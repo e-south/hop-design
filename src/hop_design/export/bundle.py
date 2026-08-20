@@ -91,10 +91,13 @@ def verify_bundle_contents(bundle_path: str | Path) -> VerifiedBundleContents:
     manifest_path = root / "hop-bundle.json"
     if not root.is_dir() or not manifest_path.is_file():
         raise BundleIntegrityError(f"Bundle manifest is missing: {manifest_path}")
+    manifest_content = manifest_path.read_bytes()
     try:
-        bundle = HopBundle.model_validate_json(manifest_path.read_bytes())
+        bundle = HopBundle.model_validate_json(manifest_content)
     except Exception as exc:
         raise BundleIntegrityError(f"Bundle manifest is invalid: {exc}") from exc
+    if manifest_content != canonical_json_bytes(bundle):
+        raise BundleIntegrityError("Bundle manifest must use canonical JSON bytes.")
 
     expected_files = {"hop-bundle.json"}
     artifact_contents: dict[str, bytes] = {}
