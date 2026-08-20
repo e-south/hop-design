@@ -106,13 +106,19 @@ PyPI gate requires its own trusted-publisher and protected-environment review.
 
 ## Phase 7: versioned GitHub artifact
 
-Status: not started.
+Status: implemented for prerelease `v0.1.0a0` on 2026-08-20.
 
 Create a protected-main tag and GitHub release only after Phase 6 hosted checks
 pass. The GitHub release workflow must produce a clean wheel and sdist,
 verify the exact files before publication, publish SHA-256 checksums, confirm
 main ancestry, and create the Release with those files without PyPI credentials.
 This versioned artifact is the first permanent downstream dependency candidate.
+
+Evidence: the protected-main tag triggered the build-and-publish workflow; the
+exact wheel and sdist passed the distribution smoke before publication; the
+Release includes `SHA256SUMS`; and a separate public download reproduced the
+checksums, clean-wheel install, metadata checks, and source/wheel bundle parity.
+See [the prerelease](https://github.com/e-south/hop-design/releases/tag/v0.1.0a0).
 
 ## Phase 8: downstream adapter and dogfood
 
