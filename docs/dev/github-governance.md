@@ -29,8 +29,10 @@ useful evidence but do not replace required tests.
 
 - Workflow permissions default to read-only.
 - Actions are restricted to full-length commit SHA pins.
-- CodeQL default setup covers Python and GitHub Actions with the extended query
-  suite.
+- A committed, SHA-pinned CodeQL workflow analyzes Python with the extended
+  query suite and exposes one stable `CodeQL` job. Workflow-file safety is
+  enforced separately by immutable Action pins, the restricted Actions
+  allowlist, workflow-schema validation, and repository contract tests.
 - Dependency graph, Dependabot alerts and security updates, secret scanning,
   and push protection are enabled when the account plan exposes them.
 - Private vulnerability reports use GitHub Security Advisories.
@@ -51,3 +53,11 @@ repository as release-ready until one hosted run passes.
 Codex code review is configured separately in ChatGPT/Codex after the GitHub
 repository is connected. `@codex review` and automatic review may add findings;
 they do not grant merge permission or replace branch protection.
+
+## Current evidence
+
+The seed was published and the server settings were re-read on 2026-08-20.
+Protected [PR #3](https://github.com/e-south/hop-design/pull/3) established the
+required `Checks`, `Dependency review`, and `CodeQL` contexts plus the supported
+Python matrix on hosted Ubuntu runners. Tag rules prevent update or deletion of
+`v*` release tags. PyPI and a versioned GitHub Release remain separate gates.

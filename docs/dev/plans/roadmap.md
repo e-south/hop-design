@@ -85,7 +85,7 @@ optional consumers, not a second scientific model.
 
 ## Phase 6: public repository hardening
 
-Status: local hardening implemented; hosted evidence pending.
+Status: implemented; public governance and hosted evidence verified.
 
 Complete file-based specs, FASTA/CSV sources, design spaces, schema and CLI
 snapshots, held-out agent-operation evaluations, install/build matrices, and
@@ -95,11 +95,11 @@ release change.
 Available: byte-bounded strict JSON/YAML design loading, bounded typed
 iterable/FASTA/CSV payload sources, explicit symbolic expansion, typed design
 spaces, root-facade mechanics and integrity operations, schema/docs surfaces,
-the source/wheel harness, GitHub governance files, immutable Actions pins,
-Python 3.12/3.13/3.14 jobs, dependency review, CodeQL setup intent, and a
-GitHub-release artifact workflow. Open gate: publish the seed repository, apply server-side
-protection and security settings, and obtain one successful hosted Linux run.
-Actions billing or quota may delay this evidence; it does not waive it.
+the source/wheel harness, public GitHub repository, protected main branch,
+restricted SHA-pinned Actions policy, Python 3.12/3.13/3.14 jobs, dependency
+review, committed CodeQL workflow, security controls, and a GitHub-release
+artifact workflow. Hosted pull-request evidence has exercised all required
+contexts under the enforced branch rule.
 
 PyPI is not part of this phase. The publication brake remains active. A future
 PyPI gate requires its own trusted-publisher and protected-environment review.

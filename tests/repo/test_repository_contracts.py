@@ -95,6 +95,29 @@ def test_dependency_review_is_a_separate_required_signal() -> None:
     assert "fail-on-severity: moderate" in text
 
 
+def test_codeql_is_a_reproducible_required_signal() -> None:
+    workflow, text = _workflow("codeql.yaml")
+
+    assert workflow["name"] == "CodeQL"
+    assert workflow["on"] == {
+        "pull_request": {"branches": ["main"]},
+        "push": {"branches": ["main"]},
+        "schedule": [{"cron": "17 6 * * 1"}],
+    }
+    assert workflow["permissions"] == {"contents": "read"}
+    jobs = workflow["jobs"]
+    assert set(jobs) == {"analyze"}
+    assert jobs["analyze"]["name"] == "CodeQL"
+    assert jobs["analyze"]["permissions"] == {
+        "contents": "read",
+        "security-events": "write",
+    }
+    assert "github/codeql-action/init@" in text
+    assert "github/codeql-action/analyze@" in text
+    assert "languages: python" in text
+    assert "queries: security-extended" in text
+
+
 def test_release_workflow_verifies_before_publishing_and_cannot_publish_to_pypi() -> None:
     workflow, text = _workflow("release.yaml")
 

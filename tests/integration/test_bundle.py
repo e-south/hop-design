@@ -94,6 +94,16 @@ def test_bundle_verification_detects_mutation(tmp_path: Path) -> None:
         verify_bundle(output)
 
 
+def test_bundle_verification_rejects_noncanonical_manifest_bytes(tmp_path: Path) -> None:
+    output = hop.compile(sequence="ACGT", design_id="demo").write(tmp_path / "manifest")
+    manifest_path = output / "hop-bundle.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_path.write_text(f"{json.dumps(manifest, indent=2)}\n", encoding="utf-8")
+
+    with pytest.raises(BundleIntegrityError, match="canonical JSON"):
+        verify_bundle(output)
+
+
 def test_bundle_verification_rejects_resealed_but_invalid_plan(tmp_path: Path) -> None:
     output = hop.compile(sequence="ACGT", design_id="demo").write(tmp_path / "invalid-plan")
     plan_path = output / "hop-plan.json"
@@ -276,7 +286,7 @@ def test_bundle_verification_rejects_corrupt_manifest_roots(
     manifest_path = output / "hop-bundle.json"
     data = json.loads(manifest_path.read_text())
     data[field] = value
-    manifest_path.write_text(json.dumps(data))
+    manifest_path.write_bytes(canonical_json_bytes(data))
 
     with pytest.raises(BundleIntegrityError, match=message):
         verify_bundle(output)
