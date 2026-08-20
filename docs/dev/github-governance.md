@@ -52,3 +52,11 @@ repository as release-ready until one hosted run passes.
 Codex code review is configured separately in ChatGPT/Codex after the GitHub
 repository is connected. `@codex review` and automatic review may add findings;
 they do not grant merge permission or replace branch protection.
+
+## Current evidence
+
+The seed was published and the server settings were re-read on 2026-08-20.
+Protected [PR #3](https://github.com/e-south/hop-design/pull/3) established the
+required `Checks`, `Dependency review`, and `CodeQL` contexts plus the supported
+Python matrix on hosted Ubuntu runners. Tag rules prevent update or deletion of
+`v*` release tags. PyPI and a versioned GitHub Release remain separate gates.
