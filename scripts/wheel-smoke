@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+smoke_root="$(mktemp -d)"
+trap 'rm -rf "$smoke_root"' EXIT
+
+if [[ $# -gt 1 ]]; then
+  echo "usage: scripts/wheel-smoke [distribution-directory]" >&2
+  exit 1
+fi
+
+if [[ $# -eq 1 ]]; then
+  dist_dir="$1"
+  if [[ ! -d "$dist_dir" ]]; then
+    echo "distribution directory does not exist: $dist_dir" >&2
+    exit 1
+  fi
+else
+  dist_dir="$smoke_root/dist"
+  uv build --no-sources --out-dir "$dist_dir"
+fi
+
+shopt -s nullglob
+wheels=("$dist_dir"/*.whl)
+sdists=("$dist_dir"/*.tar.gz)
+if [[ ${#wheels[@]} -ne 1 ]]; then
+  echo "expected exactly one wheel in $dist_dir" >&2
+  exit 1
+fi
+if [[ ${#sdists[@]} -ne 1 ]]; then
+  echo "expected exactly one source distribution in $dist_dir" >&2
+  exit 1
+fi
+wheel_path="${wheels[0]}"
+sdist_path="${sdists[0]}"
+
+uv run --locked twine check "$wheel_path" "$sdist_path"
+sdist_contents="$(tar -tzf "$sdist_path")"
+for forbidden in '/.agents/' '/.github/' '/scripts/' '/tests/'; do
+  if grep -Fq "$forbidden" <<<"$sdist_contents"; then
+    echo "sdist contains repository-only path: $forbidden" >&2
+    exit 1
+  fi
+done
+for required in \
+  'LICENSE' \
+  'README.md' \
+  'CONTRIBUTING.md' \
+  'SECURITY.md' \
+  'ARCHITECTURE.md' \
+  'DESIGN.md' \
+  'RELIABILITY.md' \
+  'assets/hop-design-banner.svg' \
+  'docs/README.md' \
+  'examples/generic-symbolic.yaml'; do
+  if ! grep -Fq "/$required" <<<"$sdist_contents"; then
+    echo "sdist omits README-routed content: $required" >&2
+    exit 1
+  fi
+done
+
+uv venv --python 3.12 "$smoke_root/venv"
+uv pip install --python "$smoke_root/venv/bin/python" "$wheel_path"
+uv pip check --python "$smoke_root/venv/bin/python"
+
+source_digest="$(uv run --locked python -c 'import hop_design as hop; print(hop.compile(sequence="NRY", design_id="wheel-parity").bundle.manifest_digest)')"
+wheel_digest="$("$smoke_root/venv/bin/python" -c 'import hop_design as hop; print(hop.compile(sequence="NRY", design_id="wheel-parity").bundle.manifest_digest)')"
+if [[ "$source_digest" != "$wheel_digest" ]]; then
+  echo "source/wheel bundle digest mismatch" >&2
+  echo "source: $source_digest" >&2
+  echo "wheel:  $wheel_digest" >&2
+  exit 1
+fi
+
+"$smoke_root/venv/bin/hop-design" compile \
+  --sequence NRY \
+  --design-id wheel-cli \
+  --out "$smoke_root/bundle" >/dev/null
+"$smoke_root/venv/bin/python" -c \
+  'import hop_design as hop; import sys; hop.verify_bundle(sys.argv[1])' \
+  "$smoke_root/bundle"
+installed_version="$("$smoke_root/venv/bin/python" -c \
+  'from importlib.metadata import version; print(version("hop-design"))')"
+test "$("$smoke_root/venv/bin/hop-design" --version)" = "hop-design $installed_version"
+
+echo "Distribution smoke and source parity: ok ($source_digest)"

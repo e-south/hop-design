@@ -1,0 +1,47 @@
+minimum_pre_commit_version: "4.3.0"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    # v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # pragma: allowlist secret
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    # 0.37.4
+    rev: 6b63472e72e1a91ed8a2f6d483790dfb644fa1d3 # pragma: allowlist secret
+    hooks:
+      - id: check-github-workflows
+
+  - repo: https://github.com/Yelp/detect-secrets
+    # v1.5.0
+    rev: 01886c8a910c64595c47f186ca1ffc0b77fa5458 # pragma: allowlist secret
+    hooks:
+      - id: detect-secrets
+
+  - repo: local
+    hooks:
+      - id: uv-lock
+        name: uv lock (check)
+        entry: uv lock --check
+        language: system
+        files: ^(uv\.lock|pyproject\.toml)$
+        pass_filenames: false
+      - id: ruff-check
+        name: ruff check (locked)
+        entry: uv run --no-sync ruff check
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format (locked)
+        entry: uv run --no-sync ruff format --check
+        language: system
+        types_or: [python, pyi]

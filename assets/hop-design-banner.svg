@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" role="img" aria-labelledby="title desc">
+  <title id="title">HOP Design</title>
+  <desc id="desc">Hairpin Oligonucleotide Processing design compiler</desc>
+  <rect width="1200" height="260" rx="24" fill="#102a43"/>
+  <path d="M90 70h115c60 0 60 120 0 120H90m115-120c70 0 70 120 0 120" fill="none" stroke="#5eead4" stroke-width="14" stroke-linecap="round"/>
+  <path d="M90 102h104m-104 56h104" stroke="#f4d35e" stroke-width="8" stroke-linecap="round" stroke-dasharray="2 18"/>
+  <text x="340" y="132" fill="#f8fafc" font-family="ui-sans-serif, system-ui, sans-serif" font-size="84" font-weight="700" letter-spacing="8">HOP DESIGN</text>
+  <text x="344" y="185" fill="#a7f3d0" font-family="ui-monospace, SFMono-Regular, monospace" font-size="25" letter-spacing="2">SPEC  →  PLAN  →  BUNDLE</text>
+</svg>

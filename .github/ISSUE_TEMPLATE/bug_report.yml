@@ -1,0 +1,36 @@
+name: Bug report
+description: Report reproducible incorrect behavior or a contract violation.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private sequences, credentials, or sensitive application data.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Include the smallest sanitized input and complete error output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected contract
+      description: State the expected result and the documentation that supports it.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: HOP Design version
+      placeholder: hop-design 0.1.0a0
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide deterministic commands or a minimal test.
+    validations:
+      required: true

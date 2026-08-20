@@ -1,0 +1,19 @@
+{
+  "schema": "hop.release-projection-fixture/v1",
+  "origin_nick": {
+    "precursor_top_strand": "AACGTTGTTCCAA",
+    "nick_boundary": 0,
+    "top_cut_boundary": 10,
+    "bottom_cut_boundary": 9,
+    "expected_active_product": "AACAACGTT",
+    "expected_retained_partner": ""
+  },
+  "nonzero_nick": {
+    "precursor_top_strand": "CCTAAGCATTAAGAGACC",
+    "nick_boundary": 2,
+    "top_cut_boundary": 7,
+    "bottom_cut_boundary": 11,
+    "expected_active_product": "TAATGCTTAGG",
+    "expected_retained_partner": "CC"
+  }
+}

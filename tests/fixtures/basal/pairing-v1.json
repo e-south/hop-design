@@ -1,0 +1,14 @@
+{
+  "schema": "hop.basal-pairing-fixture/v1",
+  "reference_profiles": [
+    {"left_arm": "CGGG", "right_arm": "ACAG", "compact_profile": "MXMX"},
+    {"left_arm": "CAAG", "right_arm": "CTCG", "compact_profile": "MXMM"},
+    {"left_arm": "AGTG", "right_arm": "CATT", "compact_profile": "MWMM"}
+  ],
+  "wobble_profile": {
+    "left_arm": "GGGG",
+    "right_arm": "TTTC",
+    "with_wobble": "MWWW",
+    "without_wobble": "MXXX"
+  }
+}

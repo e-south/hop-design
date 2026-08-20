@@ -1,0 +1,16 @@
+schema: hop.design/v1
+design_id: example-symbolic
+payload:
+  kind: degenerate
+  sequence: NRY
+junction:
+  foldback:
+    ref: hop:foldback-junction/generic-gtttc@1
+  basal:
+    ref: hop:basal-junction/generic-g-c@1
+processing_route_ref: hop:processing-route/generic-direct-synthesis@1
+constraint_profile_ref: hop:constraint-profile/generic-cloneable@1
+defaults_ref: hop:defaults/generic-direct-synthesis@1
+constraints:
+  max_candidates: 1
+external_refs: []

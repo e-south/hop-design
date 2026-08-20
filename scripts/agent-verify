@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+bash ./scripts/agent-preflight --strict
+bash ./scripts/precommit-all
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy src
+uv run --locked python -m compileall -q src/hop_design
+uv run --locked pytest --cov=hop_design --cov-report=term-missing -q
+mkdir -p .artifacts
+uv export --locked --no-dev --no-emit-project \
+  --format requirements-txt \
+  --output-file .artifacts/operational-requirements.txt >/dev/null
+uv run --locked pip-audit \
+  --requirement .artifacts/operational-requirements.txt \
+  --no-deps \
+  --disable-pip
+bash ./scripts/wheel-smoke
+
+echo "Agent verification: ok"

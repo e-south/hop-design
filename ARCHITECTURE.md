@@ -1,0 +1,84 @@
+---
+doc_id: hop-architecture
+title: HOP Design architecture
+intent: Define ownership, dependency direction, and module boundaries.
+audience:
+  - maintainers
+  - agent executors
+owner: HOP Design maintainers
+status: active
+last_verified: 2026-08-20
+---
+
+# HOP Design architecture
+
+HOP Design is a standalone modular monolith: one repository, one Python
+distribution, one public API, and no dependency on caller repositories.
+
+## Product boundary
+
+The deterministic core ends at:
+
+```text
+HopSpec -> check/resolve -> HopPlan -> HopBundle
+```
+
+HOP owns its ontology, minimal DNA/IUPAC kernel, junction contracts, route
+resolution, explicit molecular-event evaluation, deterministic artifacts,
+typed workflow views, and integrity verification. It does not own workspaces,
+runs, samples, observations, evidence, assay semantics, larger construct
+placement, private processing catalogs, or private application profiles.
+Callers link their own records through neutral external references.
+
+## Layer direction
+
+```text
+models
+  <- kernel and catalogs and deterministic encoders
+  <- design use cases
+  <- public API
+  <- CLI and future agent adapters
+```
+
+- `models` contains strict data contracts and imports no higher HOP layer.
+- `kernel` owns pure derivations and content identity.
+- `catalog` contains only generic, versioned public demonstration data.
+- `export` encodes and verifies artifacts without owning scientific policy;
+  renderers consume typed view state and do not recompute molecular state.
+- `design` checks, resolves, and compiles through the lower layers.
+  `compile.py` orchestrates use cases; `assembly.py` owns final plan and bundle
+  construction; `bundle.py` replays spec-to-bundle semantics over the
+  lower-level integrity reader; `result.py` owns the write-capable compilation
+  result.
+- `api` is the small stable Python facade.
+- `cli` adapts user input to the public API and contains no derivations.
+
+`scripts/check_architecture.py` enforces absolute and relative imports, maps the
+root `api.py` and `cli.py` modules explicitly, and fails on unknown first-party
+layers. The root facade and serialization module are narrow documented
+exceptions. Add an abstraction only when a second real implementation or
+consumer makes the seam necessary.
+
+## Current product slices
+
+The built-in `generic-direct-synthesis@1` route remains intentionally small. It
+exercises exact and symbolic payload handling, both canonical junction nouns,
+typed spans, plan locking, JSON/FASTA export, and bundle verification. It makes
+no claim of representing a lab processing protocol.
+
+The `resolved_events` path accepts explicit foldback, basal, terminal-nick, and
+optional duplex-release inputs. Pure kernels derive pairing and strand state;
+the design layer applies caller-supplied feasibility policy; the compiler emits
+expected intermediates and typed views. HOP does not resolve private agent
+identity or eligibility from neighboring repositories. Sanitized contract
+fixtures cover these mechanics, but predecessor differential equality and
+downstream cutover remain separate migration gates in
+[the roadmap](docs/dev/plans/roadmap.md).
+
+Resolved routes use an explicit molecular-state graph. A released active
+product must equal the next foldback input. Foldback and basal junctions are
+evaluated independently. A terminal-nick transition consumes the basal
+junction, and insert assembly consumes the terminal-nicked basal state, the
+foldback junction, and the authored payload. Every sequence is stored 5′→3′.
+Junction evaluations and catalog defaults use the same physical
+pair-observation types.

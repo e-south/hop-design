@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+repo_files=()
+while IFS= read -r -d '' path; do
+  repo_files+=("$path")
+done < <(git ls-files --cached --others --exclude-standard -z)
+
+if [[ ${#repo_files[@]} -eq 0 ]]; then
+  echo "no repository files available for pre-commit verification" >&2
+  exit 1
+fi
+
+uv run --locked pre-commit run --files "${repo_files[@]}"
