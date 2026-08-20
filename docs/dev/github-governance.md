@@ -30,8 +30,9 @@ useful evidence but do not replace required tests.
 - Workflow permissions default to read-only.
 - Actions are restricted to full-length commit SHA pins.
 - A committed, SHA-pinned CodeQL workflow analyzes Python with the extended
-  query suite and exposes one stable `CodeQL` job. GitHub scans workflow files
-  through its Actions security analysis.
+  query suite and exposes one stable `CodeQL` job. Workflow-file safety is
+  enforced separately by immutable Action pins, the restricted Actions
+  allowlist, workflow-schema validation, and repository contract tests.
 - Dependency graph, Dependabot alerts and security updates, secret scanning,
   and push protection are enabled when the account plan exposes them.
 - Private vulnerability reports use GitHub Security Advisories.
