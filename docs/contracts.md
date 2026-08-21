@@ -32,10 +32,12 @@ last_verified: 2026-08-21
 | `project_released_strand_state` | Exact precursor; route-compatible nick; explicit in-bounds cuts and constraints | Active and retained sequences stored 5′→3′, literal strand roles, precursor spans, and orientation-correct per-base lineage or diagnostics |
 | `ProcessingCatalog` | Known schema; unique caller-defined agent IDs | Exact site/cut scanning and symbolic motif presence without package-owned application data |
 | `search_nicking_placements` | Caller-supplied catalog; explicit target strand, boundary, paired tract, turn allowance, node budget, and hit budget | One strand-compatible geometry per examined nicking agent; exact/nearest placement, blockers, required lengths, neutral deterministic order, and truthful search/result truncation |
-| `HopSpec` | Known schema; one typed payload; explicit references and bounds | Intent only; no paired arm or final insert input |
+| `HopSpec` | Known schema; one typed payload; explicit references and bounds | Intent only; no paired arm or compiled hairpin encoding input |
 | `ResolvedHopSpec` | Known schema; explicit foldback and basal components; optional paired stem extension; optional terminal nick; release only with a terminal nick | Route-neutral component assembly or resolved-event compilation; release output equals foldback input or `HOP-ROUTE-001` |
-| `HopPlan` | Resolved assembly or processing route and lock | Paired payload and final insert reconstruct exactly from evaluated components; source oligo and state steps match the declared route kind |
+| `HairpinEncodingInsert` | Compiler-owned sequence, digest, and ordered features | Features partition and reconstruct the complete one-dimensional hairpin core; the object makes no duplex or cloning-readiness claim |
+| `HopPlan` | Resolved assembly or processing route and lock | Paired payload and hairpin encoding reconstruct exactly from evaluated components; source oligo and state steps match the declared route kind |
 | `HopBundle` | Plan plus generated artifacts | Stable inventory, digests, identifiers, and neutral external references |
+| `load_verified_bundle` | Persisted bundle directory | Integrity checks and deterministic semantic replay complete before typed spec, plan, provenance, manifest, and artifacts are returned |
 | `CheckReport` | Valid spec and configuration | All expected feasibility diagnostics without hiding software failure |
 | `WorkflowView` | Valid derived evaluation or strand state | Renderer-independent panels, tracks, spans, pair calls, and stable schema; renderers cannot revise state |
 

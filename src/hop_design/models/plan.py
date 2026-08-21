@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from enum import StrEnum
 from typing import Literal
 
@@ -20,7 +21,7 @@ from hop_design.models.sequence import (
 
 
 class FeatureRole(StrEnum):
-    """Stable molecular roles in the generic final insert."""
+    """Stable molecular roles in the compiled hairpin encoding."""
 
     BASAL_LEFT_ARM = "basal_left_arm"
     STEM_EXTENSION_LEFT_ARM = "stem_extension_left_arm"
@@ -51,7 +52,7 @@ class SequenceRecord(HopModel):
 
 
 class SequenceFeature(HopModel):
-    """A sequence-bearing feature located on the final insert."""
+    """A sequence-bearing feature located on a compiled encoding."""
 
     role: FeatureRole
     span: Span
@@ -63,6 +64,53 @@ class SequenceFeature(HopModel):
         if not isinstance(value, str):
             raise SequenceValidationError("DNA sequence must be a string.")
         return normalize_dna_sequence(value, allow_degenerate=True)
+
+
+class HairpinEncodingInsert(HopModel):
+    """The one-dimensional sequence and features that encode one hairpin core."""
+
+    kind: Literal["hairpin_encoding_insert"] = "hairpin_encoding_insert"
+    representation: Literal["one_dimensional_sequence"] = "one_dimensional_sequence"
+    alphabet: Literal["dna"] = "dna"
+    coordinate_system: Literal["zero_based_half_open"] = "zero_based_half_open"
+    record_id: str = Field(min_length=1)
+    sequence: str
+    sequence_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    features: tuple[SequenceFeature, ...] = Field(min_length=1)
+
+    @field_validator("sequence", mode="before")
+    @classmethod
+    def normalize_sequence(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise SequenceValidationError("DNA sequence must be a string.")
+        return normalize_dna_sequence(value, allow_degenerate=True)
+
+    @property
+    def is_symbolic(self) -> bool:
+        """Return whether the encoding contains IUPAC ambiguity symbols."""
+        return not set(self.sequence) <= EXACT_DNA_ALPHABET
+
+    @model_validator(mode="after")
+    def validate_encoding(self) -> HairpinEncodingInsert:
+        observed_digest = f"sha256:{hashlib.sha256(self.sequence.encode()).hexdigest()}"
+        if self.sequence_digest != observed_digest:
+            raise ValueError("Hairpin-encoding digest must match its sequence.")
+        cursor = 0
+        pieces: list[str] = []
+        for feature in self.features:
+            if feature.span.start.offset != cursor:
+                raise ValueError("Hairpin-encoding feature spans must be contiguous and ordered.")
+            if feature.span.length.value != len(feature.sequence):
+                raise ValueError(
+                    "Hairpin-encoding feature span length must equal its sequence length."
+                )
+            cursor = feature.span.end.offset
+            pieces.append(feature.sequence)
+        if cursor != len(self.sequence) or "".join(pieces) != self.sequence:
+            raise ValueError(
+                "Hairpin-encoding features must partition and reconstruct the encoded sequence."
+            )
+        return self
 
 
 class CompilationLock(HopModel):
@@ -81,15 +129,14 @@ class CompilationLock(HopModel):
 class HopPlan(HopModel):
     """An immutable, fully resolved physical build plan."""
 
-    schema_id: Literal["hop.plan/v1"] = Field(default="hop.plan/v1", alias="schema")
+    schema_id: Literal["hop.plan/v2"] = Field(default="hop.plan/v2", alias="schema")
     plan_id: ReferenceId
     design_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
     spec_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     payload_sequence: str
     paired_payload_sequence: str
     source_oligo: SequenceRecord
-    final_insert: SequenceRecord
-    features: tuple[SequenceFeature, ...] = Field(min_length=1)
+    hairpin_encoding_insert: HairpinEncodingInsert
     processing_route: PlanProcessingRoute
     lock: CompilationLock
 
@@ -107,12 +154,14 @@ class HopPlan(HopModel):
         if self.processing_route.route_id != self.lock.processing_route_ref:
             raise ValueError("Resolved processing route and lock record disagree.")
 
-        actual_roles = tuple(feature.role for feature in self.features)
+        encoding = self.hairpin_encoding_insert
+        actual_roles = tuple(feature.role for feature in encoding.features)
         expected_roles: tuple[FeatureRole, ...]
         if self.processing_route.kind == "direct_synthesis":
-            if self.source_oligo.sequence != self.final_insert.sequence:
+            if self.source_oligo.sequence != encoding.sequence:
                 raise ValueError(
-                    "Direct or component assembly requires source oligo and final insert equality."
+                    "Direct or component assembly requires source oligo and hairpin "
+                    "encoding equality."
                 )
             expected_roles = (
                 FeatureRole.BASAL_LEFT_ARM,
@@ -122,22 +171,27 @@ class HopPlan(HopModel):
                 FeatureRole.BASAL_RIGHT_ARM,
             )
             if actual_roles != expected_roles:
-                raise ValueError("Final-insert features must use the declared generic-route order.")
+                raise ValueError(
+                    "Hairpin-encoding features must use the declared generic-route order."
+                )
             foldback_sequence = self.processing_route.foldback_junction.sequence
             basal_left_arm = self.processing_route.basal_junction.left_arm
             basal_right_arm = self.processing_route.basal_junction.right_arm
             foldback_ref = self.processing_route.foldback_junction.junction_id
             basal_ref = self.processing_route.basal_junction.junction_id
         elif self.processing_route.kind == "component_assembly":
-            if self.source_oligo.sequence != self.final_insert.sequence:
+            if self.source_oligo.sequence != encoding.sequence:
                 raise ValueError(
-                    "Direct or component assembly requires source oligo and final insert equality."
+                    "Direct or component assembly requires source oligo and hairpin "
+                    "encoding equality."
                 )
             expected_roles = _feature_roles(
                 has_stem_extension=self.processing_route.stem_extension is not None
             )
             if actual_roles != expected_roles:
-                raise ValueError("Final-insert features must use the declared generic-route order.")
+                raise ValueError(
+                    "Hairpin-encoding features must use the declared generic-route order."
+                )
             foldback_sequence = self.processing_route.foldback.junction.sequence
             basal_left_arm = self.processing_route.basal.junction.left_arm
             basal_right_arm = self.processing_route.basal.junction.right_arm
@@ -156,7 +210,7 @@ class HopPlan(HopModel):
             )
             if actual_roles != expected_roles:
                 raise ValueError(
-                    "Resolved-event final-insert features must contain each physical role once "
+                    "Resolved-event hairpin-encoding features must contain each physical role once "
                     "in the declared assembly order."
                 )
             foldback_sequence = self.processing_route.foldback.junction.sequence
@@ -170,23 +224,7 @@ class HopPlan(HopModel):
             raise ValueError("Resolved foldback and lock record disagree.")
         if basal_ref != self.lock.basal_junction_ref:
             raise ValueError("Resolved basal and lock record disagree.")
-        cursor = 0
-        pieces: list[str] = []
-        for feature in self.features:
-            if feature.span.start.offset != cursor:
-                raise ValueError("Final-insert feature spans must be contiguous and ordered.")
-            if feature.span.length.value != len(feature.sequence):
-                raise ValueError("Final-insert feature span length must equal its sequence length.")
-            cursor = feature.span.end.offset
-            pieces.append(feature.sequence)
-        if (
-            cursor != len(self.final_insert.sequence)
-            or "".join(pieces) != self.final_insert.sequence
-        ):
-            raise ValueError(
-                "Final-insert features must partition and reconstruct the final sequence."
-            )
-        feature_by_role = {feature.role: feature for feature in self.features}
+        feature_by_role = {feature.role: feature for feature in encoding.features}
         if feature_by_role[FeatureRole.PAYLOAD].sequence != self.payload_sequence:
             raise ValueError("Payload feature must equal the authored payload sequence.")
         if feature_by_role[FeatureRole.PAIRED_PAYLOAD].sequence != self.paired_payload_sequence:

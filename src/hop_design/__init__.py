@@ -18,6 +18,7 @@ from hop_design.api import (
     load_csv_payloads,
     load_fasta_payloads,
     load_spec,
+    load_verified_bundle,
     plan_design_space,
     project_released_strand_state,
     render_workflow_svg,
@@ -28,6 +29,7 @@ from hop_design.api import (
     search_nicking_placements,
     verify_bundle,
 )
+from hop_design.design.bundle import VerifiedHopBundle
 from hop_design.design.design_space import (
     DesignSpaceBudgetExceededError,
     DuplicateDesignSequenceError,
@@ -102,6 +104,7 @@ from hop_design.models.method import (
     ProcessOligo,
 )
 from hop_design.models.payload import DegeneratePayload, ExactPayload
+from hop_design.models.plan import HairpinEncodingInsert
 from hop_design.models.sources import (
     DuplicateSequencePolicy,
     PayloadCollection,
@@ -156,6 +159,7 @@ __all__ = [
     "FoldbackSearchLimits",
     "FoldbackSearchRequest",
     "FoldbackSearchResult",
+    "HairpinEncodingInsert",
     "HairpinMethodMaterialsPlan",
     "HairpinMethodMaterialsSpec",
     "HopSpec",
@@ -199,6 +203,7 @@ __all__ = [
     "Strand",
     "StrandExposureRoute",
     "VariantBudgetExceededError",
+    "VerifiedHopBundle",
     "WorkflowView",
     "build_basal_pairing_view",
     "build_basal_view",
@@ -217,6 +222,7 @@ __all__ = [
     "load_csv_payloads",
     "load_fasta_payloads",
     "load_spec",
+    "load_verified_bundle",
     "plan_design_space",
     "project_released_strand_state",
     "render_workflow_svg",

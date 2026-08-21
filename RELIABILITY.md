@@ -54,8 +54,9 @@ their adjacent sequence states are identical. Release scanners discard any
 resolved top or bottom cut beyond the supplied sequence. Search result models
 reject terminal statuses that contradict hits or the number of examined nodes.
 A release event cannot enter component assembly without a terminal nick.
-Component assembly emits the final insert as its source oligo and route-neutral
-views; it never fills missing route fields from a catalog search or default.
+Component assembly emits the one-dimensional hairpin-encoding sequence as its
+source oligo and produces route-neutral views; it never fills missing route
+fields from a catalog search or default.
 An absent paired stem extension is omitted from serialized v1 specs and routes.
 When present, its arms, pair calls, two feature spans, and state transition must
 all agree. Method-material plans reject terminal-binding or chemistry drift.

@@ -12,7 +12,7 @@ from hop_design.catalog.defaults import (
     PROCESSING_ROUTE_REF,
 )
 from hop_design.design.basal import evaluate_basal_pairing
-from hop_design.design.bundle import verify_bundle
+from hop_design.design.bundle import load_verified_bundle, verify_bundle
 from hop_design.design.compile import check_spec, compile_spec
 from hop_design.design.design_space import plan_design_space
 from hop_design.design.discovery import search_nicking_placements
@@ -71,6 +71,7 @@ __all__ = [
     "load_csv_payloads",
     "load_fasta_payloads",
     "load_spec",
+    "load_verified_bundle",
     "plan_design_space",
     "project_released_strand_state",
     "render_workflow_svg",

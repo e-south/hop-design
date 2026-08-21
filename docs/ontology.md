@@ -49,6 +49,19 @@ evaluation and composition, not how a component was discovered or inherited.
 Historical lineage and application interpretation stay in the caller and can
 be linked through neutral external references.
 
+`HairpinEncodingInsert` is the compiler-owned one-dimensional sequence that
+encodes a hairpin core. It contains an exact sequence digest and nested
+features that partition the sequence. It does not describe strandedness,
+topology, a PCR product, or destination-specific assembly ends.
+
+`LinearHairpinPcrDuplex` is the reserved name for the physical HOP method
+endpoint: a typed duplex produced from explicit annealing, ligation, and
+hairpin-PCR transitions. HOP does not emit this object yet.
+
+`AssemblyFragment` is a destination-specific physical input with the ends and
+orientation required by an assembly plan. It belongs to the caller and its
+generic composition service, not to HOP.
+
 `BasalConstraintProfile` is explicit caller policy applied after physical pair
 classification. Its active, reserve, and reject decisions are not molecular
 pair kinds. Application thresholds remain with their owners.
