@@ -57,9 +57,9 @@ truncation. Open work includes released-route cross-product discovery,
 sequence-level candidate construction, rejection diagnostics, and sanitized
 candidate/rank parity.
 
-This additive public API is assigned to the unreleased `0.1.0a1` development
-line. Downstream consumers remain pinned to `v0.1.0a0` until a new protected
-release repeats the Phase 7 artifact gate.
+This additive public API shipped in `v0.1.0a1`. The protected release repeated
+the Phase 7 artifact gate, and the first private comparison path installs that
+versioned wheel rather than a sibling checkout.
 
 ## Phase 3: basal mechanics
 
@@ -88,12 +88,22 @@ component assembly for caller-supplied or inherited components; resolved route
 state graph; optional released state; exact feature spans; expected
 intermediates; verified content-addressed bundles; and renderer-free Cartesian
 design-space planning with pre-allocation cardinality checks. Open work includes
-selective batch bundle orchestration and any route that genuinely requires
-primers/adapters rather than synthetic placeholders.
+selective batch bundle orchestration and the concrete processing-method stages
+between released strand and linear double-stranded insert: adapter annealing,
+ligation, hairpin PCR, and any route-required primers or adapters. A sanitized
+supplied-design fixture must also determine whether non-payload paired stem
+extensions need a new explicit plan feature; they cannot be encoded as an
+independently authored paired payload.
 
 A primer or adapter is a process material, not a molecular intermediate. HOP
 owns a vendor-neutral material only when the declared generic route requires it;
 application context and procurement metadata remain caller-owned.
+
+The initial method boundary is deliberately narrower than a general reaction
+simulator. It must explain one source-ssDNA-to-linear-insert path through typed
+molecular states and events. Reaction conditions, controls, execution, and
+larger construct placement remain caller-owned. See the
+[processing method boundary](../../processing-method-boundary.md).
 
 ## Phase 5: view contracts and optional plots
 
@@ -132,7 +142,7 @@ PyPI gate requires its own trusted-publisher and protected-environment review.
 
 ## Phase 7: versioned GitHub artifact
 
-Status: implemented for prerelease `v0.1.0a0` on 2026-08-20.
+Status: implemented for prereleases `v0.1.0a0` and `v0.1.0a1` on 2026-08-20.
 
 Create a protected-main tag and GitHub release only after Phase 6 hosted checks
 pass. The GitHub release workflow must produce a clean wheel and sdist,
@@ -144,12 +154,13 @@ Evidence: the protected-main tag triggered the build-and-publish workflow; the
 exact wheel and sdist passed the distribution smoke before publication; the
 Release includes `SHA256SUMS`; and a separate public download reproduced the
 checksums, clean-wheel install, metadata checks, and source/wheel bundle parity.
-See [the prerelease](https://github.com/e-south/hop-design/releases/tag/v0.1.0a0).
+See [the current prerelease](https://github.com/e-south/hop-design/releases/tag/v0.1.0a1).
 
 ## Phase 8: downstream consumer and dogfood
 
-Status: pinned downstream installation and a neutral differential harness have
-started; the shadow application workflow remains open.
+Status: pinned downstream installation, neutral differential records, and one
+representative output comparison are implemented; direct HOP-authored consumer
+input remains open.
 
 Add a shadow adapter in the application-owning repository through HOP's public
 API. Establish zero predecessor imports in the migrated path, artifact parity,
@@ -169,17 +180,24 @@ lineage references. Absence of a selected process route does not make their
 molecular composition infeasible. Route parity is required only where the
 study asserts a route.
 
+The HOP plan, rather than a caller's legacy domain compiler, must eventually
+author the hairpin-specific segment order and spans. A generic composition,
+folding, or rendering service may still consume that plan. HOP supersedes the
+hairpin-specific authoring layer, not reusable downstream file and assessment
+services.
+
 ## Phase 9: cutover and deduplication
 
 Status: not started.
 
-Switch consumers, observe the migration window, then remove only superseded
-HOP-owned predecessor code. Do not retain a permanent compatibility shim or
-run-directory reader. Workspace routing changes only after the new ownership
-and downstream paths are real. The caller-owned observation record must name
-the responsible maintainer, minimum elapsed time and representative-run count,
-compared outputs, zero-unexplained-mismatch rule, rollback trigger, rollback
-mechanism, and evidence used to close the gate.
+Switch consumers through a reversible default, execute the declared
+representative cases, then remove only superseded HOP-owned predecessor code.
+Do not retain a permanent compatibility shim or run-directory reader. Workspace
+routing changes only after the new ownership and downstream paths are real. The
+caller-owned cutover record must name the responsible maintainer, compared
+versions and outputs, zero-unexplained-mismatch rule, rollback trigger,
+rollback mechanism, consumer-import audit, and evidence used to close the gate.
+Elapsed time is not evidence and is not a closure requirement.
 
 ## Product done
 
@@ -195,5 +213,5 @@ mechanism, and evidence used to close the gate.
 - Sanitized differential fixtures establish accepted/rejected candidates, ordering,
   diagnostics, spans, sequences, and artifacts.
 - Real downstream workflows use only the public HOP API.
-- Superseded code is removed after the observation gate, with no duplicate
+- Superseded code is removed after the cutover evidence gate, with no duplicate
   scientific authority remaining.

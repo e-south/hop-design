@@ -35,6 +35,8 @@ Start at the shallowest layer that answers the task.
 ## Understand the domain
 
 - [Ontology](ontology.md): the smallest public vocabulary.
+- [Processing method boundary](processing-method-boundary.md): the concrete
+  source-to-insert method scope, current coverage, and caller boundary.
 - [Spec, plan, and bundle](spec-plan-bundle.md): ownership across the product
   spine.
 - [Contract table](contracts.md): preconditions and guarantees.
