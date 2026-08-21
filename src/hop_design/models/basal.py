@@ -153,16 +153,18 @@ class BasalConstraintProfile(HopModel):
 
 
 class BasalDesignRequest(HopModel):
-    """Physical arms, explicit policy, and reserve-candidate acceptance."""
+    """Physical arms, explicit policy, and optional terminal processing."""
 
     pairing: BasalPairingRequest
     constraints: BasalConstraintProfile
     acceptance: Literal["active_only", "allow_reserve"]
-    terminal_nick: NickEvent
+    terminal_nick: NickEvent | None = None
 
     @model_validator(mode="after")
     def validate_terminal_boundary(self) -> BasalDesignRequest:
-        if self.terminal_nick.boundary.offset != len(self.pairing.left_arm):
+        if self.terminal_nick is not None and self.terminal_nick.boundary.offset != len(
+            self.pairing.left_arm
+        ):
             raise ValueError("Basal terminal nick boundary must equal the paired-arm length.")
         return self
 

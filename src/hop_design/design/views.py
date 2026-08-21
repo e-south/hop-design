@@ -125,6 +125,23 @@ def build_foldback_view(evaluation: FoldbackEvaluation) -> WorkflowView:
     )
 
 
+def build_foldback_junction_view(evaluation: FoldbackEvaluation) -> WorkflowView:
+    """Build one folded-junction panel without asserting a nicking process."""
+    if evaluation.report.has_errors:
+        raise ValueError("Foldback views require a feasible evaluation.")
+    panel = _foldback_panels(evaluation)[-1].model_copy(
+        update={
+            "panel_id": "foldback_junction",
+            "title": "Foldback junction",
+        }
+    )
+    return WorkflowView(
+        view_id="hop:view/foldback-junction@1",
+        kind="foldback_junction",
+        panels=(panel,),
+    )
+
+
 def build_released_workflow_view(
     state: ReleasedStrandState,
     foldback: FoldbackEvaluation,
@@ -187,12 +204,9 @@ def build_released_workflow_view(
     )
 
 
-def build_basal_view(
+def _basal_panel_parts(
     evaluation: BasalEvaluation,
-    *,
-    nicked_strand: Strand,
-) -> WorkflowView:
-    """Build pre- and post-terminal-nick basal-junction panels."""
+) -> tuple[ViewTrack, ViewTrack, tuple[ViewPairing, ...]]:
     if evaluation.decision.status == "reject":
         raise ValueError("Basal views cannot represent a rejected pair profile.")
     left_track = ViewTrack(
@@ -219,6 +233,16 @@ def build_basal_view(
         )
         for pair in evaluation.junction.pairs
     )
+    return left_track, right_track, pairings
+
+
+def build_basal_view(
+    evaluation: BasalEvaluation,
+    *,
+    nicked_strand: Strand,
+) -> WorkflowView:
+    """Build pre- and post-terminal-nick basal-junction panels."""
+    left_track, right_track, pairings = _basal_panel_parts(evaluation)
     pre = ViewPanel(
         panel_id="pre_terminal_nick",
         title="Pre-terminal-nick basal junction",
@@ -239,4 +263,27 @@ def build_basal_view(
     )
 
 
-__all__ = ["build_basal_view", "build_foldback_view", "build_released_workflow_view"]
+def build_basal_pairing_view(evaluation: BasalEvaluation) -> WorkflowView:
+    """Build one basal-junction panel without asserting terminal processing."""
+    left_track, right_track, pairings = _basal_panel_parts(evaluation)
+    return WorkflowView(
+        view_id="hop:view/basal-pairing@1",
+        kind="basal_pairing",
+        panels=(
+            ViewPanel(
+                panel_id="basal_junction",
+                title="Basal junction",
+                tracks=(left_track, right_track),
+                pairings=pairings,
+            ),
+        ),
+    )
+
+
+__all__ = [
+    "build_basal_pairing_view",
+    "build_basal_view",
+    "build_foldback_junction_view",
+    "build_foldback_view",
+    "build_released_workflow_view",
+]

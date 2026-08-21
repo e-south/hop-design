@@ -5,7 +5,9 @@ from pydantic import ValidationError
 
 import hop_design as hop
 from hop_design.design.views import (
+    build_basal_pairing_view,
     build_basal_view,
+    build_foldback_junction_view,
     build_foldback_view,
     build_released_workflow_view,
 )
@@ -88,6 +90,14 @@ def test_foldback_view_is_a_typed_three_panel_scientific_contract() -> None:
     assert len(view.panels[-1].pairings) == 4
 
 
+def test_foldback_junction_view_does_not_invent_nicking_states() -> None:
+    view = build_foldback_junction_view(_foldback_evaluation())
+
+    assert view.kind == "foldback_junction"
+    assert [panel.panel_id for panel in view.panels] == ["foldback_junction"]
+    assert len(view.panels[0].pairings) == 4
+
+
 def test_released_and_basal_views_keep_strand_and_pair_calls_explicit() -> None:
     released = build_released_workflow_view(_released_state(), _foldback_evaluation())
     basal = build_basal_view(_basal_evaluation(), nicked_strand=Strand.TOP)
@@ -104,6 +114,15 @@ def test_released_and_basal_views_keep_strand_and_pair_calls_explicit() -> None:
         "post_terminal_nick",
     ]
     assert basal.panels[1].tracks[0].strand is Strand.BOTTOM
+    assert [pair.kind for pair in basal.panels[0].pairings] == ["watson_crick"] * 4
+
+
+def test_basal_pairing_view_does_not_invent_terminal_processing() -> None:
+    basal = build_basal_pairing_view(_basal_evaluation())
+
+    assert basal.kind == "basal_pairing"
+    assert [panel.panel_id for panel in basal.panels] == ["basal_junction"]
+    assert len(basal.panels[0].tracks) == 2
     assert [pair.kind for pair in basal.panels[0].pairings] == ["watson_crick"] * 4
 
 

@@ -27,7 +27,7 @@ def summarize_pairing(
     *, retained_sequence: str, foldback_arm: str, arm_start: int
 ) -> PairingSummary:
     """Measure reverse-oriented complement pairing in retained-tract coordinates."""
-    aligned_arm = reverse_complement_iupac(foldback_arm)
+    aligned_arm = "" if not foldback_arm else reverse_complement_iupac(foldback_arm)
     matched_mask = tuple(
         retained_base == aligned_base
         for retained_base, aligned_base in zip(retained_sequence, aligned_arm, strict=True)

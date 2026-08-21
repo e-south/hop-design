@@ -38,6 +38,11 @@ Provide exactly one of `spec` or `sequence`. `design_id` is only valid with
 invalid call shapes raise `TypeError`; corrupt bundles raise
 `BundleIntegrityError`.
 
+A `ResolvedHopSpec` without a terminal nick compiles supplied foldback and
+basal components as `component_assembly`. The resulting bundle makes no claim
+that HOP discovered those components or that an enzyme route exists. Supplying
+a terminal nick selects `resolved_events`; a release event requires that route.
+
 ## Payload records and variants
 
 - `collect_payloads(records, duplicate_policy=...) -> PayloadCollection`
@@ -65,21 +70,28 @@ invalid call shapes raise `TypeError`; corrupt bundles raise
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
 - `scan_nicking_agent(sequence, agent=...) -> tuple[ResolvedNickSite, ...]`
 - `scan_release_agent(sequence, agent=...) -> tuple[ResolvedReleaseSite, ...]`
+- `search_nicking_placements(catalog=..., target=..., limits=...) -> NickingPlacementSearchResult`
 
 Foldback, basal, and release operations accept explicit typed requests. Basal
 pair classification is physical; active/reserve/reject classification comes
 from the caller-supplied `BasalConstraintProfile`. See the
 [mechanics reference](mechanics-api.md).
+Explicit foldback evaluation can represent a cap-only junction with zero
+retained and returning paired bases. Foldback-arm search remains limited to a
+nonempty retained tract.
 
 ## Views
 
 - `build_foldback_view(evaluation) -> WorkflowView`
+- `build_foldback_junction_view(evaluation) -> WorkflowView`
 - `build_released_workflow_view(state, foldback) -> WorkflowView`
+- `build_basal_pairing_view(evaluation) -> WorkflowView`
 - `build_basal_view(evaluation, nicked_strand=...) -> WorkflowView`
 - `render_workflow_svg(view) -> bytes`
 
 The renderer consumes the typed view and performs no molecular derivation.
 
 Stable supporting types exported at package root include payload/spec models,
-`Boundary`, `Span`, `Strand`, mechanics request/result models, processing agent
-models, `WorkflowView`, and the documented error classes.
+`Boundary`, `NucleotideCount`, `BasePairCount`, `Span`, `Strand`, mechanics and
+discovery request/result models, processing agent models, `WorkflowView`, and
+the documented error classes.

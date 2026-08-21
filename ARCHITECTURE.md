@@ -24,11 +24,12 @@ HopSpec -> check/resolve -> HopPlan -> HopBundle
 ```
 
 HOP owns its ontology, minimal DNA/IUPAC kernel, junction contracts, route
-resolution, explicit molecular-event evaluation, deterministic artifacts,
-typed workflow views, and integrity verification. It does not own workspaces,
-runs, samples, observations, evidence, assay semantics, larger construct
-placement, private processing catalogs, or private application profiles.
-Callers link their own records through neutral external references.
+resolution, bounded processing-geometry discovery, explicit molecular-event
+evaluation, deterministic artifacts, typed workflow views, and integrity
+verification. It does not own workspaces, runs, samples, observations,
+evidence, assay semantics, larger construct placement, private processing
+catalogs, or private application profiles. Callers link their own records
+through neutral external references.
 
 ## Layer direction
 
@@ -66,14 +67,33 @@ exercises exact and symbolic payload handling, both canonical junction nouns,
 typed spans, plan locking, JSON/FASTA export, and bundle verification. It makes
 no claim of representing a lab processing protocol.
 
-The `resolved_events` path accepts explicit foldback, basal, terminal-nick, and
-optional duplex-release inputs. Pure kernels derive pairing and strand state;
-the design layer applies caller-supplied feasibility policy; the compiler emits
-expected intermediates and typed views. HOP does not resolve private agent
-identity or eligibility from neighboring repositories. Sanitized contract
-fixtures cover these mechanics, but predecessor differential equality and
-downstream cutover remain separate migration gates in
-[the roadmap](docs/dev/plans/roadmap.md).
+The explicit-mechanics path accepts foldback and basal inputs plus an optional
+terminal nick and duplex release. Without a terminal nick it emits a
+`component_assembly`: validated components, a derived paired payload, a
+five-part insert, and route-neutral QA views without a discovery or processing
+claim. With a terminal nick it emits `resolved_events` and the corresponding
+state transitions. A release event requires that resolved route. Pure kernels
+derive pairing and strand state; the design layer applies caller-supplied
+feasibility policy. See
+[ADR 0008](docs/architecture/decisions/0008-inherited-component-assembly.md).
+
+HOP does not resolve private agent identity, historical lineage, or eligibility
+from neighboring repositories. Sanitized contract fixtures cover the public
+mechanics, but predecessor differential equality and downstream cutover remain
+separate migration gates in [the roadmap](docs/dev/plans/roadmap.md).
+
+Explicit foldback evaluation also represents a cap-only junction with zero
+retained and returning paired bases. It emits no synthetic pair observations;
+bounded arm search remains limited to nonempty retained tracts. See
+[ADR 0007](docs/architecture/decisions/0007-cap-only-foldback-junctions.md).
+
+Discovery is distinct from compilation. `search_nicking_placements` evaluates
+one strand-compatible orientation per caller-supplied nicking agent and returns
+exact or nearest geometry under node and result budgets. It neither constructs
+filler sequence nor applies commercial or application rank. Selected explicit
+events enter the existing compiler boundary. Optional structure predictors and
+additional renderers consume plan-owned artifacts without changing molecular
+validity; see [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).
 
 Resolved routes use an explicit molecular-state graph. A released active
 product must equal the next foldback input. Foldback and basal junctions are

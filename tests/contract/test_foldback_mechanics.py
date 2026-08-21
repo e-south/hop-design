@@ -81,6 +81,43 @@ def test_foldback_evaluation_preserves_near_match_measurements() -> None:
     assert sum(pair.is_match for pair in evaluation.junction.pairs) == 3
 
 
+def test_foldback_evaluation_represents_a_cap_only_junction_without_invented_pairs() -> None:
+    request = FoldbackEvaluationRequest(
+        precursor_sequence="TTAA",
+        nick_boundary=Boundary(offset=0),
+        retained_tract_span=Span(
+            start=Boundary(offset=0),
+            end=Boundary(offset=0),
+        ),
+        protected_region=Span(
+            start=Boundary(offset=0),
+            end=Boundary(offset=0),
+        ),
+        turn_extension="",
+        foldback_arm="",
+        constraints=FoldbackConstraints(
+            max_mismatches=0,
+            terminal_paired_bp_min=0,
+            terminal_paired_bp_max=0,
+            max_uninterrupted_paired_bp=0,
+            max_added_nt=0,
+            required_turn_nt=4,
+            allow_protected_region_mismatches=False,
+        ),
+    )
+
+    evaluation = evaluate_foldback(request)
+
+    assert evaluation.report.status == "valid"
+    assert evaluation.junction.sequence == "TTAA"
+    assert evaluation.junction.retained_tract_span == _span([0, 0])
+    assert evaluation.junction.turn_span == _span([0, 4])
+    assert evaluation.junction.foldback_arm_span == _span([4, 4])
+    assert evaluation.junction.pairs == ()
+    assert evaluation.terminal_paired_bp == 0
+    assert evaluation.max_uninterrupted_paired_bp == 0
+
+
 def test_foldback_reports_independent_constraint_failures_with_stable_codes() -> None:
     fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     case = dict(fixture["accepted_near_match"])

@@ -110,7 +110,7 @@ class HopPlan(HopModel):
         if self.processing_route.kind == "direct_synthesis":
             if self.source_oligo.sequence != self.final_insert.sequence:
                 raise ValueError(
-                    "The direct-synthesis route requires source oligo and final insert equality."
+                    "Direct or component assembly requires source oligo and final insert equality."
                 )
             if actual_roles != expected_roles:
                 raise ValueError("Final-insert features must use the declared generic-route order.")
@@ -119,6 +119,18 @@ class HopPlan(HopModel):
             basal_right_arm = self.processing_route.basal_junction.right_arm
             foldback_ref = self.processing_route.foldback_junction.junction_id
             basal_ref = self.processing_route.basal_junction.junction_id
+        elif self.processing_route.kind == "component_assembly":
+            if self.source_oligo.sequence != self.final_insert.sequence:
+                raise ValueError(
+                    "Direct or component assembly requires source oligo and final insert equality."
+                )
+            if actual_roles != expected_roles:
+                raise ValueError("Final-insert features must use the declared generic-route order.")
+            foldback_sequence = self.processing_route.foldback.junction.sequence
+            basal_left_arm = self.processing_route.basal.junction.left_arm
+            basal_right_arm = self.processing_route.basal.junction.right_arm
+            foldback_ref = self.processing_route.foldback.junction.junction_id
+            basal_ref = self.processing_route.basal.junction.junction_id
         else:
             expected_source = (
                 self.processing_route.foldback.precursor_sequence

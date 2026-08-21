@@ -1,7 +1,9 @@
 """Public package for HOP Design."""
 
 from hop_design.api import (
+    build_basal_pairing_view,
     build_basal_view,
+    build_foldback_junction_view,
     build_foldback_view,
     build_released_workflow_view,
     check,
@@ -21,6 +23,7 @@ from hop_design.api import (
     scan_nicking_agent,
     scan_release_agent,
     search_foldback_arms,
+    search_nicking_placements,
     verify_bundle,
 )
 from hop_design.design.design_space import (
@@ -51,7 +54,7 @@ from hop_design.models.catalog import (
     ResolvedNickSite,
     ResolvedReleaseSite,
 )
-from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.coordinates import BasePairCount, Boundary, NucleotideCount, Span
 from hop_design.models.design_space import (
     BasalOption,
     DesignSpaceLimits,
@@ -63,6 +66,13 @@ from hop_design.models.design_space import (
     ResolvedDesignSpace,
 )
 from hop_design.models.diagnostics import InfeasibleDesignError
+from hop_design.models.discovery import (
+    NickingPlacementFeasibility,
+    NickingPlacementHit,
+    NickingPlacementSearchLimits,
+    NickingPlacementSearchResult,
+    NickingPlacementTarget,
+)
 from hop_design.models.foldback import (
     FoldbackConstraints,
     FoldbackEvaluation,
@@ -107,6 +117,7 @@ __all__ = [
     "BasalOption",
     "BasalPairKind",
     "BasalPairingRequest",
+    "BasePairCount",
     "Boundary",
     "BundleIntegrityError",
     "Compilation",
@@ -137,6 +148,12 @@ __all__ = [
     "MotifPresenceReport",
     "NickEvent",
     "NickingAgent",
+    "NickingPlacementFeasibility",
+    "NickingPlacementHit",
+    "NickingPlacementSearchLimits",
+    "NickingPlacementSearchResult",
+    "NickingPlacementTarget",
+    "NucleotideCount",
     "PayloadCollection",
     "PayloadExpansionResult",
     "PayloadRecord",
@@ -158,7 +175,9 @@ __all__ = [
     "StrandExposureRoute",
     "VariantBudgetExceededError",
     "WorkflowView",
+    "build_basal_pairing_view",
     "build_basal_view",
+    "build_foldback_junction_view",
     "build_foldback_view",
     "build_released_workflow_view",
     "check",
@@ -178,5 +197,6 @@ __all__ = [
     "scan_nicking_agent",
     "scan_release_agent",
     "search_foldback_arms",
+    "search_nicking_placements",
     "verify_bundle",
 ]

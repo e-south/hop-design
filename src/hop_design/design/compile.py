@@ -19,7 +19,9 @@ from hop_design.design.foldback import evaluate_foldback
 from hop_design.design.processing import project_released_strand_state
 from hop_design.design.result import Compilation
 from hop_design.design.views import (
+    build_basal_pairing_view,
     build_basal_view,
+    build_foldback_junction_view,
     build_foldback_view,
     build_released_workflow_view,
 )
@@ -28,6 +30,7 @@ from hop_design.models.basal import BasalEvaluation, BasalPolicyStatus
 from hop_design.models.diagnostics import CheckReport, Diagnostic, Severity
 from hop_design.models.foldback import FoldbackEvaluation
 from hop_design.models.processing import (
+    ComponentAssemblyRoute,
     PlanProcessingRoute,
     ProcessingRoute,
     ResolvedMechanicsRoute,
@@ -148,37 +151,67 @@ def compile_spec(spec: DesignSpec) -> Compilation:
                     input_states=("authored_basal_arms",),
                     output_state="basal_junction",
                 ),
-                ResolvedMechanicsStep(
-                    step_id="terminal-nick",
-                    operation="terminal_nick",
-                    input_states=("basal_junction",),
-                    output_state="terminal_nicked_basal_junction",
-                ),
+            )
+        )
+        terminal_nick = spec.basal.terminal_nick
+        if terminal_nick is None:
+            steps.append(
                 ResolvedMechanicsStep(
                     step_id="insert-assembly",
                     operation="assemble_insert",
                     input_states=(
                         "foldback_junction",
-                        "terminal_nicked_basal_junction",
+                        "basal_junction",
                         "authored_payload",
                     ),
                     output_state="hairpin_encoding_insert",
-                ),
+                )
             )
-        )
-        route: PlanProcessingRoute = ResolvedMechanicsRoute(
-            route_id=spec.processing_route_ref,
-            description=(
-                "Caller-resolved nick, release, foldback, and basal-junction events; "
-                "catalog eligibility remains caller-owned."
-            ),
-            catalog_ref=spec.catalog_ref,
-            foldback=resolved.foldback,
-            basal=resolved.basal,
-            terminal_nick=spec.basal.terminal_nick,
-            released_state=resolved.released_state,
-            steps=tuple(steps),
-        )
+            route: PlanProcessingRoute = ComponentAssemblyRoute(
+                route_id=spec.processing_route_ref,
+                description=(
+                    "Validated caller-supplied foldback and basal components assembled "
+                    "without a discovery or processing-route claim."
+                ),
+                catalog_ref=spec.catalog_ref,
+                foldback=resolved.foldback,
+                basal=resolved.basal,
+                steps=tuple(steps),
+            )
+        else:
+            steps.extend(
+                (
+                    ResolvedMechanicsStep(
+                        step_id="terminal-nick",
+                        operation="terminal_nick",
+                        input_states=("basal_junction",),
+                        output_state="terminal_nicked_basal_junction",
+                    ),
+                    ResolvedMechanicsStep(
+                        step_id="insert-assembly",
+                        operation="assemble_insert",
+                        input_states=(
+                            "foldback_junction",
+                            "terminal_nicked_basal_junction",
+                            "authored_payload",
+                        ),
+                        output_state="hairpin_encoding_insert",
+                    ),
+                )
+            )
+            route = ResolvedMechanicsRoute(
+                route_id=spec.processing_route_ref,
+                description=(
+                    "Caller-resolved nick, release, foldback, and basal-junction events; "
+                    "catalog eligibility remains caller-owned."
+                ),
+                catalog_ref=spec.catalog_ref,
+                foldback=resolved.foldback,
+                basal=resolved.basal,
+                terminal_nick=terminal_nick,
+                released_state=resolved.released_state,
+                steps=tuple(steps),
+            )
         intermediates = canonical_json_bytes(
             {
                 "schema": "hop.expected-intermediates/v1",
@@ -191,10 +224,15 @@ def compile_spec(spec: DesignSpec) -> Compilation:
                 ),
             }
         )
-        foldback_view = build_foldback_view(resolved.foldback)
-        basal_view = build_basal_view(
-            resolved.basal,
-            nicked_strand=spec.basal.terminal_nick.strand,
+        foldback_view = (
+            build_foldback_junction_view(resolved.foldback)
+            if terminal_nick is None
+            else build_foldback_view(resolved.foldback)
+        )
+        basal_view = (
+            build_basal_pairing_view(resolved.basal)
+            if terminal_nick is None
+            else build_basal_view(resolved.basal, nicked_strand=terminal_nick.strand)
         )
         additional_artifacts: dict[str, tuple[bytes, str]] = {
             "expected-intermediates.json": (intermediates, "application/json"),
@@ -231,9 +269,13 @@ def compile_spec(spec: DesignSpec) -> Compilation:
             basal_left_arm=resolved.basal.profile.left_arm,
             basal_right_arm=resolved.basal.profile.right_arm,
             route_source_sequence=(
-                spec.foldback.precursor_sequence
-                if spec.release is None
-                else spec.release.precursor_top_strand
+                None
+                if terminal_nick is None
+                else (
+                    spec.foldback.precursor_sequence
+                    if spec.release is None
+                    else spec.release.precursor_top_strand
+                )
             ),
             additional_artifacts=additional_artifacts,
         )

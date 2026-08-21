@@ -19,7 +19,9 @@ is always derived by reverse complement.
 `FoldbackJunction` is the contiguous physical junction between the authored
 payload arm and its returning paired arm. It contains a retained stem-forming
 tract, the short unpaired `turn`, a `foldback_arm`, and one ordered physical
-pair observation for every aligned position.
+pair observation for every aligned position. A cap-only junction has a
+zero-length retained tract, a zero-length foldback arm, and no invented pair
+observations; its nonempty turn remains explicit.
 
 `BasalJunction` is the paired junction at the open end of the payload duplex.
 It has declared left and right arms, a base-pair count, and ordered physical
@@ -36,6 +38,12 @@ caller-supplied release nick, optional release, foldback, basal-pairing,
 terminal-nick, and insert-assembly transitions. The generic direct-synthesis
 route is a synthetic software demonstration, not a lab protocol.
 
+`component_assembly` composes caller-supplied foldback and basal components with
+the authored payload without asserting an enzyme route. It records physical
+evaluation and composition, not how a component was discovered or inherited.
+Historical lineage and application interpretation stay in the caller and can
+be linked through neutral external references.
+
 `BasalConstraintProfile` is explicit caller policy applied after physical pair
 classification. Its active, reserve, and reject decisions are not molecular
 pair kinds. Application thresholds remain with their owners.
@@ -44,6 +52,12 @@ pair kinds. Application thresholds remain with their owners.
 agents. HOP can resolve concrete site geometry or classify symbolic motif
 presence as `guaranteed`, `possible`, or `absent`; it ships no private or
 application-specific processing catalog.
+
+`NickingPlacementTarget` describes a desired nick boundary and strand plus the
+paired tract and available turn that may contain a recognition site.
+`search_nicking_placements` compares that target with caller-supplied nicking
+agents and reports exact or nearest geometry. A placement is a physical search
+result, not an application selection or an orderable oligo.
 
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate

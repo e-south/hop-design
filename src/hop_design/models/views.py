@@ -88,7 +88,13 @@ class WorkflowView(HopModel):
         default="hop.workflow-view/v1", alias="schema"
     )
     view_id: ReferenceId
-    kind: Literal["foldback_qa", "released_workflow", "basal_terminal_nick"]
+    kind: Literal[
+        "foldback_junction",
+        "foldback_qa",
+        "released_workflow",
+        "basal_pairing",
+        "basal_terminal_nick",
+    ]
     panels: tuple[ViewPanel, ...] = Field(min_length=1)
 
     @model_validator(mode="after")

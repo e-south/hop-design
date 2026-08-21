@@ -31,17 +31,35 @@ expansion, invalid alphabets, corrupt bundles, and unsafe paths.
 
 ## Phase 2: foldback mechanics
 
-Status: standalone mechanics implemented; predecessor differential parity open.
+Status: standalone mechanics and bounded nicking-placement discovery implemented;
+predecessor differential parity remains open.
 
 Define precursor, nick, release/exposure, retained tract, turn, foldback arm,
 pair map, bounded search, and stable rejection codes. Port behavior against
 sanitized accepted, rejected, near-match, and truncated parity fixtures. The
 predecessor remains authoritative until semantic equality passes.
 
-Available: exact evaluation, pair/run measurements, `HOP-FOLD-001`
+Available: exact evaluation including explicit cap-only zero-pair junctions,
+pair/run measurements, `HOP-FOLD-001`
 through `HOP-FOLD-007`, exact-first bounded search, truthful completion status,
 and sanitized public fixtures. Open gate: differential accepted/rejected set,
 ordering, and target-search parity against the predecessor.
+
+Target-search parity includes bounded discovery across caller-supplied
+processing-agent placements and hairpin geometry. Catalog scanning and
+compilation of already-selected options do not, by themselves, satisfy that
+discovery contract.
+
+Available discovery now covers exact and nearest nicking-site placement for a
+declared nick strand, boundary, paired tract, and turn allowance. It reports
+stable geometry blockers and distinguishes node truncation from returned-hit
+truncation. Open work includes released-route cross-product discovery,
+sequence-level candidate construction, rejection diagnostics, and sanitized
+candidate/rank parity.
+
+This additive public API is assigned to the unreleased `0.1.0a1` development
+line. Downstream consumers remain pinned to `v0.1.0a0` until a new protected
+release repeats the Phase 7 artifact gate.
 
 ## Phase 3: basal mechanics
 
@@ -62,15 +80,20 @@ differential candidate-set, geometry, and ordering parity.
 Status: resolved-mechanics and bounded design-space planning implemented; full build outputs open.
 
 Resolve physical routes, source oligos, processing steps, expected strand
-states and intermediates, final inserts, primers/adapters where required, and
+states and intermediates, final inserts, route-required primers/adapters, and
 complete provenance. Add explicit enumeration statuses and hard budgets.
 
-Available: foldback, payload, derived paired arm, basal composition; resolved
-route state graph; optional released state; exact feature spans; expected
+Available: foldback, payload, derived paired arm, basal composition; route-neutral
+component assembly for caller-supplied or inherited components; resolved route
+state graph; optional released state; exact feature spans; expected
 intermediates; verified content-addressed bundles; and renderer-free Cartesian
 design-space planning with pre-allocation cardinality checks. Open work includes
 selective batch bundle orchestration and any route that genuinely requires
 primers/adapters rather than synthetic placeholders.
+
+A primer or adapter is a process material, not a molecular intermediate. HOP
+owns a vendor-neutral material only when the declared generic route requires it;
+application context and procurement metadata remain caller-owned.
 
 ## Phase 5: view contracts and optional plots
 
@@ -80,8 +103,11 @@ Add typed foldback, released-product, and basal view models. Renderers consume
 those models and cannot recompute molecular state. Plot dependencies remain an
 optional extra.
 
-The current renderer is dependency-free SVG. Additional PNG/PDF renderers are
-optional consumers, not a second scientific model.
+The current renderer is dependency-free SVG. Additional PNG/PDF renderers and
+secondary-structure predictors are optional artifact consumers, not a second
+scientific model. They link results to a plan or bundle digest and cannot
+silently change compile validity. A general plugin protocol remains deferred
+until more than one independent integration establishes a stable seam.
 
 ## Phase 6: public repository hardening
 
@@ -120,20 +146,28 @@ Release includes `SHA256SUMS`; and a separate public download reproduced the
 checksums, clean-wheel install, metadata checks, and source/wheel bundle parity.
 See [the prerelease](https://github.com/e-south/hop-design/releases/tag/v0.1.0a0).
 
-## Phase 8: downstream adapter and dogfood
+## Phase 8: downstream consumer and dogfood
 
-Status: not started.
+Status: pinned downstream installation and a neutral differential harness have
+started; the shadow application workflow remains open.
 
-Add thin adapters in caller-owned repositories through HOP's public API. Establish
-zero predecessor imports, artifact parity, exact sequence/span equality, and a
-representative private workflow. Adapters own larger construct placement and
-application semantics.
+Add a shadow adapter in the application-owning repository through HOP's public
+API. Establish zero predecessor imports in the migrated path, artifact parity,
+exact sequence/span equality, and a representative private workflow. The
+caller owns larger construct placement and application semantics. A generic
+intermediate-repository adapter is added only if a second independent consumer
+proves that boundary reusable.
 
 Entry precondition: the consumer must install the Phase 7 versioned HOP artifact
 through an authorized reproducible channel. An editable sibling-path override
 is useful for an ephemeral local probe but is not an accepted adapter or CI
 dependency. PyPI is optional; a pinned GitHub release artifact satisfies this
 gate.
+
+Historical crossover records may use `component_assembly` with caller-owned
+lineage references. Absence of a selected process route does not make their
+molecular composition infeasible. Route parity is required only where the
+study asserts a route.
 
 ## Phase 9: cutover and deduplication
 
