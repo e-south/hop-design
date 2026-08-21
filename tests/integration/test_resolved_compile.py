@@ -102,6 +102,13 @@ def _release_request() -> ReleaseProjectionRequest:
     )
 
 
+def _component_spec() -> ResolvedHopSpec:
+    data = _spec().model_dump(by_alias=True)
+    data["basal"]["terminal_nick"] = None
+    data["processing_route_ref"] = "example:assembly-route/inherited-components@1"
+    return ResolvedHopSpec.model_validate(data)
+
+
 def test_resolved_spec_compiles_mechanics_into_one_verified_plan_and_bundle(tmp_path: Path) -> None:
     compilation = hop.compile(_spec())
 
@@ -121,6 +128,36 @@ def test_resolved_spec_compiles_mechanics_into_one_verified_plan_and_bundle(tmp_
 
     output = compilation.write(tmp_path / "bundle")
     assert verify_bundle(output) == compilation.bundle
+
+
+def test_resolved_components_compile_without_claiming_a_processing_route(tmp_path: Path) -> None:
+    compilation = hop.compile(_component_spec())
+
+    assert compilation.report.status == "valid"
+    assert compilation.plan.processing_route.kind == "component_assembly"
+    assert [step.operation for step in compilation.plan.processing_route.steps] == [
+        "foldback",
+        "basal_pairing",
+        "assemble_insert",
+    ]
+    assert compilation.plan.source_oligo.sequence == compilation.plan.final_insert.sequence
+    foldback_view = json.loads(compilation.artifacts["foldback-view.json"])
+    assert foldback_view["kind"] == "foldback_junction"
+    assert [panel["panel_id"] for panel in foldback_view["panels"]] == ["foldback_junction"]
+    basal_view = json.loads(compilation.artifacts["basal-view.json"])
+    assert basal_view["kind"] == "basal_pairing"
+    assert [panel["panel_id"] for panel in basal_view["panels"]] == ["basal_junction"]
+
+    output = compilation.write(tmp_path / "component-bundle")
+    assert verify_bundle(output) == compilation.bundle
+
+
+def test_component_assembly_rejects_a_release_event_without_a_terminal_nick() -> None:
+    data = _component_spec().model_dump(by_alias=True)
+    data["release"] = _release_request().model_dump()
+
+    with pytest.raises(ValidationError, match="terminal nick"):
+        ResolvedHopSpec.model_validate(data)
 
 
 def test_bundle_verification_replays_resolved_spec_policy(tmp_path: Path) -> None:

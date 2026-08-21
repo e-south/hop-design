@@ -42,7 +42,7 @@ class FoldbackConstraints(HopModel):
 
 
 class FoldbackEvaluationRequest(HopModel):
-    """One explicit precursor, nick, turn, arm, and constraint request."""
+    """One explicit precursor, nick, turn, optional paired arm, and constraint request."""
 
     precursor_sequence: str
     nick_boundary: Boundary
@@ -52,16 +52,16 @@ class FoldbackEvaluationRequest(HopModel):
     foldback_arm: str
     constraints: FoldbackConstraints
 
-    @field_validator("precursor_sequence", "foldback_arm", mode="before")
+    @field_validator("precursor_sequence", mode="before")
     @classmethod
     def normalize_required_sequence(cls, value: object) -> str:
         if not isinstance(value, str):
             raise SequenceValidationError("DNA sequence must be a string.")
         return normalize_dna_sequence(value, allow_degenerate=False)
 
-    @field_validator("turn_extension", mode="before")
+    @field_validator("turn_extension", "foldback_arm", mode="before")
     @classmethod
-    def normalize_turn_extension(cls, value: object) -> str:
+    def normalize_optional_sequence(cls, value: object) -> str:
         return _normalize_optional_exact_dna(value)
 
     @model_validator(mode="after")
@@ -137,7 +137,7 @@ class FoldbackEvaluation(HopModel):
     added_nt: int = Field(ge=0)
     report: CheckReport
 
-    @field_validator("precursor_sequence", "designed_sequence", "foldback_arm", mode="before")
+    @field_validator("precursor_sequence", "designed_sequence", mode="before")
     @classmethod
     def normalize_required_sequence(cls, value: object) -> str:
         if not isinstance(value, str):
@@ -148,6 +148,7 @@ class FoldbackEvaluation(HopModel):
         "turn_extension",
         "source_turn_sequence",
         "effective_turn_sequence",
+        "foldback_arm",
         mode="before",
     )
     @classmethod

@@ -21,12 +21,17 @@ private enzymes, target catalogs, application thresholds, or workspaces.
 `evaluate_foldback(FoldbackEvaluationRequest)` derives the designed sequence,
 canonical junction, source and effective turns, pair observations, mismatch positions,
 terminal paired run, longest uninterrupted paired run, and added nucleotide
-count. The retained tract must begin at the nick boundary.
+count. The retained tract must begin at the nick boundary. Explicit evaluation
+accepts a cap-only junction when both the retained tract and foldback arm have
+length zero; the nonempty turn is preserved and no pair observations are
+invented.
 
 `search_foldback_arms(FoldbackSearchRequest, limits=FoldbackSearchLimits)` uses
 exact-first deterministic enumeration. It returns the candidate-space size,
 nodes examined, hits, and a truthful `complete`, `infeasible`, or `truncated`
 status. `max_search_nodes` and `max_hits` are both required.
+Search requires a nonempty retained tract because a zero-pair junction has no
+foldback-arm design space.
 
 Foldback diagnostics are stable codes `HOP-FOLD-001` through `HOP-FOLD-007`
 covering nick/tract geometry, mismatch policy, protected-region mismatches,
@@ -70,21 +75,52 @@ forward and reverse geometry only for exact DNA. Symbolic DNA uses
 `classify_motif_presence`, which reports `guaranteed`, `possible`, or `absent`
 without inventing a concrete event.
 
+## Processing-agent geometry discovery
+
+`search_nicking_placements(catalog=..., target=..., limits=...)` searches one
+strand-compatible orientation per nicking agent. `NickingPlacementTarget`
+declares a nick boundary and strand, a paired-tract base-pair count, and the
+number of turn nucleotides available to preserve a recognition site.
+
+Each feasibility row records target-relative site coordinates and stable
+blockers. `HOP-DISC-001` means the site would start before precursor origin;
+`HOP-DISC-002` means the site would extend beyond the paired tract and available
+turn. A feasible hit records exact or nearest placement, the literal nick,
+boundary displacement, and minimum precursor and turn lengths.
+
+Both `max_search_nodes` and `max_hits` are required. Node truncation and result
+truncation are reported independently in `truncated_by`; neither is silent.
+Hits use a neutral physical order: exact before nearest, then displacement,
+required precursor length, required turn length, and agent identity. Catalog
+provenance, commercial preference, and application eligibility remain caller
+policy. This operation does not enumerate filler bases or compile a route.
+
 ## Compiler integration
 
 `ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit
-foldback, basal, terminal-nick, and optional release requests. `check` aggregates
-their independent diagnostics. `compile` refuses any error, records ordered
-`resolved_events` state-graph steps, and emits expected intermediates and typed
-views into the ordinary verified bundle. Foldback and basal pairing are
-independent branches. A terminal-nick transition transforms the basal junction;
-insert assembly then consumes that state with the foldback junction and
-authored payload.
+foldback and basal requests plus an optional terminal nick and release.
+`check` aggregates their independent diagnostics. `compile` refuses any error
+and emits expected intermediates and typed views into the ordinary verified
+bundle.
 
-If release is present, its active product must equal the foldback precursor.
+Without a terminal nick, compilation produces `component_assembly`. It
+evaluates the supplied junctions and composes the final insert without claiming
+that HOP generated the components or that a processing route exists. With a
+terminal nick, compilation produces `resolved_events`: foldback and basal
+pairing remain independent branches, the terminal-nick transition transforms
+the basal junction, and insert assembly consumes that state with the foldback
+junction and authored payload.
+
+For component assembly, the foldback request's `nick_boundary` is a topology
+coordinate marking the retained-tract start. It does not create a `NickEvent`
+or assert an experimental nick.
+
+If release is present, a terminal nick is required and its active product must
+equal the foldback precursor.
 `check` reports `HOP-ROUTE-001` rather than joining unrelated states. The plan
 source records the release precursor, or the foldback precursor when release is
 absent.
 
-This integration checks internal consistency, not processing-agent eligibility
-or experimental performance. Those claims stay with the caller.
+Both paths check internal consistency, not component lineage,
+processing-agent eligibility, or experimental performance. Those claims stay
+with the caller.

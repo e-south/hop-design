@@ -15,6 +15,7 @@ from hop_design.design.basal import evaluate_basal_pairing
 from hop_design.design.bundle import verify_bundle
 from hop_design.design.compile import check_spec, compile_spec
 from hop_design.design.design_space import plan_design_space
+from hop_design.design.discovery import search_nicking_placements
 from hop_design.design.foldback import evaluate_foldback, search_foldback_arms
 from hop_design.design.loading import load_spec
 from hop_design.design.payloads import (
@@ -26,7 +27,9 @@ from hop_design.design.payloads import (
 from hop_design.design.processing import project_released_strand_state
 from hop_design.design.result import Compilation
 from hop_design.design.views import (
+    build_basal_pairing_view,
     build_basal_view,
+    build_foldback_junction_view,
     build_foldback_view,
     build_released_workflow_view,
 )
@@ -49,7 +52,9 @@ from hop_design.models.spec import (
 )
 
 __all__ = [
+    "build_basal_pairing_view",
     "build_basal_view",
+    "build_foldback_junction_view",
     "build_foldback_view",
     "build_released_workflow_view",
     "check",
@@ -69,6 +74,7 @@ __all__ = [
     "scan_nicking_agent",
     "scan_release_agent",
     "search_foldback_arms",
+    "search_nicking_placements",
     "verify_bundle",
 ]
 

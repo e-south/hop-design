@@ -39,6 +39,12 @@ last_verified: 2026-08-20
   steps are contiguous and the plan source records the actual route input.
 - Canonical junction pairs cover every aligned position, including wobble and
   mismatch calls. Feasibility policy does not alter the physical object.
+- Catalog discovery and molecular compilation are separate operations.
+  Discovery reports physical placement facts and explicit truncation; caller
+  selection policy cannot silently become HOP rank.
+- Component assembly and processing-route compilation are separate claims.
+  Supplied components may be evaluated and composed without asserting their
+  discovery method, enzyme route, nicked strand, or historical lineage.
 
 ## Error channels
 

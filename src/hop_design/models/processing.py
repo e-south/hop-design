@@ -51,6 +51,52 @@ class ResolvedMechanicsStep(HopModel):
     output_state: str = Field(min_length=1)
 
 
+class ComponentAssemblyRoute(HopModel):
+    """Validated caller-supplied components assembled without a process claim."""
+
+    route_id: ReferenceId
+    kind: Literal["component_assembly"] = "component_assembly"
+    description: str = Field(min_length=1)
+    catalog_ref: ReferenceId
+    foldback: FoldbackEvaluation
+    basal: BasalEvaluation
+    steps: tuple[ResolvedMechanicsStep, ...] = Field(min_length=3)
+
+    @model_validator(mode="after")
+    def validate_route(self) -> ComponentAssemblyRoute:
+        if self.foldback.report.has_errors:
+            raise ValueError("Component assembly requires a feasible foldback evaluation.")
+        if self.basal.decision.status == "reject":
+            raise ValueError("Component assembly cannot contain a rejected basal evaluation.")
+        expected = (
+            (
+                "foldback",
+                "foldback",
+                ("authored_foldback_precursor",),
+                "foldback_junction",
+            ),
+            (
+                "basal-pairing",
+                "basal_pairing",
+                ("authored_basal_arms",),
+                "basal_junction",
+            ),
+            (
+                "insert-assembly",
+                "assemble_insert",
+                ("foldback_junction", "basal_junction", "authored_payload"),
+                "hairpin_encoding_insert",
+            ),
+        )
+        actual = tuple(
+            (step.step_id, step.operation, step.input_states, step.output_state)
+            for step in self.steps
+        )
+        if actual != expected:
+            raise ValueError("Component assembly steps must match the declared state graph.")
+        return self
+
+
 class ResolvedMechanicsRoute(HopModel):
     """Resolved foldback, basal, and optional released-strand mechanics."""
 
@@ -176,6 +222,6 @@ class ResolvedMechanicsRoute(HopModel):
 
 
 PlanProcessingRoute = Annotated[
-    ProcessingRoute | ResolvedMechanicsRoute,
+    ProcessingRoute | ComponentAssemblyRoute | ResolvedMechanicsRoute,
     Field(discriminator="kind"),
 ]

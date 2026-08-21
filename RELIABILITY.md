@@ -39,7 +39,11 @@ output paths are never replaced.
 Every spec has an explicit positive candidate bound. The convenience route
 resolves exactly one generic design. Foldback enumeration reports `complete`,
 `infeasible`, or `truncated`, including the fired node or hit bound; a truncated
-search is never presented as complete. Symbolic expansion calculates exact
+search is never presented as complete. Nicking-placement discovery evaluates at
+most `max_search_nodes` caller-owned catalog entries and returns at most
+`max_hits`. Its result distinguishes an incomplete catalog search from a
+complete search whose returned hit list was bounded; both conditions produce an
+explicit `truncated` status. Symbolic expansion calculates exact
 cardinality before allocation, raises when it exceeds `max_variants`, and never
 truncates silently. Design-space planning likewise calculates the full payload
 by foldback by basal by release Cartesian cardinality before allocating rows and
@@ -49,6 +53,9 @@ Resolved release and foldback requests cannot be evaluated as one route unless
 their adjacent sequence states are identical. Release scanners discard any
 resolved top or bottom cut beyond the supplied sequence. Search result models
 reject terminal statuses that contradict hits or the number of examined nodes.
+A release event cannot enter component assembly without a terminal nick.
+Component assembly emits the final insert as its source oligo and route-neutral
+views; it never fills missing route fields from a catalog search or default.
 
 ## Degraded modes
 

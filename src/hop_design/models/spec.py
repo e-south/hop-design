@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from hop_design.models.basal import BasalDesignRequest
 from hop_design.models.base import HopModel
@@ -70,6 +70,14 @@ class ResolvedHopSpec(HopModel):
     processing_route_ref: ReferenceId
     constraints: DesignLimits
     external_refs: tuple[ExternalRef, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_event_dependencies(self) -> ResolvedHopSpec:
+        if self.release is not None and self.basal.terminal_nick is None:
+            raise ValueError(
+                "A release event requires a terminal nick in the resolved processing route."
+            )
+        return self
 
 
 DesignSpec = HopSpec | ResolvedHopSpec

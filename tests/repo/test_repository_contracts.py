@@ -26,7 +26,7 @@ def _workflow(name: str) -> tuple[dict[str, object], str]:
 def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert readme.startswith("# ![HOP Design")
+    assert readme.startswith("# ![hop — Hairpin Oligonucleotide Processing")
     assert "assets/hop-design-banner.svg" in readme
     assert "CONTRIBUTING.md" in readme
     assert "SECURITY.md" in readme

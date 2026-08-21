@@ -4,6 +4,8 @@ import hop_design as hop
 
 
 def test_public_facade_exposes_standalone_mechanics_without_internal_imports() -> None:
+    assert callable(hop.build_basal_pairing_view)
+    assert callable(hop.build_foldback_junction_view)
     assert callable(hop.evaluate_foldback)
     assert callable(hop.search_foldback_arms)
     assert callable(hop.evaluate_basal_pairing)
@@ -14,6 +16,7 @@ def test_public_facade_exposes_standalone_mechanics_without_internal_imports() -
     assert callable(hop.classify_motif_presence)
     assert callable(hop.scan_nicking_agent)
     assert callable(hop.scan_release_agent)
+    assert callable(hop.search_nicking_placements)
     assert hop.FoldbackConstraints.__module__.startswith("hop_design.")
     assert hop.BasalConstraintProfile.__module__.startswith("hop_design.")
     assert hop.ProcessingCatalog.__module__.startswith("hop_design.")
@@ -24,6 +27,7 @@ def test_public_facade_exposes_supporting_contracts_and_integrity_operations() -
     public_contracts = (
         hop.BasalEvaluation,
         hop.BasalPairKind,
+        hop.BasePairCount,
         hop.Boundary,
         hop.FoldbackEvaluation,
         hop.FoldbackSearchRequest,
@@ -33,6 +37,9 @@ def test_public_facade_exposes_supporting_contracts_and_integrity_operations() -
         hop.JunctionPairKind,
         hop.JunctionPairObservation,
         hop.MotifPresenceReport,
+        hop.NickingPlacementSearchResult,
+        hop.NickingPlacementTarget,
+        hop.NucleotideCount,
         hop.PayloadCollection,
         hop.PayloadExpansionResult,
         hop.ReleaseProjectionResult,

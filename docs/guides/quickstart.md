@@ -30,8 +30,9 @@ uv run hop-design compile --spec examples/generic-symbolic.yaml --out build/from
 ```
 
 Use `hop.design/v1` for the named generic demonstration and
-`hop.resolved-design/v1` when foldback, basal, terminal-nick, and optional
-release events have already been resolved by the caller.
+`hop.resolved-design/v1` when foldback and basal components are supplied by the
+caller. Omit the terminal nick for route-neutral component assembly; include it
+for resolved processing events. A release event requires the resolved route.
 
 In Python:
 
