@@ -33,10 +33,10 @@ foldback precursor. Ordered route steps must form the declared contiguous state
 graph. Foldback and basal pairing are independent branches. Terminal nick
 transforms the basal branch before insert assembly consumes it with the
 foldback junction and authored payload. Direct synthesis alone requires
-source/final equality.
+source/hairpin-encoding equality.
 
 ## Consequences
 
 Disconnected requests produce `HOP-ROUTE-001`. Resolved bundles may include
-`source-oligo.fasta` in addition to the distinct generated final insert. HOP
-does not infer a bridge between unrelated sequences.
+`source-oligo.fasta` in addition to the distinct generated hairpin encoding.
+HOP does not infer a bridge between unrelated sequences.

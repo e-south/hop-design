@@ -115,7 +115,7 @@ and emits expected intermediates and typed views into the ordinary verified
 bundle.
 
 Without a terminal nick, compilation produces `component_assembly`. It
-evaluates the supplied junctions and composes the final insert without claiming
+evaluates the supplied junctions and composes the hairpin encoding without claiming
 that HOP generated the components or that a processing route exists. With a
 terminal nick, compilation produces `resolved_events`: foldback and basal
 pairing remain independent branches, the terminal-nick transition transforms

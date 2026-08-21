@@ -43,7 +43,7 @@ uv run hop-design compile \
 import hop_design as hop
 
 compilation = hop.compile(sequence="NRYNRY", design_id="demo-symbolic")
-print(compilation.plan.final_insert.sequence)
+print(compilation.plan.hairpin_encoding_insert.sequence)
 compilation.write("build/demo-python")
 ```
 
@@ -57,10 +57,14 @@ cardinality budgets before allocation.
 - exact and symbolic payload ingestion and bounded variant generation;
 - foldback, basal-junction, nick, release, and strand-state contracts;
 - optional non-payload paired stem context and reference-method oligo bindings;
-- deterministic JSON, FASTA, typed view, SVG, digest, and provenance artifacts.
+- a digest-bearing `HairpinEncodingInsert` with deterministic JSON, FASTA,
+  typed view, SVG, and provenance artifacts;
+- verified persisted-bundle loading for downstream consumers.
 
 HOP does not own workspaces, runs, observations, evidence stores, private
-application profiles, or laboratory execution.
+application profiles, destination-specific assembly, or laboratory execution.
+It does not yet claim to produce a physical PCR duplex or cloning-ready
+fragment; those capabilities require additional typed method-state contracts.
 
 ## Documentation and support
 

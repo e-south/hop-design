@@ -14,9 +14,10 @@ last_verified: 2026-08-21
 # Hairpin-processing method boundary
 
 HOP is a sequence-design compiler for a specific family of hairpin-processing
-methods. It is not a universal reaction simulator. Its initial method scope is
-the path from an authored single-stranded sequence to a checked hairpin design
-and a linear double-stranded insert with inverted repeats.
+methods. It is not a universal reaction simulator. Its current implemented
+scope ends at a checked, one-dimensional `HairpinEncodingInsert`. Its initial
+method target extends that derivation to a typed linear hairpin-PCR duplex with
+inverted repeats.
 
 The reference method has this molecular spine:
 
@@ -44,13 +45,24 @@ controls, or experimental acceptance.
 | Foldback and basal geometry | Typed junctions, pair calls, spans, diagnostics, and route-neutral component assembly | Predecessor candidate and ordering parity |
 | Nicking and duplex release | Explicit nick/cut geometry and released-strand lineage | Joint route discovery and sequence-level route candidates |
 | Adapter annealing and ligation | Source and adapter materials, terminal binding, and ligation-end preparation are represented | Typed annealed and ligated states with continuity checks |
-| Hairpin PCR and inverted-repeat duplex | Final insert and both hairpin-PCR primer bindings are represented; the PCR transition is not | A bounded method-plan transition from ligated hairpin to duplex |
+| Hairpin PCR and inverted-repeat duplex | The hairpin-encoding sequence and both hairpin-PCR primer bindings are represented; no physical duplex is emitted | A bounded method-plan transition from ligated hairpin to `LinearHairpinPcrDuplex` |
 | Larger construct or vector placement | Outside HOP | Caller-owned composition or assembly handoff |
 | Secondary-structure prediction | Optional consumer of plan-owned sequence artifacts | Prove an interoperable adapter before defining a plugin protocol |
 
 The current `resolved_events` graph therefore establishes junction and release
 mechanics, not end-to-end method coverage. A verified bundle proves that its
 software contracts replay; it does not prove that the laboratory method works.
+
+## Product capability boundary
+
+| Product | Status | Meaning |
+| --- | --- | --- |
+| `HairpinEncodingInsert` | Implemented | One-dimensional HOP core sequence, digest, and nested features; design-valid when its plan compiles |
+| `LinearHairpinPcrDuplex` | Not implemented | Physical method endpoint with explicit strands, topology, and derivation through annealing, ligation, and PCR |
+| `AssemblyFragment` | Outside HOP | Destination-specific physical input with orientation and restriction or homology ends; owned by the caller and composition service |
+
+No product is called cloning-ready without a destination vector, insertion
+slot, orientation, assembly ends, and policy checks.
 
 ## Four different kinds of information
 
@@ -109,9 +121,17 @@ does not invent a nicked strand, processing agent, or feasibility result.
 ## Composition and assessment seams
 
 HOP owns the hairpin-specific order, derivation, spans, and method state. A
-generic sequence-composition service may consume that plan to add larger
-context and write GenBank, FASTA, feature, folding, or review artifacts. HOP
-does not need to reimplement those generic services.
+generic sequence-composition service consumes the verified HOP product as one
+immutable annotated object, then adds larger context and offsets its nested
+features. It must not reconstruct HOP features or paired sequences.
+
+HOP may export standard representations of the molecular object it owns. A
+clearly labeled GenBank representation of `HairpinEncodingInsert` is therefore
+legitimate; it must not claim duplex strandedness or cloning readiness. A
+duplex-specific GenBank record remains blocked until
+`LinearHairpinPcrDuplex` exists. A composition service may also write FASTA or
+GenBank for a larger construct; those files represent a different object and
+do not duplicate molecular authority.
 
 Likewise, a secondary-structure predictor consumes a selected HOP sequence and
 returns an advisory artifact linked to the plan or bundle digest. It cannot

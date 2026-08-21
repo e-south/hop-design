@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -116,7 +117,7 @@ def test_resolved_spec_compiles_mechanics_into_one_verified_plan_and_bundle(tmp_
     assert compilation.plan.processing_route.kind == "resolved_events"
     assert compilation.plan.processing_route.foldback.report.status == "valid"
     assert compilation.plan.processing_route.basal.decision.status == "active"
-    assert compilation.plan.final_insert.sequence == "AAAANTCAGCATCTGANTTTT"
+    assert compilation.plan.hairpin_encoding_insert.sequence == "AAAANTCAGCATCTGANTTTT"
     assert compilation.plan.source_oligo.sequence == "CCTCAGCA"
     assert "expected-intermediates.json" in compilation.artifacts
     assert "foldback-view.json" in compilation.artifacts
@@ -140,7 +141,9 @@ def test_resolved_components_compile_without_claiming_a_processing_route(tmp_pat
         "basal_pairing",
         "assemble_insert",
     ]
-    assert compilation.plan.source_oligo.sequence == compilation.plan.final_insert.sequence
+    assert (
+        compilation.plan.source_oligo.sequence == compilation.plan.hairpin_encoding_insert.sequence
+    )
     foldback_view = json.loads(compilation.artifacts["foldback-view.json"])
     assert foldback_view["kind"] == "foldback_junction"
     assert [panel["panel_id"] for panel in foldback_view["panels"]] == ["foldback_junction"]
@@ -165,8 +168,8 @@ def test_component_assembly_preserves_optional_non_payload_stem_context() -> Non
 
     compilation = hop.compile(spec)
 
-    assert compilation.plan.final_insert.sequence == "AAAAGCTANTCAGCATCTGANTAACTTTT"
-    assert tuple(feature.role for feature in compilation.plan.features) == (
+    assert compilation.plan.hairpin_encoding_insert.sequence == "AAAAGCTANTCAGCATCTGANTAACTTTT"
+    assert tuple(feature.role for feature in compilation.plan.hairpin_encoding_insert.features) == (
         "basal_left_arm",
         "stem_extension_left_arm",
         "payload",
@@ -189,14 +192,14 @@ def test_component_assembly_preserves_optional_non_payload_stem_context() -> Non
     assert intermediates["stem_extension"]["left_arm"] == "GCTA"
 
 
-def test_absent_stem_extension_does_not_change_the_v1_serialized_surface() -> None:
+def test_absent_stem_extension_is_omitted_from_the_serialized_surface() -> None:
     spec = _component_spec()
     compilation = hop.compile(spec)
 
     assert "stem_extension" not in spec.model_dump(mode="json", by_alias=True)
     route = compilation.plan.processing_route
     assert "stem_extension" not in route.model_dump(mode="json")
-    assert tuple(feature.role for feature in compilation.plan.features) == (
+    assert tuple(feature.role for feature in compilation.plan.hairpin_encoding_insert.features) == (
         "basal_left_arm",
         "payload",
         "foldback_junction",
@@ -283,7 +286,9 @@ def test_resolved_compile_carries_released_state_into_plan_views_and_artifacts()
     assert compilation.plan.processing_route.released_state is not None
     assert compilation.plan.processing_route.released_state.active_product_sequence == "CCTCAGCA"
     assert compilation.plan.source_oligo.sequence == spec.release.precursor_top_strand
-    assert compilation.plan.source_oligo.sequence != compilation.plan.final_insert.sequence
+    assert (
+        compilation.plan.source_oligo.sequence != compilation.plan.hairpin_encoding_insert.sequence
+    )
     assert "released-workflow-view.json" in compilation.artifacts
     assert "released-workflow-view.svg" in compilation.artifacts
 
@@ -362,7 +367,9 @@ def test_resolved_plan_rejects_route_source_and_layout_drift() -> None:
         HopPlan.model_validate_json(json.dumps(source_drift))
 
     role_drift = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
-    features = role_drift["features"]
+    encoding = role_drift["hairpin_encoding_insert"]
+    assert isinstance(encoding, dict)
+    features = encoding["features"]
     assert isinstance(features, list)
     first = features[0]
     assert isinstance(first, dict)
@@ -398,14 +405,17 @@ def test_resolved_plan_rejects_derived_foldback_and_insert_drift() -> None:
         HopPlan.model_validate_json(json.dumps(foldback_drift))
 
     insert_drift = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
-    features = insert_drift["features"]
+    encoding = insert_drift["hairpin_encoding_insert"]
+    assert isinstance(encoding, dict)
+    features = encoding["features"]
     assert isinstance(features, list)
     junction_feature = features[2]
     assert isinstance(junction_feature, dict)
     junction_feature["sequence"] = "A" * len(junction_feature["sequence"])
-    final_insert = insert_drift["final_insert"]
-    assert isinstance(final_insert, dict)
-    final_insert["sequence"] = "".join(feature["sequence"] for feature in features)
+    encoding["sequence"] = "".join(feature["sequence"] for feature in features)
+    encoding["sequence_digest"] = (
+        f"sha256:{hashlib.sha256(encoding['sequence'].encode()).hexdigest()}"
+    )
 
     with pytest.raises(ValidationError, match="resolved foldback junction"):
         HopPlan.model_validate_json(json.dumps(insert_drift))

@@ -12,9 +12,11 @@ def test_compile_exact_sequence_through_resolved_plan() -> None:
 
     assert compilation.plan.payload_sequence == "ACGT"
     assert compilation.plan.paired_payload_sequence == "ACGT"
-    assert compilation.plan.final_insert.sequence == "GACGTGTTTCACGTC"
-    assert compilation.plan.source_oligo.sequence == compilation.plan.final_insert.sequence
-    assert [feature.role for feature in compilation.plan.features] == [
+    assert compilation.plan.hairpin_encoding_insert.sequence == "GACGTGTTTCACGTC"
+    assert (
+        compilation.plan.source_oligo.sequence == compilation.plan.hairpin_encoding_insert.sequence
+    )
+    assert [feature.role for feature in compilation.plan.hairpin_encoding_insert.features] == [
         "basal_left_arm",
         "payload",
         "foldback_junction",
@@ -31,8 +33,8 @@ def test_compile_degenerate_sequence_without_implicit_expansion() -> None:
     assert compilation.spec.payload.kind == "degenerate"
     assert compilation.plan.payload_sequence == "NRY"
     assert compilation.plan.paired_payload_sequence == "RYN"
-    assert compilation.plan.final_insert.sequence == "GNRYGTTTCRYNC"
-    assert compilation.plan.final_insert.is_symbolic
+    assert compilation.plan.hairpin_encoding_insert.sequence == "GNRYGTTTCRYNC"
+    assert compilation.plan.hairpin_encoding_insert.is_symbolic
 
 
 def test_explicit_spec_and_sequence_convenience_are_observationally_equivalent() -> None:

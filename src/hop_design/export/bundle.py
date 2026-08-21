@@ -47,7 +47,7 @@ class BundleVerifier(Protocol):
 
 @dataclass(frozen=True)
 class VerifiedBundleContents:
-    """Integrity-checked bundle content for higher-layer semantic replay."""
+    """Integrity-checked bundle content awaiting design-layer semantic replay."""
 
     bundle: HopBundle
     spec: DesignSpec
@@ -147,7 +147,7 @@ def verify_bundle_contents(bundle_path: str | Path) -> VerifiedBundleContents:
         raise BundleIntegrityError("Bundle identifier does not match its content digest.")
 
     required_artifacts = {
-        "final-insert.fasta",
+        "hairpin-encoding.fasta",
         "hop-plan.json",
         "hop-spec.json",
         "provenance.json",
@@ -212,10 +212,10 @@ def verify_bundle_contents(bundle_path: str | Path) -> VerifiedBundleContents:
         or provenance_lock != plan_lock
     ):
         raise BundleIntegrityError("Bundle provenance does not match its plan and spec.")
-    if artifact_contents["final-insert.fasta"] != render_fasta(plan.final_insert):
-        raise BundleIntegrityError("Bundle final-insert.fasta does not match its plan.")
+    if artifact_contents["hairpin-encoding.fasta"] != render_fasta(plan.hairpin_encoding_insert):
+        raise BundleIntegrityError("Bundle hairpin-encoding.fasta does not match its plan.")
     source_fasta = artifact_contents.get("source-oligo.fasta")
-    if plan.source_oligo.sequence == plan.final_insert.sequence:
+    if plan.source_oligo.sequence == plan.hairpin_encoding_insert.sequence:
         if source_fasta is not None:
             raise BundleIntegrityError("Bundle contains a redundant source-oligo.fasta artifact.")
     elif source_fasta != render_fasta(plan.source_oligo):

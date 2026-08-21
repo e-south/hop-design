@@ -6,13 +6,13 @@ from pathlib import Path
 import pytest
 
 import hop_design as hop
-from hop_design.export.bundle import BundleIntegrityError
+from hop_design.export.bundle import BundleIntegrityError, verify_bundle_contents
 from hop_design.kernel.bundle_identity import bundle_id, manifest_digest_for_bundle
 from hop_design.models.bundle import HopBundle
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 EXPECTED_FILES = {
-    "final-insert.fasta",
+    "hairpin-encoding.fasta",
     "hop-bundle.json",
     "hop-plan.json",
     "hop-spec.json",
@@ -86,9 +86,33 @@ def test_bundle_write_and_verification_round_trip(tmp_path: Path) -> None:
     assert bundle_data["schema"] == "hop.bundle/v1"
 
 
+def test_load_verified_bundle_returns_typed_semantic_contents(tmp_path: Path) -> None:
+    compilation = hop.compile(sequence="ACGT", design_id="demo")
+    output = compilation.write(tmp_path / "demo")
+
+    loaded = hop.load_verified_bundle(output)
+
+    assert loaded.bundle == compilation.bundle
+    assert loaded.plan == compilation.plan
+    assert loaded.spec == compilation.spec
+    assert loaded.plan.hairpin_encoding_insert.sequence == (
+        compilation.plan.hairpin_encoding_insert.sequence
+    )
+    assert set(loaded.artifacts) == EXPECTED_FILES - {"hop-bundle.json"}
+    assert "final-insert.fasta" not in loaded.artifacts
+
+
+def test_integrity_parser_does_not_claim_semantic_verification(tmp_path: Path) -> None:
+    output = hop.compile(sequence="ACGT", design_id="demo").write(tmp_path / "demo")
+
+    contents = verify_bundle_contents(output)
+
+    assert not isinstance(contents, hop.VerifiedHopBundle)
+
+
 def test_bundle_verification_detects_mutation(tmp_path: Path) -> None:
     output = hop.compile(sequence="ACGT", design_id="demo").write(tmp_path / "demo")
-    (output / "final-insert.fasta").write_text(">modified\nAAAA\n")
+    (output / "hairpin-encoding.fasta").write_text(">modified\nAAAA\n")
 
     with pytest.raises(BundleIntegrityError, match="digest mismatch"):
         verify_bundle(output)
@@ -153,9 +177,9 @@ def test_bundle_verification_rejects_resealed_cross_artifact_drift(tmp_path: Pat
 
 def test_bundle_verification_rejects_resealed_fasta_drift(tmp_path: Path) -> None:
     output = hop.compile(sequence="ACGT", design_id="demo").write(tmp_path / "fasta-drift")
-    _replace_artifact_and_reseal_bundle(output, "final-insert.fasta", b">other\nAAAA\n")
+    _replace_artifact_and_reseal_bundle(output, "hairpin-encoding.fasta", b">other\nAAAA\n")
 
-    with pytest.raises(BundleIntegrityError, match=r"final-insert\.fasta does not match"):
+    with pytest.raises(BundleIntegrityError, match=r"hairpin-encoding\.fasta does not match"):
         verify_bundle(output)
 
 

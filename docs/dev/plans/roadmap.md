@@ -80,7 +80,7 @@ differential candidate-set, geometry, and ordering parity.
 Status: resolved-mechanics and bounded design-space planning implemented; full build outputs open.
 
 Resolve physical routes, source oligos, processing steps, expected strand
-states and intermediates, final inserts, route-required primers/adapters, and
+states and intermediates, hairpin-encoding sequences, route-required primers/adapters, and
 complete provenance. Add explicit enumeration statuses and hard budgets.
 
 Available: foldback, payload, derived paired arm, basal composition, optional
@@ -94,7 +94,10 @@ between released strand and linear double-stranded insert: adapter annealing,
 ligation, and hairpin PCR. The first method-material contract now validates the
 six source, adapter, and primer oligos, their terminal binding spans, and
 supplied-phosphate or kinase-step posture. These materials are not yet linked
-into the end-to-end state graph.
+into the end-to-end state graph. The compiled one-dimensional product is now
+an explicit, digest-bearing `HairpinEncodingInsert`; the physical
+`LinearHairpinPcrDuplex` remains unimplemented until those transitions can
+derive it without guessed geometry.
 
 A primer or adapter is a process material, not a molecular intermediate. HOP
 owns a vendor-neutral material only when the declared generic route requires it;
@@ -160,9 +163,8 @@ See the [release history](https://github.com/e-south/hop-design/releases).
 
 ## Phase 8: downstream consumer and dogfood
 
-Status: pinned downstream installation, neutral differential records, and one
-representative output comparison are implemented; direct HOP-authored consumer
-input remains open.
+Status: released-pin differential evidence is implemented; the breaking typed
+consumer boundary is locally proven and awaits a versioned release.
 
 Add a shadow adapter in the application-owning repository through HOP's public
 API. Establish zero predecessor imports in the migrated path, artifact parity,
@@ -182,11 +184,12 @@ lineage references. Absence of a selected process route does not make their
 molecular composition infeasible. Route parity is required only where the
 study asserts a route.
 
-The HOP plan, rather than a caller's legacy domain compiler, must eventually
-author the hairpin-specific segment order and spans. A generic composition,
-folding, or rendering service may still consume that plan. HOP supersedes the
-hairpin-specific authoring layer, not reusable downstream file and assessment
-services.
+The verified `HairpinEncodingInsert`, rather than a caller's legacy domain
+compiler, authors the hairpin-specific segment order and spans. A study may add
+its context around that object. A generic composition, folding, or rendering
+service may consume the resulting object without rederiving HOP features. HOP
+supersedes the hairpin-specific authoring layer, not reusable larger-placement
+or assessment services.
 
 ## Phase 9: cutover and deduplication
 
@@ -206,7 +209,10 @@ Elapsed time is not evidence and is not a closure requirement.
 - A clean machine can install the wheel and reproduce exact and symbolic demos.
 - Spec, plan, bundle, diagnostics, coordinates, catalogs, and limits have stable
   strict schemas and negative tests.
-- Bundles verify and all scientific artifacts derive from one plan.
+- Bundles verify and downstream consumers can load their complete typed content
+  only after deterministic replay.
+- Product names distinguish a one-dimensional hairpin encoding from a physical
+  PCR duplex and a destination-specific assembly fragment.
 - Docs, CLI, Python API, skills, and CI exercise the same use cases.
 - The package contains no private data or caller-repository runtime dependency.
 

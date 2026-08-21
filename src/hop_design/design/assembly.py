@@ -1,4 +1,4 @@
-"""Shared final-insert, plan, artifact, and bundle assembly."""
+"""Shared hairpin-encoding, plan, artifact, and bundle assembly."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from hop_design.models.diagnostics import CheckReport
 from hop_design.models.plan import (
     CompilationLock,
     FeatureRole,
+    HairpinEncodingInsert,
     HopPlan,
     SequenceFeature,
     SequenceRecord,
@@ -83,8 +84,11 @@ def assemble_compilation(
         )
         cursor = end
     final_sequence = "".join(sequence for _, sequence in pieces)
-    final_insert = SequenceRecord(
-        record_id=f"{spec.design_id}-final-insert", sequence=final_sequence
+    hairpin_encoding_insert = HairpinEncodingInsert(
+        record_id=f"{spec.design_id}-hairpin-encoding",
+        sequence=final_sequence,
+        sequence_digest=sha256_digest(final_sequence.encode()),
+        features=tuple(features),
     )
     source_oligo = SequenceRecord(
         record_id=f"{spec.design_id}-source-oligo",
@@ -107,8 +111,7 @@ def assemble_compilation(
         payload_sequence=spec.payload.sequence,
         paired_payload_sequence=paired_payload,
         source_oligo=source_oligo,
-        final_insert=final_insert,
-        features=tuple(features),
+        hairpin_encoding_insert=hairpin_encoding_insert,
         processing_route=route,
         lock=lock,
     )
@@ -124,18 +127,18 @@ def assemble_compilation(
         processing_route_ref=lock.processing_route_ref,
     )
     artifact_bytes: dict[str, bytes] = {
-        "final-insert.fasta": render_fasta(final_insert),
+        "hairpin-encoding.fasta": render_fasta(hairpin_encoding_insert),
         "hop-plan.json": plan_bytes,
         "hop-spec.json": spec_bytes,
         "provenance.json": canonical_json_bytes(provenance),
     }
     media_types: dict[str, str] = {
-        "final-insert.fasta": "text/x-fasta",
+        "hairpin-encoding.fasta": "text/x-fasta",
         "hop-plan.json": "application/json",
         "hop-spec.json": "application/json",
         "provenance.json": "application/json",
     }
-    if source_oligo.sequence != final_insert.sequence:
+    if source_oligo.sequence != hairpin_encoding_insert.sequence:
         artifact_bytes["source-oligo.fasta"] = render_fasta(source_oligo)
         media_types["source-oligo.fasta"] = "text/x-fasta"
     for path, (content, media_type) in additional_artifacts.items():
