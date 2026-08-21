@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # Molecular mechanics API
@@ -48,6 +48,17 @@ The caller-supplied `BasalConstraintProfile` then produces `active`, `reserve`,
 or `reject`. A reserve result emits `HOP-BASAL-002`; a resolved compilation
 requires `acceptance="allow_reserve"` or adds `HOP-BASAL-003`. Rejected profiles
 emit `HOP-BASAL-001` and cannot enter a plan.
+
+## Optional paired stem extension
+
+`evaluate_paired_stem_extension(PairedStemExtensionRequest)` classifies one
+pair for every position in two equal-length literal arms. This component sits
+between the basal junction and payload stem. It is variable in length and can
+preserve intentional mismatches without making the paired payload independently
+authored.
+
+The current S3/S2/S1/S0 basal profile remains four positions because it
+describes the terminal processing junction, not the entire stem.
 
 ## Nick, release, and strand state
 

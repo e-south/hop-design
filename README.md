@@ -56,6 +56,7 @@ cardinality budgets before allocation.
 - strict `Spec -> Plan -> Bundle` compilation;
 - exact and symbolic payload ingestion and bounded variant generation;
 - foldback, basal-junction, nick, release, and strand-state contracts;
+- optional non-payload paired stem context and reference-method oligo bindings;
 - deterministic JSON, FASTA, typed view, SVG, digest, and provenance artifacts.
 
 HOP does not own workspaces, runs, observations, evidence stores, private

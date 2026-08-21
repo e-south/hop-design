@@ -9,6 +9,7 @@ def test_public_facade_exposes_standalone_mechanics_without_internal_imports() -
     assert callable(hop.evaluate_foldback)
     assert callable(hop.search_foldback_arms)
     assert callable(hop.evaluate_basal_pairing)
+    assert callable(hop.evaluate_paired_stem_extension)
     assert callable(hop.project_released_strand_state)
     assert callable(hop.expand_payload)
     assert callable(hop.load_fasta_payloads)
@@ -17,6 +18,7 @@ def test_public_facade_exposes_standalone_mechanics_without_internal_imports() -
     assert callable(hop.scan_nicking_agent)
     assert callable(hop.scan_release_agent)
     assert callable(hop.search_nicking_placements)
+    assert callable(hop.resolve_hairpin_method_materials)
     assert hop.FoldbackConstraints.__module__.startswith("hop_design.")
     assert hop.BasalConstraintProfile.__module__.startswith("hop_design.")
     assert hop.ProcessingCatalog.__module__.startswith("hop_design.")
@@ -40,6 +42,8 @@ def test_public_facade_exposes_supporting_contracts_and_integrity_operations() -
         hop.NickingPlacementSearchResult,
         hop.NickingPlacementTarget,
         hop.NucleotideCount,
+        hop.PairedStemExtension,
+        hop.PairedStemExtensionRequest,
         hop.PayloadCollection,
         hop.PayloadExpansionResult,
         hop.ReleaseProjectionResult,
@@ -48,6 +52,8 @@ def test_public_facade_exposes_supporting_contracts_and_integrity_operations() -
         hop.Span,
         hop.Strand,
         hop.WorkflowView,
+        hop.HairpinMethodMaterialsPlan,
+        hop.HairpinMethodMaterialsSpec,
     )
 
     assert all(contract.__module__.startswith("hop_design.") for contract in public_contracts)

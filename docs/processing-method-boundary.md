@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # Hairpin-processing method boundary
@@ -43,8 +43,8 @@ controls, or experimental acceptance.
 | Input sequence and paired arm | Exact and DNA IUPAC payloads; paired arm derived by reverse complement | None for the current compiler path |
 | Foldback and basal geometry | Typed junctions, pair calls, spans, diagnostics, and route-neutral component assembly | Predecessor candidate and ordering parity |
 | Nicking and duplex release | Explicit nick/cut geometry and released-strand lineage | Joint route discovery and sequence-level route candidates |
-| Adapter annealing and ligation | Not represented as method stages | Typed states, continuity checks, and exact route-material derivation |
-| Hairpin PCR and inverted-repeat duplex | Final hairpin-encoding insert is represented; the PCR transition is not | A bounded method-plan transition and its required primers |
+| Adapter annealing and ligation | Source and adapter materials, terminal binding, and ligation-end preparation are represented | Typed annealed and ligated states with continuity checks |
+| Hairpin PCR and inverted-repeat duplex | Final insert and both hairpin-PCR primer bindings are represented; the PCR transition is not | A bounded method-plan transition from ligated hairpin to duplex |
 | Larger construct or vector placement | Outside HOP | Caller-owned composition or assembly handoff |
 | Secondary-structure prediction | Optional consumer of plan-owned sequence artifacts | Prove an interoperable adapter before defining a plugin protocol |
 
@@ -74,6 +74,11 @@ orderable primer from a diagram or label.
 Hairpin-path materials belong to HOP only when the generic method cannot be
 executed without them. Primers or flanks that add a plasmid, assay, barcode, or
 other application context belong to the caller.
+
+The first material contract covers the source oligo, two source-PCR primers,
+ligation adapter, and two hairpin-PCR primers. It verifies terminal binding and
+records whether ligatable 5′ phosphates are supplied or produced by a kinase
+step. Vector primers remain outside that six-material handoff.
 
 ## Supplied and discovered designs
 

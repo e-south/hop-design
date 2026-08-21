@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # HOP Design contract table
@@ -27,12 +27,14 @@ last_verified: 2026-08-20
 | `BasalJunction` | Equal-length arms; one ordered pair observation per position | Pair count and literal pair bases match the antiparallel arms, including wobble or mismatch calls |
 | `evaluate_basal_pairing` | Two exact four-base arms; explicit wobble choice and caller constraint profile | Physical S3/S2/S1/S0 pair calls plus separate active, reserve, or reject decision |
 | `BasalDesignRequest` | Physical arms, caller policy, acceptance, and optional terminal nick at the basal boundary | A terminal nick is validated when supplied; absence selects route-neutral component assembly |
+| `PairedStemExtensionRequest` | Equal nonzero exact-DNA arms and explicit wobble choice | Literal antiparallel pair calls and counts for optional non-payload stem context |
+| `HairpinMethodMaterialsSpec` | Six unique sequence materials; exact primers and adapter; explicit ligation-end preparation | Terminal primer bindings, oriented spans, required material IDs, and terminal chemistry in a strict derived plan |
 | `project_released_strand_state` | Exact precursor; route-compatible nick; explicit in-bounds cuts and constraints | Active and retained sequences stored 5′→3′, literal strand roles, precursor spans, and orientation-correct per-base lineage or diagnostics |
 | `ProcessingCatalog` | Known schema; unique caller-defined agent IDs | Exact site/cut scanning and symbolic motif presence without package-owned application data |
 | `search_nicking_placements` | Caller-supplied catalog; explicit target strand, boundary, paired tract, turn allowance, node budget, and hit budget | One strand-compatible geometry per examined nicking agent; exact/nearest placement, blockers, required lengths, neutral deterministic order, and truthful search/result truncation |
 | `HopSpec` | Known schema; one typed payload; explicit references and bounds | Intent only; no paired arm or final insert input |
-| `ResolvedHopSpec` | Known schema; explicit foldback and basal components; optional terminal nick; release only with a terminal nick | Route-neutral component assembly or resolved-event compilation; release output equals foldback input or `HOP-ROUTE-001` |
-| `HopPlan` | Resolved assembly or processing route and lock | Paired arm and final insert reconstruct exactly from evaluated junctions; source oligo and state steps match the declared route kind |
+| `ResolvedHopSpec` | Known schema; explicit foldback and basal components; optional paired stem extension; optional terminal nick; release only with a terminal nick | Route-neutral component assembly or resolved-event compilation; release output equals foldback input or `HOP-ROUTE-001` |
+| `HopPlan` | Resolved assembly or processing route and lock | Paired payload and final insert reconstruct exactly from evaluated components; source oligo and state steps match the declared route kind |
 | `HopBundle` | Plan plus generated artifacts | Stable inventory, digests, identifiers, and neutral external references |
 | `CheckReport` | Valid spec and configuration | All expected feasibility diagnostics without hiding software failure |
 | `WorkflowView` | Valid derived evaluation or strand state | Renderer-independent panels, tracks, spans, pair calls, and stable schema; renderers cannot revise state |

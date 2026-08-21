@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # `HopSpec` to `HopPlan` to `HopBundle`
@@ -23,7 +23,9 @@ references. Neither can contain a paired payload, source oligo, or final insert.
 `HopPlan` is compiler-generated and immutable. It locks the compiler and named
 references, resolves both junctions and the route, derives the paired payload,
 creates typed features and spans, and reconstructs the source oligo and final
-insert. In `component_assembly`, the source oligo equals the final insert and
+insert. An optional paired stem extension adds literal left and right features
+without changing the derived payload complement. In `component_assembly`, the
+source oligo equals the final insert and
 the plan makes no discovery or processing claim. In `resolved_events`, the
 source oligo is the actual molecular route input and may differ from the final
 insert. That route records an ordered state graph, including the terminal-nick

@@ -7,7 +7,7 @@ audience:
   - API consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # HOP Design engineering contracts
@@ -45,6 +45,12 @@ last_verified: 2026-08-20
 - Component assembly and processing-route compilation are separate claims.
   Supplied components may be evaluated and composed without asserting their
   discovery method, enzyme route, nicked strand, or historical lineage.
+- Optional paired stem extensions remain separate from both the four-position
+  basal junction and the authored payload. Literal extension arms may preserve
+  noncanonical pairs; the paired payload remains derived.
+- Process materials are distinct from molecular states. Terminal binding and
+  ligation-end chemistry must be explicit before a material is reported as
+  route-ready.
 
 ## Error channels
 

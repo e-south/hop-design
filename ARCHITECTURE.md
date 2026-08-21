@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # HOP Design architecture
@@ -25,7 +25,8 @@ HopSpec -> check/resolve -> HopPlan -> HopBundle
 
 HOP owns its ontology, minimal DNA/IUPAC kernel, junction contracts, route
 resolution, bounded processing-geometry discovery, explicit molecular-event
-evaluation, deterministic artifacts, typed workflow views, and integrity
+evaluation, paired non-payload stem context, route-material binding,
+deterministic artifacts, typed workflow views, and integrity
 verification. It does not own workspaces, runs, samples, observations,
 evidence, assay semantics, larger construct placement, private processing
 catalogs, or private application profiles. Callers link their own records

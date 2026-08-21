@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # HOP Design implementation and migration roadmap
@@ -83,17 +83,18 @@ Resolve physical routes, source oligos, processing steps, expected strand
 states and intermediates, final inserts, route-required primers/adapters, and
 complete provenance. Add explicit enumeration statuses and hard budgets.
 
-Available: foldback, payload, derived paired arm, basal composition; route-neutral
-component assembly for caller-supplied or inherited components; resolved route
+Available: foldback, payload, derived paired arm, basal composition, optional
+variable-length paired stem extensions with literal noncanonical pairs;
+route-neutral component assembly for caller-supplied or inherited components; resolved route
 state graph; optional released state; exact feature spans; expected
 intermediates; verified content-addressed bundles; and renderer-free Cartesian
 design-space planning with pre-allocation cardinality checks. Open work includes
 selective batch bundle orchestration and the concrete processing-method stages
 between released strand and linear double-stranded insert: adapter annealing,
-ligation, hairpin PCR, and any route-required primers or adapters. A sanitized
-supplied-design fixture must also determine whether non-payload paired stem
-extensions need a new explicit plan feature; they cannot be encoded as an
-independently authored paired payload.
+ligation, and hairpin PCR. The first method-material contract now validates the
+six source, adapter, and primer oligos, their terminal binding spans, and
+supplied-phosphate or kinase-step posture. These materials are not yet linked
+into the end-to-end state graph.
 
 A primer or adapter is a process material, not a molecular intermediate. HOP
 owns a vendor-neutral material only when the declared generic route requires it;
@@ -142,7 +143,7 @@ PyPI gate requires its own trusted-publisher and protected-environment review.
 
 ## Phase 7: versioned GitHub artifact
 
-Status: implemented for prereleases `v0.1.0a0` and `v0.1.0a1` on 2026-08-20.
+Status: implemented; required for every prerelease.
 
 Create a protected-main tag and GitHub release only after Phase 6 hosted checks
 pass. The GitHub release workflow must produce a clean wheel and sdist,
@@ -150,11 +151,12 @@ verify the exact files before publication, publish SHA-256 checksums, confirm
 main ancestry, and create the Release with those files without PyPI credentials.
 This versioned artifact is the first permanent downstream dependency candidate.
 
-Evidence: the protected-main tag triggered the build-and-publish workflow; the
+Evidence for each published prerelease must show that the protected-main tag
+triggered the build-and-publish workflow; the
 exact wheel and sdist passed the distribution smoke before publication; the
 Release includes `SHA256SUMS`; and a separate public download reproduced the
 checksums, clean-wheel install, metadata checks, and source/wheel bundle parity.
-See [the current prerelease](https://github.com/e-south/hop-design/releases/tag/v0.1.0a1).
+See the [release history](https://github.com/e-south/hop-design/releases).
 
 ## Phase 8: downstream consumer and dogfood
 

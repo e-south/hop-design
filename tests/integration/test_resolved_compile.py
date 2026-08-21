@@ -152,6 +152,59 @@ def test_resolved_components_compile_without_claiming_a_processing_route(tmp_pat
     assert verify_bundle(output) == compilation.bundle
 
 
+def test_component_assembly_preserves_optional_non_payload_stem_context() -> None:
+    spec = _component_spec().model_copy(
+        update={
+            "stem_extension": hop.PairedStemExtensionRequest(
+                left_arm="GCTA",
+                right_arm="TAAC",
+                allow_gt_wobble=True,
+            )
+        }
+    )
+
+    compilation = hop.compile(spec)
+
+    assert compilation.plan.final_insert.sequence == "AAAAGCTANTCAGCATCTGANTAACTTTT"
+    assert tuple(feature.role for feature in compilation.plan.features) == (
+        "basal_left_arm",
+        "stem_extension_left_arm",
+        "payload",
+        "foldback_junction",
+        "paired_payload",
+        "stem_extension_right_arm",
+        "basal_right_arm",
+    )
+    route = compilation.plan.processing_route
+    assert route.kind == "component_assembly"
+    assert route.stem_extension is not None
+    assert route.stem_extension.hard_mismatch_count == 1
+    assert [step.operation for step in route.steps] == [
+        "foldback",
+        "basal_pairing",
+        "stem_extension_pairing",
+        "assemble_insert",
+    ]
+    intermediates = json.loads(compilation.artifacts["expected-intermediates.json"])
+    assert intermediates["stem_extension"]["left_arm"] == "GCTA"
+
+
+def test_absent_stem_extension_does_not_change_the_v1_serialized_surface() -> None:
+    spec = _component_spec()
+    compilation = hop.compile(spec)
+
+    assert "stem_extension" not in spec.model_dump(mode="json", by_alias=True)
+    route = compilation.plan.processing_route
+    assert "stem_extension" not in route.model_dump(mode="json")
+    assert tuple(feature.role for feature in compilation.plan.features) == (
+        "basal_left_arm",
+        "payload",
+        "foldback_junction",
+        "paired_payload",
+        "basal_right_arm",
+    )
+
+
 def test_component_assembly_rejects_a_release_event_without_a_terminal_nick() -> None:
     data = _component_spec().model_dump(by_alias=True)
     data["release"] = _release_request().model_dump()

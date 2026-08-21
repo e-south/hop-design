@@ -11,6 +11,7 @@ from hop_design.models.base import HopModel
 from hop_design.models.foldback import FoldbackEvaluationRequest
 from hop_design.models.payload import Payload
 from hop_design.models.references import ExternalRef, ReferenceId
+from hop_design.models.stem import PairedStemExtensionRequest
 from hop_design.models.strand_state import ReleaseProjectionRequest
 
 
@@ -63,6 +64,10 @@ class ResolvedHopSpec(HopModel):
     payload: Payload
     foldback: FoldbackEvaluationRequest
     basal: BasalDesignRequest
+    stem_extension: PairedStemExtensionRequest | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     release: ReleaseProjectionRequest | None
     defaults_ref: ReferenceId
     catalog_ref: ReferenceId

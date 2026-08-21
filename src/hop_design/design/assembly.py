@@ -21,6 +21,7 @@ from hop_design.models.plan import (
 )
 from hop_design.models.processing import PlanProcessingRoute
 from hop_design.models.spec import DesignSpec
+from hop_design.models.stem import PairedStemExtension
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 
@@ -35,6 +36,7 @@ def assemble_compilation(
     foldback_sequence: str,
     basal_left_arm: str,
     basal_right_arm: str,
+    stem_extension: PairedStemExtension | None,
     route_source_sequence: str | None,
     additional_artifacts: Mapping[str, tuple[bytes, str]],
 ) -> Compilation:
@@ -55,13 +57,19 @@ def assemble_compilation(
     )
 
     paired_payload = spec.payload.paired_sequence
-    pieces = (
-        (FeatureRole.BASAL_LEFT_ARM, basal_left_arm),
-        (FeatureRole.PAYLOAD, spec.payload.sequence),
-        (FeatureRole.FOLDBACK_JUNCTION, foldback_sequence),
-        (FeatureRole.PAIRED_PAYLOAD, paired_payload),
-        (FeatureRole.BASAL_RIGHT_ARM, basal_right_arm),
+    pieces = [(FeatureRole.BASAL_LEFT_ARM, basal_left_arm)]
+    if stem_extension is not None:
+        pieces.append((FeatureRole.STEM_EXTENSION_LEFT_ARM, stem_extension.left_arm))
+    pieces.extend(
+        (
+            (FeatureRole.PAYLOAD, spec.payload.sequence),
+            (FeatureRole.FOLDBACK_JUNCTION, foldback_sequence),
+            (FeatureRole.PAIRED_PAYLOAD, paired_payload),
+        )
     )
+    if stem_extension is not None:
+        pieces.append((FeatureRole.STEM_EXTENSION_RIGHT_ARM, stem_extension.right_arm))
+    pieces.append((FeatureRole.BASAL_RIGHT_ARM, basal_right_arm))
     cursor = 0
     features: list[SequenceFeature] = []
     for role, sequence in pieces:

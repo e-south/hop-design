@@ -23,9 +23,11 @@ class FeatureRole(StrEnum):
     """Stable molecular roles in the generic final insert."""
 
     BASAL_LEFT_ARM = "basal_left_arm"
+    STEM_EXTENSION_LEFT_ARM = "stem_extension_left_arm"
     PAYLOAD = "payload"
     FOLDBACK_JUNCTION = "foldback_junction"
     PAIRED_PAYLOAD = "paired_payload"
+    STEM_EXTENSION_RIGHT_ARM = "stem_extension_right_arm"
     BASAL_RIGHT_ARM = "basal_right_arm"
 
 
@@ -105,13 +107,20 @@ class HopPlan(HopModel):
         if self.processing_route.route_id != self.lock.processing_route_ref:
             raise ValueError("Resolved processing route and lock record disagree.")
 
-        expected_roles = tuple(FeatureRole)
         actual_roles = tuple(feature.role for feature in self.features)
+        expected_roles: tuple[FeatureRole, ...]
         if self.processing_route.kind == "direct_synthesis":
             if self.source_oligo.sequence != self.final_insert.sequence:
                 raise ValueError(
                     "Direct or component assembly requires source oligo and final insert equality."
                 )
+            expected_roles = (
+                FeatureRole.BASAL_LEFT_ARM,
+                FeatureRole.PAYLOAD,
+                FeatureRole.FOLDBACK_JUNCTION,
+                FeatureRole.PAIRED_PAYLOAD,
+                FeatureRole.BASAL_RIGHT_ARM,
+            )
             if actual_roles != expected_roles:
                 raise ValueError("Final-insert features must use the declared generic-route order.")
             foldback_sequence = self.processing_route.foldback_junction.sequence
@@ -124,6 +133,9 @@ class HopPlan(HopModel):
                 raise ValueError(
                     "Direct or component assembly requires source oligo and final insert equality."
                 )
+            expected_roles = _feature_roles(
+                has_stem_extension=self.processing_route.stem_extension is not None
+            )
             if actual_roles != expected_roles:
                 raise ValueError("Final-insert features must use the declared generic-route order.")
             foldback_sequence = self.processing_route.foldback.junction.sequence
@@ -139,6 +151,9 @@ class HopPlan(HopModel):
             )
             if self.source_oligo.sequence != expected_source:
                 raise ValueError("Resolved-event source oligo must equal the actual route input.")
+            expected_roles = _feature_roles(
+                has_stem_extension=self.processing_route.stem_extension is not None
+            )
             if actual_roles != expected_roles:
                 raise ValueError(
                     "Resolved-event final-insert features must contain each physical role once "
@@ -182,4 +197,35 @@ class HopPlan(HopModel):
             raise ValueError("Basal-left feature must equal the resolved basal junction.")
         if feature_by_role[FeatureRole.BASAL_RIGHT_ARM].sequence != basal_right_arm:
             raise ValueError("Basal-right feature must equal the resolved basal junction.")
+        stem_extension = (
+            None
+            if self.processing_route.kind == "direct_synthesis"
+            else self.processing_route.stem_extension
+        )
+        if stem_extension is not None and (
+            feature_by_role[FeatureRole.STEM_EXTENSION_LEFT_ARM].sequence != stem_extension.left_arm
+            or feature_by_role[FeatureRole.STEM_EXTENSION_RIGHT_ARM].sequence
+            != stem_extension.right_arm
+        ):
+            raise ValueError("Stem-extension features must equal the resolved literal arms.")
         return self
+
+
+def _feature_roles(*, has_stem_extension: bool) -> tuple[FeatureRole, ...]:
+    if not has_stem_extension:
+        return (
+            FeatureRole.BASAL_LEFT_ARM,
+            FeatureRole.PAYLOAD,
+            FeatureRole.FOLDBACK_JUNCTION,
+            FeatureRole.PAIRED_PAYLOAD,
+            FeatureRole.BASAL_RIGHT_ARM,
+        )
+    return (
+        FeatureRole.BASAL_LEFT_ARM,
+        FeatureRole.STEM_EXTENSION_LEFT_ARM,
+        FeatureRole.PAYLOAD,
+        FeatureRole.FOLDBACK_JUNCTION,
+        FeatureRole.PAIRED_PAYLOAD,
+        FeatureRole.STEM_EXTENSION_RIGHT_ARM,
+        FeatureRole.BASAL_RIGHT_ARM,
+    )

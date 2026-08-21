@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # HOP Design documentation map
@@ -26,6 +26,8 @@ Start at the shallowest layer that answers the task.
 - [Python API](reference/python-api.md): stable public facade.
 - [Mechanics API](reference/mechanics-api.md): foldback, basal, release, and
   caller-supplied processing catalog contracts.
+- [Reference method materials](reference/method-materials.md): the six generic
+  oligos, terminal chemistry, and binding checks for the initial method.
 - [View contracts](reference/view-contracts.md): renderer-independent workflow
   views and deterministic SVG output.
 - [Schema identifiers](reference/schemas.md): strict version dispatch and
