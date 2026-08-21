@@ -18,6 +18,7 @@ from hop_design.design.design_space import plan_design_space
 from hop_design.design.discovery import search_nicking_placements
 from hop_design.design.foldback import evaluate_foldback, search_foldback_arms
 from hop_design.design.loading import load_spec
+from hop_design.design.method import resolve_hairpin_method_materials
 from hop_design.design.payloads import (
     collect_payloads,
     expand_payload,
@@ -26,6 +27,7 @@ from hop_design.design.payloads import (
 )
 from hop_design.design.processing import project_released_strand_state
 from hop_design.design.result import Compilation
+from hop_design.design.stem import evaluate_paired_stem_extension
 from hop_design.design.views import (
     build_basal_pairing_view,
     build_basal_view,
@@ -64,6 +66,7 @@ __all__ = [
     "create_spec",
     "evaluate_basal_pairing",
     "evaluate_foldback",
+    "evaluate_paired_stem_extension",
     "expand_payload",
     "load_csv_payloads",
     "load_fasta_payloads",
@@ -71,6 +74,7 @@ __all__ = [
     "plan_design_space",
     "project_released_strand_state",
     "render_workflow_svg",
+    "resolve_hairpin_method_materials",
     "scan_nicking_agent",
     "scan_release_agent",
     "search_foldback_arms",

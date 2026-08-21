@@ -11,6 +11,7 @@ from hop_design.models.base import HopModel
 from hop_design.models.foldback import FoldbackEvaluation
 from hop_design.models.junction import BasalJunction, FoldbackJunction
 from hop_design.models.references import ReferenceId
+from hop_design.models.stem import PairedStemExtension
 from hop_design.models.strand_state import NickEvent, ReleasedStrandState
 
 
@@ -44,6 +45,7 @@ class ResolvedMechanicsStep(HopModel):
         "duplex_release",
         "foldback",
         "basal_pairing",
+        "stem_extension_pairing",
         "terminal_nick",
         "assemble_insert",
     ]
@@ -60,6 +62,10 @@ class ComponentAssemblyRoute(HopModel):
     catalog_ref: ReferenceId
     foldback: FoldbackEvaluation
     basal: BasalEvaluation
+    stem_extension: PairedStemExtension | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     steps: tuple[ResolvedMechanicsStep, ...] = Field(min_length=3)
 
     @model_validator(mode="after")
@@ -68,7 +74,7 @@ class ComponentAssemblyRoute(HopModel):
             raise ValueError("Component assembly requires a feasible foldback evaluation.")
         if self.basal.decision.status == "reject":
             raise ValueError("Component assembly cannot contain a rejected basal evaluation.")
-        expected = (
+        expected: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
             (
                 "foldback",
                 "foldback",
@@ -81,10 +87,26 @@ class ComponentAssemblyRoute(HopModel):
                 ("authored_basal_arms",),
                 "basal_junction",
             ),
+        )
+        if self.stem_extension is not None:
+            expected += (
+                (
+                    "stem-extension-pairing",
+                    "stem_extension_pairing",
+                    ("authored_stem_extension_arms",),
+                    "paired_stem_extension",
+                ),
+            )
+        expected += (
             (
                 "insert-assembly",
                 "assemble_insert",
-                ("foldback_junction", "basal_junction", "authored_payload"),
+                (
+                    "foldback_junction",
+                    "basal_junction",
+                    *(("paired_stem_extension",) if self.stem_extension is not None else ()),
+                    "authored_payload",
+                ),
                 "hairpin_encoding_insert",
             ),
         )
@@ -106,6 +128,10 @@ class ResolvedMechanicsRoute(HopModel):
     catalog_ref: ReferenceId
     foldback: FoldbackEvaluation
     basal: BasalEvaluation
+    stem_extension: PairedStemExtension | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     terminal_nick: NickEvent
     released_state: ReleasedStrandState | None
     steps: tuple[ResolvedMechanicsStep, ...] = Field(min_length=4)
@@ -133,6 +159,7 @@ class ResolvedMechanicsRoute(HopModel):
             "authored_foldback_precursor",
             "authored_basal_arms",
             "authored_payload",
+            "authored_stem_extension_arms",
         }
         for step in self.steps:
             if not set(step.input_states) <= available_states:
@@ -142,6 +169,19 @@ class ResolvedMechanicsRoute(HopModel):
             if step.output_state in available_states:
                 raise ValueError("Resolved mechanics route outputs must be unique.")
             available_states.add(step.output_state)
+        extension_step = (
+            (
+                (
+                    "stem-extension-pairing",
+                    "stem_extension_pairing",
+                    ("authored_stem_extension_arms",),
+                    "paired_stem_extension",
+                ),
+            )
+            if self.stem_extension is not None
+            else ()
+        )
+        extension_input = ("paired_stem_extension",) if self.stem_extension is not None else ()
         expected = (
             (
                 ("nick", "nick", ("precursor_duplex",), "nicked_precursor"),
@@ -163,6 +203,7 @@ class ResolvedMechanicsRoute(HopModel):
                     ("authored_basal_arms",),
                     "basal_junction",
                 ),
+                *extension_step,
                 (
                     "terminal-nick",
                     "terminal_nick",
@@ -175,6 +216,7 @@ class ResolvedMechanicsRoute(HopModel):
                     (
                         "foldback_junction",
                         "terminal_nicked_basal_junction",
+                        *extension_input,
                         "authored_payload",
                     ),
                     "hairpin_encoding_insert",
@@ -194,6 +236,7 @@ class ResolvedMechanicsRoute(HopModel):
                     ("authored_basal_arms",),
                     "basal_junction",
                 ),
+                *extension_step,
                 (
                     "terminal-nick",
                     "terminal_nick",
@@ -206,6 +249,7 @@ class ResolvedMechanicsRoute(HopModel):
                     (
                         "foldback_junction",
                         "terminal_nicked_basal_junction",
+                        *extension_input,
                         "authored_payload",
                     ),
                     "hairpin_encoding_insert",

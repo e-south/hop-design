@@ -34,6 +34,18 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert len(readme.splitlines()) <= 140
 
 
+def test_banner_uses_literal_name_and_method_stages() -> None:
+    banner = (REPO_ROOT / "assets" / "hop-design-banner.svg").read_text(encoding="utf-8")
+
+    assert 'width="1280" height="260"' in banner
+    assert "HAIRPIN OLIGONUCLEOTIDE PROCESSING" in banner
+    assert all(color in banner for color in ("#1E1D1A", "#F3EFE7", "#969087", "#D97757"))
+    for stage in ("SOURCE", "RELEASE", "FOLDBACK", "INSERT"):
+        assert f">{stage}</text>" in banner
+    for buzzword in (">SPEC</text>", ">PLAN</text>", ">BUNDLE</text>"):
+        assert buzzword not in banner
+
+
 def test_distribution_metadata_keeps_pypi_brake_but_names_public_home() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         config = tomllib.load(handle)

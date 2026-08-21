@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # Python API
@@ -42,6 +42,8 @@ A `ResolvedHopSpec` without a terminal nick compiles supplied foldback and
 basal components as `component_assembly`. The resulting bundle makes no claim
 that HOP discovered those components or that an enzyme route exists. Supplying
 a terminal nick selects `resolved_events`; a release event requires that route.
+An optional `PairedStemExtensionRequest` records variable non-payload paired
+context between the basal junction and payload stem.
 
 ## Payload records and variants
 
@@ -66,6 +68,7 @@ a terminal nick selects `resolved_events`; a release event requires that route.
 - `evaluate_foldback(request) -> FoldbackEvaluation`
 - `search_foldback_arms(request, limits=...) -> FoldbackSearchResult`
 - `evaluate_basal_pairing(request, constraints=...) -> BasalEvaluation`
+- `evaluate_paired_stem_extension(request) -> PairedStemExtension`
 - `project_released_strand_state(request) -> ReleaseProjectionResult`
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
 - `scan_nicking_agent(sequence, agent=...) -> tuple[ResolvedNickSite, ...]`
@@ -79,6 +82,16 @@ from the caller-supplied `BasalConstraintProfile`. See the
 Explicit foldback evaluation can represent a cap-only junction with zero
 retained and returning paired bases. Foldback-arm search remains limited to a
 nonempty retained tract.
+
+## Method materials
+
+- `resolve_hairpin_method_materials(spec) -> HairpinMethodMaterialsPlan`
+
+The input records the six sequence materials required by the initial hairpin
+path and whether ligatable 5′ phosphates are supplied on the oligos or produced
+by a kinase step. The resolver checks terminal primer binding and emits oriented
+spans. It does not model reaction conditions or vector-specific primers. See
+the [method-material reference](method-materials.md).
 
 ## Views
 

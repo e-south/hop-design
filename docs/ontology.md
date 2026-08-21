@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-21
 ---
 
 # HOP Design ontology
@@ -27,6 +27,11 @@ observations; its nonempty turn remains explicit.
 It has declared left and right arms, a base-pair count, and ordered physical
 pair observations. Nicked and surviving strand roles belong to processing
 events and views, not to the junction itself.
+
+`PairedStemExtension` is optional non-payload paired context between the basal
+junction and payload stem. Its literal equal-length arms can contain
+Watson-Crick pairs, G:T wobbles, or hard mismatches. It is not part of the
+payload and does not enlarge the S3/S2/S1/S0 basal profile.
 
 `JunctionPairObservation` records literal left/right bases, antiparallel
 indexes, and a `watson_crick`, `gt_wobble`, or `hard_mismatch` call. Exact
@@ -67,6 +72,11 @@ bottom-strand lineage therefore traverses top-precursor indexes in reverse.
 `WorkflowView` is the renderer-independent scientific view contract. It owns
 panels, tracks, features, pair calls, and strand direction. SVG is one
 deterministic rendering and cannot change the molecular state.
+
+`ProcessOligo` is a vendor-neutral sequence material with explicit terminal
+modifications. `OligoBinding` records how a primer binds a declared source or
+adapter terminus. Materials are inputs to method events; they are not molecular
+intermediate states.
 
 `Diagnostic` is a stable, machine-readable explanation of expected design
 infeasibility. Invalid schemas or corrupt software configuration are exceptions,

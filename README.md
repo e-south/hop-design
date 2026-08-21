@@ -4,9 +4,9 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
 
-HOP Design compiles authored DNA payloads and explicit molecular events into
-checked, portable Hairpin Oligonucleotide Processing design bundles. Exact and
-DNA IUPAC payloads use the same API. Paired payloads are always derived.
+HOP Design compiles DNA sequences and explicit hairpin-processing mechanics
+into checked molecular plans and portable files. Exact and DNA IUPAC sequences
+use the same API. Paired arms are always derived.
 
 HOP is alpha software. The included direct-synthesis route is a synthetic
 software demonstration, not a laboratory protocol or an experimentally
@@ -21,8 +21,10 @@ cd hop-design
 uv sync --locked
 ```
 
-No PyPI distribution is published. The supported installation surface is the
-GitHub source repository until the release gate is opened.
+No PyPI distribution is published. Versioned wheels, source distributions,
+and checksums are available from
+[GitHub Releases](https://github.com/e-south/hop-design/releases); source
+installation remains supported for development.
 
 ## Five-minute path
 
@@ -54,6 +56,7 @@ cardinality budgets before allocation.
 - strict `Spec -> Plan -> Bundle` compilation;
 - exact and symbolic payload ingestion and bounded variant generation;
 - foldback, basal-junction, nick, release, and strand-state contracts;
+- optional non-payload paired stem context and reference-method oligo bindings;
 - deterministic JSON, FASTA, typed view, SVG, digest, and provenance artifacts.
 
 HOP does not own workspaces, runs, observations, evidence stores, private
@@ -62,7 +65,9 @@ application profiles, or laboratory execution.
 ## Documentation and support
 
 Start with the [documentation map](docs/README.md). The
-[architecture](ARCHITECTURE.md), [design contracts](DESIGN.md), and
+[processing method boundary](docs/processing-method-boundary.md) explains the
+concrete source-to-insert scope without turning HOP into a laboratory protocol.
+The [architecture](ARCHITECTURE.md), [design contracts](DESIGN.md), and
 [reliability guarantees](RELIABILITY.md) define maintainer-facing boundaries.
 
 Use [GitHub Issues](https://github.com/e-south/hop-design/issues) for bugs and

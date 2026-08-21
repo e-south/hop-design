@@ -18,6 +18,7 @@ from hop_design.design.basal import evaluate_basal_pairing
 from hop_design.design.foldback import evaluate_foldback
 from hop_design.design.processing import project_released_strand_state
 from hop_design.design.result import Compilation
+from hop_design.design.stem import evaluate_paired_stem_extension
 from hop_design.design.views import (
     build_basal_pairing_view,
     build_basal_view,
@@ -37,6 +38,7 @@ from hop_design.models.processing import (
     ResolvedMechanicsStep,
 )
 from hop_design.models.spec import DesignSpec, HopSpec, ResolvedHopSpec
+from hop_design.models.stem import PairedStemExtension
 from hop_design.models.strand_state import ReleasedStrandState
 from hop_design.serialization import canonical_json_bytes
 
@@ -50,12 +52,16 @@ class _ResolvedMechanics:
     report: CheckReport
     foldback: FoldbackEvaluation
     basal: BasalEvaluation
+    stem_extension: PairedStemExtension | None
     released_state: ReleasedStrandState | None
 
 
 def _evaluate_resolved_spec(spec: ResolvedHopSpec) -> _ResolvedMechanics:
     foldback = evaluate_foldback(spec.foldback)
     basal = evaluate_basal_pairing(spec.basal.pairing, constraints=spec.basal.constraints)
+    stem_extension = (
+        None if spec.stem_extension is None else evaluate_paired_stem_extension(spec.stem_extension)
+    )
     diagnostics = [*foldback.report.diagnostics, *basal.report.diagnostics]
     released_state: ReleasedStrandState | None = None
     if spec.release is not None:
@@ -97,6 +103,7 @@ def _evaluate_resolved_spec(spec: ResolvedHopSpec) -> _ResolvedMechanics:
         report=CheckReport(diagnostics=tuple(diagnostics)),
         foldback=foldback,
         basal=basal,
+        stem_extension=stem_extension,
         released_state=released_state,
     )
 
@@ -153,17 +160,28 @@ def compile_spec(spec: DesignSpec) -> Compilation:
                 ),
             )
         )
+        if resolved.stem_extension is not None:
+            steps.append(
+                ResolvedMechanicsStep(
+                    step_id="stem-extension-pairing",
+                    operation="stem_extension_pairing",
+                    input_states=("authored_stem_extension_arms",),
+                    output_state="paired_stem_extension",
+                )
+            )
+        assembly_inputs = (
+            "foldback_junction",
+            "basal_junction",
+            *(("paired_stem_extension",) if resolved.stem_extension is not None else ()),
+            "authored_payload",
+        )
         terminal_nick = spec.basal.terminal_nick
         if terminal_nick is None:
             steps.append(
                 ResolvedMechanicsStep(
                     step_id="insert-assembly",
                     operation="assemble_insert",
-                    input_states=(
-                        "foldback_junction",
-                        "basal_junction",
-                        "authored_payload",
-                    ),
+                    input_states=assembly_inputs,
                     output_state="hairpin_encoding_insert",
                 )
             )
@@ -176,6 +194,7 @@ def compile_spec(spec: DesignSpec) -> Compilation:
                 catalog_ref=spec.catalog_ref,
                 foldback=resolved.foldback,
                 basal=resolved.basal,
+                stem_extension=resolved.stem_extension,
                 steps=tuple(steps),
             )
         else:
@@ -193,6 +212,11 @@ def compile_spec(spec: DesignSpec) -> Compilation:
                         input_states=(
                             "foldback_junction",
                             "terminal_nicked_basal_junction",
+                            *(
+                                ("paired_stem_extension",)
+                                if resolved.stem_extension is not None
+                                else ()
+                            ),
                             "authored_payload",
                         ),
                         output_state="hairpin_encoding_insert",
@@ -208,22 +232,24 @@ def compile_spec(spec: DesignSpec) -> Compilation:
                 catalog_ref=spec.catalog_ref,
                 foldback=resolved.foldback,
                 basal=resolved.basal,
+                stem_extension=resolved.stem_extension,
                 terminal_nick=terminal_nick,
                 released_state=resolved.released_state,
                 steps=tuple(steps),
             )
-        intermediates = canonical_json_bytes(
-            {
-                "schema": "hop.expected-intermediates/v1",
-                "foldback": resolved.foldback.model_dump(mode="json"),
-                "basal": resolved.basal.model_dump(mode="json"),
-                "released_state": (
-                    None
-                    if resolved.released_state is None
-                    else resolved.released_state.model_dump(mode="json")
-                ),
-            }
-        )
+        intermediate_payload = {
+            "schema": "hop.expected-intermediates/v1",
+            "foldback": resolved.foldback.model_dump(mode="json"),
+            "basal": resolved.basal.model_dump(mode="json"),
+            "released_state": (
+                None
+                if resolved.released_state is None
+                else resolved.released_state.model_dump(mode="json")
+            ),
+        }
+        if resolved.stem_extension is not None:
+            intermediate_payload["stem_extension"] = resolved.stem_extension.model_dump(mode="json")
+        intermediates = canonical_json_bytes(intermediate_payload)
         foldback_view = (
             build_foldback_junction_view(resolved.foldback)
             if terminal_nick is None
@@ -268,6 +294,7 @@ def compile_spec(spec: DesignSpec) -> Compilation:
             foldback_sequence=resolved.foldback.junction_sequence,
             basal_left_arm=resolved.basal.profile.left_arm,
             basal_right_arm=resolved.basal.profile.right_arm,
+            stem_extension=resolved.stem_extension,
             route_source_sequence=(
                 None
                 if terminal_nick is None
@@ -292,6 +319,7 @@ def compile_spec(spec: DesignSpec) -> Compilation:
         foldback_sequence=route.foldback_junction.sequence,
         basal_left_arm=route.basal_junction.left_arm,
         basal_right_arm=route.basal_junction.right_arm,
+        stem_extension=None,
         route_source_sequence=None,
         additional_artifacts={},
     )
