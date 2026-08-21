@@ -1,4 +1,4 @@
-# ![HOP Design](assets/hop-design-banner.svg)
+# ![hop — Hairpin Oligonucleotide Processing](assets/hop-design-banner.svg)
 
 [![Checks](https://github.com/e-south/hop-design/actions/workflows/ci.yaml/badge.svg)](https://github.com/e-south/hop-design/actions/workflows/ci.yaml)
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
