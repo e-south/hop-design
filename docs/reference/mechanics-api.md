@@ -205,6 +205,21 @@ digest, selected geometry identity, content identity, and canonical physical
 rank. The operation does not project a released strand, compose a basal route,
 or choose a preferred agent.
 
+`search_hairpin_junction_routes(released_precursors=..., basal_routes=...,
+limits=...)` consumes those two exact upstream result sets without
+re-enumerating either search. For each examined pair, HOP projects the selected
+precursor through its recorded nick and release cuts and compares the released
+active strand with the basal route's surviving strand. A mismatch is reported
+as `continuous_strand_mismatch`; a match receives a content-addressed route
+with the exact released state.
+
+Release agents at the two ends are not required to match. Their identities and
+orientations remain independent physical facts, and HOP applies no enzyme or
+application preference. Upstream precursor and basal-route truncation remain
+separate from local node and hit truncation. A complete search result means the
+available upstream cross-product was exhausted, not that a production method
+or destination assembly is complete.
+
 ## Compiler integration
 
 `ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit

@@ -140,6 +140,13 @@ when the intersection is empty. Node and hit truncation are independent. The
 specialized request, limits, candidate, and result models are available from
 `hop_design.models.discovery`.
 
+Hairpin-junction route search consumes exact released-foldback precursor and
+basal-route results. It projects the released state and returns only pairs for
+which the released active strand is also the basal surviving strand. It does
+not require matching release-agent identities at the two ends or apply caller
+selection policy. Its specialized limits and result models are available from
+`hop_design.models.discovery`.
+
 ## Linear-source method
 
 - `resolve_linear_source_hairpin_pcr_materials(spec) -> LinearSourceHairpinPcrMaterialsPlan`
@@ -175,5 +182,5 @@ The renderer consumes the typed view and performs no molecular derivation.
 
 Stable supporting types exported at package root include common payload/spec,
 coordinate, junction, processing-agent, method, view, and error contracts.
-Specialized basal and released-foldback search contracts remain on the
-documented `hop_design.models.discovery` surface.
+Specialized basal, released-foldback, and hairpin-junction route search
+contracts remain on the documented `hop_design.models.discovery` surface.

@@ -130,6 +130,12 @@ template, treats each foldback pair as one correlated enumeration axis, and
 reports exact cardinality before bounded allocation. It does not project a
 released state or compose a basal route. See
 [ADR 0017](docs/architecture/decisions/0017-materialize-released-foldback-precursors-inside-caller-domains.md).
+`search_hairpin_junction_routes` then projects each examined exact precursor
+and joins it to an exact basal-processing route only when the released active
+strand is the strand that survives terminal nicking. Release-agent identities
+remain independent at the two ends; HOP does not impose or rank a one-enzyme
+route. Upstream and local incompleteness remain explicit. See
+[ADR 0018](docs/architecture/decisions/0018-join-hairpin-junction-processing-on-one-strand.md).
 Optional structure predictors and additional renderers consume plan-owned
 artifacts without changing molecular validity; see
 [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).

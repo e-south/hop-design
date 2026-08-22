@@ -63,12 +63,17 @@ agent catalogs, both release orientations, and an exact-first nick-boundary
 window together. It returns correlated physical domains and cardinality without
 choosing a precursor. The separate precursor search now intersects one selected
 geometry with a complete caller-authored IUPAC template, counts correlated pair
-domains correctly, and returns bounded content-addressed exact sequences. Open
-work is differential parity and composition with a basal route.
+domains correctly, and returns bounded content-addressed exact sequences. A
+later bounded join now projects each exact precursor and pairs it with a basal
+route only when the same molecular strand remains active and survives terminal
+nicking. Open work is live-catalog differential parity and routed-view
+equality.
 
-This additive public API shipped in `v0.1.0a1`. The protected release repeated
-the Phase 7 artifact gate, and the first private comparison path installs that
-versioned wheel rather than a sibling checkout.
+The initial placement and precursor-discovery API shipped in `v0.1.0a1`. The
+protected release repeated the Phase 7 artifact gate, and the first private
+comparison path installs a versioned wheel rather than a sibling checkout. The
+cross-agent geometry, exact-precursor, and hairpin-junction route schemas on
+the current development line remain unreleased.
 
 ## Phase 3: basal mechanics
 
@@ -94,9 +99,9 @@ post-nick domains. It contains no hidden fully-degenerate downstream rule.
 The basal route join now connects each exact candidate's left arm to the
 retained scar, rejects a retained release site, derives terminal strand roles,
 and propagates both upstream searches' truncation evidence. It returns neutral
-compatible routes rather than a preferred enzyme. Open gate: differential
-basal-route identity and routed-view parity, followed by separate composition
-with released-foldback candidates into a complete route.
+compatible routes rather than a preferred enzyme. The hairpin-junction join
+preserves end-specific release agents and requires strand continuity. Open
+gate: live differential route identity and routed-view parity.
 
 ## Phase 4: complete plans and bundles
 

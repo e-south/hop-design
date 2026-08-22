@@ -59,9 +59,9 @@ Cross-agent compatibility now has one public, serializable authority. Exact and
 near-boundary results can be compared without importing application preferences
 or predecessor workspace files.
 
-The result proves only a released-foldback sequence domain. It does not prove a
-concrete precursor, a released molecular state, a basal join, a complete
-production method, or destination readiness. A later bounded operation may
-materialize exact precursors inside caller-authored domains. Complete-route
-composition must consume that explicit result and the separate basal route;
-neither step may infer a preferred agent or silently fill sequence.
+The result proves only a released-foldback sequence domain. The separate
+precursor search materializes exact sequences inside caller-authored domains,
+and `search_hairpin_junction_routes` projects that exact state before checking
+strand continuity with a basal route. Neither step infers a preferred agent,
+silently fills sequence, proves a complete production method, or claims
+destination readiness.

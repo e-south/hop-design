@@ -134,6 +134,14 @@ A `ReleasedFoldbackPrecursorCandidate` is one exact sequence with its digest,
 selected geometry identity, content identity, and canonical rank. It is not a
 released molecular state, a basal route, or a complete production method.
 
+`HairpinJunctionRouteCandidate` joins one exact released-foldback precursor to
+one exact basal-processing route. It contains the projected
+`ReleasedStrandState` and is compatible only when that state's active strand is
+the strand that survives basal terminal nicking. The two end processes may use
+different release agents; their identities and orientations remain explicit
+rather than being collapsed into a same-agent rule. This is a junction-level
+route, not a complete source molecule, wet-lab method, or assembly claim.
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;

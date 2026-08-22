@@ -14,13 +14,16 @@ from hop_design.catalog.defaults import (
 from hop_design.design.basal import evaluate_basal_pairing
 from hop_design.design.basal_candidates import search_basal_candidates
 from hop_design.design.basal_processing import search_basal_processing_geometries
-from hop_design.design.basal_routes import search_basal_processing_routes
 from hop_design.design.bundle import load_verified_bundle, verify_bundle
 from hop_design.design.candidates import search_foldback_precursors
 from hop_design.design.compile import check_spec, compile_spec
 from hop_design.design.design_space import plan_design_space
 from hop_design.design.discovery import search_nicking_placements
 from hop_design.design.foldback import evaluate_foldback, search_foldback_arms
+from hop_design.design.junction_routes import (
+    search_basal_processing_routes,
+    search_hairpin_junction_routes,
+)
 from hop_design.design.linear_source_method import (
     compile_linear_source_multinick_hairpin_pcr,
 )
@@ -104,6 +107,7 @@ __all__ = [
     "search_basal_processing_routes",
     "search_foldback_arms",
     "search_foldback_precursors",
+    "search_hairpin_junction_routes",
     "search_nicking_placements",
     "search_released_foldback_geometries",
     "search_released_foldback_precursors",
