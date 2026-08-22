@@ -7,7 +7,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from scripts.check_architecture import violations_for_source
+from scripts.check_architecture import public_facade_violations, violations_for_source
 
 
 @pytest.mark.parametrize(
@@ -38,4 +38,24 @@ def test_allowed_edges_pass(path: str, source: str) -> None:
 def test_unknown_top_level_package_fails_closed() -> None:
     assert violations_for_source("new_layer/module.py", "") == [
         "new_layer/module.py: unknown first-party layer 'new_layer'"
+    ]
+
+
+def test_public_facade_manifest_must_match_root_reexports() -> None:
+    root_source = """\
+from hop_design._facade import PUBLIC_FACADE_NAMES as _PUBLIC_FACADE_NAMES
+from hop_design.api import exported_operation, omitted_operation
+
+__all__ = list(_PUBLIC_FACADE_NAMES)
+"""
+    manifest_source = """\
+PUBLIC_FACADE_NAMES = (
+    "exported_operation",
+    "missing_operation",
+)
+"""
+
+    assert public_facade_violations(root_source, manifest_source) == [
+        "root facade imports public name omitted from manifest: omitted_operation",
+        "public facade manifest names missing root import: missing_operation",
     ]

@@ -54,6 +54,10 @@ last_verified: 2026-08-22
   scar and does not retain the selected release site. It preserves upstream
   incompleteness, returns all bounded compatible joins in neutral order, and
   does not select an enzyme or assert released-foldback continuity.
+- Released-foldback geometry discovery evaluates the bounded nick-agent by
+  release-agent by orientation by boundary product. It returns correlated
+  sequence domains and their exact cardinality without allocating a concrete
+  precursor or applying warning, vendor, or study rank.
 - Component assembly and processing-route compilation are separate claims.
   Supplied components may be evaluated and composed without asserting their
   discovery method, enzyme route, nicked strand, or historical lineage.

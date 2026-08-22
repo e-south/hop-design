@@ -62,7 +62,9 @@ models
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules explicitly, and fails on unknown first-party
 layers. The root facade and serialization module are narrow documented
-exceptions. Add an abstraction only when a second real implementation or
+exceptions. The data-only `_facade.py` manifest keeps the package root readable;
+the same architecture check requires every public root re-export and manifest
+entry to agree. Add an abstraction only when a second real implementation or
 consumer makes the seam necessary.
 
 ## Current product slices
@@ -115,6 +117,13 @@ Every compatible join is returned in neutral upstream order; HOP does not
 choose a preferred enzyme or application candidate. This basal join does not
 claim released-foldback continuity or a complete processing route. See
 [ADR 0015](docs/architecture/decisions/0015-compose-basal-pairs-with-terminal-processing.md).
+`search_released_foldback_geometries` addresses the adjacent cross-agent
+question. It evaluates nicking agent, release agent, release orientation, and
+an exact-first boundary window together; intersects their recognition motifs
+with the antiparallel foldback pairs; and returns replayable sequence domains
+and exact domain cardinality. It neither chooses a concrete precursor nor
+imports warning, vendor, or study rank. See
+[ADR 0016](docs/architecture/decisions/0016-discover-released-foldback-geometry-before-sequence-allocation.md).
 Optional structure predictors and additional renderers consume plan-owned
 artifacts without changing molecular validity; see
 [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).

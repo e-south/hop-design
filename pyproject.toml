@@ -101,4 +101,5 @@ target-version = "py312"
 select = ["B", "C4", "E", "F", "I", "RUF", "SIM", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
+"src/hop_design/__init__.py" = ["F401"]
 "tests/**/*.py" = ["B017"]

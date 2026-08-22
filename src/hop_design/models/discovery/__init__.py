@@ -37,6 +37,13 @@ from hop_design.models.discovery.placements import (
     NickingPlacementTarget,
     NickingPlacementTruncation,
 )
+from hop_design.models.discovery.released_foldback import (
+    FoldbackPairingDomain,
+    ReleasedFoldbackBaseDomain,
+    ReleasedFoldbackGeometryRequest,
+    ReleasedFoldbackGeometrySearchLimits,
+    ReleasedFoldbackGeometrySearchResult,
+)
 
 __all__ = [
     "AdditionalNickConstraint",
@@ -55,6 +62,7 @@ __all__ = [
     "CandidateRejectionSummary",
     "CandidateSearchStatus",
     "CandidateSearchTruncation",
+    "FoldbackPairingDomain",
     "FoldbackPrecursorCandidate",
     "FoldbackPrecursorSearchLimits",
     "FoldbackPrecursorSearchRequest",
@@ -66,4 +74,8 @@ __all__ = [
     "NickingPlacementSearchResult",
     "NickingPlacementTarget",
     "NickingPlacementTruncation",
+    "ReleasedFoldbackBaseDomain",
+    "ReleasedFoldbackGeometryRequest",
+    "ReleasedFoldbackGeometrySearchLimits",
+    "ReleasedFoldbackGeometrySearchResult",
 ]

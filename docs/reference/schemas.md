@@ -22,6 +22,8 @@ last_verified: 2026-08-22
 | `hop.bundle/v1` | `HopBundle` | Content-addressed artifact manifest |
 | `hop.provenance/v1` | `ProvenanceRecord` | Compiler and reference lock provenance |
 | `hop.processing-catalog/v1` | `ProcessingCatalog` | Caller-supplied nicking and release agents |
+| `hop.released-foldback-geometry-request/v1` | `ReleasedFoldbackGeometryRequest` | Cross-agent foldback target and exact-first boundary window |
+| `hop.released-foldback-geometry-search-result/v1` | `ReleasedFoldbackGeometrySearchResult` | Replayable bounded physical geometry and sequence domains |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
 | `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
 | `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Agents, selection, annealing, projection, and materials |
@@ -60,6 +62,10 @@ The `0.1.0a5` line adds `hop.method-bundle/v1` as a sibling of the design
 bundle. It does not change or reinterpret `hop.bundle/v1`. Method-bundle
 verification replays one strict request into its complete state plan and exact
 exports.
+
+The unreleased line adds strict released-foldback geometry request and result
+schemas. These schemas do not reinterpret an existing plan or bundle and do not
+select a concrete precursor sequence.
 
 `hop.load_spec(path)` accepts only `.json`, `.yaml`, and `.yml`, and only the
 two single-design authored schemas. Design spaces are composed through their

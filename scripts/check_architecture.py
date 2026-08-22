@@ -19,8 +19,58 @@ FORBIDDEN_BY_LAYER = {
     "cli": set(),
 }
 ROOT_MODULE_LAYERS = {"api.py": "api", "cli.py": "cli"}
-EXEMPT_ROOT_MODULES = {"__init__.py", "serialization.py"}
+EXEMPT_ROOT_MODULES = {"__init__.py", "_facade.py", "serialization.py"}
 KNOWN_FIRST_PARTY_TARGETS = set(FORBIDDEN_BY_LAYER) | {"serialization"}
+
+
+def _public_facade_manifest(source: str) -> tuple[str, ...]:
+    tree = ast.parse(source, filename="_facade.py")
+    assignments = (
+        node
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "PUBLIC_FACADE_NAMES"
+            for target in node.targets
+        )
+    )
+    assignment = next(assignments, None)
+    if assignment is None:
+        raise ValueError("PUBLIC_FACADE_NAMES assignment is missing")
+    value = ast.literal_eval(assignment.value)
+    if not isinstance(value, tuple) or not all(isinstance(name, str) for name in value):
+        raise ValueError("PUBLIC_FACADE_NAMES must be a literal tuple of strings")
+    return value
+
+
+def public_facade_violations(root_source: str, manifest_source: str) -> list[str]:
+    """Return mismatches between explicit root re-exports and the facade manifest."""
+    try:
+        manifest = _public_facade_manifest(manifest_source)
+    except (SyntaxError, ValueError) as exc:
+        return [f"invalid public facade manifest: {exc}"]
+
+    errors: list[str] = []
+    if len(manifest) != len(set(manifest)):
+        errors.append("public facade manifest contains duplicate names")
+    tree = ast.parse(root_source, filename="__init__.py")
+    imported_names = {
+        alias.asname or alias.name
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("hop_design")
+        for alias in node.names
+        if not (alias.asname or alias.name).startswith("_")
+    }
+    manifest_names = set(manifest)
+    for name in sorted(imported_names - manifest_names):
+        errors.append(f"root facade imports public name omitted from manifest: {name}")
+    missing_imports = manifest_names - imported_names
+    if missing_imports:
+        errors.append(
+            "public facade manifest names missing root import: "
+            + ", ".join(sorted(missing_imports))
+        )
+    return errors
 
 
 def _source_layer(relative_path: Path) -> tuple[str | None, str | None]:
@@ -102,6 +152,12 @@ def main() -> int:
     for path in sorted(PACKAGE_ROOT.rglob("*.py")):
         relative = path.relative_to(PACKAGE_ROOT)
         errors.extend(violations_for_source(relative, path.read_text(encoding="utf-8")))
+    errors.extend(
+        public_facade_violations(
+            (PACKAGE_ROOT / "__init__.py").read_text(encoding="utf-8"),
+            (PACKAGE_ROOT / "_facade.py").read_text(encoding="utf-8"),
+        )
+    )
 
     if errors:
         print("Architecture invariant failures:")

@@ -8,10 +8,10 @@ HOP Design compiles DNA sequences and explicit hairpin-processing mechanics
 into checked molecular plans and portable files. Exact and DNA IUPAC sequences
 use the same API. Paired arms are always derived.
 
-HOP is alpha software. The included direct-synthesis route is a synthetic
-software demonstration, not a laboratory protocol or an experimentally
-supported application profile. Package metadata blocks PyPI upload until a
-separate release decision is recorded.
+HOP is alpha software. Its compiled molecular states do not substitute for a
+laboratory protocol, measured yield, or an application-specific acceptance
+profile. Package metadata blocks PyPI upload until a separate release decision
+is recorded.
 
 ## Install for development
 
@@ -56,15 +56,18 @@ cardinality budgets before allocation.
 - strict `Spec -> Plan -> Bundle` compilation;
 - exact and symbolic payload ingestion and bounded variant generation;
 - foldback, basal-junction, nick, release, and strand-state contracts;
-- optional non-payload paired stem context and reference-method oligo bindings;
+- optional non-payload paired stem context and linear-source method oligo bindings;
 - a digest-bearing `HairpinEncodingInsert` with deterministic JSON, FASTA,
   typed view, SVG, and provenance artifacts;
+- a replayable linear-source multi-nick method plan with a typed hairpin-PCR
+  duplex, destination-neutral restriction product, and deterministic method
+  bundle exports;
 - verified persisted-bundle loading for downstream consumers.
 
 HOP does not own workspaces, runs, observations, evidence stores, private
 application profiles, destination-specific assembly, or laboratory execution.
-It does not yet claim to produce a physical PCR duplex or cloning-ready
-fragment; those capabilities require additional typed method-state contracts.
+Its restriction product is not called cloning-ready. Destination, orientation,
+compatible ends, and assembly policy remain caller-owned.
 
 ## Documentation and support
 

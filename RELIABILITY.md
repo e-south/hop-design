@@ -79,6 +79,14 @@ not allocate pairs beyond the node budget. Every feasibility row and returned
 route replays its embedded inputs, retained scar, terminal nick, surviving
 strand, content identity, rank, and order.
 
+Released-foldback geometry discovery calculates the full agent-pair by release-
+orientation by boundary-window cardinality without materializing that product.
+It consumes nodes only through `max_search_nodes`, returns hits only through
+`max_hits`, and reports either bound explicitly. Validation replays every
+examined recognition footprint, cut, foldback pair domain, sequence-space
+cardinality, hit identity, rank, and order from the embedded catalog and request.
+It never reports an unexamined concrete sequence.
+
 Resolved release and foldback requests cannot be evaluated as one route unless
 their adjacent sequence states are identical. Release scanners discard any
 resolved top or bottom cut beyond the supplied sequence. Search result models
