@@ -1,4 +1,4 @@
-"""Strict route-material contracts for the reference hairpin method."""
+"""Strict method identities, outcomes, and route-material contracts."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.coordinates import Span
+from hop_design.models.diagnostics import Diagnostic, Severity
 from hop_design.models.sequence import (
     EXACT_DNA_ALPHABET,
     SequenceValidationError,
@@ -61,11 +62,56 @@ class ProcessOligo(HopModel):
         return self
 
 
-class HairpinMethodMaterialsSpec(HopModel):
-    """The six sequence materials required by the reference hairpin path."""
+class MethodKind(StrEnum):
+    """Transformation-defined method families known to HOP."""
 
-    schema_id: Literal["hop.hairpin-method-materials/v1"] = Field(
-        default="hop.hairpin-method-materials/v1",
+    LINEAR_SOURCE_MULTINICK_SIZE_SELECTION_HAIRPIN_PCR = (
+        "linear-source-multinick-size-selection-hairpin-pcr@1"
+    )
+    CIRCULAR_PRECURSOR_EXONUCLEASE_SELECTION_MULTIDIGEST_HAIRPIN_PCR = (
+        "circular-precursor-exonuclease-selection-multidigest-hairpin-pcr@1"
+    )
+
+
+class MethodImplementationStatus(StrEnum):
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+
+
+class MethodResolutionStatus(StrEnum):
+    NOT_EVALUATED = "not_evaluated"
+    COMPLETE = "complete"
+    INFEASIBLE = "infeasible"
+    TRUNCATED = "truncated"
+
+
+class MethodOutcome(HopModel):
+    """Independent implementation-availability and request-resolution facets."""
+
+    implementation_status: MethodImplementationStatus
+    resolution_status: MethodResolutionStatus
+    diagnostics: tuple[Diagnostic, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_facets(self) -> MethodOutcome:
+        if (
+            self.implementation_status is MethodImplementationStatus.UNAVAILABLE
+            and self.resolution_status is not MethodResolutionStatus.NOT_EVALUATED
+        ):
+            raise ValueError("An unavailable method cannot have a resolution.")
+        has_errors = any(item.severity is Severity.ERROR for item in self.diagnostics)
+        if self.resolution_status is MethodResolutionStatus.COMPLETE and has_errors:
+            raise ValueError("A complete method resolution cannot contain error diagnostics.")
+        if self.resolution_status is MethodResolutionStatus.INFEASIBLE and not has_errors:
+            raise ValueError("An infeasible method resolution requires an error diagnostic.")
+        return self
+
+
+class LinearSourceHairpinPcrMaterialsSpec(HopModel):
+    """The six sequence materials consumed by the linear-source method."""
+
+    schema_id: Literal["hop.linear-source-hairpin-pcr-materials/v1"] = Field(
+        default="hop.linear-source-hairpin-pcr-materials/v1",
         alias="schema",
     )
     method_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
@@ -78,7 +124,7 @@ class HairpinMethodMaterialsSpec(HopModel):
     ligation_end_preparation: LigationEndPreparation
 
     @model_validator(mode="after")
-    def validate_materials(self) -> HairpinMethodMaterialsSpec:
+    def validate_materials(self) -> LinearSourceHairpinPcrMaterialsSpec:
         materials = self.materials
         material_ids = tuple(material.material_id for material in materials)
         if len(material_ids) != len(set(material_ids)):
@@ -133,11 +179,11 @@ class OligoBinding(HopModel):
     orientation: BindingOrientation
 
 
-class HairpinMethodMaterialsPlan(HopModel):
+class LinearSourceHairpinPcrMaterialsPlan(HopModel):
     """Derived method materials and terminal binding relationships."""
 
-    schema_id: Literal["hop.hairpin-method-materials-plan/v1"] = Field(
-        default="hop.hairpin-method-materials-plan/v1",
+    schema_id: Literal["hop.linear-source-hairpin-pcr-materials-plan/v1"] = Field(
+        default="hop.linear-source-hairpin-pcr-materials-plan/v1",
         alias="schema",
     )
     method_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
@@ -148,7 +194,7 @@ class HairpinMethodMaterialsPlan(HopModel):
     ligation_end_preparation: LigationEndPreparation
 
     @model_validator(mode="after")
-    def validate_derivations(self) -> HairpinMethodMaterialsPlan:
+    def validate_derivations(self) -> LinearSourceHairpinPcrMaterialsPlan:
         expected_roles = tuple(ProcessMaterialRole)
         if tuple(material.role for material in self.materials) != expected_roles:
             raise ValueError("Method materials must follow the declared role order.")
@@ -164,6 +210,19 @@ class HairpinMethodMaterialsPlan(HopModel):
         ):
             raise ValueError("Bindings must reference resolved method materials.")
         by_role = {material.role: material for material in self.materials}
+        if self.ligation_end_preparation is LigationEndPreparation.PRE_PHOSPHORYLATED_OLIGOS:
+            required_phosphates = (
+                by_role[ProcessMaterialRole.SOURCE_PCR_REVERSE_PRIMER],
+                by_role[ProcessMaterialRole.LIGATION_ADAPTER],
+            )
+            if any(
+                OligoModification.FIVE_PRIME_PHOSPHATE not in material.modifications
+                for material in required_phosphates
+            ):
+                raise ValueError(
+                    "Pre-phosphorylated material plans require phosphates on both "
+                    "ligation-end oligos."
+                )
         expected = (
             (
                 "source-pcr-forward",
@@ -226,9 +285,13 @@ class HairpinMethodMaterialsPlan(HopModel):
 
 __all__ = [
     "BindingOrientation",
-    "HairpinMethodMaterialsPlan",
-    "HairpinMethodMaterialsSpec",
     "LigationEndPreparation",
+    "LinearSourceHairpinPcrMaterialsPlan",
+    "LinearSourceHairpinPcrMaterialsSpec",
+    "MethodImplementationStatus",
+    "MethodKind",
+    "MethodOutcome",
+    "MethodResolutionStatus",
     "OligoBinding",
     "OligoModification",
     "ProcessMaterial",

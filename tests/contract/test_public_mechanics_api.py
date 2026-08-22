@@ -18,7 +18,8 @@ def test_public_facade_exposes_standalone_mechanics_without_internal_imports() -
     assert callable(hop.scan_nicking_agent)
     assert callable(hop.scan_release_agent)
     assert callable(hop.search_nicking_placements)
-    assert callable(hop.resolve_hairpin_method_materials)
+    assert callable(hop.resolve_linear_source_hairpin_pcr_materials)
+    assert callable(hop.compile_linear_source_multinick_hairpin_pcr)
     assert hop.FoldbackConstraints.__module__.startswith("hop_design.")
     assert hop.BasalConstraintProfile.__module__.startswith("hop_design.")
     assert hop.ProcessingCatalog.__module__.startswith("hop_design.")
@@ -52,8 +53,9 @@ def test_public_facade_exposes_supporting_contracts_and_integrity_operations() -
         hop.Span,
         hop.Strand,
         hop.WorkflowView,
-        hop.HairpinMethodMaterialsPlan,
-        hop.HairpinMethodMaterialsSpec,
+        hop.LinearSourceHairpinPcrMaterialsPlan,
+        hop.LinearSourceHairpinPcrMaterialsSpec,
+        hop.LinearSourceMultinickHairpinPcrResult,
     )
 
     assert all(contract.__module__.startswith("hop_design.") for contract in public_contracts)
