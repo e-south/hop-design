@@ -68,6 +68,7 @@ context between the basal junction and payload stem.
 - `evaluate_foldback(request) -> FoldbackEvaluation`
 - `search_foldback_arms(request, limits=...) -> FoldbackSearchResult`
 - `evaluate_basal_pairing(request, constraints=...) -> BasalEvaluation`
+- `search_basal_candidates(request, limits=...) -> BasalCandidateSearchResult`
 - `evaluate_paired_stem_extension(request) -> PairedStemExtension`
 - `project_released_strand_state(request) -> ReleaseProjectionResult`
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
@@ -90,6 +91,15 @@ and any required turn extension. Motif constraints are intersected with those
 domains before enumeration. Incompatible domains return `HOP-CAND-001`;
 caller-prohibited additional nick sites return `HOP-CAND-002`. Node and result
 truncation are separate and explicit.
+
+Basal candidate search takes two explicit four-nucleotide IUPAC arm templates.
+It calculates the exact Cartesian cardinality before evaluation, classifies
+each exact pair through the supplied `BasalConstraintProfile`, and returns
+active candidates or active plus reserve candidates according to `acceptance`.
+Every examined non-hit is accounted for by policy status and reason. Returned
+order is canonical by physical M/W/X profile and exact arms; it is not a
+preferred biological panel. `max_search_nodes` and `max_hits` produce separate
+truncation evidence.
 
 ## Linear-source method
 

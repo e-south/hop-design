@@ -1,0 +1,18 @@
+{
+  "schema": "hop.basal-candidate-parity-fixture/v1",
+  "left_arm_template": "AAAA",
+  "right_arm_template": "TNNT",
+  "candidate_space_size": 16,
+  "active": [
+    {"left_arm": "AAAA", "right_arm": "TATT", "compact_profile": "MMXM"},
+    {"left_arm": "AAAA", "right_arm": "TCTT", "compact_profile": "MMXM"},
+    {"left_arm": "AAAA", "right_arm": "TGTT", "compact_profile": "MMXM"},
+    {"left_arm": "AAAA", "right_arm": "TTAT", "compact_profile": "MXMM"},
+    {"left_arm": "AAAA", "right_arm": "TTCT", "compact_profile": "MXMM"},
+    {"left_arm": "AAAA", "right_arm": "TTGT", "compact_profile": "MXMM"}
+  ],
+  "excluded": [
+    {"status": "reject", "reason": "explicitly_rejected_profile", "count": 1},
+    {"status": "reserve", "reason": "middle_double_hard_mismatch", "count": 9}
+  ]
+}

@@ -12,6 +12,7 @@ from hop_design.catalog.defaults import (
     PROCESSING_ROUTE_REF,
 )
 from hop_design.design.basal import evaluate_basal_pairing
+from hop_design.design.basal_candidates import search_basal_candidates
 from hop_design.design.bundle import load_verified_bundle, verify_bundle
 from hop_design.design.candidates import search_foldback_precursors
 from hop_design.design.compile import check_spec, compile_spec
@@ -92,6 +93,7 @@ __all__ = [
     "resolve_linear_source_hairpin_pcr_materials",
     "scan_nicking_agent",
     "scan_release_agent",
+    "search_basal_candidates",
     "search_foldback_arms",
     "search_foldback_precursors",
     "search_nicking_placements",

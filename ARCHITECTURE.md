@@ -96,7 +96,11 @@ Discovery is distinct from compilation. `search_nicking_placements` evaluates
 one strand-compatible orientation per caller-supplied nicking agent and returns
 exact or nearest geometry under node and result budgets. It neither constructs
 filler sequence nor applies commercial or application rank. Selected explicit
-events enter the existing compiler boundary. Optional structure predictors and
+events enter the existing compiler boundary. `search_basal_candidates`
+enumerates exact four-position arm pairs only inside caller-authored IUPAC
+domains, applies an explicit constraint profile, and orders returned candidates
+canonically by physical profile and sequence rather than desirability. It does
+not discover an enzyme route or copy application profile buckets. Optional structure predictors and
 additional renderers consume plan-owned artifacts without changing molecular
 validity; see [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).
 

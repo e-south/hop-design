@@ -51,6 +51,14 @@ reports all additional recognition sites. Search-node and returned-hit budgets
 remain distinct. This closes sequence-construction parity without accepting a
 monolithic recipe or making unconstrained DNA completion an implicit default.
 
+`search_basal_candidates` is an independent bounded enumeration over two
+caller-authored four-nucleotide IUPAC arm domains. It reuses the canonical
+basal classifier and supplied constraint profile, accounts for every examined
+reserve or reject outcome, and returns a canonical physical record order. It
+does not infer release or nicking-agent geometry. Application target buckets,
+control distance, mismatch-tier preference, vendor data, and procurement state
+remain caller policy rather than HOP ranking inputs.
+
 Route-required primers and adapters are vendor-neutral process materials, not
 molecular states. HOP will emit them only when a generic route supplies an exact
 derivation. Procurement fields, application flanks, and experimental acceptance
@@ -66,7 +74,9 @@ accepts `hop.processing-catalog/v1`; it adds no built-in experimental catalog.
 
 New nicking or release agents can be supplied without changing HOP. Geometry
 and sequence discovery remain reusable and testable without a workspace or
-private study. Full released-route discovery and cross-agent selection require
-separate contracts and parity evidence. A general plugin registry remains
+private study. Basal candidate enumeration is reusable without carrying a
+scar-nick workspace or study profile. Full released-route discovery,
+enzyme-compatible basal geometry, and cross-agent selection require separate
+contracts and parity evidence. A general plugin registry remains
 deferred until two independent artifact integrations establish a stable
 protocol.
