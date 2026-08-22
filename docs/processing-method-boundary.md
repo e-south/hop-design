@@ -1,152 +1,128 @@
 ---
 doc_id: hop-processing-method-boundary
 title: Hairpin-processing method boundary
-intent: Ground HOP in one concrete processing method without importing application-specific biology or laboratory execution.
+intent: Define HOP's implemented molecular transformations without absorbing laboratory execution or destination assembly.
 audience:
   - users
   - integrators
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # Hairpin-processing method boundary
 
-HOP is a sequence-design compiler for a specific family of hairpin-processing
-methods. It is not a universal reaction simulator. Its current implemented
-scope ends at a checked, one-dimensional `HairpinEncodingInsert`. Its initial
-method target extends that derivation to a typed linear hairpin-PCR duplex with
-inverted repeats.
+HOP compiles hairpin designs and bounded sequence transformations. It is not a
+general reaction simulator. A method plan records sequence-bearing states,
+strand-specific events, terminal chemistry, pair relationships, covalent joins,
+primer boundaries, and per-base lineage. Laboratory conditions, recovery,
+controls, runs, and observations remain with the caller.
 
-The reference method has this molecular spine:
+## Implemented method
 
-```text
-source ssDNA
-  -> precursor duplex
-  -> nicked and released ssDNA fragment
-  -> adapter-annealed intermediate
-  -> ligated ssDNA hairpin
-  -> hairpin-PCR duplex
-  -> linear dsDNA insert with inverted repeats
-```
-
-This sequence is a boundary model, not an executable laboratory recipe. HOP
-may record the sequence-bearing states, transformations, coordinate lineage,
-and route-required oligos needed to explain a design. It does not prescribe
-reaction volumes, incubation conditions, cleanup choices, cycle counts,
-controls, or experimental acceptance.
-
-## Current and target coverage
-
-| Method concern | Current public contract | Remaining contract work |
-| --- | --- | --- |
-| Input sequence and paired arm | Exact and DNA IUPAC payloads; paired arm derived by reverse complement | None for the current compiler path |
-| Foldback and basal geometry | Typed junctions, pair calls, spans, diagnostics, and route-neutral component assembly | Predecessor candidate and ordering parity |
-| Nicking and duplex release | Explicit nick/cut geometry and released-strand lineage | Joint route discovery and sequence-level route candidates |
-| Adapter annealing and ligation | Source and adapter materials, terminal binding, and ligation-end preparation are represented | Typed annealed and ligated states with continuity checks |
-| Hairpin PCR and inverted-repeat duplex | The hairpin-encoding sequence and both hairpin-PCR primer bindings are represented; no physical duplex is emitted | A bounded method-plan transition from ligated hairpin to `LinearHairpinPcrDuplex` |
-| Larger construct or vector placement | Outside HOP | Caller-owned composition or assembly handoff |
-| Secondary-structure prediction | Optional consumer of plan-owned sequence artifacts | Prove an interoperable adapter before defining a plugin protocol |
-
-The current `resolved_events` graph therefore establishes junction and release
-mechanics, not end-to-end method coverage. A verified bundle proves that its
-software contracts replay; it does not prove that the laboratory method works.
-
-## Product capability boundary
-
-| Product | Status | Meaning |
-| --- | --- | --- |
-| `HairpinEncodingInsert` | Implemented | One-dimensional HOP core sequence, digest, and nested features; design-valid when its plan compiles |
-| `LinearHairpinPcrDuplex` | Not implemented | Physical method endpoint with explicit strands, topology, and derivation through annealing, ligation, and PCR |
-| `AssemblyFragment` | Outside HOP | Destination-specific physical input with orientation and restriction or homology ends; owned by the caller and composition service |
-
-No product is called cloning-ready without a destination vector, insertion
-slot, orientation, assembly ends, and policy checks.
-
-## Four different kinds of information
-
-The method contract must keep these categories separate:
-
-- A **molecular state** is a sequence-bearing object at one point in the
-  method, such as a precursor duplex, released strand, ligated hairpin, or
-  linear insert.
-- A **process event** transforms declared input states into declared output
-  states, such as duplex release, annealing, ligation, or amplification.
-- A **process material** is an oligo required by a generic method event, such
-  as a source oligo, adapter, or primer. It is not a transient molecular state.
-- An **observation** records what happened in an experiment. Runs, controls,
-  gels, yields, and acceptance decisions remain with the caller.
-
-Every event must name its input and output states. Every route-required
-material must name the event that consumes it and the sequence derivation that
-produced it. Missing derivation evidence fails closed; HOP does not infer an
-orderable primer from a diagram or label.
-
-Hairpin-path materials belong to HOP only when the generic method cannot be
-executed without them. Primers or flanks that add a plasmid, assay, barcode, or
-other application context belong to the caller.
-
-The first material contract covers the source oligo, two source-PCR primers,
-ligation adapter, and two hairpin-PCR primers. It verifies terminal binding and
-records whether ligatable 5′ phosphates are supplied or produced by a kinase
-step. Vector primers remain outside that six-material handoff.
-
-## Supplied and discovered designs
-
-A foldback or basal component does not need to have been found by a HOP search.
-Users may supply a hand-designed, inherited, or previously tested component
-and compile it through `component_assembly`. HOP validates its sequence,
-topology, pairing, and composition without claiming an enzyme route or a
-discovery history.
-
-Supplied designs must still fit the declared molecular contract. An additional
-paired stem segment, intentional internal mismatch, or other sequence-bearing
-context must be modeled explicitly; it cannot be hidden inside the payload or
-an annotation. The paired payload remains derived by reverse complement.
-
-Discovery and supply are provenance paths, not different molecular kinds:
+`linear-source-multinick-size-selection-hairpin-pcr@1` has this closed state
+sequence:
 
 ```text
-bounded discovery ----+
-                      +--> selected components --> checked HOP plan
-caller-supplied ------+
+SourcePcrDuplex
+  -> MultiSiteNickedDuplex
+  -> DenaturedFragmentSet
+  -> LengthSelectedFragmentSet
+  -> AdapterAnnealedComplex
+  -> LigatedHairpin
+  -> HairpinPcrDuplex
+  -> RestrictionDigestProduct
 ```
 
-Application identifiers, parentage, experimental rationale, and performance
-remain in the caller's record and may be linked through neutral external
-references. When a route is unknown, the plan records no route assertion; it
-does not invent a nicked strand, processing agent, or feasibility result.
+The request supplies six sequence materials, one or more nicking agents, an
+inclusive fragment-length rule, an adapter-pairing span and mismatch bounds,
+one type-IIS restriction agent, and an optional expected hairpin encoding. HOP
+scans the complete source for every compatible nick site. It does not select a
+site by ordinal position or record ID.
 
-## Composition and assessment seams
+After nicking, HOP enumerates every top- and bottom-strand fragment in 5′→3′
+orientation. Length selection is a declared deterministic rule, not an
+empirical recovery prediction. Resolution continues only when the rule retains
+one top and one bottom fragment that satisfy strand continuity, adapter pairing,
+both required ligations, and terminal PCR bindings.
 
-HOP owns the hairpin-specific order, derivation, spans, and method state. A
-generic sequence-composition service consumes the verified HOP product as one
-immutable annotated object, then adds larger context and offsets its nested
-features. It must not reconstruct HOP features or paired sequences.
+Hairpin PCR creates `HairpinPcrDuplex`. A subsequent facing type-IIS digest
+creates `RestrictionDigestProduct`, which records two strand products and an
+oriented `HairpinEncodingInsert` sequence projection. Restriction digestion does
+not create the duplex.
 
-HOP may export standard representations of the molecular object it owns. A
-clearly labeled GenBank representation of `HairpinEncodingInsert` is therefore
-legitimate; it must not claim duplex strandedness or cloning readiness. A
-duplex-specific GenBank record remains blocked until
-`LinearHairpinPcrDuplex` exists. A composition service may also write FASTA or
-GenBank for a larger construct; those files represent a different object and
-do not duplicate molecular authority.
+## Capability facets
 
-Likewise, a secondary-structure predictor consumes a selected HOP sequence and
-returns an advisory artifact linked to the plan or bundle digest. It cannot
-change molecular validity. A formal plugin registry is deferred until at least
-two independent integrations establish the same stable contract.
+| Concern | HOP contract | Boundary |
+| --- | --- | --- |
+| Design sequence | `HairpinEncodingInsert` | One-dimensional hairpin core; no production-method claim |
+| Method availability | `implementation_status` | `available` or `unavailable` for the named HOP version |
+| Method resolution | `resolution_status` | `not_evaluated`, `complete`, `infeasible`, or `truncated` for one request |
+| Physical PCR product | `HairpinPcrDuplex` | Exact complementary strands and derivation through the implemented method |
+| Restriction product | `RestrictionDigestProduct` | Destination-neutral strands, cuts, union, and encoding projection |
+| Assembly input | `AssemblyFragment` | Caller-owned destination, orientation, and compatible ends |
+| Experimental result | observation record | Caller-owned execution, controls, yield, and evidence |
 
-## Initial completion test
+No HOP product is called cloning-ready without a destination vector, insertion
+slot, orientation, compatible ends, and assembly policy.
 
-The initial method scope is complete when one sanitized example proves:
+## Materials and events
 
-1. every sequence-bearing state from source ssDNA through the linear insert;
-2. continuity across nicking, release, annealing, ligation, and hairpin PCR;
-3. exact, oriented, route-required oligos with consuming-step links;
-4. separation of the HOP insert from caller-added construct context; and
-5. deterministic molecular-state and review artifacts derived from one plan.
+The six HOP-owned sequence materials are:
 
-This completion test does not require a universal reaction language, a
-workspace system, laboratory automation, or a built-in structure predictor.
+1. source oligo;
+2. source-PCR forward primer;
+3. source-PCR reverse primer;
+4. ligation adapter;
+5. hairpin-PCR forward primer; and
+6. hairpin-PCR reverse primer.
+
+HOP validates terminal bindings and required 5′ phosphates or an explicit
+kinase preparation. Vector primers remain outside this handoff because they
+depend on a destination construct.
+
+`MolecularStrand`, `Fragment`, `StrandPairObservation`, and `CovalentBond`
+provide the shared state vocabulary. The compiler, not the caller, constructs
+the ordered state plan. This preserves an extension seam for another named
+method without exposing an unrestricted reaction language.
+
+## Other production methods
+
+`circular-precursor-exonuclease-selection-multidigest-hairpin-pcr@1` is a
+separate named method family. HOP currently reports it as `unavailable` and
+`not_evaluated`; no empty request class or permissive payload partner field is
+present.
+
+A sequence that needs noncomplementary payload partners can be authoritative
+while remaining infeasible for the linear-source method. The reverse-complement
+payload invariant is therefore unchanged. Another production method must earn
+its own inputs, states, continuity checks, and tests.
+
+## Consumer handoff
+
+Research Studies owns Retron identity, historical lineage, biological meaning,
+protocol conditions, selection, and experimental evidence. Construct may place
+one immutable annotated HOP product into a larger cassette or vector and check
+destination-specific assembly. It must not rederive HOP fragments, pairings, or
+features.
+
+The public compiler currently returns a strict method result and plan. Adding
+that plan to verified bundles, emitting deterministic method-state views, and
+writing duplex FASTA/GenBank are separate output tasks. Those exporters must
+consume the plan and cannot recompute molecular state.
+
+## Completion evidence
+
+The implemented compiler is complete for a request only when:
+
+- every nick and denatured fragment is represented;
+- fragment selection is replayable from its declared bounds;
+- every pair call uses literal strand bases;
+- both ligation bonds use compatible termini;
+- PCR primer boundaries derive from the six materials;
+- the duplex strands are exact reverse complements; and
+- the restriction product and encoding projection replay from facing cuts.
+
+Serialized drift in any of those relationships is rejected. This evidence does
+not establish laboratory yield or destination compatibility.

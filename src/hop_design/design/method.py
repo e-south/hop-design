@@ -1,12 +1,12 @@
-"""Resolve route-required oligos for the reference hairpin-processing method."""
+"""Resolve route-required oligos for the linear-source hairpin-PCR method."""
 
 from __future__ import annotations
 
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import (
     BindingOrientation,
-    HairpinMethodMaterialsPlan,
-    HairpinMethodMaterialsSpec,
+    LinearSourceHairpinPcrMaterialsPlan,
+    LinearSourceHairpinPcrMaterialsSpec,
     OligoBinding,
     ProcessMaterial,
     ProcessMaterialRole,
@@ -50,9 +50,9 @@ def _terminal_binding(
     )
 
 
-def resolve_hairpin_method_materials(
-    spec: HairpinMethodMaterialsSpec,
-) -> HairpinMethodMaterialsPlan:
+def resolve_linear_source_hairpin_pcr_materials(
+    spec: LinearSourceHairpinPcrMaterialsSpec,
+) -> LinearSourceHairpinPcrMaterialsPlan:
     """Validate terminal handles and emit a deterministic six-material handoff."""
     bindings = (
         _terminal_binding(
@@ -102,7 +102,7 @@ def resolve_hairpin_method_materials(
         )
         for role, oligo in zip(roles, spec.materials, strict=True)
     )
-    return HairpinMethodMaterialsPlan(
+    return LinearSourceHairpinPcrMaterialsPlan(
         method_id=spec.method_id,
         spec_digest=sha256_digest(canonical_json_bytes(spec)),
         materials=materials,
@@ -112,4 +112,4 @@ def resolve_hairpin_method_materials(
     )
 
 
-__all__ = ["resolve_hairpin_method_materials"]
+__all__ = ["resolve_linear_source_hairpin_pcr_materials"]

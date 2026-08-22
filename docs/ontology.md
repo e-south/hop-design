@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # HOP Design ontology
@@ -54,9 +54,16 @@ encodes a hairpin core. It contains an exact sequence digest and nested
 features that partition the sequence. It does not describe strandedness,
 topology, a PCR product, or destination-specific assembly ends.
 
-`LinearHairpinPcrDuplex` is the reserved name for the physical HOP method
-endpoint: a typed duplex produced from explicit annealing, ligation, and
-hairpin-PCR transitions. HOP does not emit this object yet.
+`HairpinPcrDuplex` is the physical duplex produced by hairpin PCR. It contains
+two explicit complementary strands, exact primer boundaries, terminal
+chemistry, and coordinate lineage. PCR creates the duplex; a later restriction
+event only changes its assembly ends.
+
+`RestrictionDigestProduct` is a destination-neutral duplex fragment derived
+from two facing restriction sites. It records both strand sequences, cohesive
+cut boundaries, the primary-strand union, and an oriented
+`HairpinEncodingInsert` sequence projection. It is not automatically ready for
+assembly.
 
 `AssemblyFragment` is a destination-specific physical input with the ends and
 orientation required by an assembly plan. It belongs to the caller and its
@@ -90,6 +97,26 @@ deterministic rendering and cannot change the molecular state.
 modifications. `OligoBinding` records how a primer binds a declared source or
 adapter terminus. Materials are inputs to method events; they are not molecular
 intermediate states.
+
+`MolecularStrand`, `Fragment`, `StrandPairObservation`, and `CovalentBond` are
+method-neutral primitives. They preserve literal sequences, 5′→3′ orientation,
+terminal chemistry, per-base lineage, physical pair calls, and ligation joins.
+The public API does not accept an arbitrary caller-authored event graph.
+
+`linear-source-multinick-size-selection-hairpin-pcr@1` names the implemented
+method that resolves a source-PCR duplex, every nick site, denatured fragments,
+length selection, adapter annealing, ligation, hairpin PCR, and a facing
+restriction product.
+
+`circular-precursor-exonuclease-selection-multidigest-hairpin-pcr@1` names a
+distinct method family whose implementation is unavailable. Its name records
+transformations rather than roadmap status; HOP makes no feasibility claim for
+that method until a request contract and compiler exist.
+
+`MethodOutcome` keeps `implementation_status` separate from
+`resolution_status`. Availability is `available` or `unavailable`; resolution
+is `not_evaluated`, `complete`, `infeasible`, or `truncated`. These fields do
+not replace sequence identity or destination readiness.
 
 `Diagnostic` is a stable, machine-readable explanation of expected design
 infeasibility. Invalid schemas or corrupt software configuration are exceptions,

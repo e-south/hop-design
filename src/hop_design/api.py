@@ -17,8 +17,11 @@ from hop_design.design.compile import check_spec, compile_spec
 from hop_design.design.design_space import plan_design_space
 from hop_design.design.discovery import search_nicking_placements
 from hop_design.design.foldback import evaluate_foldback, search_foldback_arms
+from hop_design.design.linear_source_method import (
+    compile_linear_source_multinick_hairpin_pcr,
+)
 from hop_design.design.loading import load_spec
-from hop_design.design.method import resolve_hairpin_method_materials
+from hop_design.design.method import resolve_linear_source_hairpin_pcr_materials
 from hop_design.design.payloads import (
     collect_payloads,
     expand_payload,
@@ -63,6 +66,7 @@ __all__ = [
     "classify_motif_presence",
     "collect_payloads",
     "compile",
+    "compile_linear_source_multinick_hairpin_pcr",
     "create_spec",
     "evaluate_basal_pairing",
     "evaluate_foldback",
@@ -75,7 +79,7 @@ __all__ = [
     "plan_design_space",
     "project_released_strand_state",
     "render_workflow_svg",
-    "resolve_hairpin_method_materials",
+    "resolve_linear_source_hairpin_pcr_materials",
     "scan_nicking_agent",
     "scan_release_agent",
     "search_foldback_arms",

@@ -83,15 +83,19 @@ Explicit foldback evaluation can represent a cap-only junction with zero
 retained and returning paired bases. Foldback-arm search remains limited to a
 nonempty retained tract.
 
-## Method materials
+## Linear-source method
 
-- `resolve_hairpin_method_materials(spec) -> HairpinMethodMaterialsPlan`
+- `resolve_linear_source_hairpin_pcr_materials(spec) -> LinearSourceHairpinPcrMaterialsPlan`
+- `compile_linear_source_multinick_hairpin_pcr(request) -> LinearSourceMultinickHairpinPcrResult`
 
-The input records the six sequence materials required by the initial hairpin
-path and whether ligatable 5′ phosphates are supplied on the oligos or produced
-by a kinase step. The resolver checks terminal primer binding and emits oriented
-spans. It does not model reaction conditions or vector-specific primers. See
-the [method-material reference](method-materials.md).
+The material input records six sequence materials and whether ligatable 5′
+phosphates are supplied or produced by a kinase step. The resolver checks
+terminal primer binding. The bounded method compiler then resolves every nick,
+fragment, selected strand, pair, bond, PCR boundary, and facing restriction
+product. Expected infeasibility returns a `MethodOutcome`; corrupt contracts
+raise validation errors. See the
+[linear-source material reference](linear-source-method-materials.md) and
+[method boundary](../processing-method-boundary.md).
 
 ## Views
 
