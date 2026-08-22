@@ -76,8 +76,9 @@ New nicking or release agents can be supplied without changing HOP. Geometry
 and sequence discovery remain reusable and testable without a workspace or
 private study. Basal candidate enumeration is reusable without carrying a
 scar-nick workspace or study profile. Basal processing and released-foldback
-geometry now have separate bounded contracts. Concrete sequence materialization,
-complete-route composition, and predecessor differential equality remain
-separate evidence gates. A general plugin registry remains
+geometry now have separate bounded contracts. Concrete precursor
+materialization and hairpin-junction route composition have their own bounded
+contracts. Complete production-method resolution and predecessor differential
+equality remain separate evidence gates. A general plugin registry remains
 deferred until two independent artifact integrations establish a stable
 protocol.

@@ -33,6 +33,7 @@ from hop_design.api import (
     search_basal_processing_routes,
     search_foldback_arms,
     search_foldback_precursors,
+    search_hairpin_junction_routes,
     search_nicking_placements,
     search_released_foldback_geometries,
     search_released_foldback_precursors,

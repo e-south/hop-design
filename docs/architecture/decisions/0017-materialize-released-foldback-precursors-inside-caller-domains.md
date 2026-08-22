@@ -58,6 +58,6 @@ HOP never treats the geometry's unconstrained `A/C/G/T` positions as permission
 to invent bases outside a caller-authored template.
 
 This operation does not project a released strand, compose a basal route,
-choose a preferred process agent, or assert a complete production method. The
-next route-composition operation must consume an explicit precursor candidate
-and an explicit basal-processing route without re-enumerating either input.
+choose a preferred process agent, or assert a complete production method.
+`search_hairpin_junction_routes` consumes its typed result and the separate
+basal-processing result without re-enumerating either input.

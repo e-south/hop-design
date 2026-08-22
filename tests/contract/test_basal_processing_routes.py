@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
-from hop_design.design import basal_routes as route_design
+from hop_design.design import junction_routes as route_design
 from hop_design.models.catalog import SiteOrientation
 from hop_design.models.discovery import (
     BasalProcessingGeometryRequest,

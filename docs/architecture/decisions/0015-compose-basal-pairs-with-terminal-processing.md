@@ -60,8 +60,8 @@ The retained-scar join has one public contract and can be replayed after JSON
 serialization. Callers can add selection policy after receiving physically
 valid routes without changing HOP identity or order.
 
-This object proves only the basal processing join. It does not prove that a
-release product matches a foldback precursor, that the foldback route is
-available, or that a complete production method has been selected. Those
-claims require a separate released-foldback result and a later bounded
-composition step.
+This object proves only the basal processing join. The later
+`search_hairpin_junction_routes` operation projects an exact released-foldback
+precursor and requires its active strand to equal this route's surviving
+strand. Neither object proves that a complete production method has been
+selected.

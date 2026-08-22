@@ -64,6 +64,11 @@ last_verified: 2026-08-22
   never treats an unconstrained geometry position as permission to invent
   sequence. Candidate materialization does not project molecular state or join
   a basal route.
+- Hairpin-junction route search consumes exact upstream results, projects the
+  released molecular state, and joins it to basal processing only when one
+  strand remains continuous through both junction processes. Different
+  release agents are permitted and preserved; agent preference remains caller
+  policy. Upstream and local truncation are reported separately.
 - Component assembly and processing-route compilation are separate claims.
   Supplied components may be evaluated and composed without asserting their
   discovery method, enzyme route, nicked strand, or historical lineage.

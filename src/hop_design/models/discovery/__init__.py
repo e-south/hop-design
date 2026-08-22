@@ -28,6 +28,10 @@ from hop_design.models.discovery.candidates import (
     FoldbackPrecursorSearchRequest,
     FoldbackPrecursorSearchResult,
 )
+from hop_design.models.discovery.hairpin_routes import (
+    HairpinJunctionRouteSearchLimits,
+    HairpinJunctionRouteSearchResult,
+)
 from hop_design.models.discovery.placements import (
     NickingPlacementBlocker,
     NickingPlacementFeasibility,
@@ -74,6 +78,8 @@ __all__ = [
     "FoldbackPrecursorSearchLimits",
     "FoldbackPrecursorSearchRequest",
     "FoldbackPrecursorSearchResult",
+    "HairpinJunctionRouteSearchLimits",
+    "HairpinJunctionRouteSearchResult",
     "NickingPlacementBlocker",
     "NickingPlacementFeasibility",
     "NickingPlacementHit",

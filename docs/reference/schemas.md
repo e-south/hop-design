@@ -26,6 +26,7 @@ last_verified: 2026-08-22
 | `hop.released-foldback-geometry-search-result/v1` | `ReleasedFoldbackGeometrySearchResult` | Replayable bounded physical geometry and sequence domains |
 | `hop.released-foldback-precursor-search-request/v1` | `ReleasedFoldbackPrecursorSearchRequest` | Selected geometry and caller-authorized precursor domain |
 | `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization and completion evidence |
+| `hop.hairpin-junction-route-search-result/v1` | `HairpinJunctionRouteSearchResult` | Bounded strand-continuity join across exact foldback and basal routes |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
 | `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
 | `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Agents, selection, annealing, projection, and materials |
@@ -65,11 +66,14 @@ bundle. It does not change or reinterpret `hop.bundle/v1`. Method-bundle
 verification replays one strict request into its complete state plan and exact
 exports.
 
-The unreleased line adds strict released-foldback geometry and precursor-search
-schemas. Geometry discovery does not select a concrete sequence. The separate
-precursor search accepts one selected geometry, intersects it with a complete
-caller-authored IUPAC template, and allocates only inside explicit node and hit
-budgets. Neither schema reinterprets an existing plan or bundle.
+The unreleased line adds strict released-foldback geometry, precursor-search,
+and hairpin-junction route schemas. Geometry discovery does not select a
+concrete sequence. The separate precursor search accepts one selected geometry,
+intersects it with a complete caller-authored IUPAC template, and allocates only
+inside explicit node and hit budgets. The junction-route result projects the
+exact released state and requires active/surviving strand continuity without
+requiring the same release agent at both ends. None of these schemas
+reinterprets an existing plan or bundle.
 
 `hop.load_spec(path)` accepts only `.json`, `.yaml`, and `.yml`, and only the
 two single-design authored schemas. Design spaces are composed through their
