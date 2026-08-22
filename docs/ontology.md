@@ -84,6 +84,16 @@ paired tract and available turn that may contain a recognition site.
 agents and reports exact or nearest geometry. A placement is a physical search
 result, not an application selection or an orderable oligo.
 
+`FoldbackPrecursorSearchRequest` materializes one selected nicking placement
+inside caller-authored IUPAC sequence domains. `precursor_template` and
+`turn_extension_template` state exactly which bases HOP may choose; HOP does
+not invent unconstrained filler outside those domains. A
+`FoldbackPrecursorCandidate` contains the exact precursor, derived
+reverse-complement foldback arm, intended nick site, extra-site measurements,
+and complete foldback evaluation. Candidate order uses molecular measurements
+only. Catalog tier, vendor, procurement, and application preference remain
+caller policy.
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;

@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-20
+last_verified: 2026-08-22
 ---
 
 # ADR 0006: Discovery, compilation, and assessment boundaries
@@ -26,8 +26,9 @@ HOP separates three stages:
 
 1. **Discovery** evaluates caller-supplied processing-agent geometry under
    explicit targets and hard budgets. Results expose physical measurements,
-   exact or nearest placement, blockers, and truthful truncation. They do not
-   construct arbitrary filler sequence or apply vendor and application rank.
+   exact or nearest placement, blockers, and truthful truncation. Concrete
+   sequence discovery is permitted only inside caller-authored IUPAC domains;
+   HOP does not invent hidden filler or apply vendor and application rank.
 2. **Compilation** consumes selected explicit events and derives the immutable
    molecular plan and bundle.
 3. **Assessment** is an optional artifact-consumer layer. A structure predictor
@@ -41,6 +42,14 @@ paired tract, and available turn. The operation evaluates one finite geometry
 per nicking agent. It orders hits by exactness, boundary displacement, required
 precursor length, required turn length, and neutral identity. Callers may apply
 separate documented selection policy afterward.
+
+`search_foldback_precursors` is the second discovery operation. It consumes
+one selected placement, replays that placement from its agent and target, and
+intersects the recognition motif with explicit precursor and turn-extension
+templates. It derives the returning foldback arm by reverse complement and
+reports all additional recognition sites. Search-node and returned-hit budgets
+remain distinct. This closes sequence-construction parity without accepting a
+monolithic recipe or making unconstrained DNA completion an implicit default.
 
 Route-required primers and adapters are vendor-neutral process materials, not
 molecular states. HOP will emit them only when a generic route supplies an exact
@@ -56,8 +65,8 @@ accepts `hop.processing-catalog/v1`; it adds no built-in experimental catalog.
 ## Consequences
 
 New nicking or release agents can be supplied without changing HOP. Geometry
-discovery remains reusable and testable without a workspace or private study.
-Full released-route discovery, sequence materialization, and process-material
-emission require separate contracts and parity evidence. A general plugin
-registry remains deferred until two independent artifact integrations establish
-a stable protocol.
+and sequence discovery remain reusable and testable without a workspace or
+private study. Full released-route discovery and cross-agent selection require
+separate contracts and parity evidence. A general plugin registry remains
+deferred until two independent artifact integrations establish a stable
+protocol.
