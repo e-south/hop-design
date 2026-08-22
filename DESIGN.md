@@ -49,6 +49,11 @@ last_verified: 2026-08-22
 - Basal processing geometry separately intersects release, terminal-nick,
   retained-scar, and explicit post-nick domains in signed cut-relative
   coordinates; it does not infer a downstream degeneracy rule.
+- Basal processing-route composition joins exact basal candidates to exact
+  processing geometries only when the basal left arm is an allowed retained
+  scar and does not retain the selected release site. It preserves upstream
+  incompleteness, returns all bounded compatible joins in neutral order, and
+  does not select an enzyme or assert released-foldback continuity.
 - Component assembly and processing-route compilation are separate claims.
   Supplied components may be evaluated and composed without asserting their
   discovery method, enzyme route, nicked strand, or historical lineage.

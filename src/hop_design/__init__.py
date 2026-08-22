@@ -1,4 +1,3 @@
-# Public package facade for HOP Design.
 from hop_design.api import (
     build_basal_pairing_view,
     build_basal_view,
@@ -30,6 +29,7 @@ from hop_design.api import (
     scan_release_agent,
     search_basal_candidates,
     search_basal_processing_geometries,
+    search_basal_processing_routes,
     search_foldback_arms,
     search_foldback_precursors,
     search_nicking_placements,
@@ -341,10 +341,10 @@ __all__ = [
     "scan_nicking_agent",
     "scan_release_agent",
     "search_basal_candidates",
-    "search_basal_processing_geometries",
     "search_foldback_arms",
     "search_foldback_precursors",
     "search_nicking_placements",
     "verify_bundle",
     "verify_method_bundle",
 ]
+__all__ += ["search_basal_processing_geometries", "search_basal_processing_routes"]

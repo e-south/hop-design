@@ -151,6 +151,21 @@ Node and hit bounds are independent and never silent. Compatible geometries
 use agent identity and signed physical placement order. The result does not
 classify basal pairs, select a route, or apply vendor and application policy.
 
+`search_basal_processing_routes(basal_candidates=...,
+processing_geometries=..., limits=...)` composes the two typed result sets.
+For each examined pair, HOP treats the basal left arm as the retained scar,
+checks it against all four geometry domains, and rejects a scar that contains
+the selected release motif in either orientation. Compatible routes derive the
+terminal nick and surviving strand from the processing geometry and receive a
+content identity over both upstream candidates and the normalized release.
+
+The operation evaluates the canonical returned-candidate cross-product. It
+reports upstream basal and processing-geometry truncation separately from its
+own node and hit bounds; `available_pair_count` therefore describes only that
+returned cross-product. Route order follows the upstream physical ranks and
+content identity. The operation neither chooses a preferred agent nor proves
+continuity with a released foldback state.
+
 ## Compiler integration
 
 `ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit

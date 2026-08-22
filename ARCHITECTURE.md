@@ -107,6 +107,14 @@ footprints, a caller-authored retained-scar domain, and a caller-authored
 post-nick domain in a signed cut-relative coordinate frame. It does not repeat
 basal pair policy or rank a study panel. See
 [ADR 0014](docs/architecture/decisions/0014-separate-basal-pairing-from-processing-geometry.md).
+`search_basal_processing_routes` then performs one bounded, replayable join of
+the returned exact basal pairs and processing geometries. The basal left arm is
+the retained scar. A route is rejected when that sequence falls outside the
+geometry's retained-scar domains or regenerates the selected release site.
+Every compatible join is returned in neutral upstream order; HOP does not
+choose a preferred enzyme or application candidate. This basal join does not
+claim released-foldback continuity or a complete processing route. See
+[ADR 0015](docs/architecture/decisions/0015-compose-basal-pairs-with-terminal-processing.md).
 Optional structure predictors and additional renderers consume plan-owned
 artifacts without changing molecular validity; see
 [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).

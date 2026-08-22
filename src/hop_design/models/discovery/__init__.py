@@ -13,6 +13,10 @@ from hop_design.models.discovery.basal_processing import (
     BasalProcessingGeometrySearchLimits,
     BasalProcessingGeometrySearchResult,
 )
+from hop_design.models.discovery.basal_routes import (
+    BasalProcessingRouteSearchLimits,
+    BasalProcessingRouteSearchResult,
+)
 from hop_design.models.discovery.candidates import (
     AdditionalNickConstraint,
     CandidateRejectionCode,
@@ -45,6 +49,8 @@ __all__ = [
     "BasalProcessingGeometryRequest",
     "BasalProcessingGeometrySearchLimits",
     "BasalProcessingGeometrySearchResult",
+    "BasalProcessingRouteSearchLimits",
+    "BasalProcessingRouteSearchResult",
     "CandidateRejectionCode",
     "CandidateRejectionSummary",
     "CandidateSearchStatus",

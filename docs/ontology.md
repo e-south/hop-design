@@ -111,6 +111,14 @@ nick. `post_nick_domain_mode` states whether a process footprint may narrow
 that domain or must preserve it. A compatible geometry is not yet a selected
 route and does not imply that a particular left/right basal pair was chosen.
 
+`BasalProcessingRouteCandidate` joins one exact `BasalCandidate` to one exact
+processing geometry. Its retained scar is the basal left arm. Compatibility
+requires every scar base to satisfy the geometry domains and requires the scar
+not to contain the selected release motif in either orientation. The candidate
+derives its terminal nick and surviving strand from the processing geometry.
+It is a basal processing route, not a released-foldback route and not a caller
+preference.
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;
