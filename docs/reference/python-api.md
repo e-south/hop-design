@@ -74,6 +74,7 @@ context between the basal junction and payload stem.
 - `search_basal_processing_geometries(catalog=..., request=..., limits=...) -> BasalProcessingGeometrySearchResult`
 - `search_basal_processing_routes(basal_candidates=..., processing_geometries=..., limits=...) -> BasalProcessingRouteSearchResult`
 - `search_released_foldback_geometries(catalog=..., request=..., limits=...) -> ReleasedFoldbackGeometrySearchResult`
+- `search_released_foldback_precursors(request, limits=...) -> ReleasedFoldbackPrecursorSearchResult`
 - `evaluate_paired_stem_extension(request) -> PairedStemExtension`
 - `project_released_strand_state(request) -> ReleaseProjectionResult`
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
@@ -131,6 +132,14 @@ independent request constraints. The search does not choose one sequence or
 apply catalog warnings, vendor status, or application rank. Node and returned-
 hit truncation are independent.
 
+Released-foldback precursor search consumes one selected geometry and one
+same-length caller-authored IUPAC template. It intersects all sequence and
+correlated pairing domains before enumeration, returns content-addressed exact
+precursors in canonical physical order, and reports `caller_domain_conflict`
+when the intersection is empty. Node and hit truncation are independent. The
+specialized request, limits, candidate, and result models are available from
+`hop_design.models.discovery`.
+
 ## Linear-source method
 
 - `resolve_linear_source_hairpin_pcr_materials(spec) -> LinearSourceHairpinPcrMaterialsPlan`
@@ -164,7 +173,7 @@ boundary; the lower-level compiler continues to return its typed outcome.
 
 The renderer consumes the typed view and performs no molecular derivation.
 
-Stable supporting types exported at package root include payload/spec models,
-`Boundary`, `NucleotideCount`, `BasePairCount`, `Span`, `Strand`, mechanics and
-discovery request/result models, processing agent models, `WorkflowView`, and
-the documented error classes.
+Stable supporting types exported at package root include common payload/spec,
+coordinate, junction, processing-agent, method, view, and error contracts.
+Specialized basal and released-foldback search contracts remain on the
+documented `hop_design.models.discovery` surface.

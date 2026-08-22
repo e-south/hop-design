@@ -127,6 +127,13 @@ cuts, the active-product extent, correlated Watson-Crick pairing domains, and
 the exact number of compatible precursor sequences. It is a geometry result,
 not a selected sequence, released state, basal route, or caller preference.
 
+`ReleasedFoldbackPrecursorSearchRequest` selects one released-foldback geometry
+and supplies one complete caller-authored IUPAC precursor template. The search
+intersects that template with the geometry's base and correlated pair domains.
+A `ReleasedFoldbackPrecursorCandidate` is one exact sequence with its digest,
+selected geometry identity, content identity, and canonical rank. It is not a
+released molecular state, a basal route, or a complete production method.
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;

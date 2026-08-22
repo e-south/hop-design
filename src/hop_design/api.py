@@ -39,7 +39,10 @@ from hop_design.design.payloads import (
     load_fasta_payloads,
 )
 from hop_design.design.processing import project_released_strand_state
-from hop_design.design.released_foldback import search_released_foldback_geometries
+from hop_design.design.released_foldback import (
+    search_released_foldback_geometries,
+    search_released_foldback_precursors,
+)
 from hop_design.design.result import Compilation
 from hop_design.design.stem import evaluate_paired_stem_extension
 from hop_design.design.views import (
@@ -103,6 +106,7 @@ __all__ = [
     "search_foldback_precursors",
     "search_nicking_placements",
     "search_released_foldback_geometries",
+    "search_released_foldback_precursors",
     "verify_bundle",
     "verify_method_bundle",
 ]

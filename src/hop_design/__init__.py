@@ -35,6 +35,7 @@ from hop_design.api import (
     search_foldback_precursors,
     search_nicking_placements,
     search_released_foldback_geometries,
+    search_released_foldback_precursors,
     verify_bundle,
     verify_method_bundle,
 )

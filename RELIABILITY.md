@@ -87,6 +87,14 @@ examined recognition footprint, cut, foldback pair domain, sequence-space
 cardinality, hit identity, rank, and order from the embedded catalog and request.
 It never reports an unexamined concrete sequence.
 
+Released-foldback precursor search calculates the exact intersection of one
+selected geometry and one caller-authored IUPAC template before allocation.
+Correlated foldback pairs count as one axis. `max_search_nodes` bounds exact
+sequences examined and `max_hits` independently bounds returned candidates;
+both limits are replayed from the embedded request. A zero intersection is
+explicitly infeasible, and result validation rejects sequence, digest, content
+identity, rank, order, accounting, or truncation drift.
+
 Resolved release and foldback requests cannot be evaluated as one route unless
 their adjacent sequence states are identical. Release scanners discard any
 resolved top or bottom cut beyond the supplied sequence. Search result models

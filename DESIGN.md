@@ -58,6 +58,12 @@ last_verified: 2026-08-22
   release-agent by orientation by boundary product. It returns correlated
   sequence domains and their exact cardinality without allocating a concrete
   precursor or applying warning, vendor, or study rank.
+- Released-foldback precursor search accepts one selected geometry and one
+  complete caller-authored IUPAC template. It intersects all per-base and
+  correlated pair domains before enumeration, computes exact cardinality, and
+  never treats an unconstrained geometry position as permission to invent
+  sequence. Candidate materialization does not project molecular state or join
+  a basal route.
 - Component assembly and processing-route compilation are separate claims.
   Supplied components may be evaluated and composed without asserting their
   discovery method, enzyme route, nicked strand, or historical lineage.

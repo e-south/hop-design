@@ -8,6 +8,9 @@ from hop_design.models.discovery import (
     ReleasedFoldbackGeometrySearchLimits,
     ReleasedFoldbackGeometrySearchResult,
 )
+from hop_design.models.discovery.released_foldback import (
+    ReleasedFoldbackGeometryFeasibility,
+)
 
 
 def _catalog(*, near_nick: bool = False) -> hop.ProcessingCatalog:
@@ -393,6 +396,22 @@ def test_released_foldback_result_rejects_replayed_geometry_drift() -> None:
 
     with pytest.raises(ValueError, match="replay canonical physical search nodes"):
         ReleasedFoldbackGeometrySearchResult.model_validate(data)
+
+
+def test_released_foldback_feasibility_rejects_pair_outside_active_product() -> None:
+    result = hop.search_released_foldback_geometries(
+        catalog=_catalog(),
+        request=_request(),
+        limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
+    )
+    data = result.hits[0].model_dump(
+        mode="python",
+        exclude={"candidate_id", "rank"},
+    )
+    data["pairing_domains"][0]["right_coordinate"] = data["active_product_span"]["end"]["offset"]
+
+    with pytest.raises(ValueError, match="active product span"):
+        ReleasedFoldbackGeometryFeasibility.model_validate(data)
 
 
 def test_released_foldback_search_does_not_materialize_nodes_beyond_the_budget(

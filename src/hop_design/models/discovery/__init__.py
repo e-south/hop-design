@@ -44,6 +44,13 @@ from hop_design.models.discovery.released_foldback import (
     ReleasedFoldbackGeometrySearchLimits,
     ReleasedFoldbackGeometrySearchResult,
 )
+from hop_design.models.discovery.released_foldback_candidates import (
+    ReleasedFoldbackPrecursorBlocker,
+    ReleasedFoldbackPrecursorCandidate,
+    ReleasedFoldbackPrecursorSearchLimits,
+    ReleasedFoldbackPrecursorSearchRequest,
+    ReleasedFoldbackPrecursorSearchResult,
+)
 
 __all__ = [
     "AdditionalNickConstraint",
@@ -78,4 +85,9 @@ __all__ = [
     "ReleasedFoldbackGeometryRequest",
     "ReleasedFoldbackGeometrySearchLimits",
     "ReleasedFoldbackGeometrySearchResult",
+    "ReleasedFoldbackPrecursorBlocker",
+    "ReleasedFoldbackPrecursorCandidate",
+    "ReleasedFoldbackPrecursorSearchLimits",
+    "ReleasedFoldbackPrecursorSearchRequest",
+    "ReleasedFoldbackPrecursorSearchResult",
 ]

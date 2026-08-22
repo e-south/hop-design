@@ -166,6 +166,28 @@ class ReleasedFoldbackGeometryFeasibility(HopModel):
             for pair in self.pairing_domains
             for coordinate in (pair.left_coordinate, pair.right_coordinate)
         }
+        if len(paired_coordinates) != 2 * len(self.pairing_domains):
+            raise ValueError("Foldback pairing domains must not reuse coordinates.")
+        active_start = self.active_product_span.start.offset
+        active_end = self.active_product_span.end.offset
+        if any(
+            coordinate < active_start or coordinate >= active_end
+            for coordinate in paired_coordinates
+        ):
+            raise ValueError("Foldback pair coordinates must lie inside the active product span.")
+        domains_by_coordinate = {
+            domain.coordinate: domain.allowed_bases for domain in self.resolved_domains
+        }
+        for pair in self.pairing_domains:
+            left_projection = tuple(sorted({choice[0] for choice in pair.allowed_pairs}))
+            right_projection = tuple(sorted({choice[1] for choice in pair.allowed_pairs}))
+            if (
+                domains_by_coordinate[pair.left_coordinate] != left_projection
+                or domains_by_coordinate[pair.right_coordinate] != right_projection
+            ):
+                raise ValueError(
+                    "Resolved base domains must equal their foldback pair projections."
+                )
         unpaired_counts = (
             len(domain.allowed_bases)
             for domain in self.resolved_domains
