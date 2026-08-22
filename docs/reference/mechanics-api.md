@@ -104,7 +104,21 @@ truncation are reported independently in `truncated_by`; neither is silent.
 Hits use a neutral physical order: exact before nearest, then displacement,
 required precursor length, required turn length, and agent identity. Catalog
 provenance, commercial preference, and application eligibility remain caller
-policy. This operation does not enumerate filler bases or compile a route.
+policy. This operation does not enumerate sequence or compile a route.
+
+`search_foldback_precursors(request, limits=...)` is the separate concrete
+sequence operation for one selected placement. The caller supplies an IUPAC
+template for the required precursor and for any remaining turn extension.
+HOP intersects the selected recognition motif with those domains, calculates
+the exact candidate-space size before enumeration, derives the returning arm
+by reverse complement, and reports the intended and additional nick sites.
+
+`HOP-CAND-001` reports that the caller's template cannot contain the selected
+motif. `HOP-CAND-002` reports candidates rejected by the caller's explicit
+additional-nick constraint. Both `max_search_nodes` and `max_hits` are hard
+budgets with independent truncation evidence. Candidate order uses extra-site
+counts, added-sequence GC fraction and homopolymer run, exact sequence, and
+content identity. It does not use vendor, catalog-tier, or application rank.
 
 ## Compiler integration
 

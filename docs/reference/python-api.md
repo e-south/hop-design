@@ -74,6 +74,7 @@ context between the basal junction and payload stem.
 - `scan_nicking_agent(sequence, agent=...) -> tuple[ResolvedNickSite, ...]`
 - `scan_release_agent(sequence, agent=...) -> tuple[ResolvedReleaseSite, ...]`
 - `search_nicking_placements(catalog=..., target=..., limits=...) -> NickingPlacementSearchResult`
+- `search_foldback_precursors(request, limits=...) -> FoldbackPrecursorSearchResult`
 
 Foldback, basal, and release operations accept explicit typed requests. Basal
 pair classification is physical; active/reserve/reject classification comes
@@ -82,6 +83,13 @@ from the caller-supplied `BasalConstraintProfile`. See the
 Explicit foldback evaluation can represent a cap-only junction with zero
 retained and returning paired bases. Foldback-arm search remains limited to a
 nonempty retained tract.
+
+Precursor search is a second bounded operation after placement discovery. The
+request names one exact placement and supplies IUPAC domains for the precursor
+and any required turn extension. Motif constraints are intersected with those
+domains before enumeration. Incompatible domains return `HOP-CAND-001`;
+caller-prohibited additional nick sites return `HOP-CAND-002`. Node and result
+truncation are separate and explicit.
 
 ## Linear-source method
 

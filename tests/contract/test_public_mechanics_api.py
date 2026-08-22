@@ -18,6 +18,7 @@ def test_public_facade_exposes_standalone_mechanics_without_internal_imports() -
     assert callable(hop.scan_nicking_agent)
     assert callable(hop.scan_release_agent)
     assert callable(hop.search_nicking_placements)
+    assert callable(hop.search_foldback_precursors)
     assert callable(hop.resolve_linear_source_hairpin_pcr_materials)
     assert callable(hop.compile_linear_source_multinick_hairpin_pcr)
     assert hop.FoldbackConstraints.__module__.startswith("hop_design.")
@@ -35,6 +36,8 @@ def test_public_facade_exposes_supporting_contracts_and_integrity_operations() -
         hop.FoldbackEvaluation,
         hop.FoldbackSearchRequest,
         hop.FoldbackSearchResult,
+        hop.FoldbackPrecursorSearchRequest,
+        hop.FoldbackPrecursorSearchResult,
         hop.BasalJunction,
         hop.FoldbackJunction,
         hop.JunctionPairKind,

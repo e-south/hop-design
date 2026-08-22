@@ -51,11 +51,14 @@ compilation of already-selected options do not, by themselves, satisfy that
 discovery contract.
 
 Available discovery now covers exact and nearest nicking-site placement for a
-declared nick strand, boundary, paired tract, and turn allowance. It reports
-stable geometry blockers and distinguishes node truncation from returned-hit
-truncation. Open work includes released-route cross-product discovery,
-sequence-level candidate construction, rejection diagnostics, and sanitized
-candidate/rank parity.
+declared nick strand, boundary, paired tract, and turn allowance. A separate
+bounded operation constructs exact precursor sequences only inside
+caller-authored IUPAC domains, derives the returning arm, reports additional
+nick sites, and distinguishes template conflict, candidate rejection, node
+truncation, and returned-hit truncation. Sanitized sequence and neutral-order
+parity now matches the predecessor's physical candidate while excluding its
+vendor and application rank. Open work is released-route cross-product
+discovery and its differential parity evidence.
 
 This additive public API shipped in `v0.1.0a1`. The protected release repeated
 the Phase 7 artifact gate, and the first private comparison path installs that
