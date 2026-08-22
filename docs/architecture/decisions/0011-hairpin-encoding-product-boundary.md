@@ -41,8 +41,8 @@ them to rederive foldback, paired-payload, stem-extension, or basal spans.
 `HairpinEncodingInsert` remains a sequence representation, not a physical
 duplex and not evidence of cloning readiness.
 
-The name `LinearHairpinPcrDuplex` is reserved for a future typed endpoint that
-must be derived from explicit annealing, ligation, and PCR transitions. FASTA,
-feature, and GenBank exports for that physical product remain blocked until the
-state exists. Destination-specific `AssemblyFragment` objects remain caller
-owned.
+`HairpinPcrDuplex` is the distinct typed endpoint derived from explicit
+annealing, ligation, and PCR transitions. FASTA, feature, and GenBank exports
+for that physical product must consume the method plan rather than infer a
+duplex from `HairpinEncodingInsert`. Destination-specific `AssemblyFragment`
+objects remain caller owned.

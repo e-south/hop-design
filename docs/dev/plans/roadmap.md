@@ -85,28 +85,32 @@ complete provenance. Add explicit enumeration statuses and hard budgets.
 
 Available: foldback, payload, derived paired arm, basal composition, optional
 variable-length paired stem extensions with literal noncanonical pairs;
-route-neutral component assembly for caller-supplied or inherited components; resolved route
-state graph; optional released state; exact feature spans; expected
-intermediates; verified content-addressed bundles; and renderer-free Cartesian
-design-space planning with pre-allocation cardinality checks. Open work includes
-selective batch bundle orchestration and the concrete processing-method stages
-between released strand and linear double-stranded insert: adapter annealing,
-ligation, and hairpin PCR. The first method-material contract now validates the
-six source, adapter, and primer oligos, their terminal binding spans, and
-supplied-phosphate or kinase-step posture. These materials are not yet linked
-into the end-to-end state graph. The compiled one-dimensional product is now
-an explicit, digest-bearing `HairpinEncodingInsert`; the physical
-`LinearHairpinPcrDuplex` remains unimplemented until those transitions can
-derive it without guessed geometry.
+route-neutral component assembly for caller-supplied or inherited components;
+resolved release state; exact feature spans; verified content-addressed design
+bundles; and renderer-free Cartesian design-space planning with pre-allocation
+cardinality checks. The
+`linear-source-multinick-size-selection-hairpin-pcr@1` compiler now resolves six
+materials, complete site multiplicity, all denatured fragments, length
+selection, adapter pairing, two ligations, a hairpin-PCR duplex, and a
+destination-neutral facing restriction product for caller-supplied
+sequences and agents. Its strict request, result, and plan reject cross-state
+serialized drift.
+
+The compiled one-dimensional design product remains `HairpinEncodingInsert`.
+`HairpinPcrDuplex` is a separate physical method state, and
+`RestrictionDigestProduct` is its destination-neutral projection. Open work is
+to add method plans and artifacts to verified bundles, implement deterministic
+method-state views and duplex FASTA/GenBank, and prove the immutable downstream
+consumer handoff. Selective batch bundle orchestration remains separate.
 
 A primer or adapter is a process material, not a molecular intermediate. HOP
 owns a vendor-neutral material only when the declared generic route requires it;
 application context and procurement metadata remain caller-owned.
 
-The initial method boundary is deliberately narrower than a general reaction
-simulator. It must explain one source-ssDNA-to-linear-insert path through typed
-molecular states and events. Reaction conditions, controls, execution, and
-larger construct placement remain caller-owned. See the
+The implemented method boundary is narrower than a general reaction simulator.
+It explains one linear-source multi-nick path through typed molecular states
+and events. Reaction conditions, controls, execution, and larger construct
+placement remain caller-owned. See the
 [processing method boundary](../../processing-method-boundary.md).
 
 ## Phase 5: view contracts and optional plots

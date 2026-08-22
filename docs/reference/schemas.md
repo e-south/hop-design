@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # Public schema identifiers
@@ -22,8 +22,11 @@ last_verified: 2026-08-21
 | `hop.bundle/v1` | `HopBundle` | Content-addressed artifact manifest |
 | `hop.provenance/v1` | `ProvenanceRecord` | Compiler and reference lock provenance |
 | `hop.processing-catalog/v1` | `ProcessingCatalog` | Caller-supplied nicking and release agents |
-| `hop.hairpin-method-materials/v1` | `HairpinMethodMaterialsSpec` | Six route-required oligos and ligation-end preparation |
-| `hop.hairpin-method-materials-plan/v1` | `HairpinMethodMaterialsPlan` | Derived terminal bindings and required material handoff |
+| `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
+| `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
+| `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Agents, selection, annealing, projection, and materials |
+| `hop.linear-source-multinick-hairpin-pcr-plan/v1` | `LinearSourceMultinickHairpinPcrPlan` | Complete molecular-state and restriction-product derivation |
+| `hop.linear-source-multinick-hairpin-pcr-result/v1` | `LinearSourceMultinickHairpinPcrResult` | Orthogonal method outcome and optional complete plan |
 | `hop.workflow-view/v1` | `WorkflowView` | Renderer-independent panels and tracks |
 
 Serialized documents use the JSON key `schema`. Exact IDs are dispatch
@@ -46,6 +49,11 @@ The `0.1.0a3` line replaces `hop.plan/v1` with `hop.plan/v2`. The plan owns one
 `HairpinEncodingInsert` containing its sequence digest and nested features, and
 bundles emit `hairpin-encoding.fasta`. There is no v1 plan reader or legacy
 artifact-name fallback.
+
+The `0.1.0a4` line replaces the generic method-material schema names with the
+linear-source names above and adds the strict method request, plan, and result.
+There is no reader for the retired generic material schema. Method
+implementation availability and request resolution remain separate fields.
 
 `hop.load_spec(path)` accepts only `.json`, `.yaml`, and `.yml`, and only the
 two single-design authored schemas. Design spaces are composed through their
