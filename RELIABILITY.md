@@ -70,6 +70,15 @@ exact compatible-hit accounting, canonical agent order, content-addressed hit
 projection, and distinct node/hit truncation. Signed release/nick coordinates
 remain local geometry; concrete molecular spans remain nonnegative.
 
+Basal processing-route composition evaluates the canonical Cartesian product
+of the returned basal candidates and returned processing geometries. It reports
+upstream basal or geometry truncation separately from its own node and hit
+bounds. `available_pair_count` describes that returned cross-product, not an
+unobserved global search space. HOP computes that count arithmetically and does
+not allocate pairs beyond the node budget. Every feasibility row and returned
+route replays its embedded inputs, retained scar, terminal nick, surviving
+strand, content identity, rank, and order.
+
 Resolved release and foldback requests cannot be evaluated as one route unless
 their adjacent sequence states are identical. Release scanners discard any
 resolved top or bottom cut beyond the supplied sequence. Search result models

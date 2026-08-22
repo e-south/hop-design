@@ -13,7 +13,7 @@ last_verified: 2026-08-22
 # Python API
 
 Import supported operations and common construction types from `hop_design`.
-Specialized basal processing-geometry request and result models use the
+Specialized basal processing-geometry and route-search models use the
 documented `hop_design.models.discovery` surface. Other internal module paths
 are not a compatibility guarantee.
 
@@ -72,6 +72,7 @@ context between the basal junction and payload stem.
 - `evaluate_basal_pairing(request, constraints=...) -> BasalEvaluation`
 - `search_basal_candidates(request, limits=...) -> BasalCandidateSearchResult`
 - `search_basal_processing_geometries(catalog=..., request=..., limits=...) -> BasalProcessingGeometrySearchResult`
+- `search_basal_processing_routes(basal_candidates=..., processing_geometries=..., limits=...) -> BasalProcessingRouteSearchResult`
 - `evaluate_paired_stem_extension(request) -> PairedStemExtension`
 - `project_released_strand_state(request) -> ReleaseProjectionResult`
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
@@ -111,6 +112,14 @@ and post-nick domains, and reports complete per-agent feasibility. The
 `compatible` post-nick mode permits an explicit nonempty narrowing;
 `preserve` requires the authored domain to remain unchanged. Request, limit,
 and result models are available from `hop_design.models.discovery`.
+
+Basal processing-route search is the bounded join of those two explicit result
+sets. It uses the basal left arm as the retained scar, rejects domain conflicts
+and a retained release motif, and derives the terminal nick and surviving
+strand. It returns all compatible joins within the caller budgets in neutral
+upstream order. Upstream incompleteness and local node or hit truncation remain
+distinct; this operation does not select an enzyme or establish
+released-foldback continuity.
 
 ## Linear-source method
 

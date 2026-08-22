@@ -66,8 +66,9 @@ versioned wheel rather than a sibling checkout.
 
 ## Phase 3: basal mechanics
 
-Status: standalone mechanics, bounded arm-pair enumeration, and bounded
-enzyme-compatible geometry implemented; joint routed parity remains open.
+Status: standalone mechanics, bounded arm-pair enumeration, bounded
+enzyme-compatible geometry, and bounded basal route composition implemented;
+differential routed parity remains open.
 
 Define arm ordering, pair classes, site order, strand roles, terminal-nick
 geometry, deterministic ranking, and caller-supplied constraint profiles.
@@ -84,8 +85,12 @@ record order and deliberately omits predecessor profile-bucket, control,
 mismatch-tier, vendor, and procurement rank. Agent-compatible basal geometry
 now uses a separate signed-coordinate search with explicit retained-scar and
 post-nick domains. It contains no hidden fully-degenerate downstream rule.
-Open gate: compose precursor, release, foldback, and basal results into bounded
-route identity and routed-view parity.
+The basal route join now connects each exact candidate's left arm to the
+retained scar, rejects a retained release site, derives terminal strand roles,
+and propagates both upstream searches' truncation evidence. It returns neutral
+compatible routes rather than a preferred enzyme. Open gate: differential
+basal-route identity and routed-view parity, followed by separate composition
+with released-foldback candidates into a complete route.
 
 ## Phase 4: complete plans and bundles
 
