@@ -22,6 +22,12 @@ from hop_design.design.linear_source_method import (
 )
 from hop_design.design.loading import load_spec
 from hop_design.design.method import resolve_linear_source_hairpin_pcr_materials
+from hop_design.design.method_bundle import (
+    compile_linear_source_method_bundle,
+    load_verified_method_bundle,
+    verify_method_bundle,
+)
+from hop_design.design.method_views import build_method_trajectory_view
 from hop_design.design.payloads import (
     collect_payloads,
     expand_payload,
@@ -61,11 +67,13 @@ __all__ = [
     "build_basal_view",
     "build_foldback_junction_view",
     "build_foldback_view",
+    "build_method_trajectory_view",
     "build_released_workflow_view",
     "check",
     "classify_motif_presence",
     "collect_payloads",
     "compile",
+    "compile_linear_source_method_bundle",
     "compile_linear_source_multinick_hairpin_pcr",
     "create_spec",
     "evaluate_basal_pairing",
@@ -76,6 +84,7 @@ __all__ = [
     "load_fasta_payloads",
     "load_spec",
     "load_verified_bundle",
+    "load_verified_method_bundle",
     "plan_design_space",
     "project_released_strand_state",
     "render_workflow_svg",
@@ -85,6 +94,7 @@ __all__ = [
     "search_foldback_arms",
     "search_nicking_placements",
     "verify_bundle",
+    "verify_method_bundle",
 ]
 
 

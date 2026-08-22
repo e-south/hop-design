@@ -94,6 +94,7 @@ class WorkflowView(HopModel):
         "released_workflow",
         "basal_pairing",
         "basal_terminal_nick",
+        "method_trajectory",
     ]
     panels: tuple[ViewPanel, ...] = Field(min_length=1)
 

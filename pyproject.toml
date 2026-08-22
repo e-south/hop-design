@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hop-design"
-version = "0.1.0a4"
+version = "0.1.0a5"
 description = "A deterministic compiler for hairpin oligonucleotide processing designs"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -39,6 +39,7 @@ hop-design = "hop_design.cli:app"
 
 [dependency-groups]
 dev = [
+  "biopython>=1.85,<2",
   "hypothesis>=6.130,<7",
   "mypy>=1.17,<2",
   "pip-audit>=2.9,<3",
