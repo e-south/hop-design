@@ -27,6 +27,7 @@ last_verified: 2026-08-22
 | `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Agents, selection, annealing, projection, and materials |
 | `hop.linear-source-multinick-hairpin-pcr-plan/v1` | `LinearSourceMultinickHairpinPcrPlan` | Complete molecular-state and restriction-product derivation |
 | `hop.linear-source-multinick-hairpin-pcr-result/v1` | `LinearSourceMultinickHairpinPcrResult` | Orthogonal method outcome and optional complete plan |
+| `hop.method-bundle/v1` | `MethodBundle` | Content-addressed complete method plan and exported artifacts |
 | `hop.workflow-view/v1` | `WorkflowView` | Renderer-independent panels and tracks |
 
 Serialized documents use the JSON key `schema`. Exact IDs are dispatch
@@ -54,6 +55,11 @@ The `0.1.0a4` line replaces the generic method-material schema names with the
 linear-source names above and adds the strict method request, plan, and result.
 There is no reader for the retired generic material schema. Method
 implementation availability and request resolution remain separate fields.
+
+The `0.1.0a5` line adds `hop.method-bundle/v1` as a sibling of the design
+bundle. It does not change or reinterpret `hop.bundle/v1`. Method-bundle
+verification replays one strict request into its complete state plan and exact
+exports.
 
 `hop.load_spec(path)` accepts only `.json`, `.yaml`, and `.yml`, and only the
 two single-design authored schemas. Design spaces are composed through their

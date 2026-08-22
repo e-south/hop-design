@@ -34,6 +34,13 @@ resealed bundle whose authored intent and derived state disagree. Writes use a
 sibling temporary directory, verify it, then rename it atomically. Existing
 output paths are never replaced.
 
+`method-bundle.json` applies the same safe-path, complete-inventory, digest,
+atomic-write, and no-overwrite rules to a method request and plan. Verification
+parses both strict schemas, recompiles the request, and requires the plan,
+trajectory, FASTA, GenBank, artifact inventory, manifest digest, and bundle ID
+to match byte for byte. A checksum-valid reseal of one generated artifact is
+therefore rejected.
+
 ## Limits
 
 Every spec has an explicit positive candidate bound. The convenience route

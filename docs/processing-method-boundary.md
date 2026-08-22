@@ -107,10 +107,12 @@ one immutable annotated HOP product into a larger cassette or vector and check
 destination-specific assembly. It must not rederive HOP fragments, pairings, or
 features.
 
-The public compiler currently returns a strict method result and plan. Adding
-that plan to verified bundles, emitting deterministic method-state views, and
-writing duplex FASTA/GenBank are separate output tasks. Those exporters must
-consume the plan and cannot recompute molecular state.
+`compile_linear_source_method_bundle()` turns a complete result into a separate
+`MethodBundle`. Its trajectory JSON/SVG, duplex and restriction-product FASTA,
+GenBank, and hairpin-encoding projection are derived only from the strict plan.
+`load_verified_method_bundle()` recompiles the stored request and requires the
+plan and every exported byte to match. An infeasible result cannot be written
+as a complete bundle.
 
 ## Completion evidence
 

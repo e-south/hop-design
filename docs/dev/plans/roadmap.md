@@ -98,10 +98,13 @@ serialized drift.
 
 The compiled one-dimensional design product remains `HairpinEncodingInsert`.
 `HairpinPcrDuplex` is a separate physical method state, and
-`RestrictionDigestProduct` is its destination-neutral projection. Open work is
-to add method plans and artifacts to verified bundles, implement deterministic
-method-state views and duplex FASTA/GenBank, and prove the immutable downstream
-consumer handoff. Selective batch bundle orchestration remains separate.
+`RestrictionDigestProduct` is its destination-neutral projection. Complete
+method requests now produce a separate replay-verified `MethodBundle` with the
+strict request and plan, an eight-state trajectory, duplex and
+restriction-product FASTA, deterministic GenBank, and the exact
+hairpin-encoding projection. The design bundle remains unchanged. Open work is
+to prove the immutable downstream consumer handoff. Selective batch bundle
+orchestration remains separate.
 
 A primer or adapter is a process material, not a molecular intermediate. HOP
 owns a vendor-neutral material only when the declared generic route requires it;
