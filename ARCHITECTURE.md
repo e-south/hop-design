@@ -124,6 +124,12 @@ with the antiparallel foldback pairs; and returns replayable sequence domains
 and exact domain cardinality. It neither chooses a concrete precursor nor
 imports warning, vendor, or study rank. See
 [ADR 0016](docs/architecture/decisions/0016-discover-released-foldback-geometry-before-sequence-allocation.md).
+`search_released_foldback_precursors` is the separate exact-sequence handoff.
+It intersects one selected geometry with one complete caller-authored IUPAC
+template, treats each foldback pair as one correlated enumeration axis, and
+reports exact cardinality before bounded allocation. It does not project a
+released state or compose a basal route. See
+[ADR 0017](docs/architecture/decisions/0017-materialize-released-foldback-precursors-inside-caller-domains.md).
 Optional structure predictors and additional renderers consume plan-owned
 artifacts without changing molecular validity; see
 [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).

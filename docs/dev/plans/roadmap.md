@@ -61,8 +61,10 @@ parity now matches the predecessor's physical candidate while excluding its
 vendor and application rank. Cross-agent geometry discovery now evaluates both
 agent catalogs, both release orientations, and an exact-first nick-boundary
 window together. It returns correlated physical domains and cardinality without
-choosing a precursor. Open work is concrete candidate materialization from a
-selected geometry, differential parity, and composition with a basal route.
+choosing a precursor. The separate precursor search now intersects one selected
+geometry with a complete caller-authored IUPAC template, counts correlated pair
+domains correctly, and returns bounded content-addressed exact sequences. Open
+work is differential parity and composition with a basal route.
 
 This additive public API shipped in `v0.1.0a1`. The protected release repeated
 the Phase 7 artifact gate, and the first private comparison path installs that

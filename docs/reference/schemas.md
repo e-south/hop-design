@@ -24,6 +24,8 @@ last_verified: 2026-08-22
 | `hop.processing-catalog/v1` | `ProcessingCatalog` | Caller-supplied nicking and release agents |
 | `hop.released-foldback-geometry-request/v1` | `ReleasedFoldbackGeometryRequest` | Cross-agent foldback target and exact-first boundary window |
 | `hop.released-foldback-geometry-search-result/v1` | `ReleasedFoldbackGeometrySearchResult` | Replayable bounded physical geometry and sequence domains |
+| `hop.released-foldback-precursor-search-request/v1` | `ReleasedFoldbackPrecursorSearchRequest` | Selected geometry and caller-authorized precursor domain |
+| `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization and completion evidence |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
 | `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
 | `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Agents, selection, annealing, projection, and materials |
@@ -63,9 +65,11 @@ bundle. It does not change or reinterpret `hop.bundle/v1`. Method-bundle
 verification replays one strict request into its complete state plan and exact
 exports.
 
-The unreleased line adds strict released-foldback geometry request and result
-schemas. These schemas do not reinterpret an existing plan or bundle and do not
-select a concrete precursor sequence.
+The unreleased line adds strict released-foldback geometry and precursor-search
+schemas. Geometry discovery does not select a concrete sequence. The separate
+precursor search accepts one selected geometry, intersects it with a complete
+caller-authored IUPAC template, and allocates only inside explicit node and hit
+budgets. Neither schema reinterprets an existing plan or bundle.
 
 `hop.load_spec(path)` accepts only `.json`, `.yaml`, and `.yml`, and only the
 two single-design authored schemas. Design spaces are composed through their

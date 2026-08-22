@@ -190,6 +190,21 @@ exact before near, then displacement, boundary, agent identities, and release
 orientation. Sequence allocation, warning policy, vendor state, and application
 rank remain outside the result.
 
+`search_released_foldback_precursors(request, limits=...)` materializes exact
+sequences for one selected `ReleasedFoldbackGeometryHit`. The request's
+`precursor_template` must cover the complete required precursor and is the only
+sequence domain the caller authorizes. HOP intersects it with every resolved
+base domain and every correlated Watson-Crick pair domain before enumeration.
+
+Each pair domain is one independent axis, so its contribution to cardinality
+is the number of allowed pairs rather than the product of its two coordinate
+domains. Other coordinates remain independent. A zero intersection returns
+`infeasible` with `caller_domain_conflict`. `max_search_nodes` and `max_hits`
+are independent hard bounds. Candidates contain the exact precursor, its
+digest, selected geometry identity, content identity, and canonical physical
+rank. The operation does not project a released strand, compose a basal route,
+or choose a preferred agent.
+
 ## Compiler integration
 
 `ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit
