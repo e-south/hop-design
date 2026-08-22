@@ -120,6 +120,16 @@ budgets with independent truncation evidence. Candidate order uses extra-site
 counts, added-sequence GC fraction and homopolymer run, exact sequence, and
 content identity. It does not use vendor, catalog-tier, or application rank.
 
+`search_basal_candidates(request, limits=...)` enumerates exact four-position
+arm pairs inside two caller-authored IUPAC domains. The request records the G:T
+wobble interpretation, the complete `BasalConstraintProfile`, and whether
+reserve candidates are selectable. Every returned candidate contains the exact
+pairing, complete basal evaluation, full content identity, and one-based
+canonical rank. Excluded reserve and reject candidates are counted by their
+stable policy reason. Candidate order is compact S3/S2/S1/S0 profile, left arm,
+right arm, and content identity; profile buckets, control similarity, mismatch
+tier preference, and enzyme/vendor eligibility are not HOP rank inputs.
+
 ## Compiler integration
 
 `ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit

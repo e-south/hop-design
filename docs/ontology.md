@@ -94,6 +94,14 @@ and complete foldback evaluation. Candidate order uses molecular measurements
 only. Catalog tier, vendor, procurement, and application preference remain
 caller policy.
 
+`BasalCandidateSearchRequest` declares two four-nucleotide IUPAC arm domains,
+one G:T interpretation, one caller-owned constraint profile, and whether
+reserve results are selectable. `BasalCandidate` is an exact arm pair plus its
+complete `BasalEvaluation`; it does not imply that an enzyme route can produce
+the pair. `BasalCandidateExclusionSummary` accounts for evaluated reserve or
+reject outcomes not returned by that request. The result's canonical physical
+order is an interoperability order, not an experimental preference.
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;

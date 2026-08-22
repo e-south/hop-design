@@ -26,6 +26,7 @@ last_verified: 2026-08-22
 | `search_foldback_arms` | Valid foldback search request; positive node and hit limits | Exact-first deterministic hits and truthful `complete`, `infeasible`, or `truncated` status |
 | `BasalJunction` | Equal-length arms; one ordered pair observation per position | Pair count and literal pair bases match the antiparallel arms, including wobble or mismatch calls |
 | `evaluate_basal_pairing` | Two exact four-base arms; explicit wobble choice and caller constraint profile | Physical S3/S2/S1/S0 pair calls plus separate active, reserve, or reject decision |
+| `search_basal_candidates` | Two four-base IUPAC arm domains, explicit wobble choice, caller constraint profile, acceptance, and node/hit budgets | Exact evaluated arm pairs in canonical physical order, content identities, exclusion counts, and truthful completion status |
 | `BasalDesignRequest` | Physical arms, caller policy, acceptance, and optional terminal nick at the basal boundary | A terminal nick is validated when supplied; absence selects route-neutral component assembly |
 | `PairedStemExtensionRequest` | Equal nonzero exact-DNA arms and explicit wobble choice | Literal antiparallel pair calls and counts for optional non-payload stem context |
 | `LinearSourceHairpinPcrMaterialsSpec` | Six unique sequence materials; exact primers and adapter; explicit ligation-end preparation | Terminal primer bindings, oriented spans, required material IDs, and terminal chemistry in a strict derived plan |

@@ -66,7 +66,8 @@ versioned wheel rather than a sibling checkout.
 
 ## Phase 3: basal mechanics
 
-Status: standalone mechanics implemented; predecessor candidate/ranking parity open.
+Status: standalone mechanics and bounded arm-pair enumeration implemented;
+enzyme-compatible geometry and routed predecessor parity remain open.
 
 Define arm ordering, pair classes, site order, strand roles, terminal-nick
 geometry, deterministic ranking, and caller-supplied constraint profiles.
@@ -75,8 +76,13 @@ never built-in defaults.
 
 Available: S3/S2/S1/S0 physical pair calls, explicit G:T wobble choice,
 M/W/X interoperability profiles, caller-owned active/reserve/reject policy,
-literal nicked/surviving strands, and explicit reserve acceptance. Open gate:
-differential candidate-set, geometry, and ordering parity.
+literal nicked/surviving strands, explicit reserve acceptance, and bounded
+candidate enumeration inside caller-authored IUPAC arm domains. A sanitized
+16-pair differential fixture reproduces six predecessor active candidates,
+nine reserve outcomes, and one explicit rejection. HOP uses canonical physical
+record order and deliberately omits predecessor profile-bucket, control,
+mismatch-tier, vendor, and procurement rank. Open gate: release/nick
+agent-compatible basal geometry, route identity, and routed-view parity.
 
 ## Phase 4: complete plans and bundles
 

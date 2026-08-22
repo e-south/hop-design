@@ -56,6 +56,13 @@ truncates silently. Design-space planning likewise calculates the full payload
 by foldback by basal by release Cartesian cardinality before allocating rows and
 fails above `max_designs`.
 
+Basal candidate discovery calculates the exact left-arm by right-arm IUPAC
+cardinality before evaluation. It examines at most `max_search_nodes`, returns
+at most `max_hits`, reports reserve and reject exclusions for every examined
+non-hit, and distinguishes node truncation from result truncation. Candidate
+identity covers the exact pairing request and complete evaluation; result
+validation rejects domain, accounting, rank, and order drift.
+
 Resolved release and foldback requests cannot be evaluated as one route unless
 their adjacent sequence states are identical. Release scanners discard any
 resolved top or bottom cut beyond the supplied sequence. Search result models

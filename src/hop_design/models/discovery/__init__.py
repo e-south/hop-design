@@ -1,5 +1,13 @@
 """Strict contracts for geometry and concrete-sequence discovery."""
 
+from hop_design.models.discovery.basal_candidates import (
+    BasalCandidate,
+    BasalCandidateExclusionStatus,
+    BasalCandidateExclusionSummary,
+    BasalCandidateSearchLimits,
+    BasalCandidateSearchRequest,
+    BasalCandidateSearchResult,
+)
 from hop_design.models.discovery.candidates import (
     AdditionalNickConstraint,
     CandidateRejectionCode,
@@ -23,6 +31,12 @@ from hop_design.models.discovery.placements import (
 
 __all__ = [
     "AdditionalNickConstraint",
+    "BasalCandidate",
+    "BasalCandidateExclusionStatus",
+    "BasalCandidateExclusionSummary",
+    "BasalCandidateSearchLimits",
+    "BasalCandidateSearchRequest",
+    "BasalCandidateSearchResult",
     "CandidateRejectionCode",
     "CandidateRejectionSummary",
     "CandidateSearchStatus",

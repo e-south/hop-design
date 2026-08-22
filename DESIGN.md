@@ -42,6 +42,10 @@ last_verified: 2026-08-21
 - Catalog discovery and molecular compilation are separate operations.
   Discovery reports physical placement facts and explicit truncation; caller
   selection policy cannot silently become HOP rank.
+- Basal candidate discovery enumerates only caller-authorized IUPAC arm domains.
+  Returned order is a canonical physical record order; profile preference,
+  control distance, procurement, and agent eligibility remain separate caller
+  decisions.
 - Component assembly and processing-route compilation are separate claims.
   Supplied components may be evaluated and composed without asserting their
   discovery method, enzyme route, nicked strand, or historical lineage.
