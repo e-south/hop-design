@@ -70,3 +70,8 @@ replays the spec into the complete stored plan, artifact set, and manifest.
 replay succeeds. Caller systems may link by bundle ID, plan digest,
 hairpin-encoding digest, or neutral external reference.
 A compiled and verified bundle is not evidence that a route works experimentally.
+
+Production-method resolution uses a separate
+[method bundle](reference/method-bundle-layout.md). This preserves design
+identity when more than one physical method could produce the same
+hairpin-encoding sequence.

@@ -33,6 +33,8 @@ Start at the shallowest layer that answers the task.
 - [Schema identifiers](reference/schemas.md): strict version dispatch and
   compatibility behavior.
 - [Bundle layout](reference/bundle-layout.md): consume and verify outputs.
+- [Method bundle layout](reference/method-bundle-layout.md): inspect and verify
+  resolved molecular states and physical product exports.
 
 ## Understand the domain
 

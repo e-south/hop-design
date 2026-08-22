@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
+from hop_design.models.method import MethodKind
 from hop_design.models.references import ExternalRef, ReferenceId
 
 
@@ -23,7 +24,7 @@ class ArtifactManifestEntry(HopModel):
     @classmethod
     def require_safe_relative_path(cls, value: str) -> str:
         path = PurePosixPath(value)
-        if path.is_absolute() or ".." in path.parts or value != path.as_posix():
+        if not path.parts or path.is_absolute() or ".." in path.parts or value != path.as_posix():
             raise ValueError("Bundle artifact path must be a normalized safe relative path.")
         return value
 
@@ -53,3 +54,27 @@ class ProvenanceRecord(HopModel):
     catalog_ref: ReferenceId
     constraint_profile_ref: ReferenceId
     processing_route_ref: ReferenceId
+
+
+class MethodBundle(HopModel):
+    """Content-addressed output for one complete method request."""
+
+    schema_id: Literal["hop.method-bundle/v1"] = Field(
+        default="hop.method-bundle/v1", alias="schema"
+    )
+    bundle_id: ReferenceId
+    request_id: ReferenceId
+    method_kind: MethodKind
+    compiler_version: str = Field(min_length=1)
+    request_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    plan_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    hairpin_encoding_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    manifest_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    artifacts: tuple[ArtifactManifestEntry, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_artifact_paths(self) -> MethodBundle:
+        paths = tuple(artifact.path for artifact in self.artifacts)
+        if len(paths) != len(set(paths)):
+            raise ValueError("Method-bundle artifact paths must be unique.")
+        return self

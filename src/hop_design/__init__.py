@@ -5,11 +5,13 @@ from hop_design.api import (
     build_basal_view,
     build_foldback_junction_view,
     build_foldback_view,
+    build_method_trajectory_view,
     build_released_workflow_view,
     check,
     classify_motif_presence,
     collect_payloads,
     compile,
+    compile_linear_source_method_bundle,
     compile_linear_source_multinick_hairpin_pcr,
     create_spec,
     evaluate_basal_pairing,
@@ -20,6 +22,7 @@ from hop_design.api import (
     load_fasta_payloads,
     load_spec,
     load_verified_bundle,
+    load_verified_method_bundle,
     plan_design_space,
     project_released_strand_state,
     render_workflow_svg,
@@ -29,6 +32,7 @@ from hop_design.api import (
     search_foldback_arms,
     search_nicking_placements,
     verify_bundle,
+    verify_method_bundle,
 )
 from hop_design.design.bundle import VerifiedHopBundle
 from hop_design.design.design_space import (
@@ -36,6 +40,11 @@ from hop_design.design.design_space import (
     DuplicateDesignSequenceError,
 )
 from hop_design.design.loading import DEFAULT_SPEC_MAX_BYTES, SpecSourceLimitError
+from hop_design.design.method_bundle import (
+    MethodCompilation,
+    MethodResolutionError,
+    VerifiedMethodBundle,
+)
 from hop_design.design.payloads import (
     DEFAULT_PAYLOAD_SOURCE_LIMITS,
     DuplicatePayloadError,
@@ -51,6 +60,7 @@ from hop_design.models.basal import (
     BasalPairingRequest,
     BasalPairKind,
 )
+from hop_design.models.bundle import MethodBundle
 from hop_design.models.catalog import (
     MotifPresenceReport,
     NickingAgent,
@@ -221,9 +231,12 @@ __all__ = [
     "LinearSourceMultinickHairpinPcrRequest",
     "LinearSourceMultinickHairpinPcrResult",
     "MaterialBaseLineage",
+    "MethodBundle",
+    "MethodCompilation",
     "MethodImplementationStatus",
     "MethodKind",
     "MethodOutcome",
+    "MethodResolutionError",
     "MethodResolutionStatus",
     "MolecularStrand",
     "MotifPresenceReport",
@@ -271,16 +284,19 @@ __all__ = [
     "StrandPairObservation",
     "VariantBudgetExceededError",
     "VerifiedHopBundle",
+    "VerifiedMethodBundle",
     "WorkflowView",
     "build_basal_pairing_view",
     "build_basal_view",
     "build_foldback_junction_view",
     "build_foldback_view",
+    "build_method_trajectory_view",
     "build_released_workflow_view",
     "check",
     "classify_motif_presence",
     "collect_payloads",
     "compile",
+    "compile_linear_source_method_bundle",
     "compile_linear_source_multinick_hairpin_pcr",
     "create_spec",
     "evaluate_basal_pairing",
@@ -291,6 +307,7 @@ __all__ = [
     "load_fasta_payloads",
     "load_spec",
     "load_verified_bundle",
+    "load_verified_method_bundle",
     "plan_design_space",
     "project_released_strand_state",
     "render_workflow_svg",
@@ -300,4 +317,5 @@ __all__ = [
     "search_foldback_arms",
     "search_nicking_placements",
     "verify_bundle",
+    "verify_method_bundle",
 ]

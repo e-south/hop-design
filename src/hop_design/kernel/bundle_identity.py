@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from hop_design.models.bundle import ArtifactManifestEntry, HopBundle
+from hop_design.models.bundle import ArtifactManifestEntry, HopBundle, MethodBundle
 from hop_design.models.references import ExternalRef
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
@@ -43,3 +43,49 @@ def bundle_id(*, design_id: str, manifest_digest: str) -> str:
     """Derive the stable public bundle identifier from its manifest digest."""
     suffix = manifest_digest.removeprefix("sha256:")[:16]
     return f"hop:bundle/{design_id}/{suffix}"
+
+
+def method_manifest_seed(
+    *,
+    request_id: str,
+    method_kind: str,
+    compiler_version: str,
+    request_digest: str,
+    plan_digest: str,
+    hairpin_encoding_digest: str,
+    artifacts: Sequence[ArtifactManifestEntry],
+) -> dict[str, object]:
+    """Return the canonical identity seed for one method bundle."""
+    return {
+        "artifacts": [item.model_dump(mode="json") for item in artifacts],
+        "compiler_version": compiler_version,
+        "hairpin_encoding_digest": hairpin_encoding_digest,
+        "method_kind": method_kind,
+        "plan_digest": plan_digest,
+        "request_digest": request_digest,
+        "request_id": request_id,
+    }
+
+
+def manifest_digest_for_method_bundle(bundle: MethodBundle) -> str:
+    """Recompute the content identity of a loaded method bundle."""
+    return sha256_digest(
+        canonical_json_bytes(
+            method_manifest_seed(
+                request_id=bundle.request_id,
+                method_kind=bundle.method_kind,
+                compiler_version=bundle.compiler_version,
+                request_digest=bundle.request_digest,
+                plan_digest=bundle.plan_digest,
+                hairpin_encoding_digest=bundle.hairpin_encoding_digest,
+                artifacts=bundle.artifacts,
+            )
+        )
+    )
+
+
+def method_bundle_id(*, request_id: str, manifest_digest: str) -> str:
+    """Derive a stable method-bundle id without embedding a caller path."""
+    request_suffix = sha256_digest(request_id.encode()).removeprefix("sha256:")[:12]
+    content_suffix = manifest_digest.removeprefix("sha256:")[:16]
+    return f"hop:method-bundle/{request_suffix}/{content_suffix}"

@@ -87,6 +87,9 @@ nonempty retained tract.
 
 - `resolve_linear_source_hairpin_pcr_materials(spec) -> LinearSourceHairpinPcrMaterialsPlan`
 - `compile_linear_source_multinick_hairpin_pcr(request) -> LinearSourceMultinickHairpinPcrResult`
+- `compile_linear_source_method_bundle(request) -> MethodCompilation`
+- `load_verified_method_bundle(path) -> VerifiedMethodBundle`
+- `verify_method_bundle(path) -> MethodBundle`
 
 The material input records six sequence materials and whether ligatable 5′
 phosphates are supplied or produced by a kinase step. The resolver checks
@@ -95,7 +98,11 @@ fragment, selected strand, pair, bond, PCR boundary, and facing restriction
 product. Expected infeasibility returns a `MethodOutcome`; corrupt contracts
 raise validation errors. See the
 [linear-source material reference](linear-source-method-materials.md) and
-[method boundary](../processing-method-boundary.md).
+[method boundary](../processing-method-boundary.md). A complete request can be
+written as a replay-verified method bundle containing the plan, trajectory,
+FASTA, GenBank, and hairpin-encoding projection. Infeasible resolution raises
+`MethodResolutionError` only when the caller requests that complete artifact
+boundary; the lower-level compiler continues to return its typed outcome.
 
 ## Views
 
@@ -104,6 +111,7 @@ raise validation errors. See the
 - `build_released_workflow_view(state, foldback) -> WorkflowView`
 - `build_basal_pairing_view(evaluation) -> WorkflowView`
 - `build_basal_view(evaluation, nicked_strand=...) -> WorkflowView`
+- `build_method_trajectory_view(plan) -> WorkflowView`
 - `render_workflow_svg(view) -> bytes`
 
 The renderer consumes the typed view and performs no molecular derivation.

@@ -118,6 +118,12 @@ that method until a request contract and compiler exist.
 is `not_evaluated`, `complete`, `infeasible`, or `truncated`. These fields do
 not replace sequence identity or destination readiness.
 
+`MethodBundle` is the portable evidence for one complete method request. It
+contains the strict request and plan plus exports derived from that plan. It is
+separate from `HopBundle`: the former records production-method resolution,
+while the latter records hairpin-design compilation. They may share a
+hairpin-encoding sequence digest without sharing identity or ownership.
+
 `Diagnostic` is a stable, machine-readable explanation of expected design
 infeasibility. Invalid schemas or corrupt software configuration are exceptions,
 not diagnostics.

@@ -17,10 +17,11 @@ distribution, one public API, and no dependency on caller repositories.
 
 ## Product boundary
 
-The deterministic core ends at:
+The deterministic core has two related compilation spines:
 
 ```text
 HopSpec -> check/resolve -> HopPlan -> HopBundle
+MethodRequest -> resolve states -> MethodPlan -> MethodBundle
 ```
 
 HOP owns its ontology, minimal DNA/IUPAC kernel, junction contracts, route
@@ -52,6 +53,9 @@ models
   construction; `bundle.py` replays spec-to-bundle semantics over the
   lower-level integrity reader; `result.py` owns the write-capable compilation
   result.
+- A method bundle is separate from a design bundle. It proves how one named
+  method request resolves into molecular states and exported physical products;
+  it does not redefine design identity or claim destination readiness.
 - `api` is the small stable Python facade.
 - `cli` adapts user input to the public API and contains no derivations.
 
