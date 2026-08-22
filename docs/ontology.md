@@ -102,6 +102,15 @@ the pair. `BasalCandidateExclusionSummary` accounts for evaluated reserve or
 reject outcomes not returned by that request. The result's canonical physical
 order is an interoperability order, not an experimental preference.
 
+`BasalProcessingGeometryRequest` asks whether a selected release geometry and
+one caller-supplied nicking catalog can support an exact terminal nick around a
+four-base retained scar. Its coordinates are signed relative to the release
+top cut. `retained_scar_template` describes allowed scar bases;
+`post_nick_template` describes the caller's allowed domain after the terminal
+nick. `post_nick_domain_mode` states whether a process footprint may narrow
+that domain or must preserve it. A compatible geometry is not yet a selected
+route and does not imply that a particular left/right basal pair was chosen.
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;

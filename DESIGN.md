@@ -7,7 +7,7 @@ audience:
   - API consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # HOP Design engineering contracts
@@ -46,6 +46,9 @@ last_verified: 2026-08-21
   Returned order is a canonical physical record order; profile preference,
   control distance, procurement, and agent eligibility remain separate caller
   decisions.
+- Basal processing geometry separately intersects release, terminal-nick,
+  retained-scar, and explicit post-nick domains in signed cut-relative
+  coordinates; it does not infer a downstream degeneracy rule.
 - Component assembly and processing-route compilation are separate claims.
   Supplied components may be evaluated and composed without asserting their
   discovery method, enzyme route, nicked strand, or historical lineage.

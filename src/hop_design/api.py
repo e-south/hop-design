@@ -13,6 +13,7 @@ from hop_design.catalog.defaults import (
 )
 from hop_design.design.basal import evaluate_basal_pairing
 from hop_design.design.basal_candidates import search_basal_candidates
+from hop_design.design.basal_processing import search_basal_processing_geometries
 from hop_design.design.bundle import load_verified_bundle, verify_bundle
 from hop_design.design.candidates import search_foldback_precursors
 from hop_design.design.compile import check_spec, compile_spec
@@ -94,6 +95,7 @@ __all__ = [
     "scan_nicking_agent",
     "scan_release_agent",
     "search_basal_candidates",
+    "search_basal_processing_geometries",
     "search_foldback_arms",
     "search_foldback_precursors",
     "search_nicking_placements",

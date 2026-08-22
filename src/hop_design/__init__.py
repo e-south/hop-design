@@ -1,5 +1,4 @@
-"""Public package for HOP Design."""
-
+# Public package facade for HOP Design.
 from hop_design.api import (
     build_basal_pairing_view,
     build_basal_view,
@@ -30,6 +29,7 @@ from hop_design.api import (
     scan_nicking_agent,
     scan_release_agent,
     search_basal_candidates,
+    search_basal_processing_geometries,
     search_foldback_arms,
     search_foldback_precursors,
     search_nicking_placements,
@@ -341,6 +341,7 @@ __all__ = [
     "scan_nicking_agent",
     "scan_release_agent",
     "search_basal_candidates",
+    "search_basal_processing_geometries",
     "search_foldback_arms",
     "search_foldback_precursors",
     "search_nicking_placements",

@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # HOP Design implementation and migration roadmap
@@ -66,8 +66,8 @@ versioned wheel rather than a sibling checkout.
 
 ## Phase 3: basal mechanics
 
-Status: standalone mechanics and bounded arm-pair enumeration implemented;
-enzyme-compatible geometry and routed predecessor parity remain open.
+Status: standalone mechanics, bounded arm-pair enumeration, and bounded
+enzyme-compatible geometry implemented; joint routed parity remains open.
 
 Define arm ordering, pair classes, site order, strand roles, terminal-nick
 geometry, deterministic ranking, and caller-supplied constraint profiles.
@@ -81,8 +81,11 @@ candidate enumeration inside caller-authored IUPAC arm domains. A sanitized
 16-pair differential fixture reproduces six predecessor active candidates,
 nine reserve outcomes, and one explicit rejection. HOP uses canonical physical
 record order and deliberately omits predecessor profile-bucket, control,
-mismatch-tier, vendor, and procurement rank. Open gate: release/nick
-agent-compatible basal geometry, route identity, and routed-view parity.
+mismatch-tier, vendor, and procurement rank. Agent-compatible basal geometry
+now uses a separate signed-coordinate search with explicit retained-scar and
+post-nick domains. It contains no hidden fully-degenerate downstream rule.
+Open gate: compose precursor, release, foldback, and basal results into bounded
+route identity and routed-view parity.
 
 ## Phase 4: complete plans and bundles
 
@@ -179,8 +182,11 @@ See the [release history](https://github.com/e-south/hop-design/releases).
 
 ## Phase 8: downstream consumer and dogfood
 
-Status: released-pin differential evidence is implemented; the breaking typed
-consumer boundary is locally proven and awaits a versioned release.
+Status: the typed product and method boundaries shipped in `v0.1.0a5`; the
+released-pin Retron study, atomic Construct handoff, Folding assessment, and
+independent RT-lnRNA lineage replay are locally proven. Research Studies hosted
+checks remain blocked before execution by account payment or Actions spending
+capacity, so downstream merge and default cutover remain open.
 
 Add a shadow adapter in the application-owning repository through HOP's public
 API. Establish zero predecessor imports in the migrated path, artifact parity,

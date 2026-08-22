@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # Molecular mechanics API
@@ -129,6 +129,27 @@ canonical rank. Excluded reserve and reject candidates are counted by their
 stable policy reason. Candidate order is compact S3/S2/S1/S0 profile, left arm,
 right arm, and content identity; profile buckets, control similarity, mismatch
 tier preference, and enzyme/vendor eligibility are not HOP rank inputs.
+
+`search_basal_processing_geometries(catalog=..., request=..., limits=...)`
+answers the separate processability question. The request selects one release
+agent and orientation, the terminal-nicked strand, a four-base retained-scar
+IUPAC template, and an explicit post-nick IUPAC template. Release geometry is
+normalized to signed coordinate zero at the top cut, so recognition and
+nicking footprints may extend upstream without being forced into a concrete
+sequence span.
+
+Each examined nicking agent receives a complete feasibility row. HOP
+intersects release, nicking, retained-scar, and post-nick domains; reports the
+exact compatible scar cardinality; and returns stable blockers for process
+footprint conflicts, empty scar positions, post-nick conflict, incomplete
+post-nick coverage, or domain narrowing. `post_nick_domain_mode="compatible"`
+allows an agent to narrow the caller domain to a nonempty intersection;
+`"preserve"` rejects any narrowing. This explicit choice replaces hidden
+assumptions that bases after the terminal nick must be fully degenerate.
+
+Node and hit bounds are independent and never silent. Compatible geometries
+use agent identity and signed physical placement order. The result does not
+classify basal pairs, select a route, or apply vendor and application policy.
 
 ## Compiler integration
 
