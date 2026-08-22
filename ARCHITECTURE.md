@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # HOP Design architecture
@@ -100,9 +100,16 @@ events enter the existing compiler boundary. `search_basal_candidates`
 enumerates exact four-position arm pairs only inside caller-authored IUPAC
 domains, applies an explicit constraint profile, and orders returned candidates
 canonically by physical profile and sequence rather than desirability. It does
-not discover an enzyme route or copy application profile buckets. Optional structure predictors and
-additional renderers consume plan-owned artifacts without changing molecular
-validity; see [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).
+not discover an enzyme route or copy application profile buckets.
+`search_basal_processing_geometries` is the adjacent enzyme-compatibility
+slice. It intersects one selected release footprint, exact terminal nicking
+footprints, a caller-authored retained-scar domain, and a caller-authored
+post-nick domain in a signed cut-relative coordinate frame. It does not repeat
+basal pair policy or rank a study panel. See
+[ADR 0014](docs/architecture/decisions/0014-separate-basal-pairing-from-processing-geometry.md).
+Optional structure predictors and additional renderers consume plan-owned
+artifacts without changing molecular validity; see
+[ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).
 
 Resolved routes use an explicit molecular-state graph. A released active
 product must equal the next foldback input. Foldback and basal junctions are

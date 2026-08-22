@@ -7,13 +7,15 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # Python API
 
-Import supported operations and construction types from `hop_design`. Internal
-module paths are not a compatibility guarantee.
+Import supported operations and common construction types from `hop_design`.
+Specialized basal processing-geometry request and result models use the
+documented `hop_design.models.discovery` surface. Other internal module paths
+are not a compatibility guarantee.
 
 ## Compile and integrity
 
@@ -69,6 +71,7 @@ context between the basal junction and payload stem.
 - `search_foldback_arms(request, limits=...) -> FoldbackSearchResult`
 - `evaluate_basal_pairing(request, constraints=...) -> BasalEvaluation`
 - `search_basal_candidates(request, limits=...) -> BasalCandidateSearchResult`
+- `search_basal_processing_geometries(catalog=..., request=..., limits=...) -> BasalProcessingGeometrySearchResult`
 - `evaluate_paired_stem_extension(request) -> PairedStemExtension`
 - `project_released_strand_state(request) -> ReleaseProjectionResult`
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
@@ -100,6 +103,14 @@ Every examined non-hit is accounted for by policy status and reason. Returned
 order is canonical by physical M/W/X profile and exact arms; it is not a
 preferred biological panel. `max_search_nodes` and `max_hits` produce separate
 truncation evidence.
+
+Basal processing-geometry search is a separate operation. It normalizes a
+selected release geometry to a signed top-cut origin, evaluates exact terminal
+nick placement for each bounded catalog entry, intersects caller-authored scar
+and post-nick domains, and reports complete per-agent feasibility. The
+`compatible` post-nick mode permits an explicit nonempty narrowing;
+`preserve` requires the authored domain to remain unchanged. Request, limit,
+and result models are available from `hop_design.models.discovery`.
 
 ## Linear-source method
 

@@ -7,7 +7,7 @@ audience:
   - bundle consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-21
+last_verified: 2026-08-22
 ---
 
 # HOP Design reliability contract
@@ -62,6 +62,13 @@ at most `max_hits`, reports reserve and reject exclusions for every examined
 non-hit, and distinguishes node truncation from result truncation. Candidate
 identity covers the exact pairing request and complete evaluation; result
 validation rejects domain, accounting, rank, and order drift.
+
+Basal processing-geometry discovery evaluates at most `max_search_nodes`
+nicking agents and returns at most `max_hits`. Every examined agent has one
+feasibility row. The result validator requires full node-budget exhaustion,
+exact compatible-hit accounting, canonical agent order, content-addressed hit
+projection, and distinct node/hit truncation. Signed release/nick coordinates
+remain local geometry; concrete molecular spans remain nonnegative.
 
 Resolved release and foldback requests cannot be evaluated as one route unless
 their adjacent sequence states are identical. Release scanners discard any
