@@ -22,6 +22,7 @@ def test_public_facade_exposes_standalone_mechanics_without_internal_imports() -
     assert callable(hop.search_basal_candidates)
     assert callable(hop.search_basal_processing_geometries)
     assert callable(hop.search_basal_processing_routes)
+    assert callable(hop.search_released_foldback_geometries)
     assert callable(hop.resolve_linear_source_hairpin_pcr_materials)
     assert callable(hop.compile_linear_source_multinick_hairpin_pcr)
     assert hop.FoldbackConstraints.__module__.startswith("hop_design.")
@@ -73,3 +74,8 @@ def test_public_facade_exposes_supporting_contracts_and_integrity_operations() -
     assert issubclass(hop.VariantBudgetExceededError, ValueError)
     assert issubclass(hop.BundleIntegrityError, ValueError)
     assert issubclass(hop.InfeasibleDesignError, ValueError)
+
+
+def test_public_facade_manifest_contains_unique_resolvable_names() -> None:
+    assert len(hop.__all__) == len(set(hop.__all__))
+    assert all(hasattr(hop, name) for name in hop.__all__)

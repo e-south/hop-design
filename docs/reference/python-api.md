@@ -13,7 +13,7 @@ last_verified: 2026-08-22
 # Python API
 
 Import supported operations and common construction types from `hop_design`.
-Specialized basal processing-geometry and route-search models use the
+Specialized basal and released-foldback search models use the
 documented `hop_design.models.discovery` surface. Other internal module paths
 are not a compatibility guarantee.
 
@@ -73,6 +73,7 @@ context between the basal junction and payload stem.
 - `search_basal_candidates(request, limits=...) -> BasalCandidateSearchResult`
 - `search_basal_processing_geometries(catalog=..., request=..., limits=...) -> BasalProcessingGeometrySearchResult`
 - `search_basal_processing_routes(basal_candidates=..., processing_geometries=..., limits=...) -> BasalProcessingRouteSearchResult`
+- `search_released_foldback_geometries(catalog=..., request=..., limits=...) -> ReleasedFoldbackGeometrySearchResult`
 - `evaluate_paired_stem_extension(request) -> PairedStemExtension`
 - `project_released_strand_state(request) -> ReleaseProjectionResult`
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
@@ -120,6 +121,15 @@ strand. It returns all compatible joins within the caller budgets in neutral
 upstream order. Upstream incompleteness and local node or hit truncation remain
 distinct; this operation does not select an enzyme or establish
 released-foldback continuity.
+
+Released-foldback geometry search evaluates the bounded cross-product of
+nicking agents, release agents, release orientations, and exact-first nick
+boundaries. Each examined row records process footprints, strand-specific cuts,
+foldback pair domains, minimum precursor extent, and exact compatible-sequence
+cardinality. Downstream-site placement and complete two-strand separation are
+independent request constraints. The search does not choose one sequence or
+apply catalog warnings, vendor status, or application rank. Node and returned-
+hit truncation are independent.
 
 ## Linear-source method
 

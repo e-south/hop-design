@@ -166,6 +166,30 @@ returned cross-product. Route order follows the upstream physical ranks and
 content identity. The operation neither chooses a preferred agent nor proves
 continuity with a released foldback state.
 
+`search_released_foldback_geometries(catalog=..., request=..., limits=...)`
+evaluates the joint released-foldback geometry before any concrete sequence is
+chosen. The request declares the target nick boundary, paired-tract and turn
+lengths, exposed-strand route, allowed boundary displacement, and whether the
+release recognition site must stay downstream of the nick. A separate
+`require_complete_downstream_separation` field requires the partner-strand cut
+to clear the active foldback product; recognition-site position alone does not
+establish complete separation.
+
+The candidate space is the exact-first nonnegative boundary window crossed with
+every caller nicking agent, release agent, and release orientation. Each row
+records both oriented recognition footprints, literal nick and duplex cuts,
+the active-product span and active-oriented nick boundary, minimum precursor
+length, per-base domains, correlated Watson-Crick pair domains, and exact
+compatible-sequence cardinality. Empty process or foldback-pair intersections
+are explicit blockers.
+
+The search calculates the full candidate-space cardinality arithmetically and
+does not consume nodes beyond `max_search_nodes`. `max_hits` independently
+bounds compatible results. Content identity and order use only physical inputs:
+exact before near, then displacement, boundary, agent identities, and release
+orientation. Sequence allocation, warning policy, vendor state, and application
+rank remain outside the result.
+
 ## Compiler integration
 
 `ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit

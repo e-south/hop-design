@@ -119,6 +119,14 @@ derives its terminal nick and surviving strand from the processing geometry.
 It is a basal processing route, not a released-foldback route and not a caller
 preference.
 
+`ReleasedFoldbackGeometryRequest` asks whether a caller-supplied nicking agent,
+release agent, release orientation, and exact or nearby nick boundary can share
+one precursor while supporting the declared exposed strand, paired tract, and
+turn. `ReleasedFoldbackGeometryHit` records both process footprints, literal
+cuts, the active-product extent, correlated Watson-Crick pairing domains, and
+the exact number of compatible precursor sequences. It is a geometry result,
+not a selected sequence, released state, basal route, or caller preference.
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;

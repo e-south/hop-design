@@ -31,8 +31,9 @@ expansion, invalid alphabets, corrupt bundles, and unsafe paths.
 
 ## Phase 2: foldback mechanics
 
-Status: standalone mechanics and bounded nicking-placement discovery implemented;
-predecessor differential parity remains open.
+Status: standalone mechanics, bounded placement and precursor discovery, and
+bounded cross-agent released-foldback geometry implemented; predecessor
+differential parity remains open.
 
 Define precursor, nick, release/exposure, retained tract, turn, foldback arm,
 pair map, bounded search, and stable rejection codes. Port behavior against
@@ -57,8 +58,11 @@ caller-authored IUPAC domains, derives the returning arm, reports additional
 nick sites, and distinguishes template conflict, candidate rejection, node
 truncation, and returned-hit truncation. Sanitized sequence and neutral-order
 parity now matches the predecessor's physical candidate while excluding its
-vendor and application rank. Open work is released-route cross-product
-discovery and its differential parity evidence.
+vendor and application rank. Cross-agent geometry discovery now evaluates both
+agent catalogs, both release orientations, and an exact-first nick-boundary
+window together. It returns correlated physical domains and cardinality without
+choosing a precursor. Open work is concrete candidate materialization from a
+selected geometry, differential parity, and composition with a basal route.
 
 This additive public API shipped in `v0.1.0a1`. The protected release repeated
 the Phase 7 artifact gate, and the first private comparison path installs that

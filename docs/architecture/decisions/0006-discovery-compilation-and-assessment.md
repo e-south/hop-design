@@ -75,8 +75,9 @@ accepts `hop.processing-catalog/v1`; it adds no built-in experimental catalog.
 New nicking or release agents can be supplied without changing HOP. Geometry
 and sequence discovery remain reusable and testable without a workspace or
 private study. Basal candidate enumeration is reusable without carrying a
-scar-nick workspace or study profile. Full released-route discovery,
-enzyme-compatible basal geometry, and cross-agent selection require separate
-contracts and parity evidence. A general plugin registry remains
+scar-nick workspace or study profile. Basal processing and released-foldback
+geometry now have separate bounded contracts. Concrete sequence materialization,
+complete-route composition, and predecessor differential equality remain
+separate evidence gates. A general plugin registry remains
 deferred until two independent artifact integrations establish a stable
 protocol.
