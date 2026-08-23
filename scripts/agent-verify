@@ -11,6 +11,7 @@ uv run --locked ruff format --check .
 uv run --locked mypy src
 uv run --locked python -m compileall -q src/hop_design
 uv run --locked pytest --cov=hop_design --cov-report=term-missing -q
+uv run --locked python scripts/docs-smoke
 mkdir -p .artifacts
 uv export --locked --no-dev --no-emit-project \
   --format requirements-txt \

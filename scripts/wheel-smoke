@@ -36,6 +36,15 @@ if [[ ${#sdists[@]} -ne 1 ]]; then
 fi
 wheel_path="${wheels[0]}"
 sdist_path="${sdists[0]}"
+sdist_extract_root="$smoke_root/sdist"
+mkdir -p "$sdist_extract_root"
+tar -xzf "$sdist_path" -C "$sdist_extract_root"
+sdist_roots=("$sdist_extract_root"/*)
+if [[ ${#sdist_roots[@]} -ne 1 || ! -d "${sdist_roots[0]}" ]]; then
+  echo "expected source distribution to contain one root directory" >&2
+  exit 1
+fi
+sdist_root="${sdist_roots[0]}"
 
 uv run --locked twine check "$wheel_path" "$sdist_path"
 sdist_contents="$(tar -tzf "$sdist_path")"
@@ -54,9 +63,14 @@ for required in \
   'DESIGN.md' \
   'RELIABILITY.md' \
   'assets/hop-design-banner.svg' \
-  'docs/README.md' \
+  'docs/index.md' \
+  'examples/author_linear_source_method.py' \
+  'examples/compile_linear_source_method.py' \
+  'examples/discover_basal_candidates.py' \
   'examples/generic-symbolic.yaml' \
-  'examples/linear-source-method.json'; do
+  'examples/linear-source-matched-design.yaml' \
+  'examples/linear-source-method.json' \
+  'examples/verify_design_method_handoff.py'; do
   if ! grep -Fq "/$required" <<<"$sdist_contents"; then
     echo "sdist omits README-routed content: $required" >&2
     exit 1
@@ -66,6 +80,7 @@ done
 uv venv --python 3.12 "$smoke_root/venv"
 uv pip install --python "$smoke_root/venv/bin/python" "$wheel_path"
 uv pip check --python "$smoke_root/venv/bin/python"
+"$smoke_root/venv/bin/python" scripts/docs-smoke --content-root "$sdist_root"
 
 source_digest="$(uv run --locked python -c 'import hop_design as hop; print(hop.compile(sequence="NRY", design_id="wheel-parity").bundle.manifest_digest)')"
 wheel_digest="$("$smoke_root/venv/bin/python" -c 'import hop_design as hop; print(hop.compile(sequence="NRY", design_id="wheel-parity").bundle.manifest_digest)')"
@@ -73,6 +88,48 @@ if [[ "$source_digest" != "$wheel_digest" ]]; then
   echo "source/wheel bundle digest mismatch" >&2
   echo "source: $source_digest" >&2
   echo "wheel:  $wheel_digest" >&2
+  exit 1
+fi
+
+source_facades="$(uv run --locked python - <<'PY'
+import json
+import hop_design as hop
+import hop_design.discovery as discovery
+import hop_design.methods as methods
+import hop_design.views as views
+
+print(json.dumps({
+    "root": hop.__all__,
+    "discovery": discovery.__all__,
+    "methods": methods.__all__,
+    "views": views.__all__,
+}, sort_keys=True))
+PY
+)"
+wheel_facades="$("$smoke_root/venv/bin/python" - <<'PY'
+import json
+import hop_design as hop
+import hop_design.discovery as discovery
+import hop_design.methods as methods
+import hop_design.views as views
+
+print(json.dumps({
+    "root": hop.__all__,
+    "discovery": discovery.__all__,
+    "methods": methods.__all__,
+    "views": views.__all__,
+}, sort_keys=True))
+PY
+)"
+if [[ "$source_facades" != "$wheel_facades" ]]; then
+  echo "source/wheel public facade mismatch" >&2
+  exit 1
+fi
+
+source_discovery="$(uv run --locked python examples/discover_basal_candidates.py)"
+wheel_discovery="$("$smoke_root/venv/bin/python" examples/discover_basal_candidates.py)"
+if [[ "$source_discovery" != "$wheel_discovery" ]]; then
+  echo "source/wheel discovery mismatch" >&2
   exit 1
 fi
 
