@@ -7,10 +7,30 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-23
 ---
 
 # HOP Design ontology
+
+The hierarchy is:
+
+```text
+DesignSpec  -> HopPlan       -> HairpinEncodingInsert
+MethodRequest -> method states -> RestrictionDigestProduct
+bound method handoff:
+  HairpinEncodingInsert.sequence_digest
+    == RestrictionDigestProduct.hairpin_encoding_projection.sequence_digest
+RestrictionDigestProduct + caller destination -> AssemblyFragment
+```
+
+Discovery proposes compatible geometry. Caller policy selects among candidates.
+Views and files project derived state; they do not become a second authority.
+The cross-bundle equality is a checked handoff, not an invariant of every
+independently compiled pair. It holds when the method request supplies
+`expected_hairpin_encoding`, or when the consumer performs the same exact
+digest comparison before associating the products.
+
+## Design inputs and hairpin structure
 
 `Payload` is the input sequence to be paired. `ExactPayload` uses only
 `A/C/G/T`; `DegeneratePayload` retains DNA IUPAC symbols. Its paired payload arm
@@ -49,6 +69,8 @@ evaluation and composition, not how a component was discovered or inherited.
 Historical lineage and application interpretation stay in the caller and can
 be linked through neutral external references.
 
+## Compiled design and physical products
+
 `HairpinEncodingInsert` is the compiler-owned one-dimensional sequence that
 encodes a hairpin core. It contains an exact sequence digest and nested
 features that partition the sequence. It does not describe strandedness,
@@ -69,9 +91,13 @@ assembly.
 orientation required by an assembly plan. It belongs to the caller and its
 generic composition service, not to HOP.
 
+## Physical evaluation and caller policy
+
 `BasalConstraintProfile` is explicit caller policy applied after physical pair
 classification. Its active, reserve, and reject decisions are not molecular
 pair kinds. Application thresholds remain with their owners.
+
+## Catalogs and bounded discovery
 
 `ProcessingCatalog` is a strict caller-supplied set of nicking and release
 agents. HOP can resolve concrete site geometry or classify symbolic motif
@@ -82,7 +108,8 @@ application-specific processing catalog.
 paired tract and available turn that may contain a recognition site.
 `search_nicking_placements` compares that target with caller-supplied nicking
 agents and reports exact or nearest geometry. A placement is a physical search
-result, not an application selection or an orderable oligo.
+result for sequence and cut coordinates, not evidence of empirical cleavage,
+an application selection, or an orderable oligo.
 
 `FoldbackPrecursorSearchRequest` materializes one selected nicking placement
 inside caller-authored IUPAC sequence domains. `precursor_template` and
@@ -145,6 +172,8 @@ exact precursor is checked against the embedded geometry even after the route
 is extracted from its search result. A routed workflow view derives from this
 object and cannot substitute an independent foldback evaluation.
 
+## Molecular states, materials, and views
+
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
 lineage after one explicit release event. Molecular sequences are stored 5′→3′;
@@ -163,6 +192,8 @@ intermediate states.
 method-neutral primitives. They preserve literal sequences, 5′→3′ orientation,
 terminal chemistry, per-base lineage, physical pair calls, and ligation joins.
 The public API does not accept an arbitrary caller-authored event graph.
+
+## Named methods and portable evidence
 
 `linear-source-multinick-size-selection-hairpin-pcr@1` names the implemented
 method that resolves a source-PCR duplex, every nick site, denatured fragments,
@@ -183,7 +214,11 @@ not replace sequence identity or destination readiness.
 contains the strict request and plan plus exports derived from that plan. It is
 separate from `HopBundle`: the former records production-method resolution,
 while the latter records hairpin-design compilation. They may share a
-hairpin-encoding sequence digest without sharing identity or ownership.
+hairpin-encoding sequence digest without sharing identity or ownership. A
+consumer must not infer that relationship from two otherwise valid bundles;
+the method request or handoff must establish exact digest equality.
+
+## Diagnostics
 
 `Diagnostic` is a stable, machine-readable explanation of expected design
 infeasibility. Invalid schemas or corrupt software configuration are exceptions,

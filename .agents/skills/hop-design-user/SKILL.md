@@ -1,8 +1,8 @@
 ---
 name: hop-design-user
-description: Use HOP Design to load/expand payloads, plan bounded spaces, evaluate mechanics, compile specs, render views, and verify bundles. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
+description: Use HOP Design to load or expand payloads, run bounded discovery, compile design or named-method bundles, render typed views, and verify handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
 metadata:
-  version: 0.2.0
+  version: 0.3.0
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation]
 ---
@@ -29,12 +29,12 @@ or reference document for the requested operation, and `RELIABILITY.md` or
 
 ## Workflow
 
-1. Identify the requested operation: explain, load payloads, expand variants,
-   plan a bounded design space, evaluate mechanics, create/check a spec,
-   compile, render, write, inspect, or verify.
-2. Confirm the input is an exact or DNA-IUPAC sequence. Do not reinterpret RNA,
-   punctuation, an empty value, or a malformed file as DNA.
-3. For the common path, use the public facade:
+1. Identify the requested product: a design bundle, bounded discovery result,
+   named-method result or bundle, typed view, or verified consumer handoff.
+2. Read the matching concept and reference document. Confirm whether the input
+   may be DNA IUPAC or must be exact DNA; do not reinterpret RNA, punctuation,
+   an empty value, or a malformed file as DNA.
+3. For a design bundle, use the public facade:
 
    ```python
    import hop_design as hop
@@ -42,28 +42,47 @@ or reference document for the requested operation, and `RELIABILITY.md` or
    compilation = hop.compile(sequence="NRY", design_id="example")
    ```
 
-4. For a reproducible path, create or load a strict `HopSpec` or
+4. For a reproducible design path, create or load a strict `HopSpec` or
    `ResolvedHopSpec`, call `hop.check(spec)`, and stop on errors before
    compilation. Use explicit mechanics requests and caller-owned policy; do not
    invent private catalog entries.
-5. Before writing, state that the built-in route is the visible
-   `generic-direct-synthesis@1` software demonstration and that the target path
-   must not exist.
-6. Verify a written bundle before interpreting its files:
+5. For discovery, create the smallest strict request and hard bounds that answer
+   the question. Report candidate-space size, completion or truncation, the
+   canonical ordinal, and caller-owned selection separately.
+6. For the implemented physical method, require exact molecular inputs and use
+   `hop.compile_linear_source_multinick_hairpin_pcr(request)`. Use
+   `hop.compile_linear_source_method_bundle(request)` only after the result is
+   complete. State the method ID; do not describe it as
+   `generic-direct-synthesis@1`.
+7. Before any write, state which bundle type will be created and confirm that
+   the target path does not exist. Verify the matching bundle before
+   interpreting its files:
 
    ```python
    import hop_design as hop
 
-   bundle = hop.verify_bundle("build/example")
+   bundle_manifest = hop.verify_bundle("build/example")
+   verified_design = hop.load_verified_bundle("build/example")
    ```
 
-7. Report the normalized payload kind, plan ID, bundle ID, output path or dry-run
-   state, and any diagnostics. Keep scientific claims within the plan.
+   For a `MethodBundle`, use `hop.verify_method_bundle(path)` to verify its
+   manifest and `hop.load_verified_method_bundle(path)` to load the verified
+   request, plan, and product.
+8. For integration, branch on product type. From a `HopBundle`, pass the
+   `load_verified_bundle()` result's hairpin encoding, digest, and nested
+   features. From a `MethodBundle`, pass the
+   `load_verified_method_bundle()` result's physical product, request, plan,
+   cut geometry, and hairpin-encoding projection and digest. Do not invent
+   nested features on a restriction product, let a consumer rederive HOP
+   geometry, or call a destination-neutral product assembly-ready.
+9. Report the input kind, operation or method ID, plan and bundle IDs when
+   applicable, output path or dry-run state, and diagnostics. Keep scientific
+   claims within the resolved contract.
 
 ## Required Deliverables
 
-- Operation and input kind.
-- Plan and bundle identifiers when compilation succeeds.
+- Operation, product type, and input kind.
+- Method, plan, and bundle identifiers when applicable.
 - Output path and bundle verification status when files are written.
 - Diagnostics, invalid-state errors, and scientific limitations.
 
@@ -81,6 +100,10 @@ or reference document for the requested operation, and `RELIABILITY.md` or
 - Keep physical foldback/basal/release derivation separate from caller
   eligibility and application policy. A reserve basal profile compiles only
   with explicit reserve acceptance.
+- Treat candidate rank as reproducible ordering, not a biological or
+  procurement recommendation unless a named objective explicitly says so.
+- Treat recognition-site placement as sequence-and-cut geometry, not evidence
+  of empirical cleavage efficiency.
 - Treat typed view JSON as the scientific view contract. Renderers cannot
   recompute molecular state.
 - Do not describe the generic route as a wet-lab protocol or infer application

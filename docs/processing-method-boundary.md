@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-23
 ---
 
 # Hairpin-processing method boundary
@@ -52,6 +52,11 @@ creates `RestrictionDigestProduct`, which records two strand products and an
 oriented `HairpinEncodingInsert` sequence projection. Restriction digestion does
 not create the duplex.
 
+The method compiler requires exact molecular inputs. Symbolic design
+compilation does not establish that every sequence in a degenerate pool follows
+this trajectory. A future pool assessment needs explicit universal and
+existential outcomes without materializing the entire pool.
+
 ## Capability facets
 
 | Concern | HOP contract | Boundary |
@@ -69,7 +74,8 @@ slot, orientation, compatible ends, and assembly policy.
 
 ## Materials and events
 
-The six HOP-owned sequence materials are:
+The request declares six sequence materials governed by HOP's material
+contract:
 
 1. source oligo;
 2. source-PCR forward primer;
@@ -78,9 +84,9 @@ The six HOP-owned sequence materials are:
 5. hairpin-PCR forward primer; and
 6. hairpin-PCR reverse primer.
 
-HOP validates terminal bindings and required 5′ phosphates or an explicit
-kinase preparation. Vector primers remain outside this handoff because they
-depend on a destination construct.
+HOP validates the supplied sequences, terminal bindings, and required 5′
+phosphates or an explicit kinase preparation. Vector primers remain outside
+this handoff because they depend on a destination construct.
 
 `MolecularStrand`, `Fragment`, `StrandPairObservation`, and `CovalentBond`
 provide the shared state vocabulary. The compiler, not the caller, constructs
@@ -101,11 +107,11 @@ its own inputs, states, continuity checks, and tests.
 
 ## Consumer handoff
 
-Research Studies owns Retron identity, historical lineage, biological meaning,
-protocol conditions, selection, and experimental evidence. Construct may place
-one immutable annotated HOP product into a larger cassette or vector and check
-destination-specific assembly. It must not rederive HOP fragments, pairings, or
-features.
+An application owner retains historical lineage, biological meaning, protocol
+conditions, selection, and experimental evidence. A generic composition
+service may place one immutable annotated HOP product into a larger cassette or
+vector and check destination-specific assembly. It must not rederive HOP
+fragments, pairings, or features. See [processing and assembly](concepts/processing-and-assembly.md).
 
 `compile_linear_source_method_bundle()` turns a complete result into a separate
 `MethodBundle`. Its trajectory JSON/SVG, duplex and restriction-product FASTA,

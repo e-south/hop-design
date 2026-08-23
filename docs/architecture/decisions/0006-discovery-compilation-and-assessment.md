@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-22
+last_verified: 2026-08-23
 ---
 
 # ADR 0006: Discovery, compilation, and assessment boundaries
@@ -60,9 +60,12 @@ control distance, mismatch-tier preference, vendor data, and procurement state
 remain caller policy rather than HOP ranking inputs.
 
 Route-required primers and adapters are vendor-neutral process materials, not
-molecular states. HOP will emit them only when a generic route supplies an exact
-derivation. Procurement fields, application flanks, and experimental acceptance
-remain downstream.
+molecular states. This decision originally anticipated emitting them only after
+generic derivation. [ADR 0010](0010-linear-source-method-materials.md) amended
+that expectation for the implemented linear-source method: its request declares
+six materials, and HOP validates their sequences, modifications, and bindings.
+Procurement fields, application flanks, and experimental acceptance remain
+downstream.
 
 ## Compatibility
 

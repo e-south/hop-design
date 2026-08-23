@@ -6,14 +6,27 @@
 
 HOP Design compiles DNA sequences and explicit hairpin-processing mechanics
 into checked molecular plans and portable files. Exact and DNA IUPAC sequences
-use the same API. Paired arms are always derived.
+use the same API. The paired payload is always derived.
 
-HOP is alpha software. Its compiled molecular states do not substitute for a
-laboratory protocol, measured yield, or an application-specific acceptance
-profile. Package metadata blocks PyPI upload until a separate release decision
-is recorded.
+HOP is alpha software. Its molecular states do not substitute for a laboratory
+protocol, measured yield, or an application-specific acceptance profile. HOP
+is not published on PyPI.
 
-## Install for development
+## Install
+
+Install a versioned wheel from
+[GitHub Releases](https://github.com/e-south/hop-design/releases), then verify
+the published SHA-256 checksum:
+
+```bash
+grep 'hop_design-0.1.0a6-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
+uv venv --python 3.12
+source .venv/bin/activate
+uv pip install ./hop_design-0.1.0a6-py3-none-any.whl
+hop-design --help
+```
+
+For development:
 
 ```bash
 git clone https://github.com/e-south/hop-design.git
@@ -21,12 +34,10 @@ cd hop-design
 uv sync --locked
 ```
 
-No PyPI distribution is published. Versioned wheels, source distributions,
-and checksums are available from
-[GitHub Releases](https://github.com/e-south/hop-design/releases); source
-installation remains supported for development.
+## Compile a design
 
-## Five-minute path
+From a contributor checkout, use `uv run` as shown below. In an environment
+with the released wheel installed, omit `uv run`.
 
 ```bash
 uv run hop-design compile \
@@ -51,30 +62,29 @@ HOP preserves ambiguity symbols. It never silently expands, truncates, or
 selects a concrete variant. Explicit expansion and typed design spaces require
 cardinality budgets before allocation.
 
-## What HOP owns
+## Choose a path
 
-- strict `Spec -> Plan -> Bundle` compilation;
-- exact and symbolic payload ingestion and bounded variant generation;
-- foldback, basal-junction, nick, release, and strand-state contracts;
-- optional non-payload paired stem context and linear-source method oligo bindings;
-- a digest-bearing `HairpinEncodingInsert` with deterministic JSON, FASTA,
-  typed view, SVG, and provenance artifacts;
-- a replayable linear-source multi-nick method plan with a typed hairpin-PCR
-  duplex, destination-neutral restriction product, and deterministic method
-  bundle exports;
-- verified persisted-bundle loading for downstream consumers.
+| Task | Start here |
+| --- | --- |
+| Install, compile, and verify a design | [Quickstart](docs/guides/quickstart.md) |
+| Understand payload, foldback, and basal components | [Hairpin concepts](docs/concepts/README.md) |
+| Understand bounded junction discovery | [Discovery and selection](docs/concepts/discovery-and-selection.md) |
+| Understand the supported physical method | [Processing and assembly](docs/concepts/processing-and-assembly.md) |
+| Inspect persisted artifacts | [Design bundle](docs/reference/bundle-layout.md) or [method bundle](docs/reference/method-bundle-layout.md) |
+| Navigate every public document | [Documentation map](docs/README.md) |
 
-HOP does not own workspaces, runs, observations, evidence stores, private
-application profiles, destination-specific assembly, or laboratory execution.
-Its restriction product is not called cloning-ready. Destination, orientation,
-compatible ends, and assembly policy remain caller-owned.
+The CLI provides the common compile path. Discovery, method resolution, and
+typed integration use the Python API.
 
-## Documentation and support
+## Boundary
 
-Start with the [documentation map](docs/README.md). The
-[processing method boundary](docs/processing-method-boundary.md) explains the
-concrete source-to-insert scope without turning HOP into a laboratory protocol.
-The [architecture](ARCHITECTURE.md), [design contracts](DESIGN.md), and
+HOP owns generic hairpin geometry, deterministic molecular derivation, and
+portable evidence for the products it creates. It does not own workspaces,
+runs, observations, application profiles, destination-specific assembly, or
+laboratory execution. A restriction product is destination-neutral, not
+automatically ready for cloning.
+
+The [architecture](ARCHITECTURE.md), [engineering contracts](DESIGN.md), and
 [reliability guarantees](RELIABILITY.md) define maintainer-facing boundaries.
 
 Use [GitHub Issues](https://github.com/e-south/hop-design/issues) for bugs and

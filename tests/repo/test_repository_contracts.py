@@ -34,6 +34,27 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert len(readme.splitlines()) <= 140
 
 
+def test_public_docs_route_component_discovery_and_processing_concepts() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    docs_index = (REPO_ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+    concept_root = REPO_ROOT / "docs" / "concepts"
+
+    expected_concepts = {
+        "README.md",
+        "hairpin-components.md",
+        "discovery-and-selection.md",
+        "processing-and-assembly.md",
+    }
+    assert expected_concepts <= {path.name for path in concept_root.glob("*.md")}
+    assert "docs/concepts/README.md" in readme
+    for filename in expected_concepts - {"README.md"}:
+        assert f"concepts/{filename}" in docs_index
+
+    mechanics = (REPO_ROOT / "docs" / "reference" / "mechanics-api.md").read_text(encoding="utf-8")
+    assert "sequence-and-cut compatible" in mechanics
+    assert "empirical cleavage efficiency" in mechanics
+
+
 def test_banner_uses_literal_name_and_method_stages() -> None:
     banner = (REPO_ROOT / "assets" / "hop-design-banner.svg").read_text(encoding="utf-8")
 
@@ -210,10 +231,18 @@ def test_public_example_is_a_real_strict_spec() -> None:
 def test_readme_and_quickstart_use_real_inputs_and_distinct_outputs() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
+    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
+        version = tomllib.load(handle)["project"]["version"]
+    wheel_name = f"hop_design-{version}-py3-none-any.whl"
 
     assert 'compilation.write("build/demo-python")' in readme
     assert "--spec examples/generic-symbolic.yaml" in quickstart
     assert 'compilation.write("build/symbolic-python")' in quickstart
+    assert wheel_name in readme
+    assert wheel_name in quickstart
+    checksum_command = f"grep '{wheel_name}$' SHA256SUMS | shasum -a 256 -c -"
+    assert checksum_command in readme
+    assert checksum_command in quickstart
 
 
 def test_governance_and_release_routes_exist() -> None:

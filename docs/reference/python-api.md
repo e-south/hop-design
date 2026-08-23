@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-23
 ---
 
 # Python API
@@ -75,6 +75,7 @@ context between the basal junction and payload stem.
 - `search_basal_processing_routes(basal_candidates=..., processing_geometries=..., limits=...) -> BasalProcessingRouteSearchResult`
 - `search_released_foldback_geometries(catalog=..., request=..., limits=...) -> ReleasedFoldbackGeometrySearchResult`
 - `search_released_foldback_precursors(request, limits=...) -> ReleasedFoldbackPrecursorSearchResult`
+- `search_hairpin_junction_routes(released_precursors=..., basal_routes=..., limits=...) -> HairpinJunctionRouteSearchResult`
 - `evaluate_paired_stem_extension(request) -> PairedStemExtension`
 - `project_released_strand_state(request) -> ReleaseProjectionResult`
 - `classify_motif_presence(sequence=..., motif=...) -> MotifPresenceReport`
@@ -179,14 +180,16 @@ boundary; the lower-level compiler continues to return its typed outcome.
 - `build_foldback_view(evaluation) -> WorkflowView`
 - `build_foldback_junction_view(evaluation) -> WorkflowView`
 - `build_released_workflow_view(state, foldback) -> WorkflowView`
-- `build_hairpin_junction_route_view(route) -> WorkflowView`
-- `build_released_foldback_precursor_view(geometry=..., precursor=..., state=...) -> WorkflowView`
 - `build_basal_pairing_view(evaluation) -> WorkflowView`
 - `build_basal_view(evaluation, nicked_strand=...) -> WorkflowView`
 - `build_method_trajectory_view(plan) -> WorkflowView`
 - `render_workflow_svg(view) -> bytes`
 
 The renderer consumes the typed view and performs no molecular derivation.
+The specialized `hop_design.design.route_views` surface provides
+`build_hairpin_junction_route_view(...)` and
+`build_released_foldback_precursor_view(...)`; they are not package-root
+exports.
 
 Stable supporting types exported at package root include common payload/spec,
 coordinate, junction, processing-agent, method, view, and error contracts.

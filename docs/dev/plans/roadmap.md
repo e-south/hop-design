@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-23
 ---
 
 # HOP Design implementation and migration roadmap
@@ -138,6 +138,10 @@ destination-neutral facing restriction product for caller-supplied
 sequences and agents. Its strict request, result, and plan reject cross-state
 serialized drift.
 
+The method compiler resolves exact molecules. A bounded symbolic pool
+assessment remains open; design-level IUPAC support is not evidence that every
+member of a degenerate pool follows one exact physical trajectory.
+
 The compiled one-dimensional design product remains `HairpinEncodingInsert`.
 `HairpinPcrDuplex` is a separate physical method state, and
 `RestrictionDigestProduct` is its destination-neutral projection. Complete
@@ -213,11 +217,10 @@ See the [release history](https://github.com/e-south/hop-design/releases).
 ## Phase 8: downstream consumer and dogfood
 
 Status: the typed product and method boundaries shipped by `v0.1.0a5`; the
-`v0.1.0a6` released pin, Retron study, atomic Construct handoff, Folding
-assessment, and independent RT-lnRNA lineage replay are locally proven.
-Research Studies hosted checks remain blocked before execution by account
-payment or Actions spending capacity, so downstream merge and default cutover
-remain open.
+`v0.1.0a6` released pin, one application consumer, atomic composition handoff,
+advisory structure assessment, and a second lineage replay are locally proven.
+Required hosted checks for the downstream change have not executed, so merge
+and default adoption remain open.
 
 Add a shadow adapter in the application-owning repository through HOP's public
 API. Establish zero predecessor imports in the migrated path, artifact parity,
@@ -232,30 +235,40 @@ is useful for an ephemeral local probe but is not an accepted adapter or CI
 dependency. PyPI is optional; a pinned GitHub release artifact satisfies this
 gate.
 
-Historical crossover records may use `component_assembly` with caller-owned
+Historical or inherited records may use `component_assembly` with caller-owned
 lineage references. Absence of a selected process route does not make their
 molecular composition infeasible. Route parity is required only where the
-study asserts a route.
+application asserts a route.
 
 The verified `HairpinEncodingInsert`, rather than a caller's legacy domain
-compiler, authors the hairpin-specific segment order and spans. A study may add
-its context around that object. A generic composition, folding, or rendering
-service may consume the resulting object without rederiving HOP features. HOP
+compiler, authors the hairpin-specific segment order and spans. An application
+may add its context around that object. A generic composition, assessment, or
+rendering service may consume the result without rederiving HOP features. HOP
 supersedes the hairpin-specific authoring layer, not reusable larger-placement
 or assessment services.
 
 ## Phase 9: cutover and deduplication
 
-Status: not started.
+Status: upstream predecessor removal implemented; the downstream protected-main
+cutover remains open and the cross-repository state is not yet coherent.
 
-Switch consumers through a reversible default, execute the declared
-representative cases, then remove only superseded HOP-owned predecessor code.
-Do not retain a permanent compatibility shim or run-directory reader. Workspace
-routing changes only after the new ownership and downstream paths are real. The
-caller-owned cutover record must name the responsible maintainer, compared
-versions and outputs, zero-unexplained-mismatch rule, rollback trigger,
-rollback mechanism, consumer-import audit, and evidence used to close the gate.
-Elapsed time is not evidence and is not a closure requirement.
+Parity-closed HOP-owned predecessor producers have been removed from their
+protected upstream main branch. That does not close the ecosystem migration:
+the pending downstream consumer must still pass its required hosted checks,
+adopt the released HOP artifact by default, and close the final import audit.
+The intended cutover-before-removal order was not preserved across protected
+branches. Do not hide that mismatch with a compatibility shim; close it by
+validating and merging the prepared downstream cutover.
+
+For every remaining or future predecessor surface, switch consumers through a
+reversible default, execute the declared representative cases, then remove only
+superseded HOP-owned code. Do not retain a permanent compatibility shim or
+run-directory reader. Workspace routing changes only after the new ownership
+and downstream paths are real. The caller-owned cutover record must name the
+responsible maintainer, compared versions and outputs,
+zero-unexplained-mismatch rule, rollback trigger, rollback mechanism,
+consumer-import audit, and evidence used to close the gate. Elapsed time is not
+evidence and is not a closure requirement.
 
 ## Product done
 
@@ -273,6 +286,7 @@ Elapsed time is not evidence and is not a closure requirement.
 
 - Sanitized differential fixtures establish accepted/rejected candidates, ordering,
   diagnostics, spans, sequences, and artifacts.
-- Real downstream workflows use only the public HOP API.
-- Superseded code is removed after the cutover evidence gate, with no duplicate
-  scientific authority remaining.
+- Every protected downstream workflow uses only the public HOP API and no
+  removed predecessor import remains.
+- Future predecessor removal occurs only after its cutover evidence gate, with
+  no duplicate scientific authority remaining.
