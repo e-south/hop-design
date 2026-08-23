@@ -61,17 +61,20 @@ or reference document for the requested operation, and `RELIABILITY.md` or
    ```python
    import hop_design as hop
 
-   bundle = hop.verify_bundle("build/example")
+   bundle_manifest = hop.verify_bundle("build/example")
+   verified_design = hop.load_verified_bundle("build/example")
    ```
 
-   Use `hop.verify_method_bundle(path)` or
-   `hop.load_verified_method_bundle(path)` for a `MethodBundle`.
+   For a `MethodBundle`, use `hop.verify_method_bundle(path)` to verify its
+   manifest and `hop.load_verified_method_bundle(path)` to load the verified
+   request, plan, and product.
 8. For integration, branch on product type. From a `HopBundle`, pass the
-   verified hairpin encoding with its digest and nested features. From a
-   `MethodBundle`, pass the verified physical product with its request, plan,
-   cut geometry, and hairpin-encoding projection/digest. Do not invent nested
-   features on a restriction product, let a consumer rederive HOP geometry, or
-   call a destination-neutral product assembly-ready.
+   `load_verified_bundle()` result's hairpin encoding, digest, and nested
+   features. From a `MethodBundle`, pass the
+   `load_verified_method_bundle()` result's physical product, request, plan,
+   cut geometry, and hairpin-encoding projection and digest. Do not invent
+   nested features on a restriction product, let a consumer rederive HOP
+   geometry, or call a destination-neutral product assembly-ready.
 9. Report the input kind, operation or method ID, plan and bundle IDs when
    applicable, output path or dry-run state, and diagnostics. Keep scientific
    claims within the resolved contract.

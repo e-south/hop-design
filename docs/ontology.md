@@ -17,7 +17,8 @@ The hierarchy is:
 ```text
 DesignSpec  -> HopPlan       -> HairpinEncodingInsert
 MethodRequest -> method states -> RestrictionDigestProduct
-HairpinEncodingInsert.digest == RestrictionDigestProduct.encoding_projection.digest
+HairpinEncodingInsert.sequence_digest
+  == RestrictionDigestProduct.hairpin_encoding_projection.sequence_digest
 RestrictionDigestProduct + caller destination -> AssemblyFragment
 ```
 
