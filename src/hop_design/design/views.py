@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from hop_design.kernel.basal import surviving_strand
 from hop_design.kernel.strand_state import complement_iupac
-from hop_design.models.basal import BasalEvaluation
+from hop_design.models.basal_policy import BasalEvaluation
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.foldback import FoldbackEvaluation
 from hop_design.models.junction import Strand

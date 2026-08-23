@@ -10,6 +10,7 @@ from hop_design.models.base import HopModel
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.junction import Strand
+from hop_design.models.physical import opposite_strand
 from hop_design.models.sequence import (
     SequenceValidationError,
     normalize_dna_sequence,
@@ -125,12 +126,10 @@ class ReleasedStrandState(HopModel):
             raise ValueError("Active and retained-partner strands must differ.")
         if self.route is StrandExposureRoute.BOTTOM_ACTIVE_AFTER_TOP_NICK:
             expected_active_strand = Strand.BOTTOM
-            expected_partner_strand = Strand.TOP
-            expected_nicked_strand = Strand.TOP
         else:
             expected_active_strand = Strand.TOP
-            expected_partner_strand = Strand.BOTTOM
-            expected_nicked_strand = Strand.BOTTOM
+        expected_partner_strand = opposite_strand(expected_active_strand)
+        expected_nicked_strand = expected_partner_strand
         if (
             self.active_strand is not expected_active_strand
             or self.retained_partner_strand is not expected_partner_strand

@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import hop_design as hop
+import hop_design.methods as methods
 
 
 def main() -> None:
@@ -14,13 +14,13 @@ def main() -> None:
     parser.add_argument("request", type=Path)
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
-    request = hop.LinearSourceMultinickHairpinPcrRequest.model_validate_json(
+    request = methods.LinearSourceMultinickHairpinPcrRequest.model_validate_json(
         args.request.read_bytes()
     )
-    compilation = hop.compile_linear_source_method_bundle(request)
+    compilation = methods.compile_linear_source_method_bundle(request)
     if args.out is not None:
         output = compilation.write(args.out)
-        hop.verify_method_bundle(output)
+        methods.verify_method_bundle(output)
     print(compilation.bundle.manifest_digest)
 
 

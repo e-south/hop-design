@@ -10,8 +10,10 @@ from pathlib import Path
 
 import pytest
 from Bio import SeqIO
+from pydantic import ValidationError
 
 import hop_design as hop
+import hop_design.methods as methods
 from hop_design.kernel.bundle_identity import (
     manifest_digest_for_method_bundle,
     method_bundle_id,
@@ -67,15 +69,15 @@ def _replace_artifact_and_reseal(output: Path, artifact_path: str, content: byte
 def test_method_bundle_round_trips_one_complete_replayable_plan(tmp_path: Path) -> None:
     request = linear_source_method_request()
 
-    compilation = hop.compile_linear_source_method_bundle(request)
+    compilation = methods.compile_linear_source_method_bundle(request)
     output = compilation.write(tmp_path / "method-bundle")
-    loaded = hop.load_verified_method_bundle(output)
+    loaded = methods.load_verified_method_bundle(output)
 
     assert compilation.result.plan is not None
     assert loaded.request == request
     assert loaded.plan == compilation.result.plan
     assert loaded.bundle == compilation.bundle
-    assert loaded.bundle.schema_id == "hop.method-bundle/v1"
+    assert loaded.bundle.schema_id == "hop.method-bundle/v2"
     assert loaded.bundle.hairpin_encoding_digest == (
         "sha256:" + hashlib.sha256(HAIRPIN_ENCODING.encode()).hexdigest()
     )
@@ -118,8 +120,17 @@ def test_method_bundle_round_trips_one_complete_replayable_plan(tmp_path: Path) 
     assert str(parsed.seq).upper() == loaded.plan.hairpin_pcr_duplex.top_strand.sequence
 
 
+def test_method_bundle_outer_schema_rejects_the_retired_plan_v1_container() -> None:
+    bundle = methods.compile_linear_source_method_bundle(linear_source_method_request()).bundle
+    data = bundle.model_dump(mode="json", by_alias=True)
+    data["schema"] = "hop.method-bundle/v1"
+
+    with pytest.raises(ValidationError):
+        MethodBundle.model_validate(data)
+
+
 def test_method_bundle_rejects_resealed_generated_artifact_drift(tmp_path: Path) -> None:
-    output = hop.compile_linear_source_method_bundle(linear_source_method_request()).write(
+    output = methods.compile_linear_source_method_bundle(linear_source_method_request()).write(
         tmp_path / "resealed"
     )
     _replace_artifact_and_reseal(
@@ -129,18 +140,18 @@ def test_method_bundle_rejects_resealed_generated_artifact_drift(tmp_path: Path)
     )
 
     with pytest.raises(hop.BundleIntegrityError, match="artifacts disagree"):
-        hop.verify_method_bundle(output)
+        methods.verify_method_bundle(output)
 
 
 def test_method_bundle_rejects_unmanifested_and_symlinked_content(tmp_path: Path) -> None:
-    extra = hop.compile_linear_source_method_bundle(linear_source_method_request()).write(
+    extra = methods.compile_linear_source_method_bundle(linear_source_method_request()).write(
         tmp_path / "extra"
     )
     (extra / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
     with pytest.raises(hop.BundleIntegrityError, match="unmanifested files"):
-        hop.verify_method_bundle(extra)
+        methods.verify_method_bundle(extra)
 
-    linked = hop.compile_linear_source_method_bundle(linear_source_method_request()).write(
+    linked = methods.compile_linear_source_method_bundle(linear_source_method_request()).write(
         tmp_path / "linked"
     )
     target = linked / "outside.json"
@@ -149,9 +160,9 @@ def test_method_bundle_rejects_unmanifested_and_symlinked_content(tmp_path: Path
     artifact.unlink()
     artifact.symlink_to(target)
     with pytest.raises(hop.BundleIntegrityError, match="unsafe symlinks"):
-        hop.verify_method_bundle(linked)
+        methods.verify_method_bundle(linked)
 
-    nested = hop.compile_linear_source_method_bundle(linear_source_method_request()).write(
+    nested = methods.compile_linear_source_method_bundle(linear_source_method_request()).write(
         tmp_path / "nested"
     )
     outside = tmp_path / "outside"
@@ -159,13 +170,13 @@ def test_method_bundle_rejects_unmanifested_and_symlinked_content(tmp_path: Path
     (outside / "stolen.json").write_text("{}\n", encoding="utf-8")
     (nested / "escape").symlink_to(outside, target_is_directory=True)
     with pytest.raises(hop.BundleIntegrityError, match=r"unsafe symlinks: escape"):
-        hop.verify_method_bundle(nested)
+        methods.verify_method_bundle(nested)
 
 
 def test_method_bundle_write_rejects_unsafe_artifact_path_before_writing(
     tmp_path: Path,
 ) -> None:
-    compilation = hop.compile_linear_source_method_bundle(linear_source_method_request())
+    compilation = methods.compile_linear_source_method_bundle(linear_source_method_request())
     unsafe = replace(compilation, artifacts={"../escaped.txt": b"escape\n"})
 
     with pytest.raises(hop.BundleIntegrityError, match="path is unsafe"):
@@ -180,8 +191,8 @@ def test_method_bundle_write_rejects_unsafe_artifact_path_before_writing(
 def test_method_bundle_requires_complete_resolution(tmp_path: Path) -> None:
     request = linear_source_method_request(min_length_nt=60)
 
-    with pytest.raises(hop.MethodResolutionError, match="HOP-METHOD-001"):
-        hop.compile_linear_source_method_bundle(request)
+    with pytest.raises(methods.MethodResolutionError, match="HOP-METHOD-001"):
+        methods.compile_linear_source_method_bundle(request)
     assert not (tmp_path / "infeasible").exists()
 
 
@@ -189,6 +200,23 @@ def test_public_method_example_is_the_canonical_sanitized_fixture() -> None:
     example = Path(__file__).parents[2] / "examples" / "linear-source-method.json"
 
     assert example.read_bytes() == canonical_json_bytes(linear_source_method_request())
+
+
+def test_public_matched_design_fixture_compiles_to_the_method_encoding() -> None:
+    example_root = Path(__file__).parents[2] / "examples"
+    design_spec = hop.load_spec(example_root / "linear-source-matched-design.yaml")
+    method_request = methods.LinearSourceMultinickHairpinPcrRequest.model_validate_json(
+        (example_root / "linear-source-method.json").read_text(encoding="utf-8")
+    )
+
+    design = hop.compile(design_spec)
+
+    assert method_request.expected_hairpin_encoding is not None
+    assert (
+        design.plan.hairpin_encoding_insert.sequence
+        == method_request.expected_hairpin_encoding
+        == HAIRPIN_ENCODING
+    )
 
 
 @pytest.mark.parametrize(
@@ -203,7 +231,7 @@ def test_method_bundle_rejects_resealed_root_identity_drift(
     field: str,
     message: str,
 ) -> None:
-    output = hop.compile_linear_source_method_bundle(linear_source_method_request()).write(
+    output = methods.compile_linear_source_method_bundle(linear_source_method_request()).write(
         tmp_path / field
     )
     manifest_path = output / "method-bundle.json"
@@ -212,7 +240,7 @@ def test_method_bundle_rejects_resealed_root_identity_drift(
     _reseal_manifest(output, data)
 
     with pytest.raises(hop.BundleIntegrityError, match=message):
-        hop.verify_method_bundle(output)
+        methods.verify_method_bundle(output)
 
 
 @pytest.mark.parametrize(
@@ -228,7 +256,7 @@ def test_method_bundle_rejects_resealed_plan_root_drift(
     value: str,
     message: str,
 ) -> None:
-    output = hop.compile_linear_source_method_bundle(linear_source_method_request()).write(
+    output = methods.compile_linear_source_method_bundle(linear_source_method_request()).write(
         tmp_path / f"plan-{field}"
     )
     plan_path = output / "method-plan.json"
@@ -237,14 +265,14 @@ def test_method_bundle_rejects_resealed_plan_root_drift(
     _replace_artifact_and_reseal(output, "method-plan.json", canonical_json_bytes(plan))
 
     with pytest.raises(hop.BundleIntegrityError, match=message):
-        hop.verify_method_bundle(output)
+        methods.verify_method_bundle(output)
 
 
 def test_method_bundle_rejects_resealed_invalid_request(tmp_path: Path) -> None:
-    output = hop.compile_linear_source_method_bundle(linear_source_method_request()).write(
+    output = methods.compile_linear_source_method_bundle(linear_source_method_request()).write(
         tmp_path / "invalid-request"
     )
     _replace_artifact_and_reseal(output, "method-request.json", b"{}\n")
 
     with pytest.raises(hop.BundleIntegrityError, match="request or plan is invalid"):
-        hop.verify_method_bundle(output)
+        methods.verify_method_bundle(output)

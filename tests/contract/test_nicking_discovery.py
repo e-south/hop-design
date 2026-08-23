@@ -112,7 +112,7 @@ def test_nicking_discovery_finds_sanitized_exact_and_nearest_geometries() -> Non
     )
 
 
-def test_nicking_discovery_is_catalog_order_invariant_and_physics_ranked() -> None:
+def test_nicking_discovery_is_catalog_order_invariant_and_physically_ordered() -> None:
     catalog = _parity_catalog()
     limits = NickingPlacementSearchLimits(max_search_nodes=20, max_hits=20)
 

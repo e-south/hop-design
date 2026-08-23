@@ -7,10 +7,8 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
-from hop_design.design.route_views import (
-    build_hairpin_junction_route_view,
-    build_released_foldback_precursor_view,
-)
+import hop_design.discovery as discovery
+import hop_design.views as views
 from hop_design.models.catalog import SiteOrientation
 from hop_design.models.discovery import (
     BasalProcessingGeometryRequest,
@@ -40,7 +38,7 @@ def _released_precursors(
     *,
     precursor_template: str = "AATC",
     max_search_nodes: int = 4,
-) -> hop.ReleasedFoldbackPrecursorSearchResult:
+) -> discovery.ReleasedFoldbackPrecursorSearchResult:
     catalog = hop.ProcessingCatalog(
         catalog_id="example:processing-catalog/junction-route-foldback@1",
         nicking_agents=(
@@ -62,7 +60,7 @@ def _released_precursors(
             ),
         ),
     )
-    geometry = hop.search_released_foldback_geometries(
+    geometry = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=ReleasedFoldbackGeometryRequest(
             target_nick_boundary=hop.Boundary(offset=0),
@@ -75,7 +73,7 @@ def _released_precursors(
         ),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
     ).hits[0]
-    return hop.search_released_foldback_precursors(
+    return discovery.search_released_foldback_precursors(
         ReleasedFoldbackPrecursorSearchRequest(
             geometry=geometry,
             precursor_template=precursor_template,
@@ -90,11 +88,12 @@ def _released_precursors(
 def _constraints() -> hop.BasalConstraintProfile:
     return hop.BasalConstraintProfile(
         require_terminal_watson_crick=True,
+        allow_active_gt_wobble=True,
         max_active_hard_mismatches=0,
         max_active_non_watson_crick_pairs=0,
         forbid_active_middle_double_hard=True,
-        minimum_active_support=4.0,
-        maximum_active_disruption=0.0,
+        minimum_active_pair_support_index=4.0,
+        maximum_active_pair_disruption_index=0.0,
         require_outer_hard_for_active_double=True,
         reject_compact_profiles=(),
         reserve_compact_profiles=(),
@@ -107,16 +106,15 @@ def _basal_routes(
     agent_count: int = 1,
     max_route_nodes: int | None = None,
     release_id: str = "example:release-agent/basal@1",
-) -> hop.BasalProcessingRouteSearchResult:
-    basal = hop.search_basal_candidates(
-        hop.BasalCandidateSearchRequest(
+) -> discovery.BasalProcessingRouteSearchResult:
+    basal = discovery.search_basal_candidates(
+        discovery.BasalCandidateSearchRequest(
             left_arm_template="AAAA",
             right_arm_template="TTTT",
-            allow_gt_wobble=True,
             constraints=_constraints(),
             acceptance="active_only",
         ),
-        limits=hop.BasalCandidateSearchLimits(max_search_nodes=1, max_hits=1),
+        limits=discovery.BasalCandidateSearchLimits(max_search_nodes=1, max_hits=1),
     )
     catalog = hop.ProcessingCatalog(
         catalog_id="example:processing-catalog/junction-route-basal@1",
@@ -140,7 +138,7 @@ def _basal_routes(
             ),
         ),
     )
-    geometries = hop.search_basal_processing_geometries(
+    geometries = discovery.search_basal_processing_geometries(
         catalog=catalog,
         request=BasalProcessingGeometryRequest(
             release_agent_id=release_id,
@@ -156,7 +154,7 @@ def _basal_routes(
             max_hits=agent_count,
         ),
     )
-    return hop.search_basal_processing_routes(
+    return discovery.search_basal_processing_routes(
         basal_candidates=basal,
         processing_geometries=geometries,
         limits=BasalProcessingRouteSearchLimits(
@@ -167,13 +165,14 @@ def _basal_routes(
 
 
 def test_hairpin_junction_route_proves_one_continuous_active_strand() -> None:
-    result = hop.search_hairpin_junction_routes(
+    result = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
     )
 
     assert result.status == "complete"
+    assert result.schema_id == "hop.hairpin-junction-route-search-result/v2"
     assert result.available_pair_count == 1
     assert result.search_nodes_examined == 1
     assert result.observed_hit_count == 1
@@ -182,6 +181,11 @@ def test_hairpin_junction_route_proves_one_continuous_active_strand() -> None:
 
     route = result.hits[0]
     assert route.released_state.active_strand is hop.Strand.BOTTOM
+
+    retired = result.model_dump(mode="json", by_alias=True)
+    retired["schema"] = "hop.hairpin-junction-route-search-result/v1"
+    with pytest.raises(ValidationError):
+        HairpinJunctionRouteSearchResult.model_validate(retired)
     assert route.released_state.active_strand is route.basal_route.surviving_strand
     assert route.released_state.active_product_sequence == "ATT"
     assert route.released_state.precursor_top_strand == "AATC"
@@ -193,15 +197,38 @@ def test_hairpin_junction_route_proves_one_continuous_active_strand() -> None:
     )
 
 
-def test_hairpin_junction_route_builds_its_own_released_workflow_view() -> None:
-    route = hop.search_hairpin_junction_routes(
+def test_hairpin_route_content_identity_excludes_search_ordinals() -> None:
+    route = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
     ).hits[0]
 
-    view = build_hairpin_junction_route_view(route)
-    precursor_view = build_released_foldback_precursor_view(
+    original = hairpin_junction_route_id(
+        geometry=route.released_foldback_geometry,
+        released_foldback_precursor=route.released_foldback_precursor,
+        basal_route=route.basal_route,
+    )
+    reordered = hairpin_junction_route_id(
+        geometry=route.released_foldback_geometry.model_copy(update={"canonical_ordinal": 31}),
+        released_foldback_precursor=route.released_foldback_precursor.model_copy(
+            update={"canonical_ordinal": 41}
+        ),
+        basal_route=route.basal_route.model_copy(update={"canonical_ordinal": 59}),
+    )
+
+    assert reordered == original
+
+
+def test_hairpin_junction_route_builds_its_own_released_workflow_view() -> None:
+    route = discovery.search_hairpin_junction_routes(
+        released_precursors=_released_precursors(),
+        basal_routes=_basal_routes(),
+        limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
+    ).hits[0]
+
+    view = views.build_hairpin_junction_route_view(route)
+    precursor_view = views.build_released_foldback_precursor_view(
         geometry=route.released_foldback_geometry,
         precursor=route.released_foldback_precursor,
         state=route.released_state,
@@ -221,7 +248,7 @@ def test_hairpin_junction_route_builds_its_own_released_workflow_view() -> None:
 
 
 def test_hairpin_junction_route_rejects_a_discontinuous_strand_path() -> None:
-    result = hop.search_hairpin_junction_routes(
+    result = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(
             terminal_nicked_strand=hop.Strand.BOTTOM,
@@ -240,7 +267,7 @@ def test_hairpin_junction_route_rejects_a_discontinuous_strand_path() -> None:
 
 
 def test_hairpin_junction_route_preserves_upstream_and_local_truncation() -> None:
-    released_limited = hop.search_hairpin_junction_routes(
+    released_limited = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(
             precursor_template="NNNN",
             max_search_nodes=1,
@@ -248,7 +275,7 @@ def test_hairpin_junction_route_preserves_upstream_and_local_truncation() -> Non
         basal_routes=_basal_routes(),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=4, max_hits=4),
     )
-    node_limited = hop.search_hairpin_junction_routes(
+    node_limited = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(
             precursor_template="RAYC",
             max_search_nodes=2,
@@ -256,12 +283,12 @@ def test_hairpin_junction_route_preserves_upstream_and_local_truncation() -> Non
         basal_routes=_basal_routes(),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=2),
     )
-    hit_limited = hop.search_hairpin_junction_routes(
+    hit_limited = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(agent_count=2),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=2, max_hits=1),
     )
-    basal_limited = hop.search_hairpin_junction_routes(
+    basal_limited = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(agent_count=2, max_route_nodes=1),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=2, max_hits=2),
@@ -279,7 +306,7 @@ def test_hairpin_junction_route_preserves_upstream_and_local_truncation() -> Non
 
 
 def test_hairpin_junction_route_result_rejects_replay_and_identity_drift() -> None:
-    result = hop.search_hairpin_junction_routes(
+    result = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
@@ -307,7 +334,7 @@ def test_hairpin_junction_route_result_rejects_replay_and_identity_drift() -> No
 def test_hairpin_junction_candidate_rejects_cross_object_drift() -> None:
     released = _released_precursors(precursor_template="RAYC", max_search_nodes=2)
     basal = _basal_routes()
-    result = hop.search_hairpin_junction_routes(
+    result = discovery.search_hairpin_junction_routes(
         released_precursors=released,
         basal_routes=basal,
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=2, max_hits=2),
@@ -321,7 +348,7 @@ def test_hairpin_junction_candidate_rejects_cross_object_drift() -> None:
     )
     candidate_mutations.append(data)
 
-    mismatch = hop.search_hairpin_junction_routes(
+    mismatch = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(terminal_nicked_strand=hop.Strand.BOTTOM),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
@@ -374,7 +401,7 @@ def test_hairpin_junction_candidate_rejects_cross_object_drift() -> None:
 
 
 def test_hairpin_junction_candidate_rejects_a_reidentified_out_of_domain_precursor() -> None:
-    route = hop.search_hairpin_junction_routes(
+    route = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
@@ -385,7 +412,7 @@ def test_hairpin_junction_candidate_rejects_a_reidentified_out_of_domain_precurs
             geometry_id=route.released_foldback_geometry.candidate_id,
             sequence=invalid_sequence,
         ),
-        rank=route.released_foldback_precursor.rank,
+        canonical_ordinal=route.released_foldback_precursor.canonical_ordinal,
         geometry_id=route.released_foldback_geometry.candidate_id,
         precursor_sequence=invalid_sequence,
         precursor_digest=sha256_digest(invalid_sequence.encode("utf-8")),
@@ -430,12 +457,12 @@ def test_hairpin_junction_candidate_rejects_a_reidentified_out_of_domain_precurs
 def test_hairpin_junction_result_rejects_search_accounting_drift() -> None:
     released = _released_precursors(precursor_template="RAYC", max_search_nodes=2)
     basal = _basal_routes()
-    full = hop.search_hairpin_junction_routes(
+    full = discovery.search_hairpin_junction_routes(
         released_precursors=released,
         basal_routes=basal,
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=2, max_hits=2),
     )
-    bounded = hop.search_hairpin_junction_routes(
+    bounded = discovery.search_hairpin_junction_routes(
         released_precursors=released,
         basal_routes=basal,
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
@@ -456,12 +483,12 @@ def test_hairpin_junction_result_rejects_search_accounting_drift() -> None:
     mutations.append(data)
     data = full.model_dump(mode="python")
     data["hits"] = (
-        full.hits[1].model_copy(update={"rank": 1}),
-        full.hits[0].model_copy(update={"rank": 2}),
+        full.hits[1].model_copy(update={"canonical_ordinal": 1}),
+        full.hits[0].model_copy(update={"canonical_ordinal": 2}),
     )
     mutations.append(data)
     data = bounded.model_dump(mode="python")
-    data["hits"] = (full.hits[1].model_copy(update={"rank": 1}),)
+    data["hits"] = (full.hits[1].model_copy(update={"canonical_ordinal": 1}),)
     mutations.append(data)
     data = full.model_dump(mode="python")
     data["status"] = "truncated"
@@ -470,7 +497,7 @@ def test_hairpin_junction_result_rejects_search_accounting_drift() -> None:
     data["status"] = "infeasible"
     mutations.append(data)
 
-    mismatch = hop.search_hairpin_junction_routes(
+    mismatch = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
         basal_routes=_basal_routes(terminal_nicked_strand=hop.Strand.BOTTOM),
         limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
@@ -498,7 +525,7 @@ def test_hairpin_junction_route_does_not_consume_pairs_beyond_node_budget(
 
     monkeypatch.setattr(route_design, "product", guarded_product)
     monkeypatch.setattr(route_models, "product", guarded_product)
-    result = hop.search_hairpin_junction_routes(
+    result = discovery.search_hairpin_junction_routes(
         released_precursors=_released_precursors(
             precursor_template="RAYC",
             max_search_nodes=2,

@@ -6,12 +6,11 @@ from typing import Literal
 
 from hop_design.models.basal import (
     BasalPairingRequest,
-    BasalPairKind,
     BasalPairObservation,
     BasalPairProfile,
 )
-from hop_design.models.junction import Strand
-from hop_design.models.sequence import reverse_complement_iupac
+from hop_design.models.junction import JunctionPairKind, Strand, classify_literal_pair
+from hop_design.models.physical import opposite_strand
 
 BasalSite = Literal["S3", "S2", "S1", "S0"]
 _SITES: tuple[BasalSite, ...] = ("S3", "S2", "S1", "S0")
@@ -24,20 +23,13 @@ def classify_basal_pairing(request: BasalPairingRequest) -> BasalPairProfile:
         right_index = 3 - position
         left_base = request.left_arm[position]
         right_base = request.right_arm[right_index]
-        aligned_right_base = reverse_complement_iupac(right_base)
-        compact_symbol: Literal["M", "W", "X"]
-        if left_base == aligned_right_base:
-            kind = BasalPairKind.WATSON_CRICK
-            compact_symbol = "M"
-        elif request.allow_gt_wobble and (left_base, right_base) in {
-            ("G", "T"),
-            ("T", "G"),
-        }:
-            kind = BasalPairKind.GT_WOBBLE
-            compact_symbol = "W"
-        else:
-            kind = BasalPairKind.HARD_MISMATCH
-            compact_symbol = "X"
+        kind = JunctionPairKind(classify_literal_pair(left_base=left_base, right_base=right_base))
+        symbols: dict[JunctionPairKind, Literal["M", "W", "X"]] = {
+            JunctionPairKind.WATSON_CRICK: "M",
+            JunctionPairKind.GT_WOBBLE: "W",
+            JunctionPairKind.HARD_MISMATCH: "X",
+        }
+        compact_symbol = symbols[kind]
         pairs.append(
             BasalPairObservation(
                 position=position,
@@ -67,19 +59,17 @@ def classify_basal_pairing(request: BasalPairingRequest) -> BasalPairProfile:
         hard_mismatch_count=hard_mismatch_count,
         non_watson_crick_count=wobble_count + hard_mismatch_count,
         middle_hard_mismatch_count=sum(
-            pair.kind is BasalPairKind.HARD_MISMATCH for pair in pair_tuple[1:3]
+            pair.kind is JunctionPairKind.HARD_MISMATCH for pair in pair_tuple[1:3]
         ),
-        support_score=float(watson_crick_count) + 0.5 * float(wobble_count),
-        disruption_score=float(hard_mismatch_count) + 0.5 * float(wobble_count),
+        pair_support_index=float(watson_crick_count) + 0.5 * float(wobble_count),
+        pair_disruption_index=float(hard_mismatch_count) + 0.5 * float(wobble_count),
         terminal_pair_kind=pair_tuple[-1].kind,
     )
 
 
 def surviving_strand(nicked_strand: Strand) -> Strand:
     """Return the strand physically opposite one declared nicked strand."""
-    if nicked_strand is Strand.TOP:
-        return Strand.BOTTOM
-    return Strand.TOP
+    return opposite_strand(nicked_strand)
 
 
 __all__ = ["classify_basal_pairing", "surviving_strand"]

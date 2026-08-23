@@ -30,9 +30,9 @@ class ArtifactManifestEntry(HopModel):
 
 
 class HopBundle(HopModel):
-    """A verified, portable inventory for one HOP compilation."""
+    """A content-addressed root manifest for one HOP compilation."""
 
-    schema_id: Literal["hop.bundle/v1"] = Field(default="hop.bundle/v1", alias="schema")
+    schema_id: Literal["hop.bundle/v2"] = Field(default="hop.bundle/v2", alias="schema")
     bundle_id: ReferenceId
     design_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
     spec_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
@@ -45,7 +45,7 @@ class HopBundle(HopModel):
 class ProvenanceRecord(HopModel):
     """Deterministic compilation provenance without host-specific state."""
 
-    schema_id: Literal["hop.provenance/v1"] = Field(default="hop.provenance/v1", alias="schema")
+    schema_id: Literal["hop.provenance/v2"] = Field(default="hop.provenance/v2", alias="schema")
     compiler_distribution: Literal["hop-design"] = "hop-design"
     compiler_version: str = Field(min_length=1)
     plan_id: ReferenceId
@@ -53,14 +53,14 @@ class ProvenanceRecord(HopModel):
     defaults_ref: ReferenceId
     catalog_ref: ReferenceId
     constraint_profile_ref: ReferenceId
-    processing_route_ref: ReferenceId
+    design_derivation_ref: ReferenceId
 
 
 class MethodBundle(HopModel):
     """Content-addressed output for one complete method request."""
 
-    schema_id: Literal["hop.method-bundle/v1"] = Field(
-        default="hop.method-bundle/v1", alias="schema"
+    schema_id: Literal["hop.method-bundle/v2"] = Field(
+        default="hop.method-bundle/v2", alias="schema"
     )
     bundle_id: ReferenceId
     request_id: ReferenceId

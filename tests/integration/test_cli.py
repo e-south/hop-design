@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib.metadata import version
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -15,7 +16,7 @@ def test_cli_reports_distribution_version() -> None:
     result = runner.invoke(app, ["--version"])
 
     assert result.exit_code == 0, result.output
-    assert result.output.strip() == "hop-design 0.1.0a6"
+    assert result.output.strip() == f"hop-design {version('hop-design')}"
 
 
 def test_cli_compiles_and_reports_visible_default(tmp_path: Path) -> None:
@@ -35,7 +36,7 @@ def test_cli_compiles_and_reports_visible_default(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0, result.output
-    assert "hop:defaults/generic-direct-synthesis@1" in result.output
+    assert "hop:defaults/generic-hairpin-design@2" in result.output
     assert "hop:plan/demo/" in result.output
     verify_bundle(output)
 

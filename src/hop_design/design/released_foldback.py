@@ -68,9 +68,9 @@ def search_released_foldback_geometries(
         ReleasedFoldbackGeometryHit(
             **row.model_dump(mode="python"),
             candidate_id=released_foldback_geometry_id(row),
-            rank=rank,
+            canonical_ordinal=canonical_ordinal,
         )
-        for rank, row in enumerate(returned, start=1)
+        for canonical_ordinal, row in enumerate(returned, start=1)
     )
     truncated_by: list[ReleasedFoldbackGeometryTruncation] = []
     if len(feasibility) < candidate_space_size:
@@ -134,12 +134,12 @@ def search_released_foldback_precursors(
                 geometry_id=request.geometry.candidate_id,
                 sequence=sequence,
             ),
-            rank=rank,
+            canonical_ordinal=canonical_ordinal,
             geometry_id=request.geometry.candidate_id,
             precursor_sequence=sequence,
             precursor_digest=sha256_digest(sequence.encode("utf-8")),
         )
-        for rank, sequence in enumerate(returned, start=1)
+        for canonical_ordinal, sequence in enumerate(returned, start=1)
     )
     truncated_by: list[ReleasedFoldbackPrecursorSearchTruncation] = []
     if len(sequences) < candidate_space_size:

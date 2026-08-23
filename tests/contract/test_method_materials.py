@@ -5,7 +5,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-import hop_design as hop
+import hop_design.methods as methods
 
 
 def _oligo(
@@ -13,17 +13,17 @@ def _oligo(
     sequence: str,
     *,
     phosphorylated: bool = False,
-) -> hop.ProcessOligo:
-    modifications = (hop.OligoModification.FIVE_PRIME_PHOSPHATE,) if phosphorylated else ()
-    return hop.ProcessOligo(
+) -> methods.ProcessOligo:
+    modifications = (methods.OligoModification.FIVE_PRIME_PHOSPHATE,) if phosphorylated else ()
+    return methods.ProcessOligo(
         material_id=material_id,
         sequence=sequence,
         modifications=modifications,
     )
 
 
-def _spec() -> hop.LinearSourceHairpinPcrMaterialsSpec:
-    return hop.LinearSourceHairpinPcrMaterialsSpec(
+def _spec() -> methods.LinearSourceHairpinPcrMaterialsSpec:
+    return methods.LinearSourceHairpinPcrMaterialsSpec(
         schema="hop.linear-source-hairpin-pcr-materials/v1",
         method_id="synthetic-linear-source",
         source_oligo=_oligo("source", "ACGTACGTNNRYGCTTAG"),
@@ -40,12 +40,12 @@ def _spec() -> hop.LinearSourceHairpinPcrMaterialsSpec:
         ),
         hairpin_pcr_forward_primer=_oligo("hairpin-fwd", "ACGTACGT"),
         hairpin_pcr_reverse_primer=_oligo("hairpin-rev", "GGTTACGG"),
-        ligation_end_preparation=hop.LigationEndPreparation.PRE_PHOSPHORYLATED_OLIGOS,
+        ligation_end_preparation=(methods.LigationEndPreparation.PRE_PHOSPHORYLATED_OLIGOS),
     )
 
 
 def test_method_materials_resolve_terminal_primer_binding_and_chemistry() -> None:
-    plan = hop.resolve_linear_source_hairpin_pcr_materials(_spec())
+    plan = methods.resolve_linear_source_hairpin_pcr_materials(_spec())
 
     assert plan.schema_id == "hop.linear-source-hairpin-pcr-materials-plan/v1"
     assert tuple(binding.binding_id for binding in plan.bindings) == (
@@ -88,7 +88,7 @@ def test_method_materials_reject_a_primer_that_does_not_bind_its_terminal_handle
         ValueError,
         match="hairpin PCR reverse primer must reverse-complement the adapter suffix",
     ):
-        hop.resolve_linear_source_hairpin_pcr_materials(spec)
+        methods.resolve_linear_source_hairpin_pcr_materials(spec)
 
 
 def test_pre_phosphorylated_route_requires_both_ligation_end_modifications() -> None:
@@ -96,17 +96,17 @@ def test_pre_phosphorylated_route_requires_both_ligation_end_modifications() -> 
     data["source_pcr_reverse_primer"]["modifications"] = ()
 
     with pytest.raises(ValidationError, match="source PCR reverse primer"):
-        hop.LinearSourceHairpinPcrMaterialsSpec.model_validate(data)
+        methods.LinearSourceHairpinPcrMaterialsSpec.model_validate(data)
 
 
 def test_kinase_step_allows_unmodified_ligation_end_oligos() -> None:
     data = _spec().model_dump(mode="python", by_alias=True)
     data["source_pcr_reverse_primer"]["modifications"] = ()
     data["ligation_adapter"]["modifications"] = ()
-    data["ligation_end_preparation"] = hop.LigationEndPreparation.KINASE_STEP
+    data["ligation_end_preparation"] = methods.LigationEndPreparation.KINASE_STEP
 
-    plan = hop.resolve_linear_source_hairpin_pcr_materials(
-        hop.LinearSourceHairpinPcrMaterialsSpec.model_validate(data)
+    plan = methods.resolve_linear_source_hairpin_pcr_materials(
+        methods.LinearSourceHairpinPcrMaterialsSpec.model_validate(data)
     )
 
     assert plan.ligation_end_preparation == "kinase_step"
@@ -116,21 +116,21 @@ def test_material_plan_rejects_unmodified_pre_phosphorylated_claim() -> None:
     data = _spec().model_dump(mode="python", by_alias=True)
     data["source_pcr_reverse_primer"]["modifications"] = ()
     data["ligation_adapter"]["modifications"] = ()
-    data["ligation_end_preparation"] = hop.LigationEndPreparation.KINASE_STEP
-    plan = hop.resolve_linear_source_hairpin_pcr_materials(
-        hop.LinearSourceHairpinPcrMaterialsSpec.model_validate(data)
+    data["ligation_end_preparation"] = methods.LigationEndPreparation.KINASE_STEP
+    plan = methods.resolve_linear_source_hairpin_pcr_materials(
+        methods.LinearSourceHairpinPcrMaterialsSpec.model_validate(data)
     ).model_dump(mode="json", by_alias=True)
     plan["ligation_end_preparation"] = "pre_phosphorylated_oligos"
 
     with pytest.raises(ValidationError, match="require phosphates"):
-        hop.LinearSourceHairpinPcrMaterialsPlan.model_validate_json(json.dumps(plan))
+        methods.LinearSourceHairpinPcrMaterialsPlan.model_validate_json(json.dumps(plan))
 
 
 def test_method_materials_plan_rejects_serialized_binding_drift() -> None:
-    data = hop.resolve_linear_source_hairpin_pcr_materials(_spec()).model_dump(
+    data = methods.resolve_linear_source_hairpin_pcr_materials(_spec()).model_dump(
         mode="json", by_alias=True
     )
     data["bindings"][0]["template_span"]["end"]["offset"] = 5
 
     with pytest.raises(ValidationError, match="binding derivations"):
-        hop.LinearSourceHairpinPcrMaterialsPlan.model_validate_json(json.dumps(data))
+        methods.LinearSourceHairpinPcrMaterialsPlan.model_validate_json(json.dumps(data))

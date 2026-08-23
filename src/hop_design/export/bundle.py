@@ -250,7 +250,7 @@ def verify_bundle_contents(bundle_path: str | Path) -> VerifiedBundleContents:
     if (
         plan.lock.defaults_ref != spec.defaults_ref
         or plan.lock.constraint_profile_ref != spec.constraint_profile_ref
-        or plan.lock.processing_route_ref != spec.processing_route_ref
+        or plan.lock.design_derivation_ref != spec.design_derivation_ref
     ):
         raise BundleIntegrityError("Bundle plan lock does not match its authored spec references.")
     if isinstance(spec, HopSpec) and (
@@ -266,14 +266,14 @@ def verify_bundle_contents(bundle_path: str | Path) -> VerifiedBundleContents:
         provenance.defaults_ref,
         provenance.catalog_ref,
         provenance.constraint_profile_ref,
-        provenance.processing_route_ref,
+        provenance.design_derivation_ref,
     )
     plan_lock = (
         plan.lock.compiler_version,
         plan.lock.defaults_ref,
         plan.lock.catalog_ref,
         plan.lock.constraint_profile_ref,
-        plan.lock.processing_route_ref,
+        plan.lock.design_derivation_ref,
     )
     if (
         provenance.plan_id != plan.plan_id

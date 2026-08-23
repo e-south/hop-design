@@ -10,7 +10,8 @@ from pydantic import ValidationError
 import hop_design as hop
 from hop_design.export.bundle import BundleIntegrityError
 from hop_design.kernel.bundle_identity import bundle_id, manifest_digest_for_bundle
-from hop_design.models.basal import BasalDesignRequest, BasalPairingRequest
+from hop_design.models.basal import BasalPairingRequest
+from hop_design.models.basal_policy import BasalDesignRequest
 from hop_design.models.bundle import HopBundle
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.diagnostics import InfeasibleDesignError
@@ -33,39 +34,39 @@ verify_bundle = hop.verify_bundle
 
 def _spec(*, foldback_arm: str = "CTGA") -> ResolvedHopSpec:
     return ResolvedHopSpec(
-        schema="hop.resolved-design/v1",
+        schema="hop.resolved-design/v2",
         design_id="resolved-demo",
         payload=DegeneratePayload(sequence="N"),
         foldback=FoldbackEvaluationRequest(
             precursor_sequence="CCTCAGCA",
-            nick_boundary=Boundary(offset=2),
             retained_tract_span=Span(start=Boundary(offset=2), end=Boundary(offset=6)),
+            source_turn_span=Span(start=Boundary(offset=6), end=Boundary(offset=8)),
             protected_region=Span(start=Boundary(offset=0), end=Boundary(offset=2)),
             turn_extension="T",
             foldback_arm=foldback_arm,
             constraints=hop.FoldbackConstraints(
-                max_mismatches=0,
-                terminal_paired_bp_min=4,
-                terminal_paired_bp_max=4,
-                max_uninterrupted_paired_bp=4,
+                max_non_watson_crick_pairs=0,
+                terminal_watson_crick_bp_min=4,
+                terminal_watson_crick_bp_max=4,
+                max_uninterrupted_watson_crick_bp=4,
                 max_added_nt=5,
                 required_turn_nt=3,
-                allow_protected_region_mismatches=False,
+                allow_protected_region_non_watson_crick_pairs=False,
             ),
         ),
         basal=BasalDesignRequest(
             pairing=BasalPairingRequest(
                 left_arm="AAAA",
                 right_arm="TTTT",
-                allow_gt_wobble=True,
             ),
             constraints=hop.BasalConstraintProfile(
                 require_terminal_watson_crick=True,
+                allow_active_gt_wobble=True,
                 max_active_hard_mismatches=0,
                 max_active_non_watson_crick_pairs=0,
                 forbid_active_middle_double_hard=True,
-                minimum_active_support=4.0,
-                maximum_active_disruption=0.0,
+                minimum_active_pair_support_index=4.0,
+                maximum_active_pair_disruption_index=0.0,
                 require_outer_hard_for_active_double=True,
                 reject_compact_profiles=(),
                 reserve_compact_profiles=(),
@@ -77,7 +78,7 @@ def _spec(*, foldback_arm: str = "CTGA") -> ResolvedHopSpec:
         defaults_ref="example:defaults/resolved@1",
         catalog_ref="example:processing-catalog/synthetic@1",
         constraint_profile_ref="example:constraint-profile/explicit@1",
-        processing_route_ref="example:processing-route/resolved-events@1",
+        design_derivation_ref="example:design-derivation/resolved-junction-geometry@1",
         constraints=DesignLimits(max_candidates=1),
     )
 
@@ -106,7 +107,7 @@ def _release_request() -> ReleaseProjectionRequest:
 def _component_spec() -> ResolvedHopSpec:
     data = _spec().model_dump(by_alias=True)
     data["basal"]["terminal_nick"] = None
-    data["processing_route_ref"] = "example:assembly-route/inherited-components@1"
+    data["design_derivation_ref"] = "example:design-derivation/evaluated-components@1"
     return ResolvedHopSpec.model_validate(data)
 
 
@@ -114,9 +115,9 @@ def test_resolved_spec_compiles_mechanics_into_one_verified_plan_and_bundle(tmp_
     compilation = hop.compile(_spec())
 
     assert compilation.report.status == "valid"
-    assert compilation.plan.processing_route.kind == "resolved_events"
-    assert compilation.plan.processing_route.foldback.report.status == "valid"
-    assert compilation.plan.processing_route.basal.decision.status == "active"
+    assert compilation.plan.design_derivation.kind == "resolved_junction_geometry"
+    assert compilation.plan.design_derivation.foldback.report.status == "valid"
+    assert compilation.plan.design_derivation.basal.decision.status == "active"
     assert compilation.plan.hairpin_encoding_insert.sequence == "AAAANTCAGCATCTGANTTTT"
     assert compilation.plan.source_oligo.sequence == "CCTCAGCA"
     assert "expected-intermediates.json" in compilation.artifacts
@@ -131,16 +132,12 @@ def test_resolved_spec_compiles_mechanics_into_one_verified_plan_and_bundle(tmp_
     assert verify_bundle(output) == compilation.bundle
 
 
-def test_resolved_components_compile_without_claiming_a_processing_route(tmp_path: Path) -> None:
+def test_resolved_components_compile_without_claiming_a_production_method(tmp_path: Path) -> None:
     compilation = hop.compile(_component_spec())
 
     assert compilation.report.status == "valid"
-    assert compilation.plan.processing_route.kind == "component_assembly"
-    assert [step.operation for step in compilation.plan.processing_route.steps] == [
-        "foldback",
-        "basal_pairing",
-        "assemble_insert",
-    ]
+    assert compilation.plan.design_derivation.kind == "evaluated_components"
+    assert not hasattr(compilation.plan.design_derivation, "steps")
     assert (
         compilation.plan.source_oligo.sequence == compilation.plan.hairpin_encoding_insert.sequence
     )
@@ -155,13 +152,12 @@ def test_resolved_components_compile_without_claiming_a_processing_route(tmp_pat
     assert verify_bundle(output) == compilation.bundle
 
 
-def test_component_assembly_preserves_optional_non_payload_stem_context() -> None:
+def test_component_derivation_preserves_optional_non_payload_stem_context() -> None:
     spec = _component_spec().model_copy(
         update={
             "stem_extension": hop.PairedStemExtensionRequest(
                 left_arm="GCTA",
                 right_arm="TAAC",
-                allow_gt_wobble=True,
             )
         }
     )
@@ -178,16 +174,11 @@ def test_component_assembly_preserves_optional_non_payload_stem_context() -> Non
         "stem_extension_right_arm",
         "basal_right_arm",
     )
-    route = compilation.plan.processing_route
-    assert route.kind == "component_assembly"
-    assert route.stem_extension is not None
-    assert route.stem_extension.hard_mismatch_count == 1
-    assert [step.operation for step in route.steps] == [
-        "foldback",
-        "basal_pairing",
-        "stem_extension_pairing",
-        "assemble_insert",
-    ]
+    derivation = compilation.plan.design_derivation
+    assert derivation.kind == "evaluated_components"
+    assert derivation.stem_extension is not None
+    assert derivation.stem_extension.hard_mismatch_count == 1
+    assert not hasattr(derivation, "steps")
     intermediates = json.loads(compilation.artifacts["expected-intermediates.json"])
     assert intermediates["stem_extension"]["left_arm"] == "GCTA"
 
@@ -197,8 +188,8 @@ def test_absent_stem_extension_is_omitted_from_the_serialized_surface() -> None:
     compilation = hop.compile(spec)
 
     assert "stem_extension" not in spec.model_dump(mode="json", by_alias=True)
-    route = compilation.plan.processing_route
-    assert "stem_extension" not in route.model_dump(mode="json")
+    derivation = compilation.plan.design_derivation
+    assert "stem_extension" not in derivation.model_dump(mode="json")
     assert tuple(feature.role for feature in compilation.plan.hairpin_encoding_insert.features) == (
         "basal_left_arm",
         "payload",
@@ -208,11 +199,11 @@ def test_absent_stem_extension_is_omitted_from_the_serialized_surface() -> None:
     )
 
 
-def test_component_assembly_rejects_a_release_event_without_a_terminal_nick() -> None:
+def test_component_derivation_rejects_a_release_projection_without_a_terminal_nick() -> None:
     data = _component_spec().model_dump(by_alias=True)
     data["release"] = _release_request().model_dump()
 
-    with pytest.raises(ValidationError, match="terminal nick"):
+    with pytest.raises(ValidationError, match="terminal-nick"):
         ResolvedHopSpec.model_validate(data)
 
 
@@ -270,10 +261,10 @@ def test_resolved_spec_returns_diagnostics_before_compile() -> None:
 
     assert report.status == "infeasible"
     assert [item.code for item in report.diagnostics] == [
-        "HOP-FOLD-002",
-        "HOP-FOLD-004",
+        "HOP-FOLD-001",
+        "HOP-FOLD-003",
     ]
-    with pytest.raises(InfeasibleDesignError, match="HOP-FOLD-002"):
+    with pytest.raises(InfeasibleDesignError, match="HOP-FOLD-001"):
         hop.compile(invalid)
 
 
@@ -282,9 +273,12 @@ def test_resolved_compile_carries_released_state_into_plan_views_and_artifacts()
 
     compilation = hop.compile(spec)
 
-    assert compilation.plan.processing_route.kind == "resolved_events"
-    assert compilation.plan.processing_route.released_state is not None
-    assert compilation.plan.processing_route.released_state.active_product_sequence == "CCTCAGCA"
+    assert compilation.plan.design_derivation.kind == "resolved_junction_geometry"
+    assert compilation.plan.design_derivation.released_foldback_source is not None
+    assert (
+        compilation.plan.design_derivation.released_foldback_source.active_product_sequence
+        == "CCTCAGCA"
+    )
     assert compilation.plan.source_oligo.sequence == spec.release.precursor_top_strand
     assert (
         compilation.plan.source_oligo.sequence != compilation.plan.hairpin_encoding_insert.sequence
@@ -293,23 +287,12 @@ def test_resolved_compile_carries_released_state_into_plan_views_and_artifacts()
     assert "released-workflow-view.svg" in compilation.artifacts
 
 
-def test_resolved_route_graph_includes_terminal_nick_before_insert_assembly() -> None:
+def test_design_derivation_contains_no_temporal_state_graph() -> None:
     for spec in (_spec(), _spec().model_copy(update={"release": _release_request()})):
-        route = hop.compile(spec).plan.processing_route
-        assert route.kind == "resolved_events"
-        terminal_nick_index = next(
-            index for index, step in enumerate(route.steps) if step.operation == "terminal_nick"
-        )
-        assembly_index = next(
-            index for index, step in enumerate(route.steps) if step.operation == "assemble_insert"
-        )
-        terminal_nick = route.steps[terminal_nick_index]
-        assembly = route.steps[assembly_index]
-
-        assert terminal_nick.input_states == ("basal_junction",)
-        assert terminal_nick.output_state == "terminal_nicked_basal_junction"
-        assert "terminal_nicked_basal_junction" in assembly.input_states
-        assert terminal_nick_index < assembly_index
+        derivation = hop.compile(spec).plan.design_derivation
+        assert derivation.kind == "resolved_junction_geometry"
+        assert derivation.terminal_nick == spec.basal.terminal_nick
+        assert not hasattr(derivation, "steps")
 
 
 def test_resolved_route_rejects_disconnected_release_and_foldback_states() -> None:
@@ -343,17 +326,13 @@ def test_resolved_route_rejects_disconnected_release_and_foldback_states() -> No
         hop.compile(disconnected)
 
 
-def test_resolved_plan_rejects_disconnected_serialized_step_topology() -> None:
+def test_resolved_plan_rejects_retired_temporal_steps() -> None:
     data = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
-    route = data["processing_route"]
-    assert isinstance(route, dict)
-    steps = route["steps"]
-    assert isinstance(steps, list)
-    second = steps[1]
-    assert isinstance(second, dict)
-    second["input_states"] = ["unrelated_state"]
+    derivation = data["design_derivation"]
+    assert isinstance(derivation, dict)
+    derivation["steps"] = []
 
-    with pytest.raises(ValidationError, match="available molecular states"):
+    with pytest.raises(ValidationError, match="Extra inputs"):
         HopPlan.model_validate_json(json.dumps(data))
 
 
@@ -363,7 +342,7 @@ def test_resolved_plan_rejects_route_source_and_layout_drift() -> None:
     assert isinstance(source, dict)
     source["sequence"] = "AAAA"
 
-    with pytest.raises(ValidationError, match="actual route input"):
+    with pytest.raises(ValidationError, match="derivation input"):
         HopPlan.model_validate_json(json.dumps(source_drift))
 
     role_drift = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
@@ -375,27 +354,21 @@ def test_resolved_plan_rejects_route_source_and_layout_drift() -> None:
     assert isinstance(first, dict)
     first["role"] = "payload"
 
-    with pytest.raises(ValidationError, match="each physical role once"):
+    with pytest.raises(ValidationError, match="each role once"):
         HopPlan.model_validate_json(json.dumps(role_drift))
 
 
-def test_resolved_route_rejects_duplicate_step_ids_in_serialized_plan() -> None:
+def test_resolved_plan_rejects_retired_processing_route_field() -> None:
     data = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
-    route = data["processing_route"]
-    assert isinstance(route, dict)
-    steps = route["steps"]
-    assert isinstance(steps, list)
-    first, second = steps[:2]
-    assert isinstance(first, dict) and isinstance(second, dict)
-    second["step_id"] = first["step_id"]
+    data["processing_route"] = data["design_derivation"]
 
-    with pytest.raises(ValidationError, match="step ids must be unique"):
+    with pytest.raises(ValidationError, match="Extra inputs"):
         HopPlan.model_validate_json(json.dumps(data))
 
 
 def test_resolved_plan_rejects_derived_foldback_and_insert_drift() -> None:
     foldback_drift = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
-    route = foldback_drift["processing_route"]
+    route = foldback_drift["design_derivation"]
     assert isinstance(route, dict)
     foldback = route["foldback"]
     assert isinstance(foldback, dict)
@@ -424,11 +397,9 @@ def test_resolved_plan_rejects_derived_foldback_and_insert_drift() -> None:
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
-        ("nick_boundary", {"offset": 999}, "inside the precursor"),
-        ("nick_boundary", {"offset": 1}, "HOP-FOLD-001"),
         ("protected_region.end", {"offset": 999}, "inside the precursor"),
-        ("terminal_paired_bp", 999, "paired run"),
-        ("max_uninterrupted_paired_bp", 999, "paired run"),
+        ("terminal_watson_crick_bp", 999, "Watson-Crick run"),
+        ("max_uninterrupted_watson_crick_bp", 999, "Watson-Crick run"),
     ],
 )
 def test_resolved_plan_rejects_serialized_foldback_state_drift(
@@ -437,7 +408,7 @@ def test_resolved_plan_rejects_serialized_foldback_state_drift(
     message: str,
 ) -> None:
     data = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
-    route = data["processing_route"]
+    route = data["design_derivation"]
     assert isinstance(route, dict)
     foldback = route["foldback"]
     assert isinstance(foldback, dict)
@@ -452,11 +423,22 @@ def test_resolved_plan_rejects_serialized_foldback_state_drift(
 
 def test_resolved_plan_rejects_serialized_terminal_nick_drift() -> None:
     data = hop.compile(_spec()).plan.model_dump(mode="json", by_alias=True)
-    route = data["processing_route"]
+    route = data["design_derivation"]
     assert isinstance(route, dict)
     route["terminal_nick"]["boundary"]["offset"] = 999
 
     with pytest.raises(ValidationError, match="basal arm length"):
+        HopPlan.model_validate_json(json.dumps(data))
+
+
+def test_resolved_derivation_rejects_discontinuous_projected_strands() -> None:
+    spec = _spec().model_copy(update={"release": _release_request()})
+    data = hop.compile(spec).plan.model_dump(mode="json", by_alias=True)
+    derivation = data["design_derivation"]
+    assert isinstance(derivation, dict)
+    derivation["terminal_nick"]["strand"] = "bottom"
+
+    with pytest.raises(ValidationError, match="continuous strand"):
         HopPlan.model_validate_json(json.dumps(data))
 
 
@@ -497,9 +479,9 @@ def test_resolved_plan_rejects_serialized_release_state_drift(
 ) -> None:
     spec = _spec().model_copy(update={"release": _release_request()})
     data = hop.compile(spec).plan.model_dump(mode="json", by_alias=True)
-    route = data["processing_route"]
+    route = data["design_derivation"]
     assert isinstance(route, dict)
-    released = route["released_state"]
+    released = route["released_foldback_source"]
     assert isinstance(released, dict)
     if field == "release_cut.top":
         released["release_cut"]["top"] = value
@@ -517,14 +499,13 @@ def test_reserve_basal_profile_requires_explicit_acceptance() -> None:
             "pairing": BasalPairingRequest(
                 left_arm="AAAA",
                 right_arm="TGGT",
-                allow_gt_wobble=True,
             ),
             "constraints": spec.basal.constraints.model_copy(
                 update={
                     "max_active_hard_mismatches": 4,
                     "max_active_non_watson_crick_pairs": 4,
-                    "minimum_active_support": 0.0,
-                    "maximum_active_disruption": 4.0,
+                    "minimum_active_pair_support_index": 0.0,
+                    "maximum_active_pair_disruption_index": 4.0,
                     "reject_compact_profiles": (),
                 }
             ),

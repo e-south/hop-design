@@ -127,7 +127,7 @@ def plan_design_space(space: ResolvedDesignSpace) -> DesignSpacePlan:
             defaults_ref=space.defaults_ref,
             catalog_ref=space.catalog_ref,
             constraint_profile_ref=space.constraint_profile_ref,
-            processing_route_ref=space.processing_route_ref,
+            design_derivation_ref=space.design_derivation_ref,
             constraints=space.per_design_constraints,
             external_refs=space.external_refs,
         )

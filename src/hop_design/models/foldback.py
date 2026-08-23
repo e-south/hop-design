@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
-from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.coordinates import Span
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.junction import FoldbackJunction, JunctionPairKind
 from hop_design.models.sequence import SequenceValidationError, normalize_dna_sequence
@@ -22,31 +22,32 @@ def _normalize_optional_exact_dna(value: object) -> str:
 
 
 class FoldbackConstraints(HopModel):
-    """Caller-authored feasibility limits for one foldback junction."""
+    """Caller limits for non-Watson-Crick pairs and Watson-Crick run lengths."""
 
-    max_mismatches: int = Field(ge=0)
-    terminal_paired_bp_min: int = Field(ge=0)
-    terminal_paired_bp_max: int = Field(ge=0)
-    max_uninterrupted_paired_bp: int = Field(ge=0)
+    max_non_watson_crick_pairs: int = Field(ge=0)
+    terminal_watson_crick_bp_min: int = Field(ge=0)
+    terminal_watson_crick_bp_max: int = Field(ge=0)
+    max_uninterrupted_watson_crick_bp: int = Field(ge=0)
     max_added_nt: int = Field(ge=0)
     required_turn_nt: int = Field(ge=0)
-    allow_protected_region_mismatches: bool
+    allow_protected_region_non_watson_crick_pairs: bool
 
     @model_validator(mode="after")
     def validate_ranges(self) -> FoldbackConstraints:
-        if self.terminal_paired_bp_max < self.terminal_paired_bp_min:
+        if self.terminal_watson_crick_bp_max < self.terminal_watson_crick_bp_min:
             raise ValueError(
-                "terminal_paired_bp_max must be greater than or equal to terminal_paired_bp_min."
+                "terminal_watson_crick_bp_max must be greater than or equal to "
+                "terminal_watson_crick_bp_min."
             )
         return self
 
 
 class FoldbackEvaluationRequest(HopModel):
-    """One explicit precursor, nick, turn, optional paired arm, and constraint request."""
+    """One explicit precursor, turn, optional paired arm, and constraint request."""
 
     precursor_sequence: str
-    nick_boundary: Boundary
     retained_tract_span: Span
+    source_turn_span: Span
     protected_region: Span
     turn_extension: str
     foldback_arm: str
@@ -67,16 +68,20 @@ class FoldbackEvaluationRequest(HopModel):
     @model_validator(mode="after")
     def validate_coordinates(self) -> FoldbackEvaluationRequest:
         precursor_nt = len(self.precursor_sequence)
-        if self.nick_boundary.offset > precursor_nt:
-            raise ValueError("nick_boundary must stay inside the precursor sequence.")
         for label, span in (
             ("retained_tract_span", self.retained_tract_span),
+            ("source_turn_span", self.source_turn_span),
             ("protected_region", self.protected_region),
         ):
             if span.end.offset > precursor_nt:
                 raise ValueError(f"{label} must stay inside the precursor sequence.")
         if self.retained_tract_span.length.value != len(self.foldback_arm):
             raise ValueError("foldback_arm length must equal retained_tract_span length.")
+        _validate_source_turn_span(
+            retained_tract_span=self.retained_tract_span,
+            source_turn_span=self.source_turn_span,
+            precursor_nt=precursor_nt,
+        )
         return self
 
 
@@ -84,8 +89,8 @@ class FoldbackSearchRequest(HopModel):
     """Foldback request whose arm is to be deterministically enumerated."""
 
     precursor_sequence: str
-    nick_boundary: Boundary
     retained_tract_span: Span
+    source_turn_span: Span
     protected_region: Span
     turn_extension: str
     constraints: FoldbackConstraints
@@ -105,16 +110,20 @@ class FoldbackSearchRequest(HopModel):
     @model_validator(mode="after")
     def validate_coordinates(self) -> FoldbackSearchRequest:
         precursor_nt = len(self.precursor_sequence)
-        if self.nick_boundary.offset > precursor_nt:
-            raise ValueError("nick_boundary must stay inside the precursor sequence.")
         for label, span in (
             ("retained_tract_span", self.retained_tract_span),
+            ("source_turn_span", self.source_turn_span),
             ("protected_region", self.protected_region),
         ):
             if span.end.offset > precursor_nt:
                 raise ValueError(f"{label} must stay inside the precursor sequence.")
         if self.retained_tract_span.length.value == 0:
             raise ValueError("retained_tract_span must contain at least one nucleotide.")
+        _validate_source_turn_span(
+            retained_tract_span=self.retained_tract_span,
+            source_turn_span=self.source_turn_span,
+            precursor_nt=precursor_nt,
+        )
         return self
 
 
@@ -122,8 +131,8 @@ class FoldbackEvaluation(HopModel):
     """Derived geometry, pairing measurements, and feasibility diagnostics."""
 
     precursor_sequence: str
-    nick_boundary: Boundary
     retained_tract_span: Span
+    source_turn_span: Span
     protected_region: Span
     turn_extension: str
     designed_sequence: str
@@ -131,9 +140,9 @@ class FoldbackEvaluation(HopModel):
     source_turn_sequence: str
     effective_turn_sequence: str
     foldback_arm: str
-    mismatch_positions: tuple[int, ...]
-    terminal_paired_bp: int = Field(ge=0)
-    max_uninterrupted_paired_bp: int = Field(ge=0)
+    non_watson_crick_positions: tuple[int, ...]
+    terminal_watson_crick_bp: int = Field(ge=0)
+    max_uninterrupted_watson_crick_bp: int = Field(ge=0)
     added_nt: int = Field(ge=0)
     report: CheckReport
 
@@ -163,10 +172,9 @@ class FoldbackEvaluation(HopModel):
     @model_validator(mode="after")
     def validate_junction_projection(self) -> FoldbackEvaluation:
         precursor_nt = len(self.precursor_sequence)
-        if self.nick_boundary.offset > precursor_nt:
-            raise ValueError("Foldback nick boundary must stay inside the precursor sequence.")
         for label, span in (
             ("retained tract", self.retained_tract_span),
+            ("source turn", self.source_turn_span),
             ("protected region", self.protected_region),
         ):
             if span.end.offset > precursor_nt:
@@ -174,7 +182,14 @@ class FoldbackEvaluation(HopModel):
         retained = self.precursor_sequence[
             self.retained_tract_span.start.offset : self.retained_tract_span.end.offset
         ]
-        expected_source_turn = self.precursor_sequence[self.retained_tract_span.end.offset :]
+        _validate_source_turn_span(
+            retained_tract_span=self.retained_tract_span,
+            source_turn_span=self.source_turn_span,
+            precursor_nt=precursor_nt,
+        )
+        expected_source_turn = self.precursor_sequence[
+            self.source_turn_span.start.offset : self.source_turn_span.end.offset
+        ]
         expected_effective_turn = f"{expected_source_turn}{self.turn_extension}"
         expected_junction = f"{retained}{expected_effective_turn}{self.foldback_arm}"
         expected_designed = f"{self.precursor_sequence}{self.turn_extension}{self.foldback_arm}"
@@ -197,34 +212,41 @@ class FoldbackEvaluation(HopModel):
             for position, pair in enumerate(self.junction.pairs)
             if pair.kind is not JunctionPairKind.WATSON_CRICK
         )
-        if observed_mismatches != self.mismatch_positions:
+        if observed_mismatches != self.non_watson_crick_positions:
             raise ValueError("Foldback mismatch positions must match canonical junction pairs.")
         if self.junction.foldback_arm_span.length.value != len(self.foldback_arm):
             raise ValueError("Foldback evaluation arm must match its canonical junction.")
         matched_mask = tuple(
             pair.kind is JunctionPairKind.WATSON_CRICK for pair in self.junction.pairs
         )
-        terminal_paired_bp = 0
+        terminal_watson_crick_bp = 0
         for matched in matched_mask:
             if not matched:
                 break
-            terminal_paired_bp += 1
-        max_uninterrupted_paired_bp = 0
+            terminal_watson_crick_bp += 1
+        max_uninterrupted_watson_crick_bp = 0
         current_run = 0
         for matched in matched_mask:
             current_run = current_run + 1 if matched else 0
-            max_uninterrupted_paired_bp = max(max_uninterrupted_paired_bp, current_run)
-        if self.terminal_paired_bp != terminal_paired_bp:
-            raise ValueError("Foldback terminal paired run must match canonical junction pairs.")
-        if self.max_uninterrupted_paired_bp != max_uninterrupted_paired_bp:
-            raise ValueError("Foldback longest paired run must match canonical junction pairs.")
-        has_nick_geometry_diagnostic = any(
-            diagnostic.code == "HOP-FOLD-001" for diagnostic in self.report.diagnostics
-        )
-        nick_geometry_is_invalid = self.retained_tract_span.start != self.nick_boundary
-        if has_nick_geometry_diagnostic != nick_geometry_is_invalid:
-            raise ValueError("Foldback report must agree with HOP-FOLD-001 nick geometry.")
+            max_uninterrupted_watson_crick_bp = max(max_uninterrupted_watson_crick_bp, current_run)
+        if self.terminal_watson_crick_bp != terminal_watson_crick_bp:
+            raise ValueError(
+                "Foldback terminal Watson-Crick run must match canonical junction pairs."
+            )
+        if self.max_uninterrupted_watson_crick_bp != max_uninterrupted_watson_crick_bp:
+            raise ValueError(
+                "Foldback longest Watson-Crick run must match canonical junction pairs."
+            )
         return self
+
+
+def _validate_source_turn_span(
+    *, retained_tract_span: Span, source_turn_span: Span, precursor_nt: int
+) -> None:
+    if source_turn_span.start != retained_tract_span.end:
+        raise ValueError("source_turn_span must begin at the retained-tract boundary.")
+    if source_turn_span.end.offset != precursor_nt:
+        raise ValueError("source_turn_span must end at the precursor boundary.")
 
 
 class FoldbackSearchLimits(HopModel):

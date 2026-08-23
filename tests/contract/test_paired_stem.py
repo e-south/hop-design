@@ -11,7 +11,6 @@ def test_paired_stem_extension_preserves_literal_arms_and_pair_calls() -> None:
         hop.PairedStemExtensionRequest(
             left_arm="GCTA",
             right_arm="TAAC",
-            allow_gt_wobble=True,
         )
     )
 
@@ -29,16 +28,32 @@ def test_paired_stem_extension_preserves_literal_arms_and_pair_calls() -> None:
     assert extension.hard_mismatch_count == 1
 
 
+def test_paired_stem_pair_kind_does_not_depend_on_caller_policy() -> None:
+    extension = hop.evaluate_paired_stem_extension(
+        hop.PairedStemExtensionRequest(
+            left_arm="G",
+            right_arm="T",
+        )
+    )
+
+    assert extension.pairs[0].kind == hop.JunctionPairKind.GT_WOBBLE
+
+    with pytest.raises(ValidationError, match="Extra inputs"):
+        hop.PairedStemExtensionRequest(
+            left_arm="G",
+            right_arm="T",
+            allow_gt_wobble=True,
+        )
+
+
 def test_paired_stem_extension_rejects_empty_or_unequal_arms() -> None:
     with pytest.raises(ValidationError, match="equal nonzero lengths"):
         hop.PairedStemExtensionRequest(
             left_arm="GCTA",
             right_arm="TAA",
-            allow_gt_wobble=True,
         )
     with pytest.raises(ValidationError, match="equal nonzero lengths"):
         hop.PairedStemExtensionRequest(
             left_arm="",
             right_arm="",
-            allow_gt_wobble=True,
         )

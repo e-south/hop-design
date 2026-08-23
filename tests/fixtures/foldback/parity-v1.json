@@ -2,7 +2,6 @@
   "schema": "hop.foldback-parity-fixture/v1",
   "accepted_exact": {
     "precursor_sequence": "CCTCAGCA",
-    "nick_boundary": 2,
     "retained_tract": [2, 6],
     "protected_region": [0, 8],
     "turn_extension": "T",
@@ -13,13 +12,12 @@
   },
   "accepted_near_match": {
     "precursor_sequence": "CCTCAGCA",
-    "nick_boundary": 2,
     "retained_tract": [2, 6],
     "protected_region": [0, 2],
     "turn_extension": "T",
     "foldback_arm": "CTAA",
-    "expected_mismatch_positions": [1],
-    "expected_terminal_paired_bp": 1,
-    "expected_max_uninterrupted_paired_bp": 2
+    "expected_non_watson_crick_positions": [1],
+    "expected_terminal_watson_crick_bp": 1,
+    "expected_max_uninterrupted_watson_crick_bp": 2
   }
 }

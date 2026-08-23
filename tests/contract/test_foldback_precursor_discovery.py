@@ -91,6 +91,8 @@ def test_foldback_precursor_search_matches_sanitized_predecessor_candidate() -> 
     assert result.observed_hit_count == 1
     assert result.truncated_by == ()
     candidate = result.hits[0]
+    assert candidate.candidate_id.startswith("hop:foldback-precursor-candidate/")
+    assert candidate.candidate_id.endswith("@2")
     assert candidate.precursor_sequence == "CATTGC"
     assert candidate.turn_extension == ""
     assert candidate.evaluation.foldback_arm == "ATG"
@@ -147,8 +149,8 @@ def test_foldback_precursor_search_reports_node_and_hit_truncation() -> None:
     assert by_hits.observed_hit_count == 192
     assert by_hits.truncated_by == ("max_hits",)
     assert by_hits.hits[0].precursor_sequence == "CCA"
-    assert by_hits.hits[0].turn_extension == "AAT"
-    assert by_hits.hits[0].evaluation.designed_sequence == "CCAAATTGG"
+    assert by_hits.hits[0].turn_extension == "AAA"
+    assert by_hits.hits[0].evaluation.designed_sequence == "CCAAAATGG"
 
 
 def test_foldback_precursor_search_applies_explicit_additional_nick_policy() -> None:
@@ -201,6 +203,10 @@ def test_foldback_precursor_search_result_rejects_accounting_drift() -> None:
 @pytest.mark.parametrize(
     ("candidate_update", "message"),
     [
+        (
+            {"candidate_id": "hop:foldback-precursor-candidate/" + "0" * 64 + "@2"},
+            "candidate_id",
+        ),
         ({"precursor_sequence": "AATTGC"}, "precursor"),
         ({"turn_extension": "A"}, "turn extension"),
         ({"extra_target_strand_nick_count": 1}, "target-strand"),
@@ -265,6 +271,32 @@ def test_foldback_precursor_request_rejects_selected_placement_drift() -> None:
                 "placement": {
                     **request.placement.model_dump(mode="json"),
                     "oriented_motif_5to3": "CACTGC",
+                },
+            }
+        )
+
+
+def test_palindromic_reverse_placement_replay_rejects_orientation_tampering() -> None:
+    agent = _agent(
+        "palindromic",
+        motif="AATT",
+        nicked_strand=Strand.BOTTOM,
+        cut_offset=4,
+    )
+    request = _request(
+        agent,
+        precursor_template="NNNN",
+        turn_extension_template="NN",
+    )
+
+    assert request.placement.orientation == "reverse"
+    with pytest.raises(ValidationError, match="placement"):
+        FoldbackPrecursorSearchRequest.model_validate(
+            {
+                **request.model_dump(mode="json"),
+                "placement": {
+                    **request.placement.model_dump(mode="json"),
+                    "orientation": "forward",
                 },
             }
         )

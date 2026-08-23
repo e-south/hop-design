@@ -8,15 +8,20 @@ from pydantic import ValidationError
 import hop_design as hop
 
 
-def _foldback_option(option_id: str, *, arm: str, max_mismatches: int) -> hop.FoldbackOption:
+def _foldback_option(
+    option_id: str, *, arm: str, max_non_watson_crick_pairs: int
+) -> hop.FoldbackOption:
     return hop.FoldbackOption(
         option_id=option_id,
         request=hop.FoldbackEvaluationRequest(
             precursor_sequence="CCTCAGCA",
-            nick_boundary=hop.Boundary(offset=2),
             retained_tract_span=hop.Span(
                 start=hop.Boundary(offset=2),
                 end=hop.Boundary(offset=6),
+            ),
+            source_turn_span=hop.Span(
+                start=hop.Boundary(offset=6),
+                end=hop.Boundary(offset=8),
             ),
             protected_region=hop.Span(
                 start=hop.Boundary(offset=0),
@@ -25,13 +30,13 @@ def _foldback_option(option_id: str, *, arm: str, max_mismatches: int) -> hop.Fo
             turn_extension="T",
             foldback_arm=arm,
             constraints=hop.FoldbackConstraints(
-                max_mismatches=max_mismatches,
-                terminal_paired_bp_min=0,
-                terminal_paired_bp_max=4,
-                max_uninterrupted_paired_bp=4,
+                max_non_watson_crick_pairs=max_non_watson_crick_pairs,
+                terminal_watson_crick_bp_min=0,
+                terminal_watson_crick_bp_max=4,
+                max_uninterrupted_watson_crick_bp=4,
                 max_added_nt=5,
                 required_turn_nt=3,
-                allow_protected_region_mismatches=False,
+                allow_protected_region_non_watson_crick_pairs=False,
             ),
         ),
     )
@@ -44,15 +49,15 @@ def _basal_option() -> hop.BasalOption:
             pairing=hop.BasalPairingRequest(
                 left_arm="AAAA",
                 right_arm="TTTT",
-                allow_gt_wobble=True,
             ),
             constraints=hop.BasalConstraintProfile(
                 require_terminal_watson_crick=True,
+                allow_active_gt_wobble=True,
                 max_active_hard_mismatches=0,
                 max_active_non_watson_crick_pairs=0,
                 forbid_active_middle_double_hard=True,
-                minimum_active_support=4.0,
-                maximum_active_disruption=0.0,
+                minimum_active_pair_support_index=4.0,
+                maximum_active_pair_disruption_index=0.0,
                 require_outer_hard_for_active_double=True,
                 reject_compact_profiles=(),
                 reserve_compact_profiles=(),
@@ -78,15 +83,15 @@ def _space(*, max_designs: int) -> hop.ResolvedDesignSpace:
         space_id="example-space",
         payloads=payloads,
         foldbacks=(
-            _foldback_option("foldback-a", arm="CTGA", max_mismatches=0),
-            _foldback_option("foldback-b", arm="CTAA", max_mismatches=1),
+            _foldback_option("foldback-a", arm="CTGA", max_non_watson_crick_pairs=0),
+            _foldback_option("foldback-b", arm="CTAA", max_non_watson_crick_pairs=1),
         ),
         basals=(_basal_option(),),
         releases=(hop.ReleaseOption(option_id="no-release", request=None),),
         defaults_ref="example:defaults/resolved@1",
         catalog_ref="example:processing-catalog/synthetic@1",
         constraint_profile_ref="example:constraint-profile/explicit@1",
-        processing_route_ref="example:processing-route/resolved-events@1",
+        design_derivation_ref="example:design-derivation/resolved-junction-geometry@1",
         per_design_constraints=hop.DesignLimits(max_candidates=1),
         limits=hop.DesignSpaceLimits(max_designs=max_designs),
         duplicate_final_sequence_policy=hop.DuplicateDesignSequencePolicy.FAIL,
@@ -121,8 +126,25 @@ def test_design_space_plan_is_deterministic_typed_and_renderer_free() -> None:
         ("payload-b", "foldback-b", "basal-a"),
     ]
     assert len({row.spec.design_id for row in first.rows}) == 4
-    assert all(row.spec.schema_id == "hop.resolved-design/v1" for row in first.rows)
+    assert all(row.spec.schema_id == "hop.resolved-design/v2" for row in first.rows)
     assert all(row.release_option_id == "no-release" for row in first.rows)
+    assert space.schema_id == "hop.resolved-design-space/v2"
+    assert first.schema_id == "hop.design-space-plan/v2"
+
+
+def test_design_space_outer_schemas_reject_retired_ids() -> None:
+    space = _space(max_designs=4)
+    plan = hop.plan_design_space(space)
+
+    space_data = space.model_dump(mode="json", by_alias=True)
+    space_data["schema"] = "hop.resolved-design-space/v1"
+    with pytest.raises(ValidationError):
+        hop.ResolvedDesignSpace.model_validate(space_data)
+
+    plan_data = plan.model_dump(mode="json", by_alias=True)
+    plan_data["schema"] = "hop.design-space-plan/v1"
+    with pytest.raises(ValidationError):
+        hop.DesignSpacePlan.model_validate(plan_data)
 
 
 def test_design_space_rejects_duplicate_axis_ids() -> None:

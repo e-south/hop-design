@@ -8,33 +8,15 @@ from hop_design.catalog.defaults import (
     BASAL_REF,
     CONSTRAINT_PROFILE_REF,
     DEFAULTS_REF,
+    DESIGN_DERIVATION_REF,
     FOLDBACK_REF,
-    PROCESSING_ROUTE_REF,
 )
 from hop_design.design.basal import evaluate_basal_pairing
-from hop_design.design.basal_candidates import search_basal_candidates
-from hop_design.design.basal_processing import search_basal_processing_geometries
 from hop_design.design.bundle import load_verified_bundle, verify_bundle
-from hop_design.design.candidates import search_foldback_precursors
 from hop_design.design.compile import check_spec, compile_spec
 from hop_design.design.design_space import plan_design_space
-from hop_design.design.discovery import search_nicking_placements
-from hop_design.design.foldback import evaluate_foldback, search_foldback_arms
-from hop_design.design.junction_routes import (
-    search_basal_processing_routes,
-    search_hairpin_junction_routes,
-)
-from hop_design.design.linear_source_method import (
-    compile_linear_source_multinick_hairpin_pcr,
-)
+from hop_design.design.foldback import evaluate_foldback
 from hop_design.design.loading import load_spec
-from hop_design.design.method import resolve_linear_source_hairpin_pcr_materials
-from hop_design.design.method_bundle import (
-    compile_linear_source_method_bundle,
-    load_verified_method_bundle,
-    verify_method_bundle,
-)
-from hop_design.design.method_views import build_method_trajectory_view
 from hop_design.design.payloads import (
     collect_payloads,
     expand_payload,
@@ -42,25 +24,8 @@ from hop_design.design.payloads import (
     load_fasta_payloads,
 )
 from hop_design.design.processing import project_released_strand_state
-from hop_design.design.released_foldback import (
-    search_released_foldback_geometries,
-    search_released_foldback_precursors,
-)
 from hop_design.design.result import Compilation
 from hop_design.design.stem import evaluate_paired_stem_extension
-from hop_design.design.views import (
-    build_basal_pairing_view,
-    build_basal_view,
-    build_foldback_junction_view,
-    build_foldback_view,
-    build_released_workflow_view,
-)
-from hop_design.export.svg import render_workflow_svg
-from hop_design.kernel.site_scanning import (
-    classify_motif_presence,
-    scan_nicking_agent,
-    scan_release_agent,
-)
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.payload import DegeneratePayload, ExactPayload
 from hop_design.models.sequence import EXACT_DNA_ALPHABET, normalize_dna_sequence
@@ -74,18 +39,9 @@ from hop_design.models.spec import (
 )
 
 __all__ = [
-    "build_basal_pairing_view",
-    "build_basal_view",
-    "build_foldback_junction_view",
-    "build_foldback_view",
-    "build_method_trajectory_view",
-    "build_released_workflow_view",
     "check",
-    "classify_motif_presence",
     "collect_payloads",
     "compile",
-    "compile_linear_source_method_bundle",
-    "compile_linear_source_multinick_hairpin_pcr",
     "create_spec",
     "evaluate_basal_pairing",
     "evaluate_foldback",
@@ -95,24 +51,9 @@ __all__ = [
     "load_fasta_payloads",
     "load_spec",
     "load_verified_bundle",
-    "load_verified_method_bundle",
     "plan_design_space",
     "project_released_strand_state",
-    "render_workflow_svg",
-    "resolve_linear_source_hairpin_pcr_materials",
-    "scan_nicking_agent",
-    "scan_release_agent",
-    "search_basal_candidates",
-    "search_basal_processing_geometries",
-    "search_basal_processing_routes",
-    "search_foldback_arms",
-    "search_foldback_precursors",
-    "search_hairpin_junction_routes",
-    "search_nicking_placements",
-    "search_released_foldback_geometries",
-    "search_released_foldback_precursors",
     "verify_bundle",
-    "verify_method_bundle",
 ]
 
 
@@ -134,7 +75,7 @@ def create_spec(*, sequence: str, design_id: str | None = None) -> HopSpec:
             foldback=FoldbackSelection(ref=FOLDBACK_REF),
             basal=BasalSelection(ref=BASAL_REF),
         ),
-        processing_route_ref=PROCESSING_ROUTE_REF,
+        design_derivation_ref=DESIGN_DERIVATION_REF,
         constraint_profile_ref=CONSTRAINT_PROFILE_REF,
         defaults_ref=DEFAULTS_REF,
         constraints=DesignLimits(max_candidates=1),

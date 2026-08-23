@@ -10,14 +10,15 @@ from hop_design.models.spec import HopSpec
 def test_sequence_convenience_expands_to_an_explicit_exact_spec() -> None:
     spec = hop.create_spec(sequence="acgt", design_id="demo-exact")
 
-    assert spec.schema_id == "hop.design/v1"
+    assert spec.schema_id == "hop.design/v2"
     assert spec.payload.kind == "exact"
     assert spec.payload.sequence == "ACGT"
     assert spec.junction.foldback.ref == "hop:foldback-junction/generic-gtttc@1"
     assert spec.junction.basal.ref == "hop:basal-junction/generic-g-c@1"
-    assert spec.processing_route_ref == "hop:processing-route/generic-direct-synthesis@1"
-    assert spec.constraint_profile_ref == "hop:constraint-profile/generic-cloneable@1"
-    assert spec.defaults_ref == "hop:defaults/generic-direct-synthesis@1"
+    assert spec.design_derivation_ref == "hop:design-derivation/generic-catalog-junctions@1"
+    assert not hasattr(spec, "processing_route_ref")
+    assert spec.constraint_profile_ref == "hop:constraint-profile/generic-hairpin@2"
+    assert spec.defaults_ref == "hop:defaults/generic-hairpin-design@2"
     assert spec.constraints.max_candidates == 1
 
 
@@ -34,7 +35,7 @@ def test_spec_rejects_a_stale_schema() -> None:
     data = hop.create_spec(sequence="ACGT", design_id="demo").model_dump(mode="json", by_alias=True)
     data["schema"] = "hop.design/v0"
 
-    with pytest.raises(ValidationError, match=r"hop\.design/v1"):
+    with pytest.raises(ValidationError, match=r"hop\.design/v2"):
         HopSpec.model_validate(data)
 
 

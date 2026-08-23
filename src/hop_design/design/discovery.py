@@ -15,7 +15,7 @@ from hop_design.models.discovery import (
 )
 
 
-def _hit_rank_key(hit: NickingPlacementHit) -> tuple[object, ...]:
+def _hit_order_key(hit: NickingPlacementHit) -> tuple[object, ...]:
     return (
         0 if hit.hit_kind == "exact" else 1,
         hit.boundary_displacement.value,
@@ -44,7 +44,7 @@ def search_nicking_placements(
         if hit is not None:
             observed_hits.append(hit)
 
-    ordered_hits = sorted(observed_hits, key=_hit_rank_key)
+    ordered_hits = sorted(observed_hits, key=_hit_order_key)
     returned_hits = ordered_hits[: limits.max_hits]
     truncated_by: list[NickingPlacementTruncation] = []
     if len(examined) < candidate_space_size:

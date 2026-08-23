@@ -1,17 +1,10 @@
+"""Public design-language facade for HOP Design."""
+
 from hop_design._facade import PUBLIC_FACADE_NAMES as _PUBLIC_FACADE_NAMES
 from hop_design.api import (
-    build_basal_pairing_view,
-    build_basal_view,
-    build_foldback_junction_view,
-    build_foldback_view,
-    build_method_trajectory_view,
-    build_released_workflow_view,
     check,
-    classify_motif_presence,
     collect_payloads,
     compile,
-    compile_linear_source_method_bundle,
-    compile_linear_source_multinick_hairpin_pcr,
     create_spec,
     evaluate_basal_pairing,
     evaluate_foldback,
@@ -21,24 +14,9 @@ from hop_design.api import (
     load_fasta_payloads,
     load_spec,
     load_verified_bundle,
-    load_verified_method_bundle,
     plan_design_space,
     project_released_strand_state,
-    render_workflow_svg,
-    resolve_linear_source_hairpin_pcr_materials,
-    scan_nicking_agent,
-    scan_release_agent,
-    search_basal_candidates,
-    search_basal_processing_geometries,
-    search_basal_processing_routes,
-    search_foldback_arms,
-    search_foldback_precursors,
-    search_hairpin_junction_routes,
-    search_nicking_placements,
-    search_released_foldback_geometries,
-    search_released_foldback_precursors,
     verify_bundle,
-    verify_method_bundle,
 )
 from hop_design.design.bundle import VerifiedHopBundle
 from hop_design.design.design_space import (
@@ -46,11 +24,6 @@ from hop_design.design.design_space import (
     DuplicateDesignSequenceError,
 )
 from hop_design.design.loading import DEFAULT_SPEC_MAX_BYTES, SpecSourceLimitError
-from hop_design.design.method_bundle import (
-    MethodCompilation,
-    MethodResolutionError,
-    VerifiedMethodBundle,
-)
 from hop_design.design.payloads import (
     DEFAULT_PAYLOAD_SOURCE_LIMITS,
     DuplicatePayloadError,
@@ -59,22 +32,13 @@ from hop_design.design.payloads import (
 )
 from hop_design.design.result import Compilation
 from hop_design.export.bundle import BundleIntegrityError
-from hop_design.models.basal import (
+from hop_design.models.basal import BasalPairingRequest
+from hop_design.models.basal_policy import (
     BasalConstraintProfile,
     BasalDesignRequest,
     BasalEvaluation,
-    BasalPairingRequest,
-    BasalPairKind,
 )
-from hop_design.models.bundle import MethodBundle
-from hop_design.models.catalog import (
-    MotifPresenceReport,
-    NickingAgent,
-    ProcessingCatalog,
-    ReleaseAgent,
-    ResolvedNickSite,
-    ResolvedReleaseSite,
-)
+from hop_design.models.catalog import NickingAgent, ProcessingCatalog, ReleaseAgent
 from hop_design.models.coordinates import BasePairCount, Boundary, NucleotideCount, Span
 from hop_design.models.design_space import (
     BasalOption,
@@ -87,32 +51,10 @@ from hop_design.models.design_space import (
     ResolvedDesignSpace,
 )
 from hop_design.models.diagnostics import Diagnostic, InfeasibleDesignError, Severity
-from hop_design.models.discovery import (
-    AdditionalNickConstraint,
-    BasalCandidate,
-    BasalCandidateExclusionStatus,
-    BasalCandidateExclusionSummary,
-    BasalCandidateSearchLimits,
-    BasalCandidateSearchRequest,
-    BasalCandidateSearchResult,
-    CandidateRejectionSummary,
-    FoldbackPrecursorCandidate,
-    FoldbackPrecursorSearchLimits,
-    FoldbackPrecursorSearchRequest,
-    FoldbackPrecursorSearchResult,
-    NickingPlacementFeasibility,
-    NickingPlacementHit,
-    NickingPlacementSearchLimits,
-    NickingPlacementSearchResult,
-    NickingPlacementTarget,
-)
 from hop_design.models.foldback import (
     FoldbackConstraints,
     FoldbackEvaluation,
     FoldbackEvaluationRequest,
-    FoldbackSearchLimits,
-    FoldbackSearchRequest,
-    FoldbackSearchResult,
 )
 from hop_design.models.junction import (
     BasalJunction,
@@ -120,52 +62,6 @@ from hop_design.models.junction import (
     JunctionPairKind,
     JunctionPairObservation,
     Strand,
-)
-from hop_design.models.linear_source_method import (
-    LinearSourceMultinickHairpinPcrPlan,
-    LinearSourceMultinickHairpinPcrRequest,
-    LinearSourceMultinickHairpinPcrResult,
-)
-from hop_design.models.method import (
-    BindingOrientation,
-    LigationEndPreparation,
-    LinearSourceHairpinPcrMaterialsPlan,
-    LinearSourceHairpinPcrMaterialsSpec,
-    MethodImplementationStatus,
-    MethodKind,
-    MethodOutcome,
-    MethodResolutionStatus,
-    OligoBinding,
-    OligoModification,
-    ProcessMaterial,
-    ProcessMaterialRole,
-    ProcessOligo,
-)
-from hop_design.models.method_states import (
-    AdapterAnnealedComplex,
-    DenaturedFragmentSet,
-    DestinationReadiness,
-    HairpinPcrDuplex,
-    LengthSelectedFragmentSet,
-    LigatedHairpin,
-    MultiSiteNickedDuplex,
-    RestrictionDigestProduct,
-    SourcePcrDuplex,
-)
-from hop_design.models.molecular_state import (
-    AdapterAnnealingRequest,
-    CovalentBond,
-    EndChemistry,
-    Fragment,
-    FragmentLengthSelection,
-    LineageDirection,
-    LineageStrand,
-    MaterialBaseLineage,
-    MolecularStrand,
-    PrimerBinding,
-    SequenceProjection,
-    StrandEnd,
-    StrandPairObservation,
 )
 from hop_design.models.payload import DegeneratePayload, ExactPayload
 from hop_design.models.plan import HairpinEncodingInsert
@@ -186,6 +82,5 @@ from hop_design.models.strand_state import (
     ReleaseProjectionResult,
     StrandExposureRoute,
 )
-from hop_design.models.views import WorkflowView
 
 __all__ = list(_PUBLIC_FACADE_NAMES)

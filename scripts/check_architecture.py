@@ -9,18 +9,25 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "hop_design"
 
+PUBLIC_FACADE_MODULES = {"api", "discovery", "methods", "views"}
 FORBIDDEN_BY_LAYER = {
-    "models": {"api", "catalog", "cli", "design", "export", "kernel"},
-    "kernel": {"api", "catalog", "cli", "design", "export"},
-    "catalog": {"api", "cli", "design", "export"},
-    "export": {"api", "catalog", "cli", "design"},
-    "design": {"api", "cli"},
+    "models": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export", "kernel"},
+    "kernel": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export"},
+    "catalog": PUBLIC_FACADE_MODULES | {"cli", "design", "export"},
+    "export": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design"},
+    "design": PUBLIC_FACADE_MODULES | {"cli"},
     "api": {"cli"},
     "cli": set(),
 }
-ROOT_MODULE_LAYERS = {"api.py": "api", "cli.py": "cli"}
+ROOT_MODULE_LAYERS = {
+    "api.py": "api",
+    "cli.py": "cli",
+    "discovery.py": "api",
+    "methods.py": "api",
+    "views.py": "api",
+}
 EXEMPT_ROOT_MODULES = {"__init__.py", "_facade.py", "serialization.py"}
-KNOWN_FIRST_PARTY_TARGETS = set(FORBIDDEN_BY_LAYER) | {"serialization"}
+KNOWN_FIRST_PARTY_TARGETS = set(FORBIDDEN_BY_LAYER) | PUBLIC_FACADE_MODULES | {"serialization"}
 
 
 def _public_facade_manifest(source: str) -> tuple[str, ...]:
@@ -133,6 +140,20 @@ def violations_for_source(relative_path: str | Path, source: str) -> list[str]:
 
     tree = ast.parse(source, filename=str(relative))
     errors: list[str] = []
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Name):
+            continue
+        for target in node.targets:
+            if (
+                isinstance(target, ast.Name)
+                and target.id[:1].isupper()
+                and node.value.id[:1].isupper()
+                and target.id != node.value.id
+            ):
+                errors.append(
+                    f"{relative}:{node.lineno}: explicit semantic type alias "
+                    f"{target.id!r} -> {node.value.id!r} is forbidden"
+                )
     for node in ast.walk(tree):
         if not isinstance(node, ast.Import | ast.ImportFrom):
             continue

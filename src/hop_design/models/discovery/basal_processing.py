@@ -196,14 +196,14 @@ class BasalProcessingGeometryHit(BasalProcessingGeometryFeasibility):
     """One compatible geometry in canonical, policy-neutral order."""
 
     candidate_id: str = Field(pattern=r"^hop:basal-processing-geometry/[0-9a-f]{64}@1$")
-    rank: int = Field(ge=1)
+    canonical_ordinal: int = Field(ge=1)
 
     @model_validator(mode="after")
     def validate_hit(self) -> BasalProcessingGeometryHit:
         if not self.compatible:
             raise ValueError("A basal processing geometry hit must be compatible.")
         feasibility = BasalProcessingGeometryFeasibility.model_validate(
-            self.model_dump(mode="python", exclude={"candidate_id", "rank"})
+            self.model_dump(mode="python", exclude={"candidate_id", "canonical_ordinal"})
         )
         if self.candidate_id != basal_processing_geometry_id(feasibility):
             raise ValueError("Basal processing candidate_id must match its geometry content.")
@@ -259,8 +259,8 @@ class BasalProcessingGeometrySearchResult(HopModel):
         expected_returned = min(self.observed_hit_count, self.limits.max_hits)
         if len(self.hits) != expected_returned:
             raise ValueError("Returned hits must exhaust the available hit budget.")
-        if tuple(hit.rank for hit in self.hits) != tuple(range(1, len(self.hits) + 1)):
-            raise ValueError("Returned hit ranks must be contiguous and one-based.")
+        if tuple(hit.canonical_ordinal for hit in self.hits) != tuple(range(1, len(self.hits) + 1)):
+            raise ValueError("Returned hit ordinals must be contiguous and one-based.")
         if self.hits != tuple(sorted(self.hits, key=basal_processing_hit_order_key)):
             raise ValueError("Returned hits must use canonical physical order.")
         expected_ids = tuple(

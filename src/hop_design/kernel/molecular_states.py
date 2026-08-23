@@ -6,7 +6,7 @@ from collections.abc import Iterable, Sequence
 from itertools import pairwise
 
 from hop_design.models.coordinates import Boundary, Span
-from hop_design.models.junction import JunctionPairKind, Strand
+from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import (
     EndChemistry,
     Fragment,
@@ -16,6 +16,7 @@ from hop_design.models.molecular_state import (
     MolecularStrand,
     StrandPairObservation,
 )
+from hop_design.models.physical import classify_literal_pair
 from hop_design.models.sequence import reverse_complement_iupac
 
 
@@ -112,12 +113,6 @@ def observe_pair(
     left_base: str,
     right_base: str,
 ) -> StrandPairObservation:
-    if left_base == reverse_complement_iupac(right_base):
-        kind = JunctionPairKind.WATSON_CRICK
-    elif (left_base, right_base) in {("G", "T"), ("T", "G")}:
-        kind = JunctionPairKind.GT_WOBBLE
-    else:
-        kind = JunctionPairKind.HARD_MISMATCH
     return StrandPairObservation(
         left_strand_id=left_strand_id,
         right_strand_id=right_strand_id,
@@ -125,7 +120,7 @@ def observe_pair(
         right_index=right_index,
         left_base=left_base,
         right_base=right_base,
-        kind=kind,
+        kind=classify_literal_pair(left_base=left_base, right_base=right_base),
     )
 
 

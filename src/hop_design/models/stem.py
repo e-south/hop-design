@@ -15,7 +15,6 @@ class PairedStemExtensionRequest(HopModel):
 
     left_arm: str
     right_arm: str
-    allow_gt_wobble: bool
 
     @field_validator("left_arm", "right_arm", mode="before")
     @classmethod

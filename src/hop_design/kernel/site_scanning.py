@@ -14,15 +14,19 @@ from hop_design.models.catalog import (
     ResolvedNickSite,
     ResolvedReleaseSite,
     SiteOrientation,
+    resolve_release_sites,
 )
 from hop_design.models.coordinates import Boundary, Span
-from hop_design.models.junction import Strand
+from hop_design.models.physical import (
+    opposite_strand,
+    orient_nick_geometry,
+)
 from hop_design.models.sequence import (
     iupac_bases,
     normalize_dna_sequence,
     reverse_complement_iupac,
 )
-from hop_design.models.strand_state import DuplexCut, NickEvent
+from hop_design.models.strand_state import NickEvent
 
 
 def _orientation_motifs(motif: str) -> Iterator[tuple[SiteOrientation, str]]:
@@ -89,68 +93,54 @@ def scan_nicking_agent(sequence: str, *, agent: NickingAgent) -> tuple[ResolvedN
     normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
     motif_nt = len(agent.motif_top_5to3)
     matches: list[ResolvedNickSite] = []
-    for start, orientation, window, _certainty in _matching_windows(
-        normalized, agent.motif_top_5to3
-    ):
-        if orientation is SiteOrientation.FORWARD:
-            strand = agent.nicked_strand
-            boundary = start + agent.cut_offset
-        else:
-            strand = Strand.BOTTOM if agent.nicked_strand is Strand.TOP else Strand.TOP
-            boundary = start + motif_nt - agent.cut_offset
-        if boundary < 0 or boundary > len(normalized):
-            continue
-        matches.append(
-            ResolvedNickSite(
-                agent_id=agent.agent_id,
-                site_span=Span(
-                    start=Boundary(offset=start),
-                    end=Boundary(offset=start + motif_nt),
-                ),
-                orientation=orientation,
-                matched_sequence=window,
-                nick=NickEvent(boundary=Boundary(offset=boundary), strand=strand),
-            )
+    for target_strand in (agent.nicked_strand, opposite_strand(agent.nicked_strand)):
+        geometry = orient_nick_geometry(
+            motif_top_5to3=agent.motif_top_5to3,
+            native_nicked_strand=agent.nicked_strand,
+            cut_offset=agent.cut_offset,
+            target_strand=target_strand,
         )
+        for start in range(len(normalized) - motif_nt + 1):
+            window = normalized[start : start + motif_nt]
+            if any(
+                base not in iupac_bases(symbol)
+                for base, symbol in zip(window, geometry.motif_top_5to3, strict=True)
+            ):
+                continue
+            boundary = start + geometry.cut_offset
+            if boundary < 0 or boundary > len(normalized):
+                continue
+            matches.append(
+                ResolvedNickSite(
+                    agent_id=agent.agent_id,
+                    site_span=Span(
+                        start=Boundary(offset=start),
+                        end=Boundary(offset=start + motif_nt),
+                    ),
+                    orientation=geometry.orientation,
+                    matched_sequence=window,
+                    nick=NickEvent(boundary=Boundary(offset=boundary), strand=target_strand),
+                )
+            )
+    unique = {
+        (
+            match.agent_id,
+            match.site_span.start.offset,
+            match.site_span.end.offset,
+            match.orientation,
+            match.nick.strand,
+            match.nick.boundary.offset,
+        ): match
+        for match in matches
+    }
     return tuple(
-        sorted(matches, key=lambda match: (match.site_span.start.offset, match.orientation))
+        sorted(unique.values(), key=lambda match: (match.site_span.start.offset, match.orientation))
     )
 
 
 def scan_release_agent(sequence: str, *, agent: ReleaseAgent) -> tuple[ResolvedReleaseSite, ...]:
     """Resolve concrete duplex cuts for both motif orientations."""
-    normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
-    motif_nt = len(agent.motif_top_5to3)
-    matches: list[ResolvedReleaseSite] = []
-    for start, orientation, window, _certainty in _matching_windows(
-        normalized, agent.motif_top_5to3
-    ):
-        if orientation is SiteOrientation.FORWARD:
-            top_cut = start + agent.top_cut_offset
-            bottom_cut = start + agent.bottom_cut_offset
-        else:
-            top_cut = start + motif_nt - agent.bottom_cut_offset
-            bottom_cut = start + motif_nt - agent.top_cut_offset
-        if not (0 <= top_cut <= len(normalized) and 0 <= bottom_cut <= len(normalized)):
-            continue
-        matches.append(
-            ResolvedReleaseSite(
-                agent_id=agent.agent_id,
-                site_span=Span(
-                    start=Boundary(offset=start),
-                    end=Boundary(offset=start + motif_nt),
-                ),
-                orientation=orientation,
-                matched_sequence=window,
-                cut=DuplexCut(
-                    top=Boundary(offset=top_cut),
-                    bottom=Boundary(offset=bottom_cut),
-                ),
-            )
-        )
-    return tuple(
-        sorted(matches, key=lambda match: (match.site_span.start.offset, match.orientation))
-    )
+    return resolve_release_sites(sequence, agent=agent)
 
 
 __all__ = [

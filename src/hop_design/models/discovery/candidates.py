@@ -9,18 +9,18 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
-from hop_design.models.catalog import NickingAgent, ResolvedNickSite, SiteOrientation
+from hop_design.models.catalog import NickingAgent, ResolvedNickSite
 from hop_design.models.discovery.placements import (
     NickingPlacementHit,
     NickingPlacementTarget,
 )
 from hop_design.models.foldback import FoldbackEvaluation
-from hop_design.models.references import ReferenceId
+from hop_design.models.physical import orient_nick_geometry
 from hop_design.models.sequence import (
     SequenceValidationError,
     normalize_dna_sequence,
-    reverse_complement_iupac,
 )
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 CandidateSearchStatus = Literal["complete", "infeasible", "truncated"]
 CandidateSearchTruncation = Literal["max_search_nodes", "max_hits"]
@@ -76,14 +76,15 @@ class FoldbackPrecursorSearchRequest(HopModel):
         if placement.agent_id != agent.agent_id:
             raise ValueError("placement.agent_id must match the selected agent.")
 
-        if agent.nicked_strand is target.nicked_strand:
-            orientation = SiteOrientation.FORWARD
-            oriented_motif = agent.motif_top_5to3
-            oriented_cut_offset = agent.cut_offset
-        else:
-            orientation = SiteOrientation.REVERSE
-            oriented_motif = reverse_complement_iupac(agent.motif_top_5to3)
-            oriented_cut_offset = len(oriented_motif) - agent.cut_offset
+        geometry = orient_nick_geometry(
+            motif_top_5to3=agent.motif_top_5to3,
+            native_nicked_strand=agent.nicked_strand,
+            cut_offset=agent.cut_offset,
+            target_strand=target.nicked_strand,
+        )
+        orientation = geometry.orientation
+        oriented_motif = geometry.motif_top_5to3
+        oriented_cut_offset = geometry.cut_offset
 
         target_boundary = target.nick_boundary.offset
         exact_site_start = target_boundary - oriented_cut_offset
@@ -144,10 +145,35 @@ class CandidateRejectionSummary(HopModel):
     count: int = Field(ge=1)
 
 
+def foldback_precursor_candidate_id(
+    *,
+    precursor_sequence: str,
+    turn_extension: str,
+    intended_site: ResolvedNickSite,
+    extra_nick_sites: tuple[ResolvedNickSite, ...],
+    evaluation: FoldbackEvaluation,
+) -> str:
+    """Return content identity for one exact foldback precursor candidate."""
+    digest = sha256_digest(
+        canonical_json_bytes(
+            {
+                "evaluation": evaluation.model_dump(mode="json", by_alias=True),
+                "extra_nick_sites": [
+                    site.model_dump(mode="json", by_alias=True) for site in extra_nick_sites
+                ],
+                "intended_site": intended_site.model_dump(mode="json", by_alias=True),
+                "precursor_sequence": precursor_sequence,
+                "turn_extension": turn_extension,
+            }
+        )
+    ).removeprefix("sha256:")
+    return f"hop:foldback-precursor-candidate/{digest}@2"
+
+
 class FoldbackPrecursorCandidate(HopModel):
     """One exact precursor and foldback sequence for a selected placement."""
 
-    candidate_id: ReferenceId
+    candidate_id: str = Field(pattern=r"^hop:foldback-precursor-candidate/[0-9a-f]{64}@2$")
     precursor_sequence: str
     turn_extension: str
     intended_site: ResolvedNickSite
@@ -195,7 +221,27 @@ class FoldbackPrecursorCandidate(HopModel):
             longest = max(longest, run)
         if self.max_homopolymer_run_added != longest:
             raise ValueError("Added-sequence homopolymer run must match the evaluated sequence.")
+        expected_id = foldback_precursor_candidate_id(
+            precursor_sequence=self.precursor_sequence,
+            turn_extension=self.turn_extension,
+            intended_site=self.intended_site,
+            extra_nick_sites=self.extra_nick_sites,
+            evaluation=self.evaluation,
+        )
+        if self.candidate_id != expected_id:
+            raise ValueError("candidate_id must match the complete foldback candidate content.")
         return self
+
+
+def foldback_precursor_candidate_order_key(
+    candidate: FoldbackPrecursorCandidate,
+) -> tuple[str, str, str]:
+    """Return literal content order without preferring candidate measurements."""
+    return (
+        candidate.precursor_sequence,
+        candidate.turn_extension,
+        candidate.candidate_id,
+    )
 
 
 class FoldbackPrecursorSearchResult(HopModel):
@@ -219,6 +265,8 @@ class FoldbackPrecursorSearchResult(HopModel):
             raise ValueError("observed_hit_count cannot exceed examined search nodes.")
         if len(self.hits) > self.observed_hit_count:
             raise ValueError("Returned hits cannot exceed observed hits.")
+        if self.hits != tuple(sorted(self.hits, key=foldback_precursor_candidate_order_key)):
+            raise ValueError("Returned hits must use canonical content order.")
         if len({item.code for item in self.rejections}) != len(self.rejections):
             raise ValueError("Rejection summaries must contain unique codes.")
 
@@ -262,4 +310,6 @@ __all__ = [
     "FoldbackPrecursorSearchLimits",
     "FoldbackPrecursorSearchRequest",
     "FoldbackPrecursorSearchResult",
+    "foldback_precursor_candidate_id",
+    "foldback_precursor_candidate_order_key",
 ]

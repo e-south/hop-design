@@ -45,7 +45,9 @@ def evaluate_foldback(request: FoldbackEvaluationRequest) -> FoldbackEvaluation:
     retained = request.precursor_sequence[
         request.retained_tract_span.start.offset : request.retained_tract_span.end.offset
     ]
-    source_turn = request.precursor_sequence[request.retained_tract_span.end.offset :]
+    source_turn = request.precursor_sequence[
+        request.source_turn_span.start.offset : request.source_turn_span.end.offset
+    ]
     effective_turn = f"{source_turn}{request.turn_extension}"
     junction_sequence = f"{retained}{effective_turn}{request.foldback_arm}"
     arm_start = len(retained) + len(effective_turn)
@@ -76,79 +78,69 @@ def evaluate_foldback(request: FoldbackEvaluationRequest) -> FoldbackEvaluation:
     diagnostics: list[Diagnostic] = []
     constraints = request.constraints
 
-    if request.retained_tract_span.start.offset != request.nick_boundary.offset:
+    if len(pairing.non_watson_crick_positions) > constraints.max_non_watson_crick_pairs:
         diagnostics.append(
             _error(
                 "HOP-FOLD-001",
-                path="retained_tract_span.start",
-                message="The retained tract must begin at the resolved nick boundary.",
-                evidence={
-                    "retained_start": request.retained_tract_span.start.offset,
-                    "nick_boundary": request.nick_boundary.offset,
-                },
-            )
-        )
-    if len(pairing.mismatch_positions) > constraints.max_mismatches:
-        diagnostics.append(
-            _error(
-                "HOP-FOLD-002",
                 path="foldback_arm",
-                message="The foldback arm exceeds the declared mismatch limit.",
+                message="The foldback arm exceeds the non-Watson-Crick pair limit.",
                 evidence={
-                    "mismatch_count": len(pairing.mismatch_positions),
-                    "max_mismatches": constraints.max_mismatches,
+                    "non_watson_crick_count": len(pairing.non_watson_crick_positions),
+                    "max_non_watson_crick_pairs": constraints.max_non_watson_crick_pairs,
                 },
             )
         )
-    protected_mismatches = tuple(
+    protected_non_watson_crick = tuple(
         position
-        for position in pairing.mismatch_positions
+        for position in pairing.non_watson_crick_positions
         if request.protected_region.contains_index(
             request.retained_tract_span.start.offset + position
         )
     )
-    if protected_mismatches and not constraints.allow_protected_region_mismatches:
+    if protected_non_watson_crick and not constraints.allow_protected_region_non_watson_crick_pairs:
         diagnostics.append(
             _error(
-                "HOP-FOLD-003",
+                "HOP-FOLD-002",
                 path="protected_region",
-                message="A foldback mismatch overlaps the protected region.",
-                evidence={"retained_local_mismatch_positions": list(protected_mismatches)},
-            )
-        )
-    if not (
-        constraints.terminal_paired_bp_min
-        <= pairing.terminal_paired_bp
-        <= constraints.terminal_paired_bp_max
-    ):
-        diagnostics.append(
-            _error(
-                "HOP-FOLD-004",
-                path="constraints.terminal_paired_bp",
-                message="The terminal paired run lies outside the declared range.",
+                message="A non-Watson-Crick pair overlaps the protected region.",
                 evidence={
-                    "observed": pairing.terminal_paired_bp,
-                    "minimum": constraints.terminal_paired_bp_min,
-                    "maximum": constraints.terminal_paired_bp_max,
+                    "retained_local_non_watson_crick_positions": list(protected_non_watson_crick)
                 },
             )
         )
-    if pairing.max_uninterrupted_paired_bp > constraints.max_uninterrupted_paired_bp:
+    if not (
+        constraints.terminal_watson_crick_bp_min
+        <= pairing.terminal_watson_crick_bp
+        <= constraints.terminal_watson_crick_bp_max
+    ):
         diagnostics.append(
             _error(
-                "HOP-FOLD-005",
-                path="constraints.max_uninterrupted_paired_bp",
-                message="The longest paired run exceeds the declared maximum.",
+                "HOP-FOLD-003",
+                path="constraints.terminal_watson_crick_bp",
+                message="The terminal Watson-Crick run lies outside the declared range.",
                 evidence={
-                    "observed": pairing.max_uninterrupted_paired_bp,
-                    "maximum": constraints.max_uninterrupted_paired_bp,
+                    "observed": pairing.terminal_watson_crick_bp,
+                    "minimum": constraints.terminal_watson_crick_bp_min,
+                    "maximum": constraints.terminal_watson_crick_bp_max,
+                },
+            )
+        )
+    if pairing.max_uninterrupted_watson_crick_bp > constraints.max_uninterrupted_watson_crick_bp:
+        diagnostics.append(
+            _error(
+                "HOP-FOLD-004",
+                path="constraints.max_uninterrupted_watson_crick_bp",
+                message="The longest Watson-Crick run exceeds the declared maximum.",
+                evidence={
+                    "observed": pairing.max_uninterrupted_watson_crick_bp,
+                    "maximum": constraints.max_uninterrupted_watson_crick_bp,
                 },
             )
         )
     if added_nt > constraints.max_added_nt:
         diagnostics.append(
             _error(
-                "HOP-FOLD-006",
+                "HOP-FOLD-005",
                 path="constraints.max_added_nt",
                 message="The authored extension and foldback arm exceed the added-nt budget.",
                 evidence={"observed": added_nt, "maximum": constraints.max_added_nt},
@@ -157,7 +149,7 @@ def evaluate_foldback(request: FoldbackEvaluationRequest) -> FoldbackEvaluation:
     if len(effective_turn) != constraints.required_turn_nt:
         diagnostics.append(
             _error(
-                "HOP-FOLD-007",
+                "HOP-FOLD-006",
                 path="constraints.required_turn_nt",
                 message="The effective turn length differs from the declared requirement.",
                 evidence={
@@ -171,8 +163,8 @@ def evaluate_foldback(request: FoldbackEvaluationRequest) -> FoldbackEvaluation:
 
     return FoldbackEvaluation(
         precursor_sequence=request.precursor_sequence,
-        nick_boundary=request.nick_boundary,
         retained_tract_span=request.retained_tract_span,
+        source_turn_span=request.source_turn_span,
         protected_region=request.protected_region,
         turn_extension=request.turn_extension,
         designed_sequence=(
@@ -182,9 +174,9 @@ def evaluate_foldback(request: FoldbackEvaluationRequest) -> FoldbackEvaluation:
         source_turn_sequence=source_turn,
         effective_turn_sequence=effective_turn,
         foldback_arm=request.foldback_arm,
-        mismatch_positions=pairing.mismatch_positions,
-        terminal_paired_bp=pairing.terminal_paired_bp,
-        max_uninterrupted_paired_bp=pairing.max_uninterrupted_paired_bp,
+        non_watson_crick_positions=pairing.non_watson_crick_positions,
+        terminal_watson_crick_bp=pairing.terminal_watson_crick_bp,
+        max_uninterrupted_watson_crick_bp=pairing.max_uninterrupted_watson_crick_bp,
         added_nt=added_nt,
         report=CheckReport(diagnostics=tuple(diagnostics)),
     )
@@ -201,7 +193,7 @@ def search_foldback_arms(
     ]
     candidate_space_size = foldback_arm_candidate_count(
         paired_bp=len(retained),
-        max_mismatches=request.constraints.max_mismatches,
+        max_non_watson_crick_pairs=request.constraints.max_non_watson_crick_pairs,
     )
     hits: list[FoldbackEvaluation] = []
     nodes = 0
@@ -209,7 +201,7 @@ def search_foldback_arms(
 
     for foldback_arm in enumerate_foldback_arms(
         retained,
-        max_mismatches=request.constraints.max_mismatches,
+        max_non_watson_crick_pairs=request.constraints.max_non_watson_crick_pairs,
     ):
         if nodes >= limits.max_search_nodes:
             truncated_by = "max_search_nodes"
@@ -217,8 +209,8 @@ def search_foldback_arms(
         evaluation = evaluate_foldback(
             FoldbackEvaluationRequest(
                 precursor_sequence=request.precursor_sequence,
-                nick_boundary=request.nick_boundary,
                 retained_tract_span=request.retained_tract_span,
+                source_turn_span=request.source_turn_span,
                 protected_region=request.protected_region,
                 turn_extension=request.turn_extension,
                 foldback_arm=foldback_arm,

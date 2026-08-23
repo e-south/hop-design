@@ -21,19 +21,19 @@ def _foldback_evaluation():
     return hop.evaluate_foldback(
         hop.FoldbackEvaluationRequest(
             precursor_sequence="CCTCAGCA",
-            nick_boundary=Boundary(offset=2),
             retained_tract_span=Span(start=Boundary(offset=2), end=Boundary(offset=6)),
+            source_turn_span=Span(start=Boundary(offset=6), end=Boundary(offset=8)),
             protected_region=Span(start=Boundary(offset=0), end=Boundary(offset=2)),
             turn_extension="T",
             foldback_arm="CTGA",
             constraints=hop.FoldbackConstraints(
-                max_mismatches=0,
-                terminal_paired_bp_min=4,
-                terminal_paired_bp_max=4,
-                max_uninterrupted_paired_bp=4,
+                max_non_watson_crick_pairs=0,
+                terminal_watson_crick_bp_min=4,
+                terminal_watson_crick_bp_max=4,
+                max_uninterrupted_watson_crick_bp=4,
                 max_added_nt=5,
                 required_turn_nt=3,
-                allow_protected_region_mismatches=False,
+                allow_protected_region_non_watson_crick_pairs=False,
             ),
         )
     )
@@ -41,14 +41,15 @@ def _foldback_evaluation():
 
 def _basal_evaluation():
     return hop.evaluate_basal_pairing(
-        hop.BasalPairingRequest(left_arm="AAAA", right_arm="TTTT", allow_gt_wobble=True),
+        hop.BasalPairingRequest(left_arm="AAAA", right_arm="TTTT"),
         constraints=hop.BasalConstraintProfile(
             require_terminal_watson_crick=True,
+            allow_active_gt_wobble=True,
             max_active_hard_mismatches=0,
             max_active_non_watson_crick_pairs=0,
             forbid_active_middle_double_hard=True,
-            minimum_active_support=4.0,
-            maximum_active_disruption=0.0,
+            minimum_active_pair_support_index=4.0,
+            maximum_active_pair_disruption_index=0.0,
             require_outer_hard_for_active_double=True,
             reject_compact_profiles=(),
             reserve_compact_profiles=(),

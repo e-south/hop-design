@@ -51,9 +51,9 @@ def load_spec(
         raise ValueError("HOP spec document root must be a mapping.")
     schema = payload.get("schema")
     encoded = json.dumps(payload, separators=(",", ":"))
-    if schema == "hop.design/v1":
+    if schema == "hop.design/v2":
         return HopSpec.model_validate_json(encoded)
-    if schema == "hop.resolved-design/v1":
+    if schema == "hop.resolved-design/v2":
         return ResolvedHopSpec.model_validate_json(encoded)
     raise ValueError(f"Unsupported HOP spec schema: {schema!r}.")
 

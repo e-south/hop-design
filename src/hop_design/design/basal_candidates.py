@@ -11,8 +11,8 @@ from hop_design.kernel.basal_candidates import (
     basal_candidate_space_size,
     enumerate_basal_candidate_pairs,
 )
-from hop_design.models.basal import (
-    BasalPairingRequest,
+from hop_design.models.basal import BasalPairingRequest
+from hop_design.models.basal_policy import (
     BasalPolicyReason,
     BasalPolicyStatus,
 )
@@ -46,7 +46,6 @@ def search_basal_candidates(
         pairing = BasalPairingRequest(
             left_arm=left_arm,
             right_arm=right_arm,
-            allow_gt_wobble=request.allow_gt_wobble,
         )
         evaluation = evaluate_basal_pairing(pairing, constraints=request.constraints)
         nodes += 1
@@ -64,26 +63,26 @@ def search_basal_candidates(
             )
         ] += 1
 
-    candidates = [
+    candidates = (
         BasalCandidate(
             candidate_id=basal_candidate_id(pairing=pairing, evaluation=evaluation),
-            rank=1,
+            canonical_ordinal=1,
             pairing=pairing,
             evaluation=evaluation,
         )
         for pairing, evaluation in accepted
-    ]
-    ordered = sorted(candidates, key=basal_candidate_order_key)
-    ranked = tuple(
-        candidate.model_copy(update={"rank": rank})
-        for rank, candidate in enumerate(ordered, start=1)
     )
-    returned = ranked[: limits.max_hits]
+    ordered_candidates = sorted(candidates, key=basal_candidate_order_key)
+    numbered_candidates = tuple(
+        candidate.model_copy(update={"canonical_ordinal": canonical_ordinal})
+        for canonical_ordinal, candidate in enumerate(ordered_candidates, start=1)
+    )
+    returned = numbered_candidates[: limits.max_hits]
 
     truncated_by: list[BasalCandidateSearchTruncation] = []
     if nodes < candidate_space_size:
         truncated_by.append("max_search_nodes")
-    if len(returned) < len(ranked):
+    if len(returned) < len(numbered_candidates):
         truncated_by.append("max_hits")
     if truncated_by:
         status: Literal["complete", "infeasible", "truncated"] = "truncated"
@@ -99,7 +98,7 @@ def search_basal_candidates(
         hits=returned,
         candidate_space_size=candidate_space_size,
         search_nodes_examined=nodes,
-        observed_hit_count=len(ranked),
+        observed_hit_count=len(numbered_candidates),
         excluded=tuple(
             BasalCandidateExclusionSummary(status=key[0], reason=key[1], count=count)
             for key, count in sorted(
