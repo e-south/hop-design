@@ -16,8 +16,12 @@ from hop_design.models.discovery.basal_routes import (
     BasalProcessingRouteSearchResult,
 )
 from hop_design.models.discovery.released_foldback import ReleasedFoldbackGeometryHit
+from hop_design.models.discovery.released_foldback_candidate_evaluation import (
+    released_foldback_precursor_domains,
+)
 from hop_design.models.discovery.released_foldback_candidates import (
     ReleasedFoldbackPrecursorCandidate,
+    ReleasedFoldbackPrecursorSearchRequest,
     ReleasedFoldbackPrecursorSearchResult,
 )
 from hop_design.models.junction import Strand
@@ -127,6 +131,12 @@ class HairpinJunctionRouteCandidate(HopModel):
         basal_route = self.basal_route
         if precursor.geometry_id != geometry.candidate_id:
             raise ValueError("The exact precursor must reference the embedded foldback geometry.")
+        precursor_request = ReleasedFoldbackPrecursorSearchRequest(
+            geometry=geometry,
+            precursor_template=precursor.precursor_sequence,
+        )
+        if released_foldback_precursor_domains(precursor_request) is None:
+            raise ValueError("The exact precursor must satisfy the embedded foldback geometry.")
         if not self.feasibility.compatible:
             raise ValueError("A hairpin-junction route candidate must be compatible.")
         expected_feasibility = hairpin_junction_route_feasibility(

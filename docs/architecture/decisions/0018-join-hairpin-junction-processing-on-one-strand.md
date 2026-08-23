@@ -54,6 +54,9 @@ or destination assembly has been selected.
 Specialized result models remain under `hop_design.models.discovery`. Only the
 operation is added to the package-root facade.
 
+Route-owned QA projection is defined separately by
+[ADR 0019](0019-project-junction-route-views-from-the-route.md).
+
 ## Consequences
 
 The two hairpin-junction processing surfaces now share one explicit molecular

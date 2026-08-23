@@ -147,6 +147,12 @@ not require matching release-agent identities at the two ends or apply caller
 selection policy. Its specialized limits and result models are available from
 `hop_design.models.discovery`.
 
+The specialized `hop_design.design.route_views` module provides
+`build_released_foldback_precursor_view(...) -> WorkflowView` and
+`build_hairpin_junction_route_view(route) -> WorkflowView`. Both derive the
+released and foldback panels from exact discovery results and are not
+package-root exports.
+
 ## Linear-source method
 
 - `resolve_linear_source_hairpin_pcr_materials(spec) -> LinearSourceHairpinPcrMaterialsPlan`
@@ -173,6 +179,8 @@ boundary; the lower-level compiler continues to return its typed outcome.
 - `build_foldback_view(evaluation) -> WorkflowView`
 - `build_foldback_junction_view(evaluation) -> WorkflowView`
 - `build_released_workflow_view(state, foldback) -> WorkflowView`
+- `build_hairpin_junction_route_view(route) -> WorkflowView`
+- `build_released_foldback_precursor_view(geometry=..., precursor=..., state=...) -> WorkflowView`
 - `build_basal_pairing_view(evaluation) -> WorkflowView`
 - `build_basal_view(evaluation, nicked_strand=...) -> WorkflowView`
 - `build_method_trajectory_view(plan) -> WorkflowView`

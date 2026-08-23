@@ -66,20 +66,28 @@ geometry with a complete caller-authored IUPAC template, counts correlated pair
 domains correctly, and returns bounded content-addressed exact sequences. A
 later bounded join now projects each exact precursor and pairs it with a basal
 route only when the same molecular strand remains active and survives terminal
-nicking. Open work is live-catalog differential parity and routed-view
-equality.
+nicking. A live-catalog differential comparison now matches five exact
+candidate identities, active sequences, coordinate lineage, and routed
+foldback views. The predecessor's 64 returned near hits are a verified subset
+of HOP's 130 neutral near geometries; its reported pre-truncation count is 118.
+That bounded-list difference is explicit rather than treated as equality.
+Predecessor ordering and warning/vendor filters remain caller policy, while HOP
+keeps neutral physical order. Complete partner-strand separation remains an
+independent stricter constraint and excludes two otherwise valid
+downstream-site placements.
 
 The initial placement and precursor-discovery API shipped in `v0.1.0a1`. The
 protected release repeated the Phase 7 artifact gate, and the first private
 comparison path installs a versioned wheel rather than a sibling checkout. The
 cross-agent geometry, exact-precursor, and hairpin-junction route schemas on
-the current development line remain unreleased.
+the current development line, route-owned view projection, and origin-boundary
+released-state correction are part of the `v0.1.0a6` line.
 
 ## Phase 3: basal mechanics
 
 Status: standalone mechanics, bounded arm-pair enumeration, bounded
-enzyme-compatible geometry, and bounded basal route composition implemented;
-differential routed parity remains open.
+enzyme-compatible geometry, bounded basal route composition, and live routed
+differential parity implemented; versioned release remains open.
 
 Define arm ordering, pair classes, site order, strand roles, terminal-nick
 geometry, deterministic ranking, and caller-supplied constraint profiles.
@@ -100,8 +108,11 @@ The basal route join now connects each exact candidate's left arm to the
 retained scar, rejects a retained release site, derives terminal strand roles,
 and propagates both upstream searches' truncation evidence. It returns neutral
 compatible routes rather than a preferred enzyme. The hairpin-junction join
-preserves end-specific release agents and requires strand continuity. Open
-gate: live differential route identity and routed-view parity.
+preserves end-specific release agents and requires strand continuity. A route
+candidate now replays its embedded exact precursor against its selected
+geometry before a route-owned view can be built. Live exact identity, released
+state, lineage, and normalized view comparisons pass; ranking and catalog
+warning policy remain deliberately downstream.
 
 ## Phase 4: complete plans and bundles
 

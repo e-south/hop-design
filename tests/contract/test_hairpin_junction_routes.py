@@ -7,6 +7,10 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
+from hop_design.design.route_views import (
+    build_hairpin_junction_route_view,
+    build_released_foldback_precursor_view,
+)
 from hop_design.models.catalog import SiteOrientation
 from hop_design.models.discovery import (
     BasalProcessingGeometryRequest,
@@ -22,7 +26,14 @@ from hop_design.models.discovery import (
 from hop_design.models.discovery.hairpin_routes import (
     HairpinJunctionRouteCandidate,
     HairpinJunctionRouteFeasibility,
+    hairpin_junction_route_feasibility,
+    hairpin_junction_route_id,
 )
+from hop_design.models.discovery.released_foldback_candidates import (
+    ReleasedFoldbackPrecursorCandidate,
+    released_foldback_precursor_candidate_id,
+)
+from hop_design.serialization import sha256_digest
 
 
 def _released_precursors(
@@ -182,6 +193,33 @@ def test_hairpin_junction_route_proves_one_continuous_active_strand() -> None:
     )
 
 
+def test_hairpin_junction_route_builds_its_own_released_workflow_view() -> None:
+    route = hop.search_hairpin_junction_routes(
+        released_precursors=_released_precursors(),
+        basal_routes=_basal_routes(),
+        limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
+    ).hits[0]
+
+    view = build_hairpin_junction_route_view(route)
+    precursor_view = build_released_foldback_precursor_view(
+        geometry=route.released_foldback_geometry,
+        precursor=route.released_foldback_precursor,
+        state=route.released_state,
+    )
+
+    assert view == precursor_view
+    assert view.kind == "released_workflow"
+    assert tuple(panel.panel_id for panel in view.panels) == (
+        "precursor",
+        "released_fragments",
+        "origin_anchored_foldback",
+    )
+    assert view.panels[1].tracks[0].sequence == route.released_state.active_product_sequence
+    assert view.panels[1].tracks[0].strand is route.released_state.active_strand
+    assert view.panels[2].tracks[0].strand is route.released_state.active_strand
+    assert len(view.panels[2].pairings) == len(route.released_foldback_geometry.pairing_domains)
+
+
 def test_hairpin_junction_route_rejects_a_discontinuous_strand_path() -> None:
     result = hop.search_hairpin_junction_routes(
         released_precursors=_released_precursors(),
@@ -333,6 +371,60 @@ def test_hairpin_junction_candidate_rejects_cross_object_drift() -> None:
     for data in candidate_mutations:
         with pytest.raises(ValidationError):
             HairpinJunctionRouteCandidate.model_validate(data)
+
+
+def test_hairpin_junction_candidate_rejects_a_reidentified_out_of_domain_precursor() -> None:
+    route = hop.search_hairpin_junction_routes(
+        released_precursors=_released_precursors(),
+        basal_routes=_basal_routes(),
+        limits=HairpinJunctionRouteSearchLimits(max_search_nodes=1, max_hits=1),
+    ).hits[0]
+    invalid_sequence = "CCCC"
+    precursor = ReleasedFoldbackPrecursorCandidate(
+        candidate_id=released_foldback_precursor_candidate_id(
+            geometry_id=route.released_foldback_geometry.candidate_id,
+            sequence=invalid_sequence,
+        ),
+        rank=route.released_foldback_precursor.rank,
+        geometry_id=route.released_foldback_geometry.candidate_id,
+        precursor_sequence=invalid_sequence,
+        precursor_digest=sha256_digest(invalid_sequence.encode("utf-8")),
+    )
+    projection = hop.project_released_strand_state(
+        hop.ReleaseProjectionRequest(
+            precursor_top_strand=invalid_sequence,
+            origin=route.released_foldback_geometry.active_product_span.start,
+            nick=route.released_foldback_geometry.nick,
+            release_cut=route.released_foldback_geometry.release_cut,
+            release_site_span=hop.Span(
+                start=hop.Boundary(offset=route.released_foldback_geometry.release_site_start),
+                end=hop.Boundary(offset=route.released_foldback_geometry.release_site_end),
+            ),
+            route=route.released_state.route,
+            constraints=hop.ReleaseProjectionConstraints(
+                require_release_site_downstream_of_nick=False,
+                require_complete_downstream_separation=False,
+            ),
+        )
+    ).projection
+    assert projection is not None
+
+    data = route.model_dump(mode="python")
+    data["released_foldback_precursor"] = precursor
+    data["released_state"] = projection
+    data["feasibility"] = hairpin_junction_route_feasibility(
+        geometry=route.released_foldback_geometry,
+        released_foldback_precursor=precursor,
+        basal_route=route.basal_route,
+    )
+    data["route_id"] = hairpin_junction_route_id(
+        geometry=route.released_foldback_geometry,
+        released_foldback_precursor=precursor,
+        basal_route=route.basal_route,
+    )
+
+    with pytest.raises(ValidationError, match="precursor must satisfy"):
+        HairpinJunctionRouteCandidate.model_validate(data)
 
 
 def test_hairpin_junction_result_rejects_search_accounting_drift() -> None:

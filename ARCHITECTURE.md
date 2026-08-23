@@ -136,6 +136,10 @@ strand is the strand that survives terminal nicking. Release-agent identities
 remain independent at the two ends; HOP does not impose or rank a one-enzyme
 route. Upstream and local incompleteness remain explicit. See
 [ADR 0018](docs/architecture/decisions/0018-join-hairpin-junction-processing-on-one-strand.md).
+The selected route can be projected into one route-owned released-workflow
+view; its exact precursor is rechecked against the embedded geometry before
+the view is built. See
+[ADR 0019](docs/architecture/decisions/0019-project-junction-route-views-from-the-route.md).
 Optional structure predictors and additional renderers consume plan-owned
 artifacts without changing molecular validity; see
 [ADR 0006](docs/architecture/decisions/0006-discovery-compilation-and-assessment.md).

@@ -15,7 +15,7 @@ def test_cli_reports_distribution_version() -> None:
     result = runner.invoke(app, ["--version"])
 
     assert result.exit_code == 0, result.output
-    assert result.output.strip() == "hop-design 0.1.0a5"
+    assert result.output.strip() == "hop-design 0.1.0a6"
 
 
 def test_cli_compiles_and_reports_visible_default(tmp_path: Path) -> None:

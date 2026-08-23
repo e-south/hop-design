@@ -191,10 +191,14 @@ def build_released_workflow_view(
         title="Released strand state",
         tracks=tuple(released_tracks),
     )
-    folded = _foldback_panels(foldback)[-1].model_copy(
+    foldback_panel = _foldback_panels(foldback)[-1]
+    folded = foldback_panel.model_copy(
         update={
             "panel_id": "origin_anchored_foldback",
             "title": "Origin-anchored foldback",
+            "tracks": (
+                foldback_panel.tracks[0].model_copy(update={"strand": state.active_strand}),
+            ),
         }
     )
     return WorkflowView(
