@@ -31,20 +31,22 @@ expansion, invalid alphabets, corrupt bundles, and unsafe paths.
 
 ## Phase 2: foldback mechanics
 
-Status: standalone mechanics, bounded placement and precursor discovery, and
-bounded cross-agent released-foldback geometry implemented; predecessor
-differential parity remains open.
+Status: standalone mechanics and bounded placement, precursor, and cross-agent
+released-foldback discovery implemented; live predecessor differential parity
+closed and released in `v0.1.0a6`.
 
 Define precursor, nick, release/exposure, retained tract, turn, foldback arm,
 pair map, bounded search, and stable rejection codes. Port behavior against
 sanitized accepted, rejected, near-match, and truncated parity fixtures. The
-predecessor remains authoritative until semantic equality passes.
+predecessor remains authoritative only for behavior outside the supported,
+parity-closed surface.
 
 Available: exact evaluation including explicit cap-only zero-pair junctions,
 pair/run measurements, `HOP-FOLD-001`
 through `HOP-FOLD-007`, exact-first bounded search, truthful completion status,
-and sanitized public fixtures. Open gate: differential accepted/rejected set,
-ordering, and target-search parity against the predecessor.
+and sanitized public fixtures. The live differential gate records exact
+candidate equality, bounded-subset near-hit parity, and the intentional
+caller-policy ordering difference.
 
 Target-search parity includes bounded discovery across caller-supplied
 processing-agent placements and hairpin geometry. Catalog scanning and
@@ -79,15 +81,15 @@ downstream-site placements.
 The initial placement and precursor-discovery API shipped in `v0.1.0a1`. The
 protected release repeated the Phase 7 artifact gate, and the first private
 comparison path installs a versioned wheel rather than a sibling checkout. The
-cross-agent geometry, exact-precursor, and hairpin-junction route schemas on
-the current development line, route-owned view projection, and origin-boundary
-released-state correction are part of the `v0.1.0a6` line.
+cross-agent geometry, exact-precursor, hairpin-junction route schemas,
+route-owned view projection, and origin-boundary released-state correction were
+released in `v0.1.0a6`.
 
 ## Phase 3: basal mechanics
 
 Status: standalone mechanics, bounded arm-pair enumeration, bounded
 enzyme-compatible geometry, bounded basal route composition, and live routed
-differential parity implemented; versioned release remains open.
+differential parity closed and released in `v0.1.0a6`.
 
 Define arm ordering, pair classes, site order, strand roles, terminal-nick
 geometry, deterministic ranking, and caller-supplied constraint profiles.
@@ -116,7 +118,8 @@ warning policy remain deliberately downstream.
 
 ## Phase 4: complete plans and bundles
 
-Status: resolved-mechanics and bounded design-space planning implemented; full build outputs open.
+Status: resolved mechanics, bounded design-space planning, design bundles, and
+method bundles implemented; default downstream adoption remains open.
 
 Resolve physical routes, source oligos, processing steps, expected strand
 states and intermediates, hairpin-encoding sequences, route-required primers/adapters, and
@@ -142,8 +145,8 @@ method requests now produce a separate replay-verified `MethodBundle` with the
 strict request and plan, an eight-state trajectory, duplex and
 restriction-product FASTA, deterministic GenBank, and the exact
 hairpin-encoding projection. The design bundle remains unchanged. Open work is
-to prove the immutable downstream consumer handoff. Selective batch bundle
-orchestration remains separate.
+the default downstream consumer cutover and its hosted validation. Selective
+batch bundle orchestration remains separate.
 
 A primer or adapter is a process material, not a molecular intermediate. HOP
 owns a vendor-neutral material only when the declared generic route requires it;
@@ -209,11 +212,12 @@ See the [release history](https://github.com/e-south/hop-design/releases).
 
 ## Phase 8: downstream consumer and dogfood
 
-Status: the typed product and method boundaries shipped in `v0.1.0a5`; the
-released-pin Retron study, atomic Construct handoff, Folding assessment, and
-independent RT-lnRNA lineage replay are locally proven. Research Studies hosted
-checks remain blocked before execution by account payment or Actions spending
-capacity, so downstream merge and default cutover remain open.
+Status: the typed product and method boundaries shipped by `v0.1.0a5`; the
+`v0.1.0a6` released pin, Retron study, atomic Construct handoff, Folding
+assessment, and independent RT-lnRNA lineage replay are locally proven.
+Research Studies hosted checks remain blocked before execution by account
+payment or Actions spending capacity, so downstream merge and default cutover
+remain open.
 
 Add a shadow adapter in the application-owning repository through HOP's public
 API. Establish zero predecessor imports in the migrated path, artifact parity,
