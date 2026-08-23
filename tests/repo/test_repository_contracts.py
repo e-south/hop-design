@@ -233,6 +233,16 @@ def test_governance_and_release_routes_exist() -> None:
         assert (REPO_ROOT / relative_path).is_file(), relative_path
 
 
+def test_public_roadmap_matches_the_current_release_line() -> None:
+    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
+        version = tomllib.load(handle)["project"]["version"]
+    roadmap = (REPO_ROOT / "docs" / "dev" / "plans" / "roadmap.md").read_text(encoding="utf-8")
+
+    assert f"released in `v{version}`" in roadmap
+    assert "predecessor differential parity remains open" not in roadmap
+    assert "versioned release remains open" not in roadmap
+
+
 def test_source_layout_has_explicit_sprawl_limits() -> None:
     source_root = REPO_ROOT / "src" / "hop_design"
     package_dirs = [source_root, *sorted(path for path in source_root.rglob("*") if path.is_dir())]
