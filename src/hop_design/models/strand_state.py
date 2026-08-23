@@ -166,6 +166,8 @@ class ReleasedStrandState(HopModel):
             retained_top_prefix
             if self.retained_partner_strand is Strand.TOP
             else reverse_complement_iupac(retained_top_prefix)
+            if retained_top_prefix
+            else ""
         )
         if self.retained_partner_sequence != expected_partner_sequence:
             raise ValueError("Retained-partner sequence must derive from the precursor and route.")

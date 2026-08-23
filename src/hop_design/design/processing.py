@@ -119,6 +119,8 @@ def project_released_strand_state(request: ReleaseProjectionRequest) -> ReleaseP
         retained_top_prefix
         if semantics.retained_partner_strand is Strand.TOP
         else reverse_complement_iupac(retained_top_prefix)
+        if retained_top_prefix
+        else ""
     )
     active_span = Span(start=request.origin, end=Boundary(offset=active_cut))
     precursor_indexes = (

@@ -24,7 +24,7 @@ body:
     id: version
     attributes:
       label: HOP Design version
-      placeholder: hop-design 0.1.0a5
+      placeholder: hop-design 0.1.0a6
     validations:
       required: true
   - type: textarea

@@ -220,6 +220,13 @@ separate from local node and hit truncation. A complete search result means the
 available upstream cross-product was exhausted, not that a production method
 or destination assembly is complete.
 
+`build_released_foldback_precursor_view(geometry=..., precursor=..., state=...)`
+and `build_hairpin_junction_route_view(route)` are available from
+`hop_design.design.route_views`. They recheck the exact precursor against the
+embedded geometry, derive the foldback panel from the selected released state,
+and return the typed `released_workflow` view. Neither accepts an independent
+foldback input, and neither is part of the root facade.
+
 ## Compiler integration
 
 `ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit

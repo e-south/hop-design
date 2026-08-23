@@ -84,6 +84,29 @@ def test_release_projection_supports_the_opposite_literal_strand_route() -> None
     assert result.projection.retained_partner_sequence == "TT"
 
 
+def test_top_active_projection_allows_an_empty_retained_partner_at_origin() -> None:
+    request = ReleaseProjectionRequest(
+        precursor_top_strand="AACCGGTTAA",
+        origin=Boundary(offset=0),
+        nick=NickEvent(boundary=Boundary(offset=0), strand=Strand.BOTTOM),
+        release_cut=DuplexCut(top=Boundary(offset=8), bottom=Boundary(offset=7)),
+        release_site_span=None,
+        route=StrandExposureRoute.TOP_ACTIVE_AFTER_BOTTOM_NICK,
+        constraints=ReleaseProjectionConstraints(
+            require_release_site_downstream_of_nick=False,
+            require_complete_downstream_separation=True,
+        ),
+    )
+
+    result = project_released_strand_state(request)
+
+    assert result.report.status == "valid"
+    assert result.projection is not None
+    assert result.projection.active_product_sequence == "AACCGGTT"
+    assert result.projection.retained_partner_sequence == ""
+    assert result.projection.active_nick_boundary == Boundary(offset=0)
+
+
 def test_bottom_active_product_is_stored_five_prime_to_three_prime() -> None:
     request = ReleaseProjectionRequest(
         precursor_top_strand="AACCGGTTAA",

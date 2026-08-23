@@ -140,7 +140,10 @@ one exact basal-processing route. It contains the projected
 the strand that survives basal terminal nicking. The two end processes may use
 different release agents; their identities and orientations remain explicit
 rather than being collapsed into a same-agent rule. This is a junction-level
-route, not a complete source molecule, wet-lab method, or assembly claim.
+route, not a complete source molecule, wet-lab method, or assembly claim. Its
+exact precursor is checked against the embedded geometry even after the route
+is extracted from its search result. A routed workflow view derives from this
+object and cannot substitute an independent foldback evaluation.
 
 `ReleasedStrandState` records the active product, retained partner, literal
 strand roles, cut and nick boundaries, precursor span, and per-base coordinate
