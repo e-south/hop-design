@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-23
 ---
 
 # Molecular mechanics API
@@ -15,6 +15,16 @@ last_verified: 2026-08-22
 HOP separates physical derivation from caller policy and application identity.
 The package accepts explicit events and versioned references; it does not ship
 private enzymes, target catalogs, application thresholds, or workspaces.
+
+## On this page
+
+- [Foldback junction](#foldback-junction)
+- [Basal junction](#basal-junction)
+- [Optional paired stem extension](#optional-paired-stem-extension)
+- [Nick, release, and strand state](#nick-release-and-strand-state)
+- [Caller-supplied processing catalogs](#caller-supplied-processing-catalogs)
+- [Processing-agent geometry discovery](#processing-agent-geometry-discovery)
+- [Compiler integration](#compiler-integration)
 
 ## Foldback junction
 
@@ -93,6 +103,15 @@ strand-compatible orientation per nicking agent. `NickingPlacementTarget`
 declares a nick boundary and strand, a paired-tract base-pair count, and the
 number of turn nucleotides available to preserve a recognition site.
 
+This establishes **sequence-and-cut compatible** geometry: the motif,
+orientation, and resolved cut fit the modeled substrate. It does not establish
+empirical cleavage efficiency, including activity near a linear end or the
+effect of bases outside the recognition site. Those effects vary by enzyme and
+reaction context. HOP therefore does not apply one universal minimum-flank
+rule. Caller catalogs may record warning codes, but current discovery does not
+promote them into feasibility or performance claims. See
+[discovery and selection](../concepts/discovery-and-selection.md).
+
 Each feasibility row records target-relative site coordinates and stable
 blockers. `HOP-DISC-001` means the site would start before precursor origin;
 `HOP-DISC-002` means the site would extend beyond the paired tract and available
@@ -112,6 +131,13 @@ template for the required precursor and for any remaining turn extension.
 HOP intersects the selected recognition motif with those domains, calculates
 the exact candidate-space size before enumeration, derives the returning arm
 by reverse complement, and reports the intended and additional nick sites.
+
+Recognition-motif length is not itself an added-nucleotide measure. Motif
+positions can overlap the paired tract or available turn; required precursor
+and turn lengths report only the footprint extent that the selected geometry
+needs. Degenerate positions are set-valued domains. Neutral effects are domain
+narrowing and exact cardinality, not an unqualified synthesis or application
+“cost.”
 
 `HOP-CAND-001` reports that the caller's template cannot contain the selected
 motif. `HOP-CAND-002` reports candidates rejected by the caller's explicit
@@ -182,6 +208,11 @@ the active-product span and active-oriented nick boundary, minimum precursor
 length, per-base domains, correlated Watson-Crick pair domains, and exact
 compatible-sequence cardinality. Empty process or foldback-pair intersections
 are explicit blockers.
+
+The paired-tract and turn lengths are inputs to this operation. It does not
+search all possible lengths or prove a globally shortest junction. To compare
+longer turns or stems, a caller must submit a bounded set of target geometries
+and compare their reported physical measurements.
 
 The search calculates the full candidate-space cardinality arithmetically and
 does not consume nodes beyond `max_search_nodes`. `max_hits` independently

@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-23
 ---
 
 # Workflow view contracts
@@ -29,6 +29,7 @@ state.
 | `released_workflow` | precursor, released fragments, origin-anchored foldback |
 | `basal_pairing` | paired basal junction only; no terminal nick asserted |
 | `basal_terminal_nick` | pre-terminal nick, post-terminal nick |
+| `method_trajectory` | the eight derived states of a complete named method plan |
 
 Build views from already-derived mechanics:
 
