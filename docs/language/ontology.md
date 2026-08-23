@@ -8,18 +8,25 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-23
+doc_type: reference
+journey:
+  - compile
+  - discover
+  - method
+  - verify
 ---
 
 # HOP Design ontology
 
-The hierarchy is:
+Design and method products are sibling authorities:
 
 ```text
-DesignSpec  -> HopPlan       -> HairpinEncodingInsert
-MethodRequest -> method states -> RestrictionDigestProduct
-bound method handoff:
-  HairpinEncodingInsert.sequence_digest
-    == RestrictionDigestProduct.hairpin_encoding_projection.sequence_digest
+DesignSpec -> DesignDerivation -> HairpinEncodingInsert -> HopBundle
+                                      |
+                                      | encoding-digest equality
+                                      |
+MethodRequest -> method states -> RestrictionDigestProduct -> MethodBundle
+
 RestrictionDigestProduct + caller destination -> AssemblyFragment
 ```
 
@@ -38,7 +45,8 @@ is always derived by reverse complement.
 
 `FoldbackJunction` is the contiguous physical junction between the authored
 payload arm and its returning paired arm. It contains a retained stem-forming
-tract, the short unpaired `turn`, a `foldback_arm`, and one ordered physical
+tract, an explicitly bounded source-turn span, any declared turn extension, a
+`foldback_arm`, and one ordered physical
 pair observation for every aligned position. A cap-only junction has a
 zero-length retained tract, a zero-length foldback arm, and no invented pair
 observations; its nonempty turn remains explicit.
@@ -57,22 +65,23 @@ payload and does not enlarge the S3/S2/S1/S0 basal profile.
 indexes, and a `watson_crick`, `gt_wobble`, or `hard_mismatch` call. Exact
 defaults and evaluated noncanonical junctions use this same representation.
 
-`ProcessingRoute` is a reusable physical implementation that produces a
-resolved foldback and basal junction. `resolved_events` records explicit
-caller-supplied release nick, optional release, foldback, basal-pairing,
-terminal-nick, and insert-assembly transitions. The generic direct-synthesis
-route is a synthetic software demonstration, not a lab protocol.
+`DesignDerivation` is a deterministic account of how HOP resolved or evaluated
+the components in a `HairpinEncodingInsert`. It may record catalog junction
+resolution, component evaluation, or caller-asserted nick and release projection
+geometry. Those projections support encoding derivation; they are not an ordered
+laboratory history. Only a named `MethodPlan` owns temporal molecular-state history.
 
-`component_assembly` composes caller-supplied foldback and basal components with
-the authored payload without asserting an enzyme route. It records physical
-evaluation and composition, not how a component was discovered or inherited.
+`EvaluatedComponentDerivation` composes caller-supplied foldback and basal
+components with the authored payload without asserting an enzyme route. It
+records physical evaluation and composition, not how a component was discovered or inherited.
 Historical lineage and application interpretation stay in the caller and can
 be linked through neutral external references.
 
 ## Compiled design and physical products
 
 `HairpinEncodingInsert` is the compiler-owned one-dimensional sequence that
-encodes a hairpin core. It contains an exact sequence digest and nested
+encodes a hairpin core. It contains a digest of its normalized literal or
+symbolic sequence and nested
 features that partition the sequence. It does not describe strandedness,
 topology, a PCR product, or destination-specific assembly ends.
 
@@ -82,8 +91,8 @@ chemistry, and coordinate lineage. PCR creates the duplex; a later restriction
 event only changes its assembly ends.
 
 `RestrictionDigestProduct` is a destination-neutral duplex fragment derived
-from two facing restriction sites. It records both strand sequences, cohesive
-cut boundaries, the primary-strand union, and an oriented
+from two facing restriction sites. It records both strand sequences, both exact
+cohesive ends, the primary-strand union, and an oriented
 `HairpinEncodingInsert` sequence projection. It is not automatically ready for
 assembly.
 
@@ -95,7 +104,12 @@ generic composition service, not to HOP.
 
 `BasalConstraintProfile` is explicit caller policy applied after physical pair
 classification. Its active, reserve, and reject decisions are not molecular
-pair kinds. Application thresholds remain with their owners.
+pair kinds. Its support and disruption thresholds use the dimensionless
+`pair-count-weighted@1` heuristic: Watson-Crick, wobble, and hard-mismatch
+pairs contribute `1`, `0.5`, and `0` to `pair_support_index`, and the reverse
+weights to `pair_disruption_index`. These indices are bookkeeping rules, not
+energetic, kinetic, or empirical measurements. Application thresholds remain
+with their owners.
 
 ## Catalogs and bounded discovery
 
@@ -117,17 +131,19 @@ inside caller-authored IUPAC sequence domains. `precursor_template` and
 not invent unconstrained filler outside those domains. A
 `FoldbackPrecursorCandidate` contains the exact precursor, derived
 reverse-complement foldback arm, intended nick site, extra-site measurements,
-and complete foldback evaluation. Candidate order uses molecular measurements
-only. Catalog tier, vendor, procurement, and application preference remain
-caller policy.
+and complete foldback evaluation. Its measurements remain inspectable, while
+bounded output uses literal precursor and turn-extension content order rather
+than a hidden quality objective. Catalog tier, vendor, procurement, and
+application preference remain caller policy.
 
 `BasalCandidateSearchRequest` declares two four-nucleotide IUPAC arm domains,
-one G:T interpretation, one caller-owned constraint profile, and whether
+one caller-owned constraint profile, and whether
 reserve results are selectable. `BasalCandidate` is an exact arm pair plus its
 complete `BasalEvaluation`; it does not imply that an enzyme route can produce
 the pair. `BasalCandidateExclusionSummary` accounts for evaluated reserve or
-reject outcomes not returned by that request. The result's canonical physical
-order is an interoperability order, not an experimental preference.
+reject outcomes not returned by that request. The result's `canonical_ordinal`
+follows literal arm content and is interoperability metadata, not an
+experimental preference.
 
 `BasalProcessingGeometryRequest` asks whether a selected release geometry and
 one caller-supplied nicking catalog can support an exact terminal nick around a
@@ -158,7 +174,7 @@ not a selected sequence, released state, basal route, or caller preference.
 and supplies one complete caller-authored IUPAC precursor template. The search
 intersects that template with the geometry's base and correlated pair domains.
 A `ReleasedFoldbackPrecursorCandidate` is one exact sequence with its digest,
-selected geometry identity, content identity, and canonical rank. It is not a
+selected geometry identity, content identity, and `canonical_ordinal`. It is not a
 released molecular state, a basal route, or a complete production method.
 
 `HairpinJunctionRouteCandidate` joins one exact released-foldback precursor to
@@ -193,7 +209,7 @@ method-neutral primitives. They preserve literal sequences, 5′→3′ orientat
 terminal chemistry, per-base lineage, physical pair calls, and ligation joins.
 The public API does not accept an arbitrary caller-authored event graph.
 
-## Named methods and portable evidence
+## Named methods
 
 `linear-source-multinick-size-selection-hairpin-pcr@1` names the implemented
 method that resolves a source-PCR duplex, every nick site, denatured fragments,
@@ -210,7 +226,9 @@ that method until a request contract and compiler exist.
 is `not_evaluated`, `complete`, `infeasible`, or `truncated`. These fields do
 not replace sequence identity or destination readiness.
 
-`MethodBundle` is the portable evidence for one complete method request. It
+## Provenance and verification
+
+`MethodBundle` is the portable derivation record for one complete method request. It
 contains the strict request and plan plus exports derived from that plan. It is
 separate from `HopBundle`: the former records production-method resolution,
 while the latter records hairpin-design compilation. They may share a

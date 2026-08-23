@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-20
+doc_type: how-to
 ---
 
 # Payload sources and explicit expansion
@@ -86,7 +87,7 @@ space = hop.ResolvedDesignSpace(
     defaults_ref="example:defaults/resolved@1",
     catalog_ref="example:processing-catalog/synthetic@1",
     constraint_profile_ref="example:constraint-profile/explicit@1",
-    processing_route_ref="example:processing-route/resolved-events@1",
+    design_derivation_ref="example:design-derivation/component-evaluation@1",
     per_design_constraints=hop.DesignLimits(max_candidates=1),
     limits=hop.DesignSpaceLimits(max_designs=64),
     duplicate_final_sequence_policy=hop.DuplicateDesignSequencePolicy.FAIL,

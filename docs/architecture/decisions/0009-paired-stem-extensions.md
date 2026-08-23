@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-21
+doc_type: decision
 ---
 
 # ADR 0009: Paired stem extensions

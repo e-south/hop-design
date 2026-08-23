@@ -9,6 +9,9 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-23
+doc_type: explanation
+journey:
+  - compile
 ---
 
 # Hairpin components
@@ -80,5 +83,5 @@ destination readiness.
 that product. A caller creates an `AssemblyFragment` only after choosing a
 destination, orientation, and compatible ends.
 
-See [processing and assembly](processing-and-assembly.md) for the event order
-and [the ontology](../ontology.md) for exact contract names.
+See the [method language](../methods/overview.md) for event order and the
+[formal ontology](ontology.md) for exact contract names.

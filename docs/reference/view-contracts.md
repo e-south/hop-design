@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-23
+doc_type: reference
 ---
 
 # Workflow view contracts
@@ -34,9 +35,15 @@ state.
 Build views from already-derived mechanics:
 
 ```python
-foldback_view = hop.build_foldback_view(foldback_evaluation)
-basal_view = hop.build_basal_view(basal_evaluation, nicked_strand=hop.Strand.TOP)
-svg_bytes = hop.render_workflow_svg(foldback_view)
+import hop_design as hop
+import hop_design.views as views
+
+foldback_view = views.build_foldback_view(foldback_evaluation)
+basal_view = views.build_basal_view(
+    basal_evaluation,
+    nicked_strand=hop.Strand.TOP,
+)
+svg_bytes = views.render_workflow_svg(foldback_view)
 ```
 
 Use `build_foldback_junction_view` and `build_basal_pairing_view` when the

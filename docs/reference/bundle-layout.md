@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-21
+doc_type: reference
 ---
 
 # Bundle layout and verification
@@ -15,17 +16,17 @@ last_verified: 2026-08-21
 | File | Meaning |
 | --- | --- |
 | `hop-spec.json` | Canonical expanded authored intent |
-| `hop-plan.json` | Fully resolved immutable plan and lock |
+| `hop-plan.json` | Fully resolved immutable design derivation and lock |
 | `provenance.json` | Deterministic compiler and reference provenance |
 | `hairpin-encoding.fasta` | Generated one-dimensional hairpin-encoding sequence |
-| `source-oligo.fasta` | Actual resolved-route input when it differs from the hairpin encoding |
+| `source-oligo.fasta` | Resolved-junction input when it differs from the hairpin encoding |
 | `hop-bundle.json` | Root manifest and neutral external references |
 
-Resolved-mechanics bundles add the following content-addressed artifacts:
+Explicit component or resolved-junction bundles add these content-addressed artifacts:
 
 | File | Meaning |
 | --- | --- |
-| `expected-intermediates.json` | Foldback and basal evaluations plus optional released strand state |
+| `expected-intermediates.json` | Foldback and basal evaluations plus an optional release projection |
 | `foldback-view.json` / `.svg` | Typed foldback QA view and deterministic rendering |
 | `basal-view.json` / `.svg` | Typed basal terminal-nick view and deterministic rendering |
 | `released-workflow-view.json` / `.svg` | Optional released-product lineage view and deterministic rendering |

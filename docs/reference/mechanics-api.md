@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-23
+doc_type: reference
 ---
 
 # Molecular mechanics API
@@ -15,6 +16,9 @@ last_verified: 2026-08-23
 HOP separates physical derivation from caller policy and application identity.
 The package accepts explicit events and versioned references; it does not ship
 private enzymes, target catalogs, application thresholds, or workspaces.
+Component evaluators and release projection use the package-root design
+facade. Bounded searches use `hop_design.discovery`; workflow projections use
+`hop_design.views`.
 
 ## On this page
 
@@ -29,9 +33,10 @@ private enzymes, target catalogs, application thresholds, or workspaces.
 ## Foldback junction
 
 `evaluate_foldback(FoldbackEvaluationRequest)` derives the designed sequence,
-canonical junction, source and effective turns, pair observations, mismatch positions,
-terminal paired run, longest uninterrupted paired run, and added nucleotide
-count. The retained tract must begin at the nick boundary. Explicit evaluation
+canonical junction, source and effective turns, physical pair observations,
+non-Watson-Crick positions, terminal and longest uninterrupted Watson-Crick
+runs, and added nucleotide count. The retained-tract start is declared once by
+`retained_tract_span`; generic foldback evaluation makes no nick claim. Explicit evaluation
 accepts a cap-only junction when both the retained tract and foldback arm have
 length zero; the nonempty turn is preserved and no pair observations are
 invented.
@@ -43,21 +48,28 @@ status. `max_search_nodes` and `max_hits` are both required.
 Search requires a nonempty retained tract because a zero-pair junction has no
 foldback-arm design space.
 
-Foldback diagnostics are stable codes `HOP-FOLD-001` through `HOP-FOLD-007`
-covering nick/tract geometry, mismatch policy, protected-region mismatches,
-run-length bounds, added nucleotides, and turn length.
+Foldback diagnostics are stable codes `HOP-FOLD-001` through `HOP-FOLD-006`
+covering non-Watson-Crick policy, protected-region pairs, Watson-Crick run bounds,
+added nucleotides, and turn length. A G:T pair is
+physically classified as `gt_wobble`; these foldback feasibility measurements
+still count it as non-Watson-Crick and exclude it from Watson-Crick-only runs.
 
 ## Basal junction
 
 `evaluate_basal_pairing(BasalPairingRequest, constraints=...)` first classifies
 four physical pairs in S3/S2/S1/S0 order as `watson_crick`, `gt_wobble`, or
 `hard_mismatch`. Compact M/W/X strings exist only as interoperability fields.
-Whether G:T is treated as wobble is explicit.
+Literal G:T and T:G pairs are always classified as `gt_wobble`.
 
 The caller-supplied `BasalConstraintProfile` then produces `active`, `reserve`,
 or `reject`. A reserve result emits `HOP-BASAL-002`; a resolved compilation
 requires `acceptance="allow_reserve"` or adds `HOP-BASAL-003`. Rejected profiles
 emit `HOP-BASAL-001` and cannot enter a plan.
+
+`pair_support_index` and `pair_disruption_index` use the declared
+`pair-count-weighted@1` dimensionless heuristic. They replay fixed M/W/X
+weights; they do not estimate duplex energy, ligation efficiency, enzyme
+activity, or experimental success. Thresholds are caller-authored policy.
 
 ## Optional paired stem extension
 
@@ -110,7 +122,7 @@ effect of bases outside the recognition site. Those effects vary by enzyme and
 reaction context. HOP therefore does not apply one universal minimum-flank
 rule. Caller catalogs may record warning codes, but current discovery does not
 promote them into feasibility or performance claims. See
-[discovery and selection](../concepts/discovery-and-selection.md).
+[discovery language](../discovery/overview.md).
 
 Each feasibility row records target-relative site coordinates and stable
 blockers. `HOP-DISC-001` means the site would start before precursor origin;
@@ -142,19 +154,22 @@ narrowing and exact cardinality, not an unqualified synthesis or application
 `HOP-CAND-001` reports that the caller's template cannot contain the selected
 motif. `HOP-CAND-002` reports candidates rejected by the caller's explicit
 additional-nick constraint. Both `max_search_nodes` and `max_hits` are hard
-budgets with independent truncation evidence. Candidate order uses extra-site
-counts, added-sequence GC fraction and homopolymer run, exact sequence, and
-content identity. It does not use vendor, catalog-tier, or application rank.
+budgets with independent truncation evidence. Candidate order uses literal
+precursor sequence, turn extension, and content identity. Extra-site counts,
+GC fraction, homopolymer run, vendor status, catalog tier, and application
+preference do not determine which candidates survive a hit budget.
 
 `search_basal_candidates(request, limits=...)` enumerates exact four-position
-arm pairs inside two caller-authored IUPAC domains. The request records the G:T
-wobble interpretation, the complete `BasalConstraintProfile`, and whether
+arm pairs inside two caller-authored IUPAC domains. The request records the
+complete `BasalConstraintProfile`, including whether observed G:T wobbles may
+remain active, and whether
 reserve candidates are selectable. Every returned candidate contains the exact
 pairing, complete basal evaluation, full content identity, and one-based
-canonical rank. Excluded reserve and reject candidates are counted by their
-stable policy reason. Candidate order is compact S3/S2/S1/S0 profile, left arm,
-right arm, and content identity; profile buckets, control similarity, mismatch
-tier preference, and enzyme/vendor eligibility are not HOP rank inputs.
+contiguous `canonical_ordinal`. Excluded reserve and reject candidates are counted by their
+stable policy reason. Candidate order uses literal left arm, right arm, and
+content identity. Compact profile, control similarity, mismatch-tier
+preference, and enzyme or vendor eligibility do not determine which candidates
+survive a hit budget.
 
 `search_basal_processing_geometries(catalog=..., request=..., limits=...)`
 answers the separate processability question. The request selects one release
@@ -188,7 +203,7 @@ content identity over both upstream candidates and the normalized release.
 The operation evaluates the canonical returned-candidate cross-product. It
 reports upstream basal and processing-geometry truncation separately from its
 own node and hit bounds; `available_pair_count` therefore describes only that
-returned cross-product. Route order follows the upstream physical ranks and
+returned cross-product. Route order follows the upstream canonical ordinals and
 content identity. The operation neither chooses a preferred agent nor proves
 continuity with a released foldback state.
 
@@ -219,7 +234,7 @@ does not consume nodes beyond `max_search_nodes`. `max_hits` independently
 bounds compatible results. Content identity and order use only physical inputs:
 exact before near, then displacement, boundary, agent identities, and release
 orientation. Sequence allocation, warning policy, vendor state, and application
-rank remain outside the result.
+preference remain outside the result.
 
 `search_released_foldback_precursors(request, limits=...)` materializes exact
 sequences for one selected `ReleasedFoldbackGeometryHit`. The request's
@@ -232,8 +247,8 @@ is the number of allowed pairs rather than the product of its two coordinate
 domains. Other coordinates remain independent. A zero intersection returns
 `infeasible` with `caller_domain_conflict`. `max_search_nodes` and `max_hits`
 are independent hard bounds. Candidates contain the exact precursor, its
-digest, selected geometry identity, content identity, and canonical physical
-rank. The operation does not project a released strand, compose a basal route,
+digest, selected geometry identity, content identity, and `canonical_ordinal`.
+The operation does not project a released strand, compose a basal route,
 or choose a preferred agent.
 
 `search_hairpin_junction_routes(released_precursors=..., basal_routes=...,
@@ -253,30 +268,28 @@ or destination assembly is complete.
 
 `build_released_foldback_precursor_view(geometry=..., precursor=..., state=...)`
 and `build_hairpin_junction_route_view(route)` are available from
-`hop_design.design.route_views`. They recheck the exact precursor against the
+`hop_design.views`. They recheck the exact precursor against the
 embedded geometry, derive the foldback panel from the selected released state,
 and return the typed `released_workflow` view. Neither accepts an independent
 foldback input, and neither is part of the root facade.
 
 ## Compiler integration
 
-`ResolvedHopSpec` uses schema `hop.resolved-design/v1` and carries explicit
+`ResolvedHopSpec` uses schema `hop.resolved-design/v2` and carries explicit
 foldback and basal requests plus an optional terminal nick and release.
 `check` aggregates their independent diagnostics. `compile` refuses any error
 and emits expected intermediates and typed views into the ordinary verified
 bundle.
 
-Without a terminal nick, compilation produces `component_assembly`. It
-evaluates the supplied junctions and composes the hairpin encoding without claiming
-that HOP generated the components or that a processing route exists. With a
-terminal nick, compilation produces `resolved_events`: foldback and basal
-pairing remain independent branches, the terminal-nick transition transforms
-the basal junction, and insert assembly consumes that state with the foldback
-junction and authored payload.
+Compilation evaluates the supplied junctions and composes the hairpin encoding
+without claiming that HOP generated the components or that a production method
+exists. Its `design_derivation` records deterministic component resolution,
+not temporal events. A terminal nick and optional release can contribute
+explicit resolved-junction geometry without becoming a method plan.
 
-For component assembly, the foldback request's `nick_boundary` is a topology
-coordinate marking the retained-tract start. It does not create a `NickEvent`
-or assert an experimental nick.
+For component assembly, `retained_tract_span.start` is the sole foldback origin.
+Actual nick boundaries occur only in discovery, projection, or named-method
+contracts that assert strand-specific processing geometry.
 
 If release is present, a terminal nick is required and its active product must
 equal the foldback precursor.
@@ -284,6 +297,6 @@ equal the foldback precursor.
 source records the release precursor, or the foldback precursor when release is
 absent.
 
-Both paths check internal consistency, not component lineage,
+Both forms check design consistency, not process lineage,
 processing-agent eligibility, or experimental performance. Those claims stay
 with the caller.

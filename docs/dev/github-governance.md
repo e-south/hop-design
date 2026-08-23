@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-20
+doc_type: how-to
 ---
 
 # GitHub governance contract

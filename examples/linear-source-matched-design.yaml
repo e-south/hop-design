@@ -1,0 +1,58 @@
+schema: hop.resolved-design/v2
+design_id: matched-linear-source-demo
+payload:
+  kind: exact
+  sequence: GATACCGTTAAGCTCGATTACC
+foldback:
+  precursor_sequence: TCAGCAAT
+  retained_tract_span:
+    start:
+      offset: 0
+    end:
+      offset: 4
+  source_turn_span:
+    start:
+      offset: 4
+    end:
+      offset: 8
+  protected_region:
+    start:
+      offset: 0
+    end:
+      offset: 0
+  turn_extension: ""
+  foldback_arm: TGCG
+  constraints:
+    max_non_watson_crick_pairs: 4
+    terminal_watson_crick_bp_min: 0
+    terminal_watson_crick_bp_max: 4
+    max_uninterrupted_watson_crick_bp: 4
+    max_added_nt: 4
+    required_turn_nt: 4
+    allow_protected_region_non_watson_crick_pairs: true
+basal:
+  pairing:
+    left_arm: CAAG
+    right_arm: CTCG
+  constraints:
+    pairing_index_kind: pair-count-weighted@1
+    require_terminal_watson_crick: true
+    allow_active_gt_wobble: true
+    max_active_hard_mismatches: 0
+    max_active_non_watson_crick_pairs: 1
+    forbid_active_middle_double_hard: true
+    minimum_active_pair_support_index: 3.5
+    maximum_active_pair_disruption_index: 0.5
+    require_outer_hard_for_active_double: true
+    reject_compact_profiles: []
+    reserve_compact_profiles: []
+  acceptance: allow_reserve
+  terminal_nick: null
+release: null
+defaults_ref: example:defaults/matched-handoff@1
+catalog_ref: example:processing-catalog/matched-handoff@1
+constraint_profile_ref: example:constraint-profile/matched-handoff@1
+design_derivation_ref: example:design-derivation/matched-handoff@1
+constraints:
+  max_candidates: 1
+external_refs: []

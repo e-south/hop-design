@@ -8,6 +8,11 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-22
+doc_type: reference
+journey:
+  - compile
+  - discover
+  - method
 ---
 
 # HOP Design contract table
@@ -22,34 +27,34 @@ last_verified: 2026-08-22
 | `ResolvedDesignSpace` | Nonempty typed axes; unique option IDs; positive `max_designs`; explicit duplicate-final-sequence policy | Cardinality checked before row allocation; deterministic checked specs and projected sequences; duplicates fail or remain counted; no rendering side effects |
 | `Span` | Nonnegative boundaries; end not before start | Zero-based, half-open length |
 | `FoldbackJunction` | Contiguous spans; equal retained/foldback-arm lengths; ordered bounded pair observations | Retained tract, turn, and foldback arm partition its sequence; exact, mismatched, and cap-only zero-pair junctions share one physical representation |
-| `evaluate_foldback` | Exact precursor; explicit nick, spans, optional zero-length paired arm, turn, and constraints | Canonical junction, mismatch/run measurements, designed sequence, and all independent diagnostics without invented pairs |
+| `evaluate_foldback` | Exact precursor; retained-tract, source-turn, and protected-region spans; optional zero-length paired arm; turn extension; constraints | Canonical junction, turn boundary, non-Watson-Crick positions, Watson-Crick-only runs, designed sequence, and all independent diagnostics without invented pairs |
 | `search_foldback_arms` | Valid foldback search request; positive node and hit limits | Exact-first deterministic hits and truthful `complete`, `infeasible`, or `truncated` status |
 | `BasalJunction` | Equal-length arms; one ordered pair observation per position | Pair count and literal pair bases match the antiparallel arms, including wobble or mismatch calls |
-| `evaluate_basal_pairing` | Two exact four-base arms; explicit wobble choice and caller constraint profile | Physical S3/S2/S1/S0 pair calls plus separate active, reserve, or reject decision |
-| `search_basal_candidates` | Two four-base IUPAC arm domains, explicit wobble choice, caller constraint profile, acceptance, and node/hit budgets | Exact evaluated arm pairs in canonical physical order, content identities, exclusion counts, and truthful completion status |
+| `evaluate_basal_pairing` | Two exact four-base arms and caller constraint profile | Invariant physical S3/S2/S1/S0 pair calls, dimensionless `pair-count-weighted@1` heuristic indices, and a separate active, reserve, or reject decision |
+| `search_basal_candidates` | Two four-base IUPAC arm domains, caller constraint profile, acceptance, and node/hit budgets | Exact evaluated arm pairs in literal content order, contiguous `canonical_ordinal`, content identities, exclusion counts, and truthful completion status |
 | `search_basal_processing_geometries` | Caller catalog, selected release agent and orientation, exact terminal-nicked strand, four-base scar domain, explicit post-nick domain policy, and node/hit budgets | Signed release/nick geometry, complete domain intersections and blockers for every examined agent, exact compatible-scar cardinality, neutral hit order, and truthful truncation |
 | `search_basal_processing_routes` | Typed basal-candidate and processing-geometry results plus route node/hit budgets | Exact retained-scar compatibility, retained-release-site rejection, derived terminal nick and surviving strand, content-addressed routes in neutral order, and separate upstream/local truncation evidence |
 | `search_released_foldback_geometries` | Caller catalog, exposure route, nick target and displacement window, paired-tract and turn lengths, downstream-site and complete-separation rules, and node/hit budgets | Replayable cross-agent footprints, cuts, correlated foldback sequence domains, exact sequence-space cardinality, neutral content identities, and truthful truncation without concrete-sequence selection |
-| `search_released_foldback_precursors` | One selected released-foldback geometry, a complete caller-authored IUPAC precursor template, and node/hit budgets | Exact template/domain intersection, correlated-pair cardinality, content-addressed exact precursors in canonical physical order, explicit caller-domain infeasibility, and truthful truncation without basal-route composition |
+| `search_released_foldback_precursors` | One selected released-foldback geometry, a complete caller-authored IUPAC precursor template, and node/hit budgets | Exact template/domain intersection, correlated-pair cardinality, content-addressed exact precursors with contiguous `canonical_ordinal`, explicit caller-domain infeasibility, and truthful truncation without basal-route composition |
 | `search_hairpin_junction_routes` | Typed exact-precursor and basal-route results plus route node/hit budgets | Exact precursor-to-geometry replay, released-state projection, one continuous active/surviving strand, content-addressed routes in neutral upstream order, distinct end-agent identities, and separate upstream/local truncation evidence |
 | `build_hairpin_junction_route_view` | One validated exact junction-route candidate | A released-workflow view whose state and foldback panels derive from that route; no independent foldback substitution |
 | `build_released_foldback_precursor_view` | One selected geometry, exact precursor, and its derived released state | A released-workflow view after cross-object replay; no independent foldback substitution |
 | `BasalDesignRequest` | Physical arms, caller policy, acceptance, and optional terminal nick at the basal boundary | A terminal nick is validated when supplied; absence selects route-neutral component assembly |
-| `PairedStemExtensionRequest` | Equal nonzero exact-DNA arms and explicit wobble choice | Literal antiparallel pair calls and counts for optional non-payload stem context |
+| `PairedStemExtensionRequest` | Equal nonzero exact-DNA arms | Invariant literal antiparallel pair calls and counts for optional non-payload stem context |
 | `LinearSourceHairpinPcrMaterialsSpec` | Six unique sequence materials; exact primers and adapter; explicit ligation-end preparation | Terminal primer bindings, oriented spans, required material IDs, and terminal chemistry in a strict derived plan |
 | `MethodOutcome` | Independent implementation and resolution statuses | Unavailable methods remain not evaluated; infeasible results carry errors; complete results carry no errors |
 | `LinearSourceMultinickHairpinPcrRequest` | Exact source; unique caller-supplied agents; inclusive length rule; adapter constraints; restriction projection orientation | Every compatible nick and fragment is resolved or the result is explicitly infeasible |
-| `LinearSourceMultinickHairpinPcrPlan` | Complete result from the bounded compiler | Source duplex, all nicks and fragments, selection, pairing, bonds, PCR boundaries, duplex, restriction product, and projection replay after serialization |
-| `MethodBundle` | One complete method plan and generated artifacts | Content-addressed request, plan, trajectory, duplex/restriction FASTA, GenBank, and hairpin-encoding projection |
+| `LinearSourceMultinickHairpinPcrPlan` | Complete result from the bounded compiler | Source duplex, all nicks and fragments, selection, pairing, bonds, PCR boundaries, duplex, restriction product, exact cohesive ends, and projection replay after serialization |
+| `MethodBundle` | Root manifest derived from one complete method compilation | Content-addressed inventory and identities for the request, plan, trajectory, duplex/restriction FASTA, GenBank, and hairpin-encoding projection; no loaded artifact bytes |
 | `load_verified_method_bundle` | Persisted method-bundle directory | Safe-path and complete-inventory checks plus deterministic request-to-plan and byte-for-byte artifact replay |
 | `project_released_strand_state` | Exact precursor; route-compatible nick; explicit in-bounds cuts and constraints | Active and retained sequences stored 5′→3′, literal strand roles, precursor spans, and orientation-correct per-base lineage or diagnostics |
 | `ProcessingCatalog` | Known schema; unique caller-defined agent IDs | Exact site/cut scanning and symbolic motif presence without package-owned application data |
 | `search_nicking_placements` | Caller-supplied catalog; explicit target strand, boundary, paired tract, turn allowance, node budget, and hit budget | One strand-compatible geometry per examined nicking agent; exact/nearest placement, blockers, required lengths, neutral deterministic order, and truthful search/result truncation |
-| `HopSpec` | Known schema; one typed payload; explicit references and bounds | Intent only; no paired arm or compiled hairpin encoding input |
-| `ResolvedHopSpec` | Known schema; explicit foldback and basal components; optional paired stem extension; optional terminal nick; release only with a terminal nick | Route-neutral component assembly or resolved-event compilation; release output equals foldback input or `HOP-ROUTE-001` |
+| `HopSpec` | `hop.design/v2`; one typed payload; explicit derivation, policy, and bounds references | Intent only; no paired arm, compiled encoding, or method chronology input |
+| `ResolvedHopSpec` | `hop.resolved-design/v2`; explicit foldback and basal components; optional paired stem extension; optional terminal nick; release only with terminal-nick geometry | Component evaluation or explicit resolved-junction derivation; release output equals foldback input or `HOP-ROUTE-001` |
 | `HairpinEncodingInsert` | Compiler-owned sequence, digest, and ordered features | Features partition and reconstruct the complete one-dimensional hairpin core; the object makes no duplex or cloning-readiness claim |
-| `HopPlan` | Resolved assembly or processing route and lock | Paired payload and hairpin encoding reconstruct exactly from evaluated components; source oligo and state steps match the declared route kind |
-| `HopBundle` | Plan plus generated artifacts | Stable inventory, digests, identifiers, and neutral external references |
+| `HopPlan` | `hop.plan/v3`; deterministic design derivation and lock | Paired payload and hairpin encoding reconstruct from evaluated components; projected nick/release geometry is not ordered production history |
+| `HopBundle` | Root manifest derived from one design compilation | Stable inventory, digests, identifiers, and neutral external references; no loaded spec, plan, or artifact bytes |
 | `load_verified_bundle` | Persisted bundle directory | Integrity checks and deterministic semantic replay complete before typed spec, plan, provenance, manifest, and artifacts are returned |
 | `CheckReport` | Valid spec and configuration | All expected feasibility diagnostics without hiding software failure |
 | `WorkflowView` | Valid derived evaluation or strand state | Renderer-independent panels, tracks, spans, pair calls, and stable schema; renderers cannot revise state |

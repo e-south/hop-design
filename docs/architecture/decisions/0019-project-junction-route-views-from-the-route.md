@@ -8,6 +8,8 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-22
+doc_type: decision
+amended_by: hop-adr-0023
 ---
 
 # ADR 0019: Project junction-route views from the selected route
@@ -37,8 +39,8 @@ from the route's exact released state and geometry, requires that derivation to
 reconstruct the active product, and emits the existing `released_workflow`
 view contract.
 
-The operation remains under `hop_design.design.route_views`; it is not added to
-the package-root facade. Renderers still consume only `WorkflowView` and
+ADR 0023 later promotes the operation through `hop_design.views` while keeping
+it out of the package root. Renderers still consume only `WorkflowView` and
 perform no molecular derivation.
 
 ## Consequences

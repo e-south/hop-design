@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-22
+doc_type: reference
 ---
 
 # Linear-source hairpin-PCR materials
@@ -17,41 +18,41 @@ vendor-neutral sequence materials. The material resolver checks terminal
 relationships before the method compiler derives physical states.
 
 ```python
-import hop_design as hop
+import hop_design.methods as methods
 
-phosphate = (hop.OligoModification.FIVE_PRIME_PHOSPHATE,)
-spec = hop.LinearSourceHairpinPcrMaterialsSpec(
+phosphate = (methods.OligoModification.FIVE_PRIME_PHOSPHATE,)
+spec = methods.LinearSourceHairpinPcrMaterialsSpec(
     method_id="linear-source-demo",
-    source_oligo=hop.ProcessOligo(
+    source_oligo=methods.ProcessOligo(
         material_id="source",
         sequence="ACGTACGTNNRYGCTTAG",
     ),
-    source_pcr_forward_primer=hop.ProcessOligo(
+    source_pcr_forward_primer=methods.ProcessOligo(
         material_id="source-fwd",
         sequence="ACGTAC",
     ),
-    source_pcr_reverse_primer=hop.ProcessOligo(
+    source_pcr_reverse_primer=methods.ProcessOligo(
         material_id="source-rev",
         sequence="CTAAGC",
         modifications=phosphate,
     ),
-    ligation_adapter=hop.ProcessOligo(
+    ligation_adapter=methods.ProcessOligo(
         material_id="adapter",
         sequence="TTGACCGTAACC",
         modifications=phosphate,
     ),
-    hairpin_pcr_forward_primer=hop.ProcessOligo(
+    hairpin_pcr_forward_primer=methods.ProcessOligo(
         material_id="hairpin-fwd",
         sequence="ACGTACGT",
     ),
-    hairpin_pcr_reverse_primer=hop.ProcessOligo(
+    hairpin_pcr_reverse_primer=methods.ProcessOligo(
         material_id="hairpin-rev",
         sequence="GGTTACGG",
     ),
-    ligation_end_preparation=hop.LigationEndPreparation.PRE_PHOSPHORYLATED_OLIGOS,
+    ligation_end_preparation=(methods.LigationEndPreparation.PRE_PHOSPHORYLATED_OLIGOS),
 )
 
-plan = hop.resolve_linear_source_hairpin_pcr_materials(spec)
+plan = methods.resolve_linear_source_hairpin_pcr_materials(spec)
 ```
 
 The source oligo accepts DNA IUPAC symbols at the material-validation stage so

@@ -8,6 +8,8 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-20
+doc_type: decision
+amended_by: hop-adr-0021
 ---
 
 # ADR 0005: Canonical junction pair observations

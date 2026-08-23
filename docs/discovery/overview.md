@@ -9,6 +9,9 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-23
+doc_type: explanation
+journey:
+  - discover
 ---
 
 # Discovery and selection
@@ -58,12 +61,15 @@ caller.
 ## Ordering is not recommendation
 
 Candidate order is deterministic so two consumers can replay the same bounded
-result. Depending on the operation, it may include exact-versus-near geometry,
-displacement, required sequence extent, molecular measurements, and content
-identity. It does not encode vendor availability or application preference.
+result. Basal and concrete precursor searches use literal content order;
+geometry searches use stable identifiers and declared coordinate relations.
+Measured GC content, homopolymer length, extra-site counts, or M/W/X profiles
+do not silently determine the prefix returned under a hit budget.
 
-Treat a returned rank as a canonical ordinal unless a named objective says
-otherwise. The caller should persist its own selection rule and the selected
+`canonical_ordinal` is only a reproducible position in HOP's neutral order. It
+is not a score or recommendation. A future optimization surface would have to
+name its objective, report its measurements, and define deterministic
+tie-breaking. The caller should persist its own selection rule and selected
 candidate identity.
 
 ## What site placement proves

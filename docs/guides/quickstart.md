@@ -7,9 +7,19 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-23
+doc_type: tutorial
+journey:
+  - install
+  - compile
+  - verify
 ---
 
 # Quickstart
+
+This page targets the unreleased v0.1.0a7 source checkout. The latest
+published wheel is v0.1.0a6 and uses the preceding schema generation; use its
+[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a6)
+when operating the wheel.
 
 Download a versioned wheel and `SHA256SUMS` from
 [GitHub Releases](https://github.com/e-south/hop-design/releases), verify the
@@ -17,7 +27,10 @@ wheel's checksum, and install it into a Python 3.12–3.14 environment. HOP is n
 published on PyPI.
 
 ```bash
+# macOS
 grep 'hop_design-0.1.0a6-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
+# Linux
+grep 'hop_design-0.1.0a6-py3-none-any.whl$' SHA256SUMS | sha256sum -c -
 uv venv --python 3.12
 source .venv/bin/activate
 uv pip install ./hop_design-0.1.0a6-py3-none-any.whl
@@ -42,10 +55,13 @@ A strict JSON or YAML specification uses the same endpoint:
 uv run hop-design compile --spec examples/generic-symbolic.yaml --out build/from-spec
 ```
 
-Use `hop.design/v1` for the named generic demonstration and
-`hop.resolved-design/v1` when foldback and basal components are supplied by the
-caller. Omit the terminal nick for route-neutral component assembly; include it
-for resolved processing events. A release event requires the resolved route.
+The release-wheel command above uses the a6 contract shipped with that wheel.
+The contributor-checkout commands below exercise the unreleased a7 source
+candidate. In the current source candidate, use `hop.design/v2` for the named generic demonstration and
+`hop.resolved-design/v2` when foldback and basal components are supplied by the
+caller. A design spec records deterministic design derivation, not a laboratory
+chronology. A resolved release projection requires explicit terminal-nick
+geometry; complete production history belongs to a named method request.
 
 In Python:
 
@@ -60,12 +76,12 @@ compilation.write("build/symbolic-python")
 hop.verify_bundle("build/symbolic-python")
 ```
 
-The generic route builds `basal left + payload + foldback junction + derived
+The generic design derivation builds `basal left + payload + foldback junction + derived
 paired payload + basal right`. It exists to exercise the software contracts and
 must not be interpreted as a wet-lab protocol or experimental validation.
 
-The CLI intentionally exposes the common compile path. Continue in Python for:
+The CLI intentionally exposes the common compile path. Continue in Python with:
 
-- [bounded geometry discovery concepts](../concepts/discovery-and-selection.md);
-- [named processing-method concepts](../concepts/processing-and-assembly.md); or
-- [verified consumer integration](../spec-plan-bundle.md).
+- [a bounded basal-candidate query](discover-compatible-basal-candidates.md);
+- [a named processing-method bundle](resolve-production-method.md); or
+- [verified consumer integration](../provenance/overview.md).

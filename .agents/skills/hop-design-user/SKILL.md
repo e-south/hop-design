@@ -2,7 +2,7 @@
 name: hop-design-user
 description: Use HOP Design to load or expand payloads, run bounded discovery, compile design or named-method bundles, render typed views, and verify handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
 metadata:
-  version: 0.3.0
+  version: 0.5.0
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation]
 ---
@@ -16,7 +16,8 @@ junction, route, or application constraint outside a typed contract.
 
 Operate the existing public API, CLI, models, and bundles. Explain only the
 scientific state actually represented by those contracts. Read
-`docs/ontology.md` and `docs/spec-plan-bundle.md` for terms, the matching guide
+`docs/start/mental-model.md`, `docs/language/ontology.md`, and
+`docs/provenance/overview.md` for terms, the matching guide
 or reference document for the requested operation, and `RELIABILITY.md` or
 `SECURITY.md` for integrity or safety claims.
 
@@ -48,12 +49,14 @@ or reference document for the requested operation, and `RELIABILITY.md` or
    invent private catalog entries.
 5. For discovery, create the smallest strict request and hard bounds that answer
    the question. Report candidate-space size, completion or truncation, the
-   canonical ordinal, and caller-owned selection separately.
+   canonical ordinal, and caller-owned selection separately. Import bounded
+   query operations and contracts from `hop_design.discovery`.
 6. For the implemented physical method, require exact molecular inputs and use
-   `hop.compile_linear_source_multinick_hairpin_pcr(request)`. Use
-   `hop.compile_linear_source_method_bundle(request)` only after the result is
-   complete. State the method ID; do not describe it as
-   `generic-direct-synthesis@1`.
+   `methods.compile_linear_source_multinick_hairpin_pcr(request)` from
+   `hop_design.methods` (imported as `methods`). Use
+   `methods.compile_linear_source_method_bundle(request)` only after the result is
+   complete. State the transformation-based method ID; do not substitute a
+   design-derivation identifier.
 7. Before any write, state which bundle type will be created and confirm that
    the target path does not exist. Verify the matching bundle before
    interpreting its files:
@@ -65,14 +68,17 @@ or reference document for the requested operation, and `RELIABILITY.md` or
    verified_design = hop.load_verified_bundle("build/example")
    ```
 
-   For a `MethodBundle`, use `hop.verify_method_bundle(path)` to verify its
-   manifest and `hop.load_verified_method_bundle(path)` to load the verified
+   For a verified method handoff, use `methods.verify_method_bundle(path)` to
+   verify its raw manifest and `methods.load_verified_method_bundle(path)` to load the verified
    request, plan, and product.
-8. For integration, branch on product type. From a `HopBundle`, pass the
-   `load_verified_bundle()` result's hairpin encoding, digest, and nested
-   features. From a `MethodBundle`, pass the
-   `load_verified_method_bundle()` result's physical product, request, plan,
-   cut geometry, and hairpin-encoding projection and digest. Do not invent
+8. For integration, branch on product type. For a verified design handoff, pass the
+   `load_verified_bundle()` result's `plan.hairpin_encoding_insert`, its
+   `sequence_digest`, and nested features. For a verified method handoff, pass the
+   `load_verified_method_bundle()` result's
+   `plan.restriction_digest_product`, request, plan, cut geometry, and
+   `bundle.hairpin_encoding_digest`. The consumer must explicitly compare that
+   digest with `verified_design.plan.hairpin_encoding_insert.sequence_digest`.
+   Do not invent
    nested features on a restriction product, let a consumer rederive HOP
    geometry, or call a destination-neutral product assembly-ready.
 9. Report the input kind, operation or method ID, plan and bundle IDs when
@@ -100,13 +106,14 @@ or reference document for the requested operation, and `RELIABILITY.md` or
 - Keep physical foldback/basal/release derivation separate from caller
   eligibility and application policy. A reserve basal profile compiles only
   with explicit reserve acceptance.
-- Treat candidate rank as reproducible ordering, not a biological or
-  procurement recommendation unless a named objective explicitly says so.
+- Treat `canonical_ordinal` as reproducible ordering, never as a biological or
+  procurement recommendation. An optimization claim requires a named objective,
+  reported measurements, and a deterministic tie-breaker.
 - Treat recognition-site placement as sequence-and-cut geometry, not evidence
   of empirical cleavage efficiency.
 - Treat typed view JSON as the scientific view contract. Renderers cannot
   recompute molecular state.
-- Do not describe the generic route as a wet-lab protocol or infer application
+- Do not describe a design derivation as a wet-lab protocol or infer application
   fitness from successful compilation.
 - Do not add private sequences, study identifiers, or caller profiles to the
   repository or examples.

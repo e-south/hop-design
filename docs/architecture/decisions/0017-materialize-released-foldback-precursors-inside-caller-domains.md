@@ -8,6 +8,8 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-22
+doc_type: decision
+amended_by: hop-adr-0023
 ---
 
 # ADR 0017: Materialize released-foldback precursors inside caller domains
@@ -47,9 +49,8 @@ partial search is reported as complete. Every candidate has the exact sequence,
 sequence digest, selected geometry identity, content identity, and one-based
 rank.
 
-Specialized request and result models remain under
-`hop_design.models.discovery`. Only the operation is added to the package-root
-facade.
+ADR 0023 later moved this operation and its public contracts from the package
+root to `hop_design.discovery`; the molecular decision is unchanged.
 
 ## Consequences
 

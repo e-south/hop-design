@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-22
+doc_type: reference
 ---
 
 # HOP Design reliability contract
@@ -61,7 +62,7 @@ cardinality before evaluation. It examines at most `max_search_nodes`, returns
 at most `max_hits`, reports reserve and reject exclusions for every examined
 non-hit, and distinguishes node truncation from result truncation. Candidate
 identity covers the exact pairing request and complete evaluation; result
-validation rejects domain, accounting, rank, and order drift.
+validation rejects domain, accounting, canonical-ordinal, and order drift.
 
 Basal processing-geometry discovery evaluates at most `max_search_nodes`
 nicking agents and returns at most `max_hits`. Every examined agent has one
@@ -77,14 +78,14 @@ bounds. `available_pair_count` describes that returned cross-product, not an
 unobserved global search space. HOP computes that count arithmetically and does
 not allocate pairs beyond the node budget. Every feasibility row and returned
 route replays its embedded inputs, retained scar, terminal nick, surviving
-strand, content identity, rank, and order.
+strand, content identity, canonical ordinal, and order.
 
 Released-foldback geometry discovery calculates the full agent-pair by release-
 orientation by boundary-window cardinality without materializing that product.
 It consumes nodes only through `max_search_nodes`, returns hits only through
 `max_hits`, and reports either bound explicitly. Validation replays every
 examined recognition footprint, cut, foldback pair domain, sequence-space
-cardinality, hit identity, rank, and order from the embedded catalog and request.
+cardinality, hit identity, canonical ordinal, and order from the embedded catalog and request.
 It never reports an unexamined concrete sequence.
 
 Released-foldback precursor search calculates the exact intersection of one
@@ -93,17 +94,17 @@ Correlated foldback pairs count as one axis. `max_search_nodes` bounds exact
 sequences examined and `max_hits` independently bounds returned candidates;
 both limits are replayed from the embedded request. A zero intersection is
 explicitly infeasible, and result validation rejects sequence, digest, content
-identity, rank, order, accounting, or truncation drift.
+identity, canonical ordinal, order, accounting, or truncation drift.
 
-Resolved release and foldback requests cannot be evaluated as one route unless
+Resolved release and foldback requests cannot be joined unless
 their adjacent sequence states are identical. Release scanners discard any
 resolved top or bottom cut beyond the supplied sequence. Search result models
 reject terminal statuses that contradict hits or the number of examined nodes.
-A release event cannot enter component assembly without a terminal nick.
-Component assembly emits the one-dimensional hairpin-encoding sequence as its
-source oligo and produces route-neutral views; it never fills missing route
-fields from a catalog search or default.
-An absent paired stem extension is omitted from serialized v1 specs and routes.
+A release projection cannot enter resolved-junction derivation without a terminal nick.
+Component evaluation emits the one-dimensional hairpin-encoding sequence and
+produces route-neutral views; it never fills missing method fields from a
+catalog search or default.
+An absent paired stem extension is omitted from serialized v2 design specs.
 When present, its arms, pair calls, two feature spans, and state transition must
 all agree. Method-material plans reject terminal-binding or chemistry drift.
 
