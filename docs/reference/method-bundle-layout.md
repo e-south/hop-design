@@ -39,6 +39,8 @@ unknown schemas. It then recompiles `method-request.json` and requires the plan,
 all eight exported artifacts, manifest, and bundle ID to match byte for byte.
 Updating checksums after altering a derived file does not satisfy this replay.
 
-The manifest records `hairpin_encoding_digest`. A caller can use that digest to
-join method evidence to the design object it produces without giving the two
-bundles the same identity.
+The manifest records `hairpin_encoding_digest`. A caller may join method
+evidence to a design object only when the method request supplied
+`expected_hairpin_encoding`, or when the handoff explicitly compares this
+digest with the design encoding's `sequence_digest`. The bundles retain
+separate identities.

@@ -17,13 +17,18 @@ The hierarchy is:
 ```text
 DesignSpec  -> HopPlan       -> HairpinEncodingInsert
 MethodRequest -> method states -> RestrictionDigestProduct
-HairpinEncodingInsert.sequence_digest
-  == RestrictionDigestProduct.hairpin_encoding_projection.sequence_digest
+bound method handoff:
+  HairpinEncodingInsert.sequence_digest
+    == RestrictionDigestProduct.hairpin_encoding_projection.sequence_digest
 RestrictionDigestProduct + caller destination -> AssemblyFragment
 ```
 
 Discovery proposes compatible geometry. Caller policy selects among candidates.
 Views and files project derived state; they do not become a second authority.
+The cross-bundle equality is a checked handoff, not an invariant of every
+independently compiled pair. It holds when the method request supplies
+`expected_hairpin_encoding`, or when the consumer performs the same exact
+digest comparison before associating the products.
 
 ## Design inputs and hairpin structure
 
@@ -209,7 +214,9 @@ not replace sequence identity or destination readiness.
 contains the strict request and plan plus exports derived from that plan. It is
 separate from `HopBundle`: the former records production-method resolution,
 while the latter records hairpin-design compilation. They may share a
-hairpin-encoding sequence digest without sharing identity or ownership.
+hairpin-encoding sequence digest without sharing identity or ownership. A
+consumer must not infer that relationship from two otherwise valid bundles;
+the method request or handoff must establish exact digest equality.
 
 ## Diagnostics
 
