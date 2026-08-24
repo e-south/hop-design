@@ -55,4 +55,4 @@ Record any caller selection separately with its objective and chosen candidate
 identity.
 
 Continue with the [discovery concepts](../discovery/overview.md) or the
-[mechanics reference](../reference/mechanics-api.md).
+[processing-discovery reference](../reference/processing-discovery.md#basal-searches).

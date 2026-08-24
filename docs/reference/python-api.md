@@ -102,76 +102,20 @@ use `hop_design.discovery`.
 - `search_nicking_placements(catalog=..., target=..., limits=...) -> NickingPlacementSearchResult`
 - `search_foldback_precursors(request, limits=...) -> FoldbackPrecursorSearchResult`
 
-Foldback, basal, and release operations accept explicit typed requests. Basal
-pair classification is physical; active/reserve/reject classification comes
-from the caller-supplied `BasalConstraintProfile`. See the
-[mechanics reference](mechanics-api.md).
-Explicit foldback evaluation can represent a cap-only junction with zero
-retained and returning paired bases. Foldback-arm search remains limited to a
-nonempty retained tract.
+The operation list is the signature index, not the semantic authority. Follow
+the reference that matches the question:
 
-Precursor search is a second bounded operation after placement discovery. The
-request names one exact placement and supplies IUPAC domains for the precursor
-and any required turn extension. Motif constraints are intersected with those
-domains before enumeration. Incompatible domains return `HOP-CAND-001`;
-caller-prohibited additional nick sites return `HOP-CAND-002`. Node and result
-truncation are separate and explicit.
+- [component evaluation](component-evaluation.md) for foldback, basal, paired
+  stem, released-strand projection, and compiler integration;
+- [processing discovery](processing-discovery.md) for nick placement, exact
+  precursor sequence, basal candidates, and terminal processing routes;
+- [released-foldback routes](released-foldback-routes.md) for joint geometry,
+  exact selected precursors, and active/surviving-strand continuity; and
+- [workflow views](view-contracts.md) for renderer-independent projections.
 
-Basal candidate search takes two explicit four-nucleotide IUPAC arm templates.
-It calculates the exact Cartesian cardinality before evaluation, classifies
-each exact pair through the supplied `BasalConstraintProfile`, and returns
-active candidates or active plus reserve candidates according to `acceptance`.
-Every examined non-hit is accounted for by policy status and reason. Returned
-order uses literal left arm, right arm, and content identity. Compact M/W/X
-profiles remain physical annotations and policy inputs; they do not determine
-which candidates survive a hit budget. `max_search_nodes` and `max_hits`
-produce separate truncation evidence.
-
-Basal processing-geometry search is a separate operation. It normalizes a
-selected release geometry to a signed top-cut origin, evaluates exact terminal
-nick placement for each bounded catalog entry, intersects caller-authored scar
-and post-nick domains, and reports complete per-agent feasibility. The
-`compatible` post-nick mode permits an explicit nonempty narrowing;
-`preserve` requires the authored domain to remain unchanged. Request, limit,
-and result models are available from `hop_design.discovery`.
-
-Basal processing-route search is the bounded join of those two explicit result
-sets. It uses the basal left arm as the retained scar, rejects domain conflicts
-and a retained release motif, and derives the terminal nick and surviving
-strand. It returns all compatible joins within the caller budgets in neutral
-upstream order. Upstream incompleteness and local node or hit truncation remain
-distinct; this operation does not select an enzyme or establish
-released-foldback continuity.
-
-Released-foldback geometry search evaluates the bounded cross-product of
-nicking agents, release agents, release orientations, and exact-first nick
-boundaries. Each examined row records process footprints, strand-specific cuts,
-foldback pair domains, minimum precursor extent, and exact compatible-sequence
-cardinality. Downstream-site placement and complete two-strand separation are
-independent request constraints. The search does not choose one sequence or
-apply catalog warnings, vendor status, or application preference. Node and returned-
-hit truncation are independent.
-
-Released-foldback precursor search consumes one selected geometry and one
-same-length caller-authored IUPAC template. It intersects all sequence and
-correlated pairing domains before enumeration, returns content-addressed exact
-precursors with contiguous `canonical_ordinal`, and reports `caller_domain_conflict`
-when the intersection is empty. Node and hit truncation are independent. The
-specialized request, limits, candidate, and result models are available from
-`hop_design.discovery`.
-
-Hairpin-junction route search consumes exact released-foldback precursor and
-basal-route results. It projects the released state and returns only pairs for
-which the released active strand is also the basal surviving strand. It does
-not require matching release-agent identities at the two ends or apply caller
-selection policy. Its specialized limits and result models are available from
-`hop_design.discovery`.
-
-The `hop_design.views` facade provides
-`build_released_foldback_precursor_view(...) -> WorkflowView` and
-`build_hairpin_junction_route_view(route) -> WorkflowView`. Both derive the
-released and foldback panels from exact discovery results and are not
-package-root exports.
+Every bounded search requires explicit node and hit limits. Its status,
+canonical order, physical measurements, caller selection, and downstream use
+remain distinct claims.
 
 ## Linear-source method
 

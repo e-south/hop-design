@@ -69,9 +69,11 @@ def test_public_docs_route_the_five_sibling_surfaces() -> None:
     assert "docs/start/mental-model.md" in readme
     assert not (REPO_ROOT / "docs" / "concepts").exists()
 
-    mechanics = (REPO_ROOT / "docs" / "reference" / "mechanics-api.md").read_text(encoding="utf-8")
-    assert "sequence-and-cut compatible" in mechanics
-    assert "empirical cleavage efficiency" in mechanics
+    processing = (REPO_ROOT / "docs" / "reference" / "processing-discovery.md").read_text(
+        encoding="utf-8"
+    )
+    assert "sequence-and-cut compatible" in processing
+    assert "empirical cleavage efficiency" in processing
 
 
 def test_action_routes_have_runnable_public_examples() -> None:

@@ -87,5 +87,5 @@ them into feasibility or empirical performance claims. A future advisory
 contract should identify the agent, applicable context, evidence, and severity.
 Until then, callers must apply and preserve their own versioned protocol rules.
 
-The [mechanics API](../reference/mechanics-api.md) defines each bounded search
+The [mechanics reference map](../reference/mechanics-api.md) routes each bounded search
 and its completion evidence.

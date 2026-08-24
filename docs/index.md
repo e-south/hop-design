@@ -74,8 +74,8 @@ integration use Python.
 - [Component views](guides/render-component-views.md): runnable, route-neutral
   foldback and basal SVGs backed by typed JSON.
 - [CLI](reference/cli.md) and [Python API](reference/python-api.md).
-- [Mechanics API](reference/mechanics-api.md): foldback, basal, release,
-  discovery, and caller-supplied processing catalogs.
+- [Mechanics map](reference/mechanics-api.md): route to component evaluation,
+  processing discovery, or released-foldback composition without one monolith.
 - [Linear-source method materials](reference/linear-source-method-materials.md):
   declared oligos, terminal chemistry, and binding checks.
 - [Schema identifiers](reference/schemas.md), [formal ontology](language/ontology.md),
