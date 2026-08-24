@@ -123,10 +123,14 @@ def check_inline_route_targets(path: Path, text: str) -> list[str]:
 def check_skill_metadata(path: Path, metadata: dict[str, object]) -> list[str]:
     """Validate the structured metadata block for one repository skill."""
     errors: list[str] = []
-    block = metadata.get("metadata")
     relative = path.relative_to(REPO_ROOT)
+    description = metadata.get("description")
+    if isinstance(description, str) and len(description) > 220:
+        errors.append(f"{relative}: description exceeds 220 characters")
+    block = metadata.get("metadata")
     if not isinstance(block, dict):
-        return [f"{relative}: metadata must be a YAML mapping"]
+        errors.append(f"{relative}: metadata must be a YAML mapping")
+        return errors
     for key in ("version", "category"):
         value = block.get(key)
         if not isinstance(value, str) or not value.strip():
