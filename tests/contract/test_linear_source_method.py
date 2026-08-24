@@ -329,6 +329,16 @@ def test_restriction_product_rejects_cohesive_end_geometry_drift(
         methods.RestrictionDigestProduct.model_validate_json(json.dumps(data))
 
 
+def test_restriction_product_rejects_duplicate_physical_site_spans() -> None:
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
+    assert result.plan is not None
+    data = result.plan.restriction_digest_product.model_dump(mode="json")
+    data["sites"][1]["site_span"] = data["sites"][0]["site_span"]
+
+    with pytest.raises(ValidationError, match="distinct physical spans"):
+        methods.RestrictionDigestProduct.model_validate_json(json.dumps(data))
+
+
 def test_palindromic_restriction_site_replay_requires_both_orientations() -> None:
     result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
     assert result.plan is not None
@@ -513,4 +523,17 @@ def test_serialized_method_plan_rejects_cross_state_drift(drift: str) -> None:
         )
 
     with pytest.raises(ValidationError):
+        methods.LinearSourceMultinickHairpinPcrPlan.model_validate_json(json.dumps(data))
+
+
+@pytest.mark.parametrize("index_field", ("left_index", "right_index"))
+def test_serialized_method_plan_rejects_out_of_bounds_pair_indexes(
+    index_field: str,
+) -> None:
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
+    assert result.plan is not None
+    data = result.plan.model_dump(mode="json", by_alias=True)
+    data["adapter_annealed_complex"]["pairs"][0][index_field] = 999_999
+
+    with pytest.raises(ValidationError, match="selected literal strands"):
         methods.LinearSourceMultinickHairpinPcrPlan.model_validate_json(json.dumps(data))

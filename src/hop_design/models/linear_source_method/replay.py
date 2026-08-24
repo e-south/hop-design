@@ -119,11 +119,15 @@ def _validate_annealing_and_ligation(
     }
     pairs = plan.adapter_annealed_complex.pairs
     for pair in pairs:
+        left_sequence = strand_sequences.get(pair.left_strand_id)
+        right_sequence = strand_sequences.get(pair.right_strand_id)
         if (
-            pair.left_strand_id not in strand_sequences
-            or pair.right_strand_id not in strand_sequences
-            or strand_sequences[pair.left_strand_id][pair.left_index] != pair.left_base
-            or strand_sequences[pair.right_strand_id][pair.right_index] != pair.right_base
+            left_sequence is None
+            or right_sequence is None
+            or not 0 <= pair.left_index < len(left_sequence)
+            or not 0 <= pair.right_index < len(right_sequence)
+            or left_sequence[pair.left_index] != pair.left_base
+            or right_sequence[pair.right_index] != pair.right_base
         ):
             raise ValueError("Annealing pairs must reference the selected literal strands.")
     overlap_start = max(top.precursor_span.start.offset, bottom.precursor_span.start.offset)
