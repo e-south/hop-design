@@ -27,8 +27,8 @@ Explicit component or resolved-junction bundles add these content-addressed arti
 | File | Meaning |
 | --- | --- |
 | `expected-intermediates.json` | Foldback and basal evaluations plus an optional release projection |
-| `foldback-view.json` / `.svg` | Typed foldback QA view and deterministic rendering |
-| `basal-view.json` / `.svg` | Typed basal terminal-nick view and deterministic rendering |
+| `foldback-view.json` / `.svg` | Route-neutral folded-junction view or source/resolved/folded QA view |
+| `basal-view.json` / `.svg` | Route-neutral basal-pairing view or explicit terminal-nick view |
 | `released-workflow-view.json` / `.svg` | Optional released-product lineage view and deterministic rendering |
 
 Call `hop_design.load_verified_bundle(path)` to obtain the typed spec, plan,

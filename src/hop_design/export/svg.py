@@ -111,7 +111,7 @@ def render_workflow_svg(view: WorkflowView) -> bytes:
                 f'<text class="terminus" x="{sequence_end + 2}" y="{y}">{right_terminus}</text>'
             )
             lines.append("</g>")
-        for feature in panel.features:
+        for feature_index, feature in enumerate(panel.features):
             track = tracks[feature.track_id]
             start, end = _display_span(
                 track,
@@ -126,7 +126,8 @@ def render_workflow_svg(view: WorkflowView) -> bytes:
                 f'x="{x}" y="{y}" width="{feature_width}" height="5"/>'
             )
             lines.append(
-                f'<text class="feature-label" x="{x}" y="{y + 16}">{escape(feature.label)}</text>'
+                f'<text class="feature-label" x="{x}" '
+                f'y="{y + 16 + (feature_index % 3) * 12}">{escape(feature.label)}</text>'
             )
         for pairing in panel.pairings:
             left_track = tracks[pairing.left_track_id]
@@ -137,13 +138,19 @@ def render_workflow_svg(view: WorkflowView) -> bytes:
             x2 = sequence_x + right_index * _BASE_WIDTH + 4
             y1 = track_y[pairing.left_track_id] + 4
             y2 = track_y[pairing.right_track_id] - 10
-            if pairing.left_track_id == pairing.right_track_id:
-                y2 = y1 + 16
-            lines.append(
-                f'<line class="pair pair-{escape(pairing.kind)}" '
-                f'data-pair-kind="{escape(pairing.kind)}" data-display-aligned="true" '
-                f'x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>'
+            attributes = (
+                f'class="pair pair-{escape(pairing.kind)}" '
+                f'data-pair-kind="{escape(pairing.kind)}" data-display-aligned="true"'
             )
+            if pairing.left_track_id == pairing.right_track_id:
+                anchor_y = track_y[pairing.left_track_id] - 7
+                control_y = max(25, anchor_y - abs(x2 - x1) / 5)
+                lines.append(
+                    f'<path {attributes} fill="none" '
+                    f'd="M{x1},{anchor_y} Q{(x1 + x2) / 2},{control_y} {x2},{anchor_y}"/>'
+                )
+            else:
+                lines.append(f'<line {attributes} x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
         lines.append("</g>")
         previous_panel = (panel.panel_id, panel_y + panel_height)
         panel_y += panel_height + _TRANSITION_GAP

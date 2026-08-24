@@ -63,6 +63,8 @@ for required in \
   'DESIGN.md' \
   'RELIABILITY.md' \
   'assets/hop-design-banner.svg' \
+  'assets/examples/basal-junction.svg' \
+  'assets/examples/foldback-junction.svg' \
   'docs/index.md' \
   'examples/author_linear_source_method.py' \
   'examples/compile_linear_source_method.py' \
@@ -70,6 +72,7 @@ for required in \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
   'examples/linear-source-method.json' \
+  'examples/render_component_views.py' \
   'examples/verify_design_method_handoff.py'; do
   if ! grep -Fq "/$required" <<<"$sdist_contents"; then
     echo "sdist omits README-routed content: $required" >&2

@@ -85,4 +85,5 @@ The CLI intentionally exposes the common compile path. Continue in Python with:
 - [a bounded payload library on selected anatomy](payload-sources-and-expansion.md);
 - [a bounded basal-candidate query](discover-compatible-basal-candidates.md);
 - [a named processing-method bundle](resolve-production-method.md); or
+- [route-neutral foldback and basal views](render-component-views.md); or
 - [verified consumer integration](../provenance/overview.md).

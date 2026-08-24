@@ -253,6 +253,28 @@ def _exercise_handoff(smoke_root: Path, *, content_root: Path) -> None:
     _require(isinstance(summary.get("method_bundle_id"), str), "handoff omitted method bundle ID")
 
 
+def _exercise_component_views(smoke_root: Path, *, content_root: Path) -> None:
+    summary = _json_output(
+        "component-view example",
+        [
+            "examples/render_component_views.py",
+            "--out",
+            str(smoke_root / "component-views"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "component-view example must emit an object")
+    _require(
+        summary.get("view_kinds") == ["foldback_junction", "basal_pairing"],
+        "component-view example changed its route-neutral view kinds",
+    )
+    _require(
+        summary.get("basal_pair_kinds")
+        == ["hard_mismatch", "gt_wobble", "watson_crick", "watson_crick"],
+        "component-view example lost its didactic pair vocabulary",
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--content-root", type=Path, default=REPO_ROOT)
@@ -269,11 +291,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         _exercise_method(smoke_root, content_root=content_root)
         _exercise_method_authoring(smoke_root, content_root=content_root)
         _exercise_handoff(smoke_root, content_root=content_root)
+        _exercise_component_views(smoke_root, content_root=content_root)
 
     print(
         json.dumps(
             {
                 "design_surfaces": ["exact", "symbolic", "spec"],
+                "component_views_verified": True,
                 "discovery_statuses": discovery_statuses,
                 "handoff_verified": True,
                 "method_authoring_verified": True,

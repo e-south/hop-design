@@ -46,7 +46,9 @@ integration use Python.
    runs the matched `examples/verify_design_method_handoff.py` journey and
    routes to the [design-bundle](reference/bundle-layout.md),
    [method-bundle](reference/method-bundle-layout.md), and
-   [view](reference/view-contracts.md) contracts.
+   [view](reference/view-contracts.md) contracts. The
+   [component-view guide](guides/render-component-views.md) renders foldback and
+   basal anatomy without inventing processing states.
 8. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
    defines what remains caller-owned and how broader campaign systems can call HOP.
 
@@ -69,6 +71,8 @@ integration use Python.
   and explicit expansion budgets.
 - [Payload sources and expansion](guides/payload-sources-and-expansion.md):
   iterables, FASTA, CSV, duplicate policy, and concrete variants.
+- [Component views](guides/render-component-views.md): runnable, route-neutral
+  foldback and basal SVGs backed by typed JSON.
 - [CLI](reference/cli.md) and [Python API](reference/python-api.md).
 - [Mechanics API](reference/mechanics-api.md): foldback, basal, release,
   discovery, and caller-supplied processing catalogs.

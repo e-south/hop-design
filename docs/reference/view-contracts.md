@@ -26,13 +26,19 @@ state.
 | View kind | Required panels |
 | --- | --- |
 | `foldback_junction` | folded junction only; no nicking state asserted |
-| `foldback_qa` | pre-nick duplex, post-nick exposed, post-nick foldback |
+| `foldback_qa` | source sequence, resolved junction, folded junction |
 | `released_workflow` | precursor, released fragments, origin-anchored foldback |
 | `basal_pairing` | paired basal junction only; no terminal nick asserted |
 | `basal_terminal_nick` | pre-terminal nick, post-terminal nick |
 | `method_trajectory` | the eight derived states of a complete named method plan |
 
-Build views from already-derived mechanics:
+Run the complete component example:
+
+```bash
+uv run python examples/render_component_views.py --out build/component-views
+```
+
+Or build views from already-derived mechanics:
 
 ```python
 import hop_design as hop
@@ -53,9 +59,9 @@ The dependency-free SVG renderer consumes only `WorkflowView`. It does not
 recalculate pairing, cuts, spans, strand state, or eligibility. Equivalent view
 JSON therefore produces byte-identical SVG.
 
-Explicit-mechanics bundles always include foldback and basal view JSON/SVG.
-Component assemblies receive route-neutral views. Resolved events receive
-processing-state views and include released-workflow JSON/SVG only when a
-release projection exists.
+Explicit-component bundles include route-neutral foldback and basal view
+JSON/SVG. A design with an explicit terminal-nick request receives the basal
+processing view. A design with a release projection also receives the
+released-workflow JSON/SVG.
 The JSON is the renderer-independent review and interoperability surface; the
 SVG is a deterministic convenience artifact. Neither is experimental evidence.
