@@ -134,7 +134,7 @@ def _validate_annealing_and_ligation(
         (
             top.fragment_id,
             bottom.fragment_id,
-            coordinate,
+            coordinate - top.precursor_span.start.offset,
             bottom.precursor_span.end.offset - 1 - coordinate,
         )
         for coordinate in range(overlap_start, overlap_end)
@@ -142,7 +142,7 @@ def _validate_annealing_and_ligation(
         (
             top.fragment_id,
             adapter.material_id,
-            adapter_start + position,
+            adapter_start + position - top.precursor_span.start.offset,
             arm.end.offset - 1 - position,
         )
         for position in range(arm.length.value)
