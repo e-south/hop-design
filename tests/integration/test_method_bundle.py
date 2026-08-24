@@ -18,8 +18,8 @@ from hop_design.kernel.bundle_identity import (
     manifest_digest_for_method_bundle,
     method_bundle_id,
 )
-from hop_design.kernel.strand_state import complement_iupac
 from hop_design.models.bundle import MethodBundle
+from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 from tests.support.linear_source_method import HAIRPIN_ENCODING, linear_source_method_request
 
@@ -100,7 +100,7 @@ def test_method_bundle_round_trips_one_complete_replayable_plan(tmp_path: Path) 
     ]
     source_bottom = trajectory["panels"][0]["tracks"][1]
     assert source_bottom["direction"] == "3to5"
-    assert source_bottom["sequence"] == complement_iupac(
+    assert source_bottom["sequence"] == reverse_complement_iupac(
         loaded.plan.source_pcr_duplex.top_strand.sequence
     )
     denatured_bottom = trajectory["panels"][2]["tracks"][2]

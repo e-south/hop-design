@@ -84,11 +84,13 @@ def test_foldback_view_is_a_typed_three_panel_scientific_contract() -> None:
 
     assert view.kind == "foldback_qa"
     assert [panel.panel_id for panel in view.panels] == [
-        "pre_nick_duplex",
-        "post_nick_exposed",
-        "post_nick_foldback",
+        "source_sequence",
+        "resolved_junction",
+        "folded_junction",
     ]
     assert len(view.panels[-1].pairings) == 4
+    assert all("nick" not in panel.title.lower() for panel in view.panels)
+    assert all("nick" not in track.label.lower() for panel in view.panels for track in panel.tracks)
 
 
 def test_foldback_junction_view_does_not_invent_nicking_states() -> None:
@@ -97,6 +99,7 @@ def test_foldback_junction_view_does_not_invent_nicking_states() -> None:
     assert view.kind == "foldback_junction"
     assert [panel.panel_id for panel in view.panels] == ["foldback_junction"]
     assert len(view.panels[0].pairings) == 4
+    assert view.panels[0].tracks[0].label == "junction sequence"
 
 
 def test_released_and_basal_views_keep_strand_and_pair_calls_explicit() -> None:
@@ -142,8 +145,37 @@ def test_svg_renderer_is_deterministic_and_consumes_view_state_only() -> None:
 
     assert first == second
     assert first.startswith(b"<svg")
-    assert b'data-panel-id="post_nick_foldback"' in first
+    assert b'data-panel-id="folded_junction"' in first
     assert first.count(b'data-pair-kind="watson_crick"') == 4
+    assert b'data-transition-from="source_sequence"' in first
+    assert b"5\xe2\x80\xb2" in first
+    assert b"3\xe2\x80\xb2" in first
+
+
+def test_svg_renderer_aligns_antiparallel_pairs_and_styles_pair_kinds() -> None:
+    basal = hop.evaluate_basal_pairing(
+        hop.BasalPairingRequest(left_arm="AGTG", right_arm="CATG"),
+        constraints=hop.BasalConstraintProfile(
+            require_terminal_watson_crick=False,
+            allow_active_gt_wobble=True,
+            max_active_hard_mismatches=4,
+            max_active_non_watson_crick_pairs=4,
+            forbid_active_middle_double_hard=False,
+            minimum_active_pair_support_index=0.0,
+            maximum_active_pair_disruption_index=4.0,
+            require_outer_hard_for_active_double=False,
+            reject_compact_profiles=(),
+            reserve_compact_profiles=(),
+        ),
+    )
+
+    svg = render_workflow_svg(build_basal_pairing_view(basal))
+
+    assert b">GTAC<" in svg
+    assert b'class="pair pair-watson_crick"' in svg
+    assert b'class="pair pair-gt_wobble"' in svg
+    assert b'class="pair pair-hard_mismatch"' in svg
+    assert svg.count(b'data-display-aligned="true"') == 4
 
 
 def test_view_contract_rejects_out_of_bounds_features() -> None:

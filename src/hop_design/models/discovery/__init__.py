@@ -29,6 +29,7 @@ from hop_design.models.discovery.candidates import (
     FoldbackPrecursorSearchResult,
 )
 from hop_design.models.discovery.hairpin_routes import (
+    HairpinJunctionRouteCandidate,
     HairpinJunctionRouteSearchLimits,
     HairpinJunctionRouteSearchResult,
 )
@@ -44,6 +45,7 @@ from hop_design.models.discovery.placements import (
 from hop_design.models.discovery.released_foldback import (
     FoldbackPairingDomain,
     ReleasedFoldbackBaseDomain,
+    ReleasedFoldbackGeometryHit,
     ReleasedFoldbackGeometryRequest,
     ReleasedFoldbackGeometrySearchLimits,
     ReleasedFoldbackGeometrySearchResult,
@@ -78,6 +80,7 @@ __all__ = [
     "FoldbackPrecursorSearchLimits",
     "FoldbackPrecursorSearchRequest",
     "FoldbackPrecursorSearchResult",
+    "HairpinJunctionRouteCandidate",
     "HairpinJunctionRouteSearchLimits",
     "HairpinJunctionRouteSearchResult",
     "NickingPlacementBlocker",
@@ -88,6 +91,7 @@ __all__ = [
     "NickingPlacementTarget",
     "NickingPlacementTruncation",
     "ReleasedFoldbackBaseDomain",
+    "ReleasedFoldbackGeometryHit",
     "ReleasedFoldbackGeometryRequest",
     "ReleasedFoldbackGeometrySearchLimits",
     "ReleasedFoldbackGeometrySearchResult",

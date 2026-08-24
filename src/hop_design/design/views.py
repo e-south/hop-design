@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from hop_design.kernel.basal import surviving_strand
-from hop_design.kernel.strand_state import complement_iupac
 from hop_design.models.basal_policy import BasalEvaluation
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.foldback import FoldbackEvaluation
 from hop_design.models.junction import Strand
+from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.models.strand_state import ReleasedStrandState
 from hop_design.models.views import (
     TrackDirection,
@@ -24,7 +24,6 @@ def _span(start: int, end: int) -> Span:
 
 
 def _foldback_panels(evaluation: FoldbackEvaluation) -> tuple[ViewPanel, ...]:
-    precursor_bottom = complement_iupac(evaluation.precursor_sequence)
     retained_nt = evaluation.retained_tract_span.length.value
     turn_nt = len(evaluation.effective_turn_sequence)
     arm_start = retained_nt + turn_nt
@@ -51,32 +50,25 @@ def _foldback_panels(evaluation: FoldbackEvaluation) -> tuple[ViewPanel, ...]:
             span=_span(arm_start, len(evaluation.junction_sequence)),
         ),
     )
-    precursor_tracks = (
+    source_tracks = (
         ViewTrack(
-            track_id="precursor_top",
-            label="precursor top strand",
+            track_id="source_sequence",
+            label="source sequence",
             sequence=evaluation.precursor_sequence,
             strand=Strand.TOP,
             direction=TrackDirection.FORWARD,
         ),
-        ViewTrack(
-            track_id="precursor_bottom",
-            label="precursor bottom strand",
-            sequence=precursor_bottom,
-            strand=Strand.BOTTOM,
-            direction=TrackDirection.REVERSE,
-        ),
     )
-    pre_feature = ViewFeature(
-        feature_id="retained_tract_precursor",
-        track_id="precursor_top",
+    source_feature = ViewFeature(
+        feature_id="retained_tract_source",
+        track_id="source_sequence",
         role="retained_tract",
         label="retained tract",
         span=evaluation.retained_tract_span,
     )
     junction_track = ViewTrack(
         track_id="junction",
-        label="post-nick active strand",
+        label="junction sequence",
         sequence=evaluation.junction_sequence,
         strand=Strand.TOP,
         direction=TrackDirection.FORWARD,
@@ -93,20 +85,20 @@ def _foldback_panels(evaluation: FoldbackEvaluation) -> tuple[ViewPanel, ...]:
     )
     return (
         ViewPanel(
-            panel_id="pre_nick_duplex",
-            title="Pre-nick duplex",
-            tracks=precursor_tracks,
-            features=(pre_feature,),
+            panel_id="source_sequence",
+            title="Source sequence",
+            tracks=source_tracks,
+            features=(source_feature,),
         ),
         ViewPanel(
-            panel_id="post_nick_exposed",
-            title="Post-nick exposed strand",
+            panel_id="resolved_junction",
+            title="Resolved junction sequence",
             tracks=(junction_track,),
             features=junction_features,
         ),
         ViewPanel(
-            panel_id="post_nick_foldback",
-            title="Post-nick foldback",
+            panel_id="folded_junction",
+            title="Folded junction",
             tracks=(junction_track,),
             features=junction_features,
             pairings=foldback_pairings,
@@ -161,7 +153,7 @@ def build_released_workflow_view(
             ViewTrack(
                 track_id="precursor_bottom",
                 label="precursor bottom strand",
-                sequence=complement_iupac(state.precursor_top_strand),
+                sequence=reverse_complement_iupac(state.precursor_top_strand),
                 strand=Strand.BOTTOM,
                 direction=TrackDirection.REVERSE,
             ),

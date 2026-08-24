@@ -17,16 +17,39 @@ FORBIDDEN_BY_LAYER = {
     "export": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design"},
     "design": PUBLIC_FACADE_MODULES | {"cli"},
     "api": {"cli"},
-    "cli": set(),
+    "cli": {
+        "catalog",
+        "design",
+        "discovery",
+        "export",
+        "kernel",
+        "methods",
+        "models",
+        "serialization",
+        "views",
+    },
+    "serialization": {
+        "api",
+        "catalog",
+        "cli",
+        "design",
+        "discovery",
+        "export",
+        "kernel",
+        "methods",
+        "models",
+        "views",
+    },
 }
 ROOT_MODULE_LAYERS = {
     "api.py": "api",
     "cli.py": "cli",
     "discovery.py": "api",
     "methods.py": "api",
+    "serialization.py": "serialization",
     "views.py": "api",
 }
-EXEMPT_ROOT_MODULES = {"__init__.py", "_facade.py", "serialization.py"}
+EXEMPT_ROOT_MODULES = {"__init__.py", "_facade.py"}
 KNOWN_FIRST_PARTY_TARGETS = set(FORBIDDEN_BY_LAYER) | PUBLIC_FACADE_MODULES | {"serialization"}
 
 

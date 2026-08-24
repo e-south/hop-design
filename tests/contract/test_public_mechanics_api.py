@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import inspect
+import typing
+
 import hop_design as hop
 import hop_design.discovery as discovery
 import hop_design.methods as methods
@@ -18,6 +21,7 @@ ROOT_FACADE = {
     "Boundary",
     "BundleIntegrityError",
     "Compilation",
+    "CheckReport",
     "DegeneratePayload",
     "DesignLimits",
     "DesignSpaceBudgetExceededError",
@@ -38,6 +42,7 @@ ROOT_FACADE = {
     "FoldbackOption",
     "HairpinEncodingInsert",
     "HopSpec",
+    "HopBundle",
     "InfeasibleDesignError",
     "JunctionPairKind",
     "JunctionPairObservation",
@@ -57,6 +62,7 @@ ROOT_FACADE = {
     "ReleaseProjectionConstraints",
     "ReleaseProjectionRequest",
     "ReleaseProjectionResult",
+    "ReleasedStrandState",
     "ResolvedDesignSpace",
     "ResolvedHopSpec",
     "Severity",
@@ -146,6 +152,7 @@ DISCOVERY_FACADE = {
     "FoldbackSearchResult",
     "HairpinJunctionRouteSearchLimits",
     "HairpinJunctionRouteSearchResult",
+    "HairpinJunctionRouteCandidate",
     "MotifPresenceReport",
     "NickingPlacementBlocker",
     "NickingPlacementFeasibility",
@@ -156,6 +163,7 @@ DISCOVERY_FACADE = {
     "NickingPlacementTruncation",
     "ReleasedFoldbackBaseDomain",
     "ReleasedFoldbackGeometryRequest",
+    "ReleasedFoldbackGeometryHit",
     "ReleasedFoldbackGeometrySearchLimits",
     "ReleasedFoldbackGeometrySearchResult",
     "ReleasedFoldbackPrecursorBlocker",
@@ -270,3 +278,35 @@ def test_view_facade_exposes_projection_and_rendering_only() -> None:
     assert all(callable(getattr(views, name)) for name in VIEW_OPERATIONS)
     assert views.WorkflowView.__module__.startswith("hop_design.")
     assert not hasattr(views, "compile")
+
+
+def _hop_annotation_types(annotation: object) -> set[type[object]]:
+    origin = typing.get_origin(annotation)
+    if origin is not None:
+        return {
+            item
+            for argument in typing.get_args(annotation)
+            for item in _hop_annotation_types(argument)
+        }
+    if inspect.isclass(annotation) and annotation.__module__.startswith("hop_design"):
+        return {annotation}
+    return set()
+
+
+def test_public_operation_annotations_are_reachable_from_a_public_facade() -> None:
+    facades = (hop, discovery, methods, views)
+    exported_names = {name for facade in facades for name in facade.__all__}
+    missing: dict[str, set[str]] = {}
+    for facade in facades:
+        for name in facade.__all__:
+            operation = getattr(facade, name)
+            if not inspect.isfunction(operation):
+                continue
+            for annotation in typing.get_type_hints(operation).values():
+                for contract in _hop_annotation_types(annotation):
+                    if contract.__name__ not in exported_names:
+                        missing.setdefault(contract.__name__, set()).add(
+                            f"{facade.__name__}.{name}"
+                        )
+
+    assert missing == {}

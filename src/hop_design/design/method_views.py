@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from hop_design.kernel.strand_state import complement_iupac
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.junction import Strand
 from hop_design.models.linear_source_method import LinearSourceMultinickHairpinPcrPlan
 from hop_design.models.method import ProcessMaterialRole
+from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.models.views import (
     TrackDirection,
     ViewFeature,
@@ -67,7 +67,7 @@ def _source_panels(plan: LinearSourceMultinickHairpinPcrPlan) -> tuple[ViewPanel
         _track(
             "source_bottom",
             "source bottom strand",
-            complement_iupac(source.top_strand.sequence),
+            reverse_complement_iupac(source.top_strand.sequence),
             Strand.BOTTOM,
             direction=TrackDirection.REVERSE,
         ),
@@ -221,7 +221,7 @@ def build_method_trajectory_view(plan: LinearSourceMultinickHairpinPcrPlan) -> W
                     _track(
                         "hairpin_pcr_bottom",
                         "PCR bottom strand",
-                        complement_iupac(duplex.top_strand.sequence),
+                        reverse_complement_iupac(duplex.top_strand.sequence),
                         Strand.BOTTOM,
                         direction=TrackDirection.REVERSE,
                     ),

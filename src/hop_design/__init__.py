@@ -38,6 +38,7 @@ from hop_design.models.basal_policy import (
     BasalDesignRequest,
     BasalEvaluation,
 )
+from hop_design.models.bundle import HopBundle
 from hop_design.models.catalog import NickingAgent, ProcessingCatalog, ReleaseAgent
 from hop_design.models.coordinates import BasePairCount, Boundary, NucleotideCount, Span
 from hop_design.models.design_space import (
@@ -50,7 +51,7 @@ from hop_design.models.design_space import (
     ReleaseOption,
     ResolvedDesignSpace,
 )
-from hop_design.models.diagnostics import Diagnostic, InfeasibleDesignError, Severity
+from hop_design.models.diagnostics import CheckReport, Diagnostic, InfeasibleDesignError, Severity
 from hop_design.models.foldback import (
     FoldbackConstraints,
     FoldbackEvaluation,
@@ -77,6 +78,7 @@ from hop_design.models.stem import PairedStemExtension, PairedStemExtensionReque
 from hop_design.models.strand_state import (
     DuplexCut,
     NickEvent,
+    ReleasedStrandState,
     ReleaseProjectionConstraints,
     ReleaseProjectionRequest,
     ReleaseProjectionResult,
