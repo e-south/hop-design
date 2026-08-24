@@ -1,6 +1,7 @@
 # ![hop — Hairpin Oligonucleotide Processing](assets/hop-design-banner.svg)
 
 [![Checks](https://github.com/e-south/hop-design/actions/workflows/ci.yaml/badge.svg)](https://github.com/e-south/hop-design/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/e-south/hop-design/graph/badge.svg)](https://codecov.io/gh/e-south/hop-design)
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
 

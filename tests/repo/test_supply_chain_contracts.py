@@ -61,6 +61,21 @@ def test_ci_has_one_stable_required_context_and_supported_python_probe() -> None
     assert "pull_request_target" not in text
 
 
+def test_ci_publishes_the_coverage_report_used_by_the_readme_badge() -> None:
+    workflow, text = _workflow("ci.yaml")
+    jobs = workflow["jobs"]
+    verify = jobs["verify"]
+
+    assert verify["permissions"] == {"contents": "read", "id-token": "write"}
+    assert "codecov/codecov-action@" in text
+    assert "use_oidc: true" in text
+    assert "fail_ci_if_error: true" in text
+    assert "files: .artifacts/coverage.xml" in text
+
+    agent_verify = (REPO_ROOT / "scripts" / "agent-verify").read_text(encoding="utf-8")
+    assert "--cov-report=xml:.artifacts/coverage.xml" in agent_verify
+
+
 def test_workflows_use_immutable_actions_and_bounded_permissions() -> None:
     for path in sorted((REPO_ROOT / ".github" / "workflows").glob("*.yaml")):
         text = path.read_text(encoding="utf-8")

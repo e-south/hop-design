@@ -32,6 +32,7 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
 
     assert readme.startswith("# ![hop — Hairpin Oligonucleotide Processing")
     assert "assets/hop-design-banner.svg" in readme
+    assert "codecov.io/gh/e-south/hop-design/graph/badge.svg" in readme
     assert "HOP is alpha software" in readme
     assert "docs/guides/quickstart.md" in readme
     assert "AGENTS.md" in readme
