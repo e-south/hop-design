@@ -232,6 +232,8 @@ def _validate_pcr_and_restriction(
     product = plan.restriction_digest_product
     product.assert_site_replay(duplex.top_strand.sequence, agent=plan.restriction_agent)
     left, right = product.sites
+    if left.site_span == right.site_span:
+        raise ValueError("Restriction product requires two distinct facing site spans.")
     top_start, top_end = left.cut.top.offset, right.cut.top.offset
     bottom_start, bottom_end = left.cut.bottom.offset, right.cut.bottom.offset
     union = Span(

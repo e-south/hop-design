@@ -75,6 +75,8 @@ def build_restriction_product(
     ):
         return None
     left, right = sites
+    if left.site_span == right.site_span:
+        return None
     top_start, top_end = left.cut.top.offset, right.cut.top.offset
     bottom_start, bottom_end = left.cut.bottom.offset, right.cut.bottom.offset
     if not (top_start < top_end and bottom_start < bottom_end):

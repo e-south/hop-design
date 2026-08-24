@@ -427,6 +427,26 @@ def test_method_reports_missing_facing_restriction_sites() -> None:
     assert result.outcome.diagnostics[0].code == "HOP-METHOD-005"
 
 
+def test_method_rejects_two_orientations_of_one_palindromic_restriction_span() -> None:
+    request = _request().model_copy(
+        update={
+            "restriction_agent": hop.ReleaseAgent(
+                agent_id="example:release-agent/palindromic-single-site@1",
+                motif_top_5to3="TGCA",
+                top_cut_offset=1,
+                bottom_cut_offset=2,
+                warning_codes=(),
+            )
+        }
+    )
+
+    result = methods.compile_linear_source_multinick_hairpin_pcr(request)
+
+    assert result.plan is None
+    assert result.outcome.resolution_status == "infeasible"
+    assert result.outcome.diagnostics[0].code == "HOP-METHOD-005"
+
+
 def test_method_reports_expected_encoding_disagreement() -> None:
     request = _request().model_copy(update={"expected_hairpin_encoding": "A" * 64})
 
