@@ -74,7 +74,7 @@ cardinality budgets before allocation.
 | --- | --- |
 | Install, compile, and verify a design | [Quickstart](docs/guides/quickstart.md) |
 | Understand HOP's five separate claims | [Mental model](docs/start/mental-model.md) |
-| Learn payload, foldback, and basal primitives | [Design language](docs/language/overview.md) |
+| Compile payloads on selected hairpin anatomy | [Payload-first guide](docs/guides/payload-sources-and-expansion.md) |
 | Run a bounded compatibility query | [Discovery guide](docs/guides/discover-compatible-basal-candidates.md) |
 | Resolve and verify a named production method | [Method guide](docs/guides/resolve-production-method.md) |
 | Verify identity, replay, and handoffs | [Provenance and verification](docs/provenance/overview.md) |

@@ -120,6 +120,29 @@ def _exercise_designs(smoke_root: Path, *, content_root: Path) -> None:
     )
 
 
+def _exercise_payload_library(smoke_root: Path, *, content_root: Path) -> None:
+    summary = _json_output(
+        "payload-first library example",
+        [
+            "examples/compile_payload_library.py",
+            "--out",
+            str(smoke_root / "payload-library"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "payload-library example must emit an object")
+    _require(summary.get("payload_count") == 3, "payload-library input count changed")
+    _require(summary.get("design_count") == 3, "payload-library design count changed")
+    _require(
+        summary.get("bundle_verified_count") == 3,
+        "payload-library example did not replay every design bundle",
+    )
+    _require(
+        summary.get("method_resolution_status") == "not_evaluated",
+        "payload-library design compilation invented a production-method claim",
+    )
+
+
 def _exercise_discovery(*, content_root: Path) -> list[str]:
     rows = _json_output(
         "bounded discovery example",
@@ -241,6 +264,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     with tempfile.TemporaryDirectory(prefix="hop-docs-smoke-") as temporary:
         smoke_root = Path(temporary)
         _exercise_designs(smoke_root, content_root=content_root)
+        _exercise_payload_library(smoke_root, content_root=content_root)
         discovery_statuses = _exercise_discovery(content_root=content_root)
         _exercise_method(smoke_root, content_root=content_root)
         _exercise_method_authoring(smoke_root, content_root=content_root)
@@ -254,6 +278,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 "handoff_verified": True,
                 "method_authoring_verified": True,
                 "method_bundle_verified": True,
+                "payload_library_bundles_verified": 3,
                 "schema": "hop.docs-smoke/v1",
                 "status": "ok",
             },

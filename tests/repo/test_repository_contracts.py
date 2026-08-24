@@ -88,6 +88,7 @@ def test_action_routes_have_runnable_public_examples() -> None:
         "docs/guides/resolve-production-method.md",
         "examples/discover_basal_candidates.py",
         "examples/compile_linear_source_method.py",
+        "examples/compile_payload_library.py",
         "examples/linear-source-matched-design.yaml",
         "examples/verify_design_method_handoff.py",
     ):
@@ -98,6 +99,7 @@ def test_action_routes_have_runnable_public_examples() -> None:
     assert "guides/resolve-production-method.md" in docs_index
     assert "discover-compatible-basal-candidates.md" in quickstart
     assert "resolve-production-method.md" in quickstart
+    assert "payload-sources-and-expansion.md" in quickstart
     for text in (docs_index, method_guide, provenance):
         assert "examples/verify_design_method_handoff.py" in text
     assert "--out build/matched-handoff" in provenance
@@ -191,6 +193,55 @@ def test_public_matched_handoff_example_executes(tmp_path: Path) -> None:
         hop_methods.load_verified_method_bundle(output / "method").bundle.bundle_id
         == summary["method_bundle_id"]
     )
+
+
+def test_public_payload_library_example_executes(tmp_path: Path) -> None:
+    output = tmp_path / "payload-library"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "examples/compile_payload_library.py",
+            "--out",
+            str(output),
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    summary = json.loads(completed.stdout)
+    assert summary["schema"] == "hop.payload-library-compilation/v1"
+    assert summary["payload_count"] == 3
+    assert summary["design_count"] == 3
+    assert summary["feasible_count"] == 3
+    assert summary["bundle_verified_count"] == 3
+    assert summary["method_resolution_status"] == "not_evaluated"
+    assert len(summary["designs"]) == 3
+    assert all(
+        row["paired_payload_sequence"]
+        == hop.ExactPayload(sequence=row["payload_sequence"]).paired_sequence
+        for row in summary["designs"]
+    )
+    assert all(
+        hop.load_verified_bundle(output / row["payload_id"]).bundle.bundle_id == row["bundle_id"]
+        for row in summary["designs"]
+    )
+
+    repeated = subprocess.run(
+        [
+            sys.executable,
+            "examples/compile_payload_library.py",
+            "--out",
+            str(output),
+        ],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert repeated.returncode != 0
+    assert "already exists" in repeated.stderr
 
 
 def test_symbolic_encoding_language_and_handoff_paths_match_public_models() -> None:

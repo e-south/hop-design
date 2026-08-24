@@ -103,3 +103,34 @@ feasible/infeasible/duplicate counts. Duplicate projected sequences either fail
 or remain as fully retained rows under the explicit `KEEP` policy; HOP never
 silently deduplicates. Compile only selected rows with `hop.compile(row.spec)`;
 planning the space does not render or write bundles.
+
+## Run the payload-first bundle example
+
+The complete public example starts with three exact payloads, applies one
+explicitly selected foldback/basal anatomy, plans the bounded three-design
+space, writes one bundle per design, and independently replay-verifies every
+bundle:
+
+```bash
+uv run python examples/compile_payload_library.py \
+  --out build/payload-library
+```
+
+This is the forward authoring path for a payload library:
+
+```text
+caller payloads + selected anatomy
+    -> bounded design-space plan
+    -> caller selection
+    -> deterministic encodings
+    -> replay-verified design bundles
+```
+
+The example anatomy is synthetic contract data, not an enzyme recommendation
+or an empirically qualified scaffold. A real caller supplies anatomy selected
+from its own evidence or from bounded HOP discovery. Design-bundle verification
+still makes no production-method, destination, or experimental-success claim.
+
+Historical migration can run in the opposite direction—decomposing a known
+full hairpin sequence into explicit HOP components and requiring exact replay.
+That is a parity and provenance exercise, not the normal authoring experience.
