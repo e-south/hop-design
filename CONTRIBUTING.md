@@ -1,7 +1,7 @@
 # Contributing to HOP Design
 
 HOP accepts focused changes that preserve its public ownership boundary and
-scientific contracts. Start with [docs/README.md](docs/README.md) and the
+scientific contracts. Start with [docs/index.md](docs/index.md) and the
 nearest accepted architecture decision.
 
 ## Development loop

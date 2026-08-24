@@ -30,6 +30,7 @@ from hop_design.models.discovery.released_foldback_candidates import (
     ReleasedFoldbackPrecursorSearchResult,
 )
 from hop_design.models.junction import Strand
+from hop_design.models.physical import opposite_strand
 from hop_design.models.strand_state import (
     NickEvent,
     ReleasedStrandState,
@@ -70,7 +71,7 @@ def search_basal_processing_routes(
     compatible = tuple(row for row in feasibility if row.compatible)
     returned = compatible[: limits.max_hits]
     hits = []
-    for rank, row in enumerate(returned, start=1):
+    for canonical_ordinal, row in enumerate(returned, start=1):
         basal, geometry = pair_by_ids[(row.basal_candidate_id, row.processing_geometry_id)]
         hits.append(
             BasalProcessingRouteCandidate(
@@ -79,7 +80,7 @@ def search_basal_processing_routes(
                     basal_candidate=basal,
                     processing_geometry=geometry,
                 ),
-                rank=rank,
+                canonical_ordinal=canonical_ordinal,
                 release=processing_geometries.release,
                 basal_candidate=basal,
                 processing_geometry=geometry,
@@ -88,9 +89,7 @@ def search_basal_processing_routes(
                     boundary=Boundary(offset=geometry.nick_boundary),
                     strand=geometry.nicked_strand,
                 ),
-                surviving_strand=(
-                    Strand.BOTTOM if geometry.nicked_strand is Strand.TOP else Strand.TOP
-                ),
+                surviving_strand=opposite_strand(geometry.nicked_strand),
             )
         )
 
@@ -191,7 +190,7 @@ def search_hairpin_junction_routes(
     compatible = tuple(row for row in feasibility if row.compatible)
     returned = compatible[: limits.max_hits]
     hits = []
-    for rank, row in enumerate(returned, start=1):
+    for canonical_ordinal, row in enumerate(returned, start=1):
         precursor, basal_route = pairs_by_ids[
             (row.released_foldback_precursor_id, row.basal_route_id)
         ]
@@ -206,7 +205,7 @@ def search_hairpin_junction_routes(
                     released_foldback_precursor=precursor,
                     basal_route=basal_route,
                 ),
-                rank=rank,
+                canonical_ordinal=canonical_ordinal,
                 released_foldback_geometry=geometry,
                 released_foldback_precursor=precursor,
                 released_state=released_state,

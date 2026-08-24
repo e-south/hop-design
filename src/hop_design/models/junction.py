@@ -2,33 +2,21 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.coordinates import BasePairCount, Span
+from hop_design.models.physical import (
+    JunctionPairKind,
+    Strand,
+    classify_literal_pair,
+)
 from hop_design.models.references import ReferenceId
 from hop_design.models.sequence import (
     SequenceValidationError,
     normalize_dna_sequence,
     reverse_complement_iupac,
 )
-
-
-class Strand(StrEnum):
-    """A declared strand role in a duplex representation."""
-
-    TOP = "top"
-    BOTTOM = "bottom"
-
-
-class JunctionPairKind(StrEnum):
-    """Physical classification of one aligned nucleotide pair."""
-
-    WATSON_CRICK = "watson_crick"
-    GT_WOBBLE = "gt_wobble"
-    HARD_MISMATCH = "hard_mismatch"
 
 
 class JunctionPairObservation(HopModel):
@@ -52,15 +40,20 @@ class JunctionPairObservation(HopModel):
 
     @model_validator(mode="after")
     def validate_kind(self) -> JunctionPairObservation:
-        aligned_right = reverse_complement_iupac(self.right_base)
-        is_watson_crick = self.left_base == aligned_right
-        is_gt = (self.left_base, self.right_base) in {("G", "T"), ("T", "G")}
-        if self.kind is JunctionPairKind.WATSON_CRICK and not is_watson_crick:
-            raise ValueError("Watson-Crick pair calls must match the literal bases.")
-        if self.kind is JunctionPairKind.GT_WOBBLE and not is_gt:
-            raise ValueError("G:T wobble pair calls must contain literal G and T bases.")
-        if self.kind is JunctionPairKind.HARD_MISMATCH and is_watson_crick:
-            raise ValueError("Hard-mismatch pair calls must not be Watson-Crick pairs.")
+        observed_kind = classify_literal_pair(
+            left_base=self.left_base,
+            right_base=self.right_base,
+        )
+        if self.kind is not observed_kind:
+            labels = {
+                JunctionPairKind.WATSON_CRICK: "Watson-Crick",
+                JunctionPairKind.GT_WOBBLE: "G:T wobble",
+                JunctionPairKind.HARD_MISMATCH: "Hard-mismatch",
+            }
+            raise ValueError(
+                f"{labels[self.kind]} pair calls must match the literal bases; "
+                f"these bases classify as {labels[observed_kind]}."
+            )
         return self
 
     @property
@@ -184,4 +177,5 @@ __all__ = [
     "JunctionPairKind",
     "JunctionPairObservation",
     "Strand",
+    "classify_literal_pair",
 ]

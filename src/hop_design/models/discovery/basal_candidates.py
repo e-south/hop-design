@@ -10,10 +10,11 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.basal import (
+    BasalPairingRequest,
+)
+from hop_design.models.basal_policy import (
     BasalConstraintProfile,
     BasalEvaluation,
-    BasalPairingRequest,
-    BasalPairKind,
     BasalPolicyDecision,
     BasalPolicyReason,
     BasalPolicyStatus,
@@ -40,13 +41,12 @@ class BasalCandidateExclusionStatus(StrEnum):
 class BasalCandidateSearchRequest(HopModel):
     """Caller-authored arm domains and explicit selection policy."""
 
-    schema_id: Literal["hop.basal-candidate-search/v1"] = Field(
-        default="hop.basal-candidate-search/v1",
+    schema_id: Literal["hop.basal-candidate-search/v2"] = Field(
+        default="hop.basal-candidate-search/v2",
         alias="schema",
     )
     left_arm_template: str
     right_arm_template: str
-    allow_gt_wobble: bool
     constraints: BasalConstraintProfile
     acceptance: BasalCandidateAcceptance
 
@@ -101,10 +101,10 @@ def basal_candidate_id(
 
 
 class BasalCandidate(HopModel):
-    """One exact evaluated arm pair in canonical physical order."""
+    """One exact evaluated arm pair in canonical literal-content order."""
 
     candidate_id: str = Field(pattern=r"^hop:basal-candidate/[0-9a-f]{64}@1$")
-    rank: int = Field(ge=1)
+    canonical_ordinal: int = Field(ge=1)
     pairing: BasalPairingRequest
     evaluation: BasalEvaluation
 
@@ -115,27 +115,15 @@ class BasalCandidate(HopModel):
             or self.pairing.right_arm != self.evaluation.profile.right_arm
         ):
             raise ValueError("Candidate pairing must equal its basal evaluation arms.")
-        for pair in self.evaluation.profile.pairs:
-            literal_gt = (pair.left_base, pair.right_base) in {("G", "T"), ("T", "G")}
-            expected = (
-                BasalPairKind.GT_WOBBLE
-                if literal_gt and self.pairing.allow_gt_wobble
-                else BasalPairKind.HARD_MISMATCH
-            )
-            if pair.kind is BasalPairKind.WATSON_CRICK:
-                continue
-            if pair.kind is not expected:
-                raise ValueError("Candidate pair calls must honor allow_gt_wobble.")
         expected_id = basal_candidate_id(pairing=self.pairing, evaluation=self.evaluation)
         if self.candidate_id != expected_id:
             raise ValueError("Basal candidate_id must match the evaluated candidate content.")
         return self
 
 
-def basal_candidate_order_key(candidate: BasalCandidate) -> tuple[str, str, str, str]:
-    """Return a canonical order without encoding application desirability."""
+def basal_candidate_order_key(candidate: BasalCandidate) -> tuple[str, str, str]:
+    """Return literal content order without preferring a pairing profile."""
     return (
-        candidate.evaluation.profile.compact_profile_s3_s2_s1_s0,
         candidate.pairing.left_arm,
         candidate.pairing.right_arm,
         candidate.candidate_id,
@@ -203,11 +191,11 @@ class BasalCandidateSearchResult(HopModel):
             if not self.hits or len(self.hits) != self.observed_hit_count:
                 raise ValueError("A complete search must return every observed candidate.")
 
-        expected_ranks = tuple(range(1, len(self.hits) + 1))
-        if tuple(candidate.rank for candidate in self.hits) != expected_ranks:
-            raise ValueError("Returned basal candidate ranks must be contiguous and one-based.")
+        expected_ordinals = tuple(range(1, len(self.hits) + 1))
+        if tuple(candidate.canonical_ordinal for candidate in self.hits) != expected_ordinals:
+            raise ValueError("Returned basal candidate ordinals must be contiguous and one-based.")
         if tuple(self.hits) != tuple(sorted(self.hits, key=basal_candidate_order_key)):
-            raise ValueError("Returned candidates must use canonical physical order.")
+            raise ValueError("Returned candidates must use canonical content order.")
 
         allowed_statuses = {BasalPolicyStatus.ACTIVE}
         if self.request.acceptance == "allow_reserve":
@@ -229,8 +217,6 @@ class BasalCandidateSearchResult(HopModel):
             ):
                 if base not in iupac_bases(symbol):
                     raise ValueError("Returned right arm lies outside its caller-authored domain.")
-            if candidate.pairing.allow_gt_wobble is not self.request.allow_gt_wobble:
-                raise ValueError("Returned candidate wobble interpretation must match the request.")
         return self
 
 

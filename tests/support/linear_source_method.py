@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hop_design as hop
+import hop_design.methods as methods
 
 SOURCE = "ATGCATCACGAGTTAACCCACGAGAGGTCTCACGAGGATACCGTTAAGCTCGATTACCTCAGCAATTGCG"
 ADAPTER = "TTGTGAGACCTCTTGTGACGTTAGCCTAGTCCGATA"
@@ -19,9 +20,9 @@ def _oligo(
     sequence: str,
     *,
     phosphorylated: bool = False,
-) -> hop.ProcessOligo:
-    modifications = (hop.OligoModification.FIVE_PRIME_PHOSPHATE,) if phosphorylated else ()
-    return hop.ProcessOligo(
+) -> methods.ProcessOligo:
+    modifications = (methods.OligoModification.FIVE_PRIME_PHOSPHATE,) if phosphorylated else ()
+    return methods.ProcessOligo(
         material_id=material_id,
         sequence=sequence,
         modifications=modifications,
@@ -32,9 +33,9 @@ def linear_source_method_request(
     *,
     min_length_nt: int = 16,
     kinase_step: bool = False,
-) -> hop.LinearSourceMultinickHairpinPcrRequest:
+) -> methods.LinearSourceMultinickHairpinPcrRequest:
     """Return one neutral complete route with repeated nicking sites."""
-    materials = hop.LinearSourceHairpinPcrMaterialsSpec(
+    materials = methods.LinearSourceHairpinPcrMaterialsSpec(
         schema="hop.linear-source-hairpin-pcr-materials/v1",
         method_id="synthetic-multinick",
         source_oligo=_oligo("source", SOURCE),
@@ -48,12 +49,12 @@ def linear_source_method_request(
         hairpin_pcr_forward_primer=_oligo("hairpin-fwd", SOURCE[:19]),
         hairpin_pcr_reverse_primer=_oligo("hairpin-rev", "TATCGGACTAGGCTAACGTC"),
         ligation_end_preparation=(
-            hop.LigationEndPreparation.KINASE_STEP
+            methods.LigationEndPreparation.KINASE_STEP
             if kinase_step
-            else hop.LigationEndPreparation.PRE_PHOSPHORYLATED_OLIGOS
+            else methods.LigationEndPreparation.PRE_PHOSPHORYLATED_OLIGOS
         ),
     )
-    return hop.LinearSourceMultinickHairpinPcrRequest(
+    return methods.LinearSourceMultinickHairpinPcrRequest(
         schema="hop.linear-source-multinick-hairpin-pcr-request/v1",
         request_id="example:method-request/synthetic-multinick@1",
         materials=materials,
@@ -73,8 +74,8 @@ def linear_source_method_request(
                 warning_codes=(),
             ),
         ),
-        fragment_selection=hop.FragmentLengthSelection(min_length_nt=min_length_nt),
-        adapter_annealing=hop.AdapterAnnealingRequest(
+        fragment_selection=methods.FragmentLengthSelection(min_length_nt=min_length_nt),
+        adapter_annealing=methods.AdapterAnnealingRequest(
             adapter_span=hop.Span(
                 start=hop.Boundary(offset=0),
                 end=hop.Boundary(offset=17),

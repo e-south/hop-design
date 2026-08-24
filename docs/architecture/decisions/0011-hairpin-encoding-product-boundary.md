@@ -8,6 +8,8 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-21
+doc_type: decision
+amended_by: hop-adr-0020
 ---
 
 # ADR 0011: Typed hairpin-encoding product boundary

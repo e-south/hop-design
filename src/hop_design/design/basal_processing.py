@@ -25,7 +25,7 @@ def search_basal_processing_geometries(
     request: BasalProcessingGeometryRequest,
     limits: BasalProcessingGeometrySearchLimits,
 ) -> BasalProcessingGeometrySearchResult:
-    """Find exact terminal nick geometries without application ranking."""
+    """Find exact terminal nick geometries without application preference."""
     try:
         resolved_agent = catalog.by_id(request.release_agent_id)
     except KeyError as exc:
@@ -57,9 +57,9 @@ def search_basal_processing_geometries(
         BasalProcessingGeometryHit(
             **row.model_dump(mode="python"),
             candidate_id=basal_processing_geometry_id(row),
-            rank=rank,
+            canonical_ordinal=canonical_ordinal,
         )
-        for rank, row in enumerate(returned, start=1)
+        for canonical_ordinal, row in enumerate(returned, start=1)
     )
     truncated_by: list[BasalProcessingGeometryTruncation] = []
     if len(examined) < len(agents):

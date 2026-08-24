@@ -9,9 +9,9 @@ from hop_design.catalog.defaults import (
     CATALOG_REF,
     CONSTRAINT_PROFILE_REF,
     DEFAULTS_REF,
+    DESIGN_DERIVATION_REF,
     FOLDBACK_REF,
-    PROCESSING_ROUTE_REF,
-    generic_direct_synthesis_route,
+    generic_catalog_junction_derivation,
 )
 from hop_design.design.assembly import assemble_compilation
 from hop_design.design.basal import evaluate_basal_pairing
@@ -27,16 +27,15 @@ from hop_design.design.views import (
     build_released_workflow_view,
 )
 from hop_design.export.svg import render_workflow_svg
-from hop_design.models.basal import BasalEvaluation, BasalPolicyStatus
+from hop_design.models.basal_policy import BasalEvaluation, BasalPolicyStatus
+from hop_design.models.derivation import (
+    CatalogJunctionDerivation,
+    EvaluatedComponentDerivation,
+    PlanDesignDerivation,
+    ResolvedJunctionDerivation,
+)
 from hop_design.models.diagnostics import CheckReport, Diagnostic, Severity
 from hop_design.models.foldback import FoldbackEvaluation
-from hop_design.models.processing import (
-    ComponentAssemblyRoute,
-    PlanProcessingRoute,
-    ProcessingRoute,
-    ResolvedMechanicsRoute,
-    ResolvedMechanicsStep,
-)
 from hop_design.models.spec import DesignSpec, HopSpec, ResolvedHopSpec
 from hop_design.models.stem import PairedStemExtension
 from hop_design.models.strand_state import ReleasedStrandState
@@ -48,7 +47,7 @@ class UnknownCatalogReferenceError(ValueError):
 
 
 @dataclass(frozen=True)
-class _ResolvedMechanics:
+class _ResolvedComponents:
     report: CheckReport
     foldback: FoldbackEvaluation
     basal: BasalEvaluation
@@ -56,7 +55,7 @@ class _ResolvedMechanics:
     released_state: ReleasedStrandState | None
 
 
-def _evaluate_resolved_spec(spec: ResolvedHopSpec) -> _ResolvedMechanics:
+def _evaluate_resolved_spec(spec: ResolvedHopSpec) -> _ResolvedComponents:
     foldback = evaluate_foldback(spec.foldback)
     basal = evaluate_basal_pairing(spec.basal.pairing, constraints=spec.basal.constraints)
     stem_extension = (
@@ -99,7 +98,7 @@ def _evaluate_resolved_spec(spec: ResolvedHopSpec) -> _ResolvedMechanics:
                 evidence={"reason": basal.decision.reason.value},
             )
         )
-    return _ResolvedMechanics(
+    return _ResolvedComponents(
         report=CheckReport(diagnostics=tuple(diagnostics)),
         foldback=foldback,
         basal=basal,
@@ -112,130 +111,43 @@ def check_spec(spec: DesignSpec) -> CheckReport:
     """Check expected design feasibility for one supported specification."""
     if isinstance(spec, ResolvedHopSpec):
         return _evaluate_resolved_spec(spec).report
-    _resolve_route(spec)
+    _resolve_derivation(spec)
     return CheckReport()
 
 
 def compile_spec(spec: DesignSpec) -> Compilation:
-    """Compile one generic or explicit-mechanics specification."""
+    """Compile one catalog-backed or explicit-component design specification."""
     if isinstance(spec, ResolvedHopSpec):
         resolved = _evaluate_resolved_spec(spec)
         resolved.report.raise_for_errors()
         foldback_ref = resolved.foldback.junction.junction_id
         basal_ref = resolved.basal.junction.junction_id
-        steps: list[ResolvedMechanicsStep] = []
-        if resolved.released_state is not None:
-            steps.extend(
-                (
-                    ResolvedMechanicsStep(
-                        step_id="nick",
-                        operation="nick",
-                        input_states=("precursor_duplex",),
-                        output_state="nicked_precursor",
-                    ),
-                    ResolvedMechanicsStep(
-                        step_id="duplex-release",
-                        operation="duplex_release",
-                        input_states=("nicked_precursor",),
-                        output_state="released_active_strand",
-                    ),
-                )
-            )
-            foldback_input = "released_active_strand"
-        else:
-            foldback_input = "authored_foldback_precursor"
-        steps.extend(
-            (
-                ResolvedMechanicsStep(
-                    step_id="foldback",
-                    operation="foldback",
-                    input_states=(foldback_input,),
-                    output_state="foldback_junction",
-                ),
-                ResolvedMechanicsStep(
-                    step_id="basal-pairing",
-                    operation="basal_pairing",
-                    input_states=("authored_basal_arms",),
-                    output_state="basal_junction",
-                ),
-            )
-        )
-        if resolved.stem_extension is not None:
-            steps.append(
-                ResolvedMechanicsStep(
-                    step_id="stem-extension-pairing",
-                    operation="stem_extension_pairing",
-                    input_states=("authored_stem_extension_arms",),
-                    output_state="paired_stem_extension",
-                )
-            )
-        assembly_inputs = (
-            "foldback_junction",
-            "basal_junction",
-            *(("paired_stem_extension",) if resolved.stem_extension is not None else ()),
-            "authored_payload",
-        )
         terminal_nick = spec.basal.terminal_nick
         if terminal_nick is None:
-            steps.append(
-                ResolvedMechanicsStep(
-                    step_id="insert-assembly",
-                    operation="assemble_insert",
-                    input_states=assembly_inputs,
-                    output_state="hairpin_encoding_insert",
-                )
-            )
-            route: PlanProcessingRoute = ComponentAssemblyRoute(
-                route_id=spec.processing_route_ref,
+            derivation: PlanDesignDerivation = EvaluatedComponentDerivation(
+                derivation_id=spec.design_derivation_ref,
                 description=(
-                    "Validated caller-supplied foldback and basal components assembled "
-                    "without a discovery or processing-route claim."
+                    "Evaluated caller-supplied foldback and basal components used to derive "
+                    "one hairpin encoding without a production-method claim."
                 ),
                 catalog_ref=spec.catalog_ref,
                 foldback=resolved.foldback,
                 basal=resolved.basal,
                 stem_extension=resolved.stem_extension,
-                steps=tuple(steps),
             )
         else:
-            steps.extend(
-                (
-                    ResolvedMechanicsStep(
-                        step_id="terminal-nick",
-                        operation="terminal_nick",
-                        input_states=("basal_junction",),
-                        output_state="terminal_nicked_basal_junction",
-                    ),
-                    ResolvedMechanicsStep(
-                        step_id="insert-assembly",
-                        operation="assemble_insert",
-                        input_states=(
-                            "foldback_junction",
-                            "terminal_nicked_basal_junction",
-                            *(
-                                ("paired_stem_extension",)
-                                if resolved.stem_extension is not None
-                                else ()
-                            ),
-                            "authored_payload",
-                        ),
-                        output_state="hairpin_encoding_insert",
-                    ),
-                )
-            )
-            route = ResolvedMechanicsRoute(
-                route_id=spec.processing_route_ref,
+            derivation = ResolvedJunctionDerivation(
+                derivation_id=spec.design_derivation_ref,
                 description=(
-                    "Caller-resolved nick, release, foldback, and basal-junction events; "
-                    "catalog eligibility remains caller-owned."
+                    "Exact strand projection, nick geometry, foldback, and basal components "
+                    "used to derive one hairpin encoding."
                 ),
                 catalog_ref=spec.catalog_ref,
                 foldback=resolved.foldback,
                 basal=resolved.basal,
                 stem_extension=resolved.stem_extension,
                 terminal_nick=terminal_nick,
-                released_state=resolved.released_state,
-                steps=tuple(steps),
+                released_foldback_source=resolved.released_state,
             )
         intermediate_payload = {
             "schema": "hop.expected-intermediates/v1",
@@ -287,7 +199,7 @@ def compile_spec(spec: DesignSpec) -> Compilation:
         return assemble_compilation(
             spec=spec,
             report=resolved.report,
-            route=route,
+            derivation=derivation,
             catalog_ref=spec.catalog_ref,
             foldback_ref=foldback_ref,
             basal_ref=basal_ref,
@@ -295,7 +207,7 @@ def compile_spec(spec: DesignSpec) -> Compilation:
             basal_left_arm=resolved.basal.profile.left_arm,
             basal_right_arm=resolved.basal.profile.right_arm,
             stem_extension=resolved.stem_extension,
-            route_source_sequence=(
+            derivation_source_sequence=(
                 None
                 if terminal_nick is None
                 else (
@@ -308,29 +220,29 @@ def compile_spec(spec: DesignSpec) -> Compilation:
         )
 
     report = check_spec(spec)
-    route = _resolve_route(spec)
+    derivation = _resolve_derivation(spec)
     return assemble_compilation(
         spec=spec,
         report=report,
-        route=route,
+        derivation=derivation,
         catalog_ref=CATALOG_REF,
-        foldback_ref=route.foldback_junction.junction_id,
-        basal_ref=route.basal_junction.junction_id,
-        foldback_sequence=route.foldback_junction.sequence,
-        basal_left_arm=route.basal_junction.left_arm,
-        basal_right_arm=route.basal_junction.right_arm,
+        foldback_ref=derivation.foldback_junction.junction_id,
+        basal_ref=derivation.basal_junction.junction_id,
+        foldback_sequence=derivation.foldback_junction.sequence,
+        basal_left_arm=derivation.basal_junction.left_arm,
+        basal_right_arm=derivation.basal_junction.right_arm,
         stem_extension=None,
-        route_source_sequence=None,
+        derivation_source_sequence=None,
         additional_artifacts={},
     )
 
 
-def _resolve_route(spec: HopSpec) -> ProcessingRoute:
+def _resolve_derivation(spec: HopSpec) -> CatalogJunctionDerivation:
     expected = {
         "defaults": (spec.defaults_ref, DEFAULTS_REF),
         "foldback junction": (spec.junction.foldback.ref, FOLDBACK_REF),
         "basal junction": (spec.junction.basal.ref, BASAL_REF),
-        "processing route": (spec.processing_route_ref, PROCESSING_ROUTE_REF),
+        "design derivation": (spec.design_derivation_ref, DESIGN_DERIVATION_REF),
         "constraint profile": (spec.constraint_profile_ref, CONSTRAINT_PROFILE_REF),
     }
     for label, (actual, supported) in expected.items():
@@ -338,4 +250,4 @@ def _resolve_route(spec: HopSpec) -> ProcessingRoute:
             raise UnknownCatalogReferenceError(
                 f"Unknown {label} reference {actual!r}; locked catalog supports {supported!r}."
             )
-    return generic_direct_synthesis_route()
+    return generic_catalog_junction_derivation()

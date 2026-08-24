@@ -7,6 +7,7 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-20
+doc_type: decision
 ---
 
 # ADR 0001: Standalone package boundary

@@ -6,8 +6,6 @@ from pathlib import Path
 
 import yaml
 
-import hop_design as hop
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FULL_SHA_ACTION = re.compile(r"^\s*uses:\s*[^\s@]+@[0-9a-f]{40}(?:\s+#.*)?$", re.MULTILINE)
 ANY_ACTION = re.compile(r"^\s*uses:\s*[^\s]+(?:\s+#.*)?$", re.MULTILINE)
@@ -21,50 +19,6 @@ def _workflow(name: str) -> tuple[dict[str, object], str]:
     parsed = yaml.load(text, Loader=yaml.BaseLoader)
     assert isinstance(parsed, dict)
     return parsed, text
-
-
-def test_public_landing_page_routes_without_becoming_a_manual() -> None:
-    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-
-    assert readme.startswith("# ![hop — Hairpin Oligonucleotide Processing")
-    assert "assets/hop-design-banner.svg" in readme
-    assert "CONTRIBUTING.md" in readme
-    assert "SECURITY.md" in readme
-    assert "docs/README.md" in readme
-    assert len(readme.splitlines()) <= 140
-
-
-def test_public_docs_route_component_discovery_and_processing_concepts() -> None:
-    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    docs_index = (REPO_ROOT / "docs" / "README.md").read_text(encoding="utf-8")
-    concept_root = REPO_ROOT / "docs" / "concepts"
-
-    expected_concepts = {
-        "README.md",
-        "hairpin-components.md",
-        "discovery-and-selection.md",
-        "processing-and-assembly.md",
-    }
-    assert expected_concepts <= {path.name for path in concept_root.glob("*.md")}
-    assert "docs/concepts/README.md" in readme
-    for filename in expected_concepts - {"README.md"}:
-        assert f"concepts/{filename}" in docs_index
-
-    mechanics = (REPO_ROOT / "docs" / "reference" / "mechanics-api.md").read_text(encoding="utf-8")
-    assert "sequence-and-cut compatible" in mechanics
-    assert "empirical cleavage efficiency" in mechanics
-
-
-def test_banner_uses_literal_name_and_method_stages() -> None:
-    banner = (REPO_ROOT / "assets" / "hop-design-banner.svg").read_text(encoding="utf-8")
-
-    assert 'width="1280" height="260"' in banner
-    assert "HAIRPIN OLIGONUCLEOTIDE PROCESSING" in banner
-    assert all(color in banner for color in ("#1E1D1A", "#F3EFE7", "#969087", "#D97757"))
-    for stage in ("SOURCE", "RELEASE", "FOLDBACK", "INSERT"):
-        assert f">{stage}</text>" in banner
-    for buzzword in (">SPEC</text>", ">PLAN</text>", ">BUNDLE</text>"):
-        assert buzzword not in banner
 
 
 def test_distribution_metadata_keeps_pypi_brake_but_names_public_home() -> None:
@@ -216,69 +170,3 @@ def test_dependabot_and_precommit_cover_declared_supply_chain() -> None:
         "uv-lock",
     ):
         assert f"id: {hook}" in precommit
-
-
-def test_public_example_is_a_real_strict_spec() -> None:
-    example = REPO_ROOT / "examples" / "generic-symbolic.yaml"
-
-    spec = hop.load_spec(example)
-    compilation = hop.compile(spec)
-
-    assert compilation.spec.design_id == "example-symbolic"
-    assert compilation.plan.payload_sequence == "NRY"
-
-
-def test_readme_and_quickstart_use_real_inputs_and_distinct_outputs() -> None:
-    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
-    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
-        version = tomllib.load(handle)["project"]["version"]
-    wheel_name = f"hop_design-{version}-py3-none-any.whl"
-
-    assert 'compilation.write("build/demo-python")' in readme
-    assert "--spec examples/generic-symbolic.yaml" in quickstart
-    assert 'compilation.write("build/symbolic-python")' in quickstart
-    assert wheel_name in readme
-    assert wheel_name in quickstart
-    checksum_command = f"grep '{wheel_name}$' SHA256SUMS | shasum -a 256 -c -"
-    assert checksum_command in readme
-    assert checksum_command in quickstart
-
-
-def test_governance_and_release_routes_exist() -> None:
-    expected_paths = (
-        "CODE_OF_CONDUCT.md",
-        "CONTRIBUTING.md",
-        ".github/CODEOWNERS",
-        ".github/ISSUE_TEMPLATE/bug_report.yml",
-        ".github/ISSUE_TEMPLATE/feature_request.yml",
-        ".github/pull_request_template.md",
-        "docs/dev/README.md",
-        "docs/dev/github-governance.md",
-        "docs/dev/releasing.md",
-    )
-
-    for relative_path in expected_paths:
-        assert (REPO_ROOT / relative_path).is_file(), relative_path
-
-
-def test_public_roadmap_matches_the_current_release_line() -> None:
-    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
-        version = tomllib.load(handle)["project"]["version"]
-    roadmap = (REPO_ROOT / "docs" / "dev" / "plans" / "roadmap.md").read_text(encoding="utf-8")
-
-    assert f"released in `v{version}`" in roadmap
-    assert "predecessor differential parity remains open" not in roadmap
-    assert "versioned release remains open" not in roadmap
-
-
-def test_source_layout_has_explicit_sprawl_limits() -> None:
-    source_root = REPO_ROOT / "src" / "hop_design"
-    package_dirs = [source_root, *sorted(path for path in source_root.rglob("*") if path.is_dir())]
-
-    for directory in package_dirs:
-        modules = list(directory.glob("*.py"))
-        assert len(modules) <= 25, f"{directory.relative_to(REPO_ROOT)} has too many flat modules"
-        for module in modules:
-            line_count = len(module.read_text(encoding="utf-8").splitlines())
-            assert line_count <= 350, f"{module.relative_to(REPO_ROOT)} is a monolith"

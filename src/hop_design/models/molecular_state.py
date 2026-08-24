@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
-from hop_design.models.coordinates import Span
+from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.junction import JunctionPairObservation, Strand
 from hop_design.models.method import BindingOrientation
 from hop_design.models.sequence import SequenceValidationError, normalize_dna_sequence
@@ -180,6 +181,40 @@ class SequenceProjection(HopModel):
         return self
 
 
+class CohesiveEnd(HopModel):
+    """One exact single-stranded overhang produced by a staggered digest."""
+
+    product_end: Literal["left", "right"]
+    protruding_strand_id: str = Field(min_length=1)
+    overhang_end: StrandEnd
+    sequence: str
+    source_span: Span
+    primary_cut: Boundary
+    complementary_cut: Boundary
+
+    @field_validator("sequence", mode="before")
+    @classmethod
+    def normalize_sequence(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise SequenceValidationError("DNA sequence must be a string.")
+        return normalize_dna_sequence(value, allow_degenerate=False)
+
+    @model_validator(mode="after")
+    def validate_cut_geometry(self) -> CohesiveEnd:
+        if not self.sequence:
+            raise ValueError("A cohesive end must contain at least one nucleotide.")
+        cut_start = min(self.primary_cut.offset, self.complementary_cut.offset)
+        cut_end = max(self.primary_cut.offset, self.complementary_cut.offset)
+        if self.source_span != Span(
+            start=Boundary(offset=cut_start),
+            end=Boundary(offset=cut_end),
+        ):
+            raise ValueError("Cohesive-end span must be bounded by its two strand cuts.")
+        if self.source_span.length.value != len(self.sequence):
+            raise ValueError("Cohesive-end span length must equal its sequence length.")
+        return self
+
+
 class FragmentLengthSelection(HopModel):
     """A deterministic inclusive length filter over denatured fragments."""
 
@@ -209,6 +244,7 @@ class AdapterAnnealingRequest(HopModel):
 
 __all__ = [
     "AdapterAnnealingRequest",
+    "CohesiveEnd",
     "CovalentBond",
     "EndChemistry",
     "Fragment",

@@ -9,6 +9,10 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-23
+doc_type: explanation
+journey:
+  - method
+  - integrate
 ---
 
 # Hairpin-processing method boundary
@@ -49,8 +53,9 @@ both required ligations, and terminal PCR bindings.
 
 Hairpin PCR creates `HairpinPcrDuplex`. A subsequent facing type-IIS digest
 creates `RestrictionDigestProduct`, which records two strand products and an
-oriented `HairpinEncodingInsert` sequence projection. Restriction digestion does
-not create the duplex.
+oriented `HairpinEncodingInsert` sequence projection. Each produced cohesive
+end records its exact sequence, protruding strand, polarity, aligned span, and
+both cut boundaries. Restriction digestion does not create the duplex.
 
 The method compiler requires exact molecular inputs. Symbolic design
 compilation does not establish that every sequence in a degenerate pool follows
@@ -63,14 +68,21 @@ existential outcomes without materializing the entire pool.
 | --- | --- | --- |
 | Design sequence | `HairpinEncodingInsert` | One-dimensional hairpin core; no production-method claim |
 | Method availability | `implementation_status` | `available` or `unavailable` for the named HOP version |
+| Method input exactness | `input_exactness` | `exact_only` for an implemented exact-sequence request; `not_defined` when no request schema exists |
 | Method resolution | `resolution_status` | `not_evaluated`, `complete`, `infeasible`, or `truncated` for one request |
 | Physical PCR product | `HairpinPcrDuplex` | Exact complementary strands and derivation through the implemented method |
-| Restriction product | `RestrictionDigestProduct` | Destination-neutral strands, cuts, union, and encoding projection |
+| Restriction product | `RestrictionDigestProduct` | Destination-neutral strands, exact cohesive ends, union, and encoding projection |
 | Assembly input | `AssemblyFragment` | Caller-owned destination, orientation, and compatible ends |
 | Experimental result | observation record | Caller-owned execution, controls, yield, and evidence |
 
 No HOP product is called cloning-ready without a destination vector, insertion
 slot, orientation, compatible ends, and assembly policy.
+
+`hop_design.methods.list_method_capabilities()` returns these availability and
+input-exactness facets for every named method without building or resolving a
+request. The returned tuple and its `MethodCapability` records are immutable;
+they are a version-local public contract, not a plugin registry or selection
+policy.
 
 ## Materials and events
 
@@ -111,7 +123,7 @@ An application owner retains historical lineage, biological meaning, protocol
 conditions, selection, and experimental evidence. A generic composition
 service may place one immutable annotated HOP product into a larger cassette or
 vector and check destination-specific assembly. It must not rederive HOP
-fragments, pairings, or features. See [processing and assembly](concepts/processing-and-assembly.md).
+fragments, pairings, or features. See [ecosystem ownership](../ecosystem/ownership-boundaries.md).
 
 `compile_linear_source_method_bundle()` turns a complete result into a separate
 `MethodBundle`. Its trajectory JSON/SVG, duplex and restriction-product FASTA,

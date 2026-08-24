@@ -7,6 +7,10 @@ from hop_design.models.method import (
     BindingOrientation,
     LinearSourceHairpinPcrMaterialsPlan,
     LinearSourceHairpinPcrMaterialsSpec,
+    MethodCapability,
+    MethodImplementationStatus,
+    MethodInputExactness,
+    MethodKind,
     OligoBinding,
     ProcessMaterial,
     ProcessMaterialRole,
@@ -14,6 +18,29 @@ from hop_design.models.method import (
 )
 from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes, sha256_digest
+
+
+def list_method_capabilities() -> tuple[MethodCapability, ...]:
+    """Return the closed, deterministic capability set for this HOP version."""
+    capabilities = (
+        MethodCapability(
+            method_kind=MethodKind.LINEAR_SOURCE_MULTINICK_SIZE_SELECTION_HAIRPIN_PCR,
+            implementation_status=MethodImplementationStatus.AVAILABLE,
+            input_exactness=MethodInputExactness.EXACT_ONLY,
+        ),
+        MethodCapability(
+            method_kind=(
+                MethodKind.CIRCULAR_PRECURSOR_EXONUCLEASE_SELECTION_MULTIDIGEST_HAIRPIN_PCR
+            ),
+            implementation_status=MethodImplementationStatus.UNAVAILABLE,
+            input_exactness=MethodInputExactness.NOT_DEFINED,
+        ),
+    )
+    if tuple(capability.method_kind for capability in capabilities) != tuple(MethodKind):
+        raise RuntimeError(
+            "Method capability declarations must cover every named method exactly once."
+        )
+    return capabilities
 
 
 def _terminal_binding(
@@ -112,4 +139,7 @@ def resolve_linear_source_hairpin_pcr_materials(
     )
 
 
-__all__ = ["resolve_linear_source_hairpin_pcr_materials"]
+__all__ = [
+    "list_method_capabilities",
+    "resolve_linear_source_hairpin_pcr_materials",
+]

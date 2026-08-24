@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import hop_design as hop
+import hop_design.discovery as discovery
 from hop_design.models.discovery import (
     ReleasedFoldbackGeometryRequest,
     ReleasedFoldbackGeometrySearchLimits,
@@ -52,7 +53,7 @@ def _request(*, displacement: int = 0) -> ReleasedFoldbackGeometryRequest:
 
 
 def test_released_foldback_geometry_resolves_one_exact_agent_pair() -> None:
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=_catalog(),
         request=_request(),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
@@ -89,7 +90,7 @@ def test_released_foldback_geometry_resolves_one_exact_agent_pair() -> None:
 
 
 def test_released_foldback_geometry_reports_a_near_boundary_without_hiding_search() -> None:
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=_catalog(near_nick=True),
         request=_request(displacement=1),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=4, max_hits=4),
@@ -109,7 +110,7 @@ def test_released_foldback_geometry_reports_a_near_boundary_without_hiding_searc
 
 
 def test_released_foldback_geometry_reports_pair_node_truncation() -> None:
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=_catalog(),
         request=_request(),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=1, max_hits=1),
@@ -148,7 +149,7 @@ def test_released_foldback_geometry_supports_top_active_routes() -> None:
         update={"route": hop.StrandExposureRoute.TOP_ACTIVE_AFTER_BOTTOM_NICK}
     )
 
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=request,
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
@@ -177,7 +178,7 @@ def test_released_foldback_geometry_distinguishes_hit_truncation() -> None:
         }
     )
 
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=_request(),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=4, max_hits=1),
@@ -222,7 +223,7 @@ def test_released_foldback_geometry_reports_correlated_domain_cardinality() -> N
         require_complete_downstream_separation=True,
     )
 
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=request,
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
@@ -265,7 +266,7 @@ def test_released_foldback_geometry_distinguishes_pairing_from_process_conflict(
         require_complete_downstream_separation=False,
     )
 
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=request,
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
@@ -308,7 +309,7 @@ def test_released_foldback_geometry_reports_exhaustive_infeasibility() -> None:
         require_complete_downstream_separation=False,
     )
 
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=request,
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
@@ -365,7 +366,7 @@ def test_released_foldback_geometry_matches_sanitized_cross_agent_counts() -> No
         require_complete_downstream_separation=True,
     )
 
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=request,
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=48, max_hits=48),
@@ -386,7 +387,7 @@ def test_released_foldback_geometry_matches_sanitized_cross_agent_counts() -> No
 
 
 def test_released_foldback_result_rejects_replayed_geometry_drift() -> None:
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=_catalog(),
         request=_request(),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
@@ -399,14 +400,14 @@ def test_released_foldback_result_rejects_replayed_geometry_drift() -> None:
 
 
 def test_released_foldback_feasibility_rejects_pair_outside_active_product() -> None:
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=_catalog(),
         request=_request(),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
     )
     data = result.hits[0].model_dump(
         mode="python",
-        exclude={"candidate_id", "rank"},
+        exclude={"candidate_id", "canonical_ordinal"},
     )
     data["pairing_domains"][0]["right_coordinate"] = data["active_product_span"]["end"]["offset"]
 
@@ -428,7 +429,7 @@ def test_released_foldback_search_does_not_materialize_nodes_beyond_the_budget(
             yield boundary
 
     monkeypatch.setattr(evaluator, "iter_released_foldback_boundaries", guarded_boundaries)
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=_catalog(),
         request=_request(displacement=1_000_000),
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=1, max_hits=1),

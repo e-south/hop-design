@@ -8,6 +8,7 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-22
+doc_type: decision
 ---
 
 # ADR 0015: Compose basal pairs with terminal processing

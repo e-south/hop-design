@@ -8,9 +8,18 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-20
+doc_type: decision
+amended_by: hop-adr-0020
 ---
 
 # ADR 0008: Inherited component assembly
+
+> Amended by [ADR 0020](0020-separate-design-derivation-from-method-chronology.md):
+> the historical `resolved_events` and `component_assembly` variants were
+> replaced by strict design-derivation contracts with no ordered method history.
+> [ADR 0022](0022-make-boundaries-order-and-cohesive-ends-explicit.md) later
+> removed the redundant generic foldback `nick_boundary`; the retained-tract
+> span now owns that topology coordinate without implying a nick.
 
 ## Context
 
@@ -41,10 +50,11 @@ It does not assert that HOP discovered the components or that a nicking or
 release route exists. Route-neutral foldback and basal views avoid invented
 pre/post-processing states.
 
-In this mode, `FoldbackEvaluationRequest.nick_boundary` locates the start of
-the retained tract in the supplied topology. It is not emitted as a
-strand-specific `NickEvent` and does not establish that a nicking operation
-occurred.
+At the time of this decision, `FoldbackEvaluationRequest.nick_boundary`
+duplicated the start of the retained tract without establishing that a nicking
+operation occurred. [ADR 0022](0022-make-boundaries-order-and-cohesive-ends-explicit.md)
+removed that field; `retained_tract_span.start` is now the sole route-neutral
+foldback origin.
 
 A release event still requires a terminal nick and therefore cannot enter
 component assembly. Caller systems own historical lineage and application

@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
+import hop_design.discovery as discovery
 from hop_design.models.catalog import SiteOrientation
 from hop_design.models.discovery import (
     BasalProcessingGeometryRequest,
@@ -75,7 +76,7 @@ def _request(
 
 
 def _search(**request_overrides: str) -> BasalProcessingGeometrySearchResult:
-    return hop.search_basal_processing_geometries(
+    return discovery.search_basal_processing_geometries(
         catalog=_catalog(),
         request=_request(**request_overrides),
         limits=BasalProcessingGeometrySearchLimits(
@@ -100,7 +101,7 @@ def test_basal_processing_geometry_reports_complete_signed_coordinate_audit() ->
     assert [hit.nicking_agent_id for hit in result.hits] == ["example:nicking-agent/compatible@1"]
 
     hit = result.hits[0]
-    assert hit.rank == 1
+    assert hit.canonical_ordinal == 1
     assert hit.nick_boundary == 4
     assert hit.nick_site_start == -1
     assert hit.nick_site_end == 4
@@ -136,12 +137,12 @@ def test_post_nick_domain_policy_is_explicit_not_a_hidden_degeneracy_rule() -> N
 
 
 def test_basal_processing_geometry_reports_bounds_and_infeasibility_truthfully() -> None:
-    node_limited = hop.search_basal_processing_geometries(
+    node_limited = discovery.search_basal_processing_geometries(
         catalog=_catalog(),
         request=_request(),
         limits=BasalProcessingGeometrySearchLimits(max_search_nodes=1, max_hits=4),
     )
-    hit_limited = hop.search_basal_processing_geometries(
+    hit_limited = discovery.search_basal_processing_geometries(
         catalog=_catalog(),
         request=_request(post_nick_domain_mode="compatible"),
         limits=BasalProcessingGeometrySearchLimits(max_search_nodes=4, max_hits=1),
@@ -151,7 +152,7 @@ def test_basal_processing_geometry_reports_bounds_and_infeasibility_truthfully()
         nicking_agents=(_nicking_agent("scar-conflict", motif="AAAAAT", cut_offset=5),),
         release_agents=_catalog().release_agents,
     )
-    infeasible = hop.search_basal_processing_geometries(
+    infeasible = discovery.search_basal_processing_geometries(
         catalog=infeasible_catalog,
         request=_request(retained_scar_template="CCCC"),
         limits=BasalProcessingGeometrySearchLimits(max_search_nodes=4, max_hits=4),
@@ -168,7 +169,7 @@ def test_basal_processing_geometry_reports_bounds_and_infeasibility_truthfully()
 
 def test_basal_processing_geometry_fails_fast_for_catalog_and_release_contract_errors() -> None:
     with pytest.raises(ValueError, match="release agent"):
-        hop.search_basal_processing_geometries(
+        discovery.search_basal_processing_geometries(
             catalog=_catalog(),
             request=_request().model_copy(
                 update={"release_agent_id": "example:release-agent/missing@1"}
@@ -176,7 +177,7 @@ def test_basal_processing_geometry_fails_fast_for_catalog_and_release_contract_e
             limits=BasalProcessingGeometrySearchLimits(max_search_nodes=4, max_hits=4),
         )
     with pytest.raises(ValueError, match="four-nucleotide retained scar"):
-        hop.search_basal_processing_geometries(
+        discovery.search_basal_processing_geometries(
             catalog=_catalog().model_copy(
                 update={
                     "release_agents": (
@@ -194,7 +195,7 @@ def test_basal_processing_geometry_fails_fast_for_catalog_and_release_contract_e
             limits=BasalProcessingGeometrySearchLimits(max_search_nodes=4, max_hits=4),
         )
     with pytest.raises(ValueError, match="is not a release agent"):
-        hop.search_basal_processing_geometries(
+        discovery.search_basal_processing_geometries(
             catalog=_catalog(),
             request=_request().model_copy(
                 update={"release_agent_id": "example:nicking-agent/compatible@1"}
@@ -202,7 +203,7 @@ def test_basal_processing_geometry_fails_fast_for_catalog_and_release_contract_e
             limits=BasalProcessingGeometrySearchLimits(max_search_nodes=4, max_hits=4),
         )
     with pytest.raises(ValueError, match="does not excise"):
-        hop.search_basal_processing_geometries(
+        discovery.search_basal_processing_geometries(
             catalog=hop.ProcessingCatalog(
                 catalog_id="example:processing-catalog/unexcised-release@1",
                 nicking_agents=_catalog().nicking_agents,
@@ -234,7 +235,7 @@ def test_reverse_release_orientation_uses_the_same_signed_cut_origin() -> None:
         post_nick_domain_mode="compatible",
     ).model_copy(update={"release_orientation": SiteOrientation.REVERSE})
 
-    result = hop.search_basal_processing_geometries(
+    result = discovery.search_basal_processing_geometries(
         catalog=catalog,
         request=request,
         limits=BasalProcessingGeometrySearchLimits(max_search_nodes=1, max_hits=1),
@@ -255,7 +256,7 @@ def test_reverse_nick_orientation_and_post_domain_conflict_are_explicit() -> Non
         post_nick_template="NNNNN",
         post_nick_domain_mode="compatible",
     ).model_copy(update={"terminal_nicked_strand": hop.Strand.BOTTOM})
-    reverse = hop.search_basal_processing_geometries(
+    reverse = discovery.search_basal_processing_geometries(
         catalog=hop.ProcessingCatalog(
             catalog_id="example:processing-catalog/reverse-nick@1",
             nicking_agents=(_nicking_agent("compatible", motif="ANNNN", cut_offset=5),),
@@ -270,7 +271,7 @@ def test_reverse_nick_orientation_and_post_domain_conflict_are_explicit() -> Non
     assert reverse.hits[0].oriented_motif_top_5to3 == "NNNNT"
     assert (reverse.hits[0].nick_site_start, reverse.hits[0].nick_site_end) == (4, 9)
 
-    conflict = hop.search_basal_processing_geometries(
+    conflict = discovery.search_basal_processing_geometries(
         catalog=hop.ProcessingCatalog(
             catalog_id="example:processing-catalog/post-conflict@1",
             nicking_agents=(_nicking_agent("post-domain", motif="ANNNNCG", cut_offset=5),),
@@ -415,7 +416,7 @@ def test_hit_and_result_contracts_reject_false_terminal_claims() -> None:
         BasalProcessingGeometryHit(
             **blocked_row.model_dump(mode="python"),
             candidate_id=basal_processing_geometry_id(blocked_row),
-            rank=1,
+            canonical_ordinal=1,
         )
 
     complete = _search(post_nick_domain_mode="compatible")
@@ -433,12 +434,12 @@ def test_hit_and_result_contracts_reject_false_terminal_claims() -> None:
     payload["hits"] = payload["hits"][:-1]
     mutations.append(payload)
     payload = complete.model_dump(mode="json")
-    payload["hits"][0]["rank"] = 2
+    payload["hits"][0]["canonical_ordinal"] = 2
     mutations.append(payload)
     payload = complete.model_dump(mode="json")
     payload["hits"] = list(reversed(payload["hits"]))
-    for rank, hit in enumerate(payload["hits"], start=1):
-        hit["rank"] = rank
+    for canonical_ordinal, hit in enumerate(payload["hits"], start=1):
+        hit["canonical_ordinal"] = canonical_ordinal
     mutations.append(payload)
     payload = complete.model_dump(mode="json")
     payload["truncated_by"] = ["max_hits"]

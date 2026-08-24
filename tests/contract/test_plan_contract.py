@@ -30,7 +30,9 @@ def test_plan_rejects_independently_authored_paired_payload() -> None:
 def test_plan_owns_one_typed_hairpin_encoding_insert() -> None:
     plan = hop.compile(sequence="ACGT", design_id="demo").plan
 
-    assert plan.schema_id == "hop.plan/v2"
+    assert plan.schema_id == "hop.plan/v3"
+    assert plan.design_derivation.kind == "catalog_junctions"
+    assert not hasattr(plan, "processing_route")
     assert plan.hairpin_encoding_insert.kind == "hairpin_encoding_insert"
     assert plan.hairpin_encoding_insert.representation == "one_dimensional_sequence"
     assert plan.hairpin_encoding_insert.alphabet == "dna"
@@ -52,13 +54,17 @@ def test_plan_rejects_source_and_hairpin_encoding_drift() -> None:
         assert isinstance(source, dict)
         source["sequence"] = "AAAA"
 
-    _reject_plan_change(change, "source oligo and hairpin encoding equality")
+    _reject_plan_change(change, "source and encoding equality")
 
 
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
-        ("processing_route_ref", "hop:processing-route/other@1", "route and lock"),
+        (
+            "design_derivation_ref",
+            "hop:design-derivation/other@1",
+            "derivation and lock",
+        ),
         ("catalog_ref", "hop:catalog/other@1", "catalog and lock"),
         ("foldback_junction_ref", "hop:foldback-junction/other@1", "foldback and lock"),
         ("basal_junction_ref", "hop:basal-junction/other@1", "basal and lock"),

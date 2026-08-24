@@ -3,24 +3,24 @@
 from __future__ import annotations
 
 from hop_design.models.coordinates import BasePairCount, Boundary, Span
+from hop_design.models.derivation import CatalogJunctionDerivation
 from hop_design.models.junction import (
     BasalJunction,
     FoldbackJunction,
     JunctionPairKind,
     JunctionPairObservation,
 )
-from hop_design.models.processing import DirectSynthesisStep, ProcessingRoute
 
-DEFAULTS_REF = "hop:defaults/generic-direct-synthesis@1"
+DEFAULTS_REF = "hop:defaults/generic-hairpin-design@2"
 FOLDBACK_REF = "hop:foldback-junction/generic-gtttc@1"
 BASAL_REF = "hop:basal-junction/generic-g-c@1"
-PROCESSING_ROUTE_REF = "hop:processing-route/generic-direct-synthesis@1"
-CONSTRAINT_PROFILE_REF = "hop:constraint-profile/generic-cloneable@1"
+DESIGN_DERIVATION_REF = "hop:design-derivation/generic-catalog-junctions@1"
+CONSTRAINT_PROFILE_REF = "hop:constraint-profile/generic-hairpin@2"
 CATALOG_REF = "hop:catalog/generic-demonstration@1"
 
 
-def generic_direct_synthesis_route() -> ProcessingRoute:
-    """Return the immutable, synthetic route shipped for public demonstrations."""
+def generic_catalog_junction_derivation() -> CatalogJunctionDerivation:
+    """Return the immutable catalog junctions used by the public example."""
     foldback = FoldbackJunction(
         junction_id=FOLDBACK_REF,
         sequence="GTTTC",
@@ -52,15 +52,13 @@ def generic_direct_synthesis_route() -> ProcessingRoute:
             ),
         ),
     )
-    return ProcessingRoute(
-        route_id=PROCESSING_ROUTE_REF,
-        kind="direct_synthesis",
+    return CatalogJunctionDerivation(
+        derivation_id=DESIGN_DERIVATION_REF,
         description=(
-            "Synthetic direct-synthesis route for software demonstration only; "
-            "it is not a laboratory protocol or application profile."
+            "Synthetic catalog junctions for software demonstration only; "
+            "they make no production-method or application claim."
         ),
         catalog_ref=CATALOG_REF,
         foldback_junction=foldback,
         basal_junction=basal,
-        steps=(DirectSynthesisStep(step_id="direct-synthesis"),),
     )

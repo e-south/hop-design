@@ -216,14 +216,14 @@ class ReleasedFoldbackGeometryHit(ReleasedFoldbackGeometryFeasibility):
     """One compatible released-foldback geometry in policy-neutral order."""
 
     candidate_id: str = Field(pattern=r"^hop:released-foldback-geometry/[0-9a-f]{64}@1$")
-    rank: int = Field(ge=1)
+    canonical_ordinal: int = Field(ge=1)
 
     @model_validator(mode="after")
     def validate_hit(self) -> ReleasedFoldbackGeometryHit:
         if not self.compatible:
             raise ValueError("A released-foldback hit must be compatible.")
         feasibility = ReleasedFoldbackGeometryFeasibility.model_validate(
-            self.model_dump(mode="python", exclude={"candidate_id", "rank"})
+            self.model_dump(mode="python", exclude={"candidate_id", "canonical_ordinal"})
         )
         if self.candidate_id != released_foldback_geometry_id(feasibility):
             raise ValueError("candidate_id must match the complete geometry content.")
@@ -307,8 +307,8 @@ class ReleasedFoldbackGeometrySearchResult(HopModel):
         expected_rows_returned = ordered[: self.limits.max_hits]
         if len(self.hits) != len(expected_rows_returned):
             raise ValueError("Returned hits must exhaust the available hit budget.")
-        if tuple(hit.rank for hit in self.hits) != tuple(range(1, len(self.hits) + 1)):
-            raise ValueError("Returned hit ranks must be contiguous and one-based.")
+        if tuple(hit.canonical_ordinal for hit in self.hits) != tuple(range(1, len(self.hits) + 1)):
+            raise ValueError("Returned hit ordinals must be contiguous and one-based.")
         expected_ids = tuple(released_foldback_geometry_id(row) for row in expected_rows_returned)
         if tuple(hit.candidate_id for hit in self.hits) != expected_ids:
             raise ValueError("Returned hits must project compatible rows in physical order.")

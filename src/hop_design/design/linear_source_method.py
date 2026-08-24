@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from collections import Counter
 
-from hop_design.design.linear_source_states import (
-    build_restriction_product,
+from hop_design.design.linear_source_states.material import (
     build_source_pcr_duplex,
     five_prime_chemistry,
     infeasible_result,
     material_by_role,
     primer_binding,
+)
+from hop_design.design.linear_source_states.product import (
+    build_restriction_product,
     resolve_selected_pairs,
 )
 from hop_design.design.method import resolve_linear_source_hairpin_pcr_materials
@@ -269,6 +271,7 @@ def compile_linear_source_multinick_hairpin_pcr(
         adapter_annealed_complex=annealed,
         ligated_hairpin=ligated,
         hairpin_pcr_duplex=duplex,
+        restriction_agent=request.restriction_agent,
         restriction_digest_product=restriction,
     )
     return LinearSourceMultinickHairpinPcrResult(

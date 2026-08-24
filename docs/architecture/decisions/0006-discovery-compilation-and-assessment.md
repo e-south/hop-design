@@ -8,6 +8,8 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-23
+doc_type: decision
+amended_by: hop-adr-0022
 ---
 
 # ADR 0006: Discovery, compilation, and assessment boundaries
@@ -54,7 +56,9 @@ monolithic recipe or making unconstrained DNA completion an implicit default.
 `search_basal_candidates` is an independent bounded enumeration over two
 caller-authored four-nucleotide IUPAC arm domains. It reuses the canonical
 basal classifier and supplied constraint profile, accounts for every examined
-reserve or reject outcome, and returns a canonical physical record order. It
+reserve or reject outcome, and returns a deterministic record order. ADR 0022
+amends that historical wording: active candidate order is literal arm content
+and content identity, not a physical or policy preference. It
 does not infer release or nicking-agent geometry. Application target buckets,
 control distance, mismatch-tier preference, vendor data, and procurement state
 remain caller policy rather than HOP ranking inputs.

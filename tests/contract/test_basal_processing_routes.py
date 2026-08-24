@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
+import hop_design.discovery as discovery
 from hop_design.design import junction_routes as route_design
 from hop_design.models.catalog import SiteOrientation
 from hop_design.models.discovery import (
@@ -21,11 +22,12 @@ from hop_design.models.discovery import basal_routes as route_models
 def _constraints() -> hop.BasalConstraintProfile:
     return hop.BasalConstraintProfile(
         require_terminal_watson_crick=True,
+        allow_active_gt_wobble=True,
         max_active_hard_mismatches=0,
         max_active_non_watson_crick_pairs=1,
         forbid_active_middle_double_hard=True,
-        minimum_active_support=3.5,
-        maximum_active_disruption=0.5,
+        minimum_active_pair_support_index=3.5,
+        maximum_active_pair_disruption_index=0.5,
         require_outer_hard_for_active_double=True,
         reject_compact_profiles=(),
         reserve_compact_profiles=(),
@@ -36,16 +38,15 @@ def _basal_candidates(
     *,
     left_template: str = "RAAA",
     max_search_nodes: int = 2,
-) -> hop.BasalCandidateSearchResult:
-    return hop.search_basal_candidates(
-        hop.BasalCandidateSearchRequest(
+) -> discovery.BasalCandidateSearchResult:
+    return discovery.search_basal_candidates(
+        discovery.BasalCandidateSearchRequest(
             left_arm_template=left_template,
             right_arm_template="TTGG" if left_template == "CCAA" else "TTTT",
-            allow_gt_wobble=True,
             constraints=_constraints(),
             acceptance="active_only",
         ),
-        limits=hop.BasalCandidateSearchLimits(
+        limits=discovery.BasalCandidateSearchLimits(
             max_search_nodes=max_search_nodes,
             max_hits=4,
         ),
@@ -58,7 +59,7 @@ def _processing_geometries(
     agent_count: int = 1,
     max_search_nodes: int | None = None,
     max_hits: int = 2,
-) -> hop.BasalProcessingGeometrySearchResult:
+) -> discovery.BasalProcessingGeometrySearchResult:
     release_id = "example:release-agent/four-base-scar@1"
     catalog = hop.ProcessingCatalog(
         catalog_id="example:processing-catalog/basal-routes@1",
@@ -82,7 +83,7 @@ def _processing_geometries(
             ),
         ),
     )
-    return hop.search_basal_processing_geometries(
+    return discovery.search_basal_processing_geometries(
         catalog=catalog,
         request=BasalProcessingGeometryRequest(
             release_agent_id=release_id,
@@ -101,7 +102,7 @@ def _processing_geometries(
 
 
 def test_basal_route_search_joins_retained_scar_to_the_left_arm() -> None:
-    result = hop.search_basal_processing_routes(
+    result = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(),
         processing_geometries=_processing_geometries(),
         limits=BasalProcessingRouteSearchLimits(max_search_nodes=2, max_hits=2),
@@ -112,10 +113,11 @@ def test_basal_route_search_joins_retained_scar_to_the_left_arm() -> None:
     assert result.search_nodes_examined == 2
     assert result.observed_hit_count == 1
     assert result.truncated_by == ()
+    assert result.schema_id == "hop.basal-processing-route-search-result/v2"
     assert [row.blockers for row in result.feasibility] == [(), ("retained_scar_domain_conflict",)]
 
     route = result.hits[0]
-    assert route.rank == 1
+    assert route.canonical_ordinal == 1
     assert route.basal_candidate.pairing.left_arm == "AAAA"
     assert route.processing_geometry.nicking_agent_id == "example:nicking-agent/terminal-1@1"
     assert route.terminal_nick == hop.NickEvent(
@@ -125,9 +127,36 @@ def test_basal_route_search_joins_retained_scar_to_the_left_arm() -> None:
     assert route.surviving_strand is hop.Strand.BOTTOM
     assert route.route_id.startswith("hop:basal-processing-route/")
 
+    retired = result.model_dump(mode="json", by_alias=True)
+    retired["schema"] = "hop.basal-processing-route-search-result/v1"
+    with pytest.raises(ValidationError):
+        BasalProcessingRouteSearchResult.model_validate(retired)
+
+
+def test_basal_route_content_identity_excludes_search_ordinals() -> None:
+    result = discovery.search_basal_processing_routes(
+        basal_candidates=_basal_candidates(),
+        processing_geometries=_processing_geometries(),
+        limits=BasalProcessingRouteSearchLimits(max_search_nodes=2, max_hits=2),
+    )
+    route = result.hits[0]
+
+    original = route_models.basal_processing_route_id(
+        release=route.release,
+        basal_candidate=route.basal_candidate,
+        processing_geometry=route.processing_geometry,
+    )
+    reordered = route_models.basal_processing_route_id(
+        release=route.release,
+        basal_candidate=route.basal_candidate.model_copy(update={"canonical_ordinal": 99}),
+        processing_geometry=route.processing_geometry.model_copy(update={"canonical_ordinal": 77}),
+    )
+
+    assert reordered == original
+
 
 def test_basal_route_search_rejects_a_regenerated_release_site() -> None:
-    result = hop.search_basal_processing_routes(
+    result = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(left_template="CCAA", max_search_nodes=1),
         processing_geometries=_processing_geometries(scar_motif="NNNNN"),
         limits=BasalProcessingRouteSearchLimits(max_search_nodes=1, max_hits=1),
@@ -139,12 +168,12 @@ def test_basal_route_search_rejects_a_regenerated_release_site() -> None:
 
 
 def test_basal_route_search_propagates_upstream_and_local_bounds() -> None:
-    upstream = hop.search_basal_processing_routes(
+    upstream = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(max_search_nodes=1),
         processing_geometries=_processing_geometries(),
         limits=BasalProcessingRouteSearchLimits(max_search_nodes=2, max_hits=2),
     )
-    node_limited = hop.search_basal_processing_routes(
+    node_limited = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(),
         processing_geometries=_processing_geometries(scar_motif="NNNNN"),
         limits=BasalProcessingRouteSearchLimits(max_search_nodes=1, max_hits=2),
@@ -157,7 +186,7 @@ def test_basal_route_search_propagates_upstream_and_local_bounds() -> None:
 
 
 def test_basal_route_search_reports_processing_and_hit_truncation_separately() -> None:
-    processing_limited = hop.search_basal_processing_routes(
+    processing_limited = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(left_template="AAAA", max_search_nodes=1),
         processing_geometries=_processing_geometries(
             scar_motif="NNNNN",
@@ -166,7 +195,7 @@ def test_basal_route_search_reports_processing_and_hit_truncation_separately() -
         ),
         limits=BasalProcessingRouteSearchLimits(max_search_nodes=2, max_hits=2),
     )
-    hit_limited = hop.search_basal_processing_routes(
+    hit_limited = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(left_template="AAAA", max_search_nodes=1),
         processing_geometries=_processing_geometries(
             scar_motif="NNNNN",
@@ -195,7 +224,7 @@ def test_basal_route_search_does_not_consume_pairs_beyond_the_node_budget(
     monkeypatch.setattr(route_design, "product", guarded_product)
     monkeypatch.setattr(route_models, "product", guarded_product)
 
-    result = hop.search_basal_processing_routes(
+    result = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(),
         processing_geometries=_processing_geometries(),
         limits=BasalProcessingRouteSearchLimits(max_search_nodes=1, max_hits=1),
@@ -208,7 +237,7 @@ def test_basal_route_search_does_not_consume_pairs_beyond_the_node_budget(
 
 
 def test_basal_route_result_rejects_cross_object_and_identity_drift() -> None:
-    result = hop.search_basal_processing_routes(
+    result = discovery.search_basal_processing_routes(
         basal_candidates=_basal_candidates(),
         processing_geometries=_processing_geometries(),
         limits=BasalProcessingRouteSearchLimits(max_search_nodes=2, max_hits=2),

@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
+import hop_design.discovery as discovery
 from hop_design.models.discovery import (
     ReleasedFoldbackGeometryRequest,
     ReleasedFoldbackGeometrySearchLimits,
@@ -44,7 +45,7 @@ def _selected_symbolic_geometry() -> ReleasedFoldbackGeometryHit:
         require_release_site_downstream_of_nick=True,
         require_complete_downstream_separation=True,
     )
-    result = hop.search_released_foldback_geometries(
+    result = discovery.search_released_foldback_geometries(
         catalog=catalog,
         request=request,
         limits=ReleasedFoldbackGeometrySearchLimits(max_search_nodes=2, max_hits=2),
@@ -54,7 +55,7 @@ def _selected_symbolic_geometry() -> ReleasedFoldbackGeometryHit:
 
 
 def test_released_foldback_precursor_search_materializes_only_caller_domains() -> None:
-    result = hop.search_released_foldback_precursors(
+    result = discovery.search_released_foldback_precursors(
         ReleasedFoldbackPrecursorSearchRequest(
             geometry=_selected_symbolic_geometry(),
             precursor_template="RAYC",
@@ -68,14 +69,14 @@ def test_released_foldback_precursor_search_materializes_only_caller_domains() -
     assert result.observed_hit_count == 2
     assert result.truncated_by == ()
     assert [candidate.precursor_sequence for candidate in result.hits] == ["AATC", "GACC"]
-    assert [candidate.rank for candidate in result.hits] == [1, 2]
+    assert [candidate.canonical_ordinal for candidate in result.hits] == [1, 2]
     assert all(
         candidate.geometry_id == result.request.geometry.candidate_id for candidate in result.hits
     )
 
 
 def test_released_foldback_precursor_search_reports_caller_domain_conflict() -> None:
-    result = hop.search_released_foldback_precursors(
+    result = discovery.search_released_foldback_precursors(
         ReleasedFoldbackPrecursorSearchRequest(
             geometry=_selected_symbolic_geometry(),
             precursor_template="AACC",
@@ -97,11 +98,11 @@ def test_released_foldback_precursor_search_separates_node_and_hit_truncation() 
         precursor_template="NNNN",
     )
 
-    by_nodes = hop.search_released_foldback_precursors(
+    by_nodes = discovery.search_released_foldback_precursors(
         request,
         limits=ReleasedFoldbackPrecursorSearchLimits(max_search_nodes=1, max_hits=64),
     )
-    by_hits = hop.search_released_foldback_precursors(
+    by_hits = discovery.search_released_foldback_precursors(
         request,
         limits=ReleasedFoldbackPrecursorSearchLimits(max_search_nodes=64, max_hits=1),
     )
@@ -138,7 +139,7 @@ def test_released_foldback_precursor_result_rejects_replay_drift(
     update: dict[str, object],
     message: str,
 ) -> None:
-    result = hop.search_released_foldback_precursors(
+    result = discovery.search_released_foldback_precursors(
         ReleasedFoldbackPrecursorSearchRequest(
             geometry=_selected_symbolic_geometry(),
             precursor_template="RAYC",
@@ -147,7 +148,7 @@ def test_released_foldback_precursor_result_rejects_replay_drift(
     )
     data = result.model_dump(mode="python")
     if "precursor_sequence" in update:
-        data["hits"] = ({**data["hits"][1], "rank": 1}, *data["hits"][1:])
+        data["hits"] = ({**data["hits"][1], "canonical_ordinal": 1}, *data["hits"][1:])
     else:
         data.update(update)
 
@@ -165,7 +166,7 @@ def test_released_foldback_precursor_search_does_not_consume_beyond_node_budget(
         raise AssertionError("search consumed a sequence beyond max_search_nodes")
 
     monkeypatch.setattr(operation, "enumerate_released_foldback_precursors", guarded_enumerator)
-    result = hop.search_released_foldback_precursors(
+    result = discovery.search_released_foldback_precursors(
         ReleasedFoldbackPrecursorSearchRequest(
             geometry=_selected_symbolic_geometry(),
             precursor_template="NNNN",

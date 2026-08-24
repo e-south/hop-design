@@ -51,10 +51,13 @@ def build_released_foldback_precursor_view(
     foldback = evaluate_foldback(
         FoldbackEvaluationRequest(
             precursor_sequence=active_sequence[:arm_start],
-            nick_boundary=Boundary(offset=0),
             retained_tract_span=Span(
                 start=Boundary(offset=0),
                 end=Boundary(offset=paired_tract),
+            ),
+            source_turn_span=Span(
+                start=Boundary(offset=paired_tract),
+                end=Boundary(offset=arm_start),
             ),
             protected_region=Span(
                 start=Boundary(offset=0),
@@ -63,13 +66,13 @@ def build_released_foldback_precursor_view(
             turn_extension="",
             foldback_arm=active_sequence[arm_start:],
             constraints=FoldbackConstraints(
-                max_mismatches=0,
-                terminal_paired_bp_min=paired_tract,
-                terminal_paired_bp_max=paired_tract,
-                max_uninterrupted_paired_bp=paired_tract,
+                max_non_watson_crick_pairs=0,
+                terminal_watson_crick_bp_min=paired_tract,
+                terminal_watson_crick_bp_max=paired_tract,
+                max_uninterrupted_watson_crick_bp=paired_tract,
                 max_added_nt=paired_tract,
                 required_turn_nt=turn_length,
-                allow_protected_region_mismatches=False,
+                allow_protected_region_non_watson_crick_pairs=False,
             ),
         )
     )

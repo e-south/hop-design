@@ -78,6 +78,35 @@ class MethodImplementationStatus(StrEnum):
     UNAVAILABLE = "unavailable"
 
 
+class MethodInputExactness(StrEnum):
+    """Sequence exactness accepted by a named method's public request."""
+
+    EXACT_ONLY = "exact_only"
+    NOT_DEFINED = "not_defined"
+
+
+class MethodCapability(HopModel):
+    """Version-local method availability without request construction."""
+
+    method_kind: MethodKind
+    implementation_status: MethodImplementationStatus
+    input_exactness: MethodInputExactness
+
+    @model_validator(mode="after")
+    def validate_availability(self) -> MethodCapability:
+        if (
+            self.implementation_status is MethodImplementationStatus.AVAILABLE
+            and self.input_exactness is MethodInputExactness.NOT_DEFINED
+        ):
+            raise ValueError("An available method must define input exactness.")
+        if (
+            self.implementation_status is MethodImplementationStatus.UNAVAILABLE
+            and self.input_exactness is not MethodInputExactness.NOT_DEFINED
+        ):
+            raise ValueError("An unavailable method cannot define input exactness.")
+        return self
+
+
 class MethodResolutionStatus(StrEnum):
     NOT_EVALUATED = "not_evaluated"
     COMPLETE = "complete"
@@ -288,7 +317,9 @@ __all__ = [
     "LigationEndPreparation",
     "LinearSourceHairpinPcrMaterialsPlan",
     "LinearSourceHairpinPcrMaterialsSpec",
+    "MethodCapability",
     "MethodImplementationStatus",
+    "MethodInputExactness",
     "MethodKind",
     "MethodOutcome",
     "MethodResolutionStatus",

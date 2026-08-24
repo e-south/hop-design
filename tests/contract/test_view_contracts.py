@@ -21,19 +21,19 @@ def _foldback_evaluation():
     return hop.evaluate_foldback(
         hop.FoldbackEvaluationRequest(
             precursor_sequence="CCTCAGCA",
-            nick_boundary=Boundary(offset=2),
             retained_tract_span=Span(start=Boundary(offset=2), end=Boundary(offset=6)),
+            source_turn_span=Span(start=Boundary(offset=6), end=Boundary(offset=8)),
             protected_region=Span(start=Boundary(offset=0), end=Boundary(offset=2)),
             turn_extension="T",
             foldback_arm="CTGA",
             constraints=hop.FoldbackConstraints(
-                max_mismatches=0,
-                terminal_paired_bp_min=4,
-                terminal_paired_bp_max=4,
-                max_uninterrupted_paired_bp=4,
+                max_non_watson_crick_pairs=0,
+                terminal_watson_crick_bp_min=4,
+                terminal_watson_crick_bp_max=4,
+                max_uninterrupted_watson_crick_bp=4,
                 max_added_nt=5,
                 required_turn_nt=3,
-                allow_protected_region_mismatches=False,
+                allow_protected_region_non_watson_crick_pairs=False,
             ),
         )
     )
@@ -41,14 +41,15 @@ def _foldback_evaluation():
 
 def _basal_evaluation():
     return hop.evaluate_basal_pairing(
-        hop.BasalPairingRequest(left_arm="AAAA", right_arm="TTTT", allow_gt_wobble=True),
+        hop.BasalPairingRequest(left_arm="AAAA", right_arm="TTTT"),
         constraints=hop.BasalConstraintProfile(
             require_terminal_watson_crick=True,
+            allow_active_gt_wobble=True,
             max_active_hard_mismatches=0,
             max_active_non_watson_crick_pairs=0,
             forbid_active_middle_double_hard=True,
-            minimum_active_support=4.0,
-            maximum_active_disruption=0.0,
+            minimum_active_pair_support_index=4.0,
+            maximum_active_pair_disruption_index=0.0,
             require_outer_hard_for_active_double=True,
             reject_compact_profiles=(),
             reserve_compact_profiles=(),
@@ -83,11 +84,13 @@ def test_foldback_view_is_a_typed_three_panel_scientific_contract() -> None:
 
     assert view.kind == "foldback_qa"
     assert [panel.panel_id for panel in view.panels] == [
-        "pre_nick_duplex",
-        "post_nick_exposed",
-        "post_nick_foldback",
+        "source_sequence",
+        "resolved_junction",
+        "folded_junction",
     ]
     assert len(view.panels[-1].pairings) == 4
+    assert all("nick" not in panel.title.lower() for panel in view.panels)
+    assert all("nick" not in track.label.lower() for panel in view.panels for track in panel.tracks)
 
 
 def test_foldback_junction_view_does_not_invent_nicking_states() -> None:
@@ -96,6 +99,7 @@ def test_foldback_junction_view_does_not_invent_nicking_states() -> None:
     assert view.kind == "foldback_junction"
     assert [panel.panel_id for panel in view.panels] == ["foldback_junction"]
     assert len(view.panels[0].pairings) == 4
+    assert view.panels[0].tracks[0].label == "junction sequence"
 
 
 def test_released_and_basal_views_keep_strand_and_pair_calls_explicit() -> None:
@@ -141,8 +145,37 @@ def test_svg_renderer_is_deterministic_and_consumes_view_state_only() -> None:
 
     assert first == second
     assert first.startswith(b"<svg")
-    assert b'data-panel-id="post_nick_foldback"' in first
+    assert b'data-panel-id="folded_junction"' in first
     assert first.count(b'data-pair-kind="watson_crick"') == 4
+    assert b'data-transition-from="source_sequence"' in first
+    assert b"5\xe2\x80\xb2" in first
+    assert b"3\xe2\x80\xb2" in first
+
+
+def test_svg_renderer_aligns_antiparallel_pairs_and_styles_pair_kinds() -> None:
+    basal = hop.evaluate_basal_pairing(
+        hop.BasalPairingRequest(left_arm="AGTG", right_arm="CATG"),
+        constraints=hop.BasalConstraintProfile(
+            require_terminal_watson_crick=False,
+            allow_active_gt_wobble=True,
+            max_active_hard_mismatches=4,
+            max_active_non_watson_crick_pairs=4,
+            forbid_active_middle_double_hard=False,
+            minimum_active_pair_support_index=0.0,
+            maximum_active_pair_disruption_index=4.0,
+            require_outer_hard_for_active_double=False,
+            reject_compact_profiles=(),
+            reserve_compact_profiles=(),
+        ),
+    )
+
+    svg = render_workflow_svg(build_basal_pairing_view(basal))
+
+    assert b">GTAC<" in svg
+    assert b'class="pair pair-watson_crick"' in svg
+    assert b'class="pair pair-gt_wobble"' in svg
+    assert b'class="pair pair-hard_mismatch"' in svg
+    assert svg.count(b'data-display-aligned="true"') == 4
 
 
 def test_view_contract_rejects_out_of_bounds_features() -> None:
@@ -150,4 +183,51 @@ def test_view_contract_rejects_out_of_bounds_features() -> None:
     data["panels"][0]["features"][0]["span"]["end"]["offset"] = 999
 
     with pytest.raises(ValidationError, match="feature span"):
+        WorkflowView.model_validate_json(__import__("json").dumps(data))
+
+
+def test_view_contract_rejects_false_or_duplicate_pair_claims() -> None:
+    data = build_basal_pairing_view(
+        hop.evaluate_basal_pairing(
+            hop.BasalPairingRequest(left_arm="AGTG", right_arm="CATG"),
+            constraints=hop.BasalConstraintProfile(
+                require_terminal_watson_crick=False,
+                allow_active_gt_wobble=True,
+                max_active_hard_mismatches=4,
+                max_active_non_watson_crick_pairs=4,
+                forbid_active_middle_double_hard=False,
+                minimum_active_pair_support_index=0.0,
+                maximum_active_pair_disruption_index=4.0,
+                require_outer_hard_for_active_double=False,
+                reject_compact_profiles=(),
+                reserve_compact_profiles=(),
+            ),
+        )
+    ).model_dump(mode="json")
+    data["panels"][0]["pairings"][0]["kind"] = "watson_crick"
+
+    with pytest.raises(ValidationError, match="literal track bases"):
+        WorkflowView.model_validate_json(__import__("json").dumps(data))
+
+    duplicate = build_basal_pairing_view(_basal_evaluation()).model_dump(mode="json")
+    duplicate["panels"][0]["pairings"].append(duplicate["panels"][0]["pairings"][0])
+    with pytest.raises(ValidationError, match="at most one pair"):
+        WorkflowView.model_validate_json(__import__("json").dumps(duplicate))
+
+
+@pytest.mark.parametrize(("track_id", "sequence"), [("left_arm", "NAAA"), ("right_arm", "NTTT")])
+def test_view_contract_rejects_ambiguous_pairing_endpoints(track_id: str, sequence: str) -> None:
+    data = build_basal_pairing_view(_basal_evaluation()).model_dump(mode="json")
+    track = next(track for track in data["panels"][0]["tracks"] if track["track_id"] == track_id)
+    track["sequence"] = sequence
+
+    with pytest.raises(ValidationError, match="exact A/C/G/T endpoint"):
+        WorkflowView.model_validate_json(__import__("json").dumps(data))
+
+
+def test_view_kind_requires_its_declared_panel_topology() -> None:
+    data = build_basal_pairing_view(_basal_evaluation()).model_dump(mode="json")
+    data["kind"] = "method_trajectory"
+
+    with pytest.raises(ValidationError, match="panel topology"):
         WorkflowView.model_validate_json(__import__("json").dumps(data))

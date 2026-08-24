@@ -8,6 +8,8 @@ audience:
 owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-22
+doc_type: decision
+amended_by: hop-adr-0023
 ---
 
 # ADR 0018: Join hairpin-junction processing on one strand
@@ -51,8 +53,8 @@ from its own node and hit budgets. `complete` describes exhaustive evaluation
 of the available upstream cross-product; it does not mean that a wet-lab method
 or destination assembly has been selected.
 
-Specialized result models remain under `hop_design.models.discovery`. Only the
-operation is added to the package-root facade.
+ADR 0023 later moved this operation and its public contracts from the package
+root to `hop_design.discovery`; the molecular decision is unchanged.
 
 Route-owned QA projection is defined separately by
 [ADR 0019](0019-project-junction-route-views-from-the-route.md).

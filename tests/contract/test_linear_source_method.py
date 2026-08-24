@@ -8,6 +8,9 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
+import hop_design.discovery as discovery
+import hop_design.methods as methods
+from hop_design.models.sequence import reverse_complement_iupac
 from tests.support.linear_source_method import (
     HAIRPIN_ENCODING,
     LIGATED,
@@ -18,14 +21,60 @@ from tests.support.linear_source_method import (
 _request = linear_source_method_request
 
 
-def test_method_outcome_keeps_availability_and_resolution_orthogonal() -> None:
-    available = hop.MethodOutcome(
-        implementation_status=hop.MethodImplementationStatus.AVAILABLE,
-        resolution_status=hop.MethodResolutionStatus.COMPLETE,
+def test_method_capability_query_reports_every_named_method_without_a_request() -> None:
+    assert methods.list_method_capabilities() == (
+        methods.MethodCapability(
+            method_kind=(methods.MethodKind.LINEAR_SOURCE_MULTINICK_SIZE_SELECTION_HAIRPIN_PCR),
+            implementation_status=methods.MethodImplementationStatus.AVAILABLE,
+            input_exactness=methods.MethodInputExactness.EXACT_ONLY,
+        ),
+        methods.MethodCapability(
+            method_kind=(
+                methods.MethodKind.CIRCULAR_PRECURSOR_EXONUCLEASE_SELECTION_MULTIDIGEST_HAIRPIN_PCR
+            ),
+            implementation_status=methods.MethodImplementationStatus.UNAVAILABLE,
+            input_exactness=methods.MethodInputExactness.NOT_DEFINED,
+        ),
     )
-    unavailable = hop.MethodOutcome(
-        implementation_status=hop.MethodImplementationStatus.UNAVAILABLE,
-        resolution_status=hop.MethodResolutionStatus.NOT_EVALUATED,
+
+
+def test_method_capability_contract_is_strict_immutable_and_internally_consistent() -> None:
+    capability = methods.MethodCapability(
+        method_kind=methods.MethodKind.LINEAR_SOURCE_MULTINICK_SIZE_SELECTION_HAIRPIN_PCR,
+        implementation_status=methods.MethodImplementationStatus.AVAILABLE,
+        input_exactness=methods.MethodInputExactness.EXACT_ONLY,
+    )
+
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        methods.MethodCapability.model_validate(
+            {**capability.model_dump(mode="json"), "plugin": "implicit"}
+        )
+    with pytest.raises(ValidationError, match="Instance is frozen"):
+        capability.input_exactness = methods.MethodInputExactness.NOT_DEFINED
+    with pytest.raises(ValidationError, match="unavailable method cannot define input exactness"):
+        methods.MethodCapability(
+            method_kind=(
+                methods.MethodKind.CIRCULAR_PRECURSOR_EXONUCLEASE_SELECTION_MULTIDIGEST_HAIRPIN_PCR
+            ),
+            implementation_status=methods.MethodImplementationStatus.UNAVAILABLE,
+            input_exactness=methods.MethodInputExactness.EXACT_ONLY,
+        )
+    with pytest.raises(ValidationError, match="available method must define input exactness"):
+        methods.MethodCapability(
+            method_kind=methods.MethodKind.LINEAR_SOURCE_MULTINICK_SIZE_SELECTION_HAIRPIN_PCR,
+            implementation_status=methods.MethodImplementationStatus.AVAILABLE,
+            input_exactness=methods.MethodInputExactness.NOT_DEFINED,
+        )
+
+
+def test_method_outcome_keeps_availability_and_resolution_orthogonal() -> None:
+    available = methods.MethodOutcome(
+        implementation_status=methods.MethodImplementationStatus.AVAILABLE,
+        resolution_status=methods.MethodResolutionStatus.COMPLETE,
+    )
+    unavailable = methods.MethodOutcome(
+        implementation_status=methods.MethodImplementationStatus.UNAVAILABLE,
+        resolution_status=methods.MethodResolutionStatus.NOT_EVALUATED,
     )
 
     assert (available.implementation_status, available.resolution_status) == (
@@ -37,14 +86,24 @@ def test_method_outcome_keeps_availability_and_resolution_orthogonal() -> None:
         "not_evaluated",
     )
     with pytest.raises(ValidationError, match="unavailable method cannot have a resolution"):
-        hop.MethodOutcome(
-            implementation_status=hop.MethodImplementationStatus.UNAVAILABLE,
-            resolution_status=hop.MethodResolutionStatus.COMPLETE,
+        methods.MethodOutcome(
+            implementation_status=methods.MethodImplementationStatus.UNAVAILABLE,
+            resolution_status=methods.MethodResolutionStatus.COMPLETE,
         )
 
 
+def test_method_result_outer_schema_rejects_the_retired_plan_v1_container() -> None:
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
+
+    assert result.schema_id == "hop.linear-source-multinick-hairpin-pcr-result/v2"
+    data = result.model_dump(mode="json", by_alias=True)
+    data["schema"] = "hop.linear-source-multinick-hairpin-pcr-result/v1"
+    with pytest.raises(ValidationError):
+        methods.LinearSourceMultinickHairpinPcrResult.model_validate(data)
+
+
 def test_multinick_compiler_records_every_cut_and_denatured_fragment() -> None:
-    result = hop.compile_linear_source_multinick_hairpin_pcr(_request())
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
 
     assert result.method_kind == "linear-source-multinick-size-selection-hairpin-pcr@1"
     assert result.outcome.resolution_status == "complete"
@@ -105,7 +164,7 @@ def test_multinick_compiler_records_every_cut_and_denatured_fragment() -> None:
 
 
 def test_annealing_ligation_and_pcr_states_are_strand_aware() -> None:
-    result = hop.compile_linear_source_multinick_hairpin_pcr(_request())
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
 
     assert result.plan is not None
     plan = result.plan
@@ -151,7 +210,7 @@ def test_annealing_ligation_and_pcr_states_are_strand_aware() -> None:
 
 
 def test_declared_kinase_preparation_resolves_unmodified_ligation_ends() -> None:
-    result = hop.compile_linear_source_multinick_hairpin_pcr(_request(kinase_step=True))
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request(kinase_step=True))
 
     assert result.outcome.resolution_status == "complete"
     assert result.plan is not None
@@ -162,7 +221,7 @@ def test_declared_kinase_preparation_resolves_unmodified_ligation_ends() -> None
 
 
 def test_restriction_projection_is_destination_neutral_and_matches_the_encoding() -> None:
-    result = hop.compile_linear_source_multinick_hairpin_pcr(_request())
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
 
     assert result.plan is not None
     product = result.plan.restriction_digest_product
@@ -187,17 +246,117 @@ def test_restriction_projection_is_destination_neutral_and_matches_the_encoding(
         start=hop.Boundary(offset=32),
         end=hop.Boundary(offset=96),
     )
+    assert [
+        (
+            end.product_end,
+            end.protruding_strand_id,
+            end.overhang_end,
+            end.sequence,
+            end.source_span.start.offset,
+            end.source_span.end.offset,
+            end.primary_cut.offset,
+            end.complementary_cut.offset,
+        )
+        for end in product.cohesive_ends
+    ] == [
+        ("left", "restriction-primary", "five_prime", LIGATED[32:36], 32, 36, 32, 36),
+        (
+            "right",
+            "restriction-complementary",
+            "five_prime",
+            reverse_complement_iupac(LIGATED[92:96]),
+            92,
+            96,
+            92,
+            96,
+        ),
+    ]
     assert product.hairpin_encoding_projection.sequence == HAIRPIN_ENCODING
     assert product.destination_readiness == "not_evaluated"
 
 
+def test_restriction_projection_records_three_prime_cohesive_ends() -> None:
+    request = _request()
+    restriction_agent = request.restriction_agent.model_copy(
+        update={"top_cut_offset": 11, "bottom_cut_offset": 7}
+    )
+
+    result = methods.compile_linear_source_multinick_hairpin_pcr(
+        request.model_copy(update={"restriction_agent": restriction_agent})
+    )
+
+    assert result.plan is not None
+    left, right = result.plan.restriction_digest_product.cohesive_ends
+    assert (left.protruding_strand_id, left.overhang_end, left.sequence) == (
+        "restriction-complementary",
+        "three_prime",
+        reverse_complement_iupac(LIGATED[32:36]),
+    )
+    assert (right.protruding_strand_id, right.overhang_end, right.sequence) == (
+        "restriction-primary",
+        "three_prime",
+        LIGATED[92:96],
+    )
+
+
+def test_restriction_product_rejects_cohesive_end_sequence_drift() -> None:
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
+    assert result.plan is not None
+    data = result.plan.restriction_digest_product.model_dump(mode="json")
+    data["cohesive_ends"][0]["sequence"] = "AAAA"
+
+    with pytest.raises(ValidationError, match="protruding strand"):
+        methods.RestrictionDigestProduct.model_validate_json(json.dumps(data))
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("protruding_strand_id", "restriction-complementary"),
+        ("overhang_end", "three_prime"),
+    ),
+)
+def test_restriction_product_rejects_cohesive_end_geometry_drift(
+    field: str,
+    value: str,
+) -> None:
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
+    assert result.plan is not None
+    data = result.plan.restriction_digest_product.model_dump(mode="json")
+    data["cohesive_ends"][0][field] = value
+
+    with pytest.raises(ValidationError, match="cut geometry"):
+        methods.RestrictionDigestProduct.model_validate_json(json.dumps(data))
+
+
+def test_palindromic_restriction_site_replay_requires_both_orientations() -> None:
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
+    assert result.plan is not None
+    agent = hop.ReleaseAgent(
+        agent_id="example:release-agent/palindromic@1",
+        motif_top_5to3="AATT",
+        top_cut_offset=1,
+        bottom_cut_offset=2,
+        warning_codes=(),
+    )
+    sites = discovery.scan_release_agent("AATT", agent=agent)
+    product = result.plan.restriction_digest_product.model_copy(
+        update={"agent_id": agent.agent_id, "sites": sites}
+    )
+
+    product.assert_site_replay("AATT", agent=agent)
+    tampered = product.model_copy(update={"sites": (sites[0], sites[0])})
+    with pytest.raises(ValueError, match="replay"):
+        tampered.assert_site_replay("AATT", agent=agent)
+
+
 def test_length_selection_fails_closed_when_no_fragment_survives() -> None:
-    result = hop.compile_linear_source_multinick_hairpin_pcr(_request(min_length_nt=60))
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request(min_length_nt=60))
 
     assert result.plan is None
-    assert result.outcome == hop.MethodOutcome(
-        implementation_status=hop.MethodImplementationStatus.AVAILABLE,
-        resolution_status=hop.MethodResolutionStatus.INFEASIBLE,
+    assert result.outcome == methods.MethodOutcome(
+        implementation_status=methods.MethodImplementationStatus.AVAILABLE,
+        resolution_status=methods.MethodResolutionStatus.INFEASIBLE,
         diagnostics=(
             hop.Diagnostic(
                 code="HOP-METHOD-001",
@@ -226,7 +385,7 @@ def test_method_reports_missing_nick_geometry_as_infeasible() -> None:
         }
     )
 
-    result = hop.compile_linear_source_multinick_hairpin_pcr(request)
+    result = methods.compile_linear_source_multinick_hairpin_pcr(request)
 
     assert result.plan is None
     assert result.outcome.resolution_status == "infeasible"
@@ -239,7 +398,7 @@ def test_method_reports_adapter_pairing_outside_declared_bounds() -> None:
     changed_adapter = adapter.model_copy(update={"sequence": "C" + adapter.sequence[1:]})
     materials = request.materials.model_copy(update={"ligation_adapter": changed_adapter})
 
-    result = hop.compile_linear_source_multinick_hairpin_pcr(
+    result = methods.compile_linear_source_multinick_hairpin_pcr(
         request.model_copy(update={"materials": materials})
     )
 
@@ -261,7 +420,27 @@ def test_method_reports_missing_facing_restriction_sites() -> None:
         }
     )
 
-    result = hop.compile_linear_source_multinick_hairpin_pcr(request)
+    result = methods.compile_linear_source_multinick_hairpin_pcr(request)
+
+    assert result.plan is None
+    assert result.outcome.resolution_status == "infeasible"
+    assert result.outcome.diagnostics[0].code == "HOP-METHOD-005"
+
+
+def test_method_rejects_two_orientations_of_one_palindromic_restriction_span() -> None:
+    request = _request().model_copy(
+        update={
+            "restriction_agent": hop.ReleaseAgent(
+                agent_id="example:release-agent/palindromic-single-site@1",
+                motif_top_5to3="TGCA",
+                top_cut_offset=1,
+                bottom_cut_offset=2,
+                warning_codes=(),
+            )
+        }
+    )
+
+    result = methods.compile_linear_source_multinick_hairpin_pcr(request)
 
     assert result.plan is None
     assert result.outcome.resolution_status == "infeasible"
@@ -271,7 +450,7 @@ def test_method_reports_missing_facing_restriction_sites() -> None:
 def test_method_reports_expected_encoding_disagreement() -> None:
     request = _request().model_copy(update={"expected_hairpin_encoding": "A" * 64})
 
-    result = hop.compile_linear_source_multinick_hairpin_pcr(request)
+    result = methods.compile_linear_source_multinick_hairpin_pcr(request)
 
     assert result.plan is None
     assert result.outcome.resolution_status == "infeasible"
@@ -287,12 +466,17 @@ def test_method_reports_expected_encoding_disagreement() -> None:
         "pair_index",
         "ligation_bond",
         "primer_boundary",
+        "restriction_agent_id",
+        "restriction_site_agent_id",
+        "restriction_matched_sequence",
+        "restriction_site_span",
+        "restriction_orientation",
         "restriction_cut",
         "projection",
     ),
 )
 def test_serialized_method_plan_rejects_cross_state_drift(drift: str) -> None:
-    result = hop.compile_linear_source_multinick_hairpin_pcr(_request())
+    result = methods.compile_linear_source_multinick_hairpin_pcr(_request())
     assert result.plan is not None
     data: Any = result.plan.model_dump(mode="json", by_alias=True)
 
@@ -309,6 +493,16 @@ def test_serialized_method_plan_rejects_cross_state_drift(drift: str) -> None:
         data["ligated_hairpin"]["bonds"][0]["downstream_strand_id"] = "adapter"
     elif drift == "primer_boundary":
         data["hairpin_pcr_duplex"]["primer_bindings"][1]["template_span"]["start"]["offset"] = 108
+    elif drift == "restriction_agent_id":
+        data["restriction_digest_product"]["agent_id"] = "example:release-agent/drift@1"
+    elif drift == "restriction_site_agent_id":
+        data["restriction_digest_product"]["sites"][0]["agent_id"] = "example:release-agent/drift@1"
+    elif drift == "restriction_matched_sequence":
+        data["restriction_digest_product"]["sites"][0]["matched_sequence"] = "AAAAAA"
+    elif drift == "restriction_site_span":
+        data["restriction_digest_product"]["sites"][0]["site_span"]["start"]["offset"] = 24
+    elif drift == "restriction_orientation":
+        data["restriction_digest_product"]["sites"][0]["orientation"] = "reverse"
     elif drift == "restriction_cut":
         data["restriction_digest_product"]["sites"][0]["cut"]["top"]["offset"] = 33
     else:
@@ -319,4 +513,4 @@ def test_serialized_method_plan_rejects_cross_state_drift(drift: str) -> None:
         )
 
     with pytest.raises(ValidationError):
-        hop.LinearSourceMultinickHairpinPcrPlan.model_validate_json(json.dumps(data))
+        methods.LinearSourceMultinickHairpinPcrPlan.model_validate_json(json.dumps(data))

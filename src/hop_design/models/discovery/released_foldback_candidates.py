@@ -74,7 +74,7 @@ class ReleasedFoldbackPrecursorCandidate(HopModel):
     """One exact precursor inside a selected released-foldback geometry."""
 
     candidate_id: str = Field(pattern=r"^hop:released-foldback-precursor/[0-9a-f]{64}@1$")
-    rank: int = Field(ge=1)
+    canonical_ordinal: int = Field(ge=1)
     geometry_id: str = Field(pattern=r"^hop:released-foldback-geometry/[0-9a-f]{64}@1$")
     precursor_sequence: str
     precursor_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
@@ -152,9 +152,9 @@ class ReleasedFoldbackPrecursorSearchResult(HopModel):
         returned_sequences = sequences[: self.limits.max_hits]
         if len(self.hits) != len(returned_sequences):
             raise ValueError("Returned hits must exhaust the available hit budget.")
-        expected_ranks = tuple(range(1, len(self.hits) + 1))
-        if tuple(candidate.rank for candidate in self.hits) != expected_ranks:
-            raise ValueError("Returned candidate ranks must be contiguous and one-based.")
+        expected_ordinals = tuple(range(1, len(self.hits) + 1))
+        if tuple(candidate.canonical_ordinal for candidate in self.hits) != expected_ordinals:
+            raise ValueError("Returned candidate ordinals must be contiguous and one-based.")
         for candidate, sequence in zip(self.hits, returned_sequences, strict=True):
             if candidate.geometry_id != self.request.geometry.candidate_id:
                 raise ValueError("Candidate geometry_id must equal the selected geometry.")

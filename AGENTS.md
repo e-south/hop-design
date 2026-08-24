@@ -5,16 +5,18 @@ prompts or generated plans when a linked document already owns them.
 
 ## Route by task
 
-- Explain HOP, compile an exact or symbolic sequence, or inspect a bundle:
-  read `.agents/skills/hop-design-user/SKILL.md`.
+- Explain HOP; compile a design; run discovery or a named method; render a
+  typed view; or verify and integrate a bundle: read
+  `.agents/skills/hop-design-user/SKILL.md`.
 - Change code, schemas, architecture, documentation, packaging, or release
   behavior: read `.agents/skills/hop-maintainer/SKILL.md`.
-- Learn the ontology and product boundary: read `docs/ontology.md` and
-  `docs/spec-plan-bundle.md`.
+- Learn the ontology and product boundary: read `docs/start/mental-model.md`,
+  `docs/language/ontology.md`, and
+  `docs/provenance/plans-artifacts-and-bundles.md`.
 - Change dependency direction or ownership: read `ARCHITECTURE.md` and the
   relevant record under `docs/architecture/decisions/` first.
 - Change validation, derivation, errors, or coordinates: read `DESIGN.md` and
-  `docs/contracts.md` first.
+  `docs/language/relationships-and-invariants.md` first.
 - Change bundle identity, writing, or verification: read `RELIABILITY.md` and
   `docs/reference/bundle-layout.md` first.
 

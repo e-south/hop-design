@@ -24,22 +24,12 @@ from hop_design.models.discovery import (
     FoldbackPrecursorSearchRequest,
     FoldbackPrecursorSearchResult,
 )
+from hop_design.models.discovery.candidates import (
+    foldback_precursor_candidate_id,
+    foldback_precursor_candidate_order_key,
+)
 from hop_design.models.foldback import FoldbackConstraints, FoldbackEvaluationRequest
 from hop_design.models.sequence import reverse_complement_iupac
-from hop_design.serialization import canonical_json_bytes, sha256_digest
-
-
-def _candidate_rank_key(candidate: FoldbackPrecursorCandidate) -> tuple[object, ...]:
-    return (
-        candidate.extra_target_strand_nick_count,
-        len(candidate.extra_nick_sites),
-        round(candidate.gc_fraction_added, 12),
-        candidate.max_homopolymer_run_added,
-        candidate.turn_extension,
-        candidate.intended_site.matched_sequence,
-        candidate.precursor_sequence,
-        candidate.candidate_id,
-    )
 
 
 def _max_homopolymer_run(sequence: str) -> int:
@@ -65,19 +55,22 @@ def _build_candidate(
     evaluation = evaluate_foldback(
         FoldbackEvaluationRequest(
             precursor_sequence=precursor_sequence,
-            nick_boundary=placement.nick.boundary,
             retained_tract_span=retained_span,
+            source_turn_span=Span(
+                start=retained_span.end,
+                end=Boundary(offset=len(precursor_sequence)),
+            ),
             protected_region=placement.site_span,
             turn_extension=turn_extension,
             foldback_arm=foldback_arm,
             constraints=FoldbackConstraints(
-                max_mismatches=0,
-                terminal_paired_bp_min=request.target.paired_tract.value,
-                terminal_paired_bp_max=request.target.paired_tract.value,
-                max_uninterrupted_paired_bp=request.target.paired_tract.value,
+                max_non_watson_crick_pairs=0,
+                terminal_watson_crick_bp_min=request.target.paired_tract.value,
+                terminal_watson_crick_bp_max=request.target.paired_tract.value,
+                max_uninterrupted_watson_crick_bp=request.target.paired_tract.value,
                 max_added_nt=len(turn_extension) + len(foldback_arm),
                 required_turn_nt=request.target.available_turn.value,
-                allow_protected_region_mismatches=False,
+                allow_protected_region_non_watson_crick_pairs=False,
             ),
         )
     )
@@ -100,18 +93,15 @@ def _build_candidate(
         site.nick.strand is request.target.nicked_strand for site in extra_sites
     )
     added = f"{turn_extension}{foldback_arm}"
-    digest = sha256_digest(
-        canonical_json_bytes(
-            {
-                "agent_id": request.agent.agent_id,
-                "target": request.target.model_dump(mode="json"),
-                "precursor_sequence": precursor_sequence,
-                "turn_extension": turn_extension,
-            }
-        )
-    ).removeprefix("sha256:")
+    candidate_id = foldback_precursor_candidate_id(
+        precursor_sequence=precursor_sequence,
+        turn_extension=turn_extension,
+        intended_site=intended_site,
+        extra_nick_sites=extra_sites,
+        evaluation=evaluation,
+    )
     return FoldbackPrecursorCandidate(
-        candidate_id=f"hop:foldback-precursor-candidate/{digest}@1",
+        candidate_id=candidate_id,
         precursor_sequence=precursor_sequence,
         turn_extension=turn_extension,
         intended_site=intended_site,
@@ -179,7 +169,7 @@ def search_foldback_precursors(
         else:
             observed_hits.append(candidate)
 
-    ordered_hits = sorted(observed_hits, key=_candidate_rank_key)
+    ordered_hits = sorted(observed_hits, key=foldback_precursor_candidate_order_key)
     returned_hits = tuple(ordered_hits[: limits.max_hits])
     truncated_by: list[CandidateSearchTruncation] = []
     if nodes < candidate_space_size:

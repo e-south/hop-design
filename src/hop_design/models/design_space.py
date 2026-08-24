@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from hop_design.models.basal import BasalDesignRequest
+from hop_design.models.basal_policy import BasalDesignRequest
 from hop_design.models.base import HopModel
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.foldback import FoldbackEvaluationRequest
@@ -54,8 +54,8 @@ class DuplicateDesignSequencePolicy(StrEnum):
 class ResolvedDesignSpace(HopModel):
     """Composable payload, foldback, basal, and release axes with shared locks."""
 
-    schema_id: Literal["hop.resolved-design-space/v1"] = Field(
-        default="hop.resolved-design-space/v1",
+    schema_id: Literal["hop.resolved-design-space/v2"] = Field(
+        default="hop.resolved-design-space/v2",
         alias="schema",
     )
     space_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,47}$")
@@ -66,7 +66,7 @@ class ResolvedDesignSpace(HopModel):
     defaults_ref: ReferenceId
     catalog_ref: ReferenceId
     constraint_profile_ref: ReferenceId
-    processing_route_ref: ReferenceId
+    design_derivation_ref: ReferenceId
     per_design_constraints: DesignLimits
     limits: DesignSpaceLimits
     duplicate_final_sequence_policy: DuplicateDesignSequencePolicy
@@ -100,8 +100,8 @@ class DesignSpaceRow(HopModel):
 class DesignSpacePlan(HopModel):
     """A renderer-free review table for every bounded combination."""
 
-    schema_id: Literal["hop.design-space-plan/v1"] = Field(
-        default="hop.design-space-plan/v1",
+    schema_id: Literal["hop.design-space-plan/v2"] = Field(
+        default="hop.design-space-plan/v2",
         alias="schema",
     )
     space_id: str

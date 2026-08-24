@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="180" viewBox="0 0 960 180" data-view-kind="basal_pairing" role="img">
+<title>basal pairing</title>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs>
+<style>text{font-family:ui-monospace,monospace;font-size:12px}.title{font-family:system-ui,sans-serif;font-weight:600;font-size:15px}.panel{fill:#f8fafc;stroke:#94a3b8}.feature{fill:#dbeafe;stroke:#60a5fa}.feature-label{font-family:system-ui,sans-serif;font-size:10px;fill:#1e3a8a}.terminus{fill:#64748b}.pair{stroke-width:1.8}.pair-watson_crick{stroke:#475569}.pair-gt_wobble{stroke:#d97706;stroke-dasharray:3 2}.pair-hard_mismatch{stroke:#dc2626;stroke-dasharray:2 2}.transition{stroke:#64748b;stroke-width:1.5;marker-end:url(#arrow)}</style>
+<g data-panel-id="basal_junction" transform="translate(10 10)">
+<rect class="panel" x="0" y="0" width="940" height="160" rx="8"/>
+<text class="title" x="16" y="22">Basal junction</text>
+<g data-track-id="left_arm" data-strand="top" data-direction="5to3">
+<text x="16" y="52">left basal arm</text>
+<text class="terminus" x="185" y="52">5′</text>
+<text x="210" y="52" letter-spacing="3">AGTG</text>
+<text class="terminus" x="264" y="52">3′</text>
+</g>
+<g data-track-id="right_arm" data-strand="bottom" data-direction="3to5">
+<text x="16" y="92">right basal arm</text>
+<text class="terminus" x="185" y="92">3′</text>
+<text x="210" y="92" letter-spacing="3">GTAC</text>
+<text class="terminus" x="264" y="92">5′</text>
+</g>
+<line class="pair pair-hard_mismatch" data-pair-kind="hard_mismatch" data-display-aligned="true" x1="214" y1="56" x2="214" y2="82"/>
+<line class="pair pair-gt_wobble" data-pair-kind="gt_wobble" data-display-aligned="true" x1="227" y1="56" x2="227" y2="82"/>
+<line class="pair pair-watson_crick" data-pair-kind="watson_crick" data-display-aligned="true" x1="240" y1="56" x2="240" y2="82"/>
+<line class="pair pair-watson_crick" data-pair-kind="watson_crick" data-display-aligned="true" x1="253" y1="56" x2="253" y2="82"/>
+</g>
+</svg>

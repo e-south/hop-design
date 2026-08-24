@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from itertools import combinations, product
 from math import comb
 
-from hop_design.models.junction import JunctionPairKind, JunctionPairObservation
+from hop_design.models.junction import JunctionPairObservation, classify_literal_pair
 from hop_design.models.sequence import reverse_complement_iupac
 
 _DNA_BASES = ("A", "C", "G", "T")
@@ -15,36 +15,38 @@ _DNA_BASES = ("A", "C", "G", "T")
 
 @dataclass(frozen=True)
 class PairingSummary:
-    """Internal value returned by pure antiparallel pairing analysis."""
+    """Antiparallel pair calls with explicit Watson-Crick-only run metrics."""
 
-    mismatch_positions: tuple[int, ...]
-    terminal_paired_bp: int
-    max_uninterrupted_paired_bp: int
+    non_watson_crick_positions: tuple[int, ...]
+    terminal_watson_crick_bp: int
+    max_uninterrupted_watson_crick_bp: int
     pairs: tuple[JunctionPairObservation, ...]
 
 
 def summarize_pairing(
     *, retained_sequence: str, foldback_arm: str, arm_start: int
 ) -> PairingSummary:
-    """Measure reverse-oriented complement pairing in retained-tract coordinates."""
+    """Measure non-Watson-Crick positions and Watson-Crick runs."""
     aligned_arm = "" if not foldback_arm else reverse_complement_iupac(foldback_arm)
     matched_mask = tuple(
         retained_base == aligned_base
         for retained_base, aligned_base in zip(retained_sequence, aligned_arm, strict=True)
     )
-    mismatch_positions = tuple(index for index, matched in enumerate(matched_mask) if not matched)
+    non_watson_crick_positions = tuple(
+        index for index, matched in enumerate(matched_mask) if not matched
+    )
 
-    terminal_paired_bp = 0
+    terminal_watson_crick_bp = 0
     for matched in matched_mask:
         if not matched:
             break
-        terminal_paired_bp += 1
+        terminal_watson_crick_bp += 1
 
-    max_uninterrupted_paired_bp = 0
+    max_uninterrupted_watson_crick_bp = 0
     current_run = 0
     for matched in matched_mask:
         current_run = current_run + 1 if matched else 0
-        max_uninterrupted_paired_bp = max(max_uninterrupted_paired_bp, current_run)
+        max_uninterrupted_watson_crick_bp = max(max_uninterrupted_watson_crick_bp, current_run)
 
     arm_end = arm_start + len(foldback_arm)
     pairs = tuple(
@@ -53,30 +55,35 @@ def summarize_pairing(
             right_index=arm_end - 1 - index,
             left_base=retained_sequence[index],
             right_base=foldback_arm[-1 - index],
-            kind=(JunctionPairKind.WATSON_CRICK if matched else JunctionPairKind.HARD_MISMATCH),
+            kind=classify_literal_pair(
+                left_base=retained_sequence[index],
+                right_base=foldback_arm[-1 - index],
+            ),
         )
         for index, matched in enumerate(matched_mask)
     )
     return PairingSummary(
-        mismatch_positions=mismatch_positions,
-        terminal_paired_bp=terminal_paired_bp,
-        max_uninterrupted_paired_bp=max_uninterrupted_paired_bp,
+        non_watson_crick_positions=non_watson_crick_positions,
+        terminal_watson_crick_bp=terminal_watson_crick_bp,
+        max_uninterrupted_watson_crick_bp=max_uninterrupted_watson_crick_bp,
         pairs=pairs,
     )
 
 
-def foldback_arm_candidate_count(*, paired_bp: int, max_mismatches: int) -> int:
+def foldback_arm_candidate_count(*, paired_bp: int, max_non_watson_crick_pairs: int) -> int:
     """Return the exact size of an arm space before enumeration."""
-    capped_mismatches = min(paired_bp, max_mismatches)
+    capped_mismatches = min(paired_bp, max_non_watson_crick_pairs)
     return sum(comb(paired_bp, count) * (3**count) for count in range(capped_mismatches + 1))
 
 
-def enumerate_foldback_arms(retained_sequence: str, *, max_mismatches: int) -> Iterator[str]:
-    """Yield the exact arm first, then mismatch tiers in deterministic order."""
+def enumerate_foldback_arms(
+    retained_sequence: str, *, max_non_watson_crick_pairs: int
+) -> Iterator[str]:
+    """Yield the exact arm first, then non-Watson-Crick tiers in deterministic order."""
     exact_arm = reverse_complement_iupac(retained_sequence)
     yield exact_arm
-    for mismatch_count in range(1, min(len(exact_arm), max_mismatches) + 1):
-        for positions in combinations(range(len(exact_arm)), mismatch_count):
+    for non_watson_crick_count in range(1, min(len(exact_arm), max_non_watson_crick_pairs) + 1):
+        for positions in combinations(range(len(exact_arm)), non_watson_crick_count):
             replacement_sets = tuple(
                 tuple(base for base in _DNA_BASES if base != exact_arm[position])
                 for position in positions

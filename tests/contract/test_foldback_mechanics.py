@@ -22,27 +22,33 @@ def _span(bounds: list[int]) -> Span:
     return Span(start=Boundary(offset=bounds[0]), end=Boundary(offset=bounds[1]))
 
 
-def _constraints(*, max_mismatches: int) -> FoldbackConstraints:
+def _constraints(*, max_non_watson_crick_pairs: int) -> FoldbackConstraints:
     return FoldbackConstraints(
-        max_mismatches=max_mismatches,
-        terminal_paired_bp_min=0,
-        terminal_paired_bp_max=4,
-        max_uninterrupted_paired_bp=4,
+        max_non_watson_crick_pairs=max_non_watson_crick_pairs,
+        terminal_watson_crick_bp_min=0,
+        terminal_watson_crick_bp_max=4,
+        max_uninterrupted_watson_crick_bp=4,
         max_added_nt=5,
         required_turn_nt=3,
-        allow_protected_region_mismatches=False,
+        allow_protected_region_non_watson_crick_pairs=False,
     )
 
 
-def _request(case: dict[str, object], *, max_mismatches: int) -> FoldbackEvaluationRequest:
+def _request(
+    case: dict[str, object], *, max_non_watson_crick_pairs: int
+) -> FoldbackEvaluationRequest:
+    retained = _span(case["retained_tract"])
     return FoldbackEvaluationRequest(
         precursor_sequence=case["precursor_sequence"],
-        nick_boundary=Boundary(offset=case["nick_boundary"]),
-        retained_tract_span=_span(case["retained_tract"]),
+        retained_tract_span=retained,
+        source_turn_span=Span(
+            start=retained.end,
+            end=Boundary(offset=len(case["precursor_sequence"])),
+        ),
         protected_region=_span(case["protected_region"]),
         turn_extension=case["turn_extension"],
         foldback_arm=case["foldback_arm"],
-        constraints=_constraints(max_mismatches=max_mismatches),
+        constraints=_constraints(max_non_watson_crick_pairs=max_non_watson_crick_pairs),
     )
 
 
@@ -50,15 +56,15 @@ def test_foldback_evaluation_matches_sanitized_exact_fixture() -> None:
     fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     case = fixture["accepted_exact"]
 
-    evaluation = evaluate_foldback(_request(case, max_mismatches=0))
+    evaluation = evaluate_foldback(_request(case, max_non_watson_crick_pairs=0))
 
     assert evaluation.report.status == "valid"
     assert evaluation.designed_sequence == case["expected_designed_sequence"]
     assert evaluation.source_turn_sequence == case["expected_source_turn"]
     assert evaluation.effective_turn_sequence == case["expected_effective_turn"]
-    assert evaluation.mismatch_positions == ()
-    assert evaluation.terminal_paired_bp == 4
-    assert evaluation.max_uninterrupted_paired_bp == 4
+    assert evaluation.non_watson_crick_positions == ()
+    assert evaluation.terminal_watson_crick_bp == 4
+    assert evaluation.max_uninterrupted_watson_crick_bp == 4
     assert [(pair.left_index, pair.right_index) for pair in evaluation.junction.pairs] == [
         (0, 10),
         (1, 9),
@@ -71,23 +77,87 @@ def test_foldback_evaluation_preserves_near_match_measurements() -> None:
     fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     case = fixture["accepted_near_match"]
 
-    evaluation = evaluate_foldback(_request(case, max_mismatches=1))
+    evaluation = evaluate_foldback(_request(case, max_non_watson_crick_pairs=1))
 
     assert evaluation.report.status == "valid"
-    assert list(evaluation.mismatch_positions) == case["expected_mismatch_positions"]
-    assert evaluation.terminal_paired_bp == case["expected_terminal_paired_bp"]
-    assert evaluation.max_uninterrupted_paired_bp == case["expected_max_uninterrupted_paired_bp"]
+    assert (
+        list(evaluation.non_watson_crick_positions) == case["expected_non_watson_crick_positions"]
+    )
+    assert evaluation.terminal_watson_crick_bp == case["expected_terminal_watson_crick_bp"]
+    assert (
+        evaluation.max_uninterrupted_watson_crick_bp
+        == case["expected_max_uninterrupted_watson_crick_bp"]
+    )
     assert len(evaluation.junction.pairs) == evaluation.retained_tract_span.length.value
     assert sum(pair.is_match for pair in evaluation.junction.pairs) == 3
+
+
+def test_foldback_pair_kind_is_a_physical_observation() -> None:
+    evaluation = evaluate_foldback(
+        FoldbackEvaluationRequest(
+            precursor_sequence="GAA",
+            retained_tract_span=_span([0, 1]),
+            source_turn_span=_span([1, 3]),
+            protected_region=_span([0, 0]),
+            turn_extension="",
+            foldback_arm="T",
+            constraints=FoldbackConstraints(
+                max_non_watson_crick_pairs=1,
+                terminal_watson_crick_bp_min=0,
+                terminal_watson_crick_bp_max=1,
+                max_uninterrupted_watson_crick_bp=1,
+                max_added_nt=1,
+                required_turn_nt=2,
+                allow_protected_region_non_watson_crick_pairs=True,
+            ),
+        )
+    )
+
+    assert evaluation.junction.pairs[0].kind == "gt_wobble"
+
+
+def test_foldback_request_requires_an_explicit_source_turn_span() -> None:
+    request = FoldbackEvaluationRequest(
+        precursor_sequence="GAA",
+        retained_tract_span=_span([0, 1]),
+        source_turn_span=_span([1, 3]),
+        protected_region=_span([0, 0]),
+        turn_extension="",
+        foldback_arm="C",
+        constraints=FoldbackConstraints(
+            max_non_watson_crick_pairs=0,
+            terminal_watson_crick_bp_min=1,
+            terminal_watson_crick_bp_max=1,
+            max_uninterrupted_watson_crick_bp=1,
+            max_added_nt=1,
+            required_turn_nt=2,
+            allow_protected_region_non_watson_crick_pairs=False,
+        ),
+    )
+
+    assert evaluate_foldback(request).source_turn_sequence == "AA"
+
+    invalid = request.model_dump(mode="python")
+    invalid["source_turn_span"] = _span([1, 2])
+    with pytest.raises(ValueError, match="source_turn_span must end at the precursor boundary"):
+        FoldbackEvaluationRequest.model_validate(invalid)
+
+    retired = request.model_dump(mode="python")
+    retired["nick_boundary"] = {"offset": 0}
+    with pytest.raises(ValueError, match="Extra inputs"):
+        FoldbackEvaluationRequest.model_validate(retired)
 
 
 def test_foldback_evaluation_represents_a_cap_only_junction_without_invented_pairs() -> None:
     request = FoldbackEvaluationRequest(
         precursor_sequence="TTAA",
-        nick_boundary=Boundary(offset=0),
         retained_tract_span=Span(
             start=Boundary(offset=0),
             end=Boundary(offset=0),
+        ),
+        source_turn_span=Span(
+            start=Boundary(offset=0),
+            end=Boundary(offset=4),
         ),
         protected_region=Span(
             start=Boundary(offset=0),
@@ -96,13 +166,13 @@ def test_foldback_evaluation_represents_a_cap_only_junction_without_invented_pai
         turn_extension="",
         foldback_arm="",
         constraints=FoldbackConstraints(
-            max_mismatches=0,
-            terminal_paired_bp_min=0,
-            terminal_paired_bp_max=0,
-            max_uninterrupted_paired_bp=0,
+            max_non_watson_crick_pairs=0,
+            terminal_watson_crick_bp_min=0,
+            terminal_watson_crick_bp_max=0,
+            max_uninterrupted_watson_crick_bp=0,
             max_added_nt=0,
             required_turn_nt=4,
-            allow_protected_region_mismatches=False,
+            allow_protected_region_non_watson_crick_pairs=False,
         ),
     )
 
@@ -114,8 +184,8 @@ def test_foldback_evaluation_represents_a_cap_only_junction_without_invented_pai
     assert evaluation.junction.turn_span == _span([0, 4])
     assert evaluation.junction.foldback_arm_span == _span([4, 4])
     assert evaluation.junction.pairs == ()
-    assert evaluation.terminal_paired_bp == 0
-    assert evaluation.max_uninterrupted_paired_bp == 0
+    assert evaluation.terminal_watson_crick_bp == 0
+    assert evaluation.max_uninterrupted_watson_crick_bp == 0
 
 
 def test_foldback_reports_independent_constraint_failures_with_stable_codes() -> None:
@@ -123,35 +193,13 @@ def test_foldback_reports_independent_constraint_failures_with_stable_codes() ->
     case = dict(fixture["accepted_near_match"])
     case["protected_region"] = [3, 5]
 
-    evaluation = evaluate_foldback(_request(case, max_mismatches=0))
+    evaluation = evaluate_foldback(_request(case, max_non_watson_crick_pairs=0))
 
     assert evaluation.report.status == "infeasible"
     assert [item.code for item in evaluation.report.diagnostics] == [
+        "HOP-FOLD-001",
         "HOP-FOLD-002",
-        "HOP-FOLD-003",
     ]
-
-
-def test_foldback_requires_retained_tract_to_begin_at_nick_boundary() -> None:
-    fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
-    case = dict(fixture["accepted_exact"])
-    case["retained_tract"] = [1, 5]
-
-    evaluation = evaluate_foldback(_request(case, max_mismatches=0))
-
-    assert evaluation.report.status == "infeasible"
-    assert evaluation.report.diagnostics[0].code == "HOP-FOLD-001"
-
-
-def test_foldback_evaluation_rejects_nick_geometry_report_drift() -> None:
-    fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
-    case = fixture["accepted_exact"]
-    evaluation = evaluate_foldback(_request(case, max_mismatches=0))
-    serialized = evaluation.model_dump(mode="json")
-    serialized["nick_boundary"] = {"offset": evaluation.nick_boundary.offset - 1}
-
-    with pytest.raises(ValueError, match="HOP-FOLD-001"):
-        type(evaluation).model_validate_json(json.dumps(serialized))
 
 
 def test_foldback_search_is_exact_first_bounded_and_never_silently_truncated() -> None:
@@ -159,11 +207,14 @@ def test_foldback_search_is_exact_first_bounded_and_never_silently_truncated() -
     case = fixture["accepted_exact"]
     request = FoldbackSearchRequest(
         precursor_sequence=case["precursor_sequence"],
-        nick_boundary=Boundary(offset=case["nick_boundary"]),
         retained_tract_span=_span(case["retained_tract"]),
+        source_turn_span=Span(
+            start=Boundary(offset=case["retained_tract"][1]),
+            end=Boundary(offset=len(case["precursor_sequence"])),
+        ),
         protected_region=Span(start=Boundary(offset=0), end=Boundary(offset=0)),
         turn_extension=case["turn_extension"],
-        constraints=_constraints(max_mismatches=1),
+        constraints=_constraints(max_non_watson_crick_pairs=1),
     )
 
     result = search_foldback_arms(
@@ -176,9 +227,9 @@ def test_foldback_search_is_exact_first_bounded_and_never_silently_truncated() -
     assert result.candidate_space_size == 13
     assert result.search_nodes_examined == 2
     assert result.hits[0].foldback_arm == "CTGA"
-    assert result.hits[0].mismatch_positions == ()
+    assert result.hits[0].non_watson_crick_positions == ()
     assert result.hits[1].foldback_arm == "ATGA"
-    assert result.hits[1].mismatch_positions == (3,)
+    assert result.hits[1].non_watson_crick_positions == (3,)
 
 
 def test_foldback_search_reports_node_budget_truncation() -> None:
@@ -186,11 +237,14 @@ def test_foldback_search_reports_node_budget_truncation() -> None:
     case = fixture["accepted_exact"]
     request = FoldbackSearchRequest(
         precursor_sequence=case["precursor_sequence"],
-        nick_boundary=Boundary(offset=case["nick_boundary"]),
         retained_tract_span=_span(case["retained_tract"]),
+        source_turn_span=Span(
+            start=Boundary(offset=case["retained_tract"][1]),
+            end=Boundary(offset=len(case["precursor_sequence"])),
+        ),
         protected_region=Span(start=Boundary(offset=0), end=Boundary(offset=0)),
         turn_extension=case["turn_extension"],
-        constraints=_constraints(max_mismatches=1),
+        constraints=_constraints(max_non_watson_crick_pairs=1),
     )
 
     result = search_foldback_arms(
@@ -206,17 +260,17 @@ def test_foldback_search_reports_node_budget_truncation() -> None:
 def test_foldback_reports_run_length_addition_and_turn_failures_together() -> None:
     fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     case = fixture["accepted_exact"]
-    request = _request(case, max_mismatches=0)
+    request = _request(case, max_non_watson_crick_pairs=0)
     constrained = request.model_copy(
         update={
             "constraints": FoldbackConstraints(
-                max_mismatches=0,
-                terminal_paired_bp_min=5,
-                terminal_paired_bp_max=5,
-                max_uninterrupted_paired_bp=3,
+                max_non_watson_crick_pairs=0,
+                terminal_watson_crick_bp_min=5,
+                terminal_watson_crick_bp_max=5,
+                max_uninterrupted_watson_crick_bp=3,
                 max_added_nt=4,
                 required_turn_nt=2,
-                allow_protected_region_mismatches=False,
+                allow_protected_region_non_watson_crick_pairs=False,
             )
         }
     )
@@ -224,10 +278,10 @@ def test_foldback_reports_run_length_addition_and_turn_failures_together() -> No
     evaluation = evaluate_foldback(constrained)
 
     assert [item.code for item in evaluation.report.diagnostics] == [
+        "HOP-FOLD-003",
         "HOP-FOLD-004",
         "HOP-FOLD-005",
         "HOP-FOLD-006",
-        "HOP-FOLD-007",
     ]
 
 
@@ -236,11 +290,14 @@ def test_foldback_search_distinguishes_complete_from_infeasible() -> None:
     case = fixture["accepted_exact"]
     base_request = FoldbackSearchRequest(
         precursor_sequence=case["precursor_sequence"],
-        nick_boundary=Boundary(offset=case["nick_boundary"]),
         retained_tract_span=_span(case["retained_tract"]),
+        source_turn_span=Span(
+            start=Boundary(offset=case["retained_tract"][1]),
+            end=Boundary(offset=len(case["precursor_sequence"])),
+        ),
         protected_region=Span(start=Boundary(offset=0), end=Boundary(offset=0)),
         turn_extension=case["turn_extension"],
-        constraints=_constraints(max_mismatches=0),
+        constraints=_constraints(max_non_watson_crick_pairs=0),
     )
 
     complete = search_foldback_arms(
@@ -265,7 +322,7 @@ def test_foldback_search_distinguishes_complete_from_infeasible() -> None:
 def test_foldback_search_result_rejects_untruthful_terminal_states() -> None:
     fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     case = fixture["accepted_exact"]
-    hit = evaluate_foldback(_request(case, max_mismatches=0))
+    hit = evaluate_foldback(_request(case, max_non_watson_crick_pairs=0))
 
     for status, hits, examined in (
         ("complete", (), 0),

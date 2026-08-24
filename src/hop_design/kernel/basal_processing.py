@@ -13,8 +13,8 @@ from hop_design.models.discovery.basal_processing import (
     BasalReleaseGeometry,
     RelativeBaseDomain,
 )
-from hop_design.models.junction import Strand
-from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
+from hop_design.models.physical import orient_nick_geometry, orient_release_geometry
+from hop_design.models.sequence import iupac_bases
 
 _BASES: tuple[Literal["A", "C", "G", "T"], ...] = ("A", "C", "G", "T")
 _ALL_BASES = frozenset(_BASES)
@@ -26,15 +26,15 @@ def resolve_basal_release_geometry(
     orientation: SiteOrientation,
 ) -> BasalReleaseGeometry:
     """Normalize one release site so its top cut is signed coordinate zero."""
-    motif = agent.motif_top_5to3
-    if orientation is SiteOrientation.FORWARD:
-        oriented_motif = motif
-        top_offset = agent.top_cut_offset
-        bottom_offset = agent.bottom_cut_offset
-    else:
-        oriented_motif = reverse_complement_iupac(motif)
-        top_offset = len(motif) - agent.bottom_cut_offset
-        bottom_offset = len(motif) - agent.top_cut_offset
+    geometry = orient_release_geometry(
+        motif_top_5to3=agent.motif_top_5to3,
+        top_cut_offset=agent.top_cut_offset,
+        bottom_cut_offset=agent.bottom_cut_offset,
+        orientation=orientation,
+    )
+    oriented_motif = geometry.motif_top_5to3
+    top_offset = geometry.top_cut_offset
+    bottom_offset = geometry.bottom_cut_offset
     site_start = -top_offset
     site_end = site_start + len(oriented_motif)
     bottom_cut = site_start + bottom_offset
@@ -46,20 +46,6 @@ def resolve_basal_release_geometry(
         site_end=site_end,
         bottom_cut=bottom_cut,
         recognition_site_excised=(site_end <= 0 or site_start >= bottom_cut),
-    )
-
-
-def _oriented_nicking_geometry(
-    agent: NickingAgent,
-    *,
-    target_strand: Strand,
-) -> tuple[SiteOrientation, str, int]:
-    if agent.nicked_strand is target_strand:
-        return SiteOrientation.FORWARD, agent.motif_top_5to3, agent.cut_offset
-    return (
-        SiteOrientation.REVERSE,
-        reverse_complement_iupac(agent.motif_top_5to3),
-        len(agent.motif_top_5to3) - agent.cut_offset,
     )
 
 
@@ -98,10 +84,15 @@ def evaluate_basal_processing_geometry(
     request: BasalProcessingGeometryRequest,
 ) -> BasalProcessingGeometryFeasibility:
     """Evaluate one nicking agent against exact release and caller domains."""
-    orientation, motif, cut_offset = _oriented_nicking_geometry(
-        agent,
+    geometry = orient_nick_geometry(
+        motif_top_5to3=agent.motif_top_5to3,
+        native_nicked_strand=agent.nicked_strand,
+        cut_offset=agent.cut_offset,
         target_strand=request.terminal_nicked_strand,
     )
+    orientation = geometry.orientation
+    motif = geometry.motif_top_5to3
+    cut_offset = geometry.cut_offset
     nick_boundary = 4
     nick_site_start = nick_boundary - cut_offset
     nick_site_end = nick_site_start + len(motif)

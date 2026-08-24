@@ -8,10 +8,14 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
-from hop_design.models.coordinates import Span
-from hop_design.models.junction import Strand
+from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.physical import SiteOrientation, Strand, orient_release_geometry
 from hop_design.models.references import ReferenceId
-from hop_design.models.sequence import SequenceValidationError, normalize_dna_sequence
+from hop_design.models.sequence import (
+    SequenceValidationError,
+    iupac_bases,
+    normalize_dna_sequence,
+)
 from hop_design.models.strand_state import DuplexCut, NickEvent
 
 
@@ -22,11 +26,6 @@ def _normalize_warning_codes(values: tuple[str, ...]) -> tuple[str, ...]:
     if len(set(normalized)) != len(normalized):
         raise ValueError("warning_codes must not contain duplicates.")
     return normalized
-
-
-class SiteOrientation(StrEnum):
-    FORWARD = "forward"
-    REVERSE = "reverse"
 
 
 class NickingAgent(HopModel):
@@ -119,6 +118,68 @@ class ResolvedReleaseSite(HopModel):
     orientation: SiteOrientation
     matched_sequence: str
     cut: DuplexCut
+
+
+def resolve_release_sites(
+    sequence: str,
+    *,
+    agent: ReleaseAgent,
+) -> tuple[ResolvedReleaseSite, ...]:
+    """Replay every exact site and duplex cut for one release agent."""
+    normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
+    motif_nt = len(agent.motif_top_5to3)
+    geometries = tuple(
+        orient_release_geometry(
+            motif_top_5to3=agent.motif_top_5to3,
+            top_cut_offset=agent.top_cut_offset,
+            bottom_cut_offset=agent.bottom_cut_offset,
+            orientation=orientation,
+        )
+        for orientation in (SiteOrientation.FORWARD, SiteOrientation.REVERSE)
+    )
+    matches: list[ResolvedReleaseSite] = []
+    for geometry in geometries:
+        orientation = geometry.orientation
+        motif = geometry.motif_top_5to3
+        for start in range(len(normalized) - motif_nt + 1):
+            window = normalized[start : start + motif_nt]
+            if any(
+                base not in iupac_bases(symbol) for base, symbol in zip(window, motif, strict=True)
+            ):
+                continue
+            top_cut = start + geometry.top_cut_offset
+            bottom_cut = start + geometry.bottom_cut_offset
+            if not (0 <= top_cut <= len(normalized) and 0 <= bottom_cut <= len(normalized)):
+                continue
+            matches.append(
+                ResolvedReleaseSite(
+                    agent_id=agent.agent_id,
+                    site_span=Span(
+                        start=Boundary(offset=start),
+                        end=Boundary(offset=start + motif_nt),
+                    ),
+                    orientation=orientation,
+                    matched_sequence=window,
+                    cut=DuplexCut(
+                        top=Boundary(offset=top_cut),
+                        bottom=Boundary(offset=bottom_cut),
+                    ),
+                )
+            )
+    unique = {
+        (
+            match.agent_id,
+            match.site_span.start.offset,
+            match.site_span.end.offset,
+            match.orientation,
+            match.cut.top.offset,
+            match.cut.bottom.offset,
+        ): match
+        for match in matches
+    }
+    return tuple(
+        sorted(unique.values(), key=lambda match: (match.site_span.start.offset, match.orientation))
+    )
 
 
 class MotifPresence(StrEnum):

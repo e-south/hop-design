@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from hop_design.models.catalog import NickingAgent, SiteOrientation
+from hop_design.models.catalog import NickingAgent
 from hop_design.models.coordinates import Boundary, NucleotideCount, Span
 from hop_design.models.discovery import (
     NickingPlacementBlocker,
@@ -10,24 +10,8 @@ from hop_design.models.discovery import (
     NickingPlacementHit,
     NickingPlacementTarget,
 )
-from hop_design.models.junction import Strand
-from hop_design.models.sequence import reverse_complement_iupac
+from hop_design.models.physical import orient_nick_geometry
 from hop_design.models.strand_state import NickEvent
-
-
-def _oriented_geometry(
-    agent: NickingAgent,
-    *,
-    target_strand: Strand,
-) -> tuple[SiteOrientation, str, int]:
-    motif = agent.motif_top_5to3
-    if agent.nicked_strand is target_strand:
-        return SiteOrientation.FORWARD, motif, agent.cut_offset
-    return (
-        SiteOrientation.REVERSE,
-        reverse_complement_iupac(motif),
-        len(motif) - agent.cut_offset,
-    )
 
 
 def evaluate_nicking_placement(
@@ -36,10 +20,15 @@ def evaluate_nicking_placement(
     target: NickingPlacementTarget,
 ) -> tuple[NickingPlacementFeasibility, NickingPlacementHit | None]:
     """Evaluate one agent in the orientation that nicks the requested strand."""
-    orientation, oriented_motif, oriented_cut_offset = _oriented_geometry(
-        agent,
+    geometry = orient_nick_geometry(
+        motif_top_5to3=agent.motif_top_5to3,
+        native_nicked_strand=agent.nicked_strand,
+        cut_offset=agent.cut_offset,
         target_strand=target.nicked_strand,
     )
+    orientation = geometry.orientation
+    oriented_motif = geometry.motif_top_5to3
+    oriented_cut_offset = geometry.cut_offset
     target_boundary = target.nick_boundary.offset
     site_start = target_boundary - oriented_cut_offset
     site_end = site_start + len(oriented_motif)

@@ -25,6 +25,7 @@ from hop_design.models.discovery.released_foldback_candidates import (
     ReleasedFoldbackPrecursorSearchResult,
 )
 from hop_design.models.junction import Strand
+from hop_design.models.physical import opposite_strand
 from hop_design.models.references import ReferenceId
 from hop_design.models.strand_state import ReleasedStrandState
 
@@ -68,7 +69,7 @@ class HairpinJunctionRouteFeasibility(HopModel):
 
 
 def _released_active_strand(geometry: ReleasedFoldbackGeometryHit) -> Strand:
-    return Strand.BOTTOM if geometry.nick.strand is Strand.TOP else Strand.TOP
+    return opposite_strand(geometry.nick.strand)
 
 
 def hairpin_junction_route_feasibility(
@@ -102,9 +103,9 @@ def hairpin_junction_route_id(
 ) -> str:
     """Return content identity for one foldback-to-basal route."""
     payload = {
-        "released_foldback_geometry": geometry.model_dump(mode="json"),
-        "released_foldback_precursor": released_foldback_precursor.model_dump(mode="json"),
-        "basal_route": basal_route.model_dump(mode="json"),
+        "released_foldback_geometry_id": geometry.candidate_id,
+        "released_foldback_precursor_id": released_foldback_precursor.candidate_id,
+        "basal_route_id": basal_route.route_id,
     }
     content = (
         json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\n"
@@ -116,7 +117,7 @@ class HairpinJunctionRouteCandidate(HopModel):
     """One released foldback and basal route joined by continuous strand identity."""
 
     route_id: str = Field(pattern=r"^hop:hairpin-junction-route/[0-9a-f]{64}@1$")
-    rank: int = Field(ge=1)
+    canonical_ordinal: int = Field(ge=1)
     released_foldback_geometry: ReleasedFoldbackGeometryHit
     released_foldback_precursor: ReleasedFoldbackPrecursorCandidate
     released_state: ReleasedStrandState
@@ -169,8 +170,8 @@ def hairpin_junction_route_order_key(
 ) -> tuple[object, ...]:
     """Return deterministic upstream order without caller desirability."""
     return (
-        route.released_foldback_precursor.rank,
-        route.basal_route.rank,
+        route.released_foldback_precursor.canonical_ordinal,
+        route.basal_route.canonical_ordinal,
         route.route_id,
     )
 
@@ -185,8 +186,8 @@ class HairpinJunctionRouteSearchLimits(HopModel):
 class HairpinJunctionRouteSearchResult(HopModel):
     """Bounded join of exact released foldbacks and basal processing routes."""
 
-    schema_id: Literal["hop.hairpin-junction-route-search-result/v1"] = Field(
-        default="hop.hairpin-junction-route-search-result/v1",
+    schema_id: Literal["hop.hairpin-junction-route-search-result/v2"] = Field(
+        default="hop.hairpin-junction-route-search-result/v2",
         alias="schema",
     )
     status: HairpinJunctionRouteStatus
@@ -235,8 +236,9 @@ class HairpinJunctionRouteSearchResult(HopModel):
         expected_returned = min(self.observed_hit_count, self.limits.max_hits)
         if len(self.hits) != expected_returned:
             raise ValueError("Returned routes must exhaust the available hit budget.")
-        if tuple(route.rank for route in self.hits) != tuple(range(1, len(self.hits) + 1)):
-            raise ValueError("Returned route ranks must be contiguous and one-based.")
+        observed_ordinals = tuple(route.canonical_ordinal for route in self.hits)
+        if observed_ordinals != tuple(range(1, len(self.hits) + 1)):
+            raise ValueError("Returned route ordinals must be contiguous and one-based.")
         if self.hits != tuple(sorted(self.hits, key=hairpin_junction_route_order_key)):
             raise ValueError("Returned routes must use canonical upstream order.")
         pairs_by_ids = {

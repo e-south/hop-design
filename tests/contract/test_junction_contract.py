@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
-from hop_design.catalog.defaults import generic_direct_synthesis_route
+from hop_design.catalog.defaults import generic_catalog_junction_derivation
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.junction import (
     BasalJunction,
@@ -17,7 +17,7 @@ from hop_design.models.junction import (
 
 
 def test_generic_route_uses_canonical_junction_terms_and_valid_geometry() -> None:
-    route = generic_direct_synthesis_route()
+    route = generic_catalog_junction_derivation()
 
     assert route.foldback_junction.sequence == "GTTTC"
     assert route.foldback_junction.retained_tract_span == Span(
@@ -35,7 +35,7 @@ def test_generic_route_uses_canonical_junction_terms_and_valid_geometry() -> Non
 
 
 def test_foldback_junction_requires_contiguous_partitioning() -> None:
-    route = generic_direct_synthesis_route()
+    route = generic_catalog_junction_derivation()
     junction = route.foldback_junction
 
     with pytest.raises(ValidationError, match="partition"):
@@ -50,11 +50,11 @@ def test_foldback_junction_requires_contiguous_partitioning() -> None:
 
 
 def test_basal_junction_pair_bases_must_match_the_declared_arms() -> None:
-    data = generic_direct_synthesis_route().basal_junction.model_dump()
+    data = generic_catalog_junction_derivation().basal_junction.model_dump()
     data["right_arm"] = "A"
 
     with pytest.raises(ValidationError, match="pair bases"):
-        type(generic_direct_synthesis_route().basal_junction).model_validate(data)
+        type(generic_catalog_junction_derivation().basal_junction).model_validate(data)
 
 
 def test_basal_junction_can_represent_non_watson_crick_pair_calls() -> None:
@@ -62,15 +62,15 @@ def test_basal_junction_can_represent_non_watson_crick_pair_calls() -> None:
         hop.BasalPairingRequest(
             left_arm="AAAA",
             right_arm="TGGT",
-            allow_gt_wobble=True,
         ),
         constraints=hop.BasalConstraintProfile(
             require_terminal_watson_crick=True,
+            allow_active_gt_wobble=True,
             max_active_hard_mismatches=4,
             max_active_non_watson_crick_pairs=4,
             forbid_active_middle_double_hard=False,
-            minimum_active_support=0.0,
-            maximum_active_disruption=4.0,
+            minimum_active_pair_support_index=0.0,
+            maximum_active_pair_disruption_index=4.0,
             require_outer_hard_for_active_double=False,
             reject_compact_profiles=(),
             reserve_compact_profiles=(),
@@ -122,6 +122,16 @@ def test_basal_junction_can_represent_non_watson_crick_pair_calls() -> None:
             {
                 "left_index": 0,
                 "right_index": 0,
+                "left_base": "G",
+                "right_base": "T",
+                "kind": "hard_mismatch",
+            },
+            "G:T wobble",
+        ),
+        (
+            {
+                "left_index": 0,
+                "right_index": 0,
                 "left_base": "AA",
                 "right_base": "T",
                 "kind": "watson_crick",
@@ -163,7 +173,7 @@ def test_foldback_junction_rejects_pair_geometry_drift(
     value: object,
     message: str,
 ) -> None:
-    data = generic_direct_synthesis_route().foldback_junction.model_dump(mode="json")
+    data = generic_catalog_junction_derivation().foldback_junction.model_dump(mode="json")
     _, index, key = field.split(".")
     data["pairs"][int(index)][key] = value
     if key == "left_base":
@@ -174,12 +184,12 @@ def test_foldback_junction_rejects_pair_geometry_drift(
 
 
 def test_junction_sequences_reject_non_string_values() -> None:
-    foldback_data = generic_direct_synthesis_route().foldback_junction.model_dump()
+    foldback_data = generic_catalog_junction_derivation().foldback_junction.model_dump()
     foldback_data["sequence"] = 42
     with pytest.raises(ValidationError, match="must be a string"):
         FoldbackJunction.model_validate(foldback_data)
 
-    basal_data = generic_direct_synthesis_route().basal_junction.model_dump()
+    basal_data = generic_catalog_junction_derivation().basal_junction.model_dump()
     basal_data["left_arm"] = 42
     with pytest.raises(ValidationError, match="must be a string"):
         BasalJunction.model_validate(basal_data)
@@ -197,7 +207,7 @@ def test_basal_junction_rejects_inconsistent_geometry(
     value: object,
     message: str,
 ) -> None:
-    data = generic_direct_synthesis_route().basal_junction.model_dump(mode="json")
+    data = generic_catalog_junction_derivation().basal_junction.model_dump(mode="json")
     data[field] = value
 
     with pytest.raises(ValidationError, match=message):

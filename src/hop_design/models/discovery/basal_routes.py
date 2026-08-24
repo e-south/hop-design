@@ -22,6 +22,7 @@ from hop_design.models.discovery.basal_processing import (
     BasalReleaseGeometry,
 )
 from hop_design.models.junction import Strand
+from hop_design.models.physical import opposite_strand
 from hop_design.models.references import ReferenceId
 from hop_design.models.sequence import (
     SequenceValidationError,
@@ -135,8 +136,8 @@ def basal_processing_route_id(
     """Return content identity for one complete basal processing route."""
     payload = {
         "release": release.model_dump(mode="json"),
-        "basal_candidate": basal_candidate.model_dump(mode="json"),
-        "processing_geometry": processing_geometry.model_dump(mode="json"),
+        "basal_candidate_id": basal_candidate.candidate_id,
+        "processing_geometry_id": processing_geometry.candidate_id,
     }
     content = (
         json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\n"
@@ -148,7 +149,7 @@ class BasalProcessingRouteCandidate(HopModel):
     """One exact basal pair joined to one compatible terminal process geometry."""
 
     route_id: str = Field(pattern=r"^hop:basal-processing-route/[0-9a-f]{64}@1$")
-    rank: int = Field(ge=1)
+    canonical_ordinal: int = Field(ge=1)
     release: BasalReleaseGeometry
     basal_candidate: BasalCandidate
     processing_geometry: BasalProcessingGeometryHit
@@ -183,7 +184,7 @@ class BasalProcessingRouteCandidate(HopModel):
         )
         if self.terminal_nick != expected_nick:
             raise ValueError("The route terminal nick must derive from its process geometry.")
-        expected_survivor = Strand.BOTTOM if geometry.nicked_strand is Strand.TOP else Strand.TOP
+        expected_survivor = opposite_strand(geometry.nicked_strand)
         if self.surviving_strand is not expected_survivor:
             raise ValueError("The surviving strand must be opposite the terminal-nicked strand.")
         expected_id = basal_processing_route_id(
@@ -201,8 +202,8 @@ def basal_processing_route_order_key(
 ) -> tuple[object, ...]:
     """Return deterministic physical order without caller desirability."""
     return (
-        route.basal_candidate.rank,
-        route.processing_geometry.rank,
+        route.basal_candidate.canonical_ordinal,
+        route.processing_geometry.canonical_ordinal,
         route.route_id,
     )
 
@@ -217,8 +218,8 @@ class BasalProcessingRouteSearchLimits(HopModel):
 class BasalProcessingRouteSearchResult(HopModel):
     """Bounded join of basal candidates and terminal processing geometries."""
 
-    schema_id: Literal["hop.basal-processing-route-search-result/v1"] = Field(
-        default="hop.basal-processing-route-search-result/v1",
+    schema_id: Literal["hop.basal-processing-route-search-result/v2"] = Field(
+        default="hop.basal-processing-route-search-result/v2",
         alias="schema",
     )
     status: BasalProcessingRouteStatus
@@ -272,8 +273,9 @@ class BasalProcessingRouteSearchResult(HopModel):
         expected_returned = min(self.observed_hit_count, self.limits.max_hits)
         if len(self.hits) != expected_returned:
             raise ValueError("Returned routes must exhaust the available hit budget.")
-        if tuple(route.rank for route in self.hits) != tuple(range(1, len(self.hits) + 1)):
-            raise ValueError("Returned route ranks must be contiguous and one-based.")
+        observed_ordinals = tuple(route.canonical_ordinal for route in self.hits)
+        if observed_ordinals != tuple(range(1, len(self.hits) + 1)):
+            raise ValueError("Returned route ordinals must be contiguous and one-based.")
         if self.hits != tuple(sorted(self.hits, key=basal_processing_route_order_key)):
             raise ValueError("Returned routes must use canonical physical order.")
         expected_ids = []

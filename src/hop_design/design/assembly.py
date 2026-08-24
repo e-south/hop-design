@@ -11,6 +11,7 @@ from hop_design.export.fasta import render_fasta
 from hop_design.kernel.bundle_identity import bundle_id, manifest_seed
 from hop_design.models.bundle import ArtifactManifestEntry, HopBundle, ProvenanceRecord
 from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.derivation import PlanDesignDerivation
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.plan import (
     CompilationLock,
@@ -20,7 +21,6 @@ from hop_design.models.plan import (
     SequenceFeature,
     SequenceRecord,
 )
-from hop_design.models.processing import PlanProcessingRoute
 from hop_design.models.spec import DesignSpec
 from hop_design.models.stem import PairedStemExtension
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -30,7 +30,7 @@ def assemble_compilation(
     *,
     spec: DesignSpec,
     report: CheckReport,
-    route: PlanProcessingRoute,
+    derivation: PlanDesignDerivation,
     catalog_ref: str,
     foldback_ref: str,
     basal_ref: str,
@@ -38,7 +38,7 @@ def assemble_compilation(
     basal_left_arm: str,
     basal_right_arm: str,
     stem_extension: PairedStemExtension | None,
-    route_source_sequence: str | None,
+    derivation_source_sequence: str | None,
     additional_artifacts: Mapping[str, tuple[bytes, str]],
 ) -> Compilation:
     """Assemble the shared sequence, plan, provenance, and bundle artifacts."""
@@ -52,7 +52,7 @@ def assemble_compilation(
         defaults_ref=spec.defaults_ref,
         catalog_ref=catalog_ref,
         constraint_profile_ref=spec.constraint_profile_ref,
-        processing_route_ref=route.route_id,
+        design_derivation_ref=derivation.derivation_id,
         foldback_junction_ref=foldback_ref,
         basal_junction_ref=basal_ref,
     )
@@ -92,14 +92,16 @@ def assemble_compilation(
     )
     source_oligo = SequenceRecord(
         record_id=f"{spec.design_id}-source-oligo",
-        sequence=final_sequence if route_source_sequence is None else route_source_sequence,
+        sequence=(
+            final_sequence if derivation_source_sequence is None else derivation_source_sequence
+        ),
     )
 
     plan_seed = canonical_json_bytes(
         {
             "compiler_version": compiler_version,
             "lock": lock.model_dump(mode="json"),
-            "route": route.model_dump(mode="json"),
+            "design_derivation": derivation.model_dump(mode="json"),
             "spec_digest": spec_digest,
         }
     )
@@ -112,7 +114,7 @@ def assemble_compilation(
         paired_payload_sequence=paired_payload,
         source_oligo=source_oligo,
         hairpin_encoding_insert=hairpin_encoding_insert,
-        processing_route=route,
+        design_derivation=derivation,
         lock=lock,
     )
     plan_bytes = canonical_json_bytes(plan)
@@ -124,7 +126,7 @@ def assemble_compilation(
         defaults_ref=lock.defaults_ref,
         catalog_ref=lock.catalog_ref,
         constraint_profile_ref=lock.constraint_profile_ref,
-        processing_route_ref=lock.processing_route_ref,
+        design_derivation_ref=lock.design_derivation_ref,
     )
     artifact_bytes: dict[str, bytes] = {
         "hairpin-encoding.fasta": render_fasta(hairpin_encoding_insert),

@@ -11,10 +11,7 @@ import yaml
 from pydantic import ValidationError
 
 from hop_design.api import compile as compile_design
-from hop_design.design.compile import UnknownCatalogReferenceError
-from hop_design.design.loading import load_spec
-from hop_design.models.diagnostics import InfeasibleDesignError
-from hop_design.models.sequence import SequenceValidationError
+from hop_design.api import load_spec
 
 app = typer.Typer(
     help="Compile one input sequence or strict file spec into a checked HOP Design bundle.",
@@ -97,11 +94,8 @@ def compile_command(
     except FileExistsError as exc:
         raise typer.BadParameter(str(exc), param_hint="--out") from exc
     except (
-        InfeasibleDesignError,
         OSError,
-        SequenceValidationError,
         ValidationError,
-        UnknownCatalogReferenceError,
         ValueError,
         yaml.YAMLError,
     ) as exc:

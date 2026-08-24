@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from hop_design.models.basal import BasalDesignRequest
+from hop_design.models.basal_policy import BasalDesignRequest
 from hop_design.models.base import HopModel
 from hop_design.models.foldback import FoldbackEvaluationRequest
 from hop_design.models.payload import Payload
@@ -43,11 +43,11 @@ class DesignLimits(HopModel):
 class HopSpec(HopModel):
     """The immutable, manually authored source of design intent."""
 
-    schema_id: Literal["hop.design/v1"] = Field(default="hop.design/v1", alias="schema")
+    schema_id: Literal["hop.design/v2"] = Field(default="hop.design/v2", alias="schema")
     design_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
     payload: Payload
     junction: JunctionRequest
-    processing_route_ref: ReferenceId
+    design_derivation_ref: ReferenceId
     constraint_profile_ref: ReferenceId
     defaults_ref: ReferenceId
     constraints: DesignLimits
@@ -55,10 +55,10 @@ class HopSpec(HopModel):
 
 
 class ResolvedHopSpec(HopModel):
-    """Authored intent with explicit junction and already-resolved event inputs."""
+    """Authored intent with explicit component and strand-projection inputs."""
 
-    schema_id: Literal["hop.resolved-design/v1"] = Field(
-        default="hop.resolved-design/v1", alias="schema"
+    schema_id: Literal["hop.resolved-design/v2"] = Field(
+        default="hop.resolved-design/v2", alias="schema"
     )
     design_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
     payload: Payload
@@ -72,15 +72,15 @@ class ResolvedHopSpec(HopModel):
     defaults_ref: ReferenceId
     catalog_ref: ReferenceId
     constraint_profile_ref: ReferenceId
-    processing_route_ref: ReferenceId
+    design_derivation_ref: ReferenceId
     constraints: DesignLimits
     external_refs: tuple[ExternalRef, ...] = ()
 
     @model_validator(mode="after")
-    def validate_event_dependencies(self) -> ResolvedHopSpec:
+    def validate_projection_dependencies(self) -> ResolvedHopSpec:
         if self.release is not None and self.basal.terminal_nick is None:
             raise ValueError(
-                "A release event requires a terminal nick in the resolved processing route."
+                "A release projection requires terminal-nick geometry in the design derivation."
             )
         return self
 

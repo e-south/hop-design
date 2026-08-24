@@ -8,6 +8,9 @@ audience:
 owner: HOP Design maintainers
 status: active
 last_verified: 2026-08-20
+doc_type: index
+journey:
+  - maintain
 ---
 
 # HOP Design maintainer map
@@ -18,6 +21,8 @@ last_verified: 2026-08-20
   publication.
 - [Implementation and migration roadmap](plans/roadmap.md) orders package
   readiness, downstream adoption, and predecessor removal.
+- [Public concept documentation contract](documentation-contract.md) defines
+  the claim and non-claim template for new product surfaces.
 - [Architecture decisions](../architecture/decisions/) record public contract
   and ownership changes.
 

@@ -83,7 +83,7 @@ def test_bundle_write_and_verification_round_trip(tmp_path: Path) -> None:
     verified = verify_bundle(output)
     assert verified == compilation.bundle
     bundle_data = json.loads((output / "hop-bundle.json").read_text())
-    assert bundle_data["schema"] == "hop.bundle/v1"
+    assert bundle_data["schema"] == "hop.bundle/v2"
 
 
 def test_load_verified_bundle_returns_typed_semantic_contents(tmp_path: Path) -> None:
@@ -92,6 +92,10 @@ def test_load_verified_bundle_returns_typed_semantic_contents(tmp_path: Path) ->
 
     loaded = hop.load_verified_bundle(output)
 
+    assert isinstance(compilation.bundle, HopBundle)
+    assert not hasattr(compilation.bundle, "spec")
+    assert not hasattr(compilation.bundle, "plan")
+    assert isinstance(loaded, hop.VerifiedHopBundle)
     assert loaded.bundle == compilation.bundle
     assert loaded.plan == compilation.plan
     assert loaded.spec == compilation.spec

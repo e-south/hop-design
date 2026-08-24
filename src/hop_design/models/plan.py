@@ -10,7 +10,7 @@ from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.coordinates import Span
-from hop_design.models.processing import PlanProcessingRoute
+from hop_design.models.derivation import PlanDesignDerivation
 from hop_design.models.references import ReferenceId
 from hop_design.models.sequence import (
     EXACT_DNA_ALPHABET,
@@ -121,15 +121,15 @@ class CompilationLock(HopModel):
     defaults_ref: ReferenceId
     catalog_ref: ReferenceId
     constraint_profile_ref: ReferenceId
-    processing_route_ref: ReferenceId
+    design_derivation_ref: ReferenceId
     foldback_junction_ref: ReferenceId
     basal_junction_ref: ReferenceId
 
 
 class HopPlan(HopModel):
-    """An immutable, fully resolved physical build plan."""
+    """An immutable record of deterministic design derivation."""
 
-    schema_id: Literal["hop.plan/v2"] = Field(default="hop.plan/v2", alias="schema")
+    schema_id: Literal["hop.plan/v3"] = Field(default="hop.plan/v3", alias="schema")
     plan_id: ReferenceId
     design_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
     spec_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
@@ -137,7 +137,7 @@ class HopPlan(HopModel):
     paired_payload_sequence: str
     source_oligo: SequenceRecord
     hairpin_encoding_insert: HairpinEncodingInsert
-    processing_route: PlanProcessingRoute
+    design_derivation: PlanDesignDerivation
     lock: CompilationLock
 
     @field_validator("payload_sequence", "paired_payload_sequence", mode="before")
@@ -151,18 +151,15 @@ class HopPlan(HopModel):
     def validate_derivations(self) -> HopPlan:
         if self.paired_payload_sequence != reverse_complement_iupac(self.payload_sequence):
             raise ValueError("Paired payload sequence must be derived from the authored payload.")
-        if self.processing_route.route_id != self.lock.processing_route_ref:
-            raise ValueError("Resolved processing route and lock record disagree.")
+        if self.design_derivation.derivation_id != self.lock.design_derivation_ref:
+            raise ValueError("Resolved design derivation and lock record disagree.")
 
         encoding = self.hairpin_encoding_insert
         actual_roles = tuple(feature.role for feature in encoding.features)
         expected_roles: tuple[FeatureRole, ...]
-        if self.processing_route.kind == "direct_synthesis":
+        if self.design_derivation.kind == "catalog_junctions":
             if self.source_oligo.sequence != encoding.sequence:
-                raise ValueError(
-                    "Direct or component assembly requires source oligo and hairpin "
-                    "encoding equality."
-                )
+                raise ValueError("Catalog derivation requires source and encoding equality.")
             expected_roles = (
                 FeatureRole.BASAL_LEFT_ARM,
                 FeatureRole.PAYLOAD,
@@ -174,51 +171,47 @@ class HopPlan(HopModel):
                 raise ValueError(
                     "Hairpin-encoding features must use the declared generic-route order."
                 )
-            foldback_sequence = self.processing_route.foldback_junction.sequence
-            basal_left_arm = self.processing_route.basal_junction.left_arm
-            basal_right_arm = self.processing_route.basal_junction.right_arm
-            foldback_ref = self.processing_route.foldback_junction.junction_id
-            basal_ref = self.processing_route.basal_junction.junction_id
-        elif self.processing_route.kind == "component_assembly":
+            foldback_sequence = self.design_derivation.foldback_junction.sequence
+            basal_left_arm = self.design_derivation.basal_junction.left_arm
+            basal_right_arm = self.design_derivation.basal_junction.right_arm
+            foldback_ref = self.design_derivation.foldback_junction.junction_id
+            basal_ref = self.design_derivation.basal_junction.junction_id
+        elif self.design_derivation.kind == "evaluated_components":
             if self.source_oligo.sequence != encoding.sequence:
-                raise ValueError(
-                    "Direct or component assembly requires source oligo and hairpin "
-                    "encoding equality."
-                )
+                raise ValueError("Component derivation requires source and encoding equality.")
             expected_roles = _feature_roles(
-                has_stem_extension=self.processing_route.stem_extension is not None
+                has_stem_extension=self.design_derivation.stem_extension is not None
             )
             if actual_roles != expected_roles:
                 raise ValueError(
                     "Hairpin-encoding features must use the declared generic-route order."
                 )
-            foldback_sequence = self.processing_route.foldback.junction.sequence
-            basal_left_arm = self.processing_route.basal.junction.left_arm
-            basal_right_arm = self.processing_route.basal.junction.right_arm
-            foldback_ref = self.processing_route.foldback.junction.junction_id
-            basal_ref = self.processing_route.basal.junction.junction_id
+            foldback_sequence = self.design_derivation.foldback.junction.sequence
+            basal_left_arm = self.design_derivation.basal.junction.left_arm
+            basal_right_arm = self.design_derivation.basal.junction.right_arm
+            foldback_ref = self.design_derivation.foldback.junction.junction_id
+            basal_ref = self.design_derivation.basal.junction.junction_id
         else:
             expected_source = (
-                self.processing_route.foldback.precursor_sequence
-                if self.processing_route.released_state is None
-                else self.processing_route.released_state.precursor_top_strand
+                self.design_derivation.foldback.precursor_sequence
+                if self.design_derivation.released_foldback_source is None
+                else self.design_derivation.released_foldback_source.precursor_top_strand
             )
             if self.source_oligo.sequence != expected_source:
-                raise ValueError("Resolved-event source oligo must equal the actual route input.")
+                raise ValueError("Resolved-junction source oligo must equal the derivation input.")
             expected_roles = _feature_roles(
-                has_stem_extension=self.processing_route.stem_extension is not None
+                has_stem_extension=self.design_derivation.stem_extension is not None
             )
             if actual_roles != expected_roles:
                 raise ValueError(
-                    "Resolved-event hairpin-encoding features must contain each physical role once "
-                    "in the declared assembly order."
+                    "Resolved-junction features must contain each role once in encoding order."
                 )
-            foldback_sequence = self.processing_route.foldback.junction.sequence
-            basal_left_arm = self.processing_route.basal.junction.left_arm
-            basal_right_arm = self.processing_route.basal.junction.right_arm
-            foldback_ref = self.processing_route.foldback.junction.junction_id
-            basal_ref = self.processing_route.basal.junction.junction_id
-        if self.processing_route.catalog_ref != self.lock.catalog_ref:
+            foldback_sequence = self.design_derivation.foldback.junction.sequence
+            basal_left_arm = self.design_derivation.basal.junction.left_arm
+            basal_right_arm = self.design_derivation.basal.junction.right_arm
+            foldback_ref = self.design_derivation.foldback.junction.junction_id
+            basal_ref = self.design_derivation.basal.junction.junction_id
+        if self.design_derivation.catalog_ref != self.lock.catalog_ref:
             raise ValueError("Resolved catalog and lock record disagree.")
         if foldback_ref != self.lock.foldback_junction_ref:
             raise ValueError("Resolved foldback and lock record disagree.")
@@ -237,8 +230,8 @@ class HopPlan(HopModel):
             raise ValueError("Basal-right feature must equal the resolved basal junction.")
         stem_extension = (
             None
-            if self.processing_route.kind == "direct_synthesis"
-            else self.processing_route.stem_extension
+            if self.design_derivation.kind == "catalog_junctions"
+            else self.design_derivation.stem_extension
         )
         if stem_extension is not None and (
             feature_by_role[FeatureRole.STEM_EXTENSION_LEFT_ARM].sequence != stem_extension.left_arm

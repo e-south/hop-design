@@ -1,0 +1,319 @@
+#!/usr/bin/env python3
+"""Exercise the public documentation journey through one installed HOP package."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+import tempfile
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_COMMAND_TIMEOUT_SECONDS = 60.0
+
+
+class DocsSmokeError(RuntimeError):
+    """Raised when a documented public operation does not replay as promised."""
+
+
+def _run(
+    label: str,
+    arguments: Sequence[str],
+    *,
+    content_root: Path,
+    timeout_seconds: float = DEFAULT_COMMAND_TIMEOUT_SECONDS,
+) -> str:
+    try:
+        result = subprocess.run(
+            [sys.executable, *arguments],
+            cwd=content_root,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DocsSmokeError(f"{label} timed out after {timeout_seconds:g} seconds") from exc
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "no diagnostic output"
+        raise DocsSmokeError(f"{label} failed with exit {result.returncode}: {detail}")
+    return result.stdout
+
+
+def _json_output(label: str, arguments: Sequence[str], *, content_root: Path) -> Any:
+    output = _run(label, arguments, content_root=content_root)
+    try:
+        return json.loads(output)
+    except json.JSONDecodeError as exc:
+        raise DocsSmokeError(f"{label} did not emit one JSON document") from exc
+
+
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise DocsSmokeError(message)
+
+
+def _compile_and_verify_design(
+    *,
+    label: str,
+    output: Path,
+    compile_arguments: Sequence[str],
+    content_root: Path,
+) -> dict[str, str]:
+    _run(
+        f"{label} design compilation",
+        ["-m", "hop_design.cli", "compile", *compile_arguments, "--out", str(output)],
+        content_root=content_root,
+    )
+    summary = _json_output(
+        f"{label} design verification",
+        [
+            "-c",
+            (
+                "import json, pathlib, sys; import hop_design as hop; "
+                "verified = hop.load_verified_bundle(pathlib.Path(sys.argv[1])); "
+                "print(json.dumps({'bundle_id': verified.bundle.bundle_id, "
+                "'payload_kind': verified.spec.payload.kind}, sort_keys=True))"
+            ),
+            str(output),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), f"{label} design verification must emit an object")
+    bundle_id = summary.get("bundle_id")
+    payload_kind = summary.get("payload_kind")
+    _require(isinstance(bundle_id, str), f"{label} design verification omitted bundle_id")
+    _require(isinstance(payload_kind, str), f"{label} design verification omitted payload_kind")
+    return {"bundle_id": bundle_id, "payload_kind": payload_kind}
+
+
+def _exercise_designs(smoke_root: Path, *, content_root: Path) -> None:
+    exact = _compile_and_verify_design(
+        label="exact",
+        output=smoke_root / "exact",
+        compile_arguments=["--sequence", "ACGT", "--design-id", "docs-smoke-exact"],
+        content_root=content_root,
+    )
+    symbolic = _compile_and_verify_design(
+        label="symbolic",
+        output=smoke_root / "symbolic",
+        compile_arguments=["--sequence", "NRY", "--design-id", "docs-smoke-symbolic"],
+        content_root=content_root,
+    )
+    spec = _compile_and_verify_design(
+        label="spec",
+        output=smoke_root / "spec",
+        compile_arguments=["--spec", "examples/generic-symbolic.yaml"],
+        content_root=content_root,
+    )
+
+    _require(exact["payload_kind"] == "exact", "exact CLI path changed payload kind")
+    _require(symbolic["payload_kind"] == "degenerate", "symbolic CLI path lost IUPAC identity")
+    _require(spec["payload_kind"] == "degenerate", "file-spec path lost symbolic identity")
+    _require(
+        len({exact["bundle_id"], symbolic["bundle_id"], spec["bundle_id"]}) == 3,
+        "distinct documented inputs unexpectedly produced one bundle identity",
+    )
+
+
+def _exercise_payload_library(smoke_root: Path, *, content_root: Path) -> None:
+    summary = _json_output(
+        "payload-first library example",
+        [
+            "examples/compile_payload_library.py",
+            "--out",
+            str(smoke_root / "payload-library"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "payload-library example must emit an object")
+    _require(summary.get("payload_count") == 3, "payload-library input count changed")
+    _require(summary.get("design_count") == 3, "payload-library design count changed")
+    _require(
+        summary.get("bundle_verified_count") == 3,
+        "payload-library example did not replay every design bundle",
+    )
+    _require(
+        summary.get("method_resolution_status") == "not_evaluated",
+        "payload-library design compilation invented a production-method claim",
+    )
+
+
+def _exercise_discovery(*, content_root: Path) -> list[str]:
+    rows = _json_output(
+        "bounded discovery example",
+        ["examples/discover_basal_candidates.py"],
+        content_root=content_root,
+    )
+    _require(isinstance(rows, list), "bounded discovery example must emit a JSON array")
+    statuses = [row.get("status") for row in rows if isinstance(row, dict)]
+    _require(
+        statuses == ["complete", "infeasible", "truncated"],
+        "bounded discovery example lost complete/infeasible/truncated semantics",
+    )
+    _require(bool(rows[0].get("hit_ids")), "complete discovery example must retain a hit")
+    _require(not rows[1].get("hit_ids"), "infeasible discovery example must not report a hit")
+    _require(
+        rows[2].get("truncated_by") == ["max_search_nodes"],
+        "truncated discovery example must identify its fired bound",
+    )
+    return [str(status) for status in statuses]
+
+
+def _exercise_method(smoke_root: Path, *, content_root: Path) -> None:
+    summary = _json_output(
+        "linear-source method example",
+        [
+            "examples/compile_linear_source_method.py",
+            "--out",
+            str(smoke_root / "method"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "method example must emit a JSON object")
+    _require(
+        summary.get("product_state") == "restriction-digest-product",
+        "method example did not replay the restriction product",
+    )
+    _require(
+        summary.get("destination_readiness") == "not_evaluated",
+        "method example crossed the destination-neutral boundary",
+    )
+    cohesive_ends = summary.get("cohesive_ends")
+    _require(
+        isinstance(cohesive_ends, list) and len(cohesive_ends) == 2,
+        "method example must expose both exact cohesive ends",
+    )
+
+
+def _exercise_method_authoring(smoke_root: Path, *, content_root: Path) -> None:
+    authoring_example = content_root / "examples" / "author_linear_source_method.py"
+    _require(
+        authoring_example.is_file(),
+        f"required method-authoring example is missing: {authoring_example.name}",
+    )
+    summary = _json_output(
+        "method-authoring example",
+        [
+            "examples/author_linear_source_method.py",
+            "--out",
+            str(smoke_root / "authored-method"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "method-authoring example must emit an object")
+    _require(
+        summary.get("method_bundle_verified") is True,
+        "method-authoring example did not replay its method bundle",
+    )
+    _require(summary.get("material_count") == 6, "method authoring must declare six materials")
+    _require(
+        summary.get("destination_readiness") == "not_evaluated",
+        "method authoring crossed the destination-neutral boundary",
+    )
+
+
+def _exercise_handoff(smoke_root: Path, *, content_root: Path) -> None:
+    handoff_example = content_root / "examples" / "verify_design_method_handoff.py"
+    _require(
+        handoff_example.is_file(), f"required handoff example is missing: {handoff_example.name}"
+    )
+    summary = _json_output(
+        "design-method handoff example",
+        [
+            "examples/verify_design_method_handoff.py",
+            "--out",
+            str(smoke_root / "handoff"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "handoff example must emit a JSON object")
+    _require(
+        summary.get("design_bundle_verified") is True,
+        "handoff example did not verify the design bundle",
+    )
+    _require(
+        summary.get("method_bundle_verified") is True,
+        "handoff example did not verify the method bundle",
+    )
+    digests = [
+        summary.get("design_digest"),
+        summary.get("method_bundle_digest"),
+        summary.get("product_projection_digest"),
+    ]
+    _require(
+        all(isinstance(digest, str) for digest in digests) and len(set(digests)) == 1,
+        "handoff example did not establish equality of all three encoding digests",
+    )
+    _require(isinstance(summary.get("design_bundle_id"), str), "handoff omitted design bundle ID")
+    _require(isinstance(summary.get("method_bundle_id"), str), "handoff omitted method bundle ID")
+
+
+def _exercise_component_views(smoke_root: Path, *, content_root: Path) -> None:
+    summary = _json_output(
+        "component-view example",
+        [
+            "examples/render_component_views.py",
+            "--out",
+            str(smoke_root / "component-views"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "component-view example must emit an object")
+    _require(
+        summary.get("view_kinds") == ["foldback_junction", "basal_pairing"],
+        "component-view example changed its route-neutral view kinds",
+    )
+    _require(
+        summary.get("basal_pair_kinds")
+        == ["hard_mismatch", "gt_wobble", "watson_crick", "watson_crick"],
+        "component-view example lost its didactic pair vocabulary",
+    )
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--content-root", type=Path, default=REPO_ROOT)
+    args = parser.parse_args(argv)
+    content_root = args.content_root.resolve()
+    if not content_root.is_dir():
+        raise DocsSmokeError(f"content root does not exist: {content_root}")
+
+    with tempfile.TemporaryDirectory(prefix="hop-docs-smoke-") as temporary:
+        smoke_root = Path(temporary)
+        _exercise_designs(smoke_root, content_root=content_root)
+        _exercise_payload_library(smoke_root, content_root=content_root)
+        discovery_statuses = _exercise_discovery(content_root=content_root)
+        _exercise_method(smoke_root, content_root=content_root)
+        _exercise_method_authoring(smoke_root, content_root=content_root)
+        _exercise_handoff(smoke_root, content_root=content_root)
+        _exercise_component_views(smoke_root, content_root=content_root)
+
+    print(
+        json.dumps(
+            {
+                "design_surfaces": ["exact", "symbolic", "spec"],
+                "component_views_verified": True,
+                "discovery_statuses": discovery_statuses,
+                "handoff_verified": True,
+                "method_authoring_verified": True,
+                "method_bundle_verified": True,
+                "payload_library_bundles_verified": 3,
+                "schema": "hop.docs-smoke/v1",
+                "status": "ok",
+            },
+            sort_keys=True,
+        )
+    )
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except DocsSmokeError as exc:
+        print(f"Documentation smoke failed: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc

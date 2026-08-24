@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="140" viewBox="0 0 960 140" data-view-kind="foldback_junction" role="img">
+<title>foldback junction</title>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs>
+<style>text{font-family:ui-monospace,monospace;font-size:12px}.title{font-family:system-ui,sans-serif;font-weight:600;font-size:15px}.panel{fill:#f8fafc;stroke:#94a3b8}.feature{fill:#dbeafe;stroke:#60a5fa}.feature-label{font-family:system-ui,sans-serif;font-size:10px;fill:#1e3a8a}.terminus{fill:#64748b}.pair{stroke-width:1.8}.pair-watson_crick{stroke:#475569}.pair-gt_wobble{stroke:#d97706;stroke-dasharray:3 2}.pair-hard_mismatch{stroke:#dc2626;stroke-dasharray:2 2}.transition{stroke:#64748b;stroke-width:1.5;marker-end:url(#arrow)}</style>
+<g data-panel-id="foldback_junction" transform="translate(10 10)">
+<rect class="panel" x="0" y="0" width="940" height="120" rx="8"/>
+<text class="title" x="16" y="22">Foldback junction</text>
+<g data-track-id="junction" data-strand="top" data-direction="5to3">
+<text x="16" y="52">junction sequence</text>
+<text class="terminus" x="185" y="52">5′</text>
+<text x="210" y="52" letter-spacing="3">TCAGCATCTGA</text>
+<text class="terminus" x="355" y="52">3′</text>
+</g>
+<rect class="feature" data-feature-role="retained_tract" x="210" y="59" width="52" height="5"/>
+<text class="feature-label" x="210" y="75">retained tract</text>
+<rect class="feature" data-feature-role="turn" x="262" y="59" width="39" height="5"/>
+<text class="feature-label" x="262" y="87">turn</text>
+<rect class="feature" data-feature-role="foldback_arm" x="301" y="59" width="52" height="5"/>
+<text class="feature-label" x="301" y="99">foldback arm</text>
+<path class="pair pair-watson_crick" data-pair-kind="watson_crick" data-display-aligned="true" fill="none" d="M214,45 Q279.0,25 344,45"/>
+<path class="pair pair-watson_crick" data-pair-kind="watson_crick" data-display-aligned="true" fill="none" d="M227,45 Q279.0,25 331,45"/>
+<path class="pair pair-watson_crick" data-pair-kind="watson_crick" data-display-aligned="true" fill="none" d="M240,45 Q279.0,29.4 318,45"/>
+<path class="pair pair-watson_crick" data-pair-kind="watson_crick" data-display-aligned="true" fill="none" d="M253,45 Q279.0,34.6 305,45"/>
+</g>
+</svg>

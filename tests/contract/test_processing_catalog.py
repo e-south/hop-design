@@ -13,8 +13,14 @@ from hop_design.models.catalog import (
     NickingAgent,
     ProcessingCatalog,
     ReleaseAgent,
+    SiteOrientation,
 )
 from hop_design.models.junction import Strand
+from hop_design.models.physical import (
+    opposite_strand,
+    orient_nick_geometry,
+    orient_release_geometry,
+)
 
 
 def _nicking_agent() -> NickingAgent:
@@ -59,6 +65,83 @@ def test_release_scan_swaps_cut_offsets_for_reverse_orientation() -> None:
     ]
     assert (matches[0].cut.top.offset, matches[0].cut.bottom.offset) == (1, 0)
     assert (matches[1].cut.top.offset, matches[1].cut.bottom.offset) == (8, 7)
+
+
+def test_palindromic_nick_scan_preserves_both_authoritative_orientations() -> None:
+    agent = NickingAgent(
+        agent_id="example:nicking-agent/palindromic@1",
+        motif_top_5to3="AATT",
+        nicked_strand=Strand.TOP,
+        cut_offset=1,
+        warning_codes=(),
+    )
+
+    matches = scan_nicking_agent("AATT", agent=agent)
+    expected_geometries = (
+        orient_nick_geometry(
+            motif_top_5to3=agent.motif_top_5to3,
+            native_nicked_strand=agent.nicked_strand,
+            cut_offset=agent.cut_offset,
+            target_strand=agent.nicked_strand,
+        ),
+        orient_nick_geometry(
+            motif_top_5to3=agent.motif_top_5to3,
+            native_nicked_strand=agent.nicked_strand,
+            cut_offset=agent.cut_offset,
+            target_strand=opposite_strand(agent.nicked_strand),
+        ),
+    )
+
+    assert [match.orientation for match in matches] == [
+        geometry.orientation for geometry in expected_geometries
+    ]
+    assert [match.matched_sequence for match in matches] == [
+        geometry.motif_top_5to3 for geometry in expected_geometries
+    ]
+    assert [(match.nick.strand, match.nick.boundary.offset) for match in matches] == [
+        (Strand.TOP, 1),
+        (Strand.BOTTOM, 3),
+    ]
+
+
+def test_palindromic_release_scan_preserves_both_authoritative_orientations() -> None:
+    agent = ReleaseAgent(
+        agent_id="example:release-agent/palindromic@1",
+        motif_top_5to3="AATT",
+        top_cut_offset=1,
+        bottom_cut_offset=2,
+        warning_codes=(),
+    )
+
+    matches = scan_release_agent("AATT", agent=agent)
+    expected_geometries = tuple(
+        orient_release_geometry(
+            motif_top_5to3=agent.motif_top_5to3,
+            top_cut_offset=agent.top_cut_offset,
+            bottom_cut_offset=agent.bottom_cut_offset,
+            orientation=orientation,
+        )
+        for orientation in (SiteOrientation.FORWARD, SiteOrientation.REVERSE)
+    )
+
+    assert [match.orientation for match in matches] == [
+        geometry.orientation for geometry in expected_geometries
+    ]
+    assert [match.matched_sequence for match in matches] == [
+        geometry.motif_top_5to3 for geometry in expected_geometries
+    ]
+    assert [(match.cut.top.offset, match.cut.bottom.offset) for match in matches] == [
+        (1, 2),
+        (2, 3),
+    ]
+
+
+def test_palindromic_motif_presence_remains_one_textual_match() -> None:
+    report = classify_motif_presence(sequence="AATT", motif="AATT")
+
+    assert [(match.orientation, match.span.start.offset) for match in report.matches] == [
+        (SiteOrientation.FORWARD, 0)
+    ]
 
 
 @pytest.mark.parametrize(

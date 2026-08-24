@@ -22,7 +22,12 @@ from hop_design.models.discovery.released_foldback import (
     WatsonCrickPair,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
+from hop_design.models.physical import (
+    opposite_strand,
+    orient_nick_geometry,
+    orient_release_geometry,
+)
+from hop_design.models.sequence import iupac_bases
 from hop_design.models.strand_state import DuplexCut, NickEvent, StrandExposureRoute
 
 _BASES: tuple[ExactBase, ...] = ("A", "C", "G", "T")
@@ -30,38 +35,10 @@ _WATSON_CRICK_PAIRS: tuple[WatsonCrickPair, ...] = ("AT", "CG", "GC", "TA")
 
 
 def _expected_nicked_strand(route: StrandExposureRoute) -> Strand:
-    return (
-        Strand.TOP if route is StrandExposureRoute.BOTTOM_ACTIVE_AFTER_TOP_NICK else Strand.BOTTOM
+    active_strand = (
+        Strand.BOTTOM if route is StrandExposureRoute.BOTTOM_ACTIVE_AFTER_TOP_NICK else Strand.TOP
     )
-
-
-def _nick_geometry(
-    agent: NickingAgent,
-    *,
-    target_strand: Strand,
-) -> tuple[SiteOrientation, str, int]:
-    if agent.nicked_strand is target_strand:
-        return SiteOrientation.FORWARD, agent.motif_top_5to3, agent.cut_offset
-    return (
-        SiteOrientation.REVERSE,
-        reverse_complement_iupac(agent.motif_top_5to3),
-        len(agent.motif_top_5to3) - agent.cut_offset,
-    )
-
-
-def _release_geometry(
-    agent: ReleaseAgent,
-    *,
-    orientation: SiteOrientation,
-) -> tuple[str, int, int]:
-    if orientation is SiteOrientation.FORWARD:
-        return agent.motif_top_5to3, agent.top_cut_offset, agent.bottom_cut_offset
-    motif_nt = len(agent.motif_top_5to3)
-    return (
-        reverse_complement_iupac(agent.motif_top_5to3),
-        motif_nt - agent.bottom_cut_offset,
-        motif_nt - agent.top_cut_offset,
-    )
+    return opposite_strand(active_strand)
 
 
 def iter_released_foldback_boundaries(
@@ -167,19 +144,29 @@ def evaluate_released_foldback_geometry(
 ) -> ReleasedFoldbackGeometryFeasibility:
     """Evaluate one bounded agent-pair placement without selecting a sequence."""
     nicked_strand = _expected_nicked_strand(request.route)
-    nick_orientation, nick_motif, nick_cut_offset = _nick_geometry(
-        nicking_agent,
+    nick_geometry = orient_nick_geometry(
+        motif_top_5to3=nicking_agent.motif_top_5to3,
+        native_nicked_strand=nicking_agent.nicked_strand,
+        cut_offset=nicking_agent.cut_offset,
         target_strand=nicked_strand,
     )
+    nick_orientation = nick_geometry.orientation
+    nick_motif = nick_geometry.motif_top_5to3
+    nick_cut_offset = nick_geometry.cut_offset
     nick_boundary = evaluated_nick_boundary.offset
     nick_start = nick_boundary - nick_cut_offset
     nick_end = nick_start + len(nick_motif)
     active_end = nick_boundary + 2 * request.paired_tract.value + request.turn_length.value
 
-    release_motif, release_top_offset, release_bottom_offset = _release_geometry(
-        release_agent,
+    release_geometry = orient_release_geometry(
+        motif_top_5to3=release_agent.motif_top_5to3,
+        top_cut_offset=release_agent.top_cut_offset,
+        bottom_cut_offset=release_agent.bottom_cut_offset,
         orientation=release_orientation,
     )
+    release_motif = release_geometry.motif_top_5to3
+    release_top_offset = release_geometry.top_cut_offset
+    release_bottom_offset = release_geometry.bottom_cut_offset
     active_release_offset = (
         release_bottom_offset
         if request.route is StrandExposureRoute.BOTTOM_ACTIVE_AFTER_TOP_NICK
