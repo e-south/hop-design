@@ -16,6 +16,7 @@ from hop_design.design.method_bundle import (
     verify_method_bundle,
 )
 from hop_design.models.bundle import MethodBundle
+from hop_design.models.catalog import ResolvedNickSite, ResolvedReleaseSite, SiteOrientation
 from hop_design.models.linear_source_method import (
     LinearSourceMultinickHairpinPcrPlan,
     LinearSourceMultinickHairpinPcrRequest,
@@ -106,8 +107,11 @@ __all__ = [
     "ProcessMaterial",
     "ProcessMaterialRole",
     "ProcessOligo",
+    "ResolvedNickSite",
+    "ResolvedReleaseSite",
     "RestrictionDigestProduct",
     "SequenceProjection",
+    "SiteOrientation",
     "SourcePcrDuplex",
     "StrandEnd",
     "StrandPairObservation",

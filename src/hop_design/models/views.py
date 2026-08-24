@@ -10,6 +10,7 @@ from pydantic import Field, field_validator, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.coordinates import Span
 from hop_design.models.junction import Strand
+from hop_design.models.physical import classify_literal_pair
 from hop_design.models.references import ReferenceId
 from hop_design.models.sequence import SequenceValidationError, normalize_dna_sequence
 
@@ -80,6 +81,26 @@ class ViewPanel(HopModel):
                 right.sequence
             ):
                 raise ValueError("View pairing indexes must stay inside their tracks.")
+            left_base = left.sequence[pairing.left_index]
+            right_base = right.sequence[pairing.right_index]
+            if left_base not in "ACGT" or right_base not in "ACGT":
+                raise ValueError("View pairings require exact A/C/G/T endpoint bases.")
+            observed = classify_literal_pair(
+                left_base=left_base,
+                right_base=right_base,
+            )
+            if pairing.kind != observed.value:
+                raise ValueError("View pair kinds must derive from the literal track bases.")
+        paired_positions = [
+            endpoint
+            for pairing in self.pairings
+            for endpoint in (
+                (pairing.left_track_id, pairing.left_index),
+                (pairing.right_track_id, pairing.right_index),
+            )
+        ]
+        if len(paired_positions) != len(set(paired_positions)):
+            raise ValueError("Each view nucleotide may participate in at most one pair.")
         return self
 
 
@@ -103,6 +124,29 @@ class WorkflowView(HopModel):
         panel_ids = tuple(panel.panel_id for panel in self.panels)
         if len(panel_ids) != len(set(panel_ids)):
             raise ValueError("Workflow view panel ids must be unique.")
+        expected_panels = {
+            "foldback_junction": ("foldback_junction",),
+            "foldback_qa": ("source_sequence", "resolved_junction", "folded_junction"),
+            "released_workflow": (
+                "precursor",
+                "released_fragments",
+                "origin_anchored_foldback",
+            ),
+            "basal_pairing": ("basal_junction",),
+            "basal_terminal_nick": ("pre_terminal_nick", "post_terminal_nick"),
+            "method_trajectory": (
+                "source_pcr_duplex",
+                "multi_site_nicked_duplex",
+                "denatured_fragment_set",
+                "length_selected_fragment_set",
+                "adapter_annealed_complex",
+                "ligated_hairpin",
+                "hairpin_pcr_duplex",
+                "restriction_digest_product",
+            ),
+        }
+        if panel_ids != expected_panels[self.kind]:
+            raise ValueError("Workflow view kind and panel topology must match.")
         return self
 
 

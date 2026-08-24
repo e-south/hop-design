@@ -9,11 +9,19 @@ from hop_design.models.discovery.basal_candidates import (
     BasalCandidateSearchResult,
 )
 from hop_design.models.discovery.basal_processing import (
+    BasalProcessingGeometryBlocker,
+    BasalProcessingGeometryFeasibility,
+    BasalProcessingGeometryHit,
     BasalProcessingGeometryRequest,
     BasalProcessingGeometrySearchLimits,
     BasalProcessingGeometrySearchResult,
+    BasalReleaseGeometry,
+    RelativeBaseDomain,
 )
 from hop_design.models.discovery.basal_routes import (
+    BasalProcessingRouteBlocker,
+    BasalProcessingRouteCandidate,
+    BasalProcessingRouteFeasibility,
     BasalProcessingRouteSearchLimits,
     BasalProcessingRouteSearchResult,
 )
@@ -29,7 +37,9 @@ from hop_design.models.discovery.candidates import (
     FoldbackPrecursorSearchResult,
 )
 from hop_design.models.discovery.hairpin_routes import (
+    HairpinJunctionRouteBlocker,
     HairpinJunctionRouteCandidate,
+    HairpinJunctionRouteFeasibility,
     HairpinJunctionRouteSearchLimits,
     HairpinJunctionRouteSearchResult,
 )
@@ -45,6 +55,8 @@ from hop_design.models.discovery.placements import (
 from hop_design.models.discovery.released_foldback import (
     FoldbackPairingDomain,
     ReleasedFoldbackBaseDomain,
+    ReleasedFoldbackGeometryBlocker,
+    ReleasedFoldbackGeometryFeasibility,
     ReleasedFoldbackGeometryHit,
     ReleasedFoldbackGeometryRequest,
     ReleasedFoldbackGeometrySearchLimits,
@@ -66,11 +78,18 @@ __all__ = [
     "BasalCandidateSearchLimits",
     "BasalCandidateSearchRequest",
     "BasalCandidateSearchResult",
+    "BasalProcessingGeometryBlocker",
+    "BasalProcessingGeometryFeasibility",
+    "BasalProcessingGeometryHit",
     "BasalProcessingGeometryRequest",
     "BasalProcessingGeometrySearchLimits",
     "BasalProcessingGeometrySearchResult",
+    "BasalProcessingRouteBlocker",
+    "BasalProcessingRouteCandidate",
+    "BasalProcessingRouteFeasibility",
     "BasalProcessingRouteSearchLimits",
     "BasalProcessingRouteSearchResult",
+    "BasalReleaseGeometry",
     "CandidateRejectionCode",
     "CandidateRejectionSummary",
     "CandidateSearchStatus",
@@ -80,7 +99,9 @@ __all__ = [
     "FoldbackPrecursorSearchLimits",
     "FoldbackPrecursorSearchRequest",
     "FoldbackPrecursorSearchResult",
+    "HairpinJunctionRouteBlocker",
     "HairpinJunctionRouteCandidate",
+    "HairpinJunctionRouteFeasibility",
     "HairpinJunctionRouteSearchLimits",
     "HairpinJunctionRouteSearchResult",
     "NickingPlacementBlocker",
@@ -90,7 +111,10 @@ __all__ = [
     "NickingPlacementSearchResult",
     "NickingPlacementTarget",
     "NickingPlacementTruncation",
+    "RelativeBaseDomain",
     "ReleasedFoldbackBaseDomain",
+    "ReleasedFoldbackGeometryBlocker",
+    "ReleasedFoldbackGeometryFeasibility",
     "ReleasedFoldbackGeometryHit",
     "ReleasedFoldbackGeometryRequest",
     "ReleasedFoldbackGeometrySearchLimits",

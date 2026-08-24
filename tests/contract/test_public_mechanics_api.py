@@ -9,6 +9,7 @@ import hop_design.methods as methods
 import hop_design.views as views
 
 ROOT_FACADE = {
+    "ArtifactManifestEntry",
     "DEFAULT_PAYLOAD_SOURCE_LIMITS",
     "DEFAULT_SPEC_MAX_BYTES",
     "BasalConstraintProfile",
@@ -16,7 +17,14 @@ ROOT_FACADE = {
     "BasalEvaluation",
     "BasalJunction",
     "BasalOption",
+    "BasalPairObservation",
+    "BasalPairProfile",
     "BasalPairingRequest",
+    "BasalPolicyDecision",
+    "BasalPolicyReason",
+    "BasalPolicyStatus",
+    "BasalSelection",
+    "BaseLineage",
     "BasePairCount",
     "Boundary",
     "BundleIntegrityError",
@@ -35,17 +43,21 @@ ROOT_FACADE = {
     "DuplicatePayloadError",
     "DuplicateSequencePolicy",
     "ExactPayload",
+    "ExternalRef",
+    "FeatureRole",
     "FoldbackConstraints",
     "FoldbackEvaluation",
     "FoldbackEvaluationRequest",
     "FoldbackJunction",
     "FoldbackOption",
+    "FoldbackSelection",
     "HairpinEncodingInsert",
     "HopSpec",
     "HopBundle",
     "InfeasibleDesignError",
     "JunctionPairKind",
     "JunctionPairObservation",
+    "JunctionRequest",
     "NickEvent",
     "NickingAgent",
     "NucleotideCount",
@@ -65,6 +77,7 @@ ROOT_FACADE = {
     "ReleasedStrandState",
     "ResolvedDesignSpace",
     "ResolvedHopSpec",
+    "SequenceFeature",
     "Severity",
     "Span",
     "SpecSourceLimitError",
@@ -134,10 +147,17 @@ DISCOVERY_FACADE = {
     "BasalCandidateSearchRequest",
     "BasalCandidateSearchResult",
     "BasalProcessingGeometryRequest",
+    "BasalProcessingGeometryBlocker",
+    "BasalProcessingGeometryFeasibility",
+    "BasalProcessingGeometryHit",
     "BasalProcessingGeometrySearchLimits",
     "BasalProcessingGeometrySearchResult",
+    "BasalProcessingRouteBlocker",
+    "BasalProcessingRouteCandidate",
+    "BasalProcessingRouteFeasibility",
     "BasalProcessingRouteSearchLimits",
     "BasalProcessingRouteSearchResult",
+    "BasalReleaseGeometry",
     "CandidateRejectionCode",
     "CandidateRejectionSummary",
     "CandidateSearchStatus",
@@ -153,6 +173,10 @@ DISCOVERY_FACADE = {
     "HairpinJunctionRouteSearchLimits",
     "HairpinJunctionRouteSearchResult",
     "HairpinJunctionRouteCandidate",
+    "HairpinJunctionRouteBlocker",
+    "HairpinJunctionRouteFeasibility",
+    "MotifMatch",
+    "MotifPresence",
     "MotifPresenceReport",
     "NickingPlacementBlocker",
     "NickingPlacementFeasibility",
@@ -162,6 +186,9 @@ DISCOVERY_FACADE = {
     "NickingPlacementTarget",
     "NickingPlacementTruncation",
     "ReleasedFoldbackBaseDomain",
+    "RelativeBaseDomain",
+    "ReleasedFoldbackGeometryBlocker",
+    "ReleasedFoldbackGeometryFeasibility",
     "ReleasedFoldbackGeometryRequest",
     "ReleasedFoldbackGeometryHit",
     "ReleasedFoldbackGeometrySearchLimits",
@@ -173,6 +200,7 @@ DISCOVERY_FACADE = {
     "ReleasedFoldbackPrecursorSearchResult",
     "ResolvedNickSite",
     "ResolvedReleaseSite",
+    "SiteOrientation",
 } | DISCOVERY_OPERATIONS
 
 METHOD_FACADE = {
@@ -216,7 +244,10 @@ METHOD_FACADE = {
     "ProcessOligo",
     "PrimerBinding",
     "RestrictionDigestProduct",
+    "ResolvedNickSite",
+    "ResolvedReleaseSite",
     "SequenceProjection",
+    "SiteOrientation",
     "SourcePcrDuplex",
     "StrandEnd",
     "StrandPairObservation",
@@ -308,5 +339,38 @@ def test_public_operation_annotations_are_reachable_from_a_public_facade() -> No
                         missing.setdefault(contract.__name__, set()).add(
                             f"{facade.__name__}.{name}"
                         )
+
+    assert missing == {}
+
+
+def test_public_model_annotations_are_reachable_from_a_public_facade() -> None:
+    facades = (hop, discovery, methods, views)
+    missing: dict[str, set[str]] = {}
+    allowed_names_by_facade = {
+        hop: set(hop.__all__),
+        discovery: set(hop.__all__) | set(discovery.__all__),
+        methods: set(hop.__all__) | set(methods.__all__),
+        views: set().union(*(set(facade.__all__) for facade in facades)),
+    }
+    for facade, allowed_names in allowed_names_by_facade.items():
+        pending: list[tuple[str, type[object]]] = []
+        for name in facade.__all__:
+            contract = getattr(facade, name)
+            if inspect.isclass(contract) and hasattr(contract, "model_fields"):
+                pending.append((f"{facade.__name__}.{name}", contract))
+
+        visited: set[type[object]] = set()
+        while pending:
+            path, contract = pending.pop()
+            if contract in visited:
+                continue
+            visited.add(contract)
+            for field_name, field in contract.model_fields.items():
+                for annotation_type in _hop_annotation_types(field.annotation):
+                    field_path = f"{path}.{field_name}"
+                    if annotation_type.__name__ not in allowed_names:
+                        missing.setdefault(annotation_type.__name__, set()).add(field_path)
+                    if hasattr(annotation_type, "model_fields"):
+                        pending.append((field_path, annotation_type))
 
     assert missing == {}

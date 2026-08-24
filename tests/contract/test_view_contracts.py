@@ -184,3 +184,50 @@ def test_view_contract_rejects_out_of_bounds_features() -> None:
 
     with pytest.raises(ValidationError, match="feature span"):
         WorkflowView.model_validate_json(__import__("json").dumps(data))
+
+
+def test_view_contract_rejects_false_or_duplicate_pair_claims() -> None:
+    data = build_basal_pairing_view(
+        hop.evaluate_basal_pairing(
+            hop.BasalPairingRequest(left_arm="AGTG", right_arm="CATG"),
+            constraints=hop.BasalConstraintProfile(
+                require_terminal_watson_crick=False,
+                allow_active_gt_wobble=True,
+                max_active_hard_mismatches=4,
+                max_active_non_watson_crick_pairs=4,
+                forbid_active_middle_double_hard=False,
+                minimum_active_pair_support_index=0.0,
+                maximum_active_pair_disruption_index=4.0,
+                require_outer_hard_for_active_double=False,
+                reject_compact_profiles=(),
+                reserve_compact_profiles=(),
+            ),
+        )
+    ).model_dump(mode="json")
+    data["panels"][0]["pairings"][0]["kind"] = "watson_crick"
+
+    with pytest.raises(ValidationError, match="literal track bases"):
+        WorkflowView.model_validate_json(__import__("json").dumps(data))
+
+    duplicate = build_basal_pairing_view(_basal_evaluation()).model_dump(mode="json")
+    duplicate["panels"][0]["pairings"].append(duplicate["panels"][0]["pairings"][0])
+    with pytest.raises(ValidationError, match="at most one pair"):
+        WorkflowView.model_validate_json(__import__("json").dumps(duplicate))
+
+
+@pytest.mark.parametrize(("track_id", "sequence"), [("left_arm", "NAAA"), ("right_arm", "NTTT")])
+def test_view_contract_rejects_ambiguous_pairing_endpoints(track_id: str, sequence: str) -> None:
+    data = build_basal_pairing_view(_basal_evaluation()).model_dump(mode="json")
+    track = next(track for track in data["panels"][0]["tracks"] if track["track_id"] == track_id)
+    track["sequence"] = sequence
+
+    with pytest.raises(ValidationError, match="exact A/C/G/T endpoint"):
+        WorkflowView.model_validate_json(__import__("json").dumps(data))
+
+
+def test_view_kind_requires_its_declared_panel_topology() -> None:
+    data = build_basal_pairing_view(_basal_evaluation()).model_dump(mode="json")
+    data["kind"] = "method_trajectory"
+
+    with pytest.raises(ValidationError, match="panel topology"):
+        WorkflowView.model_validate_json(__import__("json").dumps(data))
