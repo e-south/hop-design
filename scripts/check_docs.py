@@ -29,6 +29,20 @@ DOC_REQUIRED_KEYS = {
 DOC_TYPES = {"tutorial", "how-to", "reference", "explanation", "decision", "index"}
 DOC_STATUSES = {"active", "accepted"}
 JOURNEYS = {"install", "compile", "discover", "method", "verify", "integrate", "maintain"}
+JOURNEY_REQUIRED_DOC_TYPES = {"tutorial", "how-to", "index"}
+DOC_AUDIENCES = {
+    "API consumers",
+    "CLI users",
+    "Python users",
+    "agent executors",
+    "bundle consumers",
+    "integrators",
+    "maintainers",
+    "new users",
+    "release operators",
+    "security reviewers",
+    "users",
+}
 SKILL_REQUIRED_KEYS = {"name", "description", "metadata"}
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 INLINE_ROUTE_PATTERN = re.compile(
@@ -127,6 +141,35 @@ def check_skill_metadata(path: Path, metadata: dict[str, object]) -> list[str]:
     return errors
 
 
+def check_document_metadata(path: Path, metadata: dict[str, object]) -> list[str]:
+    """Validate controlled document routing fields."""
+    relative = path.relative_to(REPO_ROOT)
+    errors: list[str] = []
+    audience = metadata.get("audience")
+    if (
+        not isinstance(audience, list)
+        or not audience
+        or not all(isinstance(item, str) and item in DOC_AUDIENCES for item in audience)
+    ):
+        errors.append(f"{relative}: audience must use controlled reader roles")
+    status = metadata.get("status")
+    if status not in DOC_STATUSES:
+        errors.append(f"{relative}: invalid status {status!r}")
+    doc_type = metadata.get("doc_type")
+    if doc_type not in DOC_TYPES:
+        errors.append(f"{relative}: invalid doc_type {doc_type!r}")
+    journey = metadata.get("journey")
+    if journey is not None and (
+        not isinstance(journey, list)
+        or not journey
+        or not all(isinstance(item, str) and item in JOURNEYS for item in journey)
+    ):
+        errors.append(f"{relative}: invalid journey list")
+    if doc_type in JOURNEY_REQUIRED_DOC_TYPES and journey is None:
+        errors.append(f"{relative}: {doc_type} documents require journey routing")
+    return errors
+
+
 def main() -> int:
     """Run knowledge-integrity and skill-legibility checks."""
     errors: list[str] = []
@@ -152,26 +195,7 @@ def main() -> int:
                 errors.append(
                     f"{path.relative_to(REPO_ROOT)}: {scalar_key} must be a nonempty string"
                 )
-        audience = metadata.get("audience")
-        if (
-            not isinstance(audience, list)
-            or not audience
-            or not all(isinstance(item, str) and item.strip() for item in audience)
-        ):
-            errors.append(f"{path.relative_to(REPO_ROOT)}: audience must be a nonempty string list")
-        status = metadata.get("status")
-        if status not in DOC_STATUSES:
-            errors.append(f"{path.relative_to(REPO_ROOT)}: invalid status {status!r}")
-        doc_type = metadata.get("doc_type")
-        if doc_type not in DOC_TYPES:
-            errors.append(f"{path.relative_to(REPO_ROOT)}: invalid doc_type {doc_type!r}")
-        journey = metadata.get("journey")
-        if journey is not None and (
-            not isinstance(journey, list)
-            or not journey
-            or not all(isinstance(item, str) and item in JOURNEYS for item in journey)
-        ):
-            errors.append(f"{path.relative_to(REPO_ROOT)}: invalid journey list")
+        errors.extend(check_document_metadata(path, metadata))
         doc_id = metadata.get("doc_id")
         if isinstance(doc_id, str) and doc_id:
             if doc_id in doc_ids:
@@ -210,6 +234,7 @@ def main() -> int:
         if text.count("```") % 2:
             errors.append(f"{path.relative_to(REPO_ROOT)}: unbalanced fenced code blocks")
         errors.extend(check_markdown_links(path, text))
+        errors.extend(check_inline_route_targets(path, text))
 
     for path, amended_by in amendment_refs:
         if amended_by not in doc_ids:
@@ -241,6 +266,13 @@ def main() -> int:
             errors.append(f"{skill_path.relative_to(REPO_ROOT)}: unbalanced fenced code blocks")
         errors.extend(check_markdown_links(skill_path, text))
         errors.extend(check_inline_route_targets(skill_path, text))
+
+    for reference_path in sorted(skill_root.glob("*/references/*.md")):
+        text = reference_path.read_text(encoding="utf-8")
+        if text.count("```") % 2:
+            errors.append(f"{reference_path.relative_to(REPO_ROOT)}: unbalanced fenced code blocks")
+        errors.extend(check_markdown_links(reference_path, text))
+        errors.extend(check_inline_route_targets(reference_path, text))
 
     for root_markdown in (REPO_ROOT / "README.md", REPO_ROOT / "AGENTS.md"):
         text = root_markdown.read_text(encoding="utf-8")

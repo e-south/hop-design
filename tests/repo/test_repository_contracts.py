@@ -315,6 +315,62 @@ def test_skill_metadata_is_structurally_validated() -> None:
     assert errors == [".agents/skills/example/SKILL.md: metadata must be a YAML mapping"]
 
 
+def test_document_frontmatter_uses_controlled_routing_fields() -> None:
+    checker = _load_docs_checker()
+    path = REPO_ROOT / "docs" / "example.md"
+
+    assert (
+        checker.check_document_metadata(
+            path,
+            {
+                "audience": ["users"],
+                "doc_type": "how-to",
+                "journey": ["compile"],
+                "status": "active",
+            },
+        )
+        == []
+    )
+    assert checker.check_document_metadata(
+        path,
+        {
+            "audience": ["everyone"],
+            "doc_type": "how-to",
+            "status": "active",
+        },
+    ) == [
+        "docs/example.md: audience must use controlled reader roles",
+        "docs/example.md: how-to documents require journey routing",
+    ]
+
+
+def test_document_inline_route_targets_fail_closed() -> None:
+    checker = _load_docs_checker()
+    errors = checker.check_inline_route_targets(
+        REPO_ROOT / "docs" / "example.md",
+        "Continue with `docs/not-a-real-route.md`.",
+    )
+
+    assert errors == ["docs/example.md: broken inline route 'docs/not-a-real-route.md'"]
+
+
+def test_user_skill_is_a_small_competency_router() -> None:
+    skill_root = REPO_ROOT / ".agents" / "skills" / "hop-design-user"
+    skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+    references = {
+        "design.md",
+        "discovery.md",
+        "methods.md",
+        "verification-and-integration.md",
+        "views.md",
+    }
+
+    assert len(skill.splitlines()) <= 90
+    for name in references:
+        assert f"references/{name}" in skill
+        assert (skill_root / "references" / name).is_file()
+
+
 def test_active_docs_do_not_teach_retired_design_schemas_or_route_fields() -> None:
     active_docs = [
         path

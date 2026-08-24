@@ -5,8 +5,9 @@ prompts or generated plans when a linked document already owns them.
 
 ## Route by task
 
-- Explain HOP, compile an exact or symbolic sequence, or inspect a bundle:
-  read `.agents/skills/hop-design-user/SKILL.md`.
+- Explain HOP; compile a design; run discovery or a named method; render a
+  typed view; or verify and integrate a bundle: read
+  `.agents/skills/hop-design-user/SKILL.md`.
 - Change code, schemas, architecture, documentation, packaging, or release
   behavior: read `.agents/skills/hop-maintainer/SKILL.md`.
 - Learn the ontology and product boundary: read `docs/start/mental-model.md`,
