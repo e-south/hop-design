@@ -136,6 +136,8 @@ class RestrictionDigestProduct(HopModel):
 
     @model_validator(mode="after")
     def validate_cohesive_ends(self) -> RestrictionDigestProduct:
+        if self.sites[0].site_span == self.sites[1].site_span:
+            raise ValueError("Restriction product sites must occupy distinct physical spans.")
         if tuple(end.product_end for end in self.cohesive_ends) != ("left", "right"):
             raise ValueError("Cohesive ends must be ordered left then right.")
         strand_ids = {self.primary_strand.strand_id, self.complementary_strand.strand_id}
