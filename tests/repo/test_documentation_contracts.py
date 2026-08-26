@@ -32,10 +32,20 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
 
     assert readme.startswith("# ![hop — Hairpin Oligonucleotide Processing")
     assert "assets/hop-design-banner.svg" in readme
+    assert "codecov.io/gh/e-south/hop-design/graph/badge.svg" in readme
+    assert "HOP is alpha software" in readme
+    assert "docs/guides/quickstart.md" in readme
+    assert "https://github.com/e-south/hop-design/blob/main/AGENTS.md" in readme
+    assert "[AGENTS.md](AGENTS.md)" not in readme
     assert "CONTRIBUTING.md" in readme
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
-    assert len(readme.splitlines()) <= 100
+    assert "HOP helps scientists describe a DNA hairpin" in readme
+    assert "domain-specific language" not in readme
+    assert "```" not in readme
+    assert "## Install" not in readme
+    assert "## Compile a design" not in readme
+    assert len(readme.splitlines()) <= 80
 
 
 def test_public_docs_route_the_five_sibling_surfaces() -> None:
@@ -297,10 +307,31 @@ def test_skill_metadata_is_structurally_validated() -> None:
     checker = _load_docs_checker()
     errors = checker.check_skill_metadata(
         REPO_ROOT / ".agents" / "skills" / "example" / "SKILL.md",
-        {"metadata": "version: 1"},
+        {"description": "Example skill.", "metadata": "version: 1"},
     )
 
     assert errors == [".agents/skills/example/SKILL.md: metadata must be a YAML mapping"]
+    assert checker.check_skill_metadata(
+        REPO_ROOT / ".agents" / "skills" / "example" / "SKILL.md",
+        {
+            "description": "x" * 221,
+            "metadata": {"version": "1", "category": "testing", "tags": ["example"]},
+        },
+    ) == [".agents/skills/example/SKILL.md: description exceeds 220 characters"]
+    assert checker.check_skill_metadata(
+        REPO_ROOT / ".agents" / "skills" / "example" / "SKILL.md",
+        {
+            "description": "   ",
+            "metadata": {"version": "1", "category": "testing", "tags": ["example"]},
+        },
+    ) == [".agents/skills/example/SKILL.md: description must be a non-empty string"]
+    assert checker.check_skill_metadata(
+        REPO_ROOT / ".agents" / "skills" / "example" / "SKILL.md",
+        {
+            "description": 42,
+            "metadata": {"version": "1", "category": "testing", "tags": ["example"]},
+        },
+    ) == [".agents/skills/example/SKILL.md: description must be a non-empty string"]
 
 
 def test_document_frontmatter_uses_controlled_routing_fields() -> None:
@@ -359,6 +390,15 @@ def test_user_skill_is_a_small_competency_router() -> None:
         assert (skill_root / "references" / name).is_file()
 
 
+def test_root_agent_router_selects_one_focused_skill() -> None:
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+    assert "Load one skill" in agents
+    assert ".agents/skills/hop-design-user/SKILL.md" in agents
+    assert ".agents/skills/hop-maintainer/SKILL.md" in agents
+    assert len(agents.splitlines()) <= 50
+
+
 def test_active_docs_do_not_teach_retired_design_schemas_or_route_fields() -> None:
     active_docs = [
         path
@@ -410,7 +450,7 @@ def test_schema_reference_distinguishes_release_and_source_generations() -> None
     schemas = (REPO_ROOT / "docs" / "reference" / "schemas.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
 
-    match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", readme)
+    match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", quickstart)
     assert match is not None
     published_version = match.group(1)
 

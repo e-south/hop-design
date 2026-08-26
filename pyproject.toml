@@ -80,6 +80,7 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
+relative_files = true
 source = ["hop_design"]
 
 [tool.coverage.report]

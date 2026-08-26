@@ -1,8 +1,8 @@
 ---
 name: hop-design-user
-description: Use HOP Design to load or expand payloads, run bounded discovery, compile design or named-method bundles, render typed views, and verify handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
+description: Use HOP to compile payloads, run bounded discovery or named methods, render typed views, and verify bundles or handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
 metadata:
-  version: 0.6.0
+  version: 0.6.1
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation]
 ---

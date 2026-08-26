@@ -1,39 +1,38 @@
 # HOP Design agent router
 
-Use this file to find the owning source. Do not restate scientific contracts in
-prompts or generated plans when a linked document already owns them.
+Use this file only to select the owning workflow. Load one skill first; follow
+its progressive-disclosure references as the task requires.
 
-## Route by task
+## Choose one skill
 
-- Explain HOP; compile a design; run discovery or a named method; render a
-  typed view; or verify and integrate a bundle: read
-  `.agents/skills/hop-design-user/SKILL.md`.
-- Change code, schemas, architecture, documentation, packaging, or release
-  behavior: read `.agents/skills/hop-maintainer/SKILL.md`.
-- Learn the ontology and product boundary: read `docs/start/mental-model.md`,
-  `docs/language/ontology.md`, and
-  `docs/provenance/plans-artifacts-and-bundles.md`.
-- Change dependency direction or ownership: read `ARCHITECTURE.md` and the
-  relevant record under `docs/architecture/decisions/` first.
-- Change validation, derivation, errors, or coordinates: read `DESIGN.md` and
-  `docs/language/relationships-and-invariants.md` first.
-- Change bundle identity, writing, or verification: read `RELIABILITY.md` and
-  `docs/reference/bundle-layout.md` first.
+| Requested work | Load |
+| --- | --- |
+| Explain or use the design language, discovery, named methods, typed views, bundle verification, or immutable handoffs | `.agents/skills/hop-design-user/SKILL.md` |
+| Change or review code, schemas, architecture, documentation, tests, packaging, CI, or releases | `.agents/skills/hop-maintainer/SKILL.md` |
 
-## Deterministic endpoints
+Do not load both skills for routine work. Cross the boundary only when a user
+operation exposes a repository defect or a maintainer change needs public
+dogfood evidence.
 
-```bash
-bash ./scripts/agent-preflight --strict
-bash ./scripts/agent-verify
-```
+## Escalate to an authority
 
-Run targeted tests during development. Run `agent-verify` before declaring a
-change complete. CI invokes the same endpoint.
+- Product meaning or terminology: `docs/start/mental-model.md` and
+  `docs/language/ontology.md`.
+- Dependency direction or ownership: `ARCHITECTURE.md` and the relevant record
+  under `docs/architecture/decisions/`.
+- Validation, derivation, errors, or coordinates: `DESIGN.md` and
+  `docs/language/relationships-and-invariants.md`.
+- Bundle identity or replay: `RELIABILITY.md` and the matching bundle reference.
+
+## Verification endpoints
+
+Run targeted checks while editing. Before declaring a repository change
+complete, run `bash ./scripts/agent-preflight --strict` and
+`bash ./scripts/agent-verify`; CI invokes the same full endpoint.
 
 ## Repository boundary
 
-HOP Design is standalone and public-by-construction. Do not add machine-local
-paths, private study identifiers or sequences, application-specific catalogs,
-workspace/run abstractions, or runtime imports from neighboring repositories.
-Generated paired payload arms are outputs and must never become independently
-authored inputs.
+Keep public code and examples independent of machine-local paths, private study
+identities or sequences, application policy, workspace/run concepts, and
+neighboring repositories. The payload is authored once; its paired arm remains
+derived.

@@ -19,20 +19,20 @@ def test_public_example_is_a_real_strict_spec() -> None:
     assert compilation.plan.payload_sequence == "NRY"
 
 
-def test_readme_and_quickstart_use_real_inputs_and_distinct_outputs() -> None:
+def test_quickstart_owns_installation_and_compilation_examples() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
-    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", readme)
+    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", quickstart)
     assert release_match is not None
     wheel_name = release_match.group(0)
 
-    assert 'compilation.write("build/demo-python")' in readme
+    assert "```" not in readme
+    assert "hop-design compile" not in readme
+    assert "uv pip install" not in readme
     assert "--spec examples/generic-symbolic.yaml" in quickstart
     assert 'compilation.write("build/symbolic-python")' in quickstart
-    assert wheel_name in readme
     assert wheel_name in quickstart
     checksum_command = f"grep '{wheel_name}$' SHA256SUMS | shasum -a 256 -c -"
-    assert checksum_command in readme
     assert checksum_command in quickstart
 
 

@@ -10,9 +10,13 @@ uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy src
 uv run --locked python -m compileall -q src/hop_design
-uv run --locked pytest --cov=hop_design --cov-report=term-missing -q
-uv run --locked python scripts/docs-smoke
 mkdir -p .artifacts
+uv run --locked pytest \
+  --cov=hop_design \
+  --cov-report=term-missing \
+  --cov-report=xml:.artifacts/coverage.xml \
+  -q
+uv run --locked python scripts/docs-smoke
 uv export --locked --no-dev --no-emit-project \
   --format requirements-txt \
   --output-file .artifacts/operational-requirements.txt >/dev/null

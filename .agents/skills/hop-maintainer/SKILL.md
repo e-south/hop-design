@@ -1,8 +1,8 @@
 ---
 name: hop-maintainer
-description: Implement, refactor, review, or release HOP Design code, schemas, contracts, bundles, CLI/API, docs, tests, packaging, CI, and agent guidance. Do not use for routine compilation, wet-lab protocols, or downstream work.
+description: Change or review HOP code, schemas, APIs, docs, tests, packaging, CI, or releases. Do not use for routine compilation, lab protocols, or downstream applications.
 metadata:
-  version: 0.1.0
+  version: 0.1.1
   category: engineering
   tags: [hop-design, contract-first, test-driven-development]
 ---
