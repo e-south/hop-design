@@ -44,8 +44,9 @@ destination-neutral until a downstream system evaluates a destination.
 
 ## Project routes
 
-- Coding agents start with [AGENTS.md](AGENTS.md), which selects a focused user
-  or maintainer skill without loading both workflows.
+- Coding agents working in the repository start with
+  [AGENTS.md](https://github.com/e-south/hop-design/blob/main/AGENTS.md), which
+  selects a focused user or maintainer skill without loading both workflows.
 - Contributors use [CONTRIBUTING.md](CONTRIBUTING.md) and the maintainer-facing
   [architecture](ARCHITECTURE.md), [design contracts](DESIGN.md), and
   [reliability guarantees](RELIABILITY.md).

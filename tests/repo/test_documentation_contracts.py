@@ -35,7 +35,8 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "codecov.io/gh/e-south/hop-design/graph/badge.svg" in readme
     assert "HOP is alpha software" in readme
     assert "docs/guides/quickstart.md" in readme
-    assert "AGENTS.md" in readme
+    assert "https://github.com/e-south/hop-design/blob/main/AGENTS.md" in readme
+    assert "[AGENTS.md](AGENTS.md)" not in readme
     assert "CONTRIBUTING.md" in readme
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
