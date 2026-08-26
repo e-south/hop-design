@@ -5,10 +5,10 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
 
-HOP is a domain-specific language and compiler for sequence-encoded DNA
-hairpins. A caller supplies a payload and structural intent; the language
-derives paired sequence, validates anatomy, searches bounded geometry, and can
-resolve a selected design through a named production method.
+HOP helps scientists describe a DNA hairpin, calculate the sequence that must
+pair with it, and check whether a supported way of making it fits the design.
+It produces exact, verifiable design and method records; it does not predict
+whether a laboratory experiment will succeed.
 
 | Project status | Current contract |
 | --- | --- |

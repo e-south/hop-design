@@ -125,7 +125,9 @@ def check_skill_metadata(path: Path, metadata: dict[str, object]) -> list[str]:
     errors: list[str] = []
     relative = path.relative_to(REPO_ROOT)
     description = metadata.get("description")
-    if isinstance(description, str) and len(description) > 220:
+    if not isinstance(description, str) or not description.strip():
+        errors.append(f"{relative}: description must be a non-empty string")
+    elif len(description) > 220:
         errors.append(f"{relative}: description exceeds 220 characters")
     block = metadata.get("metadata")
     if not isinstance(block, dict):

@@ -39,6 +39,7 @@ def test_distribution_metadata_keeps_pypi_brake_but_names_public_home() -> None:
         "show_missing": True,
         "skip_covered": True,
     }
+    assert config["tool"]["coverage"]["run"]["relative_files"] is True
     dev_dependencies = "\n".join(config["dependency-groups"]["dev"])
     for dependency in ("pip-audit", "pre-commit", "twine"):
         assert dependency in dev_dependencies
@@ -71,6 +72,8 @@ def test_ci_publishes_the_coverage_report_used_by_the_readme_badge() -> None:
     assert "use_oidc: true" in text
     assert "fail_ci_if_error: true" in text
     assert "files: .artifacts/coverage.xml" in text
+    assert "github.actor != 'dependabot[bot]'" in text
+    assert "github.event.pull_request.head.repo.full_name == github.repository" in text
 
     agent_verify = (REPO_ROOT / "scripts" / "agent-verify").read_text(encoding="utf-8")
     assert "--cov-report=xml:.artifacts/coverage.xml" in agent_verify

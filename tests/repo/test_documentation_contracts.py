@@ -39,6 +39,8 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "CONTRIBUTING.md" in readme
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
+    assert "HOP helps scientists describe a DNA hairpin" in readme
+    assert "domain-specific language" not in readme
     assert "```" not in readme
     assert "## Install" not in readme
     assert "## Compile a design" not in readme
@@ -304,7 +306,7 @@ def test_skill_metadata_is_structurally_validated() -> None:
     checker = _load_docs_checker()
     errors = checker.check_skill_metadata(
         REPO_ROOT / ".agents" / "skills" / "example" / "SKILL.md",
-        {"metadata": "version: 1"},
+        {"description": "Example skill.", "metadata": "version: 1"},
     )
 
     assert errors == [".agents/skills/example/SKILL.md: metadata must be a YAML mapping"]
@@ -315,6 +317,20 @@ def test_skill_metadata_is_structurally_validated() -> None:
             "metadata": {"version": "1", "category": "testing", "tags": ["example"]},
         },
     ) == [".agents/skills/example/SKILL.md: description exceeds 220 characters"]
+    assert checker.check_skill_metadata(
+        REPO_ROOT / ".agents" / "skills" / "example" / "SKILL.md",
+        {
+            "description": "   ",
+            "metadata": {"version": "1", "category": "testing", "tags": ["example"]},
+        },
+    ) == [".agents/skills/example/SKILL.md: description must be a non-empty string"]
+    assert checker.check_skill_metadata(
+        REPO_ROOT / ".agents" / "skills" / "example" / "SKILL.md",
+        {
+            "description": 42,
+            "metadata": {"version": "1", "category": "testing", "tags": ["example"]},
+        },
+    ) == [".agents/skills/example/SKILL.md: description must be a non-empty string"]
 
 
 def test_document_frontmatter_uses_controlled_routing_fields() -> None:
