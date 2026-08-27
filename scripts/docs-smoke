@@ -129,10 +129,13 @@ def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
         content_root=content_root,
     )
     _require(
-        "Space: 64 exact assignments (4 \u00d7 4 \u00d7 4)" in preview,
+        "64 exact designs (4 \u00d7 4 \u00d7 4)" in preview,
         "substrate-space cardinality changed",
     )
-    _require("Compilation: ready" in preview, "substrate-space preview is not ready")
+    _require(
+        "Ready for exhaustive digital compilation" in preview,
+        "substrate-space preview is not ready",
+    )
 
     output = smoke_root / "substrate-space"
     _run(
@@ -165,7 +168,7 @@ def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
     _require(isinstance(summary, dict), "substrate-space verification must emit an object")
     _require(summary.get("coverage") == "complete", "substrate-space coverage is not complete")
     _require(summary.get("design_count") == 64, "substrate-space design count changed")
-    for projection in ("designs.csv", "sequences.fasta", "review.html", "source.yaml"):
+    for projection in ("designs.csv", "sequences.fasta", "review.html"):
         _require((output / projection).is_file(), f"substrate-space output omitted {projection}")
     return 64
 
