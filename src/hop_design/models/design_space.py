@@ -219,7 +219,16 @@ class ExhaustiveEnumeration(HopModel):
     """Explicit exhaustive enumeration and allocation bound."""
 
     mode: Literal["exhaustive"] = "exhaustive"
-    max_members: int = Field(ge=1, le=100_000)
+    max_members: int = Field(ge=1)
+
+    @field_validator("max_members")
+    @classmethod
+    def require_supported_member_bound(cls, value: int) -> int:
+        if value > 100_000:
+            raise ValueError(
+                "max_members cannot exceed the current implementation ceiling of 100,000."
+            )
+        return value
 
 
 class SubstrateSpaceSpec(HopModel):

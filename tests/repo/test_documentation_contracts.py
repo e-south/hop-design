@@ -45,6 +45,9 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "docs/index.md" in readme
     assert "HOP helps scientists describe a DNA hairpin" in readme
     assert "Define one bounded duplex substrate space" in readme
+    assert "three `N` positions define 64 exact assignments" in readme
+    assert "Named-method and destination compatibility are not evaluated" in readme
+    assert "physical construction, QC, and biological activity are not recorded" in readme
     assert "docs/guides/substrate-spaces.md" in readme
     assert "domain-specific language" not in readme
     assert "```" not in readme
@@ -71,7 +74,9 @@ def test_scientist_surface_uses_the_64_member_space_as_its_first_journey() -> No
     assert "hop-design verify" in guide
     assert "64 exact" in guide
     assert "review.html" in guide
-    assert "Physical construction, QC, and biological activity were not evaluated" in guide
+    assert "Physical construction, QC, and biological activity were not recorded" in guide
+    assert "implementation ceiling" in guide
+    assert "normalized authored specification" in guide
     assert "--dry-run" in cli
     assert "--out is optional with `--dry-run`" in cli
     assert spec_path.is_file()

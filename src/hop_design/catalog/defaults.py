@@ -17,6 +17,10 @@ BASAL_REF = "hop:basal-junction/generic-g-c@1"
 DESIGN_DERIVATION_REF = "hop:design-derivation/generic-catalog-junctions@1"
 CONSTRAINT_PROFILE_REF = "hop:constraint-profile/generic-hairpin@2"
 CATALOG_REF = "hop:catalog/generic-demonstration@1"
+DEFAULTS_DISPLAY_NAME = "Generic GTTTC hairpin context"
+DEFAULTS_ANATOMY_SUMMARY = (
+    "GTTTC foldback junction (TTT turn) with a one-base-pair G:C basal junction."
+)
 
 
 def generic_catalog_junction_derivation() -> CatalogJunctionDerivation:

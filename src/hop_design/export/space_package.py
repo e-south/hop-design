@@ -25,7 +25,7 @@ from hop_design.serialization import sha256_digest
 
 
 def render_source_yaml(spec: SubstrateSpaceSpec) -> bytes:
-    """Render the authored specification as a non-authoritative YAML projection."""
+    """Render a normalized authored specification as a non-authoritative projection."""
     data = spec.model_dump(mode="json", by_alias=True, exclude_none=True)
     return yaml.safe_dump(data, sort_keys=False, allow_unicode=True).encode("utf-8")
 

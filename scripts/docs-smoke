@@ -128,7 +128,10 @@ def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
         ["-m", "hop_design.cli", "space", "preview", str(spec_path)],
         content_root=content_root,
     )
-    _require("Space: 64 exact variants" in preview, "substrate-space cardinality changed")
+    _require(
+        "Space: 64 exact assignments (4 \u00d7 4 \u00d7 4)" in preview,
+        "substrate-space cardinality changed",
+    )
     _require("Compilation: ready" in preview, "substrate-space preview is not ready")
 
     output = smoke_root / "substrate-space"
@@ -334,12 +337,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     with tempfile.TemporaryDirectory(prefix="hop-docs-smoke-") as temporary:
         smoke_root = Path(temporary)
         _exercise_designs(smoke_root, content_root=content_root)
-        substrate_space_designs = _exercise_substrate_space(
-            smoke_root, content_root=content_root
-        )
-        payload_record_bundles = _exercise_payload_records(
-            smoke_root, content_root=content_root
-        )
+        substrate_space_designs = _exercise_substrate_space(smoke_root, content_root=content_root)
+        payload_record_bundles = _exercise_payload_records(smoke_root, content_root=content_root)
         discovery_statuses = _exercise_discovery(content_root=content_root)
         _exercise_method(smoke_root, content_root=content_root)
         _exercise_method_authoring(smoke_root, content_root=content_root)

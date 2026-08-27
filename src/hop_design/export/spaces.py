@@ -12,7 +12,14 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import html
+from importlib.metadata import version
 
+from hop_design.catalog.defaults import (
+    BASAL_REF,
+    DEFAULTS_ANATOMY_SUMMARY,
+    DEFAULTS_DISPLAY_NAME,
+    FOLDBACK_REF,
+)
 from hop_design.models.design_space import HairpinDesignSet, SubstrateSpaceSpec
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 
@@ -55,12 +62,14 @@ def render_review_html(
         )
         rendered_rows.append(
             f'<tr data-design-row="true" data-search="{search_text}">'
-            f"<td>{record.canonical_ordinal}</td>"
-            f"<td><code>{assignment}</code></td>"
-            f"<td><code>{record.exact_payload}</code></td>"
-            f"<td><code>{record.derived_paired_payload}</code></td>"
-            f"<td>{record.exact_hairpin_length}</td>"
-            f"<td>{record.disposition}</td>"
+            f'<td data-sort-value="{record.canonical_ordinal}">{record.canonical_ordinal}</td>'
+            f'<td data-sort-value="{assignment}"><code>{assignment}</code></td>'
+            f'<td data-sort-value="{record.exact_payload}"><code>{record.exact_payload}</code></td>'
+            f'<td data-sort-value="{record.derived_paired_payload}">'
+            f"<code>{record.derived_paired_payload}</code></td>"
+            f'<td data-sort-value="{record.exact_hairpin_length}">'
+            f"{record.exact_hairpin_length}</td>"
+            f'<td data-sort-value="{record.disposition}">{record.disposition}</td>'
             "</tr>"
         )
     rows = "".join(rendered_rows)
@@ -102,12 +111,6 @@ def render_review_html(
         segment_labels.append(f"<li>{html.escape(name)} · {html.escape(description)}</li>")
     segments = "".join(segment_labels)
 
-    variable_count = len(design_set.members[0].variable_assignment)
-    variable_label = "position" if variable_count == 1 else "positions"
-    summary_title = (
-        f"{design_set.unique_designs} exact hairpin designs from "
-        f"{variable_count} variable paired {variable_label}"
-    )
     question = ""
     if spec.context is not None and spec.context.question is not None:
         question = f'<p class="question">{html.escape(spec.context.question)}</p>'
@@ -126,6 +129,18 @@ def render_review_html(
             "</tr>"
         )
     rendered_claim_rows = "".join(claim_rows)
+    statuses = design_set.claim_status
+    evidence_boundary = (
+        f"Digital design was {statuses.digital_design.status}. "
+        "Named-method and destination compatibility were "
+        f"{statuses.named_method.status.replace('_', ' ')}; "
+        "physical construction, QC, and biological activity were "
+        f"{statuses.physical_construction.status.replace('_', ' ')}."
+    )
+    summary_accounting = (
+        f"Complete: {design_set.enumerated_assignments}/{design_set.theoretical_cardinality} · "
+        f"{design_set.unique_designs} unique · {design_set.duplicate_count} duplicates"
+    )
     markup = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -152,9 +167,10 @@ body {{
 }}
 main {{ width:min(calc(100% - 2rem), 72rem); margin:0 auto; padding:3rem 0 5rem; }}
 h1,h2 {{ line-height:1.15; letter-spacing:-.02em; }}
-h1 {{ max-width:18ch; font-size:clamp(2rem,5vw,4rem); margin:0 0 1rem; }}
+h1 {{ max-width:20ch; font-size:clamp(2rem,5vw,4rem); margin:0 0 .7rem; }}
 h2 {{ font-size:1.35rem; margin:0 0 1rem; }}
 section {{ padding:2rem 0; border-top:1px solid var(--rule); }}
+.summary {{ padding-top:0; border-top:0; }}
 .lede {{ max-width:62ch; font-size:1.15rem; }}
 .question {{ max-width:62ch; color:var(--muted); }}
 .boundary {{
@@ -166,6 +182,7 @@ section {{ padding:2rem 0; border-top:1px solid var(--rule); }}
 .segment-key {{ display:flex; flex-wrap:wrap; gap:.35rem 1.5rem; padding:0; }}
 .segment-key li {{ list-style:none; }}
 .duplex-wrap {{ overflow-x:auto; padding:.4rem 0 1rem; }}
+.duplex-stack {{ width:max-content; }}
 .duplex {{ display:flex; width:max-content; gap:.15rem; margin:.7rem 0; }}
 .base-pair {{
   display:flex;
@@ -185,9 +202,7 @@ section {{ padding:2rem 0; border-top:1px solid var(--rule); }}
   border:2px dashed var(--accent);
 }}
 .pair-line {{ height:1.25rem; color:var(--muted); }}
-.orientation {{ display:flex; justify-content:space-between; width:max-content; min-width:100%; }}
-.facts {{ display:flex; flex-wrap:wrap; gap:1rem 2.5rem; margin:1rem 0; }}
-.fact strong {{ display:block; font-size:1.6rem; }} .fact span {{ color:var(--muted); }}
+.orientation {{ display:flex; justify-content:space-between; width:100%; }}
 .table-wrap {{ overflow-x:auto; }}
 table {{ width:100%; border-collapse:collapse; }}
 #design-table {{ min-width:56rem; }}
@@ -198,39 +213,46 @@ th,td {{
   white-space:nowrap;
 }}
 th {{ font-size:.83rem; text-transform:uppercase; letter-spacing:.04em; }}
+th button {{
+  padding:0;
+  border:0;
+  color:inherit;
+  background:transparent;
+  font:inherit;
+  letter-spacing:inherit;
+  text-transform:inherit;
+  cursor:pointer;
+}}
 code {{ font-family:ui-monospace,monospace; }}
 details {{ margin-top:1rem; }}
+.handoff-list {{ padding-left:1.2rem; }}
 .filter {{ display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; margin:0 0 1rem; }}
 .filter input {{ min-width:min(100%, 22rem); padding:.55rem .65rem; font:inherit; }}
 @media (max-width: 768px) {{
   main {{ width:min(calc(100% - 1.25rem), 72rem); padding-top:1.5rem; }}
   h1 {{ font-size:clamp(2rem,11vw,3rem); }}
   section {{ padding:1.5rem 0; }}
-  .facts {{ gap:.75rem 1.5rem; }}
 }}
 @media print {{ main {{ width:100%; padding:0; }} .table-wrap {{ overflow:visible; }} }}
 </style>
 </head>
 <body><main>
-<header>
-<p>HOP Design · verified digital design set</p>
-<h1>{summary_title}</h1>
-<p class="lede">
-  The declared substrate space was exhaustively expanded into exact hairpin encodings.
-</p>
+<header><p>HOP Design · verified digital design set</p></header>
+<section class="summary"><h2>Summary</h2>
+<h1>{design_set.unique_designs} exact hairpin designs</h1>
+<p class="lede"><strong>{summary_accounting}</strong></p>
+<p class="boundary">{evidence_boundary}</p>
+</section>
+<section><h2>Substrate definition</h2>
 {question}
-<p class="boundary">
-  <strong>Compiled means digitally derived and verified.</strong>
-  It does not mean the molecules were physically constructed or assayed.
-</p>
-</header>
-<section><h2>Substrate-space anatomy</h2>
 <ul class="segment-key">{segments}</ul>
 <figure>
 <div class="duplex-wrap" role="img" aria-label="Authored and automatically paired payloads">
+ <div class="duplex-stack">
   <div class="orientation"><span>5&prime;</span><span>3&prime;</span></div>
   <div class="duplex">{base_pairs}</div>
   <div class="orientation"><span>3&prime;</span><span>5&prime;</span></div>
+ </div>
 </div>
 <figcaption>
   The paired arm is displayed 3&prime;&rarr;5&prime; beneath the authored arm;
@@ -238,54 +260,81 @@ details {{ margin-top:1rem; }}
   <code>{design_set.members[0].derived_paired_payload}</code>.
 </figcaption>
 </figure>
-<p>
-  Pairing is derived automatically using
-  <code>{html.escape(spec.hairpin.defaults_ref)}</code>.
-</p>
+<p><strong>Paired payload:</strong> derived from the authored payload by reverse complement.</p>
+<p><strong>Hairpin context:</strong> supplied by the selected
+<code>{html.escape(spec.hairpin.defaults_ref)}</code>.
+{DEFAULTS_DISPLAY_NAME}: {DEFAULTS_ANATOMY_SUMMARY}</p>
 </section>
-<section><h2>Space accounting</h2><div class="facts">
-<div class="fact"><strong>{design_set.theoretical_cardinality}</strong>
-<span>theoretical assignments</span></div>
-<div class="fact"><strong>{design_set.unique_designs}</strong>
-<span>unique exact designs</span></div>
-<div class="fact"><strong>{design_set.duplicate_count}</strong>
-<span>duplicates</span></div>
-<div class="fact"><strong>Complete</strong><span>coverage</span></div>
-</div></section>
-<section><h2>Evidence</h2><div class="table-wrap"><table>
-<thead><tr><th scope="col">Evidence dimension</th><th scope="col">Status</th>
-<th scope="col">Basis</th></tr></thead><tbody>
-{rendered_claim_rows}
-</tbody></table></div></section>
-<section><h2>Design table</h2>
+<section><h2>Designs</h2>
+<p>Designs are listed in deterministic 5&prime;&rarr;3&prime; assignment order using canonical
+A, C, G, T domain order. Ordinal is not rank.</p>
 <div class="filter">
   <label for="design-search">Filter exact designs</label>
   <input id="design-search" type="search" autocomplete="off"
          placeholder="Assignment or sequence" aria-controls="design-table">
 </div>
 <div class="table-wrap"><table id="design-table">
-<thead><tr><th scope="col">Ordinal</th><th scope="col">Assignment</th>
-<th scope="col">Exact payload</th><th scope="col">Derived paired payload</th>
-<th scope="col">Hairpin length</th><th scope="col">Disposition</th></tr></thead>
-<tbody>{rows}</tbody></table></div></section>
-<section><h2>Handoff</h2><p>
-  <code>designs.csv</code> is the sequence index;
-  <code>sequences.fasta</code> is the sequence handoff;
-  <code>bundle/</code> is the verified digital authority; and
-  <code>source.yaml</code> records the authored specification.
-</p>
+<thead><tr>
+<th scope="col"><button type="button" data-sort-column="0">Ordinal</button></th>
+<th scope="col"><button type="button" data-sort-column="1">Assignment</button></th>
+<th scope="col"><button type="button" data-sort-column="2">Exact payload</button></th>
+<th scope="col"><button type="button" data-sort-column="3">Derived paired payload</button></th>
+<th scope="col"><button type="button" data-sort-column="4">Hairpin length</button></th>
+<th scope="col"><button type="button" data-sort-column="5">Disposition</button></th>
+</tr></thead><tbody>{rows}</tbody></table></div>
+</section>
+<section><h2>Evidence and handoff</h2><div class="table-wrap"><table>
+<thead><tr><th scope="col">Evidence dimension</th><th scope="col">Status</th>
+<th scope="col">Basis</th></tr></thead><tbody>
+{rendered_claim_rows}
+</tbody></table></div>
+<ul class="handoff-list">
+<li><code>bundle/</code> — verified digital authority</li>
+<li><code>designs.csv</code> — exact sequence index and dispositions</li>
+<li><code>sequences.fasta</code> — sequence handoff</li>
+<li><code>source.yaml</code> — normalized authored specification</li>
+</ul>
 <details><summary>Technical details</summary>
+<p>HOP version: <code>{version("hop-design")}</code></p>
+<p>Schema IDs: <code>{spec.schema_id}</code> · <code>{design_set.schema_id}</code></p>
+<p>Defaults reference: <code>{html.escape(spec.hairpin.defaults_ref)}</code></p>
+<p>Resolved anatomy: <code>{FOLDBACK_REF}</code> · <code>{BASAL_REF}</code></p>
+<p>Canonical space digest: <code>{design_set.spec_digest}</code></p>
 <p>Design-set ID: <code>{html.escape(design_set.design_set_id)}</code></p>
 <p>Manifest digest: <code>{design_set.manifest_digest}</code></p>
+<p>Verification: {verified_member_count} unique member authorities replayed</p>
+<p>Member authority root: <code>bundle/members/</code></p>
 </details></section>
 </main>
 <script>
 const search = document.querySelector("#design-search");
 const rows = document.querySelectorAll('[data-design-row="true"]');
+const tableBody = document.querySelector("#design-table tbody");
 search.addEventListener("input", () => {{
   const query = search.value.trim().toLowerCase();
   rows.forEach((row) => {{
     row.hidden = !row.dataset.search.includes(query);
+  }});
+}});
+document.querySelectorAll("[data-sort-column]").forEach((button) => {{
+  button.addEventListener("click", () => {{
+    const column = Number(button.dataset.sortColumn);
+    const direction = button.dataset.direction === "ascending" ? -1 : 1;
+    const sortedRows = Array.from(rows).sort((left, right) => {{
+      const leftValue = left.children[column].dataset.sortValue;
+      const rightValue = right.children[column].dataset.sortValue;
+      const numeric = column === 0 || column === 4;
+      return direction * (numeric
+        ? Number(leftValue) - Number(rightValue)
+        : leftValue.localeCompare(rightValue));
+    }});
+    sortedRows.forEach((row) => tableBody.appendChild(row));
+    document.querySelectorAll("[data-sort-column]").forEach((item) => {{
+      item.removeAttribute("data-direction");
+      item.removeAttribute("aria-sort");
+    }});
+    button.dataset.direction = direction === 1 ? "ascending" : "descending";
+    button.setAttribute("aria-sort", button.dataset.direction);
   }});
 }});
 </script>

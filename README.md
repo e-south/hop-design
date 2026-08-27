@@ -12,6 +12,11 @@ whether a laboratory experiment will succeed.
 
 Define one bounded duplex substrate space, preview its exact size, and compile
 a verified digital design package with a readable sequence index and review.
+The public tracer asks how activity varies across three paired context
+positions: three `N` positions define 64 exact assignments and compile to one
+complete sequence-indexed design package. This establishes verified digital
+design only. Named-method and destination compatibility are not evaluated;
+physical construction, QC, and biological activity are not recorded.
 
 | Project status | Current contract |
 | --- | --- |

@@ -236,6 +236,6 @@ def test_compile_space_is_create_only_and_blocked_without_partial_output(tmp_pat
     data["enumeration"]["max_members"] = 3
     blocked = SubstrateSpaceSpec.model_validate(data)
     destination = tmp_path / "blocked"
-    with pytest.raises(ValueError, match="above max_members=3"):
+    with pytest.raises(ValueError, match="Compilation is blocked by max_members=3"):
         compile_space(blocked, destination=destination)
     assert not destination.exists()

@@ -53,7 +53,9 @@ uv run hop-design verify build/fixed-site-three-base-context/bundle
 The example defines 64 exact designs from three variable paired positions.
 Open `build/fixed-site-three-base-context/review.html` to inspect the substrate
 anatomy, complete space accounting, evidence boundary, exact sequence table,
-and handoff files. Continue with the
+and handoff files. The package establishes verified digital design; it does
+not evaluate a named method or destination, and it does not record physical
+construction, QC, or biological activity. Continue with the
 [substrate-space guide](substrate-spaces.md) for the specification and package
 contracts.
 

@@ -159,10 +159,26 @@ def test_cli_previews_a_ready_substrate_space_without_writing(tmp_path: Path) ->
     assert "Substrate space: cli-space" in result.output
     assert "Payload: ACTG N GATC" in result.output
     assert "Variable positions: 5" in result.output
-    assert "Space: 4 exact variants" in result.output
+    assert "Domains: N=A/C/G/T" in result.output
+    assert "Space: 4 exact assignments (4)" in result.output
     assert "Compilation: ready" in result.output
-    assert "Construction, QC, and activity: not evaluated" in result.output
+    assert "Method and destination: not evaluated" in result.output
+    assert "Construction, QC, and activity: not recorded" in result.output
     assert {path.name for path in tmp_path.iterdir()} == {"space.yaml"}
+
+
+def test_cli_previews_actual_mixed_iupac_domains_and_cardinality_factors(
+    tmp_path: Path,
+) -> None:
+    spec_path = tmp_path / "space.yaml"
+    _write_space_spec(spec_path, variable="RYN", max_members=16)
+
+    result = runner.invoke(app, ["space", "preview", str(spec_path)])
+
+    assert result.exit_code == 0, result.output
+    assert "Payload: ACTG RYN GATC" in result.output
+    assert "Domains: R=A/G · Y=C/T · N=A/C/G/T" in result.output
+    assert "Space: 16 exact assignments (2 \u00d7 2 \u00d7 4)" in result.output
 
 
 def test_cli_previews_a_blocked_space_as_a_successful_read_only_result(tmp_path: Path) -> None:
@@ -172,7 +188,8 @@ def test_cli_previews_a_blocked_space_as_a_successful_read_only_result(tmp_path:
     result = runner.invoke(app, ["space", "preview", str(spec_path)])
 
     assert result.exit_code == 0, result.output
-    assert "valid specification defines 4,096 variants" in result.output
+    assert "valid specification defines 4,096 exact assignments" in result.output
+    assert "Compilation is blocked by max_members=256." in result.output
     assert (
         "Preview completed. No designs were enumerated and no files were written." in result.output
     )
@@ -189,9 +206,11 @@ def test_cli_compiles_and_verifies_a_complete_design_set(tmp_path: Path) -> None
     )
 
     assert result.exit_code == 0, result.output
-    assert "Compiled 4 of 4 exact designs." in result.output
-    assert f"Verified design package: {output / 'bundle'}" in result.output
-    assert "Physical construction, QC, and biological activity were not evaluated." in result.output
+    assert "Compiled and verified 4 exact designs." in result.output
+    assert "Coverage: 4/4 complete · 4 unique · 0 duplicates" in result.output
+    assert f"Design package: {output / 'bundle'}" in result.output
+    assert "Named method and destination compatibility were not evaluated." in result.output
+    assert "Physical construction, QC, and biological activity were not recorded." in result.output
 
     verify_result = runner.invoke(app, ["verify", str(output / "bundle")])
     assert verify_result.exit_code == 0, verify_result.output

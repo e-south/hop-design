@@ -52,6 +52,18 @@ class VerifiedHairpinDesignSet:
     members: tuple[VerifiedHopBundle, ...]
 
 
+class SubstrateMemberCompilationError(ValueError):
+    """Report one exact assignment that could not compile into a member."""
+
+    def __init__(self, *, ordinal: int, total: int, assignment: str, reason: str) -> None:
+        super().__init__(
+            f"Compilation stopped at assignment {ordinal} of {total}.\n"
+            f"Assignment: {assignment}\n"
+            f"Reason: {reason}\n"
+            "No output package was committed."
+        )
+
+
 def _authored_payload(spec: SubstrateSpaceSpec) -> str:
     return "".join((segment.fixed or segment.variable or "") for segment in spec.payload.segments)
 
@@ -84,8 +96,8 @@ def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
     elif cardinality > spec.enumeration.max_members:
         state = "blocked"
         message = (
-            f"This valid specification defines {cardinality} variants, above "
-            f"max_members={spec.enumeration.max_members}."
+            f"This valid specification defines {cardinality} exact assignments. "
+            f"Compilation is blocked by max_members={spec.enumeration.max_members}."
         )
     else:
         state = "ready"
@@ -119,6 +131,33 @@ def _molecular_space(spec: SubstrateSpaceSpec) -> MolecularSubstrateSpace:
         payload_domains=tuple(payload_domains),
         defaults_ref=spec.hairpin.defaults_ref,
     )
+
+
+def _assignment_text(
+    spec: SubstrateSpaceSpec,
+    assignments: tuple[VariableAssignment, ...],
+) -> str:
+    assignments_by_position = {assignment.position: assignment.base for assignment in assignments}
+    labels: list[str] = []
+    cursor = 1
+    for segment in spec.payload.segments:
+        sequence = segment.fixed or segment.variable or ""
+        segment_positions = tuple(range(cursor, cursor + len(sequence)))
+        cursor += len(sequence)
+        if segment.variable is None:
+            continue
+        assigned = tuple(
+            (position, assignments_by_position[position])
+            for position in segment_positions
+            if position in assignments_by_position
+        )
+        if not assigned:
+            continue
+        if segment.name is not None:
+            labels.append(f"{segment.name}={''.join(base for _, base in assigned)}")
+        else:
+            labels.extend(f"{position}={base}" for position, base in assigned)
+    return "; ".join(labels) or "fixed payload"
 
 
 def _exact_payloads(
@@ -242,9 +281,17 @@ def compile_space(
                 spec_digest=spec_digest,
                 assignments=assignments,
             )
-            compilation = compile_spec(
-                create_catalog_spec(sequence=exact_payload, design_id=design_id)
-            )
+            try:
+                compilation = compile_spec(
+                    create_catalog_spec(sequence=exact_payload, design_id=design_id)
+                )
+            except ValueError as exc:
+                raise SubstrateMemberCompilationError(
+                    ordinal=ordinal,
+                    total=preview.theoretical_cardinality,
+                    assignment=_assignment_text(spec, assignments),
+                    reason=str(exc),
+                ) from exc
             encoding_digest = compilation.plan.hairpin_encoding_insert.sequence_digest
             canonical_ordinal = encoding_ordinals.get(encoding_digest)
             if canonical_ordinal is None:

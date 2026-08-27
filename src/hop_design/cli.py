@@ -162,21 +162,38 @@ def _position_text(positions: tuple[int, ...]) -> str:
     return ", ".join(str(position) for position in positions)
 
 
+def _variable_symbols(spec: SubstrateSpaceSpec) -> tuple[str, ...]:
+    return tuple(
+        symbol
+        for segment in spec.payload.segments
+        if segment.variable is not None
+        for symbol in segment.variable
+    )
+
+
 def _print_ready_preview(
     spec: SubstrateSpaceSpec,
     preview: SubstrateSpacePreview,
 ) -> None:
     typer.echo(f"Substrate space: {spec.name}")
     typer.echo(f"Payload: {_segment_text(spec)}")
+    typer.echo(f"Variable positions: {_position_text(preview.variable_positions)}")
     typer.echo(
-        f"Variable positions: {_position_text(preview.variable_positions)} · "
-        "A/C/G/T domains from the authored IUPAC symbols"
+        "Domains: "
+        + " · ".join(
+            f"{symbol}={'/'.join(domain)}"
+            for symbol, domain in zip(
+                _variable_symbols(spec), preview.variable_domains, strict=True
+            )
+        )
     )
     typer.echo("Paired arm: derived automatically by reverse complement")
-    typer.echo(f"Space: {preview.theoretical_cardinality:,} exact variants")
+    factors = " \u00d7 ".join(str(len(domain)) for domain in preview.variable_domains) or "1"
+    typer.echo(f"Space: {preview.theoretical_cardinality:,} exact assignments ({factors})")
     typer.echo(f"Coverage: exhaustive · max_members={preview.max_members:,}")
     typer.echo("Compilation: ready")
-    typer.echo("Construction, QC, and activity: not evaluated")
+    typer.echo("Method and destination: not evaluated")
+    typer.echo("Construction, QC, and activity: not recorded")
 
 
 @space_app.command("preview")
@@ -195,9 +212,10 @@ def preview_space_command(
         )
     if preview.state == "blocked":
         typer.echo(
-            f"This valid specification defines {preview.theoretical_cardinality:,} variants, "
-            f"above max_members={preview.max_members:,}."
+            f"This valid specification defines "
+            f"{preview.theoretical_cardinality:,} exact assignments."
         )
+        typer.echo(f"Compilation is blocked by max_members={preview.max_members:,}.")
         typer.echo("Preview completed. No designs were enumerated and no files were written.")
         typer.echo("Increase the explicit bound or reduce the variable space before compilation.")
         return
@@ -221,17 +239,18 @@ def compile_space_command(
     except (OSError, ValidationError, ValueError, yaml.YAMLError) as exc:
         raise typer.BadParameter(str(exc), param_hint="SPEC_PATH") from exc
     design_set = verified.design_set
+    typer.echo(f"Compiled and verified {design_set.enumerated_assignments:,} exact designs.")
     typer.echo(
-        f"Compiled {design_set.enumerated_assignments:,} of "
-        f"{design_set.theoretical_cardinality:,} exact designs."
+        f"Coverage: {design_set.enumerated_assignments:,}/"
+        f"{design_set.theoretical_cardinality:,} {design_set.coverage} · "
+        f"{design_set.unique_designs:,} unique · {design_set.duplicate_count:,} duplicates"
     )
-    typer.echo(f"Coverage: {design_set.coverage} · {design_set.duplicate_count:,} duplicates")
-    typer.echo(f"Verified design package: {output / 'bundle'}")
+    typer.echo(f"Design package: {output / 'bundle'}")
     typer.echo(f"Sequence index: {output / 'designs.csv'}")
     typer.echo(f"Review: {output / 'review.html'}")
     typer.echo()
-    typer.echo("This establishes digital design derivation only.")
-    typer.echo("Physical construction, QC, and biological activity were not evaluated.")
+    typer.echo("Named method and destination compatibility were not evaluated.")
+    typer.echo("Physical construction, QC, and biological activity were not recorded.")
 
 
 @app.command("verify")

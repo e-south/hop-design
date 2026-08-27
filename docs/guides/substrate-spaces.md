@@ -44,7 +44,10 @@ enumeration:
 
 Three `N` positions each permit `A`, `C`, `G`, or `T`, so the declared space
 contains (4^3=64) exact assignments. `context` describes the experimental
-question for the review; it does not change design-set identity.
+question for the review; it does not change design-set identity. The top-level
+name, segment labels, equivalent segment boundaries, and a permissive
+`max_members` value are likewise presentation or execution concerns rather
+than molecular identity.
 
 ## Define, preview, compile
 
@@ -58,9 +61,11 @@ uv run hop-design verify build/fixed-site-three-base-context/bundle
 ```
 
 Preview validates the specification, reports fixed and variable positions,
-computes exact cardinality, and writes nothing. A valid space larger than
-`max_members` is `blocked`: no members are allocated and no partial set is
-published.
+reports each actual IUPAC domain, computes exact cardinality, and writes
+nothing. A valid space larger than `max_members` is `blocked`: no members are
+allocated and no partial set is published. `max_members` is limited to
+100,000 in this release; larger theoretical spaces can be previewed only when
+their submitted execution bound remains within that implementation ceiling.
 
 Compile expands variable positions from 5-prime to 3-prime in `A`, `C`, `G`,
 `T` order, compiles every exact member through the existing HOP compiler,
@@ -72,7 +77,7 @@ to replace an existing destination.
 ```text
 build/fixed-site-three-base-context/
 ├── bundle/             verified digital authority
-├── source.yaml         authored specification
+├── source.yaml         normalized authored specification
 ├── designs.csv         exact sequence index
 ├── sequences.fasta     downstream sequence handoff
 └── review.html         offline human review
@@ -86,10 +91,10 @@ verification.
 
 Successful compilation establishes complete digital derivation and replay of
 64 exact member authorities.
-Physical construction, QC, and biological activity were not evaluated.
-A named construction method and destination
-compatibility also remain unevaluated unless separate evidence is attached by
-their owning systems.
+The verified manifest records this evidence boundary directly. A named
+construction method and destination compatibility were not evaluated.
+Physical construction, QC, and biological activity were not recorded. Later
+evidence belongs in separate records that reference the stable design-set ID.
 
 ## Python
 
