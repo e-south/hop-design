@@ -67,8 +67,10 @@ for required in \
   'assets/examples/foldback-junction.svg' \
   'docs/index.md' \
   'examples/author_linear_source_method.py' \
+  'examples/compile_payload_records.py' \
   'examples/compile_linear_source_method.py' \
   'examples/discover_basal_candidates.py' \
+  'examples/fixed-site-three-base-context.yaml' \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
   'examples/linear-source-method.json' \

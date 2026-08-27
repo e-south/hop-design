@@ -25,6 +25,8 @@ def test_docs_smoke_exercises_the_public_documentation_journey() -> None:
     summary = json.loads(result.stdout)
     assert summary["schema"] == "hop.docs-smoke/v1"
     assert summary["status"] == "ok"
+    assert summary["substrate_space_designs_verified"] == 64
+    assert summary["payload_record_bundles_verified"] == 3
     assert summary["design_surfaces"] == ["exact", "symbolic", "spec"]
     assert summary["discovery_statuses"] == ["complete", "infeasible", "truncated"]
     assert summary["method_authoring_verified"] is True
@@ -38,6 +40,8 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
 
     assert "uv run --locked python scripts/docs-smoke" in agent_verify
     assert '"$smoke_root/venv/bin/python" scripts/docs-smoke' in wheel_smoke
+    assert "'examples/fixed-site-three-base-context.yaml'" in wheel_smoke
+    assert "'examples/compile_payload_records.py'" in wheel_smoke
     assert "'examples/linear-source-matched-design.yaml'" in wheel_smoke
     assert "'examples/author_linear_source_method.py'" in wheel_smoke
     assert "'examples/verify_design_method_handoff.py'" in wheel_smoke

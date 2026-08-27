@@ -120,27 +120,75 @@ def _exercise_designs(smoke_root: Path, *, content_root: Path) -> None:
     )
 
 
-def _exercise_payload_library(smoke_root: Path, *, content_root: Path) -> None:
-    summary = _json_output(
-        "payload-first library example",
+def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
+    spec_path = content_root / "examples" / "fixed-site-three-base-context.yaml"
+    _require(spec_path.is_file(), f"required substrate-space example is missing: {spec_path.name}")
+    preview = _run(
+        "substrate-space preview",
+        ["-m", "hop_design.cli", "space", "preview", str(spec_path)],
+        content_root=content_root,
+    )
+    _require("Space: 64 exact variants" in preview, "substrate-space cardinality changed")
+    _require("Compilation: ready" in preview, "substrate-space preview is not ready")
+
+    output = smoke_root / "substrate-space"
+    _run(
+        "substrate-space compilation",
         [
-            "examples/compile_payload_library.py",
+            "-m",
+            "hop_design.cli",
+            "space",
+            "compile",
+            str(spec_path),
             "--out",
-            str(smoke_root / "payload-library"),
+            str(output),
         ],
         content_root=content_root,
     )
-    _require(isinstance(summary, dict), "payload-library example must emit an object")
-    _require(summary.get("payload_count") == 3, "payload-library input count changed")
-    _require(summary.get("design_count") == 3, "payload-library design count changed")
+    summary = _json_output(
+        "substrate-space verification",
+        [
+            "-c",
+            (
+                "import json, pathlib, sys; import hop_design.spaces as spaces; "
+                "verified = spaces.load_verified_design_set(pathlib.Path(sys.argv[1])); "
+                "print(json.dumps({'coverage': verified.design_set.coverage, "
+                "'design_count': verified.design_set.unique_designs}, sort_keys=True))"
+            ),
+            str(output / "bundle"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "substrate-space verification must emit an object")
+    _require(summary.get("coverage") == "complete", "substrate-space coverage is not complete")
+    _require(summary.get("design_count") == 64, "substrate-space design count changed")
+    for projection in ("designs.csv", "sequences.fasta", "review.html", "source.yaml"):
+        _require((output / projection).is_file(), f"substrate-space output omitted {projection}")
+    return 64
+
+
+def _exercise_payload_records(smoke_root: Path, *, content_root: Path) -> int:
+    summary = _json_output(
+        "advanced payload-record example",
+        [
+            "examples/compile_payload_records.py",
+            "--out",
+            str(smoke_root / "payload-records"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "payload-record example must emit an object")
+    _require(summary.get("payload_count") == 3, "payload-record input count changed")
+    _require(summary.get("design_count") == 3, "payload-record design count changed")
     _require(
         summary.get("bundle_verified_count") == 3,
-        "payload-library example did not replay every design bundle",
+        "payload-record example did not replay every design bundle",
     )
     _require(
         summary.get("method_resolution_status") == "not_evaluated",
-        "payload-library design compilation invented a production-method claim",
+        "payload-record compilation invented a production-method claim",
     )
+    return 3
 
 
 def _exercise_discovery(*, content_root: Path) -> list[str]:
@@ -286,7 +334,12 @@ def main(argv: Sequence[str] | None = None) -> None:
     with tempfile.TemporaryDirectory(prefix="hop-docs-smoke-") as temporary:
         smoke_root = Path(temporary)
         _exercise_designs(smoke_root, content_root=content_root)
-        _exercise_payload_library(smoke_root, content_root=content_root)
+        substrate_space_designs = _exercise_substrate_space(
+            smoke_root, content_root=content_root
+        )
+        payload_record_bundles = _exercise_payload_records(
+            smoke_root, content_root=content_root
+        )
         discovery_statuses = _exercise_discovery(content_root=content_root)
         _exercise_method(smoke_root, content_root=content_root)
         _exercise_method_authoring(smoke_root, content_root=content_root)
@@ -302,9 +355,10 @@ def main(argv: Sequence[str] | None = None) -> None:
                 "handoff_verified": True,
                 "method_authoring_verified": True,
                 "method_bundle_verified": True,
-                "payload_library_bundles_verified": 3,
+                "payload_record_bundles_verified": payload_record_bundles,
                 "schema": "hop.docs-smoke/v1",
                 "status": "ok",
+                "substrate_space_designs_verified": substrate_space_designs,
             },
             sort_keys=True,
         )
