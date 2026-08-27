@@ -15,7 +15,6 @@ import os
 import shutil
 import tempfile
 from dataclasses import dataclass
-from itertools import product
 from math import prod
 from pathlib import Path
 from typing import Literal
@@ -29,23 +28,27 @@ from hop_design.catalog.defaults import (
 )
 from hop_design.design.bundle import VerifiedHopBundle, load_verified_bundle
 from hop_design.design.compile import compile_spec, create_catalog_spec
+from hop_design.design.space.authority import (
+    CANONICAL_DNA_ORDER,
+    assignment_text,
+    exact_payloads,
+    member_design_id,
+    molecular_space,
+    provisional_design_set,
+    seal_design_set,
+)
 from hop_design.export.bundle import BundleIntegrityError, verify_manifested_bundle_contents
 from hop_design.export.space_package import design_set_artifacts, write_space_projections
 from hop_design.kernel.bundle_identity import design_set_id, manifest_digest_for_design_set
-from hop_design.models.bundle import ArtifactManifestEntry
 from hop_design.models.design_space import (
-    DesignSetClaimStatus,
     HairpinDesignMember,
     HairpinDesignSet,
-    MolecularSubstrateSpace,
     SubstrateSpacePreview,
     SubstrateSpaceSpec,
-    VariableAssignment,
 )
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
+from hop_design.models.space.scientist import MolecularSubstrateSpace
 from hop_design.serialization import canonical_json_bytes, sha256_digest
-
-_BASE_ORDER: tuple[Literal["A", "C", "G", "T"], ...] = ("A", "C", "G", "T")
 
 
 @dataclass(frozen=True)
@@ -89,7 +92,9 @@ def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
             else:
                 variable_positions.append(cursor)
                 bases = iupac_bases(symbol)
-                variable_domains.append(tuple(base for base in _BASE_ORDER if base in bases))
+                variable_domains.append(
+                    tuple(base for base in CANONICAL_DNA_ORDER if base in bases)
+                )
             cursor += 1
     cardinality = prod(len(domain) for domain in variable_domains)
     state: Literal["ready", "blocked", "invalid"]
@@ -126,134 +131,6 @@ def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
     )
 
 
-def _molecular_space(spec: SubstrateSpaceSpec) -> MolecularSubstrateSpace:
-    payload_domains: list[tuple[Literal["A", "C", "G", "T"], ...]] = []
-    for segment in spec.payload.segments:
-        sequence = segment.fixed or segment.variable or ""
-        for symbol in sequence:
-            bases = iupac_bases(symbol)
-            payload_domains.append(tuple(base for base in _BASE_ORDER if base in bases))
-    return MolecularSubstrateSpace(
-        payload_domains=tuple(payload_domains),
-        defaults_ref=spec.hairpin.defaults_ref,
-    )
-
-
-def _assignment_text(
-    spec: SubstrateSpaceSpec,
-    assignments: tuple[VariableAssignment, ...],
-) -> str:
-    assignments_by_position = {assignment.position: assignment.base for assignment in assignments}
-    labels: list[str] = []
-    cursor = 1
-    for segment in spec.payload.segments:
-        sequence = segment.fixed or segment.variable or ""
-        segment_positions = tuple(range(cursor, cursor + len(sequence)))
-        cursor += len(sequence)
-        if segment.variable is None:
-            continue
-        assigned = tuple(
-            (position, assignments_by_position[position])
-            for position in segment_positions
-            if position in assignments_by_position
-        )
-        if not assigned:
-            continue
-        if segment.name is not None:
-            labels.append(f"{segment.name}={''.join(base for _, base in assigned)}")
-        else:
-            labels.extend(f"{position}={base}" for position, base in assigned)
-    return "; ".join(labels) or "fixed payload"
-
-
-def _exact_payloads(
-    molecular_space: MolecularSubstrateSpace,
-) -> tuple[tuple[tuple[VariableAssignment, ...], str], ...]:
-    variable_positions = tuple(
-        position
-        for position, domain in enumerate(molecular_space.payload_domains, start=1)
-        if len(domain) > 1
-    )
-    variable_domains = tuple(
-        domain for domain in molecular_space.payload_domains if len(domain) > 1
-    )
-    template = [domain[0] for domain in molecular_space.payload_domains]
-    results: list[tuple[tuple[VariableAssignment, ...], str]] = []
-    for bases in product(*variable_domains):
-        exact = template.copy()
-        assignments = tuple(
-            VariableAssignment(
-                position=position,
-                base=base,
-            )
-            for position, base in zip(variable_positions, bases, strict=True)
-        )
-        for assignment in assignments:
-            exact[assignment.position - 1] = assignment.base
-        results.append((assignments, "".join(exact)))
-    return tuple(results)
-
-
-def _member_design_id(*, spec_digest: str, assignments: tuple[VariableAssignment, ...]) -> str:
-    assignment_digest = sha256_digest(
-        canonical_json_bytes([assignment.model_dump(mode="json") for assignment in assignments])
-    )
-    return (
-        f"space-{spec_digest.removeprefix('sha256:')[:12]}-"
-        f"member-{assignment_digest.removeprefix('sha256:')[:12]}"
-    )
-
-
-def _provisional_design_set(
-    *,
-    spec: SubstrateSpaceSpec,
-    spec_digest: str,
-    members: tuple[HairpinDesignMember, ...],
-    artifacts: tuple[ArtifactManifestEntry, ...],
-) -> HairpinDesignSet:
-    unique_designs = sum(member.disposition == "canonical" for member in members)
-    duplicate_count = len(members) - unique_designs
-    return HairpinDesignSet(
-        design_set_id="hop:design-set/pending/pending",
-        spec_digest=spec_digest,
-        defaults_ref=spec.hairpin.defaults_ref,
-        theoretical_cardinality=len(members),
-        enumerated_assignments=len(members),
-        unique_designs=unique_designs,
-        duplicate_count=duplicate_count,
-        claim_status=DesignSetClaimStatus.model_validate(
-            {
-                "space_accounting": {
-                    "status": "complete",
-                    "basis": "all_declared_assignments_enumerated",
-                },
-                "digital_design": {
-                    "status": "verified",
-                    "basis": "all_unique_member_authorities_replay_verified",
-                },
-                "named_method": {"status": "not_evaluated"},
-                "destination_compatibility": {"status": "not_evaluated"},
-                "physical_construction": {"status": "not_recorded"},
-                "quality_control": {"status": "not_recorded"},
-                "biological_activity": {"status": "not_recorded"},
-            }
-        ),
-        members=members,
-        artifacts=artifacts,
-        manifest_digest=f"sha256:{'0' * 64}",
-    )
-
-
-def _seal_design_set(design_set: HairpinDesignSet) -> HairpinDesignSet:
-    digest = manifest_digest_for_design_set(design_set)
-    return design_set.model_copy(
-        update={
-            "design_set_id": design_set_id(manifest_digest=digest),
-            "manifest_digest": digest,
-        }
-    )
-
-
 def compile_space(
     spec: SubstrateSpaceSpec,
     *,
@@ -272,8 +149,8 @@ def compile_space(
         bundle_root = staging / "bundle"
         members_root = bundle_root / "members"
         members_root.mkdir(parents=True)
-        molecular_space = _molecular_space(spec)
-        canonical_spec = canonical_json_bytes(molecular_space)
+        normalized_space = molecular_space(spec)
+        canonical_spec = canonical_json_bytes(normalized_space)
         spec_digest = sha256_digest(canonical_spec)
         (bundle_root / "spec.json").write_bytes(canonical_spec)
 
@@ -281,9 +158,9 @@ def compile_space(
         encoding_ordinals: dict[str, int] = {}
         canonical_records: dict[int, HairpinDesignMember] = {}
         for ordinal, (assignments, exact_payload) in enumerate(
-            _exact_payloads(molecular_space), start=1
+            exact_payloads(normalized_space), start=1
         ):
-            design_id = _member_design_id(
+            design_id = member_design_id(
                 spec_digest=spec_digest,
                 assignments=assignments,
             )
@@ -295,7 +172,7 @@ def compile_space(
                 raise SubstrateMemberCompilationError(
                     ordinal=ordinal,
                     total=preview.theoretical_cardinality,
-                    assignment=_assignment_text(spec, assignments),
+                    assignment=assignment_text(spec, assignments),
                     reason=str(exc),
                 ) from exc
             encoding_digest = compilation.plan.hairpin_encoding_insert.sequence_digest
@@ -332,13 +209,13 @@ def compile_space(
                 )
             records.append(record)
 
-        provisional = _provisional_design_set(
+        provisional = provisional_design_set(
             spec=spec,
             spec_digest=spec_digest,
             members=tuple(records),
             artifacts=design_set_artifacts(bundle_root),
         )
-        design_set = _seal_design_set(provisional)
+        design_set = seal_design_set(provisional)
         (bundle_root / "manifest.json").write_bytes(canonical_json_bytes(design_set))
         staged_verified = load_verified_design_set(bundle_root)
         write_space_projections(
@@ -389,7 +266,7 @@ def load_verified_design_set(bundle_path: str | Path) -> VerifiedHairpinDesignSe
         raise BundleIntegrityError("Design-set identifier does not match its manifest digest.")
     if spec.defaults_ref != DEFAULTS_REF:
         raise BundleIntegrityError("Canonical design-set spec names an unknown defaults reference.")
-    expected_payloads = _exact_payloads(spec)
+    expected_payloads = exact_payloads(spec)
     if len(expected_payloads) != len(design_set.members):
         raise BundleIntegrityError("Design-set members do not match symbolic space accounting.")
 

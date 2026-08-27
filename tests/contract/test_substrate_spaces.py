@@ -16,10 +16,8 @@ from pydantic import ValidationError
 
 import hop_design as hop
 import hop_design.spaces as spaces
-from hop_design.design.spaces import (
-    SubstrateMemberCompilationError,
-    _assignment_text,
-)
+from hop_design.design.space.authority import assignment_text
+from hop_design.design.spaces import SubstrateMemberCompilationError
 from hop_design.models.design_space import HairpinDesignMember, VariableAssignment
 
 
@@ -167,11 +165,11 @@ def test_member_compilation_error_identifies_the_authored_assignment() -> None:
         VariableAssignment(position=7, base="T"),
     )
 
-    assert _assignment_text(spec, assignments) == "context=AGT"
+    assert assignment_text(spec, assignments) == "context=AGT"
     error = SubstrateMemberCompilationError(
         ordinal=7,
         total=16,
-        assignment=_assignment_text(spec, assignments),
+        assignment=assignment_text(spec, assignments),
         reason="HOP design is infeasible: HOP-EXAMPLE-001",
     )
 
