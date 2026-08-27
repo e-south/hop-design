@@ -17,6 +17,15 @@ from hop_design.models.design_space import HairpinDesignSet, SubstrateSpaceSpec
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 
 _BASE_ORDER = ("A", "C", "G", "T")
+_CLAIM_LABELS = {
+    "space_accounting": "Substrate-space accounting",
+    "digital_design": "Exact digital designs",
+    "named_method": "Named construction method",
+    "destination_compatibility": "Destination compatibility",
+    "physical_construction": "Physical construction",
+    "quality_control": "Quality control",
+    "biological_activity": "Biological activity",
+}
 
 
 def render_review_html(
@@ -102,6 +111,21 @@ def render_review_html(
     question = ""
     if spec.context is not None and spec.context.question is not None:
         question = f'<p class="question">{html.escape(spec.context.question)}</p>'
+    claim_rows: list[str] = []
+    for dimension, claim in design_set.claim_status:
+        claim_data = claim.model_dump(mode="json")
+        status = claim_data["status"]
+        basis = claim_data.get("basis")
+        basis_attribute = "" if basis is None else f' data-basis="{html.escape(basis)}"'
+        basis_text = "—" if basis is None else basis.replace("_", " ")
+        claim_rows.append(
+            f'<tr data-claim="{dimension}" data-status="{status}"{basis_attribute}>'
+            f"<td>{_CLAIM_LABELS[dimension]}</td>"
+            f"<td>{status.replace('_', ' ').capitalize()}</td>"
+            f"<td>{basis_text}</td>"
+            "</tr>"
+        )
+    rendered_claim_rows = "".join(claim_rows)
     markup = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -231,21 +255,7 @@ details {{ margin-top:1rem; }}
 <section><h2>Evidence</h2><div class="table-wrap"><table>
 <thead><tr><th scope="col">Evidence dimension</th><th scope="col">Status</th>
 <th scope="col">Basis</th></tr></thead><tbody>
-<tr><td>Substrate-space accounting</td><td>Complete</td>
-<td>{design_set.enumerated_assignments} of {design_set.theoretical_cardinality}
-assignments enumerated</td></tr>
-<tr><td>Exact digital designs</td><td>Verified</td>
-<td>{design_set.unique_designs} member authorities replayed</td></tr>
-<tr><td>Named construction method</td><td>Not evaluated</td>
-<td>No method request attached</td></tr>
-<tr><td>Destination compatibility</td><td>Not evaluated</td>
-<td>Outside this package</td></tr>
-<tr><td>Physical construction</td><td>Not recorded</td>
-<td>No experiment attached</td></tr>
-<tr><td>Quality control</td><td>Not recorded</td>
-<td>No QC dataset attached</td></tr>
-<tr><td>Biological activity</td><td>Not recorded</td>
-<td>No assay dataset attached</td></tr>
+{rendered_claim_rows}
 </tbody></table></div></section>
 <section><h2>Design table</h2>
 <div class="filter">

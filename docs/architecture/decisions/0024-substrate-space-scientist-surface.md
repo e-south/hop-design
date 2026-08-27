@@ -58,6 +58,13 @@ The surface uses `design set` and `design package` for digital output.
 `physical library`, `constructed`, `QC-passed`, and `assay-ready` remain terms
 for separately owned experimental evidence.
 
+The design-set manifest owns a closed claim-status matrix for space accounting,
+digital replay, named-method evaluation, destination compatibility, physical
+construction, quality control, and biological activity. Human projections
+render those statuses from the verified manifest. Later experimental evidence
+references `design_set_id` in a separate immutable record; it does not revise
+the original design-set authority.
+
 ## Consequences
 
 The scientist can understand the declared sequence space, exact size, paired

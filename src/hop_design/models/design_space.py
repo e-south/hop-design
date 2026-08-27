@@ -319,6 +319,44 @@ class HairpinDesignMember(HopModel):
         return self
 
 
+class CompleteSpaceAccountingClaim(HopModel):
+    """Authoritative status for exhaustive substrate-space accounting."""
+
+    status: Literal["complete"]
+    basis: Literal["all_declared_assignments_enumerated"]
+
+
+class VerifiedDigitalDesignClaim(HopModel):
+    """Authoritative status for replay-verified digital member designs."""
+
+    status: Literal["verified"]
+    basis: Literal["all_unique_member_authorities_replay_verified"]
+
+
+class NotEvaluatedClaim(HopModel):
+    """Status for a downstream compatibility question not evaluated here."""
+
+    status: Literal["not_evaluated"]
+
+
+class NotRecordedClaim(HopModel):
+    """Status for experimental evidence absent from the design-set authority."""
+
+    status: Literal["not_recorded"]
+
+
+class DesignSetClaimStatus(HopModel):
+    """Independent claims and nonclaims established by one design set."""
+
+    space_accounting: CompleteSpaceAccountingClaim
+    digital_design: VerifiedDigitalDesignClaim
+    named_method: NotEvaluatedClaim
+    destination_compatibility: NotEvaluatedClaim
+    physical_construction: NotRecordedClaim
+    quality_control: NotRecordedClaim
+    biological_activity: NotRecordedClaim
+
+
 class HairpinDesignSet(HopModel):
     """Canonical manifest for one complete verified digital design set."""
 
@@ -336,6 +374,7 @@ class HairpinDesignSet(HopModel):
     ordering_contract: Literal["variable-positions-5prime-acgt-v1"] = (
         "variable-positions-5prime-acgt-v1"
     )
+    claim_status: DesignSetClaimStatus
     members: tuple[HairpinDesignMember, ...]
     artifacts: tuple[ArtifactManifestEntry, ...]
     manifest_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")

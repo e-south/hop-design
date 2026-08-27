@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from itertools import product
 from math import prod
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 from hop_design.catalog.defaults import DEFAULTS_REF
 from hop_design.design.bundle import VerifiedHopBundle, load_verified_bundle
@@ -28,6 +28,7 @@ from hop_design.export.space_package import design_set_artifacts, write_space_pr
 from hop_design.kernel.bundle_identity import design_set_id, manifest_digest_for_design_set
 from hop_design.models.bundle import ArtifactManifestEntry
 from hop_design.models.design_space import (
+    DesignSetClaimStatus,
     HairpinDesignMember,
     HairpinDesignSet,
     MolecularSubstrateSpace,
@@ -38,7 +39,7 @@ from hop_design.models.design_space import (
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-_BASE_ORDER = ("A", "C", "G", "T")
+_BASE_ORDER: tuple[Literal["A", "C", "G", "T"], ...] = ("A", "C", "G", "T")
 
 
 @dataclass(frozen=True)
@@ -113,11 +114,7 @@ def _molecular_space(spec: SubstrateSpaceSpec) -> MolecularSubstrateSpace:
         sequence = segment.fixed or segment.variable or ""
         for symbol in sequence:
             bases = iupac_bases(symbol)
-            payload_domains.append(
-                tuple(
-                    cast(Literal["A", "C", "G", "T"], base) for base in _BASE_ORDER if base in bases
-                )
-            )
+            payload_domains.append(tuple(base for base in _BASE_ORDER if base in bases))
     return MolecularSubstrateSpace(
         payload_domains=tuple(payload_domains),
         defaults_ref=spec.hairpin.defaults_ref,
@@ -142,7 +139,7 @@ def _exact_payloads(
         assignments = tuple(
             VariableAssignment(
                 position=position,
-                base=cast(Literal["A", "C", "G", "T"], base),
+                base=base,
             )
             for position, base in zip(variable_positions, bases, strict=True)
         )
@@ -179,6 +176,23 @@ def _provisional_design_set(
         enumerated_assignments=len(members),
         unique_designs=unique_designs,
         duplicate_count=duplicate_count,
+        claim_status=DesignSetClaimStatus.model_validate(
+            {
+                "space_accounting": {
+                    "status": "complete",
+                    "basis": "all_declared_assignments_enumerated",
+                },
+                "digital_design": {
+                    "status": "verified",
+                    "basis": "all_unique_member_authorities_replay_verified",
+                },
+                "named_method": {"status": "not_evaluated"},
+                "destination_compatibility": {"status": "not_evaluated"},
+                "physical_construction": {"status": "not_recorded"},
+                "quality_control": {"status": "not_recorded"},
+                "biological_activity": {"status": "not_recorded"},
+            }
+        ),
         members=members,
         artifacts=artifacts,
         manifest_digest=f"sha256:{'0' * 64}",

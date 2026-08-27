@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from hop_design.spaces import SubstrateSpaceSpec, compile_space
@@ -71,6 +72,13 @@ def test_review_is_one_self_contained_claim_bounded_scientific_story(tmp_path: P
     assert "overflow-x:auto" in review.replace(" ", "")
     assert "#design-table { min-width:56rem; }" in review
     assert "@media (max-width: 768px)" in review
+
+    manifest = json.loads((output / "bundle" / "manifest.json").read_text(encoding="utf-8"))
+    for dimension, claim in manifest["claim_status"].items():
+        assert f'data-claim="{dimension}"' in review
+        assert f'data-status="{claim["status"]}"' in review
+        if "basis" in claim:
+            assert f'data-basis="{claim["basis"]}"' in review
 
 
 def test_review_anatomy_labels_fixed_variable_and_physical_pairing_without_color_alone(

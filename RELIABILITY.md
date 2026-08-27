@@ -51,6 +51,13 @@ and the HTML, CSV, FASTA, and YAML projections do not enter collection identity.
 Collection compilation stages authority and projections together and atomically
 commits only after complete verification.
 
+The design-set manifest records independent claim statuses for complete space
+accounting, replay-verified digital designs, method and destination questions
+not evaluated by the package, and construction, quality-control, and activity
+evidence not recorded by the package. Verification rejects absent, unknown, or
+altered status literals. Human projections render this matrix from the verified
+manifest rather than maintaining a second claim authority.
+
 ## Limits
 
 Every spec has an explicit positive candidate bound. The convenience route

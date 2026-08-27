@@ -11,7 +11,10 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -155,6 +158,53 @@ def test_load_verified_design_set_replays_every_member(tmp_path: Path) -> None:
     assert tuple(member.bundle for member in loaded.members) == tuple(
         member.bundle for member in compiled.members
     )
+
+
+def test_design_set_manifest_owns_the_complete_claim_status(tmp_path: Path) -> None:
+    compiled = compile_space(_space(), destination=tmp_path / "design-set")
+
+    assert compiled.design_set.claim_status.model_dump(mode="json") == {
+        "space_accounting": {
+            "status": "complete",
+            "basis": "all_declared_assignments_enumerated",
+        },
+        "digital_design": {
+            "status": "verified",
+            "basis": "all_unique_member_authorities_replay_verified",
+        },
+        "named_method": {"status": "not_evaluated"},
+        "destination_compatibility": {"status": "not_evaluated"},
+        "physical_construction": {"status": "not_recorded"},
+        "quality_control": {"status": "not_recorded"},
+        "biological_activity": {"status": "not_recorded"},
+    }
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (lambda manifest: manifest.pop("claim_status"), "claim_status"),
+        (
+            lambda manifest: manifest["claim_status"]["physical_construction"].update(
+                {"status": "complete"}
+            ),
+            "physical_construction",
+        ),
+    ],
+)
+def test_design_set_verification_rejects_missing_or_corrupt_claim_status(
+    tmp_path: Path,
+    mutate: Callable[[dict[str, Any]], object],
+    expected: str,
+) -> None:
+    compiled = compile_space(_space(), destination=tmp_path / "design-set")
+    manifest_path = compiled.path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    mutate(manifest)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(BundleIntegrityError, match=expected):
+        load_verified_design_set(compiled.path)
 
 
 def test_projection_changes_do_not_change_design_set_authority(tmp_path: Path) -> None:
