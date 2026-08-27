@@ -181,6 +181,21 @@ def test_cli_previews_actual_mixed_iupac_domains_and_cardinality_factors(
     assert "Space: 16 exact assignments (2 \u00d7 2 \u00d7 4)" in result.output
 
 
+def test_cli_reports_the_invalid_space_field_and_supported_dna_iupac_codes(
+    tmp_path: Path,
+) -> None:
+    spec_path = tmp_path / "invalid.yaml"
+    _write_space_spec(spec_path, variable="ZNN", max_members=64)
+
+    result = runner.invoke(app, ["space", "preview", str(spec_path)])
+
+    assert result.exit_code != 0
+    assert "payload.segments.1.variable" in result.output
+    assert "invalid symbols: Z" in result.output
+    assert "Use A, C, G, T, R, Y, S, W, K, M, B, D, H, V, or N." in result.output
+    assert "Traceback" not in result.output
+
+
 def test_cli_previews_a_blocked_space_as_a_successful_read_only_result(tmp_path: Path) -> None:
     spec_path = tmp_path / "blocked.yaml"
     _write_space_spec(spec_path, variable="NNNNNN", max_members=256)

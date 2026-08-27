@@ -62,8 +62,14 @@ def normalize_dna_sequence(raw: str, *, allow_degenerate: bool) -> str:
     if invalid:
         description = "DNA IUPAC" if allow_degenerate else "exact DNA"
         invalid_text = ", ".join(invalid)
+        allowed_text = (
+            "A, C, G, T, R, Y, S, W, K, M, B, D, H, V, or N"
+            if allow_degenerate
+            else "A, C, G, or T"
+        )
         raise SequenceValidationError(
-            f"Sequence must use the {description} alphabet; invalid symbols: {invalid_text}."
+            f"Sequence must use the {description} alphabet; invalid symbols: {invalid_text}. "
+            f"Use {allowed_text}."
         )
     return normalized
 
