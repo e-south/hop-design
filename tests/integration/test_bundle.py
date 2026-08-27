@@ -75,6 +75,21 @@ def test_bundle_is_deterministic_and_content_addressed() -> None:
     assert len(first.bundle.manifest_digest.removeprefix("sha256:")) == 64
 
 
+def test_existing_member_bundle_identity_is_frozen_for_space_compilation() -> None:
+    compilation = hop.compile(sequence="ACGT", design_id="identity-tracer")
+
+    assert compilation.bundle.bundle_id == "hop:bundle/identity-tracer/9b18a32823402187"
+    assert compilation.bundle.manifest_digest == (
+        "sha256:9b18a328234021872963f58b1b1d7da6ecf4b676300ade96748cc196ea1371d3"
+    )
+    assert compilation.bundle.spec_digest == (
+        "sha256:a38d3d8b8b63c1bf087c5e3d8935b526502099a486ef0d83193986afdaf1461a"
+    )
+    assert compilation.bundle.plan_digest == (
+        "sha256:7669d434c285a3331e1ff6fca8421373b22ea677237fe6b932557111d9f8742d"
+    )
+
+
 def test_bundle_write_and_verification_round_trip(tmp_path: Path) -> None:
     compilation = hop.compile(sequence="ACGT", design_id="demo")
     output = compilation.write(tmp_path / "demo")
