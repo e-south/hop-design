@@ -68,6 +68,7 @@ def test_review_is_one_self_contained_claim_bounded_scientific_story(tmp_path: P
     assert "<script src=" not in review
     assert "min-width:960" not in review.replace(" ", "")
     assert "overflow-x:auto" in review.replace(" ", "")
+    assert "#design-table { min-width:56rem; }" in review
     assert "@media (max-width: 768px)" in review
 
 

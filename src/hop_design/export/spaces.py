@@ -148,7 +148,8 @@ def render_review_html(
     )
     segment_labels: list[str] = []
     for index, segment in enumerate(spec.payload.segments, start=1):
-        name = segment.name or f"segment-{index}"
+        segment_kind = "fixed" if segment.fixed is not None else "variable"
+        name = segment.name or f"{segment_kind} segment {index}"
         if segment.fixed is not None:
             description = "fixed"
         else:
@@ -233,6 +234,7 @@ section {{ padding:2rem 0; border-top:1px solid var(--rule); }}
 .fact strong {{ display:block; font-size:1.6rem; }} .fact span {{ color:var(--muted); }}
 .table-wrap {{ overflow-x:auto; }}
 table {{ width:100%; border-collapse:collapse; }}
+#design-table {{ min-width:56rem; }}
 th,td {{
   padding:.7rem .6rem;
   text-align:left;
@@ -295,7 +297,8 @@ details {{ margin-top:1rem; }}
 <div class="fact"><strong>Complete</strong><span>coverage</span></div>
 </div></section>
 <section><h2>Evidence</h2><div class="table-wrap"><table>
-<thead><tr><th>Evidence dimension</th><th>Status</th><th>Basis</th></tr></thead><tbody>
+<thead><tr><th scope="col">Evidence dimension</th><th scope="col">Status</th>
+<th scope="col">Basis</th></tr></thead><tbody>
 <tr><td>Substrate-space accounting</td><td>Complete</td>
 <td>{design_set.enumerated_assignments} of {design_set.theoretical_cardinality}
 assignments enumerated</td></tr>
@@ -319,8 +322,9 @@ assignments enumerated</td></tr>
          placeholder="Assignment or sequence" aria-controls="design-table">
 </div>
 <div class="table-wrap"><table id="design-table">
-<thead><tr><th>Ordinal</th><th>Assignment</th><th>Exact payload</th>
-<th>Derived paired payload</th><th>Hairpin length</th><th>Disposition</th></tr></thead>
+<thead><tr><th scope="col">Ordinal</th><th scope="col">Assignment</th>
+<th scope="col">Exact payload</th><th scope="col">Derived paired payload</th>
+<th scope="col">Hairpin length</th><th scope="col">Disposition</th></tr></thead>
 <tbody>{rows}</tbody></table></div></section>
 <section><h2>Handoff</h2><p>
   <code>designs.csv</code> is the sequence index;
