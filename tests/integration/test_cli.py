@@ -126,24 +126,17 @@ def test_cli_rejects_ambiguous_sequence_and_spec_inputs(tmp_path: Path) -> None:
     assert "exactly one" in result.output
 
 
-def _write_space_spec(path: Path, *, variable: str = "N", max_members: int = 4) -> None:
+def _write_space_spec(path: Path, *, variable: str = "N") -> None:
     path.write_text(
         f"""schema: hop/substrate-space/v1
 name: cli-space
-context:
-  question: Which paired context changes activity?
+question: Which paired context changes activity?
 payload:
-  segments:
-    - fixed: ACTG
-    - variable: {variable}
-      name: context
-    - fixed: GATC
-      name: recognition-site
-hairpin:
-  defaults_ref: hop:defaults/generic-hairpin-design@2
-enumeration:
-  mode: exhaustive
-  max_members: {max_members}
+  - fixed: ACTG
+  - variable: {variable}
+    label: context
+  - fixed: GATC
+    label: recognition-site
 """,
         encoding="utf-8",
     )
@@ -160,10 +153,10 @@ def test_cli_previews_a_ready_substrate_space_without_writing(tmp_path: Path) ->
     assert "Payload: ACTG N GATC" in result.output
     assert "Variable positions: 5" in result.output
     assert "Domains: N=A/C/G/T" in result.output
-    assert "Space: 4 exact assignments (4)" in result.output
-    assert "Compilation: ready" in result.output
-    assert "Method and destination: not evaluated" in result.output
-    assert "Construction, QC, and activity: not recorded" in result.output
+    assert "4 exact designs" in result.output
+    assert "Ready for exhaustive digital compilation" in result.output
+    assert "HOP will use the versioned standard hairpin context." in result.output
+    assert "Physical construction and activity are outside this preview." in result.output
     assert {path.name for path in tmp_path.iterdir()} == {"space.yaml"}
 
 
@@ -171,26 +164,26 @@ def test_cli_previews_actual_mixed_iupac_domains_and_cardinality_factors(
     tmp_path: Path,
 ) -> None:
     spec_path = tmp_path / "space.yaml"
-    _write_space_spec(spec_path, variable="RYN", max_members=16)
+    _write_space_spec(spec_path, variable="RYN")
 
     result = runner.invoke(app, ["space", "preview", str(spec_path)])
 
     assert result.exit_code == 0, result.output
     assert "Payload: ACTG RYN GATC" in result.output
     assert "Domains: R=A/G · Y=C/T · N=A/C/G/T" in result.output
-    assert "Space: 16 exact assignments (2 \u00d7 2 \u00d7 4)" in result.output
+    assert "16 exact designs (2 \u00d7 2 \u00d7 4)" in result.output
 
 
 def test_cli_reports_the_invalid_space_field_and_supported_dna_iupac_codes(
     tmp_path: Path,
 ) -> None:
     spec_path = tmp_path / "invalid.yaml"
-    _write_space_spec(spec_path, variable="ZNN", max_members=64)
+    _write_space_spec(spec_path, variable="ZNN")
 
     result = runner.invoke(app, ["space", "preview", str(spec_path)])
 
     assert result.exit_code != 0
-    assert "payload.segments.1.variable" in result.output
+    assert "payload.1.variable" in result.output
     assert "invalid symbols: Z" in result.output
     assert "Use A, C, G, T, R, Y, S, W, K, M, B, D, H, V, or N." in result.output
     assert "Traceback" not in result.output
@@ -198,13 +191,13 @@ def test_cli_reports_the_invalid_space_field_and_supported_dna_iupac_codes(
 
 def test_cli_previews_a_blocked_space_as_a_successful_read_only_result(tmp_path: Path) -> None:
     spec_path = tmp_path / "blocked.yaml"
-    _write_space_spec(spec_path, variable="NNNNNN", max_members=256)
+    _write_space_spec(spec_path, variable="NNNNN")
 
     result = runner.invoke(app, ["space", "preview", str(spec_path)])
 
     assert result.exit_code == 0, result.output
-    assert "valid specification defines 4,096 exact assignments" in result.output
-    assert "Compilation is blocked by max_members=256." in result.output
+    assert "valid specification defines 1,024 exact assignments" in result.output
+    assert "Compilation supports up to 256 designs in this release." in result.output
     assert (
         "Preview completed. No designs were enumerated and no files were written." in result.output
     )
@@ -223,11 +216,19 @@ def test_cli_compiles_and_verifies_a_complete_design_set(tmp_path: Path) -> None
     assert result.exit_code == 0, result.output
     assert "Compiled and verified 4 exact designs." in result.output
     assert "Coverage: 4/4 complete · 4 unique · 0 duplicates" in result.output
-    assert f"Design package: {output / 'bundle'}" in result.output
-    assert "Named method and destination compatibility were not evaluated." in result.output
-    assert "Physical construction, QC, and biological activity were not recorded." in result.output
+    assert "Digital verification: passed" in result.output
+    assert f"FASTA: {output / 'sequences.fasta'}" in result.output
+    assert "No physical construction, QC, or activity record is attached." in result.output
 
     verify_result = runner.invoke(app, ["verify", str(output / "bundle")])
     assert verify_result.exit_code == 0, verify_result.output
     assert "Verified design set: hop:design-set/" in verify_result.output
     assert "Coverage: complete · 4 exact designs" in verify_result.output
+
+
+def test_verify_help_names_its_design_bundle_scope() -> None:
+    result = runner.invoke(app, ["verify", "--help"])
+
+    assert result.exit_code == 0, result.output
+    assert "Verify a HOP design or design-set bundle." in result.output
+    assert "portable digital authority" not in result.output

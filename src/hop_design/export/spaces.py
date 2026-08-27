@@ -72,10 +72,10 @@ def render_review_html(
         )
     rows = "".join(rendered_rows)
 
-    payload = "".join(segment.fixed or segment.variable or "" for segment in spec.payload.segments)
+    payload = "".join(segment.fixed or segment.variable or "" for segment in spec.payload)
     position_kinds = tuple(
         kind
-        for segment in spec.payload.segments
+        for segment in spec.payload
         for kind in (
             ("fixed",) * len(segment.fixed)
             if segment.fixed is not None
@@ -94,9 +94,9 @@ def render_review_html(
         )
     )
     segment_labels: list[str] = []
-    for index, segment in enumerate(spec.payload.segments, start=1):
+    for index, segment in enumerate(spec.payload, start=1):
         segment_kind = "fixed" if segment.fixed is not None else "variable"
-        name = segment.name or f"{segment_kind} segment {index}"
+        name = segment.label or f"{segment_kind} segment {index}"
         if segment.fixed is not None:
             description = "fixed"
         else:
@@ -110,8 +110,8 @@ def render_review_html(
     segments = "".join(segment_labels)
 
     question = ""
-    if spec.context is not None and spec.context.question is not None:
-        question = f'<p class="question">{html.escape(spec.context.question)}</p>'
+    if spec.question is not None:
+        question = f'<p class="question">{html.escape(spec.question)}</p>'
     claim_rows: list[str] = []
     for dimension, claim in design_set.claim_status:
         claim_data = claim.model_dump(mode="json")
@@ -127,16 +127,10 @@ def render_review_html(
             "</tr>"
         )
     rendered_claim_rows = "".join(claim_rows)
-    statuses = design_set.claim_status
-    evidence_boundary = (
-        f"Digital design was {statuses.digital_design.status}. "
-        "Named-method and destination compatibility were "
-        f"{statuses.named_method.status.replace('_', ' ')}; "
-        "physical construction, QC, and biological activity were "
-        f"{statuses.physical_construction.status.replace('_', ' ')}."
-    )
+    evidence_boundary = "No physical construction, QC, or activity record is attached."
     summary_accounting = (
-        f"Complete: {design_set.enumerated_assignments}/{design_set.theoretical_cardinality} · "
+        "Complete and digitally verified · "
+        f"{design_set.enumerated_assignments}/{design_set.theoretical_cardinality} · "
         f"{design_set.unique_designs} unique · {design_set.duplicate_count} duplicates"
     )
     markup = f"""<!doctype html>
@@ -235,14 +229,13 @@ details {{ margin-top:1rem; }}
 </style>
 </head>
 <body><main>
-<header><p>HOP Design · verified digital design set</p></header>
-<section class="summary"><h2>Summary</h2>
+<header class="summary"><p>HOP Design</p>
+{question}
 <h1>{design_set.unique_designs} exact hairpin designs</h1>
 <p class="lede"><strong>{summary_accounting}</strong></p>
 <p class="boundary">{evidence_boundary}</p>
-</section>
-<section><h2>Substrate definition</h2>
-{question}
+</header>
+<section><h2>Substrate space</h2>
 <ul class="segment-key">{segments}</ul>
 <figure>
 <div class="duplex-wrap" role="img" aria-label="Authored and automatically paired payloads">
@@ -260,7 +253,7 @@ details {{ margin-top:1rem; }}
 </figure>
 <p><strong>Paired payload:</strong> derived from the authored payload by reverse complement.</p>
 <p><strong>Hairpin context:</strong> supplied by the selected
-<code>{html.escape(spec.hairpin.defaults_ref)}</code>.
+<code>{html.escape(design_set.defaults_ref)}</code>.
 {html.escape(defaults_display_name)}: {html.escape(defaults_anatomy_summary)}</p>
 </section>
 <section><h2>Designs</h2>
@@ -281,21 +274,21 @@ A, C, G, T domain order. Ordinal is not rank.</p>
 <th scope="col"><button type="button" data-sort-column="5">Disposition</button></th>
 </tr></thead><tbody>{rows}</tbody></table></div>
 </section>
-<section><h2>Evidence and handoff</h2><div class="table-wrap"><table>
+<section><h2>Handoff and evidence</h2>
+<ul class="handoff-list">
+<li><code>designs.csv</code> — exact sequence index and dispositions</li>
+<li><code>sequences.fasta</code> — sequence handoff</li>
+<li><code>bundle/</code> — verified digital authority</li>
+</ul>
+<details><summary>Evidence details</summary><div class="table-wrap"><table>
 <thead><tr><th scope="col">Evidence dimension</th><th scope="col">Status</th>
 <th scope="col">Basis</th></tr></thead><tbody>
 {rendered_claim_rows}
-</tbody></table></div>
-<ul class="handoff-list">
-<li><code>bundle/</code> — verified digital authority</li>
-<li><code>designs.csv</code> — exact sequence index and dispositions</li>
-<li><code>sequences.fasta</code> — sequence handoff</li>
-<li><code>source.yaml</code> — normalized authored specification</li>
-</ul>
+</tbody></table></div></details>
 <details><summary>Technical details</summary>
 <p>HOP version: <code>{version("hop-design")}</code></p>
 <p>Schema IDs: <code>{spec.schema_id}</code> · <code>{design_set.schema_id}</code></p>
-<p>Defaults reference: <code>{html.escape(spec.hairpin.defaults_ref)}</code></p>
+<p>Defaults reference: <code>{html.escape(design_set.defaults_ref)}</code></p>
 <p>Resolved anatomy: <code>{html.escape(foldback_ref)}</code> ·
 <code>{html.escape(basal_ref)}</code></p>
 <p>Canonical space digest: <code>{design_set.spec_digest}</code></p>

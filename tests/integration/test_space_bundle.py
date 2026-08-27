@@ -29,30 +29,21 @@ from hop_design.spaces import (
 def _space(
     *,
     name: str = "one-base-context",
-    context_question: str = "Which paired context changes activity?",
+    question: str = "Which paired context changes activity?",
     variable: str = "N",
-    max_members: int = 4,
     segments: list[dict[str, str]] | None = None,
 ) -> SubstrateSpaceSpec:
     return SubstrateSpaceSpec.model_validate(
         {
             "schema": "hop/substrate-space/v1",
             "name": name,
-            "context": {
-                "question": context_question,
-                "activity": "internal activity",
-                "readout": "sequence-indexed assay",
-            },
-            "payload": {
-                "segments": segments
-                or [
-                    {"fixed": "ACTG"},
-                    {"variable": variable, "name": "context"},
-                    {"fixed": "GATC", "name": "recognition-site"},
-                ]
-            },
-            "hairpin": {"defaults_ref": "hop:defaults/generic-hairpin-design@2"},
-            "enumeration": {"mode": "exhaustive", "max_members": max_members},
+            "question": question,
+            "payload": segments
+            or [
+                {"fixed": "ACTG"},
+                {"variable": variable, "label": "context"},
+                {"fixed": "GATC", "label": "recognition-site"},
+            ],
         }
     )
 
@@ -95,7 +86,6 @@ def test_compile_space_writes_one_verified_complete_design_package(tmp_path: Pat
         "designs.csv",
         "review.html",
         "sequences.fasta",
-        "source.yaml",
     }
     assert {path.name for path in (output / "bundle").iterdir()} == {
         "manifest.json",
@@ -107,18 +97,17 @@ def test_compile_space_writes_one_verified_complete_design_package(tmp_path: Pat
 def test_compile_space_authority_depends_only_on_normalized_molecular_rules(
     tmp_path: Path,
 ) -> None:
-    first = compile_space(_space(context_question="Question one"), destination=tmp_path / "first")
+    first = compile_space(_space(question="Question one"), destination=tmp_path / "first")
     second = compile_space(
         _space(
             name="renamed-space",
-            context_question="A different explanatory question",
-            max_members=20,
+            question="A different explanatory question",
             segments=[
-                {"fixed": "A", "name": "left-a"},
-                {"fixed": "CTG", "name": "left-b"},
-                {"variable": "N", "name": "renamed-context"},
-                {"fixed": "GA", "name": "right-a"},
-                {"fixed": "TC", "name": "right-b"},
+                {"fixed": "A", "label": "left-a"},
+                {"fixed": "CTG", "label": "left-b"},
+                {"variable": "N", "label": "renamed-context"},
+                {"fixed": "GA", "label": "right-a"},
+                {"fixed": "TC", "label": "right-b"},
             ],
         ),
         destination=tmp_path / "second",
@@ -126,22 +115,18 @@ def test_compile_space_authority_depends_only_on_normalized_molecular_rules(
 
     assert first.design_set == second.design_set
     assert _bundle_bytes(first.path) == _bundle_bytes(second.path)
-    assert (tmp_path / "first" / "source.yaml").read_bytes() != (
-        tmp_path / "second" / "source.yaml"
-    ).read_bytes()
+    assert not (tmp_path / "first" / "source.yaml").exists()
+    assert not (tmp_path / "second" / "source.yaml").exists()
 
     canonical_spec = (first.path / "spec.json").read_text(encoding="utf-8")
     assert '"payload_domains"' in canonical_spec
-    for presentation_field in ('"name"', '"context"', '"segments"', '"max_members"'):
+    for presentation_field in ('"name"', '"question"', '"label"', '"segments"'):
         assert presentation_field not in canonical_spec
 
 
 def test_compile_space_authority_changes_with_a_molecular_domain(tmp_path: Path) -> None:
     first = compile_space(_space(variable="N"), destination=tmp_path / "first")
-    second = compile_space(
-        _space(variable="R", max_members=4),
-        destination=tmp_path / "second",
-    )
+    second = compile_space(_space(variable="R"), destination=tmp_path / "second")
 
     assert first.design_set.spec_digest != second.design_set.spec_digest
     assert first.design_set.design_set_id != second.design_set.design_set_id
@@ -232,10 +217,16 @@ def test_compile_space_is_create_only_and_blocked_without_partial_output(tmp_pat
     with pytest.raises(FileExistsError, match="Refusing to replace"):
         compile_space(_space(), destination=existing)
 
-    data = _space().model_dump(mode="json", by_alias=True)
-    data["enumeration"]["max_members"] = 3
-    blocked = SubstrateSpaceSpec.model_validate(data)
+    blocked = _space(variable="NNNNN")
     destination = tmp_path / "blocked"
-    with pytest.raises(ValueError, match="Compilation is blocked by max_members=3"):
+    with pytest.raises(ValueError, match="supports up to 256 designs"):
         compile_space(blocked, destination=destination)
     assert not destination.exists()
+
+
+def test_compile_space_supports_the_full_release_envelope(tmp_path: Path) -> None:
+    compiled = compile_space(_space(variable="NNNN"), destination=tmp_path / "design-set")
+
+    assert compiled.design_set.theoretical_cardinality == 256
+    assert compiled.design_set.unique_designs == 256
+    assert len(compiled.design_set.members) == 256

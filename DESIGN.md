@@ -22,10 +22,11 @@ doc_type: explanation
 - Symbolic payloads remain symbolic unless the explicit `expand_payload`
   operation receives and enforces a hard `max_variants` budget after computing
   exact cardinality.
-- A substrate-space specification authors one segmented payload arm. Preview is
-  allocation-free; compilation is exhaustive or blocked, never an
-  authoritative partial set. Variable positions use 5-prime to 3-prime order
-  and `A`, `C`, `G`, `T` domain order.
+- A substrate-space specification authors one segmented payload arm. The
+  scientist surface applies the versioned standard hairpin context and
+  exhaustive release policy. Preview is allocation-free; compilation is
+  exhaustive or blocked, never an authoritative partial set. Variable
+  positions use 5-prime to 3-prime order and `A`, `C`, `G`, `T` domain order.
 - Public models are strict, frozen, and reject unknown fields.
 - Spans are zero-based and half-open. Boundaries, nucleotide counts, and base
   pair counts are distinct types.

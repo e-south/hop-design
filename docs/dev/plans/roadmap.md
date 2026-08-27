@@ -59,8 +59,9 @@ published artifact until the release gate below passes.
 No retired schema reader, field alias, or artifact fallback is retained.
 
 The current scientist surface is exhaustive or blocked. Sampled design sets,
-pool-level method assessment, QC attachments, assay data, and browser authoring
-remain outside this release until an experimental handoff requires them.
+large-set storage, pool-level method assessment, QC attachments, assay data,
+and browser authoring remain outside this release until an experimental
+handoff requires them.
 
 `hop_design.methods.list_method_capabilities()` exposes every named method's
 implementation availability and input exactness as a closed, immutable tuple.

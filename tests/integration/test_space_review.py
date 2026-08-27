@@ -22,20 +22,12 @@ def _review_spec() -> SubstrateSpaceSpec:
         {
             "schema": "hop/substrate-space/v1",
             "name": "review-tracer",
-            "context": {
-                "question": "How does activity vary across one paired context position?",
-                "activity": "internal DNA-binding or processing activity",
-                "readout": "sequence-indexed downstream assay",
-            },
-            "payload": {
-                "segments": [
-                    {"fixed": "ACTG", "name": "left-context"},
-                    {"variable": "N", "name": "context"},
-                    {"fixed": "GATC", "name": "recognition-site"},
-                ]
-            },
-            "hairpin": {"defaults_ref": "hop:defaults/generic-hairpin-design@2"},
-            "enumeration": {"mode": "exhaustive", "max_members": 4},
+            "question": "How does activity vary across one paired context position?",
+            "payload": [
+                {"fixed": "ACTG", "label": "left-context"},
+                {"variable": "N", "label": "context"},
+                {"fixed": "GATC", "label": "recognition-site"},
+            ],
         }
     )
 
@@ -46,20 +38,18 @@ def test_review_is_one_self_contained_claim_bounded_scientific_story(tmp_path: P
     review = (output / "review.html").read_text(encoding="utf-8")
 
     headings = (
-        "Summary",
-        "Substrate definition",
+        "Substrate space",
         "Designs",
-        "Evidence and handoff",
+        "Handoff and evidence",
     )
     assert tuple(review.index(heading) for heading in headings) == tuple(
         sorted(review.index(heading) for heading in headings)
     )
     assert "4 exact hairpin designs" in review
-    assert "Complete: 4/4 · 4 unique · 0 duplicates" in review
+    assert "Complete and digitally verified · 4/4 · 4 unique · 0 duplicates" in review
     assert "How does activity vary across one paired context position?" in review
-    assert "Digital design was verified." in review
-    assert "Named-method and destination compatibility were not evaluated" in review
-    assert "physical construction, QC, and biological activity were not recorded" in review
+    assert "No physical construction, QC, or activity record is attached." in review
+    assert "<details><summary>Evidence details</summary>" in review
     assert "Named construction method</td><td>Not evaluated" in review
     assert "Physical construction</td><td>Not recorded" in review
     assert "Quality control</td><td>Not recorded" in review
@@ -129,8 +119,9 @@ def test_review_table_is_searchable_and_technical_identity_is_collapsed(tmp_path
     assert "Canonical space digest:" in review
     assert "Verification:" in review
     assert "Member authority root:" in review
-    assert "normalized authored specification" in review
+    assert "source.yaml" not in review
     assert "member_bundle_id" not in review
+    assert review.index("Canonical space digest:") > review.index("Technical details")
     for prohibited in (
         "assay-ready",
         "buildable",

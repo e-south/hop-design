@@ -33,17 +33,19 @@ allocation-free `SubstrateSpacePreview`, and one complete
 allowlist is separate from the package root.
 
 The caller authors one segmented payload arm. HOP derives the opposite arm.
-V1 supports exhaustive compilation only. A valid space above its explicit
-member bound is `blocked`, not infeasible or truncated. Compilation publishes
-no authoritative partial set.
+V1 supports exhaustive compilation only. The scientist-authored schema
+contains the optional question and one labeled payload arm; the versioned
+standard hairpin context and tested 256-design release envelope are product
+policy. A valid larger space is `blocked`, not infeasible or truncated.
+Compilation publishes no authoritative partial set.
 
 Each unique member remains an unchanged, verified `HopBundle`. The collection
-authority lives below `bundle/`; the source YAML, sequence exports, and offline
-HTML review are regenerable projections outside identity. The canonical
+authority lives below `bundle/`; the sequence exports and offline HTML review
+are regenerable projections outside identity. The canonical
 molecular specification records only the ordered per-position DNA domains and
 the resolved versioned hairpin defaults reference. Display names, descriptive
-context, segment labels, equivalent segment boundaries, and allocation bounds
-are excluded from member and collection identity.
+question, segment labels, and equivalent segment boundaries are excluded from
+member and collection identity.
 
 The design-set manifest uses `hop.hairpin-design-set/v2`. Member identifiers
 derive from the canonical molecular-space digest and exact variable assignment;
@@ -74,6 +76,6 @@ different competency questions. Named methods, molecular states, provenance,
 and typed views remain available through progressive disclosure.
 
 The public tracer contains three fully variable positions and therefore 64
-exact members. This is an example and regression fixture, not an architectural
-limit. Sampled sets, pooled method assessment, QC attachments, assay data, and
-a browser authoring application require separate evidence and decisions.
+exact members. The release also verifies a 256-member envelope. Larger-set
+storage, sampled sets, pooled method assessment, QC attachments, assay data,
+and a browser authoring application require separate evidence and decisions.

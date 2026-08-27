@@ -5,18 +5,15 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
 
-HOP helps scientists describe a DNA hairpin, calculate the sequence that must
-pair with it, and check whether a supported way of making it fits the design.
-It produces exact, verifiable design and method records; it does not predict
-whether a laboratory experiment will succeed.
+Specify the duplex context you want to test. HOP returns the complete paired
+hairpin designs and a stable handoff for construction and measurement. It does
+not predict whether a laboratory experiment will succeed.
 
-Define one bounded duplex substrate space, preview its exact size, and compile
-a verified digital design package with a readable sequence index and review.
-The public tracer asks how activity varies across three paired context
-positions: three `N` positions define 64 exact assignments and compile to one
-complete sequence-indexed design package. This establishes verified digital
-design only. Named-method and destination compatibility are not evaluated;
-physical construction, QC, and biological activity are not recorded.
+The first journey is `question → substrate rule → exact paired designs → CSV,
+FASTA, and verified handoff`. The public tracer varies three paired context
+positions, so three `N` positions define 64 exact designs. HOP previews that
+space without allocation and compiles every member in deterministic order.
+No physical construction, QC, or activity record is attached.
 
 | Project status | Current contract |
 | --- | --- |

@@ -26,28 +26,22 @@ positions:
 ```yaml
 schema: hop/substrate-space/v1
 name: fixed-site-three-base-context
-context:
-  question: How does activity vary across three paired context positions?
+question: How does activity vary across three paired context positions?
 payload:
-  segments:
-    - fixed: ACTG
-    - variable: NNN
-      name: context
-    - fixed: GATC
-      name: recognition-site
-hairpin:
-  defaults_ref: hop:defaults/generic-hairpin-design@2
-enumeration:
-  mode: exhaustive
-  max_members: 64
+  - fixed: ACTG
+  - variable: NNN
+    label: context
+  - fixed: GATC
+    label: recognition-site
 ```
 
 Three `N` positions each permit `A`, `C`, `G`, or `T`, so the declared space
-contains (4^3=64) exact assignments. `context` describes the experimental
-question for the review; it does not change design-set identity. The top-level
-name, segment labels, equivalent segment boundaries, and a permissive
-`max_members` value are likewise presentation or execution concerns rather
-than molecular identity.
+contains (4^3=64) exact assignments. `question` is optional review text and
+does not change design-set identity. The top-level name, segment labels, and
+equivalent segment boundaries are likewise presentation concerns rather than
+molecular identity. HOP applies exhaustive enumeration and the versioned
+standard hairpin context without asking the first-use author to configure
+package policy.
 
 ## Define, preview, compile
 
@@ -62,10 +56,9 @@ uv run hop-design verify build/fixed-site-three-base-context/bundle
 
 Preview validates the specification, reports fixed and variable positions,
 reports each actual IUPAC domain, computes exact cardinality, and writes
-nothing. A valid space larger than `max_members` is `blocked`: no members are
-allocated and no partial set is published. `max_members` is limited to
-100,000 in this release; larger theoretical spaces can be previewed only when
-their submitted execution bound remains within that implementation ceiling.
+nothing. This release has a tested release envelope of 256 exact designs. A
+larger valid space is `blocked`: preview still reports its symbolic cardinality,
+no members are allocated, and no partial set is published.
 
 Compile expands variable positions from 5-prime to 3-prime in `A`, `C`, `G`,
 `T` order, compiles every exact member through the existing HOP compiler,
@@ -77,7 +70,6 @@ to replace an existing destination.
 ```text
 build/fixed-site-three-base-context/
 ├── bundle/             verified digital authority
-├── source.yaml         normalized authored specification
 ├── designs.csv         exact sequence index
 ├── sequences.fasta     downstream sequence handoff
 └── review.html         offline human review
@@ -85,16 +77,16 @@ build/fixed-site-three-base-context/
 
 Open `review.html` directly in a browser. It explains the paired substrate
 anatomy, exact space accounting, evidence boundaries, member sequences, and
-handoff files. The HTML, CSV, FASTA, and source copy are regenerable
-projections. Only `bundle/` participates in design-set identity and
-verification.
+handoff files. The HTML, CSV, and FASTA are regenerable projections. Only
+`bundle/` participates in design-set identity and verification.
 
 Successful compilation establishes complete digital derivation and replay of
 64 exact member authorities.
-The verified manifest records this evidence boundary directly. A named
-construction method and destination compatibility were not evaluated.
-Physical construction, QC, and biological activity were not recorded. Later
-evidence belongs in separate records that reference the stable design-set ID.
+The verified manifest records the complete evidence boundary directly. The review says:
+
+> No physical construction, QC, or activity record is attached.
+
+Later evidence belongs in separate records that reference the stable design-set ID.
 
 ## Python
 

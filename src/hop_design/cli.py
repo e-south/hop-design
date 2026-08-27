@@ -151,7 +151,7 @@ def _load_space_spec(path: Path) -> SubstrateSpaceSpec:
 
 
 def _segment_text(spec: SubstrateSpaceSpec) -> str:
-    return " ".join(segment.fixed or segment.variable or "" for segment in spec.payload.segments)
+    return " ".join(segment.fixed or segment.variable or "" for segment in spec.payload)
 
 
 def _position_text(positions: tuple[int, ...]) -> str:
@@ -165,7 +165,7 @@ def _position_text(positions: tuple[int, ...]) -> str:
 def _variable_symbols(spec: SubstrateSpaceSpec) -> tuple[str, ...]:
     return tuple(
         symbol
-        for segment in spec.payload.segments
+        for segment in spec.payload
         if segment.variable is not None
         for symbol in segment.variable
     )
@@ -189,11 +189,10 @@ def _print_ready_preview(
     )
     typer.echo("Paired arm: derived automatically by reverse complement")
     factors = " \u00d7 ".join(str(len(domain)) for domain in preview.variable_domains) or "1"
-    typer.echo(f"Space: {preview.theoretical_cardinality:,} exact assignments ({factors})")
-    typer.echo(f"Coverage: exhaustive · max_members={preview.max_members:,}")
-    typer.echo("Compilation: ready")
-    typer.echo("Method and destination: not evaluated")
-    typer.echo("Construction, QC, and activity: not recorded")
+    typer.echo(f"{preview.theoretical_cardinality:,} exact designs ({factors})")
+    typer.echo("Ready for exhaustive digital compilation")
+    typer.echo("HOP will use the versioned standard hairpin context.")
+    typer.echo("Physical construction and activity are outside this preview.")
 
 
 @space_app.command("preview")
@@ -215,9 +214,11 @@ def preview_space_command(
             f"This valid specification defines "
             f"{preview.theoretical_cardinality:,} exact assignments."
         )
-        typer.echo(f"Compilation is blocked by max_members={preview.max_members:,}.")
+        typer.echo(
+            f"Compilation supports up to {preview.compilation_limit:,} designs in this release."
+        )
         typer.echo("Preview completed. No designs were enumerated and no files were written.")
-        typer.echo("Increase the explicit bound or reduce the variable space before compilation.")
+        typer.echo("Reduce the variable space before compilation.")
         return
     _print_ready_preview(spec, preview)
 
@@ -245,19 +246,19 @@ def compile_space_command(
         f"{design_set.theoretical_cardinality:,} {design_set.coverage} · "
         f"{design_set.unique_designs:,} unique · {design_set.duplicate_count:,} duplicates"
     )
-    typer.echo(f"Design package: {output / 'bundle'}")
-    typer.echo(f"Sequence index: {output / 'designs.csv'}")
+    typer.echo("Digital verification: passed")
     typer.echo(f"Review: {output / 'review.html'}")
+    typer.echo(f"Sequence index: {output / 'designs.csv'}")
+    typer.echo(f"FASTA: {output / 'sequences.fasta'}")
     typer.echo()
-    typer.echo("Named method and destination compatibility were not evaluated.")
-    typer.echo("Physical construction, QC, and biological activity were not recorded.")
+    typer.echo("No physical construction, QC, or activity record is attached.")
 
 
 @app.command("verify")
 def verify_command(
     bundle_path: Annotated[Path, typer.Argument(help="Design or design-set bundle directory.")],
 ) -> None:
-    """Verify one portable digital authority for handoff."""
+    """Verify a HOP design or design-set bundle."""
     try:
         has_design_set = (bundle_path / "manifest.json").is_file()
         has_member = (bundle_path / "hop-bundle.json").is_file()

@@ -74,7 +74,8 @@ by foldback by basal by release Cartesian cardinality before allocating rows and
 fails above `max_designs`.
 
 A substrate-space preview computes cardinality arithmetically before member
-allocation. A valid space above `max_members` is `blocked`; compilation writes
+allocation. The scientist surface compiles through its tested 256-design
+release envelope. A valid larger space is `blocked`; compilation writes
 nothing. V1 does not truncate or publish partial authoritative sets.
 
 Basal candidate discovery calculates the exact left-arm by right-arm IUPAC

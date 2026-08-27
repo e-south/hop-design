@@ -22,20 +22,12 @@ from hop_design.models.references import ReferenceId
 from hop_design.models.sequence import normalize_dna_sequence
 
 
-class SubstrateSpaceContext(HopModel):
-    """Descriptive experimental context excluded from design-set identity."""
-
-    question: str | None = None
-    activity: str | None = None
-    readout: str | None = None
-
-
 class PayloadSegment(HopModel):
     """One fixed or variable segment on the authored payload arm."""
 
     fixed: str | None = None
     variable: str | None = None
-    name: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
+    label: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
     @field_validator("fixed", mode="before")
     @classmethod
@@ -58,59 +50,29 @@ class PayloadSegment(HopModel):
         return self
 
 
-class SegmentedPayload(HopModel):
-    """The single authored payload arm as ordered named segments."""
-
-    segments: tuple[PayloadSegment, ...] = Field(min_length=1)
-
-    @field_validator("segments", mode="before")
-    @classmethod
-    def normalize_segments(cls, value: object) -> object:
-        if isinstance(value, list):
-            return tuple(value)
-        return value
-
-    @model_validator(mode="after")
-    def require_unique_names(self) -> SegmentedPayload:
-        names = tuple(segment.name for segment in self.segments if segment.name is not None)
-        if len(names) != len(set(names)):
-            raise ValueError("Segment names must be unique.")
-        return self
-
-
-class HairpinDefaults(HopModel):
-    """Registered hairpin anatomy used for every member."""
-
-    defaults_ref: ReferenceId
-
-
-class ExhaustiveEnumeration(HopModel):
-    """Explicit exhaustive enumeration and allocation bound."""
-
-    mode: Literal["exhaustive"] = "exhaustive"
-    max_members: int = Field(ge=1)
-
-    @field_validator("max_members")
-    @classmethod
-    def require_supported_member_bound(cls, value: int) -> int:
-        if value > 100_000:
-            raise ValueError(
-                "max_members cannot exceed the current implementation ceiling of 100,000."
-            )
-        return value
-
-
 class SubstrateSpaceSpec(HopModel):
-    """One bounded, single-arm substrate-space specification."""
+    """One minimal, single-arm substrate-space specification."""
 
     schema_id: Literal["hop/substrate-space/v1"] = Field(
         default="hop/substrate-space/v1", alias="schema"
     )
     name: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
-    context: SubstrateSpaceContext | None = None
-    payload: SegmentedPayload
-    hairpin: HairpinDefaults
-    enumeration: ExhaustiveEnumeration
+    question: str | None = None
+    payload: tuple[PayloadSegment, ...] = Field(min_length=1)
+
+    @field_validator("payload", mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if isinstance(value, list):
+            return tuple(value)
+        return value
+
+    @model_validator(mode="after")
+    def require_unique_labels(self) -> SubstrateSpaceSpec:
+        labels = tuple(segment.label for segment in self.payload if segment.label is not None)
+        if len(labels) != len(set(labels)):
+            raise ValueError("Segment labels must be unique.")
+        return self
 
 
 class SubstrateSpacePreview(HopModel):
@@ -125,7 +87,7 @@ class SubstrateSpacePreview(HopModel):
     variable_domains: tuple[tuple[str, ...], ...]
     paired_positions: tuple[tuple[int, int], ...]
     theoretical_cardinality: int = Field(ge=1)
-    max_members: int = Field(ge=1)
+    compilation_limit: int = Field(ge=1)
     message: str | None = None
 
 
