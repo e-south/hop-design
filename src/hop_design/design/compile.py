@@ -1,7 +1,17 @@
-"""Deterministic one-design compiler."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/compile.py
+
+Builds and compiles one deterministic hairpin design specification.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 
 from hop_design.catalog.defaults import (
@@ -36,7 +46,17 @@ from hop_design.models.derivation import (
 )
 from hop_design.models.diagnostics import CheckReport, Diagnostic, Severity
 from hop_design.models.foldback import FoldbackEvaluation
-from hop_design.models.spec import DesignSpec, HopSpec, ResolvedHopSpec
+from hop_design.models.payload import DegeneratePayload, ExactPayload
+from hop_design.models.sequence import EXACT_DNA_ALPHABET, normalize_dna_sequence
+from hop_design.models.spec import (
+    BasalSelection,
+    DesignLimits,
+    DesignSpec,
+    FoldbackSelection,
+    HopSpec,
+    JunctionRequest,
+    ResolvedHopSpec,
+)
 from hop_design.models.stem import PairedStemExtension
 from hop_design.models.strand_state import ReleasedStrandState
 from hop_design.serialization import canonical_json_bytes
@@ -44,6 +64,31 @@ from hop_design.serialization import canonical_json_bytes
 
 class UnknownCatalogReferenceError(ValueError):
     """Raised when a spec names a reference absent from the locked public catalog."""
+
+
+def create_catalog_spec(*, sequence: str, design_id: str | None = None) -> HopSpec:
+    """Build one strict design specification against the locked public catalog."""
+    normalized = normalize_dna_sequence(sequence, allow_degenerate=True)
+    payload = (
+        ExactPayload(sequence=normalized)
+        if set(normalized) <= EXACT_DNA_ALPHABET
+        else DegeneratePayload(sequence=normalized)
+    )
+    resolved_design_id = (
+        design_id or f"sequence-{hashlib.sha256(normalized.encode()).hexdigest()[:8]}"
+    )
+    return HopSpec(
+        design_id=resolved_design_id,
+        payload=payload,
+        junction=JunctionRequest(
+            foldback=FoldbackSelection(ref=FOLDBACK_REF),
+            basal=BasalSelection(ref=BASAL_REF),
+        ),
+        design_derivation_ref=DESIGN_DERIVATION_REF,
+        constraint_profile_ref=CONSTRAINT_PROFILE_REF,
+        defaults_ref=DEFAULTS_REF,
+        constraints=DesignLimits(max_candidates=1),
+    )
 
 
 @dataclass(frozen=True)

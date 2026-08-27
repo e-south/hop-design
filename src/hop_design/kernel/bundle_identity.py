@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from hop_design.models.bundle import ArtifactManifestEntry, HopBundle, MethodBundle
+from hop_design.models.design_space import HairpinDesignSet
 from hop_design.models.references import ExternalRef
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
@@ -43,6 +44,25 @@ def bundle_id(*, design_id: str, manifest_digest: str) -> str:
     """Derive the stable public bundle identifier from its manifest digest."""
     suffix = manifest_digest.removeprefix("sha256:")[:16]
     return f"hop:bundle/{design_id}/{suffix}"
+
+
+def design_set_manifest_seed(design_set: HairpinDesignSet) -> dict[str, object]:
+    """Return design-set content that participates in its identity."""
+    data = design_set.model_dump(mode="json", by_alias=True)
+    data.pop("design_set_id")
+    data.pop("manifest_digest")
+    return data
+
+
+def manifest_digest_for_design_set(design_set: HairpinDesignSet) -> str:
+    """Recompute the manifest digest of a loaded design set."""
+    return sha256_digest(canonical_json_bytes(design_set_manifest_seed(design_set)))
+
+
+def design_set_id(*, name: str, manifest_digest: str) -> str:
+    """Derive a stable design-set identifier from its manifest digest."""
+    suffix = manifest_digest.removeprefix("sha256:")[:16]
+    return f"hop:design-set/{name}/{suffix}"
 
 
 def method_manifest_seed(

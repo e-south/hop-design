@@ -15,7 +15,7 @@ from hop_design.design.spaces import (
     load_verified_design_set,
     preview_space,
 )
-from hop_design.models.spaces import (
+from hop_design.models.design_space import (
     HairpinDesignSet,
     SubstrateSpacePreview,
     SubstrateSpaceSpec,

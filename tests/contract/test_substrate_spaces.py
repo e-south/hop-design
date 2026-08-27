@@ -16,7 +16,7 @@ from pydantic import ValidationError
 
 import hop_design as hop
 import hop_design.spaces as spaces
-from hop_design.models.spaces import HairpinDesignMember
+from hop_design.models.design_space import HairpinDesignMember
 
 
 def _space_data(*, variable: str = "NNN", max_members: int = 64) -> dict[str, object]:

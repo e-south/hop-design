@@ -11,81 +11,12 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-import csv
 import html
-import io
-from collections.abc import Mapping
 
-import yaml
-
+from hop_design.models.design_space import HairpinDesignSet, SubstrateSpaceSpec
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
-from hop_design.models.spaces import HairpinDesignSet, SubstrateSpaceSpec
 
 _BASE_ORDER = ("A", "C", "G", "T")
-
-
-def render_source_yaml(spec: SubstrateSpaceSpec) -> bytes:
-    """Render the authored specification as a non-authoritative YAML projection."""
-    data = spec.model_dump(mode="json", by_alias=True, exclude_none=True)
-    return yaml.safe_dump(data, sort_keys=False, allow_unicode=True).encode("utf-8")
-
-
-def render_designs_csv(
-    design_set: HairpinDesignSet,
-    member_encodings: Mapping[str, tuple[str, str]],
-) -> bytes:
-    """Render a readable exact-sequence index."""
-    output = io.StringIO(newline="")
-    writer = csv.DictWriter(
-        output,
-        fieldnames=(
-            "ordinal",
-            "variable_assignment",
-            "exact_payload",
-            "derived_paired_payload",
-            "hairpin_encoding",
-            "hairpin_length",
-            "disposition",
-            "member_bundle_id",
-        ),
-        lineterminator="\n",
-    )
-    writer.writeheader()
-    for record in design_set.members:
-        _, sequence = member_encodings[record.member_bundle_id]
-        writer.writerow(
-            {
-                "ordinal": record.canonical_ordinal,
-                "variable_assignment": ";".join(
-                    f"{assignment.position}={assignment.base}"
-                    for assignment in record.variable_assignment
-                ),
-                "exact_payload": record.exact_payload,
-                "derived_paired_payload": record.derived_paired_payload,
-                "hairpin_encoding": sequence,
-                "hairpin_length": record.exact_hairpin_length,
-                "disposition": record.disposition,
-                "member_bundle_id": record.member_bundle_id,
-            }
-        )
-    return output.getvalue().encode("utf-8")
-
-
-def render_sequences_fasta(
-    design_set: HairpinDesignSet,
-    member_encodings: Mapping[str, tuple[str, str]],
-) -> bytes:
-    """Render exact hairpin encodings for downstream sequence handoff."""
-    lines: list[str] = []
-    for record in design_set.members:
-        design_id, sequence = member_encodings[record.member_bundle_id]
-        lines.extend(
-            (
-                f">{design_id}",
-                sequence,
-            )
-        )
-    return ("\n".join(lines) + "\n").encode("utf-8")
 
 
 def render_review_html(
@@ -354,8 +285,5 @@ search.addEventListener("input", () => {{
 
 
 __all__ = [
-    "render_designs_csv",
     "render_review_html",
-    "render_sequences_fasta",
-    "render_source_yaml",
 ]

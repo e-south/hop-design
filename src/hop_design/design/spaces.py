@@ -22,24 +22,19 @@ from typing import Literal, cast
 
 from hop_design.catalog.defaults import DEFAULTS_REF
 from hop_design.design.bundle import VerifiedHopBundle, load_verified_bundle
-from hop_design.design.compile import compile_spec
-from hop_design.design.specs import create_catalog_spec
+from hop_design.design.compile import compile_spec, create_catalog_spec
 from hop_design.export.bundle import BundleIntegrityError, verify_manifested_bundle_contents
-from hop_design.export.spaces import (
-    render_designs_csv,
-    render_review_html,
-    render_sequences_fasta,
-    render_source_yaml,
-)
+from hop_design.export.space_package import design_set_artifacts, write_space_projections
+from hop_design.kernel.bundle_identity import design_set_id, manifest_digest_for_design_set
 from hop_design.models.bundle import ArtifactManifestEntry
-from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
-from hop_design.models.spaces import (
+from hop_design.models.design_space import (
     HairpinDesignMember,
     HairpinDesignSet,
     SubstrateSpacePreview,
     SubstrateSpaceSpec,
     VariableAssignment,
 )
+from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 _BASE_ORDER = ("A", "C", "G", "T")
@@ -117,22 +112,6 @@ def _canonical_spec_bytes(spec: SubstrateSpaceSpec) -> bytes:
     return canonical_json_bytes(data)
 
 
-def _manifest_seed(design_set: HairpinDesignSet) -> dict[str, object]:
-    data = design_set.model_dump(mode="json", by_alias=True)
-    data.pop("design_set_id")
-    data.pop("manifest_digest")
-    return data
-
-
-def _manifest_digest(design_set: HairpinDesignSet) -> str:
-    return sha256_digest(canonical_json_bytes(_manifest_seed(design_set)))
-
-
-def _design_set_id(*, name: str, manifest_digest: str) -> str:
-    suffix = manifest_digest.removeprefix("sha256:")[:16]
-    return f"hop:design-set/{name}/{suffix}"
-
-
 def _exact_payloads(
     preview: SubstrateSpacePreview,
 ) -> tuple[tuple[tuple[VariableAssignment, ...], str], ...]:
@@ -155,29 +134,6 @@ def _exact_payloads(
 
 def _member_design_id(*, name: str, spec_digest: str, ordinal: int, width: int) -> str:
     return f"{name[:38]}-{spec_digest.removeprefix('sha256:')[:8]}-m{ordinal:0{width}d}"
-
-
-def _media_type(path: Path) -> str:
-    if path.suffix == ".json":
-        return "application/json"
-    if path.suffix == ".svg":
-        return "image/svg+xml"
-    if path.suffix in {".fasta", ".fa"}:
-        return "text/x-fasta"
-    return "application/octet-stream"
-
-
-def _artifact_entries(bundle_root: Path) -> tuple[ArtifactManifestEntry, ...]:
-    return tuple(
-        ArtifactManifestEntry(
-            path=path.relative_to(bundle_root).as_posix(),
-            media_type=_media_type(path),
-            digest=sha256_digest(path.read_bytes()),
-            size_bytes=path.stat().st_size,
-        )
-        for path in sorted(bundle_root.rglob("*"))
-        if path.is_file() and path.name != "manifest.json"
-    )
 
 
 def _provisional_design_set(
@@ -205,39 +161,12 @@ def _provisional_design_set(
 
 
 def _seal_design_set(design_set: HairpinDesignSet) -> HairpinDesignSet:
-    digest = _manifest_digest(design_set)
+    digest = manifest_digest_for_design_set(design_set)
     return design_set.model_copy(
         update={
-            "design_set_id": _design_set_id(name=design_set.name, manifest_digest=digest),
+            "design_set_id": design_set_id(name=design_set.name, manifest_digest=digest),
             "manifest_digest": digest,
         }
-    )
-
-
-def _write_projections(
-    root: Path,
-    *,
-    authored_spec: SubstrateSpaceSpec,
-    verified: VerifiedHairpinDesignSet,
-) -> None:
-    member_encodings = {
-        member.bundle.bundle_id: (
-            member.plan.design_id,
-            member.plan.hairpin_encoding_insert.sequence,
-        )
-        for member in verified.members
-    }
-    (root / "source.yaml").write_bytes(render_source_yaml(authored_spec))
-    (root / "designs.csv").write_bytes(render_designs_csv(verified.design_set, member_encodings))
-    (root / "sequences.fasta").write_bytes(
-        render_sequences_fasta(verified.design_set, member_encodings)
-    )
-    (root / "review.html").write_bytes(
-        render_review_html(
-            authored_spec,
-            verified.design_set,
-            verified_member_count=len(verified.members),
-        )
     )
 
 
@@ -315,12 +244,24 @@ def compile_space(
             spec=spec,
             spec_digest=spec_digest,
             members=tuple(records),
-            artifacts=_artifact_entries(bundle_root),
+            artifacts=design_set_artifacts(bundle_root),
         )
         design_set = _seal_design_set(provisional)
         (bundle_root / "manifest.json").write_bytes(canonical_json_bytes(design_set))
         staged_verified = load_verified_design_set(bundle_root)
-        _write_projections(staging, authored_spec=spec, verified=staged_verified)
+        write_space_projections(
+            staging,
+            spec=spec,
+            design_set=staged_verified.design_set,
+            member_encodings={
+                member.bundle.bundle_id: (
+                    member.plan.design_id,
+                    member.plan.hairpin_encoding_insert.sequence,
+                )
+                for member in staged_verified.members
+            },
+            verified_member_count=len(staged_verified.members),
+        )
         os.replace(staging, output)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
@@ -347,10 +288,10 @@ def load_verified_design_set(bundle_path: str | Path) -> VerifiedHairpinDesignSe
         raise BundleIntegrityError("Canonical design-set spec must exclude descriptive context.")
     if sha256_digest(spec_content) != design_set.spec_digest:
         raise BundleIntegrityError("Design-set spec digest mismatch.")
-    digest = _manifest_digest(design_set)
+    digest = manifest_digest_for_design_set(design_set)
     if digest != design_set.manifest_digest:
         raise BundleIntegrityError("Design-set manifest digest mismatch.")
-    if design_set.design_set_id != _design_set_id(name=design_set.name, manifest_digest=digest):
+    if design_set.design_set_id != design_set_id(name=design_set.name, manifest_digest=digest):
         raise BundleIntegrityError("Design-set identifier does not match its manifest digest.")
     preview = preview_space(spec)
     if preview.state != "ready":
