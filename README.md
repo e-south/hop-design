@@ -10,6 +10,14 @@ pair with it, and check whether a supported way of making it fits the design.
 It produces exact, verifiable design and method records; it does not predict
 whether a laboratory experiment will succeed.
 
+Define one bounded duplex substrate space, preview its exact size, and compile
+a verified digital design package with a readable sequence index and review.
+The public tracer asks how activity varies across three paired context
+positions: three `N` positions define 64 exact assignments and compile to one
+complete sequence-indexed design package. This establishes verified digital
+design only. Named-method and destination compatibility are not evaluated;
+physical construction, QC, and biological activity are not recorded.
+
 | Project status | Current contract |
 | --- | --- |
 | Maturity | HOP is alpha software; schemas and public APIs may change before 1.0. |
@@ -21,9 +29,10 @@ whether a laboratory experiment will succeed.
 
 | Goal | Start here |
 | --- | --- |
+| Define, preview, and compile a bounded substrate space | [Substrate-space guide](docs/guides/substrate-spaces.md) |
 | Decide whether the problem belongs in this domain | [Mental model](docs/start/mental-model.md) |
 | Install a release and compile a first design | [Quickstart](docs/guides/quickstart.md) |
-| Begin with payloads or a bounded payload library | [Payload-first guide](docs/guides/payload-sources-and-expansion.md) |
+| Load payload records or use advanced composable axes | [Payload-source guide](docs/guides/payload-sources-and-expansion.md) |
 | Find compatible candidates under explicit limits | [Discovery guide](docs/guides/discover-compatible-basal-candidates.md) |
 | Resolve an exact named production method | [Method guide](docs/guides/resolve-production-method.md) |
 | Render typed foldback or basal views | [Component-view guide](docs/guides/render-component-views.md) |

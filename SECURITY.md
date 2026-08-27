@@ -7,7 +7,7 @@ audience:
   - security reviewers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-27
 doc_type: reference
 ---
 
@@ -35,9 +35,11 @@ refuses any pre-existing target instead of merging or overwriting content.
 FASTA and CSV readers create the same strict payload records as inline callers
 under byte, record-count, and total-nucleotide limits. JSON/YAML specs enforce a
 byte limit; YAML uses safe deserialization followed by strict schema dispatch.
-All file readers reject symlinks. Symbolic expansion and design-space planning
-enforce cardinality before allocation. Remote/network resolution stays outside
-the deterministic core.
+All file readers reject symlinks. Substrate-space preview and compilation,
+symbolic expansion, and design-space planning enforce cardinality before
+allocation. Design-set verification recursively inventories member bundles and
+rejects unsafe or unexpected files. The offline review embeds no remote
+resources. Remote/network resolution stays outside the deterministic core.
 
 ## Release gate
 

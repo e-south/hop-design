@@ -9,9 +9,12 @@ import tomllib
 from pathlib import Path
 from types import ModuleType
 
+import yaml
+
 import hop_design as hop
 import hop_design.discovery as hop_discovery
 import hop_design.methods as hop_methods
+import hop_design.spaces as hop_spaces
 import hop_design.views as hop_views
 from hop_design import api as hop_api
 
@@ -41,11 +44,46 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
     assert "HOP helps scientists describe a DNA hairpin" in readme
+    assert "Define one bounded duplex substrate space" in readme
+    assert "three `N` positions define 64 exact assignments" in readme
+    assert "Named-method and destination compatibility are not evaluated" in readme
+    assert "physical construction, QC, and biological activity are not recorded" in readme
+    assert "docs/guides/substrate-spaces.md" in readme
     assert "domain-specific language" not in readme
     assert "```" not in readme
     assert "## Install" not in readme
     assert "## Compile a design" not in readme
     assert len(readme.splitlines()) <= 80
+
+
+def test_scientist_surface_uses_the_64_member_space_as_its_first_journey() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    guide = (REPO_ROOT / "docs" / "guides" / "substrate-spaces.md").read_text(encoding="utf-8")
+    quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
+    cli = (REPO_ROOT / "docs" / "reference" / "cli.md").read_text(encoding="utf-8")
+    spec_path = REPO_ROOT / "examples" / "fixed-site-three-base-context.yaml"
+
+    for text in (readme, quickstart, guide):
+        assert "define" in text.lower()
+        assert "preview" in text.lower()
+        assert "compile" in text.lower()
+    for text in (readme, quickstart):
+        assert "payload library" not in text.lower()
+    assert "hop-design space preview" in guide
+    assert "hop-design space compile" in guide
+    assert "hop-design verify" in guide
+    assert "64 exact" in guide
+    assert "review.html" in guide
+    assert "Physical construction, QC, and biological activity were not recorded" in guide
+    assert "implementation ceiling" in guide
+    assert "normalized authored specification" in guide
+    assert "--dry-run" in cli
+    assert "--out is optional with `--dry-run`" in cli
+    assert spec_path.is_file()
+    spec = hop_spaces.SubstrateSpaceSpec.model_validate(yaml.safe_load(spec_path.read_text()))
+    preview = hop_spaces.preview_space(spec)
+    assert preview.state == "ready"
+    assert preview.theoretical_cardinality == 64
 
 
 def test_public_docs_route_the_five_sibling_surfaces() -> None:
@@ -86,7 +124,7 @@ def test_action_routes_have_runnable_public_examples() -> None:
         "docs/guides/resolve-production-method.md",
         "examples/discover_basal_candidates.py",
         "examples/compile_linear_source_method.py",
-        "examples/compile_payload_library.py",
+        "examples/compile_payload_records.py",
         "examples/linear-source-matched-design.yaml",
         "examples/verify_design_method_handoff.py",
     ):
@@ -193,12 +231,12 @@ def test_public_matched_handoff_example_executes(tmp_path: Path) -> None:
     )
 
 
-def test_public_payload_library_example_executes(tmp_path: Path) -> None:
-    output = tmp_path / "payload-library"
+def test_public_payload_record_example_executes(tmp_path: Path) -> None:
+    output = tmp_path / "payload-records"
     completed = subprocess.run(
         [
             sys.executable,
-            "examples/compile_payload_library.py",
+            "examples/compile_payload_records.py",
             "--out",
             str(output),
         ],
@@ -209,7 +247,7 @@ def test_public_payload_library_example_executes(tmp_path: Path) -> None:
     )
 
     summary = json.loads(completed.stdout)
-    assert summary["schema"] == "hop.payload-library-compilation/v1"
+    assert summary["schema"] == "hop.payload-record-compilation/v1"
     assert summary["payload_count"] == 3
     assert summary["design_count"] == 3
     assert summary["feasible_count"] == 3
@@ -229,7 +267,7 @@ def test_public_payload_library_example_executes(tmp_path: Path) -> None:
     repeated = subprocess.run(
         [
             sys.executable,
-            "examples/compile_payload_library.py",
+            "examples/compile_payload_records.py",
             "--out",
             str(output),
         ],
@@ -240,6 +278,16 @@ def test_public_payload_library_example_executes(tmp_path: Path) -> None:
     )
     assert repeated.returncode != 0
     assert "already exists" in repeated.stderr
+
+
+def test_advanced_payload_example_uses_digital_record_language() -> None:
+    guide = (REPO_ROOT / "docs" / "guides" / "payload-sources-and-expansion.md").read_text(
+        encoding="utf-8"
+    )
+    assert (REPO_ROOT / "examples" / "compile_payload_records.py").is_file()
+    assert not (REPO_ROOT / "examples" / "compile_payload_library.py").exists()
+    assert "payload library" not in guide.lower()
+    assert "compile_payload_records.py" in guide
 
 
 def test_symbolic_encoding_language_and_handoff_paths_match_public_models() -> None:
@@ -385,6 +433,8 @@ def test_user_skill_is_a_small_competency_router() -> None:
     }
 
     assert len(skill.splitlines()) <= 90
+    assert "hop_design.spaces" in skill
+    assert "substrate space" in skill.lower()
     for name in references:
         assert f"references/{name}" in skill
         assert (skill_root / "references" / name).is_file()
@@ -473,6 +523,9 @@ def test_every_stable_operation_is_named_in_the_api_reference() -> None:
     )
 
     operations = set(hop_api.__all__)
+    operations.update(
+        name for name in hop_spaces.__all__ if name.startswith(("compile_", "load_", "preview_"))
+    )
     operations.update(
         name for name in hop_discovery.__all__ if name.startswith(("classify_", "scan_", "search_"))
     )

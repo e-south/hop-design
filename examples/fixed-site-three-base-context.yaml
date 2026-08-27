@@ -1,0 +1,18 @@
+schema: hop/substrate-space/v1
+name: fixed-site-three-base-context
+context:
+  question: How does activity vary across three paired context positions?
+  activity: internal DNA-binding or processing activity
+  readout: sequence-indexed downstream assay
+payload:
+  segments:
+    - fixed: ACTG
+    - variable: NNN
+      name: context
+    - fixed: GATC
+      name: recognition-site
+hairpin:
+  defaults_ref: hop:defaults/generic-hairpin-design@2
+enumeration:
+  mode: exhaustive
+  max_members: 64

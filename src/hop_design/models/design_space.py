@@ -1,4 +1,13 @@
-"""Strict Cartesian design-space and review-plan contracts."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/models/design_space.py
+
+Defines authored substrate spaces, exact design sets, and advanced Cartesian plans.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -13,6 +22,13 @@ from hop_design.models.diagnostics import CheckReport
 from hop_design.models.foldback import FoldbackEvaluationRequest
 from hop_design.models.references import ExternalRef, ReferenceId
 from hop_design.models.sources import PayloadCollection
+from hop_design.models.space.scientist import (
+    HairpinDesignMember,
+    HairpinDesignSet,
+    SubstrateSpacePreview,
+    SubstrateSpaceSpec,
+    VariableAssignment,
+)
 from hop_design.models.spec import DesignLimits, ResolvedHopSpec
 from hop_design.models.strand_state import ReleaseProjectionRequest
 
@@ -148,6 +164,11 @@ __all__ = [
     "DesignSpaceRow",
     "DuplicateDesignSequencePolicy",
     "FoldbackOption",
+    "HairpinDesignMember",
+    "HairpinDesignSet",
     "ReleaseOption",
     "ResolvedDesignSpace",
+    "SubstrateSpacePreview",
+    "SubstrateSpaceSpec",
+    "VariableAssignment",
 ]

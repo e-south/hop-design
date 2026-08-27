@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-27
 doc_type: index
 journey:
   - maintain
@@ -28,6 +28,7 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0013: Separate replayable method bundles](0013-separate-replayable-method-bundles.md)
 - [0020: Separate design derivation from method chronology](0020-separate-design-derivation-from-method-chronology.md)
 - [0023: Separate public facades by competency question](0023-separate-public-facades-by-competency-question.md)
+- [0024: Center first use on bounded substrate spaces](0024-substrate-space-scientist-surface.md)
 
 ## Hairpin language
 

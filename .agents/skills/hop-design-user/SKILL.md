@@ -1,8 +1,8 @@
 ---
 name: hop-design-user
-description: Use HOP to compile payloads, run bounded discovery or named methods, render typed views, and verify bundles or handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
+description: Use HOP to preview substrate spaces, compile hairpin designs, run discovery or methods, render views, and verify handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
 metadata:
-  version: 0.6.1
+  version: 0.7.0
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation]
 ---
@@ -18,6 +18,7 @@ Read only the matching reference before acting.
 
 | Question | Public surface | Skill reference |
 | --- | --- | --- |
+| What exact designs are in this bounded substrate space? | `hop_design.spaces` | [design](references/design.md) |
 | What design does this payload encode? | `hop_design` | [design](references/design.md) |
 | Which bounded candidates are compatible? | `hop_design.discovery` | [discovery](references/discovery.md) |
 | What exact product follows from a named method? | `hop_design.methods` | [methods](references/methods.md) |
@@ -35,8 +36,9 @@ terminology disputes.
    question.
 3. Stop on validation errors, infeasibility, unavailability, truncation, or
    corruption. Do not reinterpret one state as another.
-4. Before a write, name the bundle type and require a new target path. After a
-   write, run the matching verifier before interpreting artifacts.
+4. Before a write, name the bundle type and require a new target path. Space
+   compilation verifies before success; use the matching standalone verifier
+   again at a later handoff boundary.
 5. Report operation, authoritative IDs, input kind, output path or dry-run
    state, verification status, diagnostics, and non-claims.
 
@@ -44,6 +46,9 @@ terminology disputes.
 
 - `payload` means the input sequence to be paired. Its paired arm is derived.
 - A symbolic payload remains symbolic until explicit, bounded expansion.
+- A substrate-space preview is allocation-free. `blocked` means the valid
+  exhaustive space exceeds its declared bound; it is not infeasible or truncated.
+- A hairpin design set is a verified digital package, not a physical library.
 - Physical pair classification, caller acceptance policy, and candidate
   selection are separate claims.
 - `canonical_ordinal` is deterministic order, not a biological score.

@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-27
 doc_type: explanation
 ---
 
@@ -68,8 +68,10 @@ models
   method request resolves into molecular states and exported physical products;
   it does not redefine design identity or claim destination readiness.
 - `api` is the package-root design-language operation facade. Thin top-level
-  `discovery`, `methods`, and `views` facades expose the three specialized
-  competency surfaces without adding derivation logic.
+  `spaces`, `discovery`, `methods`, and `views` facades expose the
+  scientist-facing workflow and three specialized competency surfaces without
+  adding derivation logic. `spaces` authors a bounded sequence space and
+  returns existing member authorities rather than redefining their anatomy.
 - `cli` adapts user input to the public API and contains no derivations.
 
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
@@ -82,7 +84,12 @@ consumer makes the seam necessary.
 
 ## Current product slices
 
-The public product has four internal semantic surfaces:
+The public product has four internal semantic surfaces and one first-use
+workflow:
+
+0. **Scientist surface.** One bounded substrate-space specification, symbolic
+   preview, complete digital design set, and offline review. It composes the
+   design and verification surfaces without making method or experiment claims.
 
 1. **Design language.** Exact and symbolic payloads, foldback and basal
    junctions, optional paired stem context, deterministic design derivation,
