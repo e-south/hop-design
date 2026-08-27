@@ -296,7 +296,8 @@ A, C, G, T domain order. Ordinal is not rank.</p>
 <p>HOP version: <code>{version("hop-design")}</code></p>
 <p>Schema IDs: <code>{spec.schema_id}</code> · <code>{design_set.schema_id}</code></p>
 <p>Defaults reference: <code>{html.escape(spec.hairpin.defaults_ref)}</code></p>
-<p>Resolved anatomy: <code>{html.escape(foldback_ref)}</code> · <code>{html.escape(basal_ref)}</code></p>
+<p>Resolved anatomy: <code>{html.escape(foldback_ref)}</code> ·
+<code>{html.escape(basal_ref)}</code></p>
 <p>Canonical space digest: <code>{design_set.spec_digest}</code></p>
 <p>Design-set ID: <code>{html.escape(design_set.design_set_id)}</code></p>
 <p>Manifest digest: <code>{design_set.manifest_digest}</code></p>
