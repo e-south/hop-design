@@ -110,13 +110,25 @@ def write_space_projections(
     design_set: HairpinDesignSet,
     member_encodings: Mapping[str, tuple[str, str]],
     verified_member_count: int,
+    defaults_display_name: str,
+    defaults_anatomy_summary: str,
+    foldback_ref: str,
+    basal_ref: str,
 ) -> None:
     """Write regenerable human and sequence projections outside the authority."""
     (root / "source.yaml").write_bytes(render_source_yaml(spec))
     (root / "designs.csv").write_bytes(render_designs_csv(design_set, member_encodings))
     (root / "sequences.fasta").write_bytes(render_sequences_fasta(design_set, member_encodings))
     (root / "review.html").write_bytes(
-        render_review_html(spec, design_set, verified_member_count=verified_member_count)
+        render_review_html(
+            spec,
+            design_set,
+            verified_member_count=verified_member_count,
+            defaults_display_name=defaults_display_name,
+            defaults_anatomy_summary=defaults_anatomy_summary,
+            foldback_ref=foldback_ref,
+            basal_ref=basal_ref,
+        )
     )
 
 

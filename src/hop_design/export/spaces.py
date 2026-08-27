@@ -14,12 +14,6 @@ from __future__ import annotations
 import html
 from importlib.metadata import version
 
-from hop_design.catalog.defaults import (
-    BASAL_REF,
-    DEFAULTS_ANATOMY_SUMMARY,
-    DEFAULTS_DISPLAY_NAME,
-    FOLDBACK_REF,
-)
 from hop_design.models.design_space import HairpinDesignSet, SubstrateSpaceSpec
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 
@@ -40,6 +34,10 @@ def render_review_html(
     design_set: HairpinDesignSet,
     *,
     verified_member_count: int,
+    defaults_display_name: str,
+    defaults_anatomy_summary: str,
+    foldback_ref: str,
+    basal_ref: str,
 ) -> bytes:
     """Render one offline scientific review of a complete design set."""
     if verified_member_count != design_set.unique_designs:
@@ -263,7 +261,7 @@ details {{ margin-top:1rem; }}
 <p><strong>Paired payload:</strong> derived from the authored payload by reverse complement.</p>
 <p><strong>Hairpin context:</strong> supplied by the selected
 <code>{html.escape(spec.hairpin.defaults_ref)}</code>.
-{DEFAULTS_DISPLAY_NAME}: {DEFAULTS_ANATOMY_SUMMARY}</p>
+{html.escape(defaults_display_name)}: {html.escape(defaults_anatomy_summary)}</p>
 </section>
 <section><h2>Designs</h2>
 <p>Designs are listed in deterministic 5&prime;&rarr;3&prime; assignment order using canonical
@@ -298,7 +296,7 @@ A, C, G, T domain order. Ordinal is not rank.</p>
 <p>HOP version: <code>{version("hop-design")}</code></p>
 <p>Schema IDs: <code>{spec.schema_id}</code> · <code>{design_set.schema_id}</code></p>
 <p>Defaults reference: <code>{html.escape(spec.hairpin.defaults_ref)}</code></p>
-<p>Resolved anatomy: <code>{FOLDBACK_REF}</code> · <code>{BASAL_REF}</code></p>
+<p>Resolved anatomy: <code>{html.escape(foldback_ref)}</code> · <code>{html.escape(basal_ref)}</code></p>
 <p>Canonical space digest: <code>{design_set.spec_digest}</code></p>
 <p>Design-set ID: <code>{html.escape(design_set.design_set_id)}</code></p>
 <p>Manifest digest: <code>{design_set.manifest_digest}</code></p>

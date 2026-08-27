@@ -20,7 +20,13 @@ from math import prod
 from pathlib import Path
 from typing import Literal
 
-from hop_design.catalog.defaults import DEFAULTS_REF
+from hop_design.catalog.defaults import (
+    BASAL_REF,
+    DEFAULTS_ANATOMY_SUMMARY,
+    DEFAULTS_DISPLAY_NAME,
+    DEFAULTS_REF,
+    FOLDBACK_REF,
+)
 from hop_design.design.bundle import VerifiedHopBundle, load_verified_bundle
 from hop_design.design.compile import compile_spec, create_catalog_spec
 from hop_design.export.bundle import BundleIntegrityError, verify_manifested_bundle_contents
@@ -347,6 +353,10 @@ def compile_space(
                 for member in staged_verified.members
             },
             verified_member_count=len(staged_verified.members),
+            defaults_display_name=DEFAULTS_DISPLAY_NAME,
+            defaults_anatomy_summary=DEFAULTS_ANATOMY_SUMMARY,
+            foldback_ref=FOLDBACK_REF,
+            basal_ref=BASAL_REF,
         )
         os.replace(staging, output)
     except BaseException:
