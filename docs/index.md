@@ -32,24 +32,26 @@ integration use Python.
 2. **Mental model:** [Five claims HOP keeps separate](start/mental-model.md)
    establishes the boundary between sequence identity, method support,
    destination fit, and experimental success.
-3. **Install and compile:** [Quickstart](guides/quickstart.md) covers exact and
-   symbolic input, persisted output, and verification.
-4. **Design language:** [Language overview](language/overview.md) introduces the
+3. **Define a substrate space:** [Substrate-space guide](guides/substrate-spaces.md)
+   previews and compiles one complete 64-member digital design set.
+4. **Install and compile:** [Quickstart](guides/quickstart.md) covers the
+   scientist-facing space and existing single-design routes.
+5. **Design language:** [Language overview](language/overview.md) introduces the
    small public vocabulary and routes to the formal ontology.
-5. **Discovery language:** [Discovery overview](discovery/overview.md) explains
+6. **Discovery language:** [Discovery overview](discovery/overview.md) explains
    bounded competency questions; [the discovery guide](guides/discover-compatible-basal-candidates.md)
    runs one complete and one truncated query.
-6. **Method language:** [Method overview](methods/overview.md) separates exact
+7. **Method language:** [Method overview](methods/overview.md) separates exact
    molecular chronology from declarative design derivation; [the method guide](guides/resolve-production-method.md)
    writes and verifies one method bundle.
-7. **Verify and inspect:** [Provenance and verification](provenance/overview.md)
+8. **Verify and inspect:** [Provenance and verification](provenance/overview.md)
    runs the matched `examples/verify_design_method_handoff.py` journey and
    routes to the [design-bundle](reference/bundle-layout.md),
    [method-bundle](reference/method-bundle-layout.md), and
    [view](reference/view-contracts.md) contracts. The
    [component-view guide](guides/render-component-views.md) renders foldback and
    basal anatomy without inventing processing states.
-8. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
+9. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
    defines what remains caller-owned and how broader campaign systems can call HOP.
 
 ## Five sibling surfaces
@@ -67,6 +69,8 @@ integration use Python.
 
 ## Guides and reference
 
+- [Substrate spaces](guides/substrate-spaces.md): one authored arm, symbolic
+  preview, exhaustive compilation, and verified design-set package.
 - [Degenerate payloads](guides/degenerate-payloads.md): DNA IUPAC preservation
   and explicit expansion budgets.
 - [Payload sources and expansion](guides/payload-sources-and-expansion.md):

@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-27
 doc_type: reference
 journey:
   - compile
@@ -25,6 +25,8 @@ installation.
 
 | Schema ID | Root model | Purpose |
 | --- | --- | --- |
+| `hop/substrate-space/v1` | `SubstrateSpaceSpec` | One bounded, segmented authored payload arm and exhaustive member bound |
+| `hop.hairpin-design-set/v1` | `HairpinDesignSet` | Complete content-addressed digital design-set manifest |
 | `hop.design/v2` | `HopSpec` | Named generic design intent |
 | `hop.resolved-design/v2` | `ResolvedHopSpec` | Explicit caller-supplied components and design derivation |
 | `hop.plan/v3` | `HopPlan` | Immutable compiler-owned design derivation and encoding |
@@ -56,9 +58,11 @@ nearest known schema. Public models are strict, frozen, and reject unknown
 fields. HOP provides no old-version readers, aliases, or artifact-name fallback.
 
 `hop.load_spec(path)` accepts only `.json`, `.yaml`, and `.yml`, and only the
-two current single-design authored schemas. Design spaces, catalogs, plans,
-bundles, and workflow views use their own strict models or integrity operations;
-the loader does not guess a document type.
+two current single-design authored schemas. The scientist-facing CLI dispatches
+`hop/substrate-space/v1` explicitly through `hop_design.spaces`; it does not
+extend the single-design loader or guess from fields. Design spaces, catalogs,
+plans, bundles, and workflow views use their own strict models or integrity
+operations.
 
 Breaking-history rationale belongs in the [decision index](../architecture/decisions/README.md),
 not in the active schema contract.

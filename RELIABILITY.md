@@ -7,7 +7,7 @@ audience:
   - bundle consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-27
 doc_type: reference
 ---
 
@@ -42,6 +42,13 @@ trajectory, FASTA, GenBank, artifact inventory, manifest digest, and bundle ID
 to match byte for byte. A checksum-valid reseal of one generated artifact is
 therefore rejected.
 
+A hairpin design set inventories its canonical specification and every byte of
+every unique member bundle below `bundle/`. Verification recomputes collection
+identity, replays canonical space enumeration, and semantically replays each
+member. Descriptive context and the HTML, CSV, FASTA, and YAML projections do
+not enter collection identity. Collection compilation stages authority and
+projections together and atomically commits only after complete verification.
+
 ## Limits
 
 Every spec has an explicit positive candidate bound. The convenience route
@@ -56,6 +63,10 @@ cardinality before allocation, raises when it exceeds `max_variants`, and never
 truncates silently. Design-space planning likewise calculates the full payload
 by foldback by basal by release Cartesian cardinality before allocating rows and
 fails above `max_designs`.
+
+A substrate-space preview computes cardinality arithmetically before member
+allocation. A valid space above `max_members` is `blocked`; compilation writes
+nothing. V1 does not truncate or publish partial authoritative sets.
 
 Basal candidate discovery calculates the exact left-arm by right-arm IUPAC
 cardinality before evaluation. It examines at most `max_search_nodes`, returns

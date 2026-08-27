@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-27
 doc_type: explanation
 journey:
   - maintain
@@ -38,7 +38,7 @@ The public `v0.1.0a6` artifact provides:
 ## Current pre-1.0 semantic line
 
 The next prerelease candidate deliberately breaks the alpha schemas and public
-facade to close six ontology and usability defects:
+facade to close seven ontology and usability defects:
 
 The local package version for this candidate is `v0.1.0a7`; it is not a
 published artifact until the release gate below passes.
@@ -53,8 +53,14 @@ published artifact until the release gate below passes.
    destination-neutral.
 6. The package root is the design-language golden path; bounded discovery,
    named methods, and views use explicit sibling facades.
+7. First use is one bounded substrate space, one symbolic preview, and one
+   complete verified digital design package through `hop_design.spaces`.
 
 No retired schema reader, field alias, or artifact fallback is retained.
+
+The current scientist surface is exhaustive or blocked. Sampled design sets,
+pool-level method assessment, QC attachments, assay data, and browser authoring
+remain outside this release until an experimental handoff requires them.
 
 `hop_design.methods.list_method_capabilities()` exposes every named method's
 implementation availability and input exactness as a closed, immutable tuple.

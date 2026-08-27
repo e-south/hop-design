@@ -7,26 +7,56 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-27
 doc_type: reference
 ---
 
 # Python API
 
-The package root is the design-language golden path. Three sibling facades
-make specialized competency questions explicit:
+The package root is the single-design language. Four sibling facades make
+scientist workflow and specialized competency questions explicit:
 
 ```python
 import hop_design as hop
 import hop_design.discovery as discovery
 import hop_design.methods as methods
+import hop_design.spaces as spaces
 import hop_design.views as views
 ```
 
 Use `hop` for design compilation, payloads, bounded design spaces, and explicit
 component evaluation. Use `discovery` for bounded catalog queries, `methods`
-for named production methods and molecular states, and `views` for projections
-and rendering. Internal `hop_design.design.*` modules are not public facades.
+for named production methods and molecular states, `spaces` for the minimal
+scientist-facing substrate-space journey, and `views` for state projections and
+rendering. Internal `hop_design.design.*` modules are not public facades.
+
+## Substrate spaces and design sets
+
+All operations and public contracts in this section use `hop_design.spaces`.
+
+- `preview_space(spec) -> SubstrateSpacePreview` validates one segmented
+  authored arm, derives its paired arm, computes exact cardinality, and returns
+  `ready`, `blocked`, or `invalid` without enumerating or writing.
+- `compile_space(spec, destination=...) -> VerifiedHairpinDesignSet` expands a
+  ready space exhaustively, compiles unchanged member `HopBundle` authorities,
+  verifies the complete collection, generates review projections, and commits
+  one new destination atomically.
+- `load_verified_design_set(path) -> VerifiedHairpinDesignSet` verifies the
+  collection inventory and identity, replays canonical enumeration, and loads
+  every unique member through the existing semantic bundle verifier.
+
+The exact facade allowlist also exposes `SubstrateSpaceSpec`,
+`SubstrateSpacePreview`, `HairpinDesignSet`, and
+`VerifiedHairpinDesignSet`. These names are not package-root re-exports.
+`context` is descriptive review metadata and is excluded from collection
+identity. V1 compilation is exhaustive or blocked; it never returns a
+truncated authoritative set.
+
+Success establishes complete digital design derivation. It does not establish
+a named construction method, destination compatibility, physical
+construction, QC, or biological activity. See the
+[design-set layout](design-set-layout.md) and
+[substrate-space guide](../guides/substrate-spaces.md).
 
 ## Compile and integrity
 

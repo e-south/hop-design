@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Compile a bounded payload library on one explicit hairpin anatomy."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+examples/compile_payload_records.py
+
+Compiles bounded payload records against one explicit hairpin anatomy.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -89,7 +98,7 @@ def _design_space() -> hop.ResolvedDesignSpace:
         duplicate_policy=hop.DuplicateSequencePolicy.FAIL,
     )
     return hop.ResolvedDesignSpace(
-        space_id="payload-first-library",
+        space_id="payload-records",
         payloads=payloads,
         foldbacks=(_foldback(),),
         basals=(_basal(),),
@@ -104,17 +113,17 @@ def _design_space() -> hop.ResolvedDesignSpace:
     )
 
 
-def compile_payload_library(output: Path) -> dict[str, object]:
+def compile_payload_records(output: Path) -> dict[str, object]:
     """Write and replay one bundle per payload under a create-only root."""
     target = output.expanduser().resolve()
     if target.exists() or target.is_symlink():
-        raise FileExistsError(f"Payload library output already exists: {target}")
+        raise FileExistsError(f"Payload-record output already exists: {target}")
     target.parent.mkdir(parents=True, exist_ok=True)
 
     space = _design_space()
     plan = hop.plan_design_space(space)
     if plan.infeasible_count:
-        raise ValueError("The example payload library contains an infeasible design.")
+        raise ValueError("The example payload records contain an infeasible design.")
 
     temporary_root = Path(tempfile.mkdtemp(prefix=f".{target.name}.staging-", dir=target.parent))
     staging = temporary_root / target.name
@@ -146,7 +155,7 @@ def compile_payload_library(output: Path) -> dict[str, object]:
         "feasible_count": plan.feasible_count,
         "method_resolution_status": "not_evaluated",
         "payload_count": len(space.payloads.records),
-        "schema": "hop.payload-library-compilation/v1",
+        "schema": "hop.payload-record-compilation/v1",
     }
 
 
@@ -154,7 +163,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
-    print(json.dumps(compile_payload_library(args.out), sort_keys=True))
+    print(json.dumps(compile_payload_records(args.out), sort_keys=True))
 
 
 if __name__ == "__main__":

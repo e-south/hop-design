@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-27
 doc_type: how-to
 journey:
   - compile
@@ -60,7 +60,7 @@ caller has a smaller budget.
 
 ```python
 record = hop.PayloadRecord(
-    record_id="library",
+    record_id="variants",
     payload=hop.DegeneratePayload(sequence="NR"),
 )
 result = hop.expand_payload(record, max_variants=8)
@@ -106,7 +106,7 @@ or remain as fully retained rows under the explicit `KEEP` policy; HOP never
 silently deduplicates. Compile only selected rows with `hop.compile(row.spec)`;
 planning the space does not render or write bundles.
 
-## Run the payload-first bundle example
+## Run the advanced payload-record example
 
 The complete public example starts with three exact payloads, applies one
 explicitly selected foldback/basal anatomy, plans the bounded three-design
@@ -114,11 +114,11 @@ space, writes one bundle per design, and independently replay-verifies every
 bundle:
 
 ```bash
-uv run python examples/compile_payload_library.py \
-  --out build/payload-library
+uv run python examples/compile_payload_records.py \
+  --out build/payload-records
 ```
 
-This is the forward authoring path for a payload library:
+This is the advanced forward path for exact payload records on selected anatomy:
 
 ```text
 caller payloads + selected anatomy
@@ -128,7 +128,9 @@ caller payloads + selected anatomy
     -> replay-verified design bundles
 ```
 
-The example anatomy is synthetic contract data, not an enzyme recommendation
+This example is not the minimal substrate-space journey. It demonstrates the
+lower-level composable axes used when the caller already owns explicit
+foldback and basal anatomy. The example anatomy is synthetic contract data, not an enzyme recommendation
 or an empirically qualified scaffold. A real caller supplies anatomy selected
 from its own evidence or from bounded HOP discovery. Design-bundle verification
 still makes no production-method, destination, or experimental-success claim.

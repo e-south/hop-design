@@ -37,17 +37,36 @@ uv pip install ./hop_design-0.1.0a6-py3-none-any.whl
 hop-design compile --sequence ACGT --design-id exact-demo --out build/exact
 ```
 
+The published a6 wheel supports the single-design command above. The current
+unreleased a7 source adds the scientist-facing substrate-space journey below.
+
 From a contributor checkout:
 
 ```bash
 uv sync --locked
+uv run hop-design space preview examples/fixed-site-three-base-context.yaml
+uv run hop-design space compile examples/fixed-site-three-base-context.yaml \
+  --out build/fixed-site-three-base-context
+uv run hop-design verify build/fixed-site-three-base-context/bundle
+```
+
+The example defines 64 exact designs from three variable paired positions.
+Open `build/fixed-site-three-base-context/review.html` to inspect the substrate
+anatomy, complete space accounting, evidence boundary, exact sequence table,
+and handoff files. Continue with the
+[substrate-space guide](substrate-spaces.md) for the specification and package
+contracts.
+
+The existing single-design route remains available:
+
+```bash
 uv run hop-design compile --sequence ACGT --design-id exact-demo --out build/exact
 uv run hop-design compile --sequence NRY --design-id symbolic-demo --out build/symbolic
 ```
 
-The CLI prints the named default, plan ID, and bundle ID. It refuses to replace
-an existing output directory. Add `--dry-run` to validate and compile without
-writing.
+The single-design CLI prints the named default, plan ID, and bundle ID. It
+refuses to replace an existing output directory. Add `--dry-run` to validate
+and compile without writing; `--out` is not required for that read-only call.
 
 A strict JSON or YAML specification uses the same endpoint:
 
@@ -82,7 +101,7 @@ must not be interpreted as a wet-lab protocol or experimental validation.
 
 The CLI intentionally exposes the common compile path. Continue in Python with:
 
-- [a bounded payload library on selected anatomy](payload-sources-and-expansion.md);
+- [payload records and advanced composable axes](payload-sources-and-expansion.md);
 - [a bounded basal-candidate query](discover-compatible-basal-candidates.md);
 - [a named processing-method bundle](resolve-production-method.md); or
 - [route-neutral foldback and basal views](render-component-views.md); or

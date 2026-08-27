@@ -30,7 +30,7 @@ separate explicit operation:
 import hop_design as hop
 
 record = hop.PayloadRecord(
-    record_id="library",
+    record_id="variants",
     payload=hop.DegeneratePayload(sequence="NR"),
 )
 expanded = hop.expand_payload(record, max_variants=8)
