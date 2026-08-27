@@ -247,6 +247,9 @@ def compile_space_command(
         f"{design_set.unique_designs:,} unique · {design_set.duplicate_count:,} duplicates"
     )
     typer.echo("Digital verification: passed")
+    typer.echo(f"Substrate-space figure: {output / 'figures' / '01-substrate-space.svg'}")
+    typer.echo(f"Design-set figure: {output / 'figures' / '02-design-set.svg'}")
+    typer.echo(f"Scientific receipt: {output / 'handoff' / 'scientific-receipt.svg'}")
     typer.echo(f"Review: {output / 'review.html'}")
     typer.echo(f"Sequence index: {output / 'designs.csv'}")
     typer.echo(f"FASTA: {output / 'sequences.fasta'}")

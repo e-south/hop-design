@@ -84,6 +84,8 @@ def test_compile_space_writes_one_verified_complete_design_package(tmp_path: Pat
     assert {path.name for path in output.iterdir()} == {
         "bundle",
         "designs.csv",
+        "figures",
+        "handoff",
         "review.html",
         "sequences.fasta",
     }

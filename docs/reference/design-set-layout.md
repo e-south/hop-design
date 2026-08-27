@@ -30,6 +30,11 @@ deterministically ordered set of verified exact digital hairpin designs?
 │   ├── spec.json
 │   ├── manifest.json
 │   └── members/<member-id>/
+├── figures/
+│   ├── 01-substrate-space.svg
+│   └── 02-design-set.svg
+├── handoff/
+│   └── scientific-receipt.svg
 ├── designs.csv
 ├── sequences.fasta
 └── review.html
@@ -45,8 +50,12 @@ identities, final-encoding digests, the closed claim-status matrix, and a
 complete recursive artifact inventory. Each unique member directory is an
 unchanged verified `HopBundle`.
 
-The CSV, FASTA, and self-contained HTML are regenerable
-projections. Editing or regenerating them does not change design-set identity.
+The SVG, CSV, FASTA, and self-contained HTML files are regenerable
+projections. The substrate-space figure shows the authored rule, derived
+pairing, exact cardinality, selected fixed context, and one expanded member.
+The design-set map includes every assignment in deterministic non-ranked order.
+The scientific receipt renders the manifest-backed claim status. Editing or
+regenerating any projection does not change design-set identity.
 
 ## Invariants and identity
 

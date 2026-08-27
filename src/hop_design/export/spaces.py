@@ -276,6 +276,9 @@ A, C, G, T domain order. Ordinal is not rank.</p>
 </section>
 <section><h2>Handoff and evidence</h2>
 <ul class="handoff-list">
+<li><code>figures/01-substrate-space.svg</code> — rule and paired-space schematic</li>
+<li><code>figures/02-design-set.svg</code> — complete non-ranked member map</li>
+<li><code>handoff/scientific-receipt.svg</code> — digital evidence boundary</li>
 <li><code>designs.csv</code> — exact sequence index and dispositions</li>
 <li><code>sequences.fasta</code> — sequence handoff</li>
 <li><code>bundle/</code> — verified digital authority</li>

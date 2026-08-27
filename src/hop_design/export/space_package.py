@@ -16,6 +16,11 @@ import io
 from collections.abc import Mapping
 from pathlib import Path
 
+from hop_design.export.space_figures import (
+    render_design_set_svg,
+    render_scientific_receipt_svg,
+    render_substrate_space_svg,
+)
 from hop_design.export.spaces import render_review_html
 from hop_design.models.bundle import ArtifactManifestEntry
 from hop_design.models.design_space import HairpinDesignSet, SubstrateSpaceSpec
@@ -108,8 +113,23 @@ def write_space_projections(
     basal_ref: str,
 ) -> None:
     """Write regenerable human and sequence projections outside the authority."""
+    figures_root = root / "figures"
+    handoff_root = root / "handoff"
+    figures_root.mkdir()
+    handoff_root.mkdir()
     (root / "designs.csv").write_bytes(render_designs_csv(design_set, member_encodings))
     (root / "sequences.fasta").write_bytes(render_sequences_fasta(design_set, member_encodings))
+    (figures_root / "01-substrate-space.svg").write_bytes(
+        render_substrate_space_svg(
+            spec,
+            design_set,
+            member_encodings,
+            defaults_display_name=defaults_display_name,
+            defaults_anatomy_summary=defaults_anatomy_summary,
+        )
+    )
+    (figures_root / "02-design-set.svg").write_bytes(render_design_set_svg(design_set))
+    (handoff_root / "scientific-receipt.svg").write_bytes(render_scientific_receipt_svg(design_set))
     (root / "review.html").write_bytes(
         render_review_html(
             spec,

@@ -70,6 +70,11 @@ to replace an existing destination.
 ```text
 build/fixed-site-three-base-context/
 ├── bundle/             verified digital authority
+├── figures/
+│   ├── 01-substrate-space.svg
+│   └── 02-design-set.svg
+├── handoff/
+│   └── scientific-receipt.svg
 ├── designs.csv         exact sequence index
 ├── sequences.fasta     downstream sequence handoff
 └── review.html         offline human review
@@ -77,8 +82,10 @@ build/fixed-site-three-base-context/
 
 Open `review.html` directly in a browser. It explains the paired substrate
 anatomy, exact space accounting, evidence boundaries, member sequences, and
-handoff files. The HTML, CSV, and FASTA are regenerable projections. Only
-`bundle/` participates in design-set identity and verification.
+handoff files. The two figure SVGs state the substrate rule and complete member
+set; the receipt SVG reports the manifest-backed evidence boundary. The HTML,
+SVG, CSV, and FASTA files are regenerable projections. Only `bundle/`
+participates in design-set identity and verification.
 
 Successful compilation establishes complete digital derivation and replay of
 64 exact member authorities.

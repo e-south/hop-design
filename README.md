@@ -10,9 +10,12 @@ hairpin designs and a stable handoff for construction and measurement. It does
 not predict whether a laboratory experiment will succeed.
 
 The first journey is `question → substrate rule → exact paired designs → CSV,
-FASTA, and verified handoff`. The public tracer varies three paired context
-positions, so three `N` positions define 64 exact designs. HOP previews that
-space without allocation and compiles every member in deterministic order.
+FASTA, scientific figures, and verified handoff`. In the public software tracer,
+three `N` positions define 64 exact designs. It demonstrates complete digital
+accounting and does not select a
+biological experiment. HOP previews that space without allocation and compiles
+every member in deterministic order.
+
 No physical construction, QC, or activity record is attached.
 
 | Project status | Current contract |
