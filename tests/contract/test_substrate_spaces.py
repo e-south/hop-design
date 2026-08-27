@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 import hop_design as hop
 import hop_design.spaces as spaces
+from hop_design.models.spaces import HairpinDesignMember
 
 
 def _space_data(*, variable: str = "NNN", max_members: int = 64) -> dict[str, object]:
@@ -126,3 +127,20 @@ def test_segment_names_are_optional_but_unique() -> None:
 
     with pytest.raises(ValidationError, match="Segment names must be unique"):
         spaces.SubstrateSpaceSpec.model_validate(data)
+
+
+def test_member_bundle_paths_are_confined_to_the_collection_member_root() -> None:
+    member = {
+        "canonical_ordinal": 1,
+        "variable_assignment": ({"position": 1, "base": "A"},),
+        "exact_payload": "A",
+        "derived_paired_payload": "T",
+        "exact_hairpin_length": 19,
+        "exact_encoding_digest": f"sha256:{'0' * 64}",
+        "member_bundle_id": "hop:bundle/member/example",
+        "member_bundle_path": "../outside",
+        "disposition": "canonical",
+    }
+
+    with pytest.raises(ValidationError, match="members/<member-id>"):
+        HairpinDesignMember.model_validate(member)

@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
@@ -139,6 +140,21 @@ class HairpinDesignMember(HopModel):
     member_bundle_path: str
     disposition: Literal["canonical", "duplicate"]
     canonical_member_ordinal: int | None = Field(default=None, ge=1)
+
+    @field_validator("member_bundle_path")
+    @classmethod
+    def require_confined_member_bundle_path(cls, value: str) -> str:
+        path = PurePosixPath(value)
+        if (
+            path.is_absolute()
+            or "\\" in value
+            or value != path.as_posix()
+            or len(path.parts) != 2
+            or path.parts[0] != "members"
+            or path.parts[1] in {"", ".", ".."}
+        ):
+            raise ValueError("Member bundle path must be members/<member-id>.")
+        return value
 
     @model_validator(mode="after")
     def validate_disposition_reference(self) -> HairpinDesignMember:
