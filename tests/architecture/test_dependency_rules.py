@@ -21,6 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
         ("models/bad.py", "from .. import design"),
         ("models/bad.py", "from hop_design.discovery import search_basal_candidates"),
         ("design/bad.py", "from hop_design.methods import MethodBundle"),
+        ("design/bad.py", "from hop_design.spaces import compile_space"),
         ("api.py", "from hop_design.cli import app"),
         ("cli.py", "from hop_design.design import compile_spec"),
         ("cli.py", "from hop_design.models import HopSpec"),
@@ -38,6 +39,7 @@ def test_forbidden_absolute_relative_and_root_imports_fail(path: str, source: st
         ("design/good.py", "from hop_design.kernel import bundle_identity"),
         ("cli.py", "from hop_design.api import compile"),
         ("discovery.py", "from hop_design.design.discovery import search_nicking_placements"),
+        ("spaces.py", "from hop_design.design.spaces import preview_space"),
     ],
 )
 def test_allowed_edges_pass(path: str, source: str) -> None:

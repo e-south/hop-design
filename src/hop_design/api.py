@@ -2,15 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-
-from hop_design.catalog.defaults import (
-    BASAL_REF,
-    CONSTRAINT_PROFILE_REF,
-    DEFAULTS_REF,
-    DESIGN_DERIVATION_REF,
-    FOLDBACK_REF,
-)
 from hop_design.design.basal import evaluate_basal_pairing
 from hop_design.design.bundle import load_verified_bundle, verify_bundle
 from hop_design.design.compile import check_spec, compile_spec
@@ -25,18 +16,10 @@ from hop_design.design.payloads import (
 )
 from hop_design.design.processing import project_released_strand_state
 from hop_design.design.result import Compilation
+from hop_design.design.specs import create_catalog_spec
 from hop_design.design.stem import evaluate_paired_stem_extension
 from hop_design.models.diagnostics import CheckReport
-from hop_design.models.payload import DegeneratePayload, ExactPayload
-from hop_design.models.sequence import EXACT_DNA_ALPHABET, normalize_dna_sequence
-from hop_design.models.spec import (
-    BasalSelection,
-    DesignLimits,
-    DesignSpec,
-    FoldbackSelection,
-    HopSpec,
-    JunctionRequest,
-)
+from hop_design.models.spec import DesignSpec, HopSpec
 
 __all__ = [
     "check",
@@ -59,27 +42,7 @@ __all__ = [
 
 def create_spec(*, sequence: str, design_id: str | None = None) -> HopSpec:
     """Expand one input sequence into a strict spec with a visible generic default."""
-    normalized = normalize_dna_sequence(sequence, allow_degenerate=True)
-    payload = (
-        ExactPayload(sequence=normalized)
-        if set(normalized) <= EXACT_DNA_ALPHABET
-        else DegeneratePayload(sequence=normalized)
-    )
-    resolved_design_id = (
-        design_id or f"sequence-{hashlib.sha256(normalized.encode()).hexdigest()[:8]}"
-    )
-    return HopSpec(
-        design_id=resolved_design_id,
-        payload=payload,
-        junction=JunctionRequest(
-            foldback=FoldbackSelection(ref=FOLDBACK_REF),
-            basal=BasalSelection(ref=BASAL_REF),
-        ),
-        design_derivation_ref=DESIGN_DERIVATION_REF,
-        constraint_profile_ref=CONSTRAINT_PROFILE_REF,
-        defaults_ref=DEFAULTS_REF,
-        constraints=DesignLimits(max_candidates=1),
-    )
+    return create_catalog_spec(sequence=sequence, design_id=design_id)
 
 
 def check(spec: DesignSpec) -> CheckReport:

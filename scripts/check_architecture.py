@@ -9,7 +9,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "hop_design"
 
-PUBLIC_FACADE_MODULES = {"api", "discovery", "methods", "views"}
+PUBLIC_FACADE_MODULES = {"api", "discovery", "methods", "spaces", "views"}
 FORBIDDEN_BY_LAYER = {
     "models": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export", "kernel"},
     "kernel": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export"},
@@ -47,6 +47,7 @@ ROOT_MODULE_LAYERS = {
     "discovery.py": "api",
     "methods.py": "api",
     "serialization.py": "serialization",
+    "spaces.py": "api",
     "views.py": "api",
 }
 EXEMPT_ROOT_MODULES = {"__init__.py", "_facade.py"}
