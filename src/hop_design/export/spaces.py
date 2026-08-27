@@ -176,6 +176,7 @@ def render_review_html(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
 <title>{html.escape(spec.name)} · HOP Design</title>
 <style>
 :root {{
