@@ -195,5 +195,5 @@ def test_cli_compiles_and_verifies_a_complete_design_set(tmp_path: Path) -> None
 
     verify_result = runner.invoke(app, ["verify", str(output / "bundle")])
     assert verify_result.exit_code == 0, verify_result.output
-    assert "Verified design set: hop:design-set/cli-space/" in verify_result.output
+    assert "Verified design set: hop:design-set/" in verify_result.output
     assert "Coverage: complete · 4 exact designs" in verify_result.output

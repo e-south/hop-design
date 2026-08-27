@@ -59,10 +59,10 @@ def manifest_digest_for_design_set(design_set: HairpinDesignSet) -> str:
     return sha256_digest(canonical_json_bytes(design_set_manifest_seed(design_set)))
 
 
-def design_set_id(*, name: str, manifest_digest: str) -> str:
+def design_set_id(*, manifest_digest: str) -> str:
     """Derive a stable design-set identifier from its manifest digest."""
     suffix = manifest_digest.removeprefix("sha256:")[:16]
-    return f"hop:design-set/{name}/{suffix}"
+    return f"hop:design-set/{suffix}"
 
 
 def method_manifest_seed(

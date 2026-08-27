@@ -24,26 +24,32 @@ from hop_design.spaces import (
 
 
 def _space(
-    *, context_question: str = "Which paired context changes activity?"
+    *,
+    name: str = "one-base-context",
+    context_question: str = "Which paired context changes activity?",
+    variable: str = "N",
+    max_members: int = 4,
+    segments: list[dict[str, str]] | None = None,
 ) -> SubstrateSpaceSpec:
     return SubstrateSpaceSpec.model_validate(
         {
             "schema": "hop/substrate-space/v1",
-            "name": "one-base-context",
+            "name": name,
             "context": {
                 "question": context_question,
                 "activity": "internal activity",
                 "readout": "sequence-indexed assay",
             },
             "payload": {
-                "segments": [
+                "segments": segments
+                or [
                     {"fixed": "ACTG"},
-                    {"variable": "N", "name": "context"},
+                    {"variable": variable, "name": "context"},
                     {"fixed": "GATC", "name": "recognition-site"},
                 ]
             },
             "hairpin": {"defaults_ref": "hop:defaults/generic-hairpin-design@2"},
-            "enumeration": {"mode": "exhaustive", "max_members": 4},
+            "enumeration": {"mode": "exhaustive", "max_members": max_members},
         }
     )
 
@@ -95,17 +101,48 @@ def test_compile_space_writes_one_verified_complete_design_package(tmp_path: Pat
     }
 
 
-def test_compile_space_is_deterministic_and_context_does_not_change_authority(
+def test_compile_space_authority_depends_only_on_normalized_molecular_rules(
     tmp_path: Path,
 ) -> None:
     first = compile_space(_space(context_question="Question one"), destination=tmp_path / "first")
-    second = compile_space(_space(context_question="Question two"), destination=tmp_path / "second")
+    second = compile_space(
+        _space(
+            name="renamed-space",
+            context_question="A different explanatory question",
+            max_members=20,
+            segments=[
+                {"fixed": "A", "name": "left-a"},
+                {"fixed": "CTG", "name": "left-b"},
+                {"variable": "N", "name": "renamed-context"},
+                {"fixed": "GA", "name": "right-a"},
+                {"fixed": "TC", "name": "right-b"},
+            ],
+        ),
+        destination=tmp_path / "second",
+    )
 
     assert first.design_set == second.design_set
     assert _bundle_bytes(first.path) == _bundle_bytes(second.path)
     assert (tmp_path / "first" / "source.yaml").read_bytes() != (
         tmp_path / "second" / "source.yaml"
     ).read_bytes()
+
+    canonical_spec = (first.path / "spec.json").read_text(encoding="utf-8")
+    assert '"payload_domains"' in canonical_spec
+    for presentation_field in ('"name"', '"context"', '"segments"', '"max_members"'):
+        assert presentation_field not in canonical_spec
+
+
+def test_compile_space_authority_changes_with_a_molecular_domain(tmp_path: Path) -> None:
+    first = compile_space(_space(variable="N"), destination=tmp_path / "first")
+    second = compile_space(
+        _space(variable="R", max_members=4),
+        destination=tmp_path / "second",
+    )
+
+    assert first.design_set.spec_digest != second.design_set.spec_digest
+    assert first.design_set.design_set_id != second.design_set.design_set_id
+    assert _bundle_bytes(first.path) != _bundle_bytes(second.path)
 
 
 def test_load_verified_design_set_replays_every_member(tmp_path: Path) -> None:
@@ -114,7 +151,7 @@ def test_load_verified_design_set_replays_every_member(tmp_path: Path) -> None:
     loaded = load_verified_design_set(compiled.path)
 
     assert loaded.design_set == compiled.design_set
-    assert loaded.spec.context is None
+    assert not hasattr(loaded.spec, "context")
     assert tuple(member.bundle for member in loaded.members) == tuple(
         member.bundle for member in compiled.members
     )

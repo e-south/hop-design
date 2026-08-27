@@ -42,12 +42,14 @@ trajectory, FASTA, GenBank, artifact inventory, manifest digest, and bundle ID
 to match byte for byte. A checksum-valid reseal of one generated artifact is
 therefore rejected.
 
-A hairpin design set inventories its canonical specification and every byte of
-every unique member bundle below `bundle/`. Verification recomputes collection
-identity, replays canonical space enumeration, and semantically replays each
-member. Descriptive context and the HTML, CSV, FASTA, and YAML projections do
-not enter collection identity. Collection compilation stages authority and
-projections together and atomically commits only after complete verification.
+A hairpin design set inventories its normalized per-position molecular domains,
+resolved hairpin defaults reference, and every byte of every unique member
+bundle below `bundle/`. Verification recomputes collection identity, replays
+canonical space enumeration, and semantically replays each member. Display
+names, descriptive context, segment labels and boundaries, allocation bounds,
+and the HTML, CSV, FASTA, and YAML projections do not enter collection identity.
+Collection compilation stages authority and projections together and atomically
+commits only after complete verification.
 
 ## Limits
 

@@ -251,6 +251,31 @@ class SubstrateSpacePreview(HopModel):
     message: str | None = None
 
 
+class MolecularSubstrateSpace(HopModel):
+    """Normalized molecular rules that define one substrate-space authority."""
+
+    schema_id: Literal["hop.molecular-substrate-space/v1"] = Field(
+        default="hop.molecular-substrate-space/v1", alias="schema"
+    )
+    payload_domains: tuple[tuple[Literal["A", "C", "G", "T"], ...], ...] = Field(min_length=1)
+    defaults_ref: ReferenceId
+
+    @field_validator("payload_domains")
+    @classmethod
+    def require_canonical_domains(
+        cls,
+        value: tuple[tuple[Literal["A", "C", "G", "T"], ...], ...],
+    ) -> tuple[tuple[Literal["A", "C", "G", "T"], ...], ...]:
+        canonical_order = ("A", "C", "G", "T")
+        for domain in value:
+            expected = tuple(base for base in canonical_order if base in domain)
+            if not domain or domain != expected:
+                raise ValueError(
+                    "Payload domains must be nonempty and canonically A/C/G/T ordered."
+                )
+        return value
+
+
 class VariableAssignment(HopModel):
     """One exact base assigned to one authored variable position."""
 
@@ -297,11 +322,10 @@ class HairpinDesignMember(HopModel):
 class HairpinDesignSet(HopModel):
     """Canonical manifest for one complete verified digital design set."""
 
-    schema_id: Literal["hop.hairpin-design-set/v1"] = Field(
-        default="hop.hairpin-design-set/v1", alias="schema"
+    schema_id: Literal["hop.hairpin-design-set/v2"] = Field(
+        default="hop.hairpin-design-set/v2", alias="schema"
     )
     design_set_id: str
-    name: str
     spec_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     defaults_ref: ReferenceId
     theoretical_cardinality: int = Field(ge=1)

@@ -30,6 +30,7 @@ from hop_design.models.bundle import ArtifactManifestEntry
 from hop_design.models.design_space import (
     HairpinDesignMember,
     HairpinDesignSet,
+    MolecularSubstrateSpace,
     SubstrateSpacePreview,
     SubstrateSpaceSpec,
     VariableAssignment,
@@ -46,7 +47,7 @@ class VerifiedHairpinDesignSet:
 
     path: Path
     design_set: HairpinDesignSet
-    spec: SubstrateSpaceSpec
+    spec: MolecularSubstrateSpace
     members: tuple[VerifiedHopBundle, ...]
 
 
@@ -106,25 +107,44 @@ def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
     )
 
 
-def _canonical_spec_bytes(spec: SubstrateSpaceSpec) -> bytes:
-    data = spec.model_dump(mode="json", by_alias=True)
-    data.pop("context", None)
-    return canonical_json_bytes(data)
+def _molecular_space(spec: SubstrateSpaceSpec) -> MolecularSubstrateSpace:
+    payload_domains: list[tuple[Literal["A", "C", "G", "T"], ...]] = []
+    for segment in spec.payload.segments:
+        sequence = segment.fixed or segment.variable or ""
+        for symbol in sequence:
+            bases = iupac_bases(symbol)
+            payload_domains.append(
+                tuple(
+                    cast(Literal["A", "C", "G", "T"], base) for base in _BASE_ORDER if base in bases
+                )
+            )
+    return MolecularSubstrateSpace(
+        payload_domains=tuple(payload_domains),
+        defaults_ref=spec.hairpin.defaults_ref,
+    )
 
 
 def _exact_payloads(
-    preview: SubstrateSpacePreview,
+    molecular_space: MolecularSubstrateSpace,
 ) -> tuple[tuple[tuple[VariableAssignment, ...], str], ...]:
-    template = list(preview.authored_payload)
+    variable_positions = tuple(
+        position
+        for position, domain in enumerate(molecular_space.payload_domains, start=1)
+        if len(domain) > 1
+    )
+    variable_domains = tuple(
+        domain for domain in molecular_space.payload_domains if len(domain) > 1
+    )
+    template = [domain[0] for domain in molecular_space.payload_domains]
     results: list[tuple[tuple[VariableAssignment, ...], str]] = []
-    for bases in product(*preview.variable_domains):
+    for bases in product(*variable_domains):
         exact = template.copy()
         assignments = tuple(
             VariableAssignment(
                 position=position,
                 base=cast(Literal["A", "C", "G", "T"], base),
             )
-            for position, base in zip(preview.variable_positions, bases, strict=True)
+            for position, base in zip(variable_positions, bases, strict=True)
         )
         for assignment in assignments:
             exact[assignment.position - 1] = assignment.base
@@ -132,8 +152,14 @@ def _exact_payloads(
     return tuple(results)
 
 
-def _member_design_id(*, name: str, spec_digest: str, ordinal: int, width: int) -> str:
-    return f"{name[:38]}-{spec_digest.removeprefix('sha256:')[:8]}-m{ordinal:0{width}d}"
+def _member_design_id(*, spec_digest: str, assignments: tuple[VariableAssignment, ...]) -> str:
+    assignment_digest = sha256_digest(
+        canonical_json_bytes([assignment.model_dump(mode="json") for assignment in assignments])
+    )
+    return (
+        f"space-{spec_digest.removeprefix('sha256:')[:12]}-"
+        f"member-{assignment_digest.removeprefix('sha256:')[:12]}"
+    )
 
 
 def _provisional_design_set(
@@ -147,7 +173,6 @@ def _provisional_design_set(
     duplicate_count = len(members) - unique_designs
     return HairpinDesignSet(
         design_set_id="hop:design-set/pending/pending",
-        name=spec.name,
         spec_digest=spec_digest,
         defaults_ref=spec.hairpin.defaults_ref,
         theoretical_cardinality=len(members),
@@ -164,7 +189,7 @@ def _seal_design_set(design_set: HairpinDesignSet) -> HairpinDesignSet:
     digest = manifest_digest_for_design_set(design_set)
     return design_set.model_copy(
         update={
-            "design_set_id": design_set_id(name=design_set.name, manifest_digest=digest),
+            "design_set_id": design_set_id(manifest_digest=digest),
             "manifest_digest": digest,
         }
     )
@@ -188,20 +213,20 @@ def compile_space(
         bundle_root = staging / "bundle"
         members_root = bundle_root / "members"
         members_root.mkdir(parents=True)
-        canonical_spec = _canonical_spec_bytes(spec)
+        molecular_space = _molecular_space(spec)
+        canonical_spec = canonical_json_bytes(molecular_space)
         spec_digest = sha256_digest(canonical_spec)
         (bundle_root / "spec.json").write_bytes(canonical_spec)
 
-        width = max(4, len(str(preview.theoretical_cardinality)))
         records: list[HairpinDesignMember] = []
         encoding_ordinals: dict[str, int] = {}
         canonical_records: dict[int, HairpinDesignMember] = {}
-        for ordinal, (assignments, exact_payload) in enumerate(_exact_payloads(preview), start=1):
+        for ordinal, (assignments, exact_payload) in enumerate(
+            _exact_payloads(molecular_space), start=1
+        ):
             design_id = _member_design_id(
-                name=spec.name,
                 spec_digest=spec_digest,
-                ordinal=ordinal,
-                width=width,
+                assignments=assignments,
             )
             compilation = compile_spec(
                 create_catalog_spec(sequence=exact_payload, design_id=design_id)
@@ -281,22 +306,19 @@ def load_verified_design_set(bundle_path: str | Path) -> VerifiedHairpinDesignSe
     if spec_content is None:
         raise BundleIntegrityError("Design-set authority omits spec.json.")
     try:
-        spec = SubstrateSpaceSpec.model_validate_json(spec_content)
+        spec = MolecularSubstrateSpace.model_validate_json(spec_content)
     except Exception as exc:
         raise BundleIntegrityError(f"Design-set spec.json is invalid: {exc}") from exc
-    if spec.context is not None:
-        raise BundleIntegrityError("Canonical design-set spec must exclude descriptive context.")
     if sha256_digest(spec_content) != design_set.spec_digest:
         raise BundleIntegrityError("Design-set spec digest mismatch.")
     digest = manifest_digest_for_design_set(design_set)
     if digest != design_set.manifest_digest:
         raise BundleIntegrityError("Design-set manifest digest mismatch.")
-    if design_set.design_set_id != design_set_id(name=design_set.name, manifest_digest=digest):
+    if design_set.design_set_id != design_set_id(manifest_digest=digest):
         raise BundleIntegrityError("Design-set identifier does not match its manifest digest.")
-    preview = preview_space(spec)
-    if preview.state != "ready":
-        raise BundleIntegrityError("Canonical design-set spec is not ready for exhaustive replay.")
-    expected_payloads = _exact_payloads(preview)
+    if spec.defaults_ref != DEFAULTS_REF:
+        raise BundleIntegrityError("Canonical design-set spec names an unknown defaults reference.")
+    expected_payloads = _exact_payloads(spec)
     if len(expected_payloads) != len(design_set.members):
         raise BundleIntegrityError("Design-set members do not match symbolic space accounting.")
 

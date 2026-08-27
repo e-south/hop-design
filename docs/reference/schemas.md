@@ -26,7 +26,8 @@ installation.
 | Schema ID | Root model | Purpose |
 | --- | --- | --- |
 | `hop/substrate-space/v1` | `SubstrateSpaceSpec` | One bounded, segmented authored payload arm and exhaustive member bound |
-| `hop.hairpin-design-set/v1` | `HairpinDesignSet` | Complete content-addressed digital design-set manifest |
+| `hop.hairpin-design-set/v2` | `HairpinDesignSet` | Complete content-addressed digital design-set manifest |
+| `hop.molecular-substrate-space/v1` | `MolecularSubstrateSpace` | Normalized per-position molecular authority for one substrate space |
 | `hop.design/v2` | `HopSpec` | Named generic design intent |
 | `hop.resolved-design/v2` | `ResolvedHopSpec` | Explicit caller-supplied components and design derivation |
 | `hop.plan/v3` | `HopPlan` | Immutable compiler-owned design derivation and encoding |

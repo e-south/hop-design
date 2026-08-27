@@ -39,8 +39,16 @@ no authoritative partial set.
 
 Each unique member remains an unchanged, verified `HopBundle`. The collection
 authority lives below `bundle/`; the source YAML, sequence exports, and offline
-HTML review are regenerable projections outside identity. Descriptive
-experimental context is likewise excluded from collection identity.
+HTML review are regenerable projections outside identity. The canonical
+molecular specification records only the ordered per-position DNA domains and
+the resolved versioned hairpin defaults reference. Display names, descriptive
+context, segment labels, equivalent segment boundaries, and allocation bounds
+are excluded from member and collection identity.
+
+The design-set manifest uses `hop.hairpin-design-set/v2`. Member identifiers
+derive from the canonical molecular-space digest and exact variable assignment;
+the collection identifier derives from the complete manifest without embedding
+a display name. No compatibility reader is retained for the prerelease schema.
 
 Compilation verifies members and collection before atomically committing a
 new destination. Standalone verification is a handoff operation rather than a
