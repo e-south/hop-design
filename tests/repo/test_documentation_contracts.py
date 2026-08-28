@@ -45,7 +45,7 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "docs/index.md" in readme
     assert "Specify the duplex context you want to test" in readme
     assert "question → substrate rule → exact paired designs" in readme
-    assert "three `N` positions define 64 exact designs" in readme
+    assert "does not choose a biological target or publication example" in readme
     assert "No physical construction, QC, or activity record is attached" in readme
     assert "docs/guides/substrate-spaces.md" in readme
     assert "domain-specific language" not in readme
@@ -55,7 +55,7 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert len(readme.splitlines()) <= 80
 
 
-def test_scientist_surface_uses_the_64_member_space_as_its_first_journey() -> None:
+def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     guide = (REPO_ROOT / "docs" / "guides" / "substrate-spaces.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
@@ -72,6 +72,8 @@ def test_scientist_surface_uses_the_64_member_space_as_its_first_journey() -> No
     assert "hop-design space compile" in guide
     assert "hop-design verify" in guide
     assert "64 exact" in guide
+    assert "verification fixture" in guide
+    assert "publication claim" in guide
     assert "review.html" in guide
     assert "No physical construction, QC, or activity record is attached" in guide
     assert "256" in guide
@@ -87,6 +89,10 @@ def test_scientist_surface_uses_the_64_member_space_as_its_first_journey() -> No
     preview = hop_spaces.preview_space(spec)
     assert preview.state == "ready"
     assert preview.theoretical_cardinality == 64
+    assert "three `N` positions define 64 exact designs" not in readme
+    assert "publication-oriented" not in (
+        REPO_ROOT / "src" / "hop_design" / "export" / "space_figures.py"
+    ).read_text(encoding="utf-8")
 
 
 def test_public_docs_route_the_five_sibling_surfaces() -> None:

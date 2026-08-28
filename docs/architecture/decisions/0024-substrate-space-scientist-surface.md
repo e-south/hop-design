@@ -75,7 +75,9 @@ ontology. Discovery retains `complete`, `infeasible`, and `truncated` for its
 different competency questions. Named methods, molecular states, provenance,
 and typed views remain available through progressive disclosure.
 
-The public tracer contains three fully variable positions and therefore 64
-exact members. The release also verifies a 256-member envelope. Larger-set
-storage, sampled sets, pooled method assessment, QC attachments, assay data,
-and a browser authoring application require separate evidence and decisions.
+The repository verification fixture contains three fully variable positions
+and therefore 64 exact members. It tests the product journey rather than
+selecting a scientific or publication example. The release also verifies a
+256-member envelope. Larger-set storage, sampled sets, pooled method
+assessment, QC attachments, assay data, and a browser authoring application
+require separate evidence and decisions.

@@ -51,10 +51,11 @@ complete recursive artifact inventory. Each unique member directory is an
 unchanged verified `HopBundle`.
 
 The SVG, CSV, FASTA, and self-contained HTML files are regenerable
-projections. The substrate-space figure shows the authored rule, derived
+projections. The substrate-space projection shows the authored rule, derived
 pairing, exact cardinality, selected fixed context, and one expanded member.
-The design-set map includes every assignment in deterministic non-ranked order.
-The scientific receipt renders the manifest-backed claim status. Editing or
+The design-set diagnostic includes every assignment in deterministic non-ranked order.
+The evidence receipt renders the manifest-backed claim status. These generic
+outputs do not select a paper example or panel composition. Editing or
 regenerating any projection does not change design-set identity.
 
 ## Invariants and identity

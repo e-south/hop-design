@@ -218,10 +218,11 @@ def test_cli_compiles_and_verifies_a_complete_design_set(tmp_path: Path) -> None
     assert "Coverage: 4/4 complete · 4 unique · 0 duplicates" in result.output
     assert "Digital verification: passed" in result.output
     assert (
-        f"Substrate-space figure: {output / 'figures' / '01-substrate-space.svg'}" in result.output
+        f"Substrate-space projection: {output / 'figures' / '01-substrate-space.svg'}"
+        in result.output
     )
-    assert f"Design-set figure: {output / 'figures' / '02-design-set.svg'}" in result.output
-    assert f"Scientific receipt: {output / 'handoff' / 'scientific-receipt.svg'}" in result.output
+    assert f"Design-set diagnostic: {output / 'figures' / '02-design-set.svg'}" in result.output
+    assert f"Evidence receipt: {output / 'handoff' / 'scientific-receipt.svg'}" in result.output
     assert f"FASTA: {output / 'sequences.fasta'}" in result.output
     assert "No physical construction, QC, or activity record is attached." in result.output
 

@@ -3,7 +3,7 @@
 HOP Design
 src/hop_design/export/space_figures.py
 
-Renders deterministic publication-oriented SVGs from a verified design set.
+Renders deterministic generic SVG projections from a verified design set.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ def _svg_document(*, width: int, height: int, title: str, body: str) -> bytes:
     markup = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}"
 viewBox="0 0 {width} {height}" role="img" aria-labelledby="figure-title figure-description">
 <title id="figure-title">{_escape(title)}</title>
-<desc id="figure-description">HOP scientific projection from a verified digital design set.</desc>
+<desc id="figure-description">Generic HOP projection from a verified digital design set.</desc>
 <style>
 text {{ fill:{_INK}; font-family:Arial, Helvetica, sans-serif; }}
 .title {{ font-size:30px; font-weight:700; }}
@@ -84,7 +84,7 @@ def render_substrate_space_svg(
     defaults_anatomy_summary: str,
 ) -> bytes:
     """Render the authored rule, paired arm, cardinality, and one exact encoding."""
-    title = "One authored arm defines a complete paired substrate space."
+    title = "Authored and derived positions define the paired substrate space."
     payload, kinds, domain_labels = _payload_parts(spec)
     paired = design_set.members[0].derived_paired_payload[::-1]
     first = design_set.members[0]
@@ -145,7 +145,7 @@ def render_substrate_space_svg(
 
 def render_design_set_svg(design_set: HairpinDesignSet) -> bytes:
     """Render every exact member in deterministic, explicitly non-ranked order."""
-    title = "Exhaustive compilation preserves every valid member and its molecular identity."
+    title = "Complete digital design-set diagnostic"
     count = len(design_set.members)
     columns = min(16, max(2, math.ceil(math.sqrt(count))))
     tile_width = 64
@@ -185,8 +185,9 @@ def render_design_set_svg(design_set: HairpinDesignSet) -> bytes:
         "as SVG metadata."
     )
     body = f"""
-<text x="72" y="72" class="title">Exhaustive compilation preserves every valid member</text>
-<text x="72" y="108" class="title">and its molecular identity.</text>
+<text x="72" y="72" class="title">Complete digital design-set diagnostic</text>
+<text x="72" y="108" class="subtitle">Every assignment is shown in deterministic,
+non-ranked order.</text>
 <text x="72" y="148" class="subtitle">{_escape(accounting)}</text>
 <line x1="72" y1="178" x2="1128" y2="178" class="rule"/>
 <text x="72" y="208" class="body">Ordinal is deterministic replay order, not rank.</text>
@@ -198,9 +199,7 @@ def render_design_set_svg(design_set: HairpinDesignSet) -> bytes:
 
 def render_scientific_receipt_svg(design_set: HairpinDesignSet) -> bytes:
     """Render complete accounting and the manifest-backed evidence boundary."""
-    title = (
-        "The handoff distinguishes verified digital derivation from untested experimental claims."
-    )
+    title = "Digital evidence boundary"
     claim_labels = {
         "space_accounting": "Substrate-space accounting",
         "digital_design": "Exact digital designs",
@@ -236,8 +235,9 @@ def render_scientific_receipt_svg(design_set: HairpinDesignSet) -> bytes:
         "CSV and FASTA provide sequence handoff; bundle/ remains the verified digital authority."
     )
     body = f"""
-<text x="72" y="72" class="title">The handoff distinguishes verified digital derivation</text>
-<text x="72" y="108" class="title">from untested experimental claims.</text>
+<text x="72" y="72" class="title">Digital evidence boundary</text>
+<text x="72" y="108" class="subtitle">Verified derivation and absent experimental
+evidence remain distinct.</text>
 <line x1="72" y1="140" x2="1128" y2="140" class="rule"/>
 <text x="72" y="188" class="label">Complete digital handoff</text>
 <text x="72" y="232" class="title">{_escape(assignment_count)}</text>

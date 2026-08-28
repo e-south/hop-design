@@ -3,7 +3,7 @@
 HOP Design
 tests/integration/test_space_figures.py
 
-Validates publication-oriented SVG projections of a verified substrate space.
+Validates generic SVG projections of a verified substrate space.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ def test_substrate_space_figure_states_the_rule_and_complete_encoding(tmp_path: 
     root = _svg(output / "figures" / "01-substrate-space.svg")
     text = _text(root)
 
-    assert "One authored arm defines a complete paired substrate space." in text
+    assert "Authored and derived positions define the paired substrate space." in text
     assert "R=A/G" in text
     assert "Y=C/T" in text
     assert "4 exact designs" in text
@@ -76,7 +76,7 @@ def test_design_set_figure_contains_every_member_without_ranking(tmp_path: Path)
     text = _text(root)
     members = [element for element in root.iter() if element.get("data-design-member") == "true"]
 
-    assert "Exhaustive compilation preserves every valid member and its molecular identity." in text
+    assert "Complete digital design-set diagnostic" in text
     assert len(members) == compiled.design_set.enumerated_assignments
     assert {element.get("data-ordinal") for element in members} == {"1", "2", "3", "4"}
     assert {element.get("data-payload") for element in members} == {
@@ -98,10 +98,7 @@ def test_scientific_receipt_renders_manifest_claim_status(tmp_path: Path) -> Non
         if element.get("data-evidence-dimension") is not None
     }
 
-    assert (
-        "The handoff distinguishes verified digital derivation from untested experimental claims."
-        in text
-    )
+    assert "Digital evidence boundary" in text
     assert compiled.design_set.design_set_id in text
     assert statuses == {
         dimension: claim.model_dump(mode="json")["status"]

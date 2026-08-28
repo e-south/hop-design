@@ -20,7 +20,7 @@ Use this route when the scientific question concerns a finite set of paired
 payload variants in one fixed hairpin context. You author one payload arm. HOP
 derives the opposite arm by reverse complement.
 
-The public tracer fixes two payload segments and varies three adjacent
+The repository verification fixture fixes two payload segments and varies three adjacent
 positions:
 
 ```yaml
@@ -35,13 +35,18 @@ payload:
     label: recognition-site
 ```
 
-Three `N` positions each permit `A`, `C`, `G`, or `T`, so the declared space
+Three `N` positions each permit `A`, `C`, `G`, or `T`, so this fixture
 contains (4^3=64) exact assignments. `question` is optional review text and
 does not change design-set identity. The top-level name, segment labels, and
 equivalent segment boundaries are likewise presentation concerns rather than
 molecular identity. HOP applies exhaustive enumeration and the versioned
 standard hairpin context without asking the first-use author to configure
 package policy.
+
+The fixture exercises compilation and package review. It is not a biological
+tracer, literature-grounded substrate choice, or publication claim. A consuming
+study owns those decisions and may use the structured preview and exact
+sequence exports without adopting HOP's example or visual composition.
 
 ## Define, preview, compile
 
@@ -82,9 +87,10 @@ build/fixed-site-three-base-context/
 
 Open `review.html` directly in a browser. It explains the paired substrate
 anatomy, exact space accounting, evidence boundaries, member sequences, and
-handoff files. The two figure SVGs state the substrate rule and complete member
-set; the receipt SVG reports the manifest-backed evidence boundary. The HTML,
-SVG, CSV, and FASTA files are regenerable projections. Only `bundle/`
+handoff files. The two SVG projections state the substrate rule and complete
+member set; the evidence receipt reports the manifest-backed claim boundary.
+They are generic diagnostics, not manuscript panels. The HTML, SVG, CSV, and
+FASTA files are regenerable projections. Only `bundle/`
 participates in design-set identity and verification.
 
 Successful compilation establishes complete digital derivation and replay of
