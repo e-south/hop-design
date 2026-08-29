@@ -53,6 +53,7 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
 
     @model_validator(mode="after")
     def validate_relation(self) -> BasalNeighborhoodDiscoveryResult:
+        NeighborhoodDiscoveryResult.model_validate(self.discovery.model_dump(mode="python"))
         if self.result_id != self._expected_result_id():
             raise ValueError("result_id must seal the complete basal neighborhood result.")
         discovery_ids = tuple(item.local_realization_id for item in self.discovery.realizations)

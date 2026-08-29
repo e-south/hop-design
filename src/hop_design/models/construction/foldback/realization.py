@@ -221,6 +221,7 @@ class FoldbackNeighborhoodDiscoveryResult(HopModel):
 
     @model_validator(mode="after")
     def validate_membership(self) -> FoldbackNeighborhoodDiscoveryResult:
+        NeighborhoodDiscoveryResult.model_validate(self.neighborhood.model_dump(mode="python"))
         generic_ids = tuple(
             realization.local_realization_id for realization in self.neighborhood.realizations
         )

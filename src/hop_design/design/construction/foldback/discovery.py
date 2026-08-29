@@ -77,7 +77,15 @@ def discover_foldback_neighborhood(
     payload_failures: dict[str, set[str]] = defaultdict(set)
 
     for shell in relaxation_shells(request.target, request.relaxation):
+        if examined_nodes >= request.enumeration.max_search_nodes:
+            truncation_reason = "max_search_nodes"
+            break
+        if len(records) >= request.enumeration.max_realizations:
+            truncation_reason = "max_realizations"
+            break
         shell_ids: list[str] = []
+        shell_failures: Counter[str] = Counter()
+        shell_rejected = 0
         for geometry in shell.geometries:
             if not isinstance(geometry, FoldbackTarget):
                 raise ValueError("Foldback relaxation produced a non-foldback geometry.")
@@ -91,10 +99,15 @@ def discover_foldback_neighborhood(
                         if examined_nodes >= request.enumeration.max_search_nodes:
                             truncation_reason = "max_search_nodes"
                             break
+                        if len(records) >= request.enumeration.max_realizations:
+                            truncation_reason = "max_realizations"
+                            break
                         examined_nodes += 1
                         if isinstance(solution, FoldbackPlacementFailure):
                             failures[solution.code] += 1
+                            shell_failures[solution.code] += 1
                             rejected_count += 1
+                            shell_rejected += 1
                             payload_failures[payload_sequence].add(solution.code)
                             continue
                         record = _realization(
@@ -107,12 +120,11 @@ def discover_foldback_neighborhood(
                         )
                         if isinstance(record, str):
                             failures[record] += 1
+                            shell_failures[record] += 1
                             rejected_count += 1
+                            shell_rejected += 1
                             payload_failures[payload_sequence].add(record)
                             continue
-                        if len(records) >= request.enumeration.max_realizations:
-                            truncation_reason = "max_realizations"
-                            break
                         records.append(record)
                         shell_ids.append(record.local_realization.local_realization_id)
                         compatible_payloads.add(payload_sequence)
@@ -126,7 +138,14 @@ def discover_foldback_neighborhood(
             RelaxationShellSummary(
                 radius=shell.radius,
                 examined=True,
+                complete=truncation_reason is None,
+                candidate_count=len(shell_ids) + shell_rejected,
                 realization_ids=tuple(shell_ids),
+                rejected_count=shell_rejected,
+                failure_reasons=tuple(
+                    FailureReasonCount(code=code, count=count)
+                    for code, count in sorted(shell_failures.items())
+                ),
             )
         )
         if truncation_reason is not None:
@@ -203,9 +222,30 @@ def discover_foldback_neighborhood(
         failures["all-members-compatibility-required"] += len(exact_records)
         rejected_count += len(exact_records)
         exact_records = ()
-        shell_summaries = [
-            shell.model_copy(update={"realization_ids": ()}) for shell in shell_summaries
-        ]
+        updated_shells: list[RelaxationShellSummary] = []
+        for shell_summary in shell_summaries:
+            shell_failures = Counter(
+                {reason.code: reason.count for reason in shell_summary.failure_reasons}
+            )
+            shell_failures["all-members-compatibility-required"] += len(
+                shell_summary.realization_ids
+            )
+            updated_shells.append(
+                RelaxationShellSummary(
+                    radius=shell_summary.radius,
+                    examined=shell_summary.examined,
+                    complete=shell_summary.complete,
+                    candidate_count=shell_summary.candidate_count,
+                    realization_ids=(),
+                    rejected_count=shell_summary.rejected_count
+                    + len(shell_summary.realization_ids),
+                    failure_reasons=tuple(
+                        FailureReasonCount(code=code, count=count)
+                        for code, count in sorted(shell_failures.items())
+                    ),
+                )
+            )
+        shell_summaries = updated_shells
         status = SearchCompletionStatus.INFEASIBLE
 
     hop_version = version("hop-design")

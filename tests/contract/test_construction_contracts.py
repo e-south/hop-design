@@ -168,6 +168,25 @@ def _foldback_request(
     )
 
 
+def _shell(
+    radius: int,
+    realization_ids: tuple[str, ...] = (),
+    failure_reasons: tuple[FailureReasonCount, ...] = (),
+    *,
+    complete: bool = True,
+) -> RelaxationShellSummary:
+    rejected_count = sum(reason.count for reason in failure_reasons)
+    return RelaxationShellSummary(
+        radius=radius,
+        examined=True,
+        complete=complete,
+        candidate_count=len(realization_ids) + rejected_count,
+        realization_ids=realization_ids,
+        rejected_count=rejected_count,
+        failure_reasons=failure_reasons,
+    )
+
+
 def _infeasible_result(request: LocalNeighborhoodRequest) -> NeighborhoodDiscoveryResult:
     return NeighborhoodDiscoveryResult(
         status=SearchCompletionStatus.INFEASIBLE,
@@ -175,7 +194,10 @@ def _infeasible_result(request: LocalNeighborhoodRequest) -> NeighborhoodDiscove
         problem_id=problem_id(request),
         execution_id="hop:execution/" + "a" * 64 + "@1",
         shells=tuple(
-            RelaxationShellSummary(radius=radius, examined=True, realization_ids=())
+            _shell(
+                radius,
+                failure_reasons=(FailureReasonCount(code="no-compatible-site", count=1),),
+            )
             for radius in range(3)
         ),
         realizations=(),
@@ -510,6 +532,96 @@ def test_relaxation_supports_nested_endpoint_geometry_coordinates() -> None:
     } == {3, 5}
 
 
+def test_relaxation_shell_accounting_partitions_every_examined_candidate() -> None:
+    shell = RelaxationShellSummary(
+        radius=0,
+        examined=True,
+        complete=True,
+        candidate_count=3,
+        realization_ids=("realization-a", "realization-b"),
+        rejected_count=1,
+        failure_reasons=(FailureReasonCount(code="site-conflict", count=1),),
+    )
+
+    assert shell.candidate_count == len(shell.realization_ids) + shell.rejected_count
+    changed = shell.model_dump(mode="python")
+    changed["candidate_count"] = 4
+    with pytest.raises(ValidationError, match="candidate count"):
+        RelaxationShellSummary.model_validate(changed)
+    changed = shell.model_dump(mode="python")
+    changed["failure_reasons"] = (FailureReasonCount(code="site-conflict", count=2),)
+    with pytest.raises(ValidationError, match="failure-reason counts"):
+        RelaxationShellSummary.model_validate(changed)
+    with pytest.raises(ValidationError, match="Unexamined shells"):
+        RelaxationShellSummary(
+            radius=0,
+            examined=False,
+            complete=False,
+            candidate_count=1,
+            realization_ids=("realization-a",),
+            rejected_count=0,
+            failure_reasons=(),
+        )
+    with pytest.raises(ValidationError, match="Partial examined shells"):
+        RelaxationShellSummary(
+            radius=0,
+            examined=True,
+            complete=False,
+            candidate_count=0,
+            realization_ids=(),
+            rejected_count=0,
+            failure_reasons=(),
+        )
+    with pytest.raises(ValidationError, match="Unexamined shells"):
+        RelaxationShellSummary(
+            radius=0,
+            examined=False,
+            complete=True,
+            candidate_count=0,
+            realization_ids=(),
+            rejected_count=0,
+            failure_reasons=(),
+        )
+
+
+def test_result_allows_only_a_final_partial_shell_in_truncated_searches() -> None:
+    result = _infeasible_result(_foldback_request())
+    changed = result.model_dump(mode="python")
+    changed["status"] = SearchCompletionStatus.TRUNCATED
+    changed["truncation_reasons"] = ("max_search_nodes",)
+    changed["shells"][0]["complete"] = False
+    with pytest.raises(ValidationError, match="Only the final recorded shell"):
+        NeighborhoodDiscoveryResult.model_validate(changed)
+
+    changed["shells"][0]["complete"] = True
+    changed["shells"][-1]["complete"] = False
+    changed["status"] = SearchCompletionStatus.INFEASIBLE
+    changed["truncation_reasons"] = ()
+    with pytest.raises(ValidationError, match="Complete and infeasible results"):
+        NeighborhoodDiscoveryResult.model_validate(changed)
+
+
+def test_all_complete_truncation_requires_an_unentered_later_shell() -> None:
+    result = _infeasible_result(_foldback_request())
+    changed = result.model_dump(mode="python")
+    changed["status"] = SearchCompletionStatus.TRUNCATED
+    changed["truncation_reasons"] = ("max_search_nodes",)
+
+    with pytest.raises(ValidationError, match="unentered later shell"):
+        NeighborhoodDiscoveryResult.model_validate(changed)
+
+
+def test_neighborhood_result_rejects_shell_and_global_accounting_drift() -> None:
+    result = _infeasible_result(_foldback_request())
+    changed = result.model_dump(mode="python")
+    changed["shells"][0]["failure_reasons"] = (
+        FailureReasonCount(code="different-primary-reason", count=1),
+    )
+
+    with pytest.raises(ValidationError, match="aggregate to global failure reasons"):
+        NeighborhoodDiscoveryResult.model_validate(changed)
+
+
 def test_problem_and_execution_identity_separate_science_from_runtime() -> None:
     first = _foldback_request(max_search_nodes=100)
     second = _foldback_request(max_search_nodes=200)
@@ -608,7 +720,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
             request=request,
             problem_id=problem_id(request),
             execution_id="hop:execution/" + "a" * 64 + "@1",
-            shells=(RelaxationShellSummary(radius=0, examined=True, realization_ids=()),),
+            shells=(_shell(0),),
             realizations=(),
             rejected_count=0,
             **result_metadata,
@@ -619,7 +731,12 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
             request=request,
             problem_id=problem_id(request),
             execution_id="hop:execution/" + "a" * 64 + "@1",
-            shells=(RelaxationShellSummary(radius=0, examined=True, realization_ids=()),),
+            shells=(
+                _shell(
+                    0,
+                    failure_reasons=(FailureReasonCount(code="no-compatible-site", count=3),),
+                ),
+            ),
             realizations=(),
             rejected_count=3,
             **result_metadata,
@@ -630,7 +747,10 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
         problem_id=problem_id(request),
         execution_id="hop:execution/" + "a" * 64 + "@1",
         shells=tuple(
-            RelaxationShellSummary(radius=radius, examined=True, realization_ids=())
+            _shell(
+                radius,
+                failure_reasons=(FailureReasonCount(code="no-compatible-site", count=1),),
+            )
             for radius in range(3)
         ),
         realizations=(),
@@ -657,13 +777,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         "request": request,
         "problem_id": problem_id(request),
         "execution_id": "hop:execution/" + "a" * 64 + "@1",
-        "shells": (
-            RelaxationShellSummary(
-                radius=0,
-                examined=True,
-                realization_ids=(realization.local_realization_id,),
-            ),
-        ),
+        "shells": (_shell(0, (realization.local_realization_id,)),),
         "realizations": (realization,),
         "rejected_count": 0,
         "failure_reasons": (),
@@ -724,13 +838,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         NeighborhoodDiscoveryResult(
             **{
                 **result_fields,
-                "shells": (
-                    RelaxationShellSummary(
-                        radius=0,
-                        examined=True,
-                        realization_ids=(wrong_shell_realization.local_realization_id,),
-                    ),
-                ),
+                "shells": (_shell(0, (wrong_shell_realization.local_realization_id,)),),
                 "realizations": (wrong_shell_realization,),
             },
             achieved_geometry_groups=(
@@ -754,13 +862,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         NeighborhoodDiscoveryResult(
             **{
                 **result_fields,
-                "shells": (
-                    RelaxationShellSummary(
-                        radius=0,
-                        examined=True,
-                        realization_ids=(non_relaxed_realization.local_realization_id,),
-                    ),
-                ),
+                "shells": (_shell(0, (non_relaxed_realization.local_realization_id,)),),
                 "realizations": (non_relaxed_realization,),
             },
             achieved_geometry_groups=(
@@ -784,13 +886,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         NeighborhoodDiscoveryResult(
             **{
                 **result_fields,
-                "shells": (
-                    RelaxationShellSummary(
-                        radius=0,
-                        examined=True,
-                        realization_ids=(wrong_family_realization.local_realization_id,),
-                    ),
-                ),
+                "shells": (_shell(0, (wrong_family_realization.local_realization_id,)),),
                 "realizations": (wrong_family_realization,),
             },
             achieved_geometry_groups=(
@@ -839,16 +935,8 @@ def _first_feasible_two_shell_fields(
         "problem_id": problem_id(request),
         "execution_id": "hop:execution/" + "a" * 64 + "@1",
         "shells": (
-            RelaxationShellSummary(
-                radius=0,
-                examined=True,
-                realization_ids=(exact.local_realization_id,),
-            ),
-            RelaxationShellSummary(
-                radius=1,
-                examined=True,
-                realization_ids=(relaxed.local_realization_id,),
-            ),
+            _shell(0, (exact.local_realization_id,)),
+            _shell(1, (relaxed.local_realization_id,)),
         ),
         "realizations": (exact, relaxed),
         "achieved_geometry_groups": (
@@ -916,12 +1004,8 @@ def test_all_member_first_feasible_allows_partial_hits_until_compatibility_compl
     missing_final_shell_hit = {
         **fields,
         "shells": (
-            RelaxationShellSummary(
-                radius=0,
-                examined=True,
-                realization_ids=(exact.local_realization_id,),
-            ),
-            RelaxationShellSummary(radius=1, examined=True, realization_ids=()),
+            _shell(0, (exact.local_realization_id,)),
+            _shell(1),
         ),
         "realizations": (exact,),
         "achieved_geometry_groups": (

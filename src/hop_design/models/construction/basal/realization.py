@@ -33,8 +33,9 @@ from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 from hop_design.models.sequence import (
     reverse_complement_iupac,
 )
-from hop_design.serialization import canonical_json_bytes, sha256_digest
+from hop_design.serialization import canonical_json_bytes
 
+from .identity import basal_realization_id
 from .pairing import BasalBoundaryControl, BasalEnzymeBinding, BasalEnzymeDefinition
 from .states import (
     BasalAdapterAnnealedComplex,
@@ -47,22 +48,6 @@ from .states import (
     BasalRestrictionProduct,
     assert_material_partition,
 )
-
-
-def _realization_id(content: dict[str, object]) -> str:
-    digest = sha256_digest(canonical_json_bytes(to_jsonable_python(content))).removeprefix(
-        "sha256:"
-    )
-    return f"hop:basal-realization/{digest}@1"
-
-
-def _realization_identity_seed(record: BasalRealizationRecord) -> dict[str, object]:
-    seed = record.model_dump(mode="json", exclude={"basal_realization_id"})
-    definitions = cast(list[dict[str, Any]], seed["enzyme_definitions"])
-    for definition in definitions:
-        enzyme = cast(dict[str, Any], definition["enzyme"])
-        enzyme["vendor_metadata"] = []
-    return seed
 
 
 class BasalRealizationRecord(HopModel):
@@ -93,13 +78,11 @@ class BasalRealizationRecord(HopModel):
     @classmethod
     def create(cls, **content: object) -> BasalRealizationRecord:
         draft = cls.model_construct(basal_realization_id="", **cast(Any, content))
-        seed = _realization_identity_seed(draft)
-        return cls.model_validate({"basal_realization_id": _realization_id(seed), **content})
+        return cls.model_validate({"basal_realization_id": basal_realization_id(draft), **content})
 
     @model_validator(mode="after")
     def validate_realization(self) -> BasalRealizationRecord:
-        content = _realization_identity_seed(self)
-        if self.basal_realization_id != _realization_id(content):
+        if self.basal_realization_id != basal_realization_id(self):
             raise ValueError("basal_realization_id must seal the complete exact route evidence.")
         expected_local_sequence = (
             self.projection.pcr_reference_sequence or self.source_precursor_sequence

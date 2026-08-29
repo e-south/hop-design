@@ -431,7 +431,11 @@ def test_complete_basal_result_rejects_compatibility_count_drift() -> None:
         )
     )
     drifted_accounting = result.discovery.payload_compatibility.model_copy(
-        update={"compatible_assignments": 2, "excluded_assignments": 0}
+        update={
+            "compatible_assignments": 2,
+            "excluded_assignments": 0,
+            "conflict_counts": (),
+        }
     )
     drifted_discovery = result.discovery.model_copy(
         update={"payload_compatibility": drifted_accounting}
@@ -498,6 +502,30 @@ def test_require_all_infeasible_result_may_suppress_compatible_payload_records()
     assert result.realizations == ()
 
 
+def test_resealed_basal_result_rejects_corrupted_shell_accounting() -> None:
+    request = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        payload=DegeneratePayload(sequence="CMAC"),
+    )
+    require_all = request.model_copy(
+        update={
+            "hard_constraints": request.hard_constraints.model_copy(
+                update={"require_all_members_compatible": True}
+            )
+        }
+    )
+    result = discover_basal_neighborhood(require_all)
+    shell = result.discovery.shells[0]
+    corrupted_shell = shell.model_copy(update={"candidate_count": shell.candidate_count + 1})
+    corrupted_discovery = result.discovery.model_copy(update={"shells": (corrupted_shell,)})
+
+    with pytest.raises(ValidationError, match="candidate count"):
+        BasalNeighborhoodDiscoveryResult.create(
+            discovery=corrupted_discovery,
+            realizations=result.realizations,
+        )
+
+
 def test_basal_family_identity_ignores_presentation_and_vendor_metadata() -> None:
     request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
     renamed_request = request.model_copy(update={"name": "renamed basal search"})
@@ -542,6 +570,18 @@ def test_basal_degenerate_payload_accounting_is_exhaustive_and_require_all_is_en
     blocked = discover_basal_neighborhood(require_all)
     assert blocked.discovery.status == "infeasible"
     assert blocked.realizations == ()
+    assert all(not shell.realization_ids for shell in blocked.discovery.shells)
+    assert all(shell.complete for shell in blocked.discovery.shells)
+    assert all(
+        shell.candidate_count == shell.rejected_count
+        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
+        for shell in blocked.discovery.shells
+    )
+    assert any(
+        reason.code == "all-members-compatibility-required"
+        for shell in blocked.discovery.shells
+        for reason in shell.failure_reasons
+    )
 
 
 def test_basal_degenerate_payload_over_bound_is_truthfully_uncomputed() -> None:
@@ -726,6 +766,11 @@ def test_clone_ready_counts_nick_and_both_type_iis_operations() -> None:
 
     assert result.discovery.status == "infeasible"
     assert "operation-limit" in {reason.code for reason in result.discovery.failure_reasons}
+    assert all(
+        shell.candidate_count == len(shell.realization_ids) + shell.rejected_count
+        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
+        for shell in result.discovery.shells
+    )
 
 
 def test_payload_and_boundary_sites_are_scanned_in_the_exact_precursor() -> None:
@@ -1075,6 +1120,61 @@ def test_relaxation_status_and_geometry_groups_are_exact_first_and_lossless() ->
     assert len(ids) > 4
     assert truncated.discovery.status == "truncated"
     assert truncated.discovery.truncation_reasons == ("max_search_nodes",)
+    assert truncated.discovery.shells[-1].complete is False
+    assert all(shell.candidate_count > 0 for shell in truncated.discovery.shells)
+    assert all(
+        shell.candidate_count == len(shell.realization_ids) + shell.rejected_count
+        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
+        for shell in truncated.discovery.shells
+    )
+
+
+def test_basal_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() -> None:
+    exact = discover_basal_neighborhood(_request(ConstructionEndpoint.SSDNA_HAIRPIN))
+    shell = exact.discovery.shells[0]
+    relaxation = RelaxationPolicy(
+        mode=RelaxationMode.THROUGH_RADIUS,
+        max_radius=1,
+        coordinates=(RelaxationCoordinate(name="nick_offset_nt", minimum=0, maximum=1),),
+    )
+
+    for limits in (
+        {"max_nodes": shell.candidate_count, "max_realizations": 100},
+        {"max_nodes": 100, "max_realizations": len(shell.realization_ids)},
+    ):
+        result = discover_basal_neighborhood(
+            _request(
+                ConstructionEndpoint.SSDNA_HAIRPIN,
+                relaxation=relaxation,
+                **limits,
+            )
+        )
+
+        assert result.discovery.status == "truncated"
+        assert tuple(item.radius for item in result.discovery.shells) == (0,)
+        assert result.discovery.shells[0].complete is True
+
+
+def test_basal_wrapper_rejects_partial_final_shell_resealed_as_complete() -> None:
+    result = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.SSDNA_HAIRPIN,
+            max_nodes=1,
+            max_realizations=100,
+        )
+    )
+    shell = result.discovery.shells[-1]
+    assert shell.complete is False
+    corrupted_shell = shell.model_copy(update={"complete": True})
+    corrupted_discovery = result.discovery.model_copy(
+        update={"shells": (*result.discovery.shells[:-1], corrupted_shell)}
+    )
+
+    with pytest.raises(ValidationError, match="unentered later shell"):
+        BasalNeighborhoodDiscoveryResult.create(
+            discovery=corrupted_discovery,
+            realizations=result.realizations,
+        )
 
 
 def test_type_iis_cut_offset_participates_in_exact_first_relaxation() -> None:

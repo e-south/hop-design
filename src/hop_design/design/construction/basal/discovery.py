@@ -93,7 +93,15 @@ def discover_basal_neighborhood(
     examined = rejected = 0
     truncation: str | None = None
     for shell in relaxation_shells(request.target, request.relaxation):
+        if examined >= request.enumeration.max_search_nodes:
+            truncation = "max_search_nodes"
+            break
+        if len(records) >= request.enumeration.max_realizations:
+            truncation = "max_realizations"
+            break
         shell_ids: list[str] = []
+        shell_failures: Counter[str] = Counter()
+        shell_rejected = 0
         for geometry in shell.geometries:
             if not isinstance(geometry, BasalTarget):
                 raise ValueError("Basal relaxation produced a non-basal geometry.")
@@ -114,10 +122,15 @@ def discover_basal_neighborhood(
                             if examined >= request.enumeration.max_search_nodes:
                                 truncation = "max_search_nodes"
                                 break
+                            if len(records) >= request.enumeration.max_realizations:
+                                truncation = "max_realizations"
+                                break
                             examined += 1
                             if isinstance(solution, BasalPlacementFailure):
                                 failures[solution.code] += 1
+                                shell_failures[solution.code] += 1
                                 rejected += 1
+                                shell_rejected += 1
                                 payload_failures[payload_sequence].add(solution.code)
                                 continue
                             record = _realization(
@@ -130,12 +143,11 @@ def discover_basal_neighborhood(
                             )
                             if isinstance(record, str):
                                 failures[record] += 1
+                                shell_failures[record] += 1
                                 rejected += 1
+                                shell_rejected += 1
                                 payload_failures[payload_sequence].add(record)
                                 continue
-                            if len(records) >= request.enumeration.max_realizations:
-                                truncation = "max_realizations"
-                                break
                             records.append(record)
                             shell_ids.append(record.local_realization.local_realization_id)
                             compatible_payloads.add(payload_sequence)
@@ -149,7 +161,16 @@ def discover_basal_neighborhood(
                 break
         shells.append(
             RelaxationShellSummary(
-                radius=shell.radius, examined=True, realization_ids=tuple(shell_ids)
+                radius=shell.radius,
+                examined=True,
+                complete=truncation is None,
+                candidate_count=len(shell_ids) + shell_rejected,
+                realization_ids=tuple(shell_ids),
+                rejected_count=shell_rejected,
+                failure_reasons=tuple(
+                    FailureReasonCount(code=code, count=count)
+                    for code, count in sorted(shell_failures.items())
+                ),
             )
         )
         if truncation or (
@@ -222,7 +243,30 @@ def discover_basal_neighborhood(
         failures["all-members-compatibility-required"] += len(exact)
         rejected += len(exact)
         exact = ()
-        shells = [shell.model_copy(update={"realization_ids": ()}) for shell in shells]
+        updated_shells: list[RelaxationShellSummary] = []
+        for shell_summary in shells:
+            shell_failures = Counter(
+                {reason.code: reason.count for reason in shell_summary.failure_reasons}
+            )
+            shell_failures["all-members-compatibility-required"] += len(
+                shell_summary.realization_ids
+            )
+            updated_shells.append(
+                RelaxationShellSummary(
+                    radius=shell_summary.radius,
+                    examined=shell_summary.examined,
+                    complete=shell_summary.complete,
+                    candidate_count=shell_summary.candidate_count,
+                    realization_ids=(),
+                    rejected_count=shell_summary.rejected_count
+                    + len(shell_summary.realization_ids),
+                    failure_reasons=tuple(
+                        FailureReasonCount(code=code, count=count)
+                        for code, count in sorted(shell_failures.items())
+                    ),
+                )
+            )
+        shells = updated_shells
         status = SearchCompletionStatus.INFEASIBLE
     execution = ConstructionExecution(
         problem_id=problem_id(request),

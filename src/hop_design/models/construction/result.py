@@ -75,6 +75,13 @@ class NeighborhoodDiscoveryResult(HopModel):
             raise ValueError("Examined relaxation shells must be contiguous and exact-first.")
         if not all(shell.examined for shell in self.shells):
             raise ValueError("Recorded relaxation shells must have been examined.")
+        incomplete_shells = tuple(
+            index for index, shell in enumerate(self.shells) if not shell.complete
+        )
+        if incomplete_shells and incomplete_shells != (len(self.shells) - 1,):
+            raise ValueError("Only the final recorded shell may be incomplete.")
+        if self.status is not SearchCompletionStatus.TRUNCATED and incomplete_shells:
+            raise ValueError("Complete and infeasible results require complete recorded shells.")
         realization_ids = tuple(item.local_realization_id for item in self.realizations)
         if len(realization_ids) != len(set(realization_ids)):
             raise ValueError("A local result must not repeat an exact realization.")
@@ -106,10 +113,15 @@ class NeighborhoodDiscoveryResult(HopModel):
         failure_codes = tuple(item.code for item in self.failure_reasons)
         if len(failure_codes) != len(set(failure_codes)):
             raise ValueError("Failure-reason codes must be unique.")
-        if bool(self.rejected_count) != bool(self.failure_reasons):
-            raise ValueError("Rejected candidates require failure-reason counts and vice versa.")
-        if any(item.count > self.rejected_count for item in self.failure_reasons):
-            raise ValueError("A failure-reason count cannot exceed rejected candidates.")
+        shell_rejected_count = sum(shell.rejected_count for shell in self.shells)
+        if shell_rejected_count != self.rejected_count:
+            raise ValueError("Shell rejected candidates must sum to the global rejected count.")
+        shell_failures: Counter[str] = Counter()
+        for shell in self.shells:
+            shell_failures.update({reason.code: reason.count for reason in shell.failure_reasons})
+        global_failures = Counter({reason.code: reason.count for reason in self.failure_reasons})
+        if shell_failures != global_failures:
+            raise ValueError("Shell failure reasons must aggregate to global failure reasons.")
         if self.provenance.enzyme_catalog_digest != self.request.enzyme_catalog_digest:
             raise ValueError("Result provenance must bind the request enzyme-catalog digest.")
         if (
@@ -153,6 +165,14 @@ class NeighborhoodDiscoveryResult(HopModel):
                 "Local neighborhood discovery cannot claim a material-bound method resolution."
             )
         required_radius = self._required_completion_radius()
+        if (
+            self.status is SearchCompletionStatus.TRUNCATED
+            and not incomplete_shells
+            and radii[-1] >= required_radius
+        ):
+            raise ValueError(
+                "All-complete truncation requires an unentered later shell in the declared domain."
+            )
         if radii[-1] > required_radius:
             raise ValueError(
                 "A result must not record shells beyond the declared relaxation domain."

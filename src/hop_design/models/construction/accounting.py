@@ -26,19 +26,46 @@ class SearchCompletionStatus(StrEnum):
     TRUNCATED = "truncated"
 
 
-class RelaxationShellSummary(HopModel):
-    """Completion evidence and exact realization membership for one examined shell."""
-
-    radius: int = Field(ge=0)
-    examined: bool
-    realization_ids: tuple[str, ...]
-
-
 class FailureReasonCount(HopModel):
     """Stable aggregate count for one rejected-candidate or payload-conflict reason."""
 
     code: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,95}$")
     count: int = Field(ge=1)
+
+
+class RelaxationShellSummary(HopModel):
+    """Candidate accounting and exact realization membership for one examined shell."""
+
+    radius: int = Field(ge=0)
+    examined: bool
+    complete: bool
+    candidate_count: int = Field(ge=0)
+    realization_ids: tuple[str, ...]
+    rejected_count: int = Field(ge=0)
+    failure_reasons: tuple[FailureReasonCount, ...]
+
+    @model_validator(mode="after")
+    def validate_accounting(self) -> RelaxationShellSummary:
+        if not self.examined and (
+            self.complete
+            or self.candidate_count
+            or self.realization_ids
+            or self.rejected_count
+            or self.failure_reasons
+        ):
+            raise ValueError("Unexamined shells must not report candidate facts.")
+        if self.examined and not self.complete and self.candidate_count == 0:
+            raise ValueError("Partial examined shells must report at least one candidate.")
+        if self.candidate_count != len(self.realization_ids) + self.rejected_count:
+            raise ValueError(
+                "Shell candidate count must equal accepted realizations plus rejected candidates."
+            )
+        codes = tuple(item.code for item in self.failure_reasons)
+        if len(codes) != len(set(codes)):
+            raise ValueError("Shell failure-reason codes must be unique.")
+        if sum(item.count for item in self.failure_reasons) != self.rejected_count:
+            raise ValueError("Shell failure-reason counts must partition rejected candidates.")
+        return self
 
 
 class PayloadCompatibilityStatus(StrEnum):

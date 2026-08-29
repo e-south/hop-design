@@ -260,6 +260,43 @@ def test_foldback_search_is_truthfully_truncated_when_a_bound_fires() -> None:
     assert result.neighborhood.status is SearchCompletionStatus.TRUNCATED
     assert result.neighborhood.truncation_reasons == ("max_search_nodes",)
     assert len(result.realizations) == 1
+    assert result.neighborhood.shells[-1].complete is False
+    assert all(shell.candidate_count > 0 for shell in result.neighborhood.shells)
+    assert all(
+        shell.candidate_count == len(shell.realization_ids) + shell.rejected_count
+        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
+        for shell in result.neighborhood.shells
+    )
+
+
+def test_foldback_shell_accounting_partitions_rejections_and_policy_suppression() -> None:
+    request = _request(
+        _nickase(
+            motif="ACA",
+            orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
+        ),
+        max_search_nodes=200,
+        max_realizations=200,
+    )
+    request_data = request.model_dump(mode="python")
+    request_data["payload"]["payload"] = DegeneratePayload(sequence="GACW")
+    request_data["hard_constraints"]["require_all_members_compatible"] = True
+
+    result = discover_foldback_neighborhood(LocalNeighborhoodRequest.model_validate(request_data))
+
+    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+    assert all(not shell.realization_ids for shell in result.neighborhood.shells)
+    assert all(shell.complete for shell in result.neighborhood.shells)
+    assert all(
+        shell.candidate_count == shell.rejected_count
+        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
+        for shell in result.neighborhood.shells
+    )
+    assert any(
+        reason.code == "all-members-compatibility-required"
+        for shell in result.neighborhood.shells
+        for reason in shell.failure_reasons
+    )
 
 
 def test_foldback_payload_recognition_conflict_is_accounted_without_repair() -> None:
@@ -301,6 +338,93 @@ def test_foldback_family_identity_binds_all_detailed_evidence() -> None:
 
     assert mutated.neighborhood.result_id == result.neighborhood.result_id
     assert mutated.result_id != result.result_id
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ("candidate", "rejected", "failure", "examined", "global"),
+)
+def test_foldback_wrapper_revalidates_resealed_shell_accounting(corruption: str) -> None:
+    result = discover_foldback_neighborhood(
+        _request(_nickase(), _terminus_enzyme(reference_cut_offset=2))
+    )
+    shell = result.neighborhood.shells[0]
+    assert shell.rejected_count > 0
+    if corruption == "candidate":
+        corrupted_shell = shell.model_copy(update={"candidate_count": shell.candidate_count + 1})
+    elif corruption == "rejected":
+        corrupted_shell = shell.model_copy(update={"rejected_count": shell.rejected_count + 1})
+    elif corruption == "failure":
+        corrupted_shell = shell.model_copy(update={"failure_reasons": ()})
+    elif corruption == "examined":
+        corrupted_shell = shell.model_copy(update={"examined": False})
+    else:
+        corrupted_shell = shell
+    corrupted_neighborhood = result.neighborhood.model_copy(
+        update={
+            "shells": (corrupted_shell,),
+            "rejected_count": (
+                result.neighborhood.rejected_count + 1
+                if corruption == "global"
+                else result.neighborhood.rejected_count
+            ),
+        }
+    )
+
+    with pytest.raises(ValidationError):
+        type(result).model_validate(
+            {
+                "neighborhood": corrupted_neighborhood,
+                "realizations": result.realizations,
+            }
+        )
+
+
+def test_foldback_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() -> None:
+    exact = discover_foldback_neighborhood(_request(_nickase()))
+    shell = exact.neighborhood.shells[0]
+    relaxation = RelaxationPolicy(
+        mode=RelaxationMode.THROUGH_RADIUS,
+        max_radius=1,
+        coordinates=(RelaxationCoordinate(name="junction_offset_nt", minimum=0, maximum=1),),
+    )
+
+    for limits in (
+        {"max_search_nodes": shell.candidate_count, "max_realizations": 100},
+        {"max_search_nodes": 100, "max_realizations": len(shell.realization_ids)},
+    ):
+        result = discover_foldback_neighborhood(
+            _request(_nickase(), relaxation=relaxation, **limits)
+        )
+
+        assert result.neighborhood.status is SearchCompletionStatus.TRUNCATED
+        assert tuple(item.radius for item in result.neighborhood.shells) == (0,)
+        assert result.neighborhood.shells[0].complete is True
+
+
+def test_foldback_wrapper_rejects_partial_final_shell_resealed_as_complete() -> None:
+    result = discover_foldback_neighborhood(
+        _request(
+            _nickase(),
+            _terminus_enzyme(),
+            max_search_nodes=1,
+            max_realizations=100,
+        )
+    )
+    shell = result.neighborhood.shells[-1]
+    assert shell.complete is False
+    corrupted_shell = shell.model_copy(update={"complete": True})
+    corrupted_neighborhood = result.neighborhood.model_copy(
+        update={"shells": (*result.neighborhood.shells[:-1], corrupted_shell)}
+    )
+
+    with pytest.raises(ValidationError, match="unentered later shell"):
+        type(result).model_validate(
+            {
+                "neighborhood": corrupted_neighborhood,
+                "realizations": result.realizations,
+            }
+        )
 
 
 def test_staggered_terminus_is_rejected_when_the_route_cannot_represent_its_intermediate() -> None:
