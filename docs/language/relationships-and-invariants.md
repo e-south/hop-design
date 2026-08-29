@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-22
+last_verified: 2026-08-29
 doc_type: reference
 journey:
   - compile
@@ -16,6 +16,34 @@ journey:
 ---
 
 # HOP Design contract table
+
+## Accepted construction-discovery contracts
+
+These contracts define the semantic target for payload-centered construction.
+They do not enlarge the current `hop_design.spaces` facade, and their presence
+here does not imply that every implementation type has landed.
+
+| Contract | Preconditions | Guarantees |
+| --- | --- | --- |
+| final-payload specification | One intended duplex payload in final-product coordinates; one authored reference strand; explicit basal and foldback boundaries | Derived aligned complement; zero-based half-open positions; immutable payload bases; no assumption of one contiguous source interval |
+| route-family source map | Final payload, one route family, and exact source segments | Every payload position maps to explicit strand-local source coordinates; route-specific segmentation cannot redefine payload identity |
+| endpoint | One route family and one of `ssdna_hairpin`, `hairpin_pcr_duplex`, or `clone_ready_duplex` | Required neighborhoods, materials, stages, and products follow from the endpoint; later-endpoint requirements do not leak into earlier endpoints |
+| local-neighborhood discovery | Final payload, family, route, endpoint, explicit target, constraints, preferences, enzyme catalog, relaxation, and finite enumeration | Exact-first foldback or basal realizations; requested and achieved geometry; rejection accounting; `complete`, `infeasible`, or truthful `truncated` status |
+| foldback target | Explicit junction offset, loop length, and annealing-arm length | Exact achieved retained geometry, exposed strand, fragments, complementary arm, and closure bond; no mnemonic schema aliases |
+| basal target | Endpoint-dependent nick target and exact proximal-outward pairing profile; optional end-generation request | Literal pairs and classes; canonical proximal match when adapter ligation requires it; Type IIS cuts and cohesive ends only for a requesting endpoint |
+| reaction stage | One accepted pre-stage molecular state and one or more declared concurrent operations | Every intended and unintended actionable binding resolves against the same pre-stage state; one atomic non-conflicting post-stage state or route failure |
+| complete route composition | Exact local realizations, one payload, one route family, one endpoint, and explicit bounds | Payload preservation, stage order, site availability, lineage, strand continuity, closure, endpoint processing, and final encoding are validated globally |
+| realization grouping | Complete exact realization set and deterministic grouping keys | Local, complete, final-product, and achieved-geometry identities remain distinct; group membership reversibly covers every realization without deduplication |
+
+Compactness is achieved endpoint geometry plus retained non-payload sequence.
+Transient recognition sites, source handles, auxiliary oligos, and destination
+sequence remain visible but do not change that measurement.
+
+HOP owns these molecular contracts and neutral projections. Research Studies
+owns frozen runs, observations, interpretation, and asset promotion. manufold
+owns accepted imports, claims, evidence cutoff, and final composition.
+
+## Implemented contracts
 
 | Contract | Preconditions | Guarantees |
 | --- | --- | --- |

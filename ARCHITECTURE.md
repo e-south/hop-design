@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-29
 doc_type: explanation
 ---
 
@@ -33,6 +33,23 @@ verification. It does not own workspaces, runs, samples, observations,
 experimental evidence, assay semantics, larger construct placement, private processing
 catalogs, or private application profiles. Callers link their own records
 through neutral external references.
+
+The accepted construction-discovery spine is payload-first:
+
+```text
+final-payload specification
+  -> route family
+  -> requested endpoint
+  -> foldback and basal local realizations
+  -> staged whole-route composition
+  -> exact endpoint products
+  -> reversible scientific projections
+```
+
+Final-payload coordinates are shared authority. Source coordinates and source
+segmentation belong to the selected route family. The current linear-source
+family may use one contiguous source interval without making that layout a
+global payload invariant.
 
 ## Layer direction
 
@@ -73,6 +90,12 @@ models
   adding derivation logic. `spaces` authors a bounded sequence space and
   returns existing member authorities rather than redefining their anatomy.
 - `cli` adapts user input to the public API and contains no derivations.
+
+Construction discovery reuses the specialist discovery, molecular-state,
+method, and view layers. Its shared local-neighborhood contract must not enter
+the seven-name `hop_design.spaces` facade or inflate the package root. Foldback
+and basal targets share result, completeness, relaxation, and identity
+semantics while retaining family-specific geometry.
 
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules explicitly, and fails on unknown first-party
@@ -119,6 +142,18 @@ All exact physical pair kinds are deterministic functions of literal bases.
 Watson-Crick complements, G:T wobbles, and hard mismatches do not change kind
 when a policy accepts or rejects them. Every sequence-bearing method state is
 stored 5′→3′ and preserves explicit coordinate lineage.
+
+Construction-route chronology is an ordered list of reaction stages. All
+concurrent operations in one stage resolve against the same pre-stage state;
+site validity depends on molecular availability in that stage. Compactness is
+an endpoint projection over retained non-payload sequence, not total source
+length. Geometry and final-product grouping remain reversible projections over
+exact realization authorities.
+
+HOP may emit neutral tidy data and diagram-ready molecular projections.
+Research Studies owns scientific runs, observations, interpretation, and asset
+promotion. manufold owns accepted evidence snapshots, manuscript claims, and
+figure composition. Neither consumer may drive HOP's molecular semantics.
 
 The [documentation index](docs/index.md) mirrors these sibling surfaces.
 Historical architecture choices and their amendments remain in the

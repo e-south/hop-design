@@ -7,7 +7,7 @@ audience:
   - API consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-29
 doc_type: explanation
 ---
 
@@ -17,6 +17,14 @@ doc_type: explanation
 
 - The payload is authored once; the paired payload is its DNA IUPAC reverse
   complement and is never an input field.
+- Construction discovery is authoritative in final-payload coordinates. Basal
+  and foldback boundaries are explicit; source coordinates and segmentation
+  belong to the selected route family.
+- Route family is selected before endpoint. Endpoint determines whether basal
+  capture, PCR, and end-generating cleavage are required.
+- The current construction family is linear source. Shared payload contracts
+  permit a future segmented source map without implementing circular-source
+  chemistry or changing the caller's contiguous final-payload view.
 - Exact payloads accept only `A/C/G/T`. Degenerate payloads accept the complete
   DNA IUPAC alphabet and reject RNA `U`.
 - Symbolic payloads remain symbolic unless the explicit `expand_payload`
@@ -49,6 +57,22 @@ doc_type: explanation
 - Catalog discovery and molecular compilation are separate operations.
   Discovery reports physical placement facts and explicit truncation; caller
   selection policy cannot silently become HOP ordering.
+- Foldback construction targets use explicit junction-offset, loop-length, and
+  annealing-arm-length fields. Public contracts contain no positional mnemonic
+  aliases.
+- Basal pairing is ordered from the payload-proximal ligation position outward
+  and retains literal bases and physical classifications. Type IIS processing
+  exists only for an endpoint that requests generated ends.
+- Construction sequence is classified as retained, transient, auxiliary, or
+  destination-associated. Compactness measures retained non-payload sequence
+  and achieved endpoint geometry, not source length or enzyme count.
+- Construction routes contain ordered reaction stages. Concurrent operations
+  resolve against one pre-stage molecular state, and unintended sites fail a
+  route only when physically actionable in the stage where the enzyme is
+  present.
+- Local realization, complete realization, exact final product, and achieved
+  geometry have distinct identities. Grouping is a reversible projection and
+  cannot discard or merge exact realization authorities.
 - Basal candidate discovery enumerates only caller-authorized IUPAC arm domains.
   Returned order is literal content order over the two arms and content identity;
   profile preference, control distance, procurement, and agent eligibility
@@ -109,3 +133,8 @@ Add or change behavior with a failing contract test first. Preserve refactors
 separately from semantic changes. A schema change requires an architecture
 decision record, explicit compatibility posture, negative tests, and an update
 to the reference docs.
+
+The payload-centered construction schemas are a pre-1.0 breaking change. They
+use the accepted terms directly and add no retired-field aliases or fallback
+readers. Existing immutable bundle schemas remain valid as the authorities they
+already describe; they are not reinterpreted as staged construction results.

@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-29
 doc_type: reference
 journey:
   - compile
@@ -36,6 +36,47 @@ The cross-bundle equality is a checked handoff, not an invariant of every
 independently compiled pair. It holds when the method request supplies
 `expected_hairpin_encoding`, or when the consumer performs the same exact
 digest comparison before associating the products.
+
+## Payload-centered construction vocabulary
+
+The accepted construction authority is the user-defined duplex payload in
+final-product coordinates. Its reference strand is authored 5-prime to
+3-prime, its aligned complement is derived, and its basal and foldback
+boundaries are explicit. A route family owns the mapping from these positions
+to one or more source-material segments. `linear_source/v1` is the current
+family; contiguous source encoding is its property, not a universal payload
+property.
+
+An endpoint names the requested molecular product. `ssdna_hairpin` ends at the
+closed single-stranded hairpin, `hairpin_pcr_duplex` adds adapter capture and
+PCR, and `clone_ready_duplex` adds declared end-generating cleavage and exact
+cohesive ends. Endpoint choice determines required neighborhoods, materials,
+operations, and states.
+
+A local-neighborhood request is the shared envelope for a foldback or basal
+construction question. It combines final payload, route family, endpoint,
+family-specific target geometry, required constraints, design preferences,
+caller-provisioned enzymes, explicit relaxation, and finite enumeration. Its
+result preserves requested and achieved geometry, relaxation shell, every
+exact realization, rejection accounting, completion evidence, and reversible
+projections.
+
+A foldback target is described by `junction_offset_nt`, `loop_length_nt`, and
+`annealing_arm_length_bp`. A basal target describes endpoint-dependent nick
+geometry, an exact payload-proximal-outward pairing profile, and optional
+end-generation geometry. Type IIS processing is absent unless the endpoint
+requests clone-ready ends.
+
+A local realization is one exact local precursor, enzyme binding, operation
+program, and state trajectory. A complete realization composes exact local
+realizations around one payload and validates the staged route. Final-product
+and achieved-geometry groups are reversible projections over realization
+identities; neither may erase alternatives.
+
+Construction sequence is classified as retained, transient, auxiliary, or
+destination-associated. Compactness uses achieved endpoint geometry and
+retained non-payload sequence only. It is not a thermodynamic, yield, or
+global-optimum claim.
 
 ## Design inputs and hairpin structure
 

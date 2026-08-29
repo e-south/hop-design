@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-29
 doc_type: explanation
 journey:
   - maintain
@@ -69,6 +69,42 @@ It does not introduce a plugin registry, select a method, construct a request,
 or change method resolution.
 
 ## Open product work
+
+### Payload-centered construction discovery
+
+The accepted semantic contract is
+[ADR 0025](../../architecture/decisions/0025-payload-centered-construction-discovery.md).
+Phase H1 is complete at the documentation layer: final-payload coordinates,
+route and endpoint hierarchy, the shared local-neighborhood contract, explicit
+foldback and basal meanings, endpoint compactness, staged state-aware
+validation, lossless grouping, the linear-route boundary, and cross-repository
+ownership are frozen before public schemas change.
+
+Implementation proceeds in dependency order:
+
+1. **H2 — enzyme and operation semantics.** Add vendor-neutral characterized
+   enzymes, request provisioning, ordered reaction stages, concurrent
+   operations, and state-aware active-site checks.
+2. **H3 — shared local-neighborhood contract.** Add one bounded exact-first
+   request/result envelope, discrete relaxation shells, exact realization
+   records, reversible geometry groups, and truthful completion.
+3. **H4 — foldback neighborhood.** Discover explicit junction offset, loop
+   length, and annealing-arm geometry through exact cleavage programs.
+4. **H5 — basal neighborhood.** Make nicking and pairing endpoint-aware; add
+   optional Type IIS end generation only to the clone-ready branch.
+5. **H6 — materialization and composition.** Materialize exact precursor and
+   auxiliary materials, validate the complete staged cross-product, and
+   preserve complete-realization and final-product identities.
+6. **H7 — scientific projections.** Produce neutral tidy results and
+   diagram-ready state projections without manuscript composition.
+7. **H8 — public documentation and dogfood.** Verify exact, infeasible, and
+   relaxed examples from source and installed wheel while preserving the
+   scientist-space facade.
+
+The current small `hop_design.spaces` journey is unchanged. Circularized-source
+chemistry, thermodynamic and enzyme-performance prediction, study history,
+experimental evidence, and manuscript assembly remain deferred or
+consumer-owned.
 
 ### Bounded symbolic method assessment
 

@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-29
 doc_type: index
 journey:
   - maintain
@@ -29,6 +29,10 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0020: Separate design derivation from method chronology](0020-separate-design-derivation-from-method-chronology.md)
 - [0023: Separate public facades by competency question](0023-separate-public-facades-by-competency-question.md)
 - [0024: Center first use on bounded substrate spaces](0024-substrate-space-scientist-surface.md)
+
+## Payload-centered construction
+
+- [0025: Center construction discovery on final payload geometry](0025-payload-centered-construction-discovery.md)
 
 ## Hairpin language
 
