@@ -446,6 +446,14 @@ class LocalNeighborhoodRequest(HopModel):
                 "Relaxation coordinates must name integer target fields: "
                 + ", ".join(sorted(unknown_coordinates))
             )
+        for coordinate in self.relaxation.coordinates:
+            exact_value = getattr(self.target, coordinate.name)
+            if not isinstance(exact_value, int) or isinstance(exact_value, bool):
+                raise ValueError("Relaxation coordinates must name integer target fields.")
+            if not coordinate.minimum <= exact_value <= coordinate.maximum:
+                raise ValueError(
+                    f"The exact target for {coordinate.name} lies outside its relaxation bounds."
+                )
         if isinstance(self.target, BasalTarget):
             self._validate_basal_endpoint(self.target)
         catalog_ids = {enzyme.enzyme_id for enzyme in self.enzyme_provisioning.catalog.enzymes}

@@ -444,6 +444,15 @@ def test_relaxation_shells_are_exact_first_bounded_and_directionally_unbiased() 
     assert len(exact) == 1
     assert exact[0].radius == 0
 
+    with pytest.raises(ValidationError, match=r"exact target.*relaxation bounds"):
+        _foldback_request(
+            target=FoldbackTarget(
+                junction_offset_nt=0,
+                loop_length_nt=5,
+                annealing_arm_length_bp=3,
+            )
+        )
+
 
 def test_problem_and_execution_identity_separate_science_from_runtime() -> None:
     first = _foldback_request(max_search_nodes=100)
