@@ -139,9 +139,7 @@ def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces()
 
 
 def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
-    discovery = (REPO_ROOT / "docs" / "discovery" / "overview.md").read_text(
-        encoding="utf-8"
-    )
+    discovery = (REPO_ROOT / "docs" / "discovery" / "overview.md").read_text(encoding="utf-8")
     view_contracts = (REPO_ROOT / "docs" / "reference" / "view-contracts.md").read_text(
         encoding="utf-8"
     )

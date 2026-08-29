@@ -111,10 +111,7 @@ def test_default_cli_receipts_do_not_make_positive_downstream_claims(tmp_path: P
 
     spec_path = tmp_path / "space.yaml"
     spec_path.write_text(
-        "schema: hop/substrate-space/v1\n"
-        "name: receipt-space\n"
-        "payload:\n"
-        "  - fixed: ACGT\n",
+        "schema: hop/substrate-space/v1\nname: receipt-space\npayload:\n  - fixed: ACGT\n",
         encoding="utf-8",
     )
     preview = runner.invoke(app, ["space", "preview", str(spec_path)])
