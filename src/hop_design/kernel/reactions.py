@@ -22,6 +22,7 @@ from hop_design.models.enzymes import (
     CharacterizedEnzyme,
     EnzymeClass,
     EnzymeProvisioningPolicy,
+    EnzymeRole,
     RecognitionOrientationSemantics,
     SubstrateRequirement,
 )
@@ -30,6 +31,8 @@ from hop_design.models.reactions import (
     ActionableEnzymeBinding,
     ReactionMolecule,
     ReactionOperation,
+    ReactionProgram,
+    ReactionProgramAssessment,
     ReactionStage,
     ReactionStageAssessment,
     ReactionState,
@@ -41,11 +44,13 @@ def _orientation_patterns(
     enzyme: CharacterizedEnzyme,
 ) -> Iterator[tuple[SiteOrientation, str]]:
     yield SiteOrientation.FORWARD, enzyme.recognition_pattern
+    reverse_pattern = reverse_complement_iupac(enzyme.recognition_pattern)
     if (
         enzyme.recognition_orientation_semantics
         is RecognitionOrientationSemantics.BOTH_ORIENTATIONS
+        and reverse_pattern != enzyme.recognition_pattern
     ):
-        yield SiteOrientation.REVERSE, reverse_complement_iupac(enzyme.recognition_pattern)
+        yield SiteOrientation.REVERSE, reverse_pattern
 
 
 def _matches_pattern(sequence: str, pattern: str) -> bool:
@@ -227,19 +232,6 @@ def assess_reaction_stage(
         raise ValueError("Reaction stage pre_state_id must equal the supplied state id.")
 
     diagnostics: list[Diagnostic] = []
-    if policy.max_operations is not None and len(stage.operations) > policy.max_operations:
-        diagnostics.append(
-            _diagnostic(
-                code="HOP-STAGE-001",
-                path="operations",
-                message="Reaction stage exceeds the provisioned operation limit.",
-                evidence={
-                    "operation_count": len(stage.operations),
-                    "max_operations": policy.max_operations,
-                },
-            )
-        )
-
     enzymes: dict[str, CharacterizedEnzyme] = {}
     for index, operation in enumerate(stage.operations):
         try:
@@ -262,6 +254,27 @@ def assess_reaction_stage(
                     path=f"operations[{index}].enzyme_id",
                     message="Reaction operation uses an enzyme unavailable for its declared role.",
                     evidence={"enzyme_id": operation.enzyme_id, "role": operation.role.value},
+                )
+            )
+        required_class = {
+            EnzymeRole.TERMINUS_DEFINITION: EnzymeClass.DUPLEX_RESTRICTION,
+            EnzymeRole.STRAND_EXPOSURE: EnzymeClass.NICKASE,
+            EnzymeRole.BASAL_NICK: EnzymeClass.NICKASE,
+            EnzymeRole.FOLDBACK_NICK: EnzymeClass.NICKASE,
+            EnzymeRole.END_GENERATION: EnzymeClass.DUPLEX_RESTRICTION,
+        }[operation.role]
+        if enzyme.enzyme_class is not required_class:
+            diagnostics.append(
+                _diagnostic(
+                    code="HOP-STAGE-006",
+                    path=f"operations[{index}].role",
+                    message="Reaction operation role conflicts with the enzyme cleavage class.",
+                    evidence={
+                        "enzyme_id": operation.enzyme_id,
+                        "enzyme_class": enzyme.enzyme_class.value,
+                        "role": operation.role.value,
+                        "required_enzyme_class": required_class.value,
+                    },
                 )
             )
 
@@ -330,4 +343,45 @@ def assess_reaction_stage(
     )
 
 
-__all__ = ["assess_reaction_stage", "scan_actionable_sites"]
+def assess_reaction_program(
+    *,
+    program: ReactionProgram,
+    policy: EnzymeProvisioningPolicy,
+) -> ReactionProgramAssessment:
+    """Assess all stages and enforce execution-wide provisioning limits."""
+    states = {state.state_id: state for state in program.states}
+    stage_assessments = tuple(
+        assess_reaction_stage(
+            state=states[stage.pre_state_id],
+            stage=stage,
+            policy=policy,
+        )
+        for stage in program.stages
+    )
+    diagnostics = [
+        diagnostic
+        for assessment in stage_assessments
+        for diagnostic in assessment.report.diagnostics
+    ]
+    operation_count = sum(len(stage.operations) for stage in program.stages)
+    if policy.max_operations is not None and operation_count > policy.max_operations:
+        diagnostics.insert(
+            0,
+            _diagnostic(
+                code="HOP-PROGRAM-001",
+                path="stages",
+                message="Reaction program exceeds the provisioned operation limit.",
+                evidence={
+                    "operation_count": operation_count,
+                    "max_operations": policy.max_operations,
+                },
+            ),
+        )
+    return ReactionProgramAssessment(
+        program_id=program.program_id,
+        stage_assessments=stage_assessments,
+        report=CheckReport(diagnostics=tuple(diagnostics)),
+    )
+
+
+__all__ = ["assess_reaction_program", "assess_reaction_stage", "scan_actionable_sites"]

@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from itertools import pairwise
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
@@ -114,7 +115,11 @@ class ReactionStage(HopModel):
 
 
 class ReactionProgram(HopModel):
-    """Ordered stages connected by the exact molecular states they transform."""
+    """Ordered stage declarations connected by exact pre- and post-state snapshots.
+
+    Family-specific route validators own proof that each stage derives its declared
+    post-state. This shared contract owns order, concurrency, and state availability.
+    """
 
     program_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
     states: tuple[ReactionState, ...] = Field(min_length=2)
@@ -137,6 +142,15 @@ class ReactionProgram(HopModel):
         if observed_connections != expected_connections:
             raise ValueError("Reaction stages must connect consecutive states in order.")
         return self
+
+
+class ReactionProgramAssessment(HopModel):
+    """State-aware site and execution assessment for one ordered stage program."""
+
+    program_id: str
+    stage_assessments: tuple[ReactionStageAssessment, ...]
+    transition_validation: Literal["route_specific_required"] = "route_specific_required"
+    report: CheckReport
 
 
 class ActionableEnzymeBinding(HopModel):
@@ -173,6 +187,7 @@ __all__ = [
     "ReactionMolecule",
     "ReactionOperation",
     "ReactionProgram",
+    "ReactionProgramAssessment",
     "ReactionStage",
     "ReactionStageAssessment",
     "ReactionState",

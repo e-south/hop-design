@@ -14,7 +14,11 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from hop_design.kernel.reactions import assess_reaction_stage, scan_actionable_sites
+from hop_design.kernel.reactions import (
+    assess_reaction_program,
+    assess_reaction_stage,
+    scan_actionable_sites,
+)
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.enzymes import (
@@ -38,6 +42,7 @@ from hop_design.models.reactions import (
     ReactionMolecule,
     ReactionOperation,
     ReactionProgram,
+    ReactionProgramAssessment,
     ReactionStage,
     ReactionStageAssessment,
     ReactionState,
@@ -169,6 +174,23 @@ def test_recognition_span_and_cut_coordinates_are_distinct() -> None:
     assert forward.complement_cut == Boundary(offset=1)
 
 
+def test_palindromic_site_is_one_physical_binding() -> None:
+    enzyme = _restriction_enzyme().model_copy(
+        update={"cut_offset_reference_strand": 1, "cut_offset_complement_strand": 3}
+    )
+    state = ReactionState(
+        state_id="palindromic-source",
+        molecules=(_duplex("source", "CCGG"),),
+    )
+
+    sites = scan_actionable_sites(state=state, enzyme=enzyme)
+
+    assert len(sites) == 1
+    assert sites[0].orientation is SiteOrientation.FORWARD
+    assert sites[0].reference_cut == Boundary(offset=1)
+    assert sites[0].complement_cut == Boundary(offset=3)
+
+
 def test_provisioning_policy_validates_allowed_forbidden_reserved_and_roles() -> None:
     nickase = _nickase()
     restriction = _restriction_enzyme()
@@ -270,6 +292,38 @@ def test_concurrent_operations_resolve_against_the_same_pre_stage_state() -> Non
     ]
 
 
+def test_intrinsic_enzyme_class_must_match_declared_role() -> None:
+    enzyme = _restriction_enzyme()
+    state = ReactionState(
+        state_id="duplex-source",
+        molecules=(_duplex("source", "CCGGAA"),),
+    )
+    stage = ReactionStage(
+        stage_id="misclassified-operation",
+        pre_state_id=state.state_id,
+        post_state_id="post-stage",
+        operations=(
+            ReactionOperation(
+                operation_id="wrong-role",
+                enzyme_id=enzyme.enzyme_id,
+                role=EnzymeRole.FOLDBACK_NICK,
+                molecule_id="source",
+                intended_binding=_binding(
+                    start=0,
+                    motif_length=4,
+                    reference_cut=5,
+                    complement_cut=1,
+                ),
+            ),
+        ),
+    )
+
+    assessment = assess_reaction_stage(state=state, stage=stage, policy=_policy(enzyme))
+
+    assert assessment.report.has_errors
+    assert "HOP-STAGE-006" in {item.code for item in assessment.report.diagnostics}
+
+
 def test_duplex_only_enzyme_is_inactive_on_single_stranded_dna() -> None:
     state = ReactionState(
         state_id="single-strand",
@@ -288,7 +342,10 @@ def test_duplex_only_enzyme_is_inactive_on_single_stranded_dna() -> None:
 def test_absent_or_not_yet_assembled_molecule_is_not_scanned() -> None:
     state = ReactionState(
         state_id="before-assembly",
-        molecules=(_duplex("present", "TTTT"),),
+        molecules=(
+            _duplex("left-half", "AA"),
+            _duplex("right-half", "GC"),
+        ),
     )
 
     assert scan_actionable_sites(state=state, enzyme=_nickase()) == ()
@@ -461,6 +518,57 @@ def test_reaction_program_orders_stages_through_exact_states() -> None:
             states=(source, released, exposed),
             stages=(stages[1], stages[0]),
         )
+
+
+def test_operation_ceiling_applies_to_the_complete_reaction_program() -> None:
+    enzyme = _nickase()
+    states = tuple(
+        ReactionState(
+            state_id=state_id,
+            molecules=(_duplex("source", "AAGC"),),
+        )
+        for state_id in ("source", "middle", "final")
+    )
+    binding = _binding(start=0, motif_length=4, reference_cut=1)
+    stages = (
+        ReactionStage(
+            stage_id="first-stage",
+            pre_state_id="source",
+            post_state_id="middle",
+            operations=(
+                ReactionOperation(
+                    operation_id="first-operation",
+                    enzyme_id=enzyme.enzyme_id,
+                    role=EnzymeRole.STRAND_EXPOSURE,
+                    molecule_id="source",
+                    intended_binding=binding,
+                ),
+            ),
+        ),
+        ReactionStage(
+            stage_id="second-stage",
+            pre_state_id="middle",
+            post_state_id="final",
+            operations=(
+                ReactionOperation(
+                    operation_id="second-operation",
+                    enzyme_id=enzyme.enzyme_id,
+                    role=EnzymeRole.STRAND_EXPOSURE,
+                    molecule_id="source",
+                    intended_binding=binding,
+                ),
+            ),
+        ),
+    )
+    program = ReactionProgram(program_id="bounded-program", states=states, stages=stages)
+    policy = _policy(enzyme).model_copy(update={"max_operations": 1})
+
+    assessment = assess_reaction_program(program=program, policy=policy)
+
+    assert isinstance(assessment, ReactionProgramAssessment)
+    assert assessment.report.has_errors
+    assert [item.code for item in assessment.report.diagnostics] == ["HOP-PROGRAM-001"]
+    assert all(not stage.report.has_errors for stage in assessment.stage_assessments)
 
 
 def test_actionable_extra_site_depends_on_fragment_presence() -> None:
