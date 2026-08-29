@@ -1,9 +1,9 @@
 """
 --------------------------------------------------------------------------------
 HOP Design
-src/hop_design/design/relaxation.py
+src/hop_design/design/relaxation/__init__.py
 
-Enumerates deterministic exact-first Manhattan shells for local target geometry.
+Enumerates exact-first construction relaxation shells.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------

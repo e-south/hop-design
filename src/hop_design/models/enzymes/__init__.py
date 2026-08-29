@@ -1,9 +1,9 @@
 """
 --------------------------------------------------------------------------------
 HOP Design
-src/hop_design/models/enzymes.py
+src/hop_design/models/enzymes/__init__.py
 
-Defines vendor-neutral characterized enzymes and caller provisioning policy.
+Defines characterized enzyme contracts and provisioning restrictions.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------

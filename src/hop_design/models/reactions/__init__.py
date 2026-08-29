@@ -1,9 +1,9 @@
 """
 --------------------------------------------------------------------------------
 HOP Design
-src/hop_design/models/reactions.py
+src/hop_design/models/reactions/__init__.py
 
-Defines exact molecular inputs, enzyme bindings, and concurrent reaction stages.
+Defines ordered reaction programs and stage assessments.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------

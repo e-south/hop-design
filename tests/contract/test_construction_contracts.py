@@ -16,8 +16,8 @@ from pydantic import ValidationError
 
 from hop_design.design.relaxation import relaxation_shells
 from hop_design.models.construction import (
-    BasalPairClass,
-    BasalPairingPosition,
+    BasalPairAllowance,
+    BasalPairingConstraint,
     BasalTarget,
     CompleteConstructionRealization,
     ConstructionConstraints,
@@ -347,11 +347,9 @@ def test_set_valued_request_inputs_have_canonical_ordering() -> None:
 
 def test_endpoint_specific_basal_targets_reject_leaked_requirements() -> None:
     pairing = (
-        BasalPairingPosition(
+        BasalPairingConstraint(
             profile_position=0,
-            source_base="G",
-            adapter_base="C",
-            pair_class=BasalPairClass.MATCH,
+            allowed_class=BasalPairAllowance.MATCH,
         ),
     )
     base = {
@@ -379,7 +377,7 @@ def test_endpoint_specific_basal_targets_reject_leaked_requirements() -> None:
                 end_generation=EndGenerationRequest(type_iis_cut_offset_nt=4),
             ),
         )
-    with pytest.raises(ValidationError, match="requires a pairing profile"):
+    with pytest.raises(ValidationError, match="requires pairing constraints"):
         LocalNeighborhoodRequest(
             **base,
             endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
@@ -392,7 +390,7 @@ def test_endpoint_specific_basal_targets_reject_leaked_requirements() -> None:
         target=BasalTarget(
             nick_strand=Strand.TOP,
             nick_offset_nt=0,
-            pairing_profile=pairing,
+            pairing_constraints=pairing,
             ligation_proximal_match_required=True,
             end_generation=EndGenerationRequest(
                 type_iis_cut_offset_nt=4,
@@ -456,17 +454,15 @@ def test_relaxation_shells_are_exact_first_bounded_and_directionally_unbiased() 
 
 def test_relaxation_supports_nested_endpoint_geometry_coordinates() -> None:
     pairing = (
-        BasalPairingPosition(
+        BasalPairingConstraint(
             profile_position=0,
-            source_base="G",
-            adapter_base="C",
-            pair_class=BasalPairClass.MATCH,
+            allowed_class=BasalPairAllowance.MATCH,
         ),
     )
     target = BasalTarget(
         nick_strand=Strand.TOP,
         nick_offset_nt=0,
-        pairing_profile=pairing,
+        pairing_constraints=pairing,
         ligation_proximal_match_required=True,
         end_generation=EndGenerationRequest(type_iis_cut_offset_nt=4),
     )
@@ -674,7 +670,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         "projection_inventory": (),
         "claim_boundary": NeighborhoodClaimBoundary(
             digital_design=DigitalDesignStatus.VERIFIED,
-            method=MethodResolutionStatus.RESOLVED,
+            method=MethodResolutionStatus.NOT_RESOLVED,
         ),
     }
     with pytest.raises(ValidationError, match="cover every realization exactly once"):
@@ -703,7 +699,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
             ),
         ),
     )
-    assert result.claim_boundary.method is MethodResolutionStatus.RESOLVED
+    assert result.claim_boundary.method is MethodResolutionStatus.NOT_RESOLVED
 
     relaxed_geometry = request.target.model_copy(update={"loop_length_nt": 4})
     wrong_shell_realization = LocalRealization.create(
@@ -794,6 +790,139 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
                 ),
             ),
         )
+
+
+def _first_feasible_two_shell_fields(
+    *, require_all_members_compatible: bool
+) -> tuple[dict[str, object], LocalRealization, LocalRealization]:
+    request = _foldback_request().model_copy(
+        update={
+            "payload": FinalPayloadReference(
+                display_name="two-member payload",
+                payload=DegeneratePayload(sequence="ACTW"),
+                basal_boundary=Boundary(offset=0),
+                foldback_boundary=Boundary(offset=4),
+            ),
+            "hard_constraints": ConstructionConstraints(
+                require_all_members_compatible=require_all_members_compatible
+            ),
+        }
+    )
+    exact = LocalRealization.create(
+        local_sequence="AAACCC",
+        enzyme_binding_ids=("enzyme-a",),
+        stage_ids=("stage-a",),
+        achieved_geometry=request.target,
+    )
+    relaxed_geometry = request.target.model_copy(update={"loop_length_nt": 4})
+    relaxed = LocalRealization.create(
+        local_sequence="AAAGCCC",
+        enzyme_binding_ids=("enzyme-a",),
+        stage_ids=("stage-a",),
+        achieved_geometry=relaxed_geometry,
+    )
+    fields: dict[str, object] = {
+        "status": SearchCompletionStatus.COMPLETE,
+        "request": request,
+        "problem_id": problem_id(request),
+        "execution_id": "hop:execution/" + "a" * 64 + "@1",
+        "shells": (
+            RelaxationShellSummary(
+                radius=0,
+                examined=True,
+                realization_ids=(exact.local_realization_id,),
+            ),
+            RelaxationShellSummary(
+                radius=1,
+                examined=True,
+                realization_ids=(relaxed.local_realization_id,),
+            ),
+        ),
+        "realizations": (exact, relaxed),
+        "achieved_geometry_groups": (
+            RealizationGroup(
+                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
+                group_key=geometry_id(exact.achieved_geometry),
+                realization_ids=(exact.local_realization_id,),
+                multiplicity=1,
+            ),
+            RealizationGroup(
+                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
+                group_key=geometry_id(relaxed.achieved_geometry),
+                realization_ids=(relaxed.local_realization_id,),
+                multiplicity=1,
+            ),
+        ),
+        "rejected_count": 0,
+        "failure_reasons": (),
+        "payload_compatibility": PayloadCompatibilityAccounting(
+            status=PayloadCompatibilityStatus.COMPLETE,
+            total_assignments=2,
+            compatible_assignments=2,
+            excluded_assignments=0,
+            exhaustive=True,
+        ),
+        "provenance": NeighborhoodProvenance(
+            hop_version="0.1.0a7",
+            route_implementation_version="linear-source/1",
+            enzyme_catalog_digest=request.enzyme_catalog_digest,
+        ),
+        "projection_inventory": (),
+        "claim_boundary": NeighborhoodClaimBoundary(
+            digital_design=DigitalDesignStatus.VERIFIED,
+            method=MethodResolutionStatus.NOT_RESOLVED,
+        ),
+    }
+    return fields, exact, relaxed
+
+
+def test_first_feasible_shell_stops_at_the_first_hit_for_ordinary_requests() -> None:
+    fields, _, _ = _first_feasible_two_shell_fields(require_all_members_compatible=False)
+
+    with pytest.raises(ValidationError, match="must stop at the first shell"):
+        NeighborhoodDiscoveryResult(**fields)
+
+
+def test_all_member_first_feasible_allows_partial_hits_until_compatibility_completes() -> None:
+    fields, exact, _ = _first_feasible_two_shell_fields(require_all_members_compatible=True)
+
+    result = NeighborhoodDiscoveryResult(**fields)
+    assert tuple(shell.radius for shell in result.shells) == (0, 1)
+
+    incomplete_accounting = {
+        **fields,
+        "payload_compatibility": PayloadCompatibilityAccounting(
+            status=PayloadCompatibilityStatus.NOT_COMPUTED,
+            total_assignments=2,
+            exhaustive=False,
+            warning="Compatibility enumeration did not complete.",
+        ),
+    }
+    with pytest.raises(ValidationError, match="completes payload compatibility"):
+        NeighborhoodDiscoveryResult(**incomplete_accounting)
+
+    missing_final_shell_hit = {
+        **fields,
+        "shells": (
+            RelaxationShellSummary(
+                radius=0,
+                examined=True,
+                realization_ids=(exact.local_realization_id,),
+            ),
+            RelaxationShellSummary(radius=1, examined=True, realization_ids=()),
+        ),
+        "realizations": (exact,),
+        "achieved_geometry_groups": (
+            RealizationGroup(
+                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
+                group_key=geometry_id(exact.achieved_geometry),
+                realization_ids=(exact.local_realization_id,),
+                multiplicity=1,
+            ),
+        ),
+    }
+    with pytest.raises(ValidationError, match="completes payload compatibility"):
+        NeighborhoodDiscoveryResult(**missing_final_shell_hit)
 
 
 def test_grouping_is_reversible_and_preserves_every_realization() -> None:
