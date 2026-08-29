@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-29
 doc_type: explanation
 journey:
   - discover
@@ -24,6 +24,35 @@ HOP keeps four operations distinct:
 4. **Compile** selected components or a named method into replayable artifacts.
 
 Discovery does not silently perform selection.
+
+## Payload-centered local construction discovery
+
+A local construction request fixes the final payload, route family, requested
+endpoint, and one foldback or basal target. Exact targets are examined before
+enabled relaxation shells. Each realization preserves both the requested
+geometry and achieved geometry, so a nearby compatible result cannot be
+mistaken for an exact match.
+
+Relaxation is a declared bounded neighborhood, not an optimization. HOP does
+not score a shell, infer a preferred geometry, or claim that the first returned
+realization is best. Its status reports what the bounded search established:
+
+- `complete`: the declared stopping rule was satisfied without firing a bound,
+  every entered shell is complete, and at least one compatible local
+  realization was found. `through_radius` exhausts every declared radius;
+  `first_feasible_shell` may stop after the first complete feasible shell;
+- `infeasible`: the stopping rule exhausted every shell it requires without a
+  compatible realization; or
+- `truncated`: a named bound fired before the stopping rule was satisfied. Its
+  final entered shell may be partial, or a later required shell may remain
+  unentered.
+
+Shell accounting records examined candidates, accepted realizations,
+rejections, and observed failure categories. A partial shell may appear only
+in a truncated result. A local construction projection renders the same typed
+result as neutral JSON, CSV, or SVG without selecting a realization or
+recomputing molecular state. Local feasibility does not establish physical
+construction, a complete route, quality control, or biological activity.
 
 ## Foldback geometry
 

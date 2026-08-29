@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-29
 doc_type: reference
 ---
 
@@ -65,3 +65,29 @@ processing view. A design with a release projection also receives the
 released-workflow JSON/SVG.
 The JSON is the renderer-independent review and interoperability surface; the
 SVG is a deterministic convenience artifact. Neither is experimental evidence.
+
+## Local construction projections
+
+Payload-centered foldback and basal discovery also support a narrower family
+of local scientific projections:
+
+- `hop.foldback-feasibility-landscape/v1` records every exact foldback local
+  realization and its achieved dimensions;
+- `hop.basal-feasibility-landscape/v1` records every exact basal local
+  realization, including endpoint-dependent pairing, nick, cut, and cohesive-
+  end facts;
+- `hop.foldback-relaxation-frontier/v1` and
+  `hop.basal-relaxation-frontier/v1` record exact-first shell membership,
+  complete or partial shell accounting, and observed rejection categories.
+
+Each projection carries its source-result identity, renderer version,
+provenance, and claim boundary. A projection is verified against its exact
+source result by rebuilding the typed relation and requiring canonical
+equality; a resealed subset, reordering, or invented row is rejected. JSON,
+CSV, and SVG renderers preserve that relation without ranking candidates or
+recalculating molecular state.
+
+These projections establish local feasibility only under the declared
+molecular model. They do not establish a complete construction route,
+physical construction, quality control, biological activity, or empirical
+enzyme performance.

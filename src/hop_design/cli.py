@@ -82,7 +82,10 @@ def compile_command(
     ] = None,
     dry_run: Annotated[
         bool,
-        typer.Option("--dry-run", help="Validate and compile without writing files."),
+        typer.Option(
+            "--dry-run",
+            help="Derive the design and check constraints without writing files.",
+        ),
     ] = False,
 ) -> None:
     """Compile one bounded design from exactly one input surface."""
@@ -126,7 +129,7 @@ def compile_command(
     typer.echo(f"Plan: {compilation.plan.plan_id}")
     typer.echo(f"Bundle: {compilation.bundle.bundle_id}")
     if dry_run:
-        typer.echo("Dry run: bundle validated; no files written.")
+        typer.echo("Dry run: design derivation verified; no files written.")
     else:
         typer.echo(f"Wrote: {output}")
 

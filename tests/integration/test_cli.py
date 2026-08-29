@@ -3,11 +3,13 @@ from __future__ import annotations
 from importlib.metadata import version
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from hop_design.api import create_spec, verify_bundle
 from hop_design.cli import app
 from hop_design.serialization import canonical_json_bytes
+from tests.support.claim_language import assert_no_positive_downstream_claims
 
 runner = CliRunner()
 
@@ -17,6 +19,26 @@ def test_cli_reports_distribution_version() -> None:
 
     assert result.exit_code == 0, result.output
     assert result.output.strip() == f"hop-design {version('hop-design')}"
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    (
+        ("--help",),
+        ("compile", "--help"),
+        ("verify", "--help"),
+        ("space", "--help"),
+        ("space", "preview", "--help"),
+        ("space", "compile", "--help"),
+    ),
+)
+def test_default_cli_help_does_not_make_positive_downstream_claims(
+    arguments: tuple[str, ...],
+) -> None:
+    result = runner.invoke(app, list(arguments))
+
+    assert result.exit_code == 0, result.output
+    assert_no_positive_downstream_claims(result.output, surface="CLI help")
 
 
 def test_cli_compiles_and_reports_visible_default(tmp_path: Path) -> None:
@@ -59,7 +81,7 @@ def test_cli_dry_run_validates_without_writing(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0, result.output
-    assert "Dry run" in result.output
+    assert "Dry run: design derivation verified; no files written." in result.output
     assert not output.exists()
 
 
@@ -77,7 +99,37 @@ def test_cli_dry_run_does_not_require_an_output_path() -> None:
     )
 
     assert result.exit_code == 0, result.output
-    assert "Dry run" in result.output
+    assert "Dry run: design derivation verified; no files written." in result.output
+
+
+def test_default_cli_receipts_do_not_make_positive_downstream_claims(tmp_path: Path) -> None:
+    dry_run = runner.invoke(
+        app,
+        ["compile", "--sequence", "ACGT", "--design-id", "receipt", "--dry-run"],
+    )
+    assert dry_run.exit_code == 0, dry_run.output
+
+    spec_path = tmp_path / "space.yaml"
+    spec_path.write_text(
+        "schema: hop/substrate-space/v1\n"
+        "name: receipt-space\n"
+        "payload:\n"
+        "  - fixed: ACGT\n",
+        encoding="utf-8",
+    )
+    preview = runner.invoke(app, ["space", "preview", str(spec_path)])
+    assert preview.exit_code == 0, preview.output
+    output = tmp_path / "compiled-space"
+    compiled = runner.invoke(
+        app,
+        ["space", "compile", str(spec_path), "--out", str(output)],
+    )
+    assert compiled.exit_code == 0, compiled.output
+    verified = runner.invoke(app, ["verify", str(output / "bundle")])
+    assert verified.exit_code == 0, verified.output
+
+    for receipt in (dry_run.output, preview.output, compiled.output, verified.output):
+        assert_no_positive_downstream_claims(receipt, surface="CLI receipt")
 
 
 def test_cli_rejects_rna_input(tmp_path: Path) -> None:

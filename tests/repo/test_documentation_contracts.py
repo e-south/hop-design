@@ -9,6 +9,7 @@ import tomllib
 from pathlib import Path
 from types import ModuleType
 
+import pytest
 import yaml
 
 import hop_design as hop
@@ -17,6 +18,7 @@ import hop_design.methods as hop_methods
 import hop_design.spaces as hop_spaces
 import hop_design.views as hop_views
 from hop_design import api as hop_api
+from tests.support.claim_language import assert_no_positive_downstream_claims
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -117,6 +119,85 @@ def test_public_docs_route_the_five_sibling_surfaces() -> None:
     )
     assert "sequence-and-cut compatible" in processing
     assert "empirical cleavage efficiency" in processing
+
+
+def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    language = (REPO_ROOT / "docs" / "language" / "overview.md").read_text(encoding="utf-8")
+    docs_index = (REPO_ROOT / "docs" / "index.md").read_text(encoding="utf-8")
+    public_text = "\n".join((readme, language, docs_index))
+
+    assert "`hop_design.spaces` is the scientist-facing facade" in public_text
+    for specialist_surface in (
+        "`hop_design`",
+        "`hop_design.discovery`",
+        "`hop_design.methods`",
+        "`hop_design.views`",
+    ):
+        assert specialist_surface in public_text
+    assert "small public vocabulary" not in language.lower()
+
+
+def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
+    discovery = (REPO_ROOT / "docs" / "discovery" / "overview.md").read_text(
+        encoding="utf-8"
+    )
+    view_contracts = (REPO_ROOT / "docs" / "reference" / "view-contracts.md").read_text(
+        encoding="utf-8"
+    )
+    reliability = (REPO_ROOT / "RELIABILITY.md").read_text(encoding="utf-8")
+    normalized = " ".join(discovery.split())
+    normalized_views = " ".join(view_contracts.split())
+    normalized_reliability = " ".join(reliability.split())
+
+    assert "Exact targets are examined before enabled relaxation shells" in normalized
+    assert "requested geometry" in normalized
+    assert "achieved geometry" in normalized
+    assert "not an optimization" in normalized
+    assert "declared stopping rule" in normalized
+    assert "through_radius" in discovery
+    assert "first_feasible_shell" in discovery
+    assert "every candidate in the declared neighborhood was examined" not in normalized
+    assert "infeasible" in discovery
+    assert "truncated" in discovery
+    assert "does not establish physical construction" in normalized
+    assert "local construction projection" in normalized
+    for schema_id in (
+        "hop.foldback-feasibility-landscape/v1",
+        "hop.basal-feasibility-landscape/v1",
+        "hop.foldback-relaxation-frontier/v1",
+        "hop.basal-relaxation-frontier/v1",
+    ):
+        assert schema_id in view_contracts
+    assert "verified against its exact source result" in normalized_views
+    assert "Only the final examined shell may be partial" in normalized_reliability
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    (
+        "README.md",
+        "docs/index.md",
+        "docs/guides/quickstart.md",
+        "docs/start/why-hop.md",
+        "docs/discovery/overview.md",
+        "docs/reference/view-contracts.md",
+    ),
+)
+def test_default_scientist_surfaces_do_not_make_positive_downstream_claims(
+    relative_path: str,
+) -> None:
+    text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+    assert_no_positive_downstream_claims(text, surface=relative_path)
+
+
+def test_public_claim_language_keeps_digital_derivation_narrow() -> None:
+    why_hop = (REPO_ROOT / "docs" / "start" / "why-hop.md").read_text(encoding="utf-8")
+    cli = (REPO_ROOT / "src" / "hop_design" / "cli.py").read_text(encoding="utf-8")
+
+    assert "constraint-checked hairpin anatomy" in why_hop
+    assert "bundle validated" not in cli.lower()
+    assert "design derivation verified; no files written" in cli.lower()
 
 
 def test_action_routes_have_runnable_public_examples() -> None:

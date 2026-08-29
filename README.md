@@ -39,8 +39,11 @@ No physical construction, QC, or activity record is attached.
 | Place or assess a product downstream | [Ownership boundaries](docs/ecosystem/ownership-boundaries.md) |
 | Navigate concepts, guides, reference, and maintenance | [Documentation map](docs/index.md) |
 
-The CLI covers common design compilation. Discovery, named methods, typed
-views, and integration use the Python surfaces documented by each route.
+`hop_design.spaces` is the scientist-facing facade. The package root
+`hop_design` and the sibling `hop_design.discovery`, `hop_design.methods`, and
+`hop_design.views` facades are specialist surfaces for single-design
+derivation, bounded searches, named methods, and typed projections. They are
+not required for the first substrate-space journey.
 
 ## Claim boundary
 

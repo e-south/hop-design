@@ -6,7 +6,7 @@ audience:
   - new users
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-29
 doc_type: tutorial
 journey:
   - install
@@ -59,6 +59,12 @@ construction, QC, or biological activity. Continue with the
 [substrate-space guide](substrate-spaces.md) for the specification and package
 contracts.
 
+`hop_design.spaces` is the scientist-facing Python facade for this journey.
+The package root `hop_design` and the `hop_design.discovery`,
+`hop_design.methods`, and `hop_design.views` facades expose specialist design,
+bounded-search, named-method, and typed-projection questions; they are not
+required to compile the 64-member verification fixture.
+
 The existing single-design route remains available:
 
 ```bash
@@ -67,8 +73,9 @@ uv run hop-design compile --sequence NRY --design-id symbolic-demo --out build/s
 ```
 
 The single-design CLI prints the named default, plan ID, and bundle ID. It
-refuses to replace an existing output directory. Add `--dry-run` to validate
-and compile without writing; `--out` is not required for that read-only call.
+refuses to replace an existing output directory. Add `--dry-run` to derive the
+design and check its constraints without writing; `--out` is not required for
+that read-only call.
 
 A strict JSON or YAML specification uses the same endpoint:
 

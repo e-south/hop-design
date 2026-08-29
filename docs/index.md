@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-29
 doc_type: index
 journey:
   - install
@@ -26,6 +26,11 @@ Follow the shortest route that answers your question. The CLI supports the
 common design-compilation path; discovery, method resolution, and typed
 integration use Python.
 
+`hop_design.spaces` is the scientist-facing facade. The package root
+`hop_design`, plus `hop_design.discovery`, `hop_design.methods`, and
+`hop_design.views`, are specialist surfaces for questions that require the
+design language, bounded discovery, named methods, or typed projections.
+
 ## Start here
 
 1. **Why HOP:** [Why HOP](start/why-hop.md) explains the product's narrow-waist role.
@@ -37,7 +42,7 @@ integration use Python.
 4. **Install and compile:** [Quickstart](guides/quickstart.md) covers the
    scientist-facing space and existing single-design routes.
 5. **Design language:** [Language overview](language/overview.md) introduces the
-   small public vocabulary and routes to the formal ontology.
+   specialist vocabulary and routes to the formal ontology.
 6. **Discovery language:** [Discovery overview](discovery/overview.md) explains
    bounded competency questions; [the discovery guide](guides/discover-compatible-basal-candidates.md)
    runs one complete and one truncated query.

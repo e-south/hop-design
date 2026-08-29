@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-29
 doc_type: explanation
 journey:
   - compile
@@ -26,7 +26,7 @@ HOP moves composition to the level of hairpin meaning:
 
 ```text
 authored payload + structural relationships
-    -> validated hairpin anatomy
+    -> constraint-checked hairpin anatomy
     -> deterministic feature-partitioned encoding
 ```
 

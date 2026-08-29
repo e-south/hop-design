@@ -1,14 +1,14 @@
 ---
 doc_id: hop-design-language-overview
 title: Design language
-intent: Introduce the small public vocabulary for declaring and compiling hairpin meaning.
+intent: Introduce the specialist vocabulary for declaring and compiling one hairpin design.
 audience:
   - users
   - integrators
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-29
 doc_type: explanation
 journey:
   - compile
@@ -19,7 +19,14 @@ journey:
 The design language answers one question: **what hairpin is being requested?**
 It is declarative. It does not claim how the hairpin will be produced.
 
-## Small public vocabulary
+`hop_design.spaces` is the scientist-facing facade for defining, previewing,
+and compiling a bounded substrate space. The package root, `hop_design`, is the
+specialist design-language surface documented here. The sibling
+`hop_design.discovery`, `hop_design.methods`, and `hop_design.views` facades
+answer bounded search, named-method, and typed-projection questions. They are
+not additional steps in the first-use substrate-space journey.
+
+## Specialist vocabulary
 
 | Term | Meaning |
 | --- | --- |
