@@ -454,6 +454,54 @@ def test_relaxation_shells_are_exact_first_bounded_and_directionally_unbiased() 
         )
 
 
+def test_relaxation_supports_nested_endpoint_geometry_coordinates() -> None:
+    pairing = (
+        BasalPairingPosition(
+            profile_position=0,
+            source_base="G",
+            adapter_base="C",
+            pair_class=BasalPairClass.MATCH,
+        ),
+    )
+    target = BasalTarget(
+        nick_strand=Strand.TOP,
+        nick_offset_nt=0,
+        pairing_profile=pairing,
+        ligation_proximal_match_required=True,
+        end_generation=EndGenerationRequest(type_iis_cut_offset_nt=4),
+    )
+    policy = RelaxationPolicy(
+        mode=RelaxationMode.THROUGH_RADIUS,
+        max_radius=1,
+        coordinates=(
+            RelaxationCoordinate(
+                name="end_generation.type_iis_cut_offset_nt",
+                minimum=3,
+                maximum=5,
+            ),
+        ),
+    )
+    request = LocalNeighborhoodRequest(
+        payload=_payload(),
+        family=LocalNeighborhoodFamily.BASAL,
+        route_family=RouteFamily.LINEAR_SOURCE_V1,
+        endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+        target=target,
+        hard_constraints=ConstructionConstraints(),
+        enzyme_provisioning=_enzyme_provisioning(),
+        relaxation=policy,
+        enumeration=EnumerationPolicy(max_search_nodes=10, max_realizations=10),
+    )
+
+    shells = relaxation_shells(request.target, request.relaxation)
+    assert [shell.radius for shell in shells] == [0, 1]
+    assert {
+        geometry.end_generation.type_iis_cut_offset_nt
+        for geometry in shells[1].geometries
+        if isinstance(geometry, BasalTarget) and geometry.end_generation is not None
+    } == {3, 5}
+
+
 def test_problem_and_execution_identity_separate_science_from_runtime() -> None:
     first = _foldback_request(max_search_nodes=100)
     second = _foldback_request(max_search_nodes=200)

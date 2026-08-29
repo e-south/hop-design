@@ -367,7 +367,7 @@ class RelaxationMode(StrEnum):
 class RelaxationCoordinate(HopModel):
     """One explicitly enabled integer target coordinate and its hard bounds."""
 
-    name: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
+    name: str = Field(pattern=r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$")
     minimum: int
     maximum: int
 
@@ -411,6 +411,58 @@ class EnumerationPolicy(HopModel):
     max_realizations: int = Field(ge=1)
 
 
+def geometry_coordinate_value(target: LocalGeometryTarget, coordinate_name: str) -> int:
+    """Resolve one integer geometry coordinate, including declared nested fields."""
+    current: object = target
+    for field_name in coordinate_name.split("."):
+        if not isinstance(current, HopModel) or field_name not in type(current).model_fields:
+            raise ValueError(f"Unknown relaxation coordinate: {coordinate_name}.")
+        current = getattr(current, field_name)
+    if not isinstance(current, int) or isinstance(current, bool):
+        raise ValueError(f"Relaxation coordinate {coordinate_name} must be an integer.")
+    return current
+
+
+def geometry_with_coordinate_value(
+    target: LocalGeometryTarget,
+    coordinate_name: str,
+    value: int,
+) -> LocalGeometryTarget:
+    """Return one target copy with a declared integer coordinate replaced."""
+
+    def replace(model: HopModel, path: tuple[str, ...]) -> HopModel:
+        field_name, *remaining = path
+        if field_name not in type(model).model_fields:
+            raise ValueError(f"Unknown relaxation coordinate: {coordinate_name}.")
+        if not remaining:
+            return model.model_copy(update={field_name: value})
+        child = getattr(model, field_name)
+        if not isinstance(child, HopModel):
+            raise ValueError(f"Unknown relaxation coordinate: {coordinate_name}.")
+        return model.model_copy(update={field_name: replace(child, tuple(remaining))})
+
+    return cast(LocalGeometryTarget, replace(target, tuple(coordinate_name.split("."))))
+
+
+def geometry_fixed_projection(
+    target: LocalGeometryTarget,
+    relaxed_coordinate_names: set[str],
+) -> dict[str, object]:
+    """Return geometry content with explicitly relaxed leaves removed."""
+    projection = target.model_dump(mode="json")
+    for coordinate_name in relaxed_coordinate_names:
+        cursor: object = projection
+        parts = coordinate_name.split(".")
+        for field_name in parts[:-1]:
+            if not isinstance(cursor, dict) or field_name not in cursor:
+                raise ValueError(f"Unknown relaxation coordinate: {coordinate_name}.")
+            cursor = cursor[field_name]
+        if not isinstance(cursor, dict) or parts[-1] not in cursor:
+            raise ValueError(f"Unknown relaxation coordinate: {coordinate_name}.")
+        del cursor[parts[-1]]
+    return projection
+
+
 class LocalNeighborhoodRequest(HopModel):
     """Shared payload-centered request envelope for foldback or basal discovery."""
 
@@ -435,21 +487,13 @@ class LocalNeighborhoodRequest(HopModel):
             raise ValueError("Local neighborhood family must match the target family.")
         if self.route_family is RouteFamily.LINEAR_SOURCE_V1:
             validate_linear_source_payload(self.payload)
-        target_fields = set(type(self.target).model_fields)
-        unknown_coordinates = {
-            coordinate.name
-            for coordinate in self.relaxation.coordinates
-            if coordinate.name not in target_fields
-        }
-        if unknown_coordinates:
-            raise ValueError(
-                "Relaxation coordinates must name integer target fields: "
-                + ", ".join(sorted(unknown_coordinates))
-            )
         for coordinate in self.relaxation.coordinates:
-            exact_value = getattr(self.target, coordinate.name)
-            if not isinstance(exact_value, int) or isinstance(exact_value, bool):
-                raise ValueError("Relaxation coordinates must name integer target fields.")
+            try:
+                exact_value = geometry_coordinate_value(self.target, coordinate.name)
+            except ValueError as error:
+                raise ValueError(
+                    "Relaxation coordinates must name integer target fields: " + coordinate.name
+                ) from error
             if not coordinate.minimum <= exact_value <= coordinate.maximum:
                 raise ValueError(
                     f"The exact target for {coordinate.name} lies outside its relaxation bounds."
@@ -1020,19 +1064,16 @@ class NeighborhoodDiscoveryResult(HopModel):
         if type(achieved) is not type(target) or achieved.family != self.request.family.value:
             raise ValueError("A local realization must use the requested neighborhood family.")
         coordinate_names = {coordinate.name for coordinate in self.request.relaxation.coordinates}
-        target_fields = target.model_dump(mode="json")
-        achieved_fields = achieved.model_dump(mode="json")
-        for field_name, target_value in target_fields.items():
-            if field_name not in coordinate_names and achieved_fields[field_name] != target_value:
-                raise ValueError(
-                    "A local realization changed a non-enabled geometry field: " + field_name
-                )
+        if geometry_fixed_projection(target, coordinate_names) != geometry_fixed_projection(
+            achieved, coordinate_names
+        ):
+            raise ValueError("A local realization changed a non-enabled geometry field.")
         radius = 0
         for coordinate in self.request.relaxation.coordinates:
-            achieved_value = cast(int, getattr(achieved, coordinate.name))
+            achieved_value = geometry_coordinate_value(achieved, coordinate.name)
             if not coordinate.minimum <= achieved_value <= coordinate.maximum:
                 raise ValueError("A local realization lies outside the declared relaxation bounds.")
-            radius += abs(achieved_value - cast(int, getattr(target, coordinate.name)))
+            radius += abs(achieved_value - geometry_coordinate_value(target, coordinate.name))
         if radius > self.request.relaxation.max_radius:
             raise ValueError("A local realization lies outside the declared relaxation radius.")
         return radius
@@ -1041,8 +1082,8 @@ class NeighborhoodDiscoveryResult(HopModel):
         target = self.request.target
         reachable_radius = sum(
             max(
-                abs(cast(int, getattr(target, coordinate.name)) - coordinate.minimum),
-                abs(coordinate.maximum - cast(int, getattr(target, coordinate.name))),
+                abs(geometry_coordinate_value(target, coordinate.name) - coordinate.minimum),
+                abs(coordinate.maximum - geometry_coordinate_value(target, coordinate.name)),
             )
             for coordinate in self.request.relaxation.coordinates
         )
@@ -1191,7 +1232,10 @@ __all__ = [
     "RouteFamily",
     "SearchCompletionStatus",
     "SourceOrientation",
+    "geometry_coordinate_value",
+    "geometry_fixed_projection",
     "geometry_id",
+    "geometry_with_coordinate_value",
     "grouped_realization_projection",
     "problem_id",
     "validate_linear_source_map",
