@@ -109,6 +109,8 @@ def _strand(
 
 
 def _nicked_duplex(solution: BasalSequenceSolution, target: BasalTarget) -> MultiSiteNickedDuplex:
+    if not isinstance(target.nick_strand, Strand):
+        raise ValueError("Basal reaction realization requires one exact nick strand.")
     sequence = solution.source_precursor_sequence
     binding = solution.enzyme_bindings[0]
     operative = (

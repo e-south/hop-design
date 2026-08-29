@@ -38,8 +38,8 @@ from hop_design.serialization import canonical_json_bytes, sha256_digest
 from .pairing import BasalBoundaryControl, BasalEnzymeBinding, BasalEnzymeDefinition
 from .states import (
     BasalAdapterAnnealedComplex,
+    BasalAdapterLigatedProduct,
     BasalEndpointProjection,
-    BasalLigatedHairpin,
     BasalMaterialAccounting,
     BasalMaterialRecord,
     BasalMaterialRole,
@@ -54,6 +54,15 @@ def _realization_id(content: dict[str, object]) -> str:
         "sha256:"
     )
     return f"hop:basal-realization/{digest}@1"
+
+
+def _realization_identity_seed(record: BasalRealizationRecord) -> dict[str, object]:
+    seed = record.model_dump(mode="json", exclude={"basal_realization_id"})
+    definitions = cast(list[dict[str, Any]], seed["enzyme_definitions"])
+    for definition in definitions:
+        enzyme = cast(dict[str, Any], definition["enzyme"])
+        enzyme["vendor_metadata"] = []
+    return seed
 
 
 class BasalRealizationRecord(HopModel):
@@ -73,7 +82,7 @@ class BasalRealizationRecord(HopModel):
     stage_assessments: tuple[ReactionStageAssessment, ...]
     nicked_duplex: MultiSiteNickedDuplex
     adapter_annealed_complex: BasalAdapterAnnealedComplex | None
-    ligated_hairpin: BasalLigatedHairpin | None
+    adapter_ligated_product: BasalAdapterLigatedProduct | None
     hairpin_pcr_duplex: BasalPcrCopyState | None
     restriction_digest_product: BasalRestrictionProduct | None
     materials: tuple[BasalMaterialRecord, ...]
@@ -84,12 +93,12 @@ class BasalRealizationRecord(HopModel):
     @classmethod
     def create(cls, **content: object) -> BasalRealizationRecord:
         draft = cls.model_construct(basal_realization_id="", **cast(Any, content))
-        seed = draft.model_dump(mode="json", exclude={"basal_realization_id"})
+        seed = _realization_identity_seed(draft)
         return cls.model_validate({"basal_realization_id": _realization_id(seed), **content})
 
     @model_validator(mode="after")
     def validate_realization(self) -> BasalRealizationRecord:
-        content = self.model_dump(mode="json", exclude={"basal_realization_id"})
+        content = _realization_identity_seed(self)
         if self.basal_realization_id != _realization_id(content):
             raise ValueError("basal_realization_id must seal the complete exact route evidence.")
         expected_local_sequence = (
@@ -274,7 +283,7 @@ class BasalRealizationRecord(HopModel):
             return
         if (
             self.adapter_annealed_complex is None
-            or self.ligated_hairpin is None
+            or self.adapter_ligated_product is None
             or self.hairpin_pcr_duplex is None
             or self.projection.pairing_profile is None
         ):
@@ -287,14 +296,16 @@ class BasalRealizationRecord(HopModel):
             if item.material_id == "ligation-adapter"
         )
         expected_ligated = self.source_precursor_sequence + adapter
-        if self.ligated_hairpin.strand.sequence != expected_ligated:
-            raise ValueError("Ligated hairpin must concatenate the exact source and adapter.")
+        if self.adapter_ligated_product.strand.sequence != expected_ligated:
+            raise ValueError(
+                "Adapter-ligated product must concatenate the exact source and adapter."
+            )
         if (
             self.hairpin_pcr_duplex.top_strand.sequence != expected_ligated
             or self.hairpin_pcr_duplex.bottom_strand.sequence
             != reverse_complement_iupac(expected_ligated)
         ):
-            raise ValueError("PCR strands must copy the complete ligated heteroduplex exactly.")
+            raise ValueError("PCR strands must copy the complete adapter-ligated duplex exactly.")
         if self.projection.endpoint is not ConstructionEndpoint.CLONE_READY_DUPLEX:
             return
         if len(self.reaction_programs) != 2 or self.restriction_digest_product is None:
@@ -334,7 +345,7 @@ class BasalRealizationRecord(HopModel):
                 item is not None
                 for item in (
                     self.adapter_annealed_complex,
-                    self.ligated_hairpin,
+                    self.adapter_ligated_product,
                     self.hairpin_pcr_duplex,
                     self.restriction_digest_product,
                 )

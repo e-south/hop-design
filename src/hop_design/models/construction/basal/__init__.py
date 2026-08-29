@@ -23,8 +23,8 @@ from .realization import BasalRealizationRecord
 from .result import BasalNeighborhoodDiscoveryResult
 from .states import (
     BasalAdapterAnnealedComplex,
+    BasalAdapterLigatedProduct,
     BasalEndpointProjection,
-    BasalLigatedHairpin,
     BasalMaterialAccounting,
     BasalMaterialRecord,
     BasalMaterialRole,
@@ -34,11 +34,11 @@ from .states import (
 
 __all__ = [
     "BasalAdapterAnnealedComplex",
+    "BasalAdapterLigatedProduct",
     "BasalBoundaryControl",
     "BasalEndpointProjection",
     "BasalEnzymeBinding",
     "BasalEnzymeDefinition",
-    "BasalLigatedHairpin",
     "BasalMaterialAccounting",
     "BasalMaterialRecord",
     "BasalMaterialRole",

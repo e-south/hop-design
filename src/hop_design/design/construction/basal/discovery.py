@@ -11,8 +11,10 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
+from collections.abc import Iterator
 from importlib.metadata import version
+from itertools import product
 
 from hop_design.design.relaxation import relaxation_shells
 from hop_design.kernel.construction.basal import (
@@ -21,6 +23,7 @@ from hop_design.kernel.construction.basal import (
     iter_basal_programs,
 )
 from hop_design.models.construction import (
+    BasalNickStrand,
     BasalTarget,
     ConstructionExecution,
     DigitalDesignStatus,
@@ -42,10 +45,35 @@ from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
     BasalRealizationRecord,
 )
-from hop_design.models.payload import ExactPayload
+from hop_design.models.junction import Strand
+from hop_design.models.sequence import iupac_bases
 
 from .reactions import _ROUTE_VERSION
 from .realization import _groups, _realization
+
+_BASES = ("A", "C", "G", "T")
+
+
+def _payload_assignments(request: LocalNeighborhoodRequest) -> Iterator[str]:
+    domains = tuple(
+        tuple(base for base in _BASES if base in iupac_bases(symbol))
+        for symbol in request.payload.payload.sequence
+    )
+    for assignment in product(*domains):
+        yield "".join(assignment)
+
+
+def _payload_cardinality(request: LocalNeighborhoodRequest) -> int:
+    cardinality = 1
+    for symbol in request.payload.payload.sequence:
+        cardinality *= len(iupac_bases(symbol))
+    return cardinality
+
+
+def _exact_strand_targets(target: BasalTarget) -> tuple[BasalTarget, ...]:
+    if target.nick_strand is not BasalNickStrand.ANY:
+        return (target,)
+    return tuple(target.model_copy(update={"nick_strand": strand}) for strand in Strand)
 
 
 def discover_basal_neighborhood(
@@ -56,14 +84,12 @@ def discover_basal_neighborhood(
         request.target, BasalTarget
     ):
         raise ValueError("Basal discovery requires a basal-neighborhood request.")
-    if not isinstance(request.payload.payload, ExactPayload):
-        raise ValueError("Basal construction discovery requires an exact payload.")
-    routes = iter_basal_programs(
-        request.enzyme_provisioning, target=request.target, endpoint=request.endpoint
-    )
+    payload_total = _payload_cardinality(request)
     records: list[BasalRealizationRecord] = []
     shells: list[RelaxationShellSummary] = []
     failures: Counter[str] = Counter()
+    compatible_payloads: set[str] = set()
+    payload_failures: dict[str, set[str]] = defaultdict(set)
     examined = rejected = 0
     truncation: str | None = None
     for shell in relaxation_shells(request.target, request.relaxation):
@@ -71,37 +97,52 @@ def discover_basal_neighborhood(
         for geometry in shell.geometries:
             if not isinstance(geometry, BasalTarget):
                 raise ValueError("Basal relaxation produced a non-basal geometry.")
-            for route in routes:
-                for solution in iter_basal_program_solutions(
-                    payload_sequence=request.payload.payload.sequence,
-                    target=geometry,
+            for exact_geometry in _exact_strand_targets(geometry):
+                routes = iter_basal_programs(
+                    request.enzyme_provisioning,
+                    target=exact_geometry,
                     endpoint=request.endpoint,
-                    program=route,
-                ):
-                    if examined >= request.enumeration.max_search_nodes:
-                        truncation = "max_search_nodes"
+                )
+                for payload_sequence in _payload_assignments(request):
+                    for route in routes:
+                        for solution in iter_basal_program_solutions(
+                            payload_sequence=payload_sequence,
+                            target=exact_geometry,
+                            endpoint=request.endpoint,
+                            program=route,
+                        ):
+                            if examined >= request.enumeration.max_search_nodes:
+                                truncation = "max_search_nodes"
+                                break
+                            examined += 1
+                            if isinstance(solution, BasalPlacementFailure):
+                                failures[solution.code] += 1
+                                rejected += 1
+                                payload_failures[payload_sequence].add(solution.code)
+                                continue
+                            record = _realization(
+                                request=request,
+                                payload_sequence=payload_sequence,
+                                target=exact_geometry,
+                                route=route,
+                                solution=solution,
+                                relaxation_radius=shell.radius,
+                            )
+                            if isinstance(record, str):
+                                failures[record] += 1
+                                rejected += 1
+                                payload_failures[payload_sequence].add(record)
+                                continue
+                            if len(records) >= request.enumeration.max_realizations:
+                                truncation = "max_realizations"
+                                break
+                            records.append(record)
+                            shell_ids.append(record.local_realization.local_realization_id)
+                            compatible_payloads.add(payload_sequence)
+                        if truncation:
+                            break
+                    if truncation:
                         break
-                    examined += 1
-                    if isinstance(solution, BasalPlacementFailure):
-                        failures[solution.code] += 1
-                        rejected += 1
-                        continue
-                    record = _realization(
-                        request=request,
-                        target=geometry,
-                        route=route,
-                        solution=solution,
-                        relaxation_radius=shell.radius,
-                    )
-                    if isinstance(record, str):
-                        failures[record] += 1
-                        rejected += 1
-                        continue
-                    if len(records) >= request.enumeration.max_realizations:
-                        truncation = "max_realizations"
-                        break
-                    records.append(record)
-                    shell_ids.append(record.local_realization.local_realization_id)
                 if truncation:
                     break
             if truncation:
@@ -112,7 +153,12 @@ def discover_basal_neighborhood(
             )
         )
         if truncation or (
-            request.relaxation.mode is RelaxationMode.FIRST_FEASIBLE_SHELL and shell_ids
+            request.relaxation.mode is RelaxationMode.FIRST_FEASIBLE_SHELL
+            and shell_ids
+            and (
+                not request.hard_constraints.require_all_members_compatible
+                or len(compatible_payloads) == payload_total
+            )
         ):
             break
     exact = tuple(records)
@@ -120,28 +166,64 @@ def discover_basal_neighborhood(
         status = SearchCompletionStatus.TRUNCATED
         accounting = PayloadCompatibilityAccounting(
             status=PayloadCompatibilityStatus.NOT_COMPUTED,
-            total_assignments=1,
+            total_assignments=payload_total,
             exhaustive=False,
             warning="Bounded basal discovery did not exhaust route compatibility.",
         )
     elif exact:
         status = SearchCompletionStatus.COMPLETE
+        excluded = payload_total - len(compatible_payloads)
         accounting = PayloadCompatibilityAccounting(
             status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=1,
-            compatible_assignments=1,
-            excluded_assignments=0,
+            total_assignments=payload_total,
+            compatible_assignments=len(compatible_payloads),
+            excluded_assignments=excluded,
+            conflict_counts=tuple(
+                FailureReasonCount(code=code, count=count)
+                for code, count in sorted(
+                    Counter(
+                        code
+                        for payload, codes in payload_failures.items()
+                        if payload not in compatible_payloads
+                        for code in codes
+                    ).items()
+                )
+                if count <= excluded
+            ),
             exhaustive=True,
         )
     else:
         status = SearchCompletionStatus.INFEASIBLE
+        payload_conflicts = Counter(
+            (
+                "payload-recognition-conflict"
+                if "recognition-payload-conflict" in payload_failures[payload]
+                else "payload-no-basal-realization"
+            )
+            for payload in _payload_assignments(request)
+        )
         accounting = PayloadCompatibilityAccounting(
             status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=1,
+            total_assignments=payload_total,
             compatible_assignments=0,
-            excluded_assignments=1,
+            excluded_assignments=payload_total,
+            conflict_counts=tuple(
+                FailureReasonCount(code=code, count=count)
+                for code, count in sorted(payload_conflicts.items())
+            ),
             exhaustive=True,
         )
+    if (
+        truncation is None
+        and exact
+        and request.hard_constraints.require_all_members_compatible
+        and accounting.excluded_assignments
+    ):
+        failures["all-members-compatibility-required"] += len(exact)
+        rejected += len(exact)
+        exact = ()
+        shells = [shell.model_copy(update={"realization_ids": ()}) for shell in shells]
+        status = SearchCompletionStatus.INFEASIBLE
     execution = ConstructionExecution(
         problem_id=problem_id(request),
         hop_version=version("hop-design"),
@@ -175,4 +257,4 @@ def discover_basal_neighborhood(
         ),
         truncation_reasons=((truncation,) if truncation else ()),
     )
-    return BasalNeighborhoodDiscoveryResult(discovery=discovery, realizations=exact)
+    return BasalNeighborhoodDiscoveryResult.create(discovery=discovery, realizations=exact)

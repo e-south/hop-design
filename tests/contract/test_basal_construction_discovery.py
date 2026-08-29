@@ -17,8 +17,15 @@ import pytest
 from pydantic import ValidationError
 
 from hop_design.design.construction.basal import discover_basal_neighborhood
-from hop_design.kernel.construction.basal import resolve_basal_pairing_profile
+from hop_design.design.construction.basal.reactions import _nicked_duplex
+from hop_design.kernel.construction.basal import (
+    BasalPlacementFailure,
+    iter_basal_program_solutions,
+    iter_basal_programs,
+    resolve_basal_pairing_profile,
+)
 from hop_design.models.construction import (
+    BasalNickStrand,
     BasalPairAllowance,
     BasalPairClass,
     BasalPairingConstraint,
@@ -34,11 +41,14 @@ from hop_design.models.construction import (
     RelaxationMode,
     RelaxationPolicy,
     RouteFamily,
+    problem_id,
 )
 from hop_design.models.construction.basal import (
+    BasalAdapterLigatedProduct,
     BasalMaterialAccounting,
     BasalMaterialRecord,
     BasalMaterialRole,
+    BasalNeighborhoodDiscoveryResult,
     BasalPairRecord,
     BasalRealizationRecord,
 )
@@ -54,10 +64,11 @@ from hop_design.models.enzymes import (
     ResultingEndModel,
     SubstrateRequirement,
     TargetMolecule,
+    VendorMetadata,
     characterized_enzyme_digest,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.payload import ExactPayload
+from hop_design.models.payload import DegeneratePayload, ExactPayload
 from hop_design.models.references import ExternalRef
 from hop_design.models.sequence import reverse_complement_iupac
 
@@ -176,7 +187,7 @@ def _pairing_constraints(
 def _request(
     endpoint: ConstructionEndpoint,
     *,
-    payload: str = "CCCC",
+    payload: str | ExactPayload | DegeneratePayload = "CCCC",
     pairing_constraints: tuple[BasalPairingConstraint, ...] | None = None,
     requested_overhangs: tuple[str, ...] = (),
     type_iis_cut_offset_nt: int = 0,
@@ -212,7 +223,7 @@ def _request(
     )
     return LocalNeighborhoodRequest(
         payload=FinalPayloadReference(
-            payload=ExactPayload(sequence=payload),
+            payload=(ExactPayload(sequence=payload) if isinstance(payload, str) else payload),
             basal_boundary=Boundary(offset=0),
             foldback_boundary=Boundary(offset=4),
         ),
@@ -288,7 +299,7 @@ def test_direct_and_pcr_endpoints_have_distinct_material_obligations() -> None:
     assert direct.realizations[0].projection.pcr_reference_sequence is None
     assert direct.realizations[0].projection.cohesive_ends == ()
     assert direct.realizations[0].adapter_annealed_complex is None
-    assert direct.realizations[0].ligated_hairpin is None
+    assert direct.realizations[0].adapter_ligated_product is None
     assert direct.realizations[0].hairpin_pcr_duplex is None
     assert direct.realizations[0].restriction_digest_product is None
 
@@ -371,12 +382,235 @@ def test_realization_contains_exact_route_evidence_and_payload_conditioning() ->
     assert all(not assessment.report.has_errors for assessment in record.stage_assessments)
     assert record.nicked_duplex is not None
     assert record.adapter_annealed_complex is not None
-    assert record.ligated_hairpin is not None
+    assert isinstance(record.adapter_ligated_product, BasalAdapterLigatedProduct)
     assert record.hairpin_pcr_duplex is not None
     assert record.restriction_digest_product is not None
     assert record.material_accounting.retained_nt > 0
     assert record.material_accounting.transient_nt > 0
     assert record.material_accounting.auxiliary_nt > 0
+
+
+def test_basal_result_identity_seals_details_and_binds_exact_request_payload() -> None:
+    result = discover_basal_neighborhood(_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
+
+    assert result.result_id.startswith("hop:basal-neighborhood-result/")
+    assert BasalNeighborhoodDiscoveryResult.model_validate_json(result.model_dump_json()) == result
+    changed = result.model_dump(mode="python")
+    changed["result_id"] = "hop:basal-neighborhood-result/" + "0" * 64 + "@1"
+    with pytest.raises(ValidationError, match="result_id"):
+        BasalNeighborhoodDiscoveryResult.model_validate(changed)
+
+    mixed = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            payload=DegeneratePayload(sequence="CYCC"),
+        )
+    )
+    exact_request = mixed.discovery.request.model_copy(
+        update={
+            "payload": mixed.discovery.request.payload.model_copy(
+                update={"payload": ExactPayload(sequence="CTCC")}
+            )
+        }
+    )
+    changed_discovery = mixed.discovery.model_copy(
+        update={"request": exact_request, "problem_id": problem_id(exact_request)}
+    )
+    with pytest.raises(ValidationError, match="request payload"):
+        BasalNeighborhoodDiscoveryResult.create(
+            discovery=changed_discovery,
+            realizations=mixed.realizations,
+        )
+
+
+def test_complete_basal_result_rejects_compatibility_count_drift() -> None:
+    result = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            payload=DegeneratePayload(sequence="CMAC"),
+        )
+    )
+    drifted_accounting = result.discovery.payload_compatibility.model_copy(
+        update={"compatible_assignments": 2, "excluded_assignments": 0}
+    )
+    drifted_discovery = result.discovery.model_copy(
+        update={"payload_compatibility": drifted_accounting}
+    )
+
+    with pytest.raises(ValidationError, match="compatible payload"):
+        BasalNeighborhoodDiscoveryResult.create(
+            discovery=drifted_discovery,
+            realizations=result.realizations,
+        )
+
+
+def test_non_require_all_infeasible_result_requires_zero_compatible_payloads() -> None:
+    request = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        payload=DegeneratePayload(sequence="CMAC"),
+    )
+    require_all = request.model_copy(
+        update={
+            "hard_constraints": request.hard_constraints.model_copy(
+                update={"require_all_members_compatible": True}
+            )
+        }
+    )
+    result = discover_basal_neighborhood(require_all)
+    non_require_all_request = result.discovery.request.model_copy(
+        update={
+            "hard_constraints": result.discovery.request.hard_constraints.model_copy(
+                update={"require_all_members_compatible": False}
+            )
+        }
+    )
+    drifted_discovery = result.discovery.model_copy(
+        update={
+            "request": non_require_all_request,
+            "problem_id": problem_id(non_require_all_request),
+        }
+    )
+
+    with pytest.raises(ValidationError, match="infeasible payload accounting"):
+        BasalNeighborhoodDiscoveryResult.create(
+            discovery=drifted_discovery,
+            realizations=(),
+        )
+
+
+def test_require_all_infeasible_result_may_suppress_compatible_payload_records() -> None:
+    request = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        payload=DegeneratePayload(sequence="CMAC"),
+    )
+    require_all = request.model_copy(
+        update={
+            "hard_constraints": request.hard_constraints.model_copy(
+                update={"require_all_members_compatible": True}
+            )
+        }
+    )
+
+    result = discover_basal_neighborhood(require_all)
+
+    assert result.discovery.status == "infeasible"
+    assert result.discovery.payload_compatibility.compatible_assignments == 1
+    assert result.realizations == ()
+
+
+def test_basal_family_identity_ignores_presentation_and_vendor_metadata() -> None:
+    request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
+    renamed_request = request.model_copy(update={"name": "renamed basal search"})
+    enzymes = tuple(
+        enzyme.model_copy(
+            update={"vendor_metadata": (VendorMetadata(vendor_name="Example Vendor"),)}
+        )
+        for enzyme in request.enzyme_provisioning.catalog.enzymes
+    )
+    vendor_catalog = request.enzyme_provisioning.catalog.model_copy(update={"enzymes": enzymes})
+    vendor_provisioning = request.enzyme_provisioning.model_copy(update={"catalog": vendor_catalog})
+    vendor_request = request.model_copy(update={"enzyme_provisioning": vendor_provisioning})
+
+    base = discover_basal_neighborhood(request)
+    renamed = discover_basal_neighborhood(renamed_request)
+    vendor = discover_basal_neighborhood(vendor_request)
+
+    assert base.discovery.result_id == renamed.discovery.result_id == vendor.discovery.result_id
+    assert base.result_id == renamed.result_id == vendor.result_id
+
+
+def test_basal_degenerate_payload_accounting_is_exhaustive_and_require_all_is_enforced() -> None:
+    request = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        payload=DegeneratePayload(sequence="CMAC"),
+    )
+    result = discover_basal_neighborhood(request)
+
+    assert result.discovery.status == "complete"
+    assert result.discovery.payload_compatibility.total_assignments == 2
+    assert result.discovery.payload_compatibility.compatible_assignments == 1
+    assert result.discovery.payload_compatibility.excluded_assignments == 1
+    assert {record.payload_sequence for record in result.realizations} == {"CCAC"}
+
+    require_all = request.model_copy(
+        update={
+            "hard_constraints": request.hard_constraints.model_copy(
+                update={"require_all_members_compatible": True}
+            )
+        }
+    )
+    blocked = discover_basal_neighborhood(require_all)
+    assert blocked.discovery.status == "infeasible"
+    assert blocked.realizations == ()
+
+
+def test_basal_degenerate_payload_over_bound_is_truthfully_uncomputed() -> None:
+    result = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            payload=DegeneratePayload(sequence="NNNN"),
+            max_nodes=1,
+        )
+    )
+
+    assert result.discovery.status == "truncated"
+    assert result.discovery.payload_compatibility.status == "not_computed"
+    assert result.discovery.payload_compatibility.total_assignments == 256
+    assert result.discovery.payload_compatibility.warning
+
+
+def test_any_nick_strand_enumerates_both_exact_strands_deterministically() -> None:
+    request = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        payload=DegeneratePayload(sequence="YTCC"),
+    )
+    request = request.model_copy(
+        update={"target": request.target.model_copy(update={"nick_strand": BasalNickStrand.ANY})}
+    )
+
+    result = discover_basal_neighborhood(request)
+
+    observed = tuple(record.basal_nick.strand for record in result.realizations)
+    assert set(observed) == {Strand.TOP, Strand.BOTTOM}
+    assert observed.index(Strand.TOP) < observed.index(Strand.BOTTOM)
+    assert {
+        record.local_realization.achieved_geometry.nick_strand for record in result.realizations
+    } == {Strand.TOP, Strand.BOTTOM}
+
+
+def test_exact_basal_realization_helpers_reject_unexpanded_nick_strand() -> None:
+    request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
+    assert isinstance(request.target, BasalTarget)
+    exact_target = request.target
+    any_target = exact_target.model_copy(update={"nick_strand": BasalNickStrand.ANY})
+    program = iter_basal_programs(
+        request.enzyme_provisioning,
+        target=exact_target,
+        endpoint=request.endpoint,
+    )[0]
+
+    with pytest.raises(ValueError, match="exact nick strand"):
+        list(
+            iter_basal_program_solutions(
+                payload_sequence="CCCC",
+                target=any_target,
+                endpoint=request.endpoint,
+                program=program,
+            )
+        )
+
+    solution = next(
+        candidate
+        for candidate in iter_basal_program_solutions(
+            payload_sequence="CCCC",
+            target=exact_target,
+            endpoint=request.endpoint,
+            program=program,
+        )
+        if not isinstance(candidate, BasalPlacementFailure)
+    )
+    with pytest.raises(ValueError, match="exact nick strand"):
+        _nicked_duplex(solution, any_target)
 
 
 def test_nick_offset_and_strand_change_exact_binding_geometry() -> None:
@@ -652,7 +886,7 @@ def test_pcr_projection_does_not_invent_primers_or_strands_and_preserves_ligatio
     ).realizations[0]
 
     assert record.adapter_annealed_complex is not None
-    assert record.ligated_hairpin is not None
+    assert record.adapter_ligated_product is not None
     assert record.hairpin_pcr_duplex is not None
     assert record.adapter_annealed_complex.strand_ids == (
         "source-fragment",
@@ -663,13 +897,13 @@ def test_pcr_projection_does_not_invent_primers_or_strands_and_preserves_ligatio
         "pcr-reverse-primer",
     } & {item.material_id for item in record.materials}
     assert record.hairpin_pcr_duplex.primer_bindings == ()
-    source_length = len(record.ligated_hairpin.source_strand.sequence)
-    assert {item.origin_id for item in record.ligated_hairpin.strand.lineage[:source_length]} == {
-        "source-precursor"
-    }
-    assert {item.origin_id for item in record.ligated_hairpin.strand.lineage[source_length:]} == {
-        "ligation-adapter"
-    }
+    source_length = len(record.adapter_ligated_product.source_strand.sequence)
+    assert {
+        item.origin_id for item in record.adapter_ligated_product.strand.lineage[:source_length]
+    } == {"source-precursor"}
+    assert {
+        item.origin_id for item in record.adapter_ligated_product.strand.lineage[source_length:]
+    } == {"ligation-adapter"}
 
 
 def test_clone_restriction_strands_serialize_with_exact_parent_spans_and_lineage() -> None:

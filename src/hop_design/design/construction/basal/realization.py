@@ -62,11 +62,14 @@ def _failure_code(codes: tuple[str, ...]) -> str:
 def _realization(
     *,
     request: LocalNeighborhoodRequest,
+    payload_sequence: str,
     target: BasalTarget,
     route: BasalProgramCandidate,
     solution: BasalSequenceSolution,
     relaxation_radius: int,
 ) -> BasalRealizationRecord | str:
+    if not isinstance(target.nick_strand, Strand):
+        raise ValueError("Basal realizations require one exact nick strand.")
     required_operations = 3 if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX else 1
     if (
         request.enzyme_provisioning.max_operations is not None
@@ -80,7 +83,7 @@ def _realization(
     if nick_assessment.report.has_errors:
         return _failure_code(tuple(item.code for item in nick_assessment.report.diagnostics))
     nicked = _nicked_duplex(solution, target)
-    annealed, ligated, duplex = _pcr_states(solution)
+    annealed, adapter_ligated, duplex = _pcr_states(solution)
     restriction = None
     programs = [nick_program]
     assessments = list(nick_assessment.stage_assessments)
@@ -125,7 +128,7 @@ def _realization(
         stage_ids=stage_ids,
         achieved_geometry=target,
     )
-    payload = request.payload.payload.sequence
+    payload = payload_sequence
     payload_map = PayloadSourceMap(
         segments=(
             PayloadSourceSegment(
@@ -227,7 +230,7 @@ def _realization(
         stage_assessments=tuple(assessments),
         nicked_duplex=nicked,
         adapter_annealed_complex=annealed,
-        ligated_hairpin=ligated,
+        adapter_ligated_product=adapter_ligated,
         hairpin_pcr_duplex=duplex,
         restriction_digest_product=restriction,
         materials=tuple(materials),

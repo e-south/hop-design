@@ -17,6 +17,7 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from hop_design.models.base import HopModel
+from hop_design.models.sequence import iupac_bases
 
 from .accounting import (
     FailureReasonCount,
@@ -62,6 +63,13 @@ class NeighborhoodDiscoveryResult(HopModel):
     def validate_result(self) -> NeighborhoodDiscoveryResult:
         if self.problem_id != problem_id(self.request):
             raise ValueError("problem_id must replay from the local request.")
+        payload_cardinality = 1
+        for symbol in self.request.payload.payload.sequence:
+            payload_cardinality *= len(iupac_bases(symbol))
+        if self.payload_compatibility.total_assignments != payload_cardinality:
+            raise ValueError(
+                "Payload accounting must replay the exact request payload cardinality."
+            )
         radii = tuple(shell.radius for shell in self.shells)
         if not radii or radii[0] != 0 or radii != tuple(range(len(radii))):
             raise ValueError("Examined relaxation shells must be contiguous and exact-first.")
@@ -185,9 +193,11 @@ class NeighborhoodDiscoveryResult(HopModel):
         if type(achieved) is not type(target) or achieved.family != self.request.family.value:
             raise ValueError("A local realization must use the requested neighborhood family.")
         coordinate_names = {coordinate.name for coordinate in self.request.relaxation.coordinates}
-        if geometry_fixed_projection(target, coordinate_names) != geometry_fixed_projection(
-            achieved, coordinate_names
-        ):
+        target_projection = geometry_fixed_projection(target, coordinate_names)
+        achieved_projection = geometry_fixed_projection(achieved, coordinate_names)
+        if target_projection.get("nick_strand") == "any":
+            target_projection["nick_strand"] = achieved_projection.get("nick_strand")
+        if target_projection != achieved_projection:
             raise ValueError("A local realization changed a non-enabled geometry field.")
         radius = 0
         for coordinate in self.request.relaxation.coordinates:

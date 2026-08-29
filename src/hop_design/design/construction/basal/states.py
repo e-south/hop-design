@@ -22,7 +22,7 @@ from hop_design.kernel.molecular_states import (
 )
 from hop_design.models.construction.basal import (
     BasalAdapterAnnealedComplex,
-    BasalLigatedHairpin,
+    BasalAdapterLigatedProduct,
     BasalPcrCopyState,
     BasalRestrictionProduct,
 )
@@ -51,7 +51,7 @@ def _pcr_states(
     solution: BasalSequenceSolution,
 ) -> tuple[
     BasalAdapterAnnealedComplex | None,
-    BasalLigatedHairpin | None,
+    BasalAdapterLigatedProduct | None,
     BasalPcrCopyState | None,
 ]:
     profile = solution.pairing_profile
@@ -94,13 +94,13 @@ def _pcr_states(
     )
     ligated_sequence = source.sequence + adapter.sequence
     ligated_strand = MolecularStrand(
-        strand_id="ligated-hairpin",
+        strand_id="adapter-ligated-product",
         sequence=ligated_sequence,
         five_prime_end=source.five_prime_end,
         three_prime_end=adapter.three_prime_end,
         lineage=reindex_lineage((source.lineage, adapter.lineage)),
     )
-    ligated = BasalLigatedHairpin(
+    adapter_ligated = BasalAdapterLigatedProduct(
         source_strand=source,
         adapter_strand=adapter,
         bond=bond,
@@ -121,7 +121,7 @@ def _pcr_states(
     )
     return (
         annealed,
-        ligated,
+        adapter_ligated,
         BasalPcrCopyState(top_strand=top, bottom_strand=bottom),
     )
 

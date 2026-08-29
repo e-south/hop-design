@@ -66,6 +66,7 @@ from .request import (
 )
 from .result import NeighborhoodDiscoveryResult
 from .targets import (
+    BasalNickStrand,
     BasalPairAllowance,
     BasalPairClass,
     BasalPairingConstraint,
@@ -78,6 +79,7 @@ from .targets import (
 )
 
 __all__ = [
+    "BasalNickStrand",
     "BasalPairAllowance",
     "BasalPairClass",
     "BasalPairingConstraint",

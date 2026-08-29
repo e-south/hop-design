@@ -89,8 +89,8 @@ class BasalAdapterAnnealedComplex(HopModel):
         return self
 
 
-class BasalLigatedHairpin(HopModel):
-    """Exact source-adapter ligation before PCR copying."""
+class BasalAdapterLigatedProduct(HopModel):
+    """Exact source-adapter ligation product before PCR copying."""
 
     source_strand: MolecularStrand
     adapter_strand: MolecularStrand
@@ -108,14 +108,16 @@ class BasalLigatedHairpin(HopModel):
         return self.adapter_strand.strand_id
 
     @model_validator(mode="after")
-    def validate_ligation(self) -> BasalLigatedHairpin:
+    def validate_ligation(self) -> BasalAdapterLigatedProduct:
         if (
             self.bond.upstream_strand_id != self.source_strand_id
             or self.bond.downstream_strand_id != self.adapter_strand_id
         ):
             raise ValueError("Basal ligation bond must join source to adapter.")
         if self.strand.sequence != self.source_strand.sequence + self.adapter_strand.sequence:
-            raise ValueError("Basal ligation must concatenate the exact component strands.")
+            raise ValueError(
+                "Basal adapter-ligated product must concatenate the exact component strands."
+            )
         expected_lineage = tuple(
             item.model_copy(update={"product_index": index})
             for index, item in enumerate(
@@ -123,7 +125,9 @@ class BasalLigatedHairpin(HopModel):
             )
         )
         if self.strand.lineage != expected_lineage:
-            raise ValueError("Basal ligation must preserve source and adapter lineage exactly.")
+            raise ValueError(
+                "Basal adapter ligation must preserve source and adapter lineage exactly."
+            )
         return self
 
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from hop_design.models.construction import (
+    BasalNickStrand,
     BasalPairAllowance,
     BasalTarget,
     ConstructionEndpoint,
@@ -128,7 +129,10 @@ def iter_basal_programs(
             controlled = (
                 Strand.TOP if nick_orientation is SiteOrientation.FORWARD else Strand.BOTTOM
             )
-            if controlled is not target.nick_strand:
+            if (
+                target.nick_strand is not BasalNickStrand.ANY
+                and controlled is not target.nick_strand
+            ):
                 continue
             for end_enzyme in end_options:
                 if end_enzyme is None:

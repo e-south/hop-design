@@ -57,6 +57,12 @@ class BasalPairingConstraint(HopModel):
     allowed_class: BasalPairAllowance
 
 
+class BasalNickStrand(StrEnum):
+    """Whether basal discovery should search either exact nick strand."""
+
+    ANY = "any"
+
+
 class EndGenerationRequest(HopModel):
     """Optional exact or discoverable end geometry for a clone-ready endpoint."""
 
@@ -83,7 +89,7 @@ class BasalTarget(HopModel):
     """Endpoint-dependent basal nick, pairing, and optional end-generation target."""
 
     family: Literal["basal"] = "basal"
-    nick_strand: Strand
+    nick_strand: Strand | BasalNickStrand
     nick_offset_nt: int = Field(ge=0)
     pairing_constraints: tuple[BasalPairingConstraint, ...] = ()
     ligation_proximal_match_required: bool = False

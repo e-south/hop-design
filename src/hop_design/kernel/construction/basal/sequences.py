@@ -22,6 +22,7 @@ from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import (
     EnzymeRole,
 )
+from hop_design.models.junction import Strand
 from hop_design.models.physical import SiteOrientation
 from hop_design.models.sequence import normalize_dna_sequence
 
@@ -48,6 +49,8 @@ def iter_basal_program_solutions(
     """Solve exact source and adapter sequences from geometry and recognition constraints."""
     from .pairing import resolve_basal_pairing_profile
 
+    if not isinstance(target.nick_strand, Strand):
+        raise ValueError("Basal sequence realization requires one exact nick strand.")
     payload = normalize_dna_sequence(payload_sequence, allow_degenerate=False)
     arm_nt = (
         len(target.pairing_constraints)

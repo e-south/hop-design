@@ -208,6 +208,7 @@ def test_payload_identity_ignores_presentation_and_linear_mapping_is_route_owned
         _payload(display_name="first").payload_spec_id
         == _payload(display_name="second").payload_spec_id
     )
+
     assert _payload().paired_sequence == "CAGT"
 
     segmented = PayloadSourceMap(
@@ -241,6 +242,17 @@ def test_payload_identity_ignores_presentation_and_linear_mapping_is_route_owned
         )
     )
     validate_linear_source_map(_payload(), contiguous)
+
+
+def test_neighborhood_payload_accounting_cardinality_must_replay_the_request() -> None:
+    result = _infeasible_result(_foldback_request())
+    changed = result.model_dump(mode="python")
+    changed["payload_compatibility"] = result.payload_compatibility.model_copy(
+        update={"total_assignments": 2, "excluded_assignments": 2}
+    )
+
+    with pytest.raises(ValidationError, match="payload cardinality"):
+        NeighborhoodDiscoveryResult.model_validate(changed)
 
 
 def test_pair_state_exceptions_are_representable_but_linear_source_rejects_them() -> None:
