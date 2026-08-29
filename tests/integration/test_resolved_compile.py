@@ -9,10 +9,9 @@ from pydantic import ValidationError
 
 import hop_design as hop
 from hop_design.export.bundle import BundleIntegrityError
-from hop_design.kernel.bundle_identity import bundle_id, manifest_digest_for_bundle
 from hop_design.models.basal import BasalPairingRequest
 from hop_design.models.basal_policy import BasalDesignRequest
-from hop_design.models.bundle import HopBundle
+from hop_design.models.bundle import HopBundle, bundle_id, manifest_digest_for_bundle
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.diagnostics import InfeasibleDesignError
 from hop_design.models.foldback import FoldbackEvaluationRequest
@@ -250,7 +249,7 @@ def test_bundle_verification_replays_resolved_spec_policy(tmp_path: Path) -> Non
     )
     manifest_path.write_bytes(canonical_json_bytes(manifest))
 
-    with pytest.raises(BundleIntegrityError, match="cannot be replayed"):
+    with pytest.raises(BundleIntegrityError, match=r"plan identity|cannot be replayed"):
         verify_bundle(output)
 
 
@@ -417,7 +416,7 @@ def test_resolved_plan_rejects_serialized_foldback_state_drift(
     else:
         foldback[field] = value
 
-    with pytest.raises(ValidationError, match=message):
+    with pytest.raises(ValidationError, match=rf"plan identity|{message}"):
         HopPlan.model_validate_json(json.dumps(data))
 
 
@@ -460,7 +459,7 @@ def test_resolved_plan_rejects_lock_reference_drift(
     assert isinstance(lock, dict)
     lock[field] = value
 
-    with pytest.raises(ValidationError, match=message):
+    with pytest.raises(ValidationError, match=rf"plan identity|{message}"):
         HopPlan.model_validate_json(json.dumps(data))
 
 

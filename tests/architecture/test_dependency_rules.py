@@ -97,3 +97,20 @@ def test_temporal_method_replay_has_truthful_ownership_and_bounded_modules() -> 
         path = REPO_ROOT / relative_path
         assert path.is_file(), relative_path
         assert len(path.read_text(encoding="utf-8").splitlines()) <= 300, relative_path
+
+
+def test_reaction_replay_is_model_owned_without_kernel_compatibility_alias() -> None:
+    package_root = REPO_ROOT / "src" / "hop_design"
+
+    assert (package_root / "models" / "reaction_replay" / "__init__.py").is_file()
+    assert not (package_root / "kernel" / "reactions").exists()
+
+    from hop_design.models.reaction_replay import (
+        assess_reaction_program,
+        assess_reaction_stage,
+        scan_actionable_sites,
+    )
+
+    assert callable(assess_reaction_program)
+    assert callable(assess_reaction_stage)
+    assert callable(scan_actionable_sites)

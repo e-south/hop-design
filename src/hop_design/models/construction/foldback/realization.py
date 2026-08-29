@@ -34,6 +34,7 @@ from hop_design.models.molecular_state import (
 )
 from hop_design.models.payload import ExactPayload
 from hop_design.models.physical import Strand
+from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.reactions import (
     ReactionProgram,
     ReactionStageAssessment,
@@ -244,6 +245,14 @@ class FoldbackNeighborhoodDiscoveryResult(HopModel):
                 )
             ):
                 raise ValueError("Foldback realization payload must belong to the request space.")
+            assessment = assess_reaction_program(
+                program=realization.reaction_program,
+                policy=self.neighborhood.request.enzyme_provisioning,
+            )
+            if assessment.report.has_errors:
+                raise ValueError(
+                    "Foldback realization violates the local provisioning operation limit."
+                )
         return self
 
     @property

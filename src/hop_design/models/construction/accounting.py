@@ -63,6 +63,8 @@ class RelaxationShellSummary(HopModel):
         codes = tuple(item.code for item in self.failure_reasons)
         if len(codes) != len(set(codes)):
             raise ValueError("Shell failure-reason codes must be unique.")
+        if codes != tuple(sorted(codes)):
+            raise ValueError("Shell failure reasons must use canonical code order.")
         if sum(item.count for item in self.failure_reasons) != self.rejected_count:
             raise ValueError("Shell failure-reason counts must partition rejected candidates.")
         return self
@@ -91,6 +93,8 @@ class PayloadCompatibilityAccounting(HopModel):
         codes = tuple(item.code for item in self.conflict_counts)
         if len(codes) != len(set(codes)):
             raise ValueError("Payload-conflict reason codes must be unique.")
+        if codes != tuple(sorted(codes)):
+            raise ValueError("Payload-conflict reasons must use canonical code order.")
         if self.status is PayloadCompatibilityStatus.COMPLETE:
             if not self.exhaustive:
                 raise ValueError("Complete payload accounting must be exhaustive.")

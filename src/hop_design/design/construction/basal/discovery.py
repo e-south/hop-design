@@ -281,6 +281,7 @@ def discover_basal_neighborhood(
         request=request,
         problem_id=problem_id(request),
         execution_id=execution.execution_id,
+        execution=execution,
         shells=tuple(shells),
         realizations=tuple(item.local_realization for item in exact),
         achieved_geometry_groups=_groups(exact),

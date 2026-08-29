@@ -19,7 +19,6 @@ from hop_design.kernel.construction.foldback import (
     FoldbackProgramCandidate,
     FoldbackSequenceSolution,
 )
-from hop_design.kernel.reactions import assess_reaction_program
 from hop_design.models.construction import (
     FoldbackTarget,
     LocalNeighborhoodRequest,
@@ -41,6 +40,7 @@ from hop_design.models.construction.foldback import (
 )
 from hop_design.models.construction.foldback_replay import replay_foldback_route
 from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import iupac_bases
 
 _BASES = ("A", "C", "G", "T")

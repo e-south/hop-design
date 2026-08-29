@@ -1,7 +1,7 @@
 """
 --------------------------------------------------------------------------------
 HOP Design
-src/hop_design/kernel/reactions/__init__.py
+src/hop_design/models/reaction_replay/__init__.py
 
 Evaluates characterized enzyme sites against ordered reaction states.
 

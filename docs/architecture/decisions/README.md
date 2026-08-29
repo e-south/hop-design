@@ -33,6 +33,7 @@ amends an earlier one, the earlier frontmatter names the current decision.
 ## Payload-centered construction
 
 - [0025: Center construction discovery on final payload geometry](0025-payload-centered-construction-discovery.md)
+- [0026: Compose complete construction chronology around enzyme phases](0026-compose-complete-construction-chronology.md)
 
 ## Hairpin language
 

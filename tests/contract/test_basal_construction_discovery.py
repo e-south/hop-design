@@ -18,6 +18,11 @@ from pydantic import ValidationError
 
 from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.basal.reactions import _nicked_duplex
+from hop_design.design.construction.verification import (
+    ConstructionVerificationError,
+    VerifiedBasalNeighborhoodResult,
+    verify_basal_neighborhood_result,
+)
 from hop_design.kernel.construction.basal import (
     BasalPlacementFailure,
     iter_basal_program_solutions,
@@ -37,10 +42,12 @@ from hop_design.models.construction import (
     FinalPayloadReference,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
+    NeighborhoodDiscoveryResult,
     RelaxationCoordinate,
     RelaxationMode,
     RelaxationPolicy,
     RouteFamily,
+    SearchCompletionStatus,
     problem_id,
 )
 from hop_design.models.construction.basal import (
@@ -413,8 +420,16 @@ def test_basal_result_identity_seals_details_and_binds_exact_request_payload() -
             )
         }
     )
+    changed_execution = mixed.discovery.execution.model_copy(
+        update={"problem_id": problem_id(exact_request)}
+    )
     changed_discovery = mixed.discovery.model_copy(
-        update={"request": exact_request, "problem_id": problem_id(exact_request)}
+        update={
+            "request": exact_request,
+            "problem_id": problem_id(exact_request),
+            "execution": changed_execution,
+            "execution_id": changed_execution.execution_id,
+        }
     )
     with pytest.raises(ValidationError, match="request payload"):
         BasalNeighborhoodDiscoveryResult.create(
@@ -468,10 +483,15 @@ def test_non_require_all_infeasible_result_requires_zero_compatible_payloads() -
             )
         }
     )
+    changed_execution = result.discovery.execution.model_copy(
+        update={"problem_id": problem_id(non_require_all_request)}
+    )
     drifted_discovery = result.discovery.model_copy(
         update={
             "request": non_require_all_request,
             "problem_id": problem_id(non_require_all_request),
+            "execution": changed_execution,
+            "execution_id": changed_execution.execution_id,
         }
     )
 
@@ -479,6 +499,34 @@ def test_non_require_all_infeasible_result_requires_zero_compatible_payloads() -
         BasalNeighborhoodDiscoveryResult.create(
             discovery=drifted_discovery,
             realizations=(),
+        )
+
+
+def test_basal_result_enforces_its_own_program_operation_limit() -> None:
+    result = discover_basal_neighborhood(
+        _request(ConstructionEndpoint.CLONE_READY_DUPLEX, max_operations=3)
+    )
+    request = result.discovery.request.model_copy(
+        update={
+            "enzyme_provisioning": result.discovery.request.enzyme_provisioning.model_copy(
+                update={"max_operations": 1}
+            )
+        }
+    )
+    execution = result.discovery.execution.model_copy(update={"max_operations": 1})
+    discovery = NeighborhoodDiscoveryResult.model_validate(
+        {
+            **result.discovery.model_dump(mode="python"),
+            "request": request,
+            "execution": execution,
+            "execution_id": execution.execution_id,
+        }
+    )
+
+    with pytest.raises(ValidationError, match="operation limit"):
+        BasalNeighborhoodDiscoveryResult.create(
+            discovery=discovery,
+            realizations=result.realizations,
         )
 
 
@@ -1128,6 +1176,32 @@ def test_relaxation_status_and_geometry_groups_are_exact_first_and_lossless() ->
         for shell in truncated.discovery.shells
     )
 
+    with pytest.raises(ValidationError, match="canonical key order"):
+        NeighborhoodDiscoveryResult.model_validate(
+            complete.discovery.model_dump(mode="python")
+            | {
+                "achieved_geometry_groups": tuple(
+                    reversed(complete.discovery.achieved_geometry_groups)
+                )
+            }
+        )
+    member_group = next(
+        group
+        for group in complete.discovery.achieved_geometry_groups
+        if len(group.realization_ids) > 1
+    )
+    changed_groups = tuple(
+        group.model_copy(update={"realization_ids": tuple(reversed(group.realization_ids))})
+        if group.group_key == member_group.group_key
+        else group
+        for group in complete.discovery.achieved_geometry_groups
+    )
+    with pytest.raises(ValidationError, match="preserve realization order"):
+        NeighborhoodDiscoveryResult.model_validate(
+            complete.discovery.model_dump(mode="python")
+            | {"achieved_geometry_groups": changed_groups}
+        )
+
 
 def test_basal_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() -> None:
     exact = discover_basal_neighborhood(_request(ConstructionEndpoint.SSDNA_HAIRPIN))
@@ -1153,6 +1227,53 @@ def test_basal_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() -> No
         assert result.discovery.status == "truncated"
         assert tuple(item.radius for item in result.discovery.shells) == (0,)
         assert result.discovery.shells[0].complete is True
+
+
+def test_exact_basal_domain_is_complete_when_a_bound_equals_exhaustive_count() -> None:
+    exhaustive = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.SSDNA_HAIRPIN,
+            max_nodes=10_000,
+            max_realizations=10_000,
+        )
+    )
+    examined = sum(shell.candidate_count for shell in exhaustive.discovery.shells)
+    realized = len(exhaustive.realizations)
+
+    node_bounded = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.SSDNA_HAIRPIN,
+            max_nodes=examined,
+            max_realizations=10_000,
+        )
+    )
+    realization_bounded = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.SSDNA_HAIRPIN,
+            max_nodes=10_000,
+            max_realizations=realized,
+        )
+    )
+
+    assert node_bounded.discovery.status is SearchCompletionStatus.COMPLETE
+    assert realization_bounded.discovery.status is SearchCompletionStatus.COMPLETE
+
+
+def test_basal_verification_rejects_self_asserted_execution_environment() -> None:
+    raw = discover_basal_neighborhood(_request(ConstructionEndpoint.SSDNA_HAIRPIN))
+    execution = raw.discovery.execution.model_copy(update={"environment": {"forged": "true"}})
+    discovery = raw.discovery.model_copy(
+        update={"execution": execution, "execution_id": execution.execution_id}
+    )
+    forged = BasalNeighborhoodDiscoveryResult.create(
+        discovery=discovery,
+        realizations=raw.realizations,
+    )
+
+    with pytest.raises(ConstructionVerificationError, match="deterministic discovery replay"):
+        verify_basal_neighborhood_result(forged)
+    with pytest.raises(ConstructionVerificationError, match="deterministic discovery replay"):
+        VerifiedBasalNeighborhoodResult(result=forged)
 
 
 def test_basal_wrapper_rejects_partial_final_shell_resealed_as_complete() -> None:

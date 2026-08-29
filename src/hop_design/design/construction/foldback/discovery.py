@@ -262,6 +262,7 @@ def discover_foldback_neighborhood(
         request=request,
         problem_id=problem_id(request),
         execution_id=execution.execution_id,
+        execution=execution,
         shells=tuple(shell_summaries),
         realizations=tuple(record.local_realization for record in exact_records),
         achieved_geometry_groups=_geometry_groups(exact_records),

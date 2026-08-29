@@ -188,11 +188,13 @@ def _shell(
 
 
 def _infeasible_result(request: LocalNeighborhoodRequest) -> NeighborhoodDiscoveryResult:
+    execution = _execution(request)
     return NeighborhoodDiscoveryResult(
         status=SearchCompletionStatus.INFEASIBLE,
         request=request,
         problem_id=problem_id(request),
-        execution_id="hop:execution/" + "a" * 64 + "@1",
+        execution_id=execution.execution_id,
+        execution=execution,
         shells=tuple(
             _shell(
                 radius,
@@ -223,6 +225,41 @@ def _infeasible_result(request: LocalNeighborhoodRequest) -> NeighborhoodDiscove
             method=MethodResolutionStatus.NOT_RESOLVED,
         ),
     )
+
+
+def _execution(request: LocalNeighborhoodRequest) -> ConstructionExecution:
+    return ConstructionExecution(
+        problem_id=problem_id(request),
+        hop_version="0.1.0a7",
+        route_implementation_version="linear-source/1",
+        enumeration=request.enumeration,
+        max_operations=request.enzyme_provisioning.max_operations,
+        environment={},
+    )
+
+
+def test_local_identity_bearing_failure_reasons_require_canonical_order() -> None:
+    reasons = (
+        FailureReasonCount(code="z-conflict", count=1),
+        FailureReasonCount(code="a-conflict", count=1),
+    )
+
+    with pytest.raises(ValidationError, match="canonical code order"):
+        _shell(0, failure_reasons=reasons)
+
+
+def test_local_result_replays_embedded_execution_and_provenance() -> None:
+    result = _infeasible_result(_foldback_request())
+
+    changed = result.model_dump(mode="python")
+    changed["execution"]["max_operations"] += 1
+    with pytest.raises(ValidationError, match=r"execution.*request"):
+        NeighborhoodDiscoveryResult.model_validate(changed)
+
+    changed = result.model_dump(mode="python")
+    changed["provenance"]["route_implementation_version"] = "different-route/1"
+    with pytest.raises(ValidationError, match=r"provenance.*execution"):
+        NeighborhoodDiscoveryResult.model_validate(changed)
 
 
 def test_payload_identity_ignores_presentation_and_linear_mapping_is_route_owned() -> None:
@@ -611,6 +648,95 @@ def test_all_complete_truncation_requires_an_unentered_later_shell() -> None:
         NeighborhoodDiscoveryResult.model_validate(changed)
 
 
+def test_local_result_status_and_truncation_reason_replay_execution_bounds() -> None:
+    request = _foldback_request(max_search_nodes=1)
+    execution = _execution(request)
+    realization = LocalRealization.create(
+        local_sequence="AAACCC",
+        enzyme_binding_ids=("enzyme-a",),
+        stage_ids=("stage-a",),
+        achieved_geometry=request.target,
+    )
+    result = NeighborhoodDiscoveryResult(
+        status=SearchCompletionStatus.TRUNCATED,
+        request=request,
+        problem_id=problem_id(request),
+        execution_id=execution.execution_id,
+        execution=execution,
+        shells=(_shell(0, (realization.local_realization_id,), complete=False),),
+        realizations=(realization,),
+        achieved_geometry_groups=(
+            RealizationGroup(
+                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
+                group_key=geometry_id(request.target),
+                realization_ids=(realization.local_realization_id,),
+                multiplicity=1,
+            ),
+        ),
+        rejected_count=0,
+        failure_reasons=(),
+        payload_compatibility=PayloadCompatibilityAccounting(
+            status=PayloadCompatibilityStatus.NOT_COMPUTED,
+            total_assignments=1,
+            exhaustive=False,
+            warning="Bounded discovery did not exhaust compatibility.",
+        ),
+        provenance=NeighborhoodProvenance(
+            hop_version=execution.hop_version,
+            route_implementation_version=execution.route_implementation_version,
+            enzyme_catalog_digest=request.enzyme_catalog_digest,
+        ),
+        projection_inventory=(),
+        claim_boundary=NeighborhoodClaimBoundary(
+            digital_design=DigitalDesignStatus.VERIFIED,
+            method=MethodResolutionStatus.NOT_RESOLVED,
+        ),
+        truncation_reasons=("max_search_nodes",),
+    )
+
+    changed = result.model_dump(mode="python")
+    changed["status"] = SearchCompletionStatus.COMPLETE
+    changed["shells"][-1]["complete"] = True
+    changed["truncation_reasons"] = ()
+    changed["payload_compatibility"] = PayloadCompatibilityAccounting(
+        status=PayloadCompatibilityStatus.COMPLETE,
+        total_assignments=1,
+        compatible_assignments=1,
+        excluded_assignments=0,
+        exhaustive=True,
+    )
+    parsed_structural_record = NeighborhoodDiscoveryResult.model_validate(changed)
+    assert parsed_structural_record.status is SearchCompletionStatus.COMPLETE
+
+    complete_request = _foldback_request()
+    complete_execution = _execution(complete_request)
+    complete = result.model_dump(mode="python")
+    complete.update(
+        {
+            "request": complete_request,
+            "problem_id": problem_id(complete_request),
+            "execution": complete_execution,
+            "execution_id": complete_execution.execution_id,
+            "status": SearchCompletionStatus.COMPLETE,
+            "shells": (_shell(0, (realization.local_realization_id,)),),
+            "payload_compatibility": PayloadCompatibilityAccounting(
+                status=PayloadCompatibilityStatus.COMPLETE,
+                total_assignments=1,
+                compatible_assignments=1,
+                excluded_assignments=0,
+                exhaustive=True,
+            ),
+            "truncation_reasons": (),
+        }
+    )
+    valid_complete = NeighborhoodDiscoveryResult.model_validate(complete)
+    invented = valid_complete.model_dump(mode="python")
+    invented["status"] = SearchCompletionStatus.TRUNCATED
+    invented["truncation_reasons"] = ("max_realizations", "max_realizations")
+    with pytest.raises(ValidationError, match="canonical truncation reason"):
+        NeighborhoodDiscoveryResult.model_validate(invented)
+
+
 def test_neighborhood_result_rejects_shell_and_global_accounting_drift() -> None:
     result = _infeasible_result(_foldback_request())
     changed = result.model_dump(mode="python")
@@ -675,7 +801,9 @@ def test_declared_preferences_do_not_change_feasibility_identity() -> None:
 
 def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> None:
     request = _foldback_request()
+    execution = _execution(request)
     result_metadata = {
+        "execution": execution,
         "failure_reasons": (FailureReasonCount(code="no-compatible-site", count=3),),
         "payload_compatibility": PayloadCompatibilityAccounting(
             status=PayloadCompatibilityStatus.COMPLETE,
@@ -708,7 +836,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
             status="invalid",
             request=request,
             problem_id=problem_id(request),
-            execution_id="hop:execution/" + "a" * 64 + "@1",
+            execution_id=execution.execution_id,
             shells=(),
             realizations=(),
             rejected_count=0,
@@ -719,7 +847,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
             status=SearchCompletionStatus.TRUNCATED,
             request=request,
             problem_id=problem_id(request),
-            execution_id="hop:execution/" + "a" * 64 + "@1",
+            execution_id=execution.execution_id,
             shells=(_shell(0),),
             realizations=(),
             rejected_count=0,
@@ -730,7 +858,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
             status=SearchCompletionStatus.INFEASIBLE,
             request=request,
             problem_id=problem_id(request),
-            execution_id="hop:execution/" + "a" * 64 + "@1",
+            execution_id=execution.execution_id,
             shells=(
                 _shell(
                     0,
@@ -745,7 +873,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
         status=SearchCompletionStatus.INFEASIBLE,
         request=request,
         problem_id=problem_id(request),
-        execution_id="hop:execution/" + "a" * 64 + "@1",
+        execution_id=execution.execution_id,
         shells=tuple(
             _shell(
                 radius,
@@ -766,6 +894,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
 
 def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
     request = _foldback_request()
+    execution = _execution(request)
     realization = LocalRealization.create(
         local_sequence="AAACCC",
         enzyme_binding_ids=("enzyme-a",),
@@ -776,7 +905,8 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         "status": SearchCompletionStatus.COMPLETE,
         "request": request,
         "problem_id": problem_id(request),
-        "execution_id": "hop:execution/" + "a" * 64 + "@1",
+        "execution_id": execution.execution_id,
+        "execution": execution,
         "shells": (_shell(0, (realization.local_realization_id,)),),
         "realizations": (realization,),
         "rejected_count": 0,
@@ -929,29 +1059,36 @@ def _first_feasible_two_shell_fields(
         stage_ids=("stage-a",),
         achieved_geometry=relaxed_geometry,
     )
+    execution = _execution(request)
     fields: dict[str, object] = {
         "status": SearchCompletionStatus.COMPLETE,
         "request": request,
         "problem_id": problem_id(request),
-        "execution_id": "hop:execution/" + "a" * 64 + "@1",
+        "execution_id": execution.execution_id,
+        "execution": execution,
         "shells": (
             _shell(0, (exact.local_realization_id,)),
             _shell(1, (relaxed.local_realization_id,)),
         ),
         "realizations": (exact, relaxed),
-        "achieved_geometry_groups": (
-            RealizationGroup(
-                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                group_key=geometry_id(exact.achieved_geometry),
-                realization_ids=(exact.local_realization_id,),
-                multiplicity=1,
-            ),
-            RealizationGroup(
-                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                group_key=geometry_id(relaxed.achieved_geometry),
-                realization_ids=(relaxed.local_realization_id,),
-                multiplicity=1,
-            ),
+        "achieved_geometry_groups": tuple(
+            sorted(
+                (
+                    RealizationGroup(
+                        grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
+                        group_key=geometry_id(exact.achieved_geometry),
+                        realization_ids=(exact.local_realization_id,),
+                        multiplicity=1,
+                    ),
+                    RealizationGroup(
+                        grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
+                        group_key=geometry_id(relaxed.achieved_geometry),
+                        realization_ids=(relaxed.local_realization_id,),
+                        multiplicity=1,
+                    ),
+                ),
+                key=lambda group: group.group_key,
+            )
         ),
         "rejected_count": 0,
         "failure_reasons": (),
@@ -1019,6 +1156,13 @@ def test_all_member_first_feasible_allows_partial_hits_until_compatibility_compl
     }
     with pytest.raises(ValidationError, match="completes payload compatibility"):
         NeighborhoodDiscoveryResult(**missing_final_shell_hit)
+
+
+def test_local_shell_members_preserve_the_ordered_realization_relation() -> None:
+    fields, exact, relaxed = _first_feasible_two_shell_fields(require_all_members_compatible=True)
+
+    with pytest.raises(ValidationError, match="ordered local realization relation"):
+        NeighborhoodDiscoveryResult(**{**fields, "realizations": (relaxed, exact)})
 
 
 def test_grouping_is_reversible_and_preserves_every_realization() -> None:

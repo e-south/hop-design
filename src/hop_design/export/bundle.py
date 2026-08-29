@@ -14,9 +14,14 @@ from typing import Protocol
 from pydantic import TypeAdapter
 
 from hop_design.export.fasta import render_fasta
-from hop_design.kernel.bundle_identity import bundle_id, manifest_digest_for_bundle
 from hop_design.models.base import HopModel
-from hop_design.models.bundle import ArtifactManifestEntry, HopBundle, ProvenanceRecord
+from hop_design.models.bundle import (
+    ArtifactManifestEntry,
+    HopBundle,
+    ProvenanceRecord,
+    bundle_id,
+    manifest_digest_for_bundle,
+)
 from hop_design.models.plan import HopPlan
 from hop_design.models.spec import DesignSpec, HopSpec, ResolvedHopSpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest

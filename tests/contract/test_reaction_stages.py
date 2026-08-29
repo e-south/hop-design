@@ -14,11 +14,6 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from hop_design.kernel.reactions import (
-    assess_reaction_program,
-    assess_reaction_stage,
-    scan_actionable_sites,
-)
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.enzymes import (
@@ -37,6 +32,11 @@ from hop_design.models.enzymes import (
     characterized_enzyme_digest,
 )
 from hop_design.models.physical import SiteOrientation
+from hop_design.models.reaction_replay import (
+    assess_reaction_program,
+    assess_reaction_stage,
+    scan_actionable_sites,
+)
 from hop_design.models.reactions import (
     DeclaredEnzymeBinding,
     ReactionMolecule,

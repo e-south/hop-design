@@ -18,6 +18,7 @@ from hop_design.models.sequence import (
     normalize_dna_sequence,
     reverse_complement_iupac,
 )
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 
 class FeatureRole(StrEnum):
@@ -124,6 +125,26 @@ class CompilationLock(HopModel):
     design_derivation_ref: ReferenceId
     foldback_junction_ref: ReferenceId
     basal_junction_ref: ReferenceId
+
+
+def derive_plan_id(
+    *,
+    design_id: str,
+    spec_digest: str,
+    lock: CompilationLock,
+    design_derivation: PlanDesignDerivation,
+) -> str:
+    """Derive deterministic plan identity from exact compilation inputs."""
+    seed = canonical_json_bytes(
+        {
+            "compiler_version": lock.compiler_version,
+            "lock": lock.model_dump(mode="json"),
+            "design_derivation": design_derivation.model_dump(mode="json"),
+            "spec_digest": spec_digest,
+        }
+    )
+    suffix = sha256_digest(seed).removeprefix("sha256:")[:16]
+    return f"hop:plan/{design_id}/{suffix}"
 
 
 class HopPlan(HopModel):
@@ -239,6 +260,13 @@ class HopPlan(HopModel):
             != stem_extension.right_arm
         ):
             raise ValueError("Stem-extension features must equal the resolved literal arms.")
+        if self.plan_id != derive_plan_id(
+            design_id=self.design_id,
+            spec_digest=self.spec_digest,
+            lock=self.lock,
+            design_derivation=self.design_derivation,
+        ):
+            raise ValueError("HOP plan identity must replay exact compilation inputs.")
         return self
 
 

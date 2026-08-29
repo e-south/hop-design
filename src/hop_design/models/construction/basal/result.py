@@ -21,6 +21,7 @@ from hop_design.models.construction import (
     PayloadCompatibilityStatus,
     SearchCompletionStatus,
 )
+from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import iupac_bases
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
@@ -104,4 +105,22 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
                 raise ValueError(
                     "Every basal detail source mapping must bind to the request payload span."
                 )
+            operation_count = sum(
+                len(stage.operations)
+                for program in item.reaction_programs
+                for stage in program.stages
+            )
+            max_operations = request.enzyme_provisioning.max_operations
+            if max_operations is not None and operation_count > max_operations:
+                raise ValueError(
+                    "Basal realization violates the local provisioning operation limit."
+                )
+            if any(
+                assess_reaction_program(
+                    program=program,
+                    policy=request.enzyme_provisioning,
+                ).report.has_errors
+                for program in item.reaction_programs
+            ):
+                raise ValueError("Basal realization violates its exact provisioning policy.")
         return self

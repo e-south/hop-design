@@ -15,6 +15,11 @@ import pytest
 from pydantic import ValidationError
 
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
+from hop_design.design.construction.verification import (
+    ConstructionVerificationError,
+    VerifiedFoldbackNeighborhoodResult,
+    verify_foldback_neighborhood_result,
+)
 from hop_design.models.construction import (
     ConstructionConstraints,
     ConstructionEndpoint,
@@ -24,13 +29,20 @@ from hop_design.models.construction import (
     FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
+    NeighborhoodDiscoveryResult,
+    PayloadCompatibilityAccounting,
+    PayloadCompatibilityStatus,
     RelaxationCoordinate,
     RelaxationMode,
     RelaxationPolicy,
     RouteFamily,
     SearchCompletionStatus,
+    problem_id,
 )
-from hop_design.models.construction.foldback import FoldbackCleavageProgramKind
+from hop_design.models.construction.foldback import (
+    FoldbackCleavageProgramKind,
+    FoldbackNeighborhoodDiscoveryResult,
+)
 from hop_design.models.coordinates import Boundary
 from hop_design.models.enzymes import (
     CharacterizedEnzyme,
@@ -267,6 +279,99 @@ def test_foldback_search_is_truthfully_truncated_when_a_bound_fires() -> None:
         and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
         for shell in result.neighborhood.shells
     )
+
+
+def test_foldback_verification_rejects_self_consistent_completion_promotion() -> None:
+    raw = discover_foldback_neighborhood(
+        _request(
+            _nickase(),
+            _terminus_enzyme(),
+            max_search_nodes=1,
+            max_realizations=100,
+        )
+    )
+    request = raw.neighborhood.request.model_copy(
+        update={
+            "enumeration": raw.neighborhood.request.enumeration.model_copy(
+                update={"max_search_nodes": 100}
+            )
+        }
+    )
+    execution = raw.neighborhood.execution.model_copy(update={"enumeration": request.enumeration})
+    shell = raw.neighborhood.shells[0].model_copy(update={"complete": True})
+    neighborhood = NeighborhoodDiscoveryResult.model_validate(
+        {
+            **raw.neighborhood.model_dump(mode="python"),
+            "status": SearchCompletionStatus.COMPLETE,
+            "request": request,
+            "problem_id": problem_id(request),
+            "execution": execution,
+            "execution_id": execution.execution_id,
+            "shells": (shell,),
+            "payload_compatibility": PayloadCompatibilityAccounting(
+                status=PayloadCompatibilityStatus.COMPLETE,
+                total_assignments=1,
+                compatible_assignments=1,
+                excluded_assignments=0,
+                exhaustive=True,
+            ),
+            "truncation_reasons": (),
+        }
+    )
+    promoted = FoldbackNeighborhoodDiscoveryResult(
+        neighborhood=neighborhood,
+        realizations=raw.realizations,
+    )
+
+    with pytest.raises(ConstructionVerificationError, match="deterministic discovery replay"):
+        verify_foldback_neighborhood_result(promoted)
+    with pytest.raises(ConstructionVerificationError, match="deterministic discovery replay"):
+        VerifiedFoldbackNeighborhoodResult(result=promoted)
+
+
+def test_exact_foldback_domain_is_complete_when_a_bound_equals_exhaustive_count() -> None:
+    enzymes = (_nickase(), _terminus_enzyme())
+    exhaustive = discover_foldback_neighborhood(
+        _request(*enzymes, max_search_nodes=10_000, max_realizations=10_000)
+    )
+    examined = sum(shell.candidate_count for shell in exhaustive.neighborhood.shells)
+    realized = len(exhaustive.realizations)
+
+    node_bounded = discover_foldback_neighborhood(
+        _request(*enzymes, max_search_nodes=examined, max_realizations=10_000)
+    )
+    realization_bounded = discover_foldback_neighborhood(
+        _request(*enzymes, max_search_nodes=10_000, max_realizations=realized)
+    )
+
+    assert node_bounded.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert realization_bounded.neighborhood.status is SearchCompletionStatus.COMPLETE
+
+
+def test_foldback_result_enforces_its_own_program_operation_limit() -> None:
+    result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
+    request = result.neighborhood.request.model_copy(
+        update={
+            "enzyme_provisioning": result.neighborhood.request.enzyme_provisioning.model_copy(
+                update={"max_operations": 1}
+            )
+        }
+    )
+    execution = result.neighborhood.execution.model_copy(update={"max_operations": 1})
+    neighborhood = NeighborhoodDiscoveryResult.model_validate(
+        {
+            **result.neighborhood.model_dump(mode="python"),
+            "request": request,
+            "execution": execution,
+            "execution_id": execution.execution_id,
+        }
+    )
+
+    with pytest.raises(ValidationError, match="operation limit"):
+        FoldbackNeighborhoodDiscoveryResult(
+            neighborhood=neighborhood,
+            realizations=result.realizations,
+        )
 
 
 def test_foldback_shell_accounting_partitions_rejections_and_policy_suppression() -> None:

@@ -18,7 +18,6 @@ from hop_design.kernel.construction.basal import (
     BasalProgramCandidate,
     BasalSequenceSolution,
 )
-from hop_design.kernel.reactions import assess_reaction_program
 from hop_design.models.construction import (
     BasalTarget,
     ConstructionEndpoint,
@@ -44,6 +43,7 @@ from hop_design.models.construction.basal import (
 from hop_design.models.coordinates import Span
 from hop_design.models.enzymes import EnzymeRole, characterized_enzyme_digest
 from hop_design.models.junction import Strand
+from hop_design.models.reaction_replay import assess_reaction_program
 
 from .reactions import _nick_program, _nicked_duplex
 from .states import _end_program, _pcr_states, _restriction_product

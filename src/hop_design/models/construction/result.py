@@ -33,7 +33,7 @@ from .accounting import (
     SearchCompletionStatus,
 )
 from .payload import _content_id
-from .realization import LocalRealization
+from .realization import ConstructionExecution, LocalRealization
 from .relaxation import RelaxationMode, geometry_coordinate_value, geometry_fixed_projection
 from .request import LocalNeighborhoodRequest, geometry_id, problem_id
 
@@ -48,6 +48,7 @@ class NeighborhoodDiscoveryResult(HopModel):
     request: LocalNeighborhoodRequest
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     execution_id: str = Field(pattern=r"^hop:execution/[0-9a-f]{64}@1$")
+    execution: ConstructionExecution
     shells: tuple[RelaxationShellSummary, ...] = Field(min_length=1)
     realizations: tuple[LocalRealization, ...]
     achieved_geometry_groups: tuple[RealizationGroup, ...]
@@ -63,6 +64,19 @@ class NeighborhoodDiscoveryResult(HopModel):
     def validate_result(self) -> NeighborhoodDiscoveryResult:
         if self.problem_id != problem_id(self.request):
             raise ValueError("problem_id must replay from the local request.")
+        if (
+            self.execution.problem_id != self.problem_id
+            or self.execution.enumeration != self.request.enumeration
+            or self.execution.max_operations != self.request.enzyme_provisioning.max_operations
+            or self.execution.execution_id != self.execution_id
+        ):
+            raise ValueError("Embedded execution must replay the exact local request.")
+        if (
+            self.provenance.hop_version != self.execution.hop_version
+            or self.provenance.route_implementation_version
+            != self.execution.route_implementation_version
+        ):
+            raise ValueError("Local result provenance must equal embedded execution versions.")
         payload_cardinality = 1
         for symbol in self.request.payload.payload.sequence:
             payload_cardinality *= len(iupac_bases(symbol))
@@ -88,8 +102,10 @@ class NeighborhoodDiscoveryResult(HopModel):
         shell_ids = tuple(
             realization_id for shell in self.shells for realization_id in shell.realization_ids
         )
-        if Counter(shell_ids) != Counter(realization_ids):
-            raise ValueError("Relaxation shells must cover every local realization exactly once.")
+        if shell_ids != realization_ids:
+            raise ValueError(
+                "Relaxation shells must preserve the ordered local realization relation."
+            )
         shell_by_realization_id = {
             realization_id: shell.radius
             for shell in self.shells
@@ -101,10 +117,9 @@ class NeighborhoodDiscoveryResult(HopModel):
                 raise ValueError(
                     "Each local realization must belong to its declared relaxation shell."
                 )
-        if self.status is SearchCompletionStatus.TRUNCATED:
-            if not self.truncation_reasons:
-                raise ValueError("Truncated results require truncation reasons.")
-        elif self.truncation_reasons:
+        if self.status is SearchCompletionStatus.TRUNCATED and not self.truncation_reasons:
+            raise ValueError("Truncated results require truncation reasons.")
+        if self.status is not SearchCompletionStatus.TRUNCATED and self.truncation_reasons:
             raise ValueError("Only truncated results may contain truncation reasons.")
         if self.status is SearchCompletionStatus.INFEASIBLE and self.realizations:
             raise ValueError("Infeasible results must not contain realizations.")
@@ -113,6 +128,8 @@ class NeighborhoodDiscoveryResult(HopModel):
         failure_codes = tuple(item.code for item in self.failure_reasons)
         if len(failure_codes) != len(set(failure_codes)):
             raise ValueError("Failure-reason codes must be unique.")
+        if failure_codes != tuple(sorted(failure_codes)):
+            raise ValueError("Failure reasons must use canonical code order.")
         shell_rejected_count = sum(shell.rejected_count for shell in self.shells)
         if shell_rejected_count != self.rejected_count:
             raise ValueError("Shell rejected candidates must sum to the global rejected count.")
@@ -150,6 +167,9 @@ class NeighborhoodDiscoveryResult(HopModel):
             set(grouped_ids)
         ):
             raise ValueError("Achieved-geometry groups must cover every realization exactly once.")
+        group_keys = tuple(group.group_key for group in self.achieved_geometry_groups)
+        if group_keys != tuple(sorted(group_keys)):
+            raise ValueError("Achieved-geometry groups must use canonical key order.")
         realizations_by_id = {
             realization.local_realization_id: realization for realization in self.realizations
         }
@@ -160,6 +180,15 @@ class NeighborhoodDiscoveryResult(HopModel):
             }
             if member_geometry_ids != {group.group_key}:
                 raise ValueError("Achieved-geometry group key must match every member realization.")
+            expected_members = tuple(
+                realization.local_realization_id
+                for realization in self.realizations
+                if geometry_id(realization.achieved_geometry) == group.group_key
+            )
+            if group.realization_ids != expected_members:
+                raise ValueError(
+                    "Achieved-geometry groups must preserve realization order within each group."
+                )
         if self.claim_boundary.method is not MethodResolutionStatus.NOT_RESOLVED:
             raise ValueError(
                 "Local neighborhood discovery cannot claim a material-bound method resolution."
@@ -205,6 +234,13 @@ class NeighborhoodDiscoveryResult(HopModel):
                 raise ValueError(
                     "first_feasible_shell must stop at the first shell with realizations."
                 )
+        if self.status is SearchCompletionStatus.TRUNCATED:
+            expected_reason = self._execution_truncation_reason()
+            if self.truncation_reasons != (expected_reason,):
+                raise ValueError(
+                    "Truncated results require the canonical truncation reasons from execution "
+                    "bounds."
+                )
         return self
 
     def _realization_relaxation_radius(self, realization: LocalRealization) -> int:
@@ -239,6 +275,18 @@ class NeighborhoodDiscoveryResult(HopModel):
             for coordinate in self.request.relaxation.coordinates
         )
         return min(self.request.relaxation.max_radius, reachable_radius)
+
+    def _execution_truncation_reason(self) -> str | None:
+        examined = sum(shell.candidate_count for shell in self.shells)
+        if examined > self.execution.enumeration.max_search_nodes:
+            raise ValueError("Local search accounting exceeds max_search_nodes.")
+        if len(self.realizations) > self.execution.enumeration.max_realizations:
+            raise ValueError("Local search accounting exceeds max_realizations.")
+        if examined == self.execution.enumeration.max_search_nodes:
+            return "max_search_nodes"
+        if len(self.realizations) == self.execution.enumeration.max_realizations:
+            return "max_realizations"
+        return None
 
     @property
     def result_id(self) -> str:
