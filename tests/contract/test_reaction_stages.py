@@ -37,6 +37,7 @@ from hop_design.models.reactions import (
     DeclaredEnzymeBinding,
     ReactionMolecule,
     ReactionOperation,
+    ReactionProgram,
     ReactionStage,
     ReactionStageAssessment,
     ReactionState,
@@ -240,6 +241,7 @@ def test_concurrent_operations_resolve_against_the_same_pre_stage_state() -> Non
     stage = ReactionStage(
         stage_id="concurrent-nicks",
         pre_state_id=state.state_id,
+        post_state_id="nicked-source",
         operations=(
             ReactionOperation(
                 operation_id="nick-left",
@@ -316,6 +318,7 @@ def test_undeclared_actionable_site_is_reported_as_a_hard_failure() -> None:
     stage = ReactionStage(
         stage_id="one-declared-nick",
         pre_state_id=state.state_id,
+        post_state_id="nicked-source",
         operations=(
             ReactionOperation(
                 operation_id="declared-nick",
@@ -347,6 +350,7 @@ def test_conflicting_concurrent_cuts_fail_stage_assessment() -> None:
     stage = ReactionStage(
         stage_id="conflicting-nicks",
         pre_state_id=state.state_id,
+        post_state_id="nicked-source",
         operations=(
             ReactionOperation(
                 operation_id="first-nick",
@@ -391,3 +395,114 @@ def test_stage_assessment_is_strict_and_frozen() -> None:
             report=CheckReport(),
             undocumented_status="accepted",  # type: ignore[call-arg]
         )
+
+
+def test_reaction_program_orders_stages_through_exact_states() -> None:
+    source = ReactionState(
+        state_id="source",
+        molecules=(_duplex("source", "AAGCAAGC"),),
+    )
+    released = ReactionState(
+        state_id="released",
+        molecules=(_duplex("retained", "AAGC"),),
+    )
+    exposed = ReactionState(
+        state_id="exposed",
+        molecules=(
+            ReactionMolecule(
+                molecule_id="retained",
+                reference_sequence_5prime="AAGC",
+                complement_sequence_5prime=None,
+            ),
+        ),
+    )
+    binding = _binding(start=0, motif_length=4, reference_cut=1)
+    stages = (
+        ReactionStage(
+            stage_id="release-fragment",
+            pre_state_id="source",
+            post_state_id="released",
+            operations=(
+                ReactionOperation(
+                    operation_id="release",
+                    enzyme_id=_nickase().enzyme_id,
+                    role=EnzymeRole.TERMINUS_DEFINITION,
+                    molecule_id="source",
+                    intended_binding=binding,
+                ),
+            ),
+        ),
+        ReactionStage(
+            stage_id="expose-strand",
+            pre_state_id="released",
+            post_state_id="exposed",
+            operations=(
+                ReactionOperation(
+                    operation_id="expose",
+                    enzyme_id=_nickase().enzyme_id,
+                    role=EnzymeRole.STRAND_EXPOSURE,
+                    molecule_id="retained",
+                    intended_binding=binding,
+                ),
+            ),
+        ),
+    )
+
+    program = ReactionProgram(
+        program_id="example-program",
+        states=(source, released, exposed),
+        stages=stages,
+    )
+
+    assert tuple(stage.pre_state_id for stage in program.stages) == ("source", "released")
+    with pytest.raises(ValidationError, match="connect consecutive states"):
+        ReactionProgram(
+            program_id="broken-program",
+            states=(source, released, exposed),
+            stages=(stages[1], stages[0]),
+        )
+
+
+def test_actionable_extra_site_depends_on_fragment_presence() -> None:
+    enzyme = _nickase()
+    binding = _binding(start=0, motif_length=4, reference_cut=1)
+    stage = ReactionStage(
+        stage_id="declared-nick",
+        pre_state_id="before-removal",
+        post_state_id="after-nick",
+        operations=(
+            ReactionOperation(
+                operation_id="nick",
+                enzyme_id=enzyme.enzyme_id,
+                role=EnzymeRole.STRAND_EXPOSURE,
+                molecule_id="retained",
+                intended_binding=binding,
+            ),
+        ),
+    )
+    before = ReactionState(
+        state_id="before-removal",
+        molecules=(
+            _duplex("retained", "AAGC"),
+            _duplex("released-fragment", "AAGC"),
+        ),
+    )
+    before_assessment = assess_reaction_stage(
+        state=before,
+        stage=stage,
+        policy=_policy(enzyme),
+    )
+    assert before_assessment.report.has_errors
+    assert len(before_assessment.undeclared_bindings) == 1
+
+    after = ReactionState(
+        state_id="after-removal",
+        molecules=(_duplex("retained", "AAGC"),),
+    )
+    after_assessment = assess_reaction_stage(
+        state=after,
+        stage=stage.model_copy(update={"pre_state_id": "after-removal"}),
+        policy=_policy(enzyme),
+    )
+    assert not after_assessment.report.has_errors
+    assert after_assessment.undeclared_bindings == ()

@@ -11,6 +11,8 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
@@ -98,6 +100,7 @@ class ReactionStage(HopModel):
 
     stage_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
     pre_state_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
+    post_state_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
     operations: tuple[ReactionOperation, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -105,6 +108,34 @@ class ReactionStage(HopModel):
         operation_ids = tuple(operation.operation_id for operation in self.operations)
         if len(operation_ids) != len(set(operation_ids)):
             raise ValueError("Reaction-stage operation ids must be unique.")
+        if self.pre_state_id == self.post_state_id:
+            raise ValueError("Reaction-stage pre-state and post-state ids must differ.")
+        return self
+
+
+class ReactionProgram(HopModel):
+    """Ordered stages connected by the exact molecular states they transform."""
+
+    program_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
+    states: tuple[ReactionState, ...] = Field(min_length=2)
+    stages: tuple[ReactionStage, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_stage_order(self) -> ReactionProgram:
+        state_ids = tuple(state.state_id for state in self.states)
+        stage_ids = tuple(stage.stage_id for stage in self.stages)
+        if len(state_ids) != len(set(state_ids)):
+            raise ValueError("Reaction-program state ids must be unique.")
+        if len(stage_ids) != len(set(stage_ids)):
+            raise ValueError("Reaction-program stage ids must be unique.")
+        if len(self.stages) != len(self.states) - 1:
+            raise ValueError("Reaction stages must connect consecutive states exactly once.")
+        expected_connections = tuple(pairwise(state_ids))
+        observed_connections = tuple(
+            (stage.pre_state_id, stage.post_state_id) for stage in self.stages
+        )
+        if observed_connections != expected_connections:
+            raise ValueError("Reaction stages must connect consecutive states in order.")
         return self
 
 
@@ -141,6 +172,7 @@ __all__ = [
     "DeclaredEnzymeBinding",
     "ReactionMolecule",
     "ReactionOperation",
+    "ReactionProgram",
     "ReactionStage",
     "ReactionStageAssessment",
     "ReactionState",
