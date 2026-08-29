@@ -44,8 +44,8 @@ bytes and verification behavior.
 | Owner | Checkout used for this work | Branch and revision | State at audit |
 | --- | --- | --- | --- |
 | HOP | `projects/phd/hop-design` | `dev/hop-scientist-surface-subtraction` at `a4e6449faa2b819893f1c51e275909fcfa6b9e66` | clean |
-| Research Studies | `projects/phd/.worktrees/research-studies-hairpin-construction` | `feat/rule-defined-hairpin-construction` at `2ba407e5e08f9cdc623e09626b459f17e66bdc5c` | clean; four commits ahead and six behind `origin/main` |
-| manufold | `projects/.worktrees/manufold-hop-manuscript` | `feat/hop-hairpin-manuscript` at `b22b271d400f9078155c08073a8dd9ece99d5a8e` | clean; local-only branch |
+| Research Studies | isolated task worktree outside this repository | `feat/rule-defined-hairpin-construction` at `2ba407e5e08f9cdc623e09626b459f17e66bdc5c` | clean; four commits ahead and six behind `origin/main` |
+| manufold | isolated task worktree outside this repository | `feat/hop-hairpin-manuscript` at `b22b271d400f9078155c08073a8dd9ece99d5a8e` | clean; local-only branch |
 
 The ordinary Research Studies and manufold checkouts contain unrelated
 uncommitted work and are outside this implementation. No merge, rebase, push,
