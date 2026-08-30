@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from collections import Counter
 from itertools import islice, product
-from typing import Literal
+from typing import Any, Literal, cast
 
 from pydantic import Field, model_validator
 
@@ -58,6 +58,7 @@ class ConstructionSpaceResult(HopModel):
     schema_id: Literal["hop.construction-space-result/v1"] = Field(
         default="hop.construction-space-result/v1", alias="schema"
     )
+    result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     execution_id: str = Field(pattern=r"^hop:construction-execution/[0-9a-f]{64}@1$")
     execution: ConstructionCompositionExecution
@@ -77,6 +78,37 @@ class ConstructionSpaceResult(HopModel):
     material_accounting: CompositionMaterialAccounting
     claim_boundary: NeighborhoodClaimBoundary
     combination_dispositions: tuple[CompositionDisposition, ...]
+
+    @classmethod
+    def create(cls, **content: object) -> ConstructionSpaceResult:
+        draft = cls.model_construct(result_id="", **cast(Any, content))
+        return cls.model_validate({"result_id": draft._expected_result_id(), **content})
+
+    def _expected_result_id(self) -> str:
+        content = {
+            "schema": self.schema_id,
+            "problem_id": self.problem_id,
+            "execution_id": self.execution_id,
+            "status": self.status,
+            "realization_ids": tuple(
+                item.materialized_realization_id for item in self.realizations
+            ),
+            "geometry_groups": tuple(item.model_dump(mode="json") for item in self.geometry_groups),
+            "final_product_groups": tuple(
+                item.model_dump(mode="json") for item in self.final_product_groups
+            ),
+            "accounting": self.accounting.model_dump(mode="json"),
+            "failure_reasons": tuple(item.model_dump(mode="json") for item in self.failure_reasons),
+            "truncation_reasons": self.truncation_reasons,
+            "upstream_truncation_reasons": self.upstream_truncation_reasons,
+            "provenance": self.provenance.model_dump(mode="json"),
+            "material_accounting": self.material_accounting.model_dump(mode="json"),
+            "claim_boundary": self.claim_boundary.model_dump(mode="json"),
+            "combination_dispositions": tuple(
+                item.model_dump(mode="json") for item in self.combination_dispositions
+            ),
+        }
+        return _content_id("construction-space-result", 1, content)
 
     @model_validator(mode="after")
     def validate_result(self) -> ConstructionSpaceResult:
@@ -277,6 +309,8 @@ class ConstructionSpaceResult(HopModel):
         )
         if self.claim_boundary.method is not expected_method:
             raise ValueError("Construction method claim must derive from exact result status.")
+        if self.result_id != self._expected_result_id():
+            raise ValueError("result_id must seal the complete construction-space result.")
         return self
 
     def _local_truncation_reason(self) -> str | None:
@@ -293,34 +327,6 @@ class ConstructionSpaceResult(HopModel):
         raise ValueError(
             "A partial composition prefix must identify the exact execution bound that fired."
         )
-
-    @property
-    def result_id(self) -> str:
-        """Return identity over scientific outcomes, evidence, and accounting."""
-        content = {
-            "schema": self.schema_id,
-            "problem_id": self.problem_id,
-            "execution_id": self.execution_id,
-            "status": self.status,
-            "realization_ids": tuple(
-                item.materialized_realization_id for item in self.realizations
-            ),
-            "geometry_groups": tuple(item.model_dump(mode="json") for item in self.geometry_groups),
-            "final_product_groups": tuple(
-                item.model_dump(mode="json") for item in self.final_product_groups
-            ),
-            "accounting": self.accounting.model_dump(mode="json"),
-            "failure_reasons": tuple(item.model_dump(mode="json") for item in self.failure_reasons),
-            "truncation_reasons": self.truncation_reasons,
-            "upstream_truncation_reasons": self.upstream_truncation_reasons,
-            "provenance": self.provenance.model_dump(mode="json"),
-            "material_accounting": self.material_accounting.model_dump(mode="json"),
-            "claim_boundary": self.claim_boundary.model_dump(mode="json"),
-            "combination_dispositions": tuple(
-                item.model_dump(mode="json") for item in self.combination_dispositions
-            ),
-        }
-        return _content_id("construction-space-result", 1, content)
 
 
 __all__ = [

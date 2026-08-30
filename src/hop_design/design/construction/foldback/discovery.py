@@ -283,7 +283,7 @@ def discover_foldback_neighborhood(
         ),
         truncation_reasons=((truncation_reason,) if truncation_reason else ()),
     )
-    return FoldbackNeighborhoodDiscoveryResult(
+    return FoldbackNeighborhoodDiscoveryResult.create(
         neighborhood=neighborhood,
         realizations=exact_records,
     )

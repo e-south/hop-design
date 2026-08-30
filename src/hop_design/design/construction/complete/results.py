@@ -112,7 +112,7 @@ def build_result(
         hop_version=hop_version,
         enumeration=request.enumeration,
     )
-    return ConstructionSpaceResult(
+    return ConstructionSpaceResult.create(
         problem_id=problem,
         execution_id=execution.execution_id,
         execution=execution,

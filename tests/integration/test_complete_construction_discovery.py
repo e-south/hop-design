@@ -663,6 +663,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
 
     assert result.status is SearchCompletionStatus.COMPLETE
     assert result.schema_id == "hop.construction-space-result/v1"
+    assert result.model_dump(mode="json")["result_id"] == result.result_id
     assert result.problem_id.startswith("hop:construction-problem/")
     assert result.execution_id.startswith("hop:construction-execution/")
     assert result.provenance.foldback_result_id == foldback.result_id
@@ -711,6 +712,10 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
         "accepted",
     )
     assert result.model_copy(update={"projection_inventory": ()}).result_id == result.result_id
+    forged_result = result.model_dump(mode="python")
+    forged_result["result_id"] = "hop:construction-space-result/" + "0" * 64 + "@1"
+    with pytest.raises(ValidationError, match="result_id"):
+        type(result).model_validate(forged_result)
     changed_rejection = result.combination_dispositions[1].model_copy(
         update={"rejection_reason": CompositionRejectionCode.GLOBAL_ACTIONABLE_SITE_CONFLICT}
     )
@@ -722,7 +727,8 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
             )
         }
     )
-    assert changed_result.result_id != result.result_id
+    with pytest.raises(ValidationError, match="fields must match its exact status"):
+        type(result).model_validate(changed_result.model_dump(mode="python"))
     renamed_request = request.model_copy(
         update={
             "payload": request.payload.model_copy(update={"display_name": "presentation-only-name"})

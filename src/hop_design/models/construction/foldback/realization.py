@@ -11,7 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, Literal, cast
 
 from pydantic import Field, field_validator, model_validator
 
@@ -217,8 +217,28 @@ class FoldbackLocalRealization(HopModel):
 class FoldbackNeighborhoodDiscoveryResult(HopModel):
     """Shared neighborhood authority plus lossless foldback-family evidence."""
 
+    schema_id: Literal["hop.foldback-neighborhood-result/v1"] = Field(
+        default="hop.foldback-neighborhood-result/v1", alias="schema"
+    )
+    result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     neighborhood: NeighborhoodDiscoveryResult
     realizations: tuple[FoldbackLocalRealization, ...]
+
+    @classmethod
+    def create(cls, **content: object) -> FoldbackNeighborhoodDiscoveryResult:
+        draft = cls.model_construct(result_id="", **cast(Any, content))
+        return cls.model_validate({"result_id": draft._expected_result_id(), **content})
+
+    def _expected_result_id(self) -> str:
+        content = {
+            "schema": self.schema_id,
+            "neighborhood_result_id": self.neighborhood.result_id,
+            "realizations": tuple(
+                realization.model_dump(mode="json") for realization in self.realizations
+            ),
+        }
+        digest = sha256_digest(canonical_json_bytes(content)).removeprefix("sha256:")
+        return f"hop:foldback-neighborhood-result/{digest}@1"
 
     @model_validator(mode="after")
     def validate_membership(self) -> FoldbackNeighborhoodDiscoveryResult:
@@ -253,16 +273,6 @@ class FoldbackNeighborhoodDiscoveryResult(HopModel):
                 raise ValueError(
                     "Foldback realization violates the local provisioning operation limit."
                 )
+        if self.result_id != self._expected_result_id():
+            raise ValueError("result_id must seal the complete foldback neighborhood result.")
         return self
-
-    @property
-    def result_id(self) -> str:
-        """Return family identity over the shared result and all detailed evidence."""
-        content = {
-            "neighborhood_result_id": self.neighborhood.result_id,
-            "realizations": tuple(
-                realization.model_dump(mode="json") for realization in self.realizations
-            ),
-        }
-        digest = sha256_digest(canonical_json_bytes(content)).removeprefix("sha256:")
-        return f"hop:foldback-neighborhood-result/{digest}@1"

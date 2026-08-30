@@ -602,12 +602,12 @@ def test_pcr_endpoint_addition_preserves_direct_canonical_authority(tmp_path: Pa
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "e9b3f84d5ed71f5ab750d3da79cda4b65d413663fe328677d7b01fec8798ed9d@1"
+        "54af957a08cb9549e75aa8af245f008d35964226a1471cb91599ff89c9252e01@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "73c5fb9b2a732fc287e8af970429c479bfebad05676c41d53d75b4e8e5de958f"  # pragma: allowlist secret  # noqa: E501
+            "8e48e743e2d3efdc453f017e58aa0d1ffeda375f07be2b1498fac2ef9a93a45e"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
@@ -642,12 +642,12 @@ def test_clone_endpoint_addition_preserves_pcr_canonical_authority(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "496e52d4abc4ecfe61293fc6338dde29ae5fe88b02558e3d06abf5fadc560bd2@1"
+        "6f01d7324391f9427e52190635085be7e065229fda8f29125c58d142ea1c1b0a@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "2d516fbcc98c73f66291350ca2ee21c6beac56603afa42d9b9eaaa98ee86dfdc"  # pragma: allowlist secret  # noqa: E501
+            "26c2d1bf4d2aa3660f0b75b4508a7f43ef002fca2ede29d8c0b69a1d6e3fcb90"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
