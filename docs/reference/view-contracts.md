@@ -71,12 +71,12 @@ SVG is a deterministic convenience artifact. Neither is experimental evidence.
 Payload-centered foldback and basal discovery also support a narrower family
 of local scientific projections:
 
-- `hop.foldback-feasibility-landscape/v1` records every exact foldback local
+- `hop.foldback-feasibility-landscape/v2` records every exact foldback local
   realization and its achieved dimensions;
 - `hop.basal-feasibility-landscape/v1` records every exact basal local
   realization, including endpoint-dependent pairing, nick, cut, and cohesive-
   end facts;
-- `hop.foldback-relaxation-frontier/v1` and
+- `hop.foldback-relaxation-frontier/v2` and
   `hop.basal-relaxation-frontier/v1` record exact-first shell membership,
   complete or partial shell accounting, and observed rejection categories.
 
@@ -101,7 +101,7 @@ product, endpoint, and material facts; rejected rows carry one derived
 rejection reason. Counts, failure partitions, material totals, group
 membership, and truncation evidence replay the source result exactly.
 
-`hop.complete-construction-trajectory/v1` embeds the exact chronology of one
+`hop.complete-construction-trajectory/v2` embeds the exact chronology of one
 explicitly selected accepted materialized realization. It has no CSV form
 because it is a structured molecular-state sequence rather than a table. The
 public operation requires `materialized_realization_id`; HOP never selects an

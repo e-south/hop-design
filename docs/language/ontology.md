@@ -61,7 +61,7 @@ result preserves requested and achieved geometry, relaxation shell, every
 exact realization, rejection accounting, completion evidence, and reversible
 projections.
 
-A foldback target is described by `junction_offset_nt`, `loop_length_nt`, and
+A foldback target is described by `nick_offset_within_foldback_nt`, `loop_length_nt`, and
 `annealing_arm_length_bp`. A basal target describes endpoint-dependent nick
 geometry, an exact payload-proximal-outward pairing profile, and optional
 end-generation geometry. Type IIS processing is absent unless the endpoint

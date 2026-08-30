@@ -150,7 +150,7 @@ def _foldback_request(
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
         target=target
         or FoldbackTarget(
-            junction_offset_nt=0,
+            nick_offset_within_foldback_nt=0,
             loop_length_nt=3,
             annealing_arm_length_bp=3,
         ),
@@ -481,7 +481,7 @@ def test_local_request_family_must_match_target() -> None:
             route_family=RouteFamily.LINEAR_SOURCE_V1,
             endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=3,
             ),
@@ -503,7 +503,9 @@ def test_relaxation_shells_are_exact_first_bounded_and_directionally_unbiased() 
         for geometry in shells[1].geometries
     } == {(2, 3), (3, 2), (3, 4), (4, 3)}
     assert all(
-        geometry.junction_offset_nt == 0 for shell in shells for geometry in shell.geometries
+        geometry.nick_offset_within_foldback_nt == 0
+        for shell in shells
+        for geometry in shell.geometries
     )
 
     exact = relaxation_shells(
@@ -516,7 +518,7 @@ def test_relaxation_shells_are_exact_first_bounded_and_directionally_unbiased() 
     with pytest.raises(ValidationError, match=r"exact target.*relaxation bounds"):
         _foldback_request(
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=5,
                 annealing_arm_length_bp=3,
             )
@@ -886,7 +888,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
         **result_metadata,
     )
     assert infeasible.result_id.startswith("hop:neighborhood-result/")
-    assert infeasible.schema_id == "hop.neighborhood-discovery-result/v1"
+    assert infeasible.schema_id == "hop.neighborhood-discovery-result/v2"
     assert infeasible.provenance.enzyme_catalog_digest == request.enzyme_catalog_digest
     assert infeasible.payload_compatibility.exhaustive is True
     assert infeasible.claim_boundary.physical_construction == "not_recorded"
@@ -981,7 +983,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
             ),
         )
 
-    non_relaxed_geometry = request.target.model_copy(update={"junction_offset_nt": 1})
+    non_relaxed_geometry = request.target.model_copy(update={"nick_offset_within_foldback_nt": 1})
     non_relaxed_realization = LocalRealization.create(
         local_sequence="CCCGGG",
         enzyme_binding_ids=("enzyme-a",),

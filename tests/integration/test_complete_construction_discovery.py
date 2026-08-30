@@ -288,7 +288,7 @@ def test_complete_composition_filters_a_multi_payload_local_authority(
             max_radius=1,
             coordinates=(
                 RelaxationCoordinate(
-                    name="junction_offset_nt",
+                    name="nick_offset_within_foldback_nt",
                     minimum=0,
                     maximum=1,
                 ),
@@ -417,7 +417,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -662,7 +662,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
         )
 
     assert result.status is SearchCompletionStatus.COMPLETE
-    assert result.schema_id == "hop.construction-space-result/v1"
+    assert result.schema_id == "hop.construction-space-result/v2"
     assert result.model_dump(mode="json")["result_id"] == result.result_id
     assert result.problem_id.startswith("hop:construction-problem/")
     assert result.execution_id.startswith("hop:construction-execution/")
@@ -2126,7 +2126,7 @@ def test_require_all_preserves_intrinsic_failures_when_every_combination_rejects
                 orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
             ),
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -2168,7 +2168,7 @@ def test_complete_materialization_preserves_exact_optional_stem_extension(
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -2228,7 +2228,7 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -2237,7 +2237,7 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
                 max_radius=1,
                 coordinates=(
                     RelaxationCoordinate(
-                        name="junction_offset_nt",
+                        name="nick_offset_within_foldback_nt",
                         minimum=0,
                         maximum=1,
                     ),

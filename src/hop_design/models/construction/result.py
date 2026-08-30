@@ -41,8 +41,8 @@ from .request import LocalNeighborhoodRequest, geometry_id, problem_id
 class NeighborhoodDiscoveryResult(HopModel):
     """Exact local realizations with explicit bounded-search completion evidence."""
 
-    schema_id: Literal["hop.neighborhood-discovery-result/v1"] = Field(
-        default="hop.neighborhood-discovery-result/v1", alias="schema"
+    schema_id: Literal["hop.neighborhood-discovery-result/v2"] = Field(
+        default="hop.neighborhood-discovery-result/v2", alias="schema"
     )
     status: SearchCompletionStatus
     request: LocalNeighborhoodRequest

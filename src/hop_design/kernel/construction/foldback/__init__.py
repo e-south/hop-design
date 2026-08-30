@@ -204,16 +204,17 @@ def iter_foldback_program_solutions(
     """Enumerate every exact local source for one target and enzyme program."""
     payload_nt = len(payload_sequence)
     arm_nt = target.annealing_arm_length_bp
-    junction = payload_nt + target.junction_offset_nt
+    junction = payload_nt
+    nick = junction + target.nick_offset_within_foldback_nt
     foldback_nt = 2 * arm_nt + target.loop_length_nt
-    terminus = junction + foldback_nt
+    terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
 
     nick_binding = _place_binding(
         program.nick_enzyme,
         role=EnzymeRole.FOLDBACK_NICK,
         orientation=SiteOrientation.FORWARD,
         controlled_strand=Strand.TOP,
-        controlled_boundary=junction,
+        controlled_boundary=nick,
     )
     if nick_binding is None:
         yield FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
@@ -282,47 +283,48 @@ def iter_foldback_program_solutions(
     if any(not domain for domain in domains):
         yield FoldbackPlacementFailure(code="overlapping-sequence-conflict")
         return
-    junction_domains = tuple(
-        tuple(base for base in _BASES if base in domains[coordinate])
-        for coordinate in range(payload_nt, junction)
-    )
+    arm_domain_sets = [set(_BASES) for _ in range(arm_nt)]
+    loop_domain_sets = [set(_BASES) for _ in range(target.loop_length_nt)]
+    for source_offset in range(foldback_nt - target.nick_offset_within_foldback_nt):
+        final_index = foldback_nt - 1 - source_offset
+        source_domain = domains[junction + source_offset]
+        if final_index < arm_nt:
+            arm_domain_sets[final_index] &= {
+                base for base in _BASES if reverse_complement_iupac(base) in source_domain
+            }
+        elif final_index < arm_nt + target.loop_length_nt:
+            loop_index = final_index - arm_nt
+            loop_domain_sets[loop_index] &= {
+                base for base in _BASES if reverse_complement_iupac(base) in source_domain
+            }
+        else:
+            arm_index = foldback_nt - 1 - final_index
+            arm_domain_sets[arm_index] &= source_domain
     arm_domains = tuple(
-        tuple(
-            base
-            for base in _BASES
-            if base in domains[junction + index]
-            and reverse_complement_iupac(base) in domains[terminus - 1 - index]
-        )
-        for index in range(arm_nt)
+        tuple(base for base in _BASES if base in domain) for domain in arm_domain_sets
     )
     loop_domains = tuple(
-        tuple(
-            base
-            for base in _BASES
-            if reverse_complement_iupac(base)
-            in domains[junction + arm_nt + target.loop_length_nt - 1 - index]
-        )
-        for index in range(target.loop_length_nt)
+        tuple(base for base in _BASES if base in domain) for domain in loop_domain_sets
     )
     if any(not domain for domain in (*arm_domains, *loop_domains)):
         yield FoldbackPlacementFailure(code="foldback-pairing-conflict")
         return
     canonical_source = [next(base for base in _BASES if base in domain) for domain in domains]
-    for junction_assignment, arm_assignment, loop_assignment in product(
-        product(*junction_domains),
+    for arm_assignment, loop_assignment in product(
         product(*arm_domains),
         product(*loop_domains),
     ):
         source_bases = canonical_source.copy()
-        source_bases[payload_nt:junction] = junction_assignment
         arm = "".join(arm_assignment)
         loop = "".join(loop_assignment)
         foldback = arm + loop + reverse_complement_iupac(arm)
-        source_bases[junction:terminus] = reverse_complement_iupac(foldback)
+        source_bases[junction:terminus] = reverse_complement_iupac(
+            foldback[target.nick_offset_within_foldback_nt :]
+        )
         if any(base not in domains[coordinate] for coordinate, base in enumerate(source_bases)):
             continue
         source = "".join(source_bases)
-        foldback_segment = reverse_complement_iupac(source[junction:terminus])
+        foldback_segment = foldback
         retained_arm = foldback_segment[:arm_nt]
         loop_start = arm_nt
         loop_end = loop_start + target.loop_length_nt
@@ -332,7 +334,9 @@ def iter_foldback_program_solutions(
             raise RuntimeError("Foldback source constraints lost literal arm complementarity.")
         yield FoldbackSequenceSolution(
             source_reference_sequence=source,
-            retained_sequence=(payload_sequence + "".join(junction_assignment) + foldback_segment),
+            retained_sequence=(
+                payload_sequence + foldback_segment + reverse_complement_iupac(payload_sequence)
+            ),
             loop_sequence=realized_loop,
             foldback_arm_sequence=realized_arm,
             junction_boundary=junction,

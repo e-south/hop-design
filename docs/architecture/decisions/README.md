@@ -33,8 +33,9 @@ amends an earlier one, the earlier frontmatter names the current decision.
 
 ## Payload-centered construction
 
-- [0025: Center construction discovery on final payload geometry](0025-payload-centered-construction-discovery.md)
+- [0025: Center construction discovery on final payload geometry](0025-payload-centered-construction-discovery.md) — amended by 0028
 - [0026: Compose complete construction chronology around enzyme phases](0026-compose-complete-construction-chronology.md) — amends 0020
+- [0028: Separate the foldback boundary from the nick position](0028-separate-foldback-boundary-from-nick-position.md) — amends 0025 and 0027
 
 ## Hairpin language
 

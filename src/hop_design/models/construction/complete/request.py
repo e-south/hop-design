@@ -177,8 +177,8 @@ class CompositionEnumerationPolicy(HopModel):
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v1"] = Field(
-        default="hop.construction-discovery-request/v1", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v2"] = Field(
+        default="hop.construction-discovery-request/v2", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily

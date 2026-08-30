@@ -35,7 +35,7 @@ from tests.integration.test_complete_construction_pcr import _payload
 def _source_document() -> dict[str, object]:
     foldback = _request(_nickase(), _terminus_enzyme())
     return {
-        "schema": "hop.construction-source/v1",
+        "schema": "hop.construction-source/v2",
         "foldback": foldback.model_dump(mode="json", by_alias=True),
         "basal": None,
         "composition": {
@@ -99,11 +99,19 @@ def test_construction_source_loads_strict_json_and_yaml(
         json.dumps(load_source_mapping(source_path), separators=(",", ":"))
     )
 
-    assert loaded.schema_id == "hop.construction-source/v1"
+    assert loaded.schema_id == "hop.construction-source/v2"
     assert loaded.composition.endpoint == "ssdna_hairpin"
     assert loaded.composition.materialization.source_complement_five_prime_end is (
         EndChemistry.PHOSPHATE
     )
+
+
+def test_construction_source_rejects_the_superseded_contract() -> None:
+    document = _source_document()
+    document["schema"] = "hop.construction-source/v1"
+
+    with pytest.raises(ValidationError, match=r"hop\.construction-source/v2"):
+        ConstructionSource.model_validate_json(json.dumps(document))
 
 
 def test_construction_source_rejects_unknown_or_internal_schema_fields() -> None:

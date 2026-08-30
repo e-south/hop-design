@@ -47,9 +47,9 @@ def project_foldback_feasibility(
             foldback_realization_id=item.foldback_realization_id,
             program_kind=item.program_kind,
             relaxation_radius=item.relaxation_radius,
-            junction_offset_nt=cast(
+            nick_offset_within_foldback_nt=cast(
                 FoldbackTarget, item.local_realization.achieved_geometry
-            ).junction_offset_nt,
+            ).nick_offset_within_foldback_nt,
             loop_length_nt=cast(
                 FoldbackTarget, item.local_realization.achieved_geometry
             ).loop_length_nt,
@@ -61,7 +61,7 @@ def project_foldback_feasibility(
         )
         for item in result.realizations
     )
-    schema = "hop.foldback-feasibility-landscape/v1"
+    schema = "hop.foldback-feasibility-landscape/v2"
     realization_ids = tuple(row.local_realization_id for row in rows)
     reference = grouped_realization_projection(
         result_id=result.result_id,
@@ -168,8 +168,8 @@ def project_relaxation_frontier(
         family: Literal["foldback", "basal"] = "foldback"
         renderer_version = FOLDBACK_PROJECTION_RENDERER_VERSION
         schema: Literal[
-            "hop.foldback-relaxation-frontier/v1", "hop.basal-relaxation-frontier/v1"
-        ] = "hop.foldback-relaxation-frontier/v1"
+            "hop.foldback-relaxation-frontier/v2", "hop.basal-relaxation-frontier/v1"
+        ] = "hop.foldback-relaxation-frontier/v2"
     else:
         neighborhood = result.discovery
         source_result_id = result.result_id

@@ -44,7 +44,7 @@ from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import iupac_bases
 
 _BASES = ("A", "C", "G", "T")
-_ROUTE_VERSION = "linear-source-foldback/1"
+_ROUTE_VERSION = "linear-source-foldback/2"
 
 
 def _payload_assignments(request: LocalNeighborhoodRequest) -> Iterator[str]:
@@ -112,7 +112,7 @@ def _realization(
     changed_coordinates = tuple(
         name
         for name in (
-            "junction_offset_nt",
+            "nick_offset_within_foldback_nt",
             "loop_length_nt",
             "annealing_arm_length_bp",
         )
@@ -161,7 +161,7 @@ def _realization(
         stage_assessments=assessment.stage_assessments,
         relaxation_radius=relaxation_radius,
         changed_coordinates=changed_coordinates,
-        retained_construction_nt=(target.junction_offset_nt + target.loop_length_nt + 2 * arm_nt),
+        retained_construction_nt=(target.loop_length_nt + 2 * arm_nt),
         transient_construction_nt=(
             sum(
                 fragment.precursor_span.length.value
@@ -195,13 +195,13 @@ def _projection_inventory() -> tuple[ProjectionInventoryItem, ...]:
     return tuple(
         ProjectionInventoryItem(
             projection_schema=schema,
-            renderer_version="foldback-projections/1",
+            renderer_version="foldback-projections/2",
             status=ProjectionInventoryStatus.NOT_GENERATED,
         )
         for schema in (
             "hop.foldback-nucleotide-exemplar/v1",
             "hop.foldback-geometry-count-table/v1",
-            "hop.foldback-feasibility-landscape/v1",
-            "hop.foldback-relaxation-frontier/v1",
+            "hop.foldback-feasibility-landscape/v2",
+            "hop.foldback-relaxation-frontier/v2",
         )
     )

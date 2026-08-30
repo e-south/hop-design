@@ -10,9 +10,14 @@ owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-30
 doc_type: decision
+amended_by: hop-adr-0028
 ---
 
 # ADR 0027: Compile construction from strict files behind a narrow facade
+
+> Amended by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md):
+> the active construction source is v2 and uses an explicit nick offset within
+> the retained foldback arm.
 
 ## Context
 
@@ -30,7 +35,7 @@ and verified.
 ## Decision
 
 `hop_design.construction` is the file-oriented construction facade. The caller
-provides one strict `hop.construction-source/v1` JSON or YAML file and one
+provides one strict `hop.construction-source/v2` JSON or YAML file and one
 separate verified design-bundle path. HOP loads the design authority, discovers
 and verifies the declared foldback and optional basal neighborhoods, derives
 the complete request, composes the route, and returns an opaque

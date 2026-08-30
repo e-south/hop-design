@@ -57,7 +57,7 @@ def select_pcr_fragments(
         or any(item.origin_id != source_complement_material_id for item in released.lineage)
     ):
         raise ValueError("PCR basal nick must create the exact removable return-arm fragment.")
-    retained_local_id = foldback.annealing_pairs[0].left_strand_id
+    retained_local_id = foldback.annealing_pairs[0].right_strand_id
     retained = next(
         (
             item

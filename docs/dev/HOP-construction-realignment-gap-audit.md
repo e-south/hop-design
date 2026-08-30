@@ -173,7 +173,7 @@ length, agents, orientation, and one-dimensional boundary displacement. It
 does not expose the target tuple:
 
 ```text
-junction_offset_nt
+nick_offset_within_foldback_nt
 loop_length_nt
 annealing_arm_length_bp
 ```

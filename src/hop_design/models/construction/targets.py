@@ -28,9 +28,15 @@ class FoldbackTarget(HopModel):
     """Requested retained foldback geometry in final-payload coordinates."""
 
     family: Literal["foldback"] = "foldback"
-    junction_offset_nt: int = Field(ge=0)
+    nick_offset_within_foldback_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_nick_offset(self) -> FoldbackTarget:
+        if self.nick_offset_within_foldback_nt > self.annealing_arm_length_bp:
+            raise ValueError("The foldback nick must lie within the first annealing arm.")
+        return self
 
 
 class BasalPairClass(StrEnum):

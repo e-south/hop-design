@@ -179,7 +179,7 @@ def _write_foldback(buffer: io.StringIO, projection: FoldbackFeasibilityProjecti
         "foldback_realization_id",
         "program_kind",
         "relaxation_radius",
-        "junction_offset_nt",
+        "nick_offset_within_foldback_nt",
         "loop_length_nt",
         "annealing_arm_length_bp",
         "retained_construction_nt",

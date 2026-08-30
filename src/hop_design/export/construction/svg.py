@@ -69,7 +69,7 @@ def _render_foldback(projection: FoldbackFeasibilityProjection) -> bytes:
     for item in projection.realizations:
         key = (
             item.program_kind,
-            item.junction_offset_nt,
+            item.nick_offset_within_foldback_nt,
             item.loop_length_nt,
             item.annealing_arm_length_bp,
             item.retained_construction_nt,

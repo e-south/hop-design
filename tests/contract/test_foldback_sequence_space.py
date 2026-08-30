@@ -40,15 +40,15 @@ def test_unconstrained_loop_bases_are_enumerated_without_a_sequence_preference()
     assert {solution.foldback_arm_sequence for solution in solutions} == {"TGT"}
 
 
-def test_retained_junction_offset_bases_are_exactly_enumerated() -> None:
-    request = _request(_nickase(motif="CATTTT"))
+def test_internal_nick_enumerates_the_foldback_base_retained_on_the_top_strand() -> None:
+    request = _request(_nickase(motif="ATTTTT"))
     route = iter_foldback_programs(request.enzyme_provisioning)[0]
 
     solutions = tuple(
         iter_foldback_program_solutions(
             payload_sequence="GACA",
             target=FoldbackTarget(
-                junction_offset_nt=1,
+                nick_offset_within_foldback_nt=1,
                 loop_length_nt=4,
                 annealing_arm_length_bp=2,
             ),
@@ -56,8 +56,12 @@ def test_retained_junction_offset_bases_are_exactly_enumerated() -> None:
         )
     )
 
+    assert tuple(solution.source_reference_sequence for solution in solutions) == tuple(
+        "GACA" + retained_base + "ATTTTT" for retained_base in "ACGT"
+    )
     assert tuple(solution.retained_sequence for solution in solutions) == tuple(
-        "GACA" + spacer + "CA" + "AAAA" + "TG" for spacer in "ACGT"
+        "GACA" + retained_base + "AAAAA" + "T" + complement + "TGTC"
+        for retained_base, complement in zip("ACGT", "TGCA", strict=True)
     )
 
 

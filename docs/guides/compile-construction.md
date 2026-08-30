@@ -29,7 +29,7 @@ substrate-space journey and does not select an experimentally preferred route.
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v1`; and
+   `hop.construction-source/v2`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
@@ -37,9 +37,9 @@ request, the requested endpoint, exact route materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v1
-foldback: <hop.local-neighborhood-request/v1 mapping>
-basal: <hop.local-neighborhood-request/v1 mapping or null>
+schema: hop.construction-source/v2
+foldback: <hop.local-neighborhood-request/v2 mapping>
+basal: <hop.local-neighborhood-request/v2 mapping or null>
 composition:
   endpoint: ssdna_hairpin | hairpin_pcr_duplex | clone_ready_duplex
   materialization: <exact linear-source materials and end chemistry>

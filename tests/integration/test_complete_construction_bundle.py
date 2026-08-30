@@ -75,7 +75,7 @@ def _verified_construction(tmp_path: Path, *, include_basal: bool = False):
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -139,15 +139,15 @@ def test_construction_bundle_round_trips_verified_authorities_deterministically(
 
     assert first._bundle == second._bundle == loaded._bundle
     assert dict(first._artifacts) == dict(second._artifacts) == dict(loaded._artifacts)
-    assert first.bundle_id == "hop:construction-bundle/abdc5c8cb477/db4bf0435353bdc4"
+    assert first.bundle_id == "hop:construction-bundle/17f3b85f576c/6bc91bdd47cfd406"
     assert first._bundle.manifest_digest == (
-        "sha256:db4bf0435353bdc46a1c80d4ef65f1b2584f7f17bb9b6d58dcc4f5661a5f6171"
+        "sha256:6bc91bdd47cfd4060b132376e90aba3e979ba8169fe1110c00bbf505873aab32"
     )
     assert first._bundle.result_digest == (
-        "sha256:2a02390fa8ac86a3114f2155f7662f2dbf3459d104c857caa8e49821abc1e395"
+        "sha256:8974dbb158585b2e28a4a7711715a23fbfaa6d9a84882fe51fc50aa5d5a4ba6c"
     )
     assert sha256_digest(canonical_json_bytes(first._bundle)) == (
-        "sha256:1d1140815e9fce6480f974f5fb063fcb5886688f323b38f1aaa400fb3573e968"
+        "sha256:0c6cf6859bf6822fb904f40c24e12651925f48f56c42ac024ab9640e79216465"
     )
     assert loaded._construction.result == verified.result
     assert loaded._construction.design == verified.design

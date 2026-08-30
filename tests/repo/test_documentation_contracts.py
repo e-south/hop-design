@@ -173,9 +173,9 @@ def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
     assert "does not establish physical construction" in normalized
     assert "local construction projection" in normalized
     for schema_id in (
-        "hop.foldback-feasibility-landscape/v1",
+        "hop.foldback-feasibility-landscape/v2",
         "hop.basal-feasibility-landscape/v1",
-        "hop.foldback-relaxation-frontier/v1",
+        "hop.foldback-relaxation-frontier/v2",
         "hop.basal-relaxation-frontier/v1",
     ):
         assert schema_id in view_contracts
@@ -609,7 +609,7 @@ def test_schema_reference_distinguishes_release_and_source_generations() -> None
             assert source_version in text
             assert published_version in text
             assert "unreleased" in text
-        assert "release-wheel command above uses the a6 contract" in quickstart
+        assert "release-wheel command above uses the a7 contract" in quickstart
 
 
 def test_every_stable_operation_is_named_in_the_api_reference() -> None:

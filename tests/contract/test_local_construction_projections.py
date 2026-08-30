@@ -68,7 +68,7 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
     assert projection.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
     assert projection.source_result_id == result.result_id
     assert projection.projection_reference.result_id == result.result_id
-    assert projection.projection_reference.renderer_version == "foldback-projections/1"
+    assert projection.projection_reference.renderer_version == "foldback-projections/2"
     assert projection.provenance == result.neighborhood.provenance
     assert projection.claim_boundary == result.neighborhood.claim_boundary
     assert (
@@ -76,7 +76,7 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
         == grouped_realization_projection(
             result_id=result.result_id,
             projection_schema=projection.schema_id,
-            renderer_version="foldback-projections/1",
+            renderer_version="foldback-projections/2",
             realization_ids=tuple(
                 item.local_realization.local_realization_id for item in result.realizations
             ),

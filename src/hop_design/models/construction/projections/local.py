@@ -30,7 +30,7 @@ from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import CohesiveEnd
 
-FOLDBACK_PROJECTION_RENDERER_VERSION = "foldback-projections/1"
+FOLDBACK_PROJECTION_RENDERER_VERSION = "foldback-projections/2"
 BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/1"
 
 
@@ -41,7 +41,7 @@ class FoldbackFeasibilityRow(HopModel):
     foldback_realization_id: str = Field(pattern=r"^hop:foldback-realization/[0-9a-f]{64}@1$")
     program_kind: FoldbackCleavageProgramKind
     relaxation_radius: int = Field(ge=0)
-    junction_offset_nt: int = Field(ge=0)
+    nick_offset_within_foldback_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
     retained_construction_nt: int = Field(ge=0)
@@ -78,8 +78,8 @@ class BasalFeasibilityRow(HopModel):
 class FoldbackFeasibilityProjection(HopModel):
     """Neutral foldback feasibility relation over exact realization authorities."""
 
-    schema_id: Literal["hop.foldback-feasibility-landscape/v1"] = Field(
-        default="hop.foldback-feasibility-landscape/v1", alias="schema"
+    schema_id: Literal["hop.foldback-feasibility-landscape/v2"] = Field(
+        default="hop.foldback-feasibility-landscape/v2", alias="schema"
     )
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
@@ -212,7 +212,7 @@ class RelaxationFrontierProjection(HopModel):
     """Exact-first relaxation frontier without inferred shell failure categories."""
 
     schema_id: Literal[
-        "hop.foldback-relaxation-frontier/v1", "hop.basal-relaxation-frontier/v1"
+        "hop.foldback-relaxation-frontier/v2", "hop.basal-relaxation-frontier/v1"
     ] = Field(alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")

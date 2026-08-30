@@ -158,7 +158,7 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
 
 def test_direct_endpoint_forbids_adapter_and_pcr_materials() -> None:
     direct = _request(ConstructionEndpoint.SSDNA_HAIRPIN)
-    assert direct.schema_id == "hop.construction-discovery-request/v1"
+    assert direct.schema_id == "hop.construction-discovery-request/v2"
     assert direct.model_dump(mode="json", by_alias=True)["schema"] == direct.schema_id
     assert direct.basal_result_id is None
     assert direct.materialization.adapter is None

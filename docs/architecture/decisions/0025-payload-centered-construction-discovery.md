@@ -10,9 +10,14 @@ owner: HOP Design maintainers
 status: accepted
 last_verified: 2026-08-29
 doc_type: decision
+amended_by: hop-adr-0028
 ---
 
 # ADR 0025: Center construction discovery on final payload geometry
+
+> Amended by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md):
+> the payload/foldback boundary remains fixed while the nick may lie within the
+> first retained foldback arm.
 
 ## Context
 
@@ -87,7 +92,7 @@ requires it. It is not added to `hop_design.spaces` or root-re-exported.
 
 The authoritative foldback target contains:
 
-- `junction_offset_nt`;
+- `nick_offset_within_foldback_nt`;
 - `loop_length_nt`; and
 - `annealing_arm_length_bp`.
 

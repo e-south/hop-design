@@ -190,11 +190,7 @@ class FoldbackLocalRealization(HopModel):
             raise ValueError("The nick-controlled three-prime end must be hydroxylated.")
         if self.terminus.end_chemistry is not EndChemistry.PHOSPHATE:
             raise ValueError("The foldback-side five-prime end must be phosphorylated.")
-        expected_retained_nt = (
-            achieved.junction_offset_nt
-            + achieved.loop_length_nt
-            + 2 * achieved.annealing_arm_length_bp
-        )
+        expected_retained_nt = achieved.loop_length_nt + 2 * achieved.annealing_arm_length_bp
         if self.retained_construction_nt != expected_retained_nt:
             raise ValueError("Retained construction count must derive from achieved geometry.")
         expected_transient = sum(
@@ -217,8 +213,8 @@ class FoldbackLocalRealization(HopModel):
 class FoldbackNeighborhoodDiscoveryResult(HopModel):
     """Shared neighborhood authority plus lossless foldback-family evidence."""
 
-    schema_id: Literal["hop.foldback-neighborhood-result/v1"] = Field(
-        default="hop.foldback-neighborhood-result/v1", alias="schema"
+    schema_id: Literal["hop.foldback-neighborhood-result/v2"] = Field(
+        default="hop.foldback-neighborhood-result/v2", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     neighborhood: NeighborhoodDiscoveryResult

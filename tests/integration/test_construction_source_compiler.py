@@ -72,7 +72,7 @@ def _source(
     basal=None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v1",
+        schema="hop.construction-source/v2",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
@@ -259,7 +259,7 @@ def test_file_source_rejects_unknown_schema_before_discovery(tmp_path: Path) -> 
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
         materialization=_materialization(),
     ).model_dump(mode="json", by_alias=True)
-    document["schema"] = "hop.construction-source/v2"
+    document["schema"] = "hop.construction-source/v3"
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
 
     with pytest.raises(ValueError, match="Unsupported HOP construction source schema"):

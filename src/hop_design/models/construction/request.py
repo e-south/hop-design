@@ -41,8 +41,8 @@ from .targets import (
 class LocalNeighborhoodRequest(HopModel):
     """Shared payload-centered request envelope for foldback or basal discovery."""
 
-    schema_id: Literal["hop.local-neighborhood-request/v1"] = Field(
-        default="hop.local-neighborhood-request/v1", alias="schema"
+    schema_id: Literal["hop.local-neighborhood-request/v2"] = Field(
+        default="hop.local-neighborhood-request/v2", alias="schema"
     )
     name: str | None = None
     payload: FinalPayloadReference

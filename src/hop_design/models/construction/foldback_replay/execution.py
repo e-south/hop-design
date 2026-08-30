@@ -83,9 +83,11 @@ def replay_foldback_route(
 ) -> FoldbackRouteReplay:
     """Derive every physical foldback state from exact source and cut authorities."""
     payload_nt = len(payload_sequence)
-    junction = payload_nt + target.junction_offset_nt
+    junction = payload_nt
+    nick = junction + target.nick_offset_within_foldback_nt
     arm_nt = target.annealing_arm_length_bp
-    terminus = junction + target.loop_length_nt + 2 * arm_nt
+    foldback_nt = target.loop_length_nt + 2 * arm_nt
+    terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
     source = source_reference_sequence
     nick_binding = next(
         binding for binding in enzyme_bindings if binding.role is EnzymeRole.FOLDBACK_NICK
@@ -93,7 +95,7 @@ def replay_foldback_route(
     foldback_nick = FoldbackBoundaryControl(
         kind=FoldbackTerminusKind.ENZYME_CLEAVAGE,
         strand=Strand.TOP,
-        boundary=Boundary(offset=junction),
+        boundary=Boundary(offset=nick),
         end_chemistry=EndChemistry.HYDROXYL,
         enzyme_id=nick_binding.enzyme_id,
         enzyme_class=EnzymeClass.NICKASE,
@@ -103,7 +105,7 @@ def replay_foldback_route(
         if len(source) != terminus:
             raise ValueError("A single-cleavage source must physically end at its terminus.")
         source_bottom_five_prime = EndChemistry.PHOSPHATE
-        top_cuts: tuple[int, ...] = (junction,)
+        top_cuts: tuple[int, ...] = (nick,)
         bottom_cuts: tuple[int, ...] = ()
         release_cut = DuplexCut(
             top=Boundary(offset=terminus),
@@ -124,7 +126,7 @@ def replay_foldback_route(
         ) or terminus_binding.complement_cut != Boundary(offset=terminus):
             raise ValueError("The current foldback replay requires a blunt terminus cut.")
         source_bottom_five_prime = EndChemistry.HYDROXYL
-        top_cuts = (junction, terminus)
+        top_cuts = (nick, terminus)
         bottom_cuts = (terminus,)
         release_cut = DuplexCut(
             top=terminus_binding.reference_cut,
@@ -168,7 +170,7 @@ def replay_foldback_route(
         and fragment.precursor_span
         == Span(
             start=Boundary(offset=0),
-            end=Boundary(offset=junction),
+            end=Boundary(offset=nick),
         )
     )
     bottom = next(
@@ -186,13 +188,13 @@ def replay_foldback_route(
         precursor_top_strand=source,
         active_strand=Strand.BOTTOM,
         retained_partner_strand=Strand.TOP,
-        nick=NickEvent(boundary=Boundary(offset=junction), strand=Strand.TOP),
+        nick=NickEvent(boundary=Boundary(offset=nick), strand=Strand.TOP),
         release_cut=release_cut,
         active_product_precursor_span=Span(
             start=Boundary(offset=0),
             end=Boundary(offset=terminus),
         ),
-        active_nick_boundary=Boundary(offset=terminus - junction),
+        active_nick_boundary=Boundary(offset=terminus - nick),
         active_product_sequence=bottom.sequence,
         retained_partner_sequence=top.sequence,
         active_product_lineage=tuple(
@@ -205,31 +207,6 @@ def replay_foldback_route(
         ),
     )
 
-    retained_arm = bottom.sequence[:arm_nt]
-    loop_start = arm_nt
-    loop_end = loop_start + target.loop_length_nt
-    loop = bottom.sequence[loop_start:loop_end]
-    arm_start = loop_end
-    arm_end = arm_start + arm_nt
-    arm = bottom.sequence[arm_start:arm_end]
-    expected_arm = reverse_complement_iupac(retained_arm)
-    if arm != expected_arm:
-        raise ValueError("Released foldback arms must be literally complementary.")
-    pairs = tuple(
-        StrandPairObservation(
-            left_strand_id=bottom.fragment_id,
-            right_strand_id=bottom.fragment_id,
-            left_index=index,
-            right_index=arm_end - 1 - index,
-            left_base=retained_arm[index],
-            right_base=arm[arm_nt - 1 - index],
-            kind=classify_literal_pair(
-                left_base=retained_arm[index],
-                right_base=arm[arm_nt - 1 - index],
-            ),
-        )
-        for index in range(arm_nt)
-    )
     if top.three_prime_end is not EndChemistry.HYDROXYL:
         raise ValueError("Foldback ligation requires a three-prime hydroxyl.")
     if bottom.five_prime_end is not EndChemistry.PHOSPHATE:
@@ -247,10 +224,44 @@ def replay_foldback_route(
         three_prime_end=bottom.three_prime_end,
         lineage=_reindex_lineage((top.lineage, bottom.lineage)),
     )
+    foldback = ligated.sequence[junction : junction + foldback_nt]
+    retained_arm = foldback[:arm_nt]
+    loop_start = arm_nt
+    loop_end = loop_start + target.loop_length_nt
+    loop = foldback[loop_start:loop_end]
+    arm_start = loop_end
+    arm_end = arm_start + arm_nt
+    arm = foldback[arm_start:arm_end]
+    expected_arm = reverse_complement_iupac(retained_arm)
+    if arm != expected_arm:
+        raise ValueError("Released foldback arms must be literally complementary.")
+    pairs = tuple(
+        StrandPairObservation(
+            left_strand_id=(
+                top.fragment_id
+                if index < target.nick_offset_within_foldback_nt
+                else bottom.fragment_id
+            ),
+            right_strand_id=bottom.fragment_id,
+            left_index=(
+                junction + index
+                if index < target.nick_offset_within_foldback_nt
+                else index - target.nick_offset_within_foldback_nt
+            ),
+            right_index=(arm_end - 1 - index - target.nick_offset_within_foldback_nt),
+            left_base=retained_arm[index],
+            right_base=arm[arm_nt - 1 - index],
+            kind=classify_literal_pair(
+                left_base=retained_arm[index],
+                right_base=arm[arm_nt - 1 - index],
+            ),
+        )
+        for index in range(arm_nt)
+    )
     program = _reaction_program(
         source=source,
         program_kind=program_kind,
-        junction=junction,
+        junction=nick,
         terminus=terminus,
         bindings=enzyme_bindings,
         fragments=fragments,
