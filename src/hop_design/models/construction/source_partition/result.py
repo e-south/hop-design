@@ -11,7 +11,8 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from itertools import combinations
+from collections.abc import Iterator
+from itertools import combinations, islice
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -41,14 +42,27 @@ from hop_design.models.method_states import (
 
 def canonical_source_partition_candidates(
     request: SourcePartitionDiscoveryRequest,
-) -> tuple[tuple[str, ...], ...]:
-    """Return nonempty enzyme subsets in stable width-first lexical order."""
+) -> Iterator[tuple[str, ...]]:
+    """Yield nonempty enzyme subsets in stable width-first lexical order."""
     ids = request.candidate_enzyme_ids
-    return tuple(
-        candidate
-        for width in range(1, request.constraints.max_enzymes_per_program + 1)
-        for candidate in combinations(ids, width)
-    )
+    for width in range(1, request.constraints.max_enzymes_per_program + 1):
+        yield from combinations(ids, width)
+
+
+def source_partition_truncation_reasons(
+    request: SourcePartitionDiscoveryRequest,
+    *,
+    examined_nodes: int,
+    realization_count: int,
+) -> tuple[SourcePartitionTruncationReason, ...]:
+    """Replay the first execution bound that stops canonical enumeration."""
+    if examined_nodes >= request.candidate_space_size:
+        return ()
+    if realization_count >= request.enumeration.max_realizations:
+        return (SourcePartitionTruncationReason.MAX_REALIZATIONS,)
+    if examined_nodes >= request.enumeration.max_search_nodes:
+        return (SourcePartitionTruncationReason.MAX_SEARCH_NODES,)
+    return ()
 
 
 def source_partition_candidate_id(
@@ -148,13 +162,21 @@ class SourcePartitionDiscoveryResult(HopModel):
     def validate_result(self) -> SourcePartitionDiscoveryResult:
         if self.problem_id != self.request.problem_id or self.request_id != self.request.request_id:
             raise ValueError("Source-partition result must bind the exact request identities.")
-        candidates = canonical_source_partition_candidates(self.request)
-        if self.candidate_space_size != len(candidates):
+        if self.candidate_space_size != self.request.candidate_space_size:
             raise ValueError("Source-partition candidate-space size must replay exactly.")
-        if self.examined_nodes != len(self.dispositions) or self.examined_nodes > len(candidates):
+        if (
+            self.examined_nodes != len(self.dispositions)
+            or self.examined_nodes > self.candidate_space_size
+        ):
             raise ValueError("Examined source-partition nodes must equal recorded dispositions.")
         observed_candidates = tuple(item.enzyme_ids for item in self.dispositions)
-        if observed_candidates != candidates[: self.examined_nodes]:
+        expected_candidates = tuple(
+            islice(
+                canonical_source_partition_candidates(self.request),
+                self.examined_nodes,
+            )
+        )
+        if observed_candidates != expected_candidates:
             raise ValueError("Source-partition dispositions must form the canonical search prefix.")
         realization_by_id = {item.realization_id: item for item in self.realizations}
         if len(realization_by_id) != len(self.realizations):
@@ -211,15 +233,13 @@ class SourcePartitionDiscoveryResult(HopModel):
             raise ValueError(
                 "Source-partition completion status must follow exact search accounting."
             )
-        if self.status is SearchCompletionStatus.TRUNCATED:
-            if not self.truncation_reasons:
-                raise ValueError("A truncated source-partition result requires a bound reason.")
-        elif self.truncation_reasons:
-            raise ValueError("An exhaustive source-partition result must not report truncation.")
-        if self.truncation_reasons != tuple(
-            sorted(set(self.truncation_reasons), key=lambda item: item.value)
-        ):
-            raise ValueError("Source-partition truncation reasons must be unique and canonical.")
+        expected_reasons = source_partition_truncation_reasons(
+            self.request,
+            examined_nodes=self.examined_nodes,
+            realization_count=len(self.realizations),
+        )
+        if self.truncation_reasons != expected_reasons:
+            raise ValueError("Source-partition truncation reasons must replay exactly.")
         expected_result_id = _content_id(
             "source-partition-result",
             {
@@ -244,4 +264,5 @@ __all__ = [
     "canonical_source_partition_candidates",
     "source_partition_candidate_id",
     "source_partition_realization_id",
+    "source_partition_truncation_reasons",
 ]

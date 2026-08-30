@@ -11,6 +11,8 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from itertools import islice
+
 from hop_design.models.construction import SearchCompletionStatus
 from hop_design.models.construction.source_partition import (
     SourcePartitionCandidateDisposition,
@@ -18,7 +20,6 @@ from hop_design.models.construction.source_partition import (
     SourcePartitionDiscoveryResult,
     SourcePartitionDispositionKind,
     SourcePartitionRealization,
-    SourcePartitionTruncationReason,
 )
 from hop_design.models.construction.source_partition.replay import (
     replay_source_partition_candidate,
@@ -28,6 +29,7 @@ from hop_design.models.construction.source_partition.result import (
     canonical_source_partition_candidates,
     source_partition_candidate_id,
     source_partition_realization_id,
+    source_partition_truncation_reasons,
 )
 
 
@@ -36,13 +38,10 @@ def discover_source_partitions(
 ) -> SourcePartitionDiscoveryResult:
     """Exhaust or truthfully truncate canonical enzyme-subset discovery."""
     candidates = canonical_source_partition_candidates(request)
+    candidate_space_size = request.candidate_space_size
     dispositions: list[SourcePartitionCandidateDisposition] = []
     realizations: list[SourcePartitionRealization] = []
-    truncation_reasons: list[SourcePartitionTruncationReason] = []
-    for enzyme_ids in candidates:
-        if len(dispositions) >= request.enumeration.max_search_nodes:
-            truncation_reasons.append(SourcePartitionTruncationReason.MAX_SEARCH_NODES)
-            break
+    for enzyme_ids in islice(candidates, request.enumeration.max_search_nodes):
         replay = replay_source_partition_candidate(request, enzyme_ids=enzyme_ids)
         candidate_id = source_partition_candidate_id(request, enzyme_ids=enzyme_ids)
         if replay.failure_codes:
@@ -77,25 +76,29 @@ def discover_source_partitions(
                 nick_functions=replay.nick_functions,
             )
         )
-        if len(realizations) >= request.enumeration.max_realizations and len(dispositions) < len(
-            candidates
+        if (
+            len(realizations) >= request.enumeration.max_realizations
+            and len(dispositions) < candidate_space_size
         ):
-            truncation_reasons.append(SourcePartitionTruncationReason.MAX_REALIZATIONS)
             break
 
     examined_nodes = len(dispositions)
     status = (
         SearchCompletionStatus.TRUNCATED
-        if examined_nodes < len(candidates)
+        if examined_nodes < candidate_space_size
         else SearchCompletionStatus.COMPLETE
         if realizations
         else SearchCompletionStatus.INFEASIBLE
     )
-    canonical_reasons = tuple(sorted(set(truncation_reasons), key=lambda item: item.value))
+    canonical_reasons = source_partition_truncation_reasons(
+        request,
+        examined_nodes=examined_nodes,
+        realization_count=len(realizations),
+    )
     result_seed = {
         "request_id": request.request_id,
         "status": status,
-        "candidate_space_size": len(candidates),
+        "candidate_space_size": candidate_space_size,
         "examined_nodes": examined_nodes,
         "dispositions": tuple(item.model_dump(mode="json") for item in dispositions),
         "realizations": tuple(item.model_dump(mode="json") for item in realizations),
@@ -108,7 +111,7 @@ def discover_source_partitions(
         request_id=request.request_id,
         result_id=_content_id("source-partition-result", result_seed),
         status=status,
-        candidate_space_size=len(candidates),
+        candidate_space_size=candidate_space_size,
         examined_nodes=examined_nodes,
         dispositions=tuple(dispositions),
         realizations=tuple(realizations),

@@ -31,6 +31,7 @@ class SourcePartitionFailure(StrEnum):
     """Closed rejection reasons for one exact enzyme subset."""
 
     NO_ACTIONABLE_SITES = "no_actionable_sites"
+    NONPARTITIONING_TERMINAL_CUT = "nonpartitioning_terminal_cut"
     CONFLICTING_CUT_BOUNDARIES = "conflicting_cut_boundaries"
     OPERATION_LIMIT_EXCEEDED = "operation_limit_exceeded"
     RETAINED_FRAGMENT_SET_MISMATCH = "retained_fragment_set_mismatch"

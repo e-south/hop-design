@@ -47,6 +47,29 @@ def _content_id(kind: str, value: object) -> str:
     return f"hop:{kind}/{digest}@1"
 
 
+def _canonical_provisioning_policy(
+    policy: EnzymeProvisioningPolicy,
+) -> dict[str, object]:
+    """Return order-independent authored provisioning policy content."""
+    return {
+        "enzyme_catalog_digest": characterized_enzyme_catalog_digest(policy.catalog),
+        "allowed_enzyme_ids": tuple(sorted(policy.allowed_enzyme_ids)),
+        "forbidden_enzyme_ids": tuple(sorted(policy.forbidden_enzyme_ids)),
+        "reserved_enzyme_ids": tuple(sorted(policy.reserved_enzyme_ids)),
+        "max_operations": policy.max_operations,
+        "role_restrictions": tuple(
+            {
+                "role": restriction.role,
+                "allowed_enzyme_ids": tuple(sorted(restriction.allowed_enzyme_ids)),
+            }
+            for restriction in sorted(
+                policy.role_restrictions,
+                key=lambda item: item.role.value,
+            )
+        ),
+    }
+
+
 class SourceDuplexMaterial(HopModel):
     """One exact duplex precursor expressed by its top strand and terminal chemistry."""
 
@@ -164,6 +187,15 @@ class SourcePartitionDiscoveryRequest(HopModel):
             for survivor in self.constraints.required_survivors
         ):
             raise ValueError("Required survivor spans must stay inside the source duplex.")
+        if not any(
+            survivor.precursor_strand is Strand.TOP
+            and survivor.source_span.start.offset <= segment.source_span.start.offset
+            and survivor.source_span.end.offset >= segment.source_span.end.offset
+            for survivor in self.constraints.required_survivors
+        ):
+            raise ValueError(
+                "The mapped payload source span must be retained by a top-strand survivor."
+            )
         candidate_ids = self.candidate_enzyme_ids
         if not candidate_ids:
             raise ValueError("Source-partition discovery requires a provisioned nickase.")
@@ -206,13 +238,8 @@ class SourcePartitionDiscoveryRequest(HopModel):
             "payload_source_map": self.payload_source_map.model_dump(mode="json"),
             "enzyme_catalog_digest": characterized_enzyme_catalog_digest(policy.catalog),
             "enzyme_policy": {
-                "allowed_enzyme_ids": policy.allowed_enzyme_ids,
-                "forbidden_enzyme_ids": policy.forbidden_enzyme_ids,
-                "reserved_enzyme_ids": policy.reserved_enzyme_ids,
+                "candidate_enzyme_ids": self.candidate_enzyme_ids,
                 "max_operations": policy.max_operations,
-                "role_restrictions": tuple(
-                    restriction.model_dump(mode="json") for restriction in policy.role_restrictions
-                ),
             },
             "constraints": self.constraints.model_dump(mode="json"),
         }
@@ -225,6 +252,7 @@ class SourcePartitionDiscoveryRequest(HopModel):
             "source-partition-request",
             {
                 "problem_id": self.problem_id,
+                "enzyme_provisioning": _canonical_provisioning_policy(self.enzyme_provisioning),
                 "enumeration": self.enumeration.model_dump(mode="json"),
             },
         )

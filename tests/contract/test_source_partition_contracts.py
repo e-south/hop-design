@@ -19,7 +19,10 @@ from pydantic import ValidationError
 
 import hop_design.construction as construction
 from hop_design.design.construction.source_partition import discover_source_partitions
-from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
+from hop_design.models.construction.source_partition import (
+    SourcePartitionDiscoveryResult,
+    SourcePartitionTruncationReason,
+)
 from hop_design.models.enzymes import VendorMetadata
 from tests.integration.test_source_partition_discovery import _request
 
@@ -72,6 +75,32 @@ def test_identity_excludes_display_procurement_and_execution_metadata() -> None:
     assert bounded.request_id != request.request_id
 
 
+def test_problem_identity_treats_provisioning_collections_as_sets() -> None:
+    request = _request()
+    mapping = request.model_dump(mode="python", by_alias=True)
+    provisioning = mapping["enzyme_provisioning"]
+    provisioning["catalog"]["enzymes"] = tuple(reversed(provisioning["catalog"]["enzymes"]))
+    provisioning["allowed_enzyme_ids"] = tuple(reversed(provisioning["allowed_enzyme_ids"]))
+    provisioning["role_restrictions"][0]["allowed_enzyme_ids"] = tuple(
+        reversed(provisioning["role_restrictions"][0]["allowed_enzyme_ids"])
+    )
+    reordered = request.__class__.model_validate(mapping)
+
+    assert reordered.problem_id == request.problem_id
+    assert reordered.request_id == request.request_id
+
+
+def test_problem_identity_uses_effective_strand_exposure_domain() -> None:
+    request = _request()
+    mapping = request.model_dump(mode="python", by_alias=True)
+    mapping["enzyme_provisioning"]["allowed_enzyme_ids"] = ()
+    implicit_all = request.__class__.model_validate(mapping)
+
+    assert implicit_all.candidate_enzyme_ids == request.candidate_enzyme_ids
+    assert implicit_all.problem_id == request.problem_id
+    assert implicit_all.request_id != request.request_id
+
+
 def test_request_rejects_source_payload_and_survivor_mismatches() -> None:
     request = _request()
     mapping = request.model_dump(mode="python", by_alias=True)
@@ -87,6 +116,14 @@ def test_request_rejects_source_payload_and_survivor_mismatches() -> None:
     mapping = request.model_dump(mode="python", by_alias=True)
     mapping["constraints"]["max_enzymes_per_program"] = 3
     with pytest.raises(ValidationError, match="must not exceed the provisioned nickase count"):
+        request.__class__.model_validate(mapping)
+
+    mapping = request.model_dump(mode="python", by_alias=True)
+    mapping["constraints"]["required_survivors"][1]["source_span"] = {
+        "start": {"offset": 36},
+        "end": {"offset": 50},
+    }
+    with pytest.raises(ValidationError, match="payload source span must be retained"):
         request.__class__.model_validate(mapping)
 
 
@@ -110,6 +147,16 @@ def test_result_rejects_forged_fragment_selection_and_nick_function() -> None:
     )
     forged = result.model_copy(update={"realizations": (forged_realization,)})
     with pytest.raises(ValidationError, match="realization states must replay exactly"):
+        _revalidate(forged)
+
+
+def test_result_rejects_inexact_truncation_reason() -> None:
+    result = discover_source_partitions(_request(max_search_nodes=2))
+    forged = result.model_copy(
+        update={"truncation_reasons": (SourcePartitionTruncationReason.MAX_REALIZATIONS,)}
+    )
+
+    with pytest.raises(ValidationError, match="truncation reasons must replay exactly"):
         _revalidate(forged)
 
 

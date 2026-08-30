@@ -37,10 +37,15 @@ Create a regular, nonsymlink JSON or YAML file with schema
 - the maximum enzymes per program; and
 - explicit search-node and realization bounds.
 
+Because v1 maps the authored payload onto the source top strand, at least one
+required top-strand survivor must fully contain that mapped payload span.
+
 HOP filters the catalog to nickases provisioned for `strand_exposure`. It
 enumerates every nonempty subset in width-first lexical order. Selecting an
 enzyme applies every actionable occurrence in the supplied duplex; the search
 does not silently choose a convenient site.
+Terminal cuts that do not partition a strand are recorded as rejected
+candidates rather than aborting the remaining search.
 
 ## Run and inspect
 

@@ -103,6 +103,8 @@ def _resolved_sites(
                 )
             )
     site_keys = tuple((site.nick.strand, site.nick.boundary.offset) for site in sites)
+    if any(site.nick.boundary.offset in {0, len(sequence)} for site in sites):
+        failures.add(SourcePartitionFailure.NONPARTITIONING_TERMINAL_CUT)
     if len(site_keys) != len(set(site_keys)):
         failures.add(SourcePartitionFailure.CONFLICTING_CUT_BOUNDARIES)
     operation_limit = request.enzyme_provisioning.max_operations
