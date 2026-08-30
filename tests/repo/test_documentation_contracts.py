@@ -1,3 +1,14 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/repo/test_documentation_contracts.py
+
+Tests documentation metadata, links, examples, and durable claim language.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -13,6 +24,7 @@ import pytest
 import yaml
 
 import hop_design as hop
+import hop_design.construction as hop_construction
 import hop_design.discovery as hop_discovery
 import hop_design.methods as hop_methods
 import hop_design.spaces as hop_spaces
@@ -615,6 +627,11 @@ def test_every_stable_operation_is_named_in_the_api_reference() -> None:
         name for name in hop_spaces.__all__ if name.startswith(("compile_", "load_", "preview_"))
     )
     operations.update(
+        name
+        for name in hop_construction.__all__
+        if name.startswith(("compile_", "load_", "project_"))
+    )
+    operations.update(
         name for name in hop_discovery.__all__ if name.startswith(("classify_", "scan_", "search_"))
     )
     operations.update(
@@ -638,6 +655,7 @@ def test_public_prose_does_not_use_removed_specialized_root_operations() -> None
     specialized_operations = {
         name
         for name in (
+            *hop_construction.__all__,
             *hop_discovery.__all__,
             *hop_methods.__all__,
             *hop_views.__all__,

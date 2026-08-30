@@ -1,14 +1,22 @@
-"""Strict JSON and YAML specification loading."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/loading.py
+
+Loads strict versioned design specifications from safe local files.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
-
-import yaml
 
 from hop_design.models.spec import DesignSpec, HopSpec, ResolvedHopSpec
+
+from .source_documents import SourceDocumentLimitError, load_source_mapping
 
 DEFAULT_SPEC_MAX_BYTES = 1_000_000
 
@@ -28,27 +36,10 @@ def load_spec(
     max_bytes: int = DEFAULT_SPEC_MAX_BYTES,
 ) -> DesignSpec:
     """Load one known HOP schema without guessing from its fields."""
-    source = Path(path)
-    suffix = source.suffix.lower()
-    if max_bytes < 1:
-        raise ValueError("max_bytes must be at least 1.")
-    if source.is_symlink():
-        raise ValueError("HOP spec source must not be a symlink.")
-    if not source.is_file():
-        raise ValueError(f"HOP spec source is not a regular file: {source}.")
-    size_bytes = source.stat().st_size
-    if size_bytes > max_bytes:
-        raise SpecSourceLimitError(actual=size_bytes, max_bytes=max_bytes)
-    text = source.read_text(encoding="utf-8")
-    payload: Any
-    if suffix == ".json":
-        payload = json.loads(text)
-    elif suffix in {".yaml", ".yml"}:
-        payload = yaml.safe_load(text)
-    else:
-        raise ValueError("HOP spec file extension must be .json, .yaml, or .yml.")
-    if not isinstance(payload, dict):
-        raise ValueError("HOP spec document root must be a mapping.")
+    try:
+        payload = load_source_mapping(path, max_bytes=max_bytes, source_label="HOP spec")
+    except SourceDocumentLimitError as error:
+        raise SpecSourceLimitError(actual=error.actual, max_bytes=error.max_bytes) from error
     schema = payload.get("schema")
     encoded = json.dumps(payload, separators=(",", ":"))
     if schema == "hop.design/v2":

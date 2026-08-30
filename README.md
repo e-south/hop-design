@@ -33,6 +33,7 @@ No physical construction, QC, or activity record is attached.
 | Install a release and compile a first design | [Quickstart](docs/guides/quickstart.md) |
 | Load payload records or use advanced composable axes | [Payload-source guide](docs/guides/payload-sources-and-expansion.md) |
 | Find compatible candidates under explicit limits | [Discovery guide](docs/guides/discover-compatible-basal-candidates.md) |
+| Compile one strict payload-centered construction route | [Construction guide](docs/guides/compile-construction.md) |
 | Resolve an exact named production method | [Method guide](docs/guides/resolve-production-method.md) |
 | Render typed foldback or basal views | [Component-view guide](docs/guides/render-component-views.md) |
 | Verify bundles and compare a design/method handoff | [Provenance and verification](docs/provenance/overview.md) |
@@ -40,18 +41,22 @@ No physical construction, QC, or activity record is attached.
 | Navigate concepts, guides, reference, and maintenance | [Documentation map](docs/index.md) |
 
 `hop_design.spaces` is the scientist-facing facade. The package root
-`hop_design` and the sibling `hop_design.discovery`, `hop_design.methods`, and
-`hop_design.views` facades are specialist surfaces for single-design
-derivation, bounded searches, named methods, and typed projections. They are
-not required for the first substrate-space journey.
+`hop_design` and the sibling `hop_design.construction`,
+`hop_design.discovery`, `hop_design.methods`, and `hop_design.views` facades are
+specialist surfaces for single-design derivation, complete construction,
+bounded searches, named methods, and typed projections. They are not required
+for the first substrate-space journey.
 
 ## Claim boundary
 
 A compiled encoding establishes deterministic design derivation. A verified
-method bundle establishes replay of one named molecular method. Neither claim
-establishes empirical cleavage efficiency, destination compatibility,
-laboratory yield, or experimental success. A restriction product is
-destination-neutral until a downstream system evaluates a destination.
+construction bundle establishes deterministic local discovery, bounded digital
+route composition, and its exact `complete`, `infeasible`, or `truncated`
+status and accounting. A verified method bundle establishes replay of one named
+molecular method. None of these claims establishes empirical cleavage
+efficiency, destination compatibility, laboratory yield, or experimental
+success. A restriction product is destination-neutral until a downstream
+system evaluates a destination.
 
 ## Project routes
 

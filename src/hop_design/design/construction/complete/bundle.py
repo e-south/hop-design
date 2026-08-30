@@ -15,6 +15,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
+from typing import Self
 
 from hop_design.design.bundle import load_verified_bundle
 from hop_design.design.construction.verification import (
@@ -36,62 +37,142 @@ from hop_design.models.construction import ConstructionBundle
 from hop_design.models.construction.complete import ConstructionSpaceResult
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
+from .authority_content import (
+    DESIGN_MANIFEST_PATH,
+    DESIGN_ROOT,
+    RESULT_PATH,
+    artifact_media_types,
+    construction_artifacts,
+    expected_artifact_paths,
+)
 from .discovery import (
     VerifiedConstructionSpaceResult,
     verify_construction_space_result,
 )
 
 _MANIFEST_NAME = "construction-bundle.json"
-_RESULT_PATH = "construction-result.json"
-_DESIGN_ROOT = "authorities/design"
-_DESIGN_MANIFEST_PATH = f"{_DESIGN_ROOT}/hop-bundle.json"
 
 
 @dataclass(frozen=True)
-class ConstructionCompilation:
-    """One verified complete-construction result and its portable authority."""
+class _WritableConstruction:
+    """Internal adapter for the generic manifested-bundle writer."""
 
-    construction: VerifiedConstructionSpaceResult
     bundle: ConstructionBundle
     artifacts: Mapping[str, bytes]
+
+
+class _ConstructionReceipt:
+    """Shared scalar receipt over one private construction authority."""
+
+    _construction: VerifiedConstructionSpaceResult
+    _bundle: ConstructionBundle
+
+    @property
+    def bundle_id(self) -> str:
+        """Return the portable construction authority identity."""
+        return self._bundle.bundle_id
+
+    @property
+    def result_id(self) -> str:
+        """Return the exact complete-construction result identity."""
+        return self._bundle.result_id
+
+    @property
+    def design_bundle_id(self) -> str:
+        """Return the embedded verified design authority identity."""
+        return self._bundle.design_bundle_id
+
+    @property
+    def status(self) -> str:
+        """Return complete, infeasible, or truncated discovery status."""
+        return self._construction.result.status.value
+
+    @property
+    def endpoint(self) -> str:
+        """Return the requested construction endpoint."""
+        return self._construction.result.request.endpoint.value
+
+    @property
+    def valid_realizations(self) -> int:
+        """Return the number of accepted exact route realizations."""
+        return self._construction.result.accounting.valid_realizations
+
+    @property
+    def examined_combinations(self) -> int:
+        """Return the number of local combinations actually examined."""
+        return self._construction.result.accounting.examined_combinations
+
+    @property
+    def nominal_combinations(self) -> int:
+        """Return the declared complete local cross-product cardinality."""
+        return self._construction.result.accounting.nominal_combinations
+
+    @property
+    def materialized_realization_ids(self) -> tuple[str, ...]:
+        """Return accepted exact route identities in canonical order."""
+        return tuple(
+            item.materialized_realization_id for item in self._construction.result.realizations
+        )
+
+    def _verified_source(self) -> VerifiedConstructionSpaceResult:
+        return self._construction
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}(bundle_id={self.bundle_id!r}, "
+            f"status={self.status!r}, endpoint={self.endpoint!r}, "
+            f"valid_realizations={self.valid_realizations})"
+        )
+
+
+@dataclass(frozen=True, init=False, repr=False)
+class ConstructionCompilation(_ConstructionReceipt):
+    """One write-capable receipt over a verified construction authority."""
+
+    _construction: VerifiedConstructionSpaceResult
+    _bundle: ConstructionBundle
+    _artifacts: Mapping[str, bytes]
+
+    @classmethod
+    def _create(
+        cls,
+        *,
+        construction: VerifiedConstructionSpaceResult,
+        bundle: ConstructionBundle,
+        artifacts: Mapping[str, bytes],
+    ) -> Self:
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "_construction", construction)
+        object.__setattr__(instance, "_bundle", bundle)
+        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
+        return instance
 
     def write(self, output: str | Path) -> Path:
         """Atomically write the construction bundle after complete replay."""
         return write_construction_bundle(self, Path(output))
 
 
-@dataclass(frozen=True)
-class VerifiedConstructionBundle:
-    """Construction content admitted after integrity and semantic replay."""
+@dataclass(frozen=True, init=False, repr=False)
+class VerifiedConstructionBundle(_ConstructionReceipt):
+    """Read-only receipt over replay-verified construction content."""
 
-    bundle: ConstructionBundle
-    construction: VerifiedConstructionSpaceResult
-    artifacts: Mapping[str, bytes]
+    _construction: VerifiedConstructionSpaceResult
+    _bundle: ConstructionBundle
+    _artifacts: Mapping[str, bytes]
 
-
-def _construction_artifacts(
-    construction: VerifiedConstructionSpaceResult,
-) -> dict[str, bytes]:
-    design = construction.design
-    artifacts = {
-        _RESULT_PATH: canonical_json_bytes(construction.result),
-        _DESIGN_MANIFEST_PATH: canonical_json_bytes(design.bundle),
-    }
-    artifacts.update(
-        {f"{_DESIGN_ROOT}/{path}": content for path, content in design.artifacts.items()}
-    )
-    return artifacts
-
-
-def _artifact_media_types(
-    construction: VerifiedConstructionSpaceResult,
-) -> dict[str, str]:
-    design_types = {item.path: item.media_type for item in construction.design.bundle.artifacts}
-    return {
-        _RESULT_PATH: "application/json",
-        _DESIGN_MANIFEST_PATH: "application/json",
-        **{f"{_DESIGN_ROOT}/{path}": design_types[path] for path in construction.design.artifacts},
-    }
+    @classmethod
+    def _create(
+        cls,
+        *,
+        construction: VerifiedConstructionSpaceResult,
+        bundle: ConstructionBundle,
+        artifacts: Mapping[str, bytes],
+    ) -> Self:
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "_construction", construction)
+        object.__setattr__(instance, "_bundle", bundle)
+        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
+        return instance
 
 
 def compile_construction_bundle(
@@ -106,8 +187,8 @@ def compile_construction_bundle(
         basal=construction.basal,
         design=construction.design,
     )
-    artifacts = _construction_artifacts(construction)
-    media_types = _artifact_media_types(construction)
+    artifacts = construction_artifacts(construction)
+    media_types = artifact_media_types(construction)
     entries = tuple(
         ArtifactManifestEntry(
             path=path,
@@ -117,7 +198,7 @@ def compile_construction_bundle(
         )
         for path, content in sorted(artifacts.items())
     )
-    result_digest = sha256_digest(artifacts[_RESULT_PATH])
+    result_digest = sha256_digest(artifacts[RESULT_PATH])
     seed = construction_manifest_seed(
         result_id=construction.result.result_id,
         design_bundle_id=construction.design.bundle.bundle_id,
@@ -136,19 +217,11 @@ def compile_construction_bundle(
         manifest_digest=manifest_digest,
         artifacts=entries,
     )
-    return ConstructionCompilation(
+    return ConstructionCompilation._create(
         construction=construction,
         bundle=bundle,
-        artifacts=MappingProxyType(artifacts),
+        artifacts=artifacts,
     )
-
-
-def _expected_artifact_paths(design_bundle: HopBundle) -> set[str]:
-    return {
-        _RESULT_PATH,
-        _DESIGN_MANIFEST_PATH,
-        *(f"{_DESIGN_ROOT}/{item.path}" for item in design_bundle.artifacts),
-    }
 
 
 def load_verified_construction_bundle(
@@ -163,12 +236,12 @@ def load_verified_construction_bundle(
     )
     artifacts = dict(artifact_mapping)
     try:
-        embedded_design = HopBundle.model_validate_json(artifacts[_DESIGN_MANIFEST_PATH])
+        embedded_design = HopBundle.model_validate_json(artifacts[DESIGN_MANIFEST_PATH])
     except KeyError as exc:
         raise BundleIntegrityError("Construction bundle omits its design manifest.") from exc
     except Exception as exc:
         raise BundleIntegrityError(f"Construction design manifest is invalid: {exc}") from exc
-    expected_paths = _expected_artifact_paths(embedded_design)
+    expected_paths = expected_artifact_paths(embedded_design)
     if set(artifacts) != expected_paths:
         missing = sorted(expected_paths - artifacts.keys())
         extra = sorted(artifacts.keys() - expected_paths)
@@ -186,13 +259,13 @@ def load_verified_construction_bundle(
         != bundle.bundle_id
     ):
         raise BundleIntegrityError("Construction bundle identifier does not match its content.")
-    if sha256_digest(artifacts[_RESULT_PATH]) != bundle.result_digest:
+    if sha256_digest(artifacts[RESULT_PATH]) != bundle.result_digest:
         raise BundleIntegrityError("Construction result digest does not match the root manifest.")
-    design = load_verified_bundle(root / _DESIGN_ROOT)
+    design = load_verified_bundle(root / DESIGN_ROOT)
     if design.bundle != embedded_design or design.bundle.bundle_id != bundle.design_bundle_id:
         raise BundleIntegrityError("Construction design authority is inconsistent.")
     try:
-        result = ConstructionSpaceResult.model_validate_json(artifacts[_RESULT_PATH])
+        result = ConstructionSpaceResult.model_validate_json(artifacts[RESULT_PATH])
     except Exception as exc:
         raise BundleIntegrityError(f"Construction result is invalid: {exc}") from exc
     if result.result_id != bundle.result_id:
@@ -213,20 +286,20 @@ def load_verified_construction_bundle(
     except Exception as exc:
         raise BundleIntegrityError(f"Construction result cannot be replayed: {exc}") from exc
     expected = compile_construction_bundle(construction)
-    if dict(expected.artifacts) != artifacts:
+    if dict(expected._artifacts) != artifacts:
         raise BundleIntegrityError("Construction artifacts disagree with deterministic replay.")
-    if expected.bundle != bundle:
+    if expected._bundle != bundle:
         raise BundleIntegrityError("Construction manifest disagrees with deterministic replay.")
-    return VerifiedConstructionBundle(
-        bundle=bundle,
+    return VerifiedConstructionBundle._create(
         construction=construction,
-        artifacts=MappingProxyType(artifacts),
+        bundle=bundle,
+        artifacts=artifacts,
     )
 
 
 def verify_construction_bundle(bundle_path: str | Path) -> ConstructionBundle:
     """Verify one construction bundle and return its root manifest."""
-    return load_verified_construction_bundle(bundle_path).bundle
+    return load_verified_construction_bundle(bundle_path)._bundle
 
 
 def write_construction_bundle(
@@ -235,7 +308,10 @@ def write_construction_bundle(
 ) -> Path:
     """Write one construction bundle atomically after semantic replay."""
     return write_manifested_bundle_files(
-        compilation,
+        _WritableConstruction(
+            bundle=compilation._bundle,
+            artifacts=compilation._artifacts,
+        ),
         output,
         manifest_name=_MANIFEST_NAME,
         verifier=verify_construction_bundle,

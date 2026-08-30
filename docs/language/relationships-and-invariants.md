@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: reference
 journey:
   - compile
@@ -19,9 +19,10 @@ journey:
 
 ## Accepted construction-discovery contracts
 
-These contracts define the semantic target for payload-centered construction.
-They do not enlarge the current `hop_design.spaces` facade, and their presence
-here does not imply that every implementation type has landed.
+These contracts define the implemented semantic authority for
+payload-centered construction. They do not enlarge the
+`hop_design.spaces` facade. External callers use the narrow
+`hop_design.construction` operations rather than importing the raw contracts.
 
 | Contract | Preconditions | Guarantees |
 | --- | --- | --- |
@@ -34,6 +35,10 @@ here does not imply that every implementation type has landed.
 | reaction stage | One accepted pre-stage molecular state and one or more declared concurrent operations | Every intended and unintended actionable binding resolves against the same pre-stage state; one atomic non-conflicting post-stage state or route failure |
 | complete route composition | Exact local realizations, one payload, one route family, one endpoint, and explicit bounds | Payload preservation, stage order, site availability, lineage, strand continuity, closure, endpoint processing, and final encoding are validated globally |
 | realization grouping | Complete exact realization set and deterministic grouping keys | Local, complete, final-product, and achieved-geometry identities remain distinct; group membership reversibly covers every realization without deduplication |
+| construction source | One bounded regular nonsymlink JSON/YAML mapping with exact schema; strict foldback, optional basal, endpoint materialization, constraints, and finite bounds; separate verified design-bundle path | The source cannot author design or result identity; endpoint structure fails closed; the design payload belongs to every declared local payload space |
+| `compile_construction` | Strict construction source and separately replay-verified `HopBundle` | Verified local authorities, bounded whole-route composition, exact endpoint materialization, encoding equality with the design, and an opaque write-capable receipt with complete/infeasible/truncated status |
+| `ConstructionBundle` | Replay-verified complete result and embedded unchanged design authority | Content-addressed root inventory, exact result and design identities, byte integrity, complete semantic replay, and create-only atomic persistence |
+| construction projection | Opaque verified construction receipt plus explicit family or accepted realization selection where required | Deterministic JSON, optional tidy CSV, and SVG preserving the exact source relation; no ranking, implicit exemplar selection, or authority mutation |
 
 Compactness is achieved endpoint geometry plus retained non-payload sequence.
 Transient recognition sites, source handles, auxiliary oligos, and destination

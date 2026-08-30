@@ -12,7 +12,6 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import json
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -138,20 +137,20 @@ def test_construction_bundle_round_trips_verified_authorities_deterministically(
     output = first.write(tmp_path / "construction-bundle")
     loaded = load_verified_construction_bundle(output)
 
-    assert first.bundle == second.bundle == loaded.bundle
-    assert dict(first.artifacts) == dict(second.artifacts) == dict(loaded.artifacts)
-    assert first.bundle.bundle_id == "hop:construction-bundle/abdc5c8cb477/db4bf0435353bdc4"
-    assert first.bundle.manifest_digest == (
+    assert first._bundle == second._bundle == loaded._bundle
+    assert dict(first._artifacts) == dict(second._artifacts) == dict(loaded._artifacts)
+    assert first.bundle_id == "hop:construction-bundle/abdc5c8cb477/db4bf0435353bdc4"
+    assert first._bundle.manifest_digest == (
         "sha256:db4bf0435353bdc46a1c80d4ef65f1b2584f7f17bb9b6d58dcc4f5661a5f6171"
     )
-    assert first.bundle.result_digest == (
+    assert first._bundle.result_digest == (
         "sha256:2a02390fa8ac86a3114f2155f7662f2dbf3459d104c857caa8e49821abc1e395"
     )
-    assert sha256_digest(canonical_json_bytes(first.bundle)) == (
+    assert sha256_digest(canonical_json_bytes(first._bundle)) == (
         "sha256:1d1140815e9fce6480f974f5fb063fcb5886688f323b38f1aaa400fb3573e968"
     )
-    assert loaded.construction.result == verified.result
-    assert loaded.construction.design == verified.design
+    assert loaded._construction.result == verified.result
+    assert loaded._construction.design == verified.design
     assert {
         path.relative_to(output).as_posix() for path in output.rglob("*") if path.is_file()
     } == {
@@ -170,7 +169,7 @@ def test_construction_bundle_rejects_unverified_input(tmp_path: Path) -> None:
 
 
 def test_construction_bundle_manifest_rejects_duplicate_artifact_paths(tmp_path: Path) -> None:
-    bundle = compile_construction_bundle(_verified_construction(tmp_path)).bundle
+    bundle = compile_construction_bundle(_verified_construction(tmp_path))._bundle
     data = bundle.model_dump(mode="python", by_alias=True)
     data["artifacts"] = (bundle.artifacts[0], bundle.artifacts[0])
 
@@ -344,7 +343,11 @@ def test_construction_bundle_write_rejects_unsafe_paths_and_existing_destination
     tmp_path: Path,
 ) -> None:
     compilation = compile_construction_bundle(_verified_construction(tmp_path))
-    unsafe = replace(compilation, artifacts={"../escaped.txt": b"escape\n"})
+    unsafe = type(compilation)._create(
+        construction=compilation._construction,
+        bundle=compilation._bundle,
+        artifacts={"../escaped.txt": b"escape\n"},
+    )
 
     with pytest.raises(ValueError, match="path is unsafe"):
         unsafe.write(tmp_path / "unsafe")
@@ -360,9 +363,13 @@ def test_construction_bundle_failed_verification_commits_no_destination(
     tmp_path: Path,
 ) -> None:
     compilation = compile_construction_bundle(_verified_construction(tmp_path))
-    artifacts = dict(compilation.artifacts)
+    artifacts = dict(compilation._artifacts)
     artifacts["construction-result.json"] = b"{}\n"
-    invalid = replace(compilation, artifacts=artifacts)
+    invalid = type(compilation)._create(
+        construction=compilation._construction,
+        bundle=compilation._bundle,
+        artifacts=artifacts,
+    )
     destination = tmp_path / "invalid"
 
     with pytest.raises(ValueError, match="artifact digest mismatch"):

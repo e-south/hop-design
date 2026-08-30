@@ -1,0 +1,206 @@
+schema: hop.construction-source/v1
+foldback:
+  schema: hop.local-neighborhood-request/v1
+  name: null
+  payload:
+    schema: hop.final-payload/v1
+    display_name: null
+    payload:
+      kind: exact
+      sequence: GACA
+    basal_boundary:
+      offset: 0
+    foldback_boundary:
+      offset: 4
+    pair_state_exceptions: []
+  family: foldback
+  route_family: linear_source/v1
+  endpoint: ssdna_hairpin
+  target:
+    family: foldback
+    junction_offset_nt: 0
+    loop_length_nt: 3
+    annealing_arm_length_bp: 4
+  hard_constraints:
+    preserve_payload: true
+    forbid_unintended_actionable_sites: true
+    require_all_members_compatible: false
+  preferences:
+    retained_construction: compact
+    payload_compatibility: report
+    ranking: none
+    preferred_enzyme_ids: []
+  enzyme_provisioning:
+    catalog:
+      schema: hop/characterized-enzyme-catalog/v1
+      catalog_id: example:enzyme-catalog/foldback-construction@1
+      enzymes:
+      - schema: hop/characterized-enzyme/v1
+        enzyme_id: example:enzyme/foldback-nick@1
+        canonical_name: foldback-nick@1
+        enzyme_class: nickase
+        target_molecule: dna
+        recognition_pattern: TCAGATGCTGA
+        recognition_orientation_semantics: declared_only
+        recognition_length: 11
+        substrate_requirement: duplex_dna
+        cut_offset_reference_strand: 0
+        cut_offset_complement_strand: null
+        resulting_end_model: nick
+        characterization_source:
+          system: literature
+          kind: synthetic-characterization-fixture
+          id: example:enzyme/foldback-nick@1
+        vendor_metadata: []
+      - schema: hop/characterized-enzyme/v1
+        enzyme_id: example:enzyme/foldback-terminus@1
+        canonical_name: foldback-terminus
+        enzyme_class: duplex_restriction
+        target_molecule: dna
+        recognition_pattern: GGCC
+        recognition_orientation_semantics: declared_only
+        recognition_length: 4
+        substrate_requirement: duplex_dna
+        cut_offset_reference_strand: 0
+        cut_offset_complement_strand: 0
+        resulting_end_model: duplex_break
+        characterization_source:
+          system: literature
+          kind: synthetic-characterization-fixture
+          id: example:enzyme/foldback-terminus@1
+        vendor_metadata: []
+    allowed_enzyme_ids:
+    - example:enzyme/foldback-nick@1
+    - example:enzyme/foldback-terminus@1
+    forbidden_enzyme_ids: []
+    reserved_enzyme_ids: []
+    max_operations: 4
+    role_restrictions:
+    - role: foldback_nick
+      allowed_enzyme_ids:
+      - example:enzyme/foldback-nick@1
+    - role: terminus_definition
+      allowed_enzyme_ids:
+      - example:enzyme/foldback-terminus@1
+  relaxation:
+    mode: exact_only
+    max_radius: 0
+    coordinates: []
+  enumeration:
+    max_search_nodes: 100
+    max_realizations: 100
+basal:
+  schema: hop.local-neighborhood-request/v1
+  name: null
+  payload:
+    schema: hop.final-payload/v1
+    display_name: null
+    payload:
+      kind: exact
+      sequence: GACA
+    basal_boundary:
+      offset: 0
+    foldback_boundary:
+      offset: 4
+    pair_state_exceptions: []
+  family: basal
+  route_family: linear_source/v1
+  endpoint: hairpin_pcr_duplex
+  target:
+    family: basal
+    nick_strand: bottom
+    nick_offset_nt: 0
+    pairing_constraints:
+    - profile_position: 0
+      allowed_class: match
+    - profile_position: 1
+      allowed_class: match
+    - profile_position: 2
+      allowed_class: match
+    - profile_position: 3
+      allowed_class: match
+    ligation_proximal_match_required: true
+    end_generation: null
+  hard_constraints:
+    preserve_payload: true
+    forbid_unintended_actionable_sites: true
+    require_all_members_compatible: false
+  preferences:
+    retained_construction: compact
+    payload_compatibility: report
+    ranking: none
+    preferred_enzyme_ids: []
+  enzyme_provisioning:
+    catalog:
+      schema: hop/characterized-enzyme-catalog/v1
+      catalog_id: example:enzyme-catalog/complete-basal@1
+      enzymes:
+      - schema: hop/characterized-enzyme/v1
+        enzyme_id: example:enzyme/complete-basal@1
+        canonical_name: complete-basal
+        enzyme_class: nickase
+        target_molecule: dna
+        recognition_pattern: TTTT
+        recognition_orientation_semantics: both_orientations
+        recognition_length: 4
+        substrate_requirement: duplex_dna
+        cut_offset_reference_strand: 0
+        cut_offset_complement_strand: null
+        resulting_end_model: nick
+        characterization_source:
+          system: literature
+          kind: synthetic-characterization-fixture
+          id: complete-basal
+        vendor_metadata: []
+    allowed_enzyme_ids:
+    - example:enzyme/complete-basal@1
+    forbidden_enzyme_ids: []
+    reserved_enzyme_ids: []
+    max_operations: 2
+    role_restrictions:
+    - role: basal_nick
+      allowed_enzyme_ids:
+      - example:enzyme/complete-basal@1
+  relaxation:
+    mode: exact_only
+    max_radius: 0
+    coordinates: []
+  enumeration:
+    max_search_nodes: 100
+    max_realizations: 100
+composition:
+  endpoint: hairpin_pcr_duplex
+  materialization:
+    source_origin: synthesized
+    source_five_prime_end: hydroxyl
+    source_three_prime_end: hydroxyl
+    source_complement_origin: synthesized
+    source_complement_five_prime_end: phosphate
+    source_complement_three_prime_end: hydroxyl
+    adapter:
+      material_id: ligation-adapter
+      origin: synthesized
+      sequence_5prime: TTTT
+      five_prime_end: phosphate
+      three_prime_end: hydroxyl
+    forward_primer:
+      material_id: forward-primer
+      origin: synthesized
+      sequence_5prime: AAAA
+      five_prime_end: phosphate
+      three_prime_end: hydroxyl
+    reverse_primer:
+      material_id: reverse-primer
+      origin: synthesized
+      sequence_5prime: AAAA
+      five_prime_end: phosphate
+      three_prime_end: hydroxyl
+  whole_route_constraints:
+    preserve_payload: true
+    reject_unintended_actionable_sites: true
+    require_exact_materials: true
+    require_all_combinations_valid: false
+  enumeration:
+    pruning: disabled
+    max_combinations: 10000
+    max_realizations: 10000

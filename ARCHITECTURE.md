@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: explanation
 ---
 
@@ -45,6 +45,22 @@ final-payload specification
   -> exact endpoint products
   -> reversible scientific projections
 ```
+
+The public construction entrypoint binds that spine to files without exposing
+its model graph:
+
+```text
+strict construction source + separately verified HopBundle
+  -> verified local authorities
+  -> verified complete construction
+  -> opaque receipt
+  -> portable ConstructionBundle or neutral projection packet
+```
+
+The source owns requests, exact materials, constraints, and bounds. The design
+bundle owns design identity and encoding. The construction bundle embeds the
+unchanged design authority needed for replay and owns only the complete-route
+result and its inventory.
 
 Final-payload coordinates are shared authority. Source coordinates and source
 segmentation belong to the selected route family. The current linear-source
@@ -85,10 +101,12 @@ models
   method request resolves into molecular states and exported physical products;
   it does not redefine design identity or claim destination readiness.
 - `api` is the package-root design-language operation facade. Thin top-level
-  `spaces`, `discovery`, `methods`, and `views` facades expose the
-  scientist-facing workflow and three specialized competency surfaces without
+  `spaces`, `construction`, `discovery`, `methods`, and `views` facades expose
+  the scientist-facing workflow and specialized competency surfaces without
   adding derivation logic. `spaces` authors a bounded sequence space and
   returns existing member authorities rather than redefining their anatomy.
+  `construction` accepts strict files plus a separately verified design bundle
+  and returns opaque receipts rather than exporting the construction ontology.
 - `cli` adapts user input to the public API and contains no derivations.
 
 Construction discovery reuses the specialist discovery, molecular-state,
@@ -124,8 +142,10 @@ workflow:
    for one named method. The linear-source compiler derives all nicks,
    fragments, selections, pairings, ligation bonds, PCR products, restriction
    products, and cohesive ends.
-4. **Provenance and verification.** Separate design and method bundles, strict
-   schema replay, byte verification, and an explicit encoding-digest handoff.
+4. **Provenance and verification.** Distinct design, construction, and method
+   bundle claims; strict schema replay; byte verification; embedded design
+   authority for construction replay; and an explicit design-method encoding-
+   digest handoff.
 
 Design derivation is non-temporal. Only a named method plan owns production
 chronology. A successful design does not imply that a method is available or

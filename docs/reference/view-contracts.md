@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: reference
 ---
 
@@ -91,3 +91,28 @@ These projections establish local feasibility only under the declared
 molecular model. They do not establish a complete construction route,
 physical construction, quality control, biological activity, or empirical
 enzyme performance.
+
+## Complete construction projections
+
+`hop.complete-construction-summary/v1` is the lossless tabular relation over
+one verified complete result. Its rows preserve the exact examined Cartesian
+prefix: accepted rows carry materialized route, achieved-geometry, final-
+product, endpoint, and material facts; rejected rows carry one derived
+rejection reason. Counts, failure partitions, material totals, group
+membership, and truncation evidence replay the source result exactly.
+
+`hop.complete-construction-trajectory/v1` embeds the exact chronology of one
+explicitly selected accepted materialized realization. It has no CSV form
+because it is a structured molecular-state sequence rather than a table. The
+public operation requires `materialized_realization_id`; HOP never selects an
+exemplar from canonical order.
+
+The public `ConstructionProjection` packet provides canonical JSON,
+deterministic SVG, and CSV when the projection defines a table. Packet writing
+is atomic and create-only. The packet carries its projection schema, projection
+identity, source-result identity, and renderer version while keeping the raw
+projection model internal.
+
+Complete projections are reversible views, not authority bundles. They cannot
+establish physical execution, recovery, destination compatibility, QC,
+activity, yield, empirical enzyme performance, or route preference.

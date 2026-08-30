@@ -1,3 +1,14 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/architecture/test_dependency_rules.py
+
+Tests package dependency direction and public-facade boundaries.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import sys
@@ -20,6 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
         ("models/bad.py", "from hop_design import design"),
         ("models/bad.py", "from .. import design"),
         ("models/bad.py", "from hop_design.discovery import search_basal_candidates"),
+        ("design/bad.py", "from hop_design.construction import compile_construction"),
         ("design/bad.py", "from hop_design.methods import MethodBundle"),
         ("design/bad.py", "from hop_design.spaces import compile_space"),
         ("api.py", "from hop_design.cli import app"),
@@ -38,6 +50,10 @@ def test_forbidden_absolute_relative_and_root_imports_fail(path: str, source: st
     [
         ("design/good.py", "from hop_design.kernel import bundle_identity"),
         ("cli.py", "from hop_design.api import compile"),
+        (
+            "construction.py",
+            "from hop_design.design.construction.public import compile_construction",
+        ),
         ("discovery.py", "from hop_design.design.discovery import search_nicking_placements"),
         ("spaces.py", "from hop_design.design.spaces import preview_space"),
     ],

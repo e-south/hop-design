@@ -7,17 +7,18 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-30
 doc_type: reference
 ---
 
 # Python API
 
-The package root is the single-design language. Four sibling facades make
+The package root is the single-design language. Five sibling facades make
 scientist workflow and specialized competency questions explicit:
 
 ```python
 import hop_design as hop
+import hop_design.construction as construction
 import hop_design.discovery as discovery
 import hop_design.methods as methods
 import hop_design.spaces as spaces
@@ -25,10 +26,47 @@ import hop_design.views as views
 ```
 
 Use `hop` for design compilation, payloads, bounded design spaces, and explicit
-component evaluation. Use `discovery` for bounded catalog queries, `methods`
-for named production methods and molecular states, `spaces` for the minimal
-scientist-facing substrate-space journey, and `views` for state projections and
-rendering. Internal `hop_design.design.*` modules are not public facades.
+component evaluation. Use `construction` for file-oriented payload-centered
+construction compilation and its neutral projections, `discovery` for bounded
+catalog queries, `methods` for named production methods and molecular states,
+`spaces` for the minimal scientist-facing substrate-space journey, and `views`
+for state projections and rendering. Internal `hop_design.design.*` modules are
+not public facades.
+
+## Payload-centered construction
+
+All operations and receipts in this section use `hop_design.construction`.
+
+- `compile_construction(source_path, design_bundle_path=...) -> ConstructionCompilation`
+  loads one strict file and a separate verified design authority, discovers
+  local neighborhoods, composes the bounded whole route, and returns an opaque
+  write-capable receipt.
+- `load_verified_construction_bundle(path) -> VerifiedConstructionBundle`
+  checks portable bytes and semantically replays the embedded design, local
+  authorities, complete result, and root manifest.
+- `project_foldback_feasibility(receipt) -> ConstructionProjection`
+- `project_basal_feasibility(receipt) -> ConstructionProjection`
+- `project_relaxation_frontier(receipt, family=...) -> ConstructionProjection`
+- `project_complete_construction_summary(receipt) -> ConstructionProjection`
+- `project_construction_trajectory(receipt, materialized_realization_id=...) -> ConstructionProjection`
+
+The source document cannot author design or result identities. Receipts expose
+bundle, result, and design-bundle identity; endpoint and status; accepted,
+examined, and nominal counts; and accepted materialized-realization identities
+rather than internal result models. `ConstructionCompilation.write(path)`
+atomically persists the portable authority. Projection
+packets provide canonical JSON, tidy CSV when defined, and SVG bytes; writing a
+packet is atomic and create-only. A trajectory always requires an explicit
+accepted realization identity.
+
+These operations establish only deterministic digital discovery,
+materialization, composition, verification, and projection. They do not
+establish laboratory construction, destination compatibility, QC, activity,
+yield, or an optimized route.
+
+See the [construction guide](../guides/compile-construction.md),
+[construction-bundle layout](construction-bundle-layout.md), and
+[construction projection contracts](view-contracts.md#complete-construction-projections).
 
 ## Substrate spaces and design sets
 

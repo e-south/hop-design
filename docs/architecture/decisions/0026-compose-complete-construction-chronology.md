@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: decision
 ---
 
@@ -28,6 +28,12 @@ state. That would make adjacency syntactically valid while making the
 chemistry false.
 
 ## Decision
+
+This decision amends the exclusive chronology language in
+[ADR 0020](0020-separate-design-derivation-from-method-chronology.md) without
+returning chronology to design derivation. A complete construction route and a
+named method plan own distinct ordered histories for their respective
+competencies.
 
 `ReactionProgram` remains the authority for one or more assessed enzyme
 phases. It continues to own enzyme operations, actionable bindings, concurrent
@@ -80,11 +86,12 @@ composition result remains a parsed record; `VerifiedConstructionSpaceResult`
 admission reruns exact whole-route composition against the verified local and
 design authorities and requires canonical-byte equality.
 
-The advanced construction modules remain internal. A future
-`hop_design.construction` facade will expose operations that accept verified
-inputs and return verified results. It will not expose raw result producers or
-make parsed structural records interchangeable with replay-verified
-authorities.
+The advanced construction models remain internal. The
+`hop_design.construction` facade defined by ADR 0027 accepts one strict source
+file and one separate verified design bundle, then returns opaque compilation,
+verified-bundle, and projection receipts. It does not expose raw result
+producers or make parsed structural records interchangeable with
+replay-verified authorities.
 
 One model-layer route derivation replays the required combined enzyme program
 and every post-cleavage strand from those local members, the lifted basal

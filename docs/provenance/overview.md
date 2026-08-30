@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-30
 doc_type: explanation
 journey:
   - verify
@@ -20,16 +20,40 @@ journey:
 HOP uses “provenance and verification” for derivation claims. Experimental
 observations and biological interpretation remain outside HOP.
 
-## Two bundle authorities
+## Three bundle authorities
 
 ```text
 DesignSpec -> DesignDerivation -> HairpinEncodingInsert -> HopBundle
 
+ConstructionSource + verified HopBundle
+  -> local authorities -> complete route result -> ConstructionBundle
+
 MethodRequest -> molecular states -> RestrictionDigestProduct -> MethodBundle
 ```
 
-The bundles are siblings. Each has its own identity, manifest, source objects,
-derived artifacts, and semantic replay.
+Each bundle has its own identity and replay claim. The construction bundle
+embeds the complete verified design bundle used during composition; it does not
+reconstruct or rename that design authority. The method bundle remains a
+sibling authority for one named method request and does not become construction
+evidence merely because an encoding digest agrees.
+
+## The construction handoff
+
+```python
+import hop_design.construction as construction
+
+compiled = construction.compile_construction(
+    "construction.yaml",
+    design_bundle_path="design",
+)
+bundle_path = compiled.write("construction")
+verified = construction.load_verified_construction_bundle(bundle_path)
+```
+
+The loader checks the root inventory and digests, replays the embedded design,
+replays each local authority, recomposes the complete route, and requires the
+expected result, artifacts, and root manifest to match. Opaque public receipts
+expose identity and accounting without making raw replay models public.
 
 ## The design-method handoff
 
@@ -75,6 +99,9 @@ consumer owns and records this equality check.
 - derived artifacts replay from their authoritative inputs;
 - feature partitions, spans, sequences, and digests agree;
 - method states preserve cut, fragment, bond, and per-base lineage;
+- construction results preserve local authority membership, reaction
+  assessment, examined composition dispositions, exact endpoint products,
+  rejection reasons, and reversible grouping;
 - each bundle is internally replayable and digest-consistent.
 
 Verification does not establish destination compatibility, protocol yield, or
@@ -82,4 +109,5 @@ experimental success.
 
 See [plans, artifacts, and bundles](plans-artifacts-and-bundles.md), the
 [design-bundle layout](../reference/bundle-layout.md), and the
-[method-bundle layout](../reference/method-bundle-layout.md).
+[construction-bundle](../reference/construction-bundle-layout.md) and
+[method-bundle](../reference/method-bundle-layout.md) layouts.

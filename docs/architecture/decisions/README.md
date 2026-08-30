@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: index
 journey:
   - maintain
@@ -26,14 +26,15 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0011: Typed hairpin-encoding product boundary](0011-hairpin-encoding-product-boundary.md) — amended by 0020
 - [0012: Method availability and resolution](0012-method-availability-and-resolution.md)
 - [0013: Separate replayable method bundles](0013-separate-replayable-method-bundles.md)
-- [0020: Separate design derivation from method chronology](0020-separate-design-derivation-from-method-chronology.md)
+- [0020: Separate design derivation from method chronology](0020-separate-design-derivation-from-method-chronology.md) — amended by 0026
 - [0023: Separate public facades by competency question](0023-separate-public-facades-by-competency-question.md)
 - [0024: Center first use on bounded substrate spaces](0024-substrate-space-scientist-surface.md)
+- [0027: Compile construction from strict files behind a narrow facade](0027-file-oriented-construction-facade.md)
 
 ## Payload-centered construction
 
 - [0025: Center construction discovery on final payload geometry](0025-payload-centered-construction-discovery.md)
-- [0026: Compose complete construction chronology around enzyme phases](0026-compose-complete-construction-chronology.md)
+- [0026: Compose complete construction chronology around enzyme phases](0026-compose-complete-construction-chronology.md) — amends 0020
 
 ## Hairpin language
 

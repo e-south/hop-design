@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Enforce HOP package dependency direction."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+scripts/check_architecture.py
+
+Enforces HOP package dependency direction and public-facade boundaries.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -9,7 +18,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "hop_design"
 
-PUBLIC_FACADE_MODULES = {"api", "discovery", "methods", "spaces", "views"}
+PUBLIC_FACADE_MODULES = {"api", "construction", "discovery", "methods", "spaces", "views"}
 FORBIDDEN_BY_LAYER = {
     "models": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export", "kernel"},
     "kernel": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export"},
@@ -32,6 +41,7 @@ FORBIDDEN_BY_LAYER = {
         "api",
         "catalog",
         "cli",
+        "construction",
         "design",
         "discovery",
         "export",
@@ -44,6 +54,7 @@ FORBIDDEN_BY_LAYER = {
 ROOT_MODULE_LAYERS = {
     "api.py": "api",
     "cli.py": "cli",
+    "construction.py": "api",
     "discovery.py": "api",
     "methods.py": "api",
     "serialization.py": "serialization",

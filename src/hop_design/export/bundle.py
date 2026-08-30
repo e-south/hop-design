@@ -1,8 +1,16 @@
-"""Atomic bundle writing and integrity verification."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/export/bundle.py
+
+Writes portable bundles atomically and verifies their integrity.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
 from collections.abc import Mapping
@@ -25,6 +33,8 @@ from hop_design.models.bundle import (
 from hop_design.models.plan import HopPlan
 from hop_design.models.spec import DesignSpec, HopSpec, ResolvedHopSpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest
+
+from .publication import publish_directory_create_only
 
 _SPEC_ADAPTER: TypeAdapter[DesignSpec] = TypeAdapter(DesignSpec)
 
@@ -104,7 +114,7 @@ def write_manifested_bundle_files(
             destination.write_bytes(content)
         (temporary / manifest_name).write_bytes(canonical_json_bytes(compilation.bundle))
         verifier(temporary)
-        os.replace(temporary, output)
+        publish_directory_create_only(temporary, output)
     except BaseException:
         shutil.rmtree(temporary, ignore_errors=True)
         raise

@@ -7,11 +7,16 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-23
+last_verified: 2026-08-30
 doc_type: decision
+amended_by: hop-adr-0026
 ---
 
 # ADR 0020: Separate design derivation from method chronology
+
+> Amended by [ADR 0026](0026-compose-complete-construction-chronology.md):
+> design derivation still owns no chronology; a complete construction route or
+> named method plan owns its respective ordered molecular history.
 
 ## Context
 
@@ -28,14 +33,16 @@ resolution and evaluation; they contain no ordered method chronology. A
 resolved derivation may preserve caller-asserted nick or release projections
 needed to derive the encoding.
 
-Only a named method plan owns ordered molecular-state history. Design and
-method bundles remain siblings joined, when applicable, by exact encoding-digest
-equality. `HopBundle` and design provenance advance to v2.
+A construction route or named method plan owns its respective ordered
+molecular-state history. Design, construction, and method bundles remain
+separate authorities joined, when applicable, by exact identities or
+encoding-digest equality. `HopBundle` and design provenance advance to v2.
 
 The removed route fields and old schemas have no aliases or readers.
 
 ## Consequences
 
-A compiled design can be authoritative without asserting a production method.
-Method availability and feasibility remain independent. Consumers must migrate
-to the current strict schemas and cannot infer chronology from a design plan.
+A compiled design can be authoritative without asserting a construction route
+or production method. Construction feasibility and method availability remain
+independent. Consumers must migrate to the current strict schemas and cannot
+infer chronology from a design plan.

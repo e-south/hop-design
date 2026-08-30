@@ -87,9 +87,10 @@ The release-wheel command above uses the a6 contract shipped with that wheel.
 The contributor-checkout commands below exercise the unreleased a7 source
 candidate. In the current source candidate, use `hop.design/v2` for the named generic demonstration and
 `hop.resolved-design/v2` when foldback and basal components are supplied by the
-caller. A design spec records deterministic design derivation, not a laboratory
-chronology. A resolved release projection requires explicit terminal-nick
-geometry; complete production history belongs to a named method request.
+caller. A design spec records deterministic design derivation, not an ordered
+construction or laboratory chronology. A resolved release projection requires
+explicit terminal-nick geometry; construction routes and named methods own
+their respective ordered molecular histories.
 
 In Python:
 

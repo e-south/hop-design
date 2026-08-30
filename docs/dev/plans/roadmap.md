@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: explanation
 journey:
   - maintain
@@ -45,8 +45,8 @@ published artifact until the release gate below passes.
 
 1. Pair kind becomes an invariant physical observation; policy cannot relabel
    G:T as a hard mismatch.
-2. Design derivation owns no ordered production chronology; only named method
-   plans own molecular-state history.
+2. Design derivation owns no ordered production chronology; construction routes
+   and named method plans own their respective molecular-state histories.
 3. Foldback input includes an exact source-turn span.
 4. Discovery uses `canonical_ordinal`, not an ambiguous `rank` field.
 5. Restriction products contain exact cohesive-end objects while remaining
@@ -80,31 +80,43 @@ foldback and basal meanings, endpoint compactness, staged state-aware
 validation, lossless grouping, the linear-route boundary, and cross-repository
 ownership are frozen before public schemas change.
 
-Implementation proceeds in dependency order:
+The implementation remains organized in dependency order. H2 through H8 are
+present on the current source candidate:
 
-1. **H2 — enzyme and operation semantics.** Add vendor-neutral characterized
-   enzymes, request provisioning, ordered reaction stages, concurrent
-   operations, and state-aware active-site checks.
-2. **H3 — shared local-neighborhood contract.** Add one bounded exact-first
-   request/result envelope, discrete relaxation shells, exact realization
-   records, reversible geometry groups, and truthful completion.
-3. **H4 — foldback neighborhood.** Discover explicit junction offset, loop
-   length, and annealing-arm geometry through exact cleavage programs.
-4. **H5 — basal neighborhood.** Make nicking and pairing endpoint-aware; add
-   optional Type IIS end generation only to the clone-ready branch.
-5. **H6 — materialization and composition.** Materialize exact precursor and
-   auxiliary materials, validate the complete staged cross-product, and
-   preserve complete-realization and final-product identities.
-6. **H7 — scientific projections.** Produce neutral tidy results and
-   diagram-ready state projections without manuscript composition.
-7. **H8 — public documentation and dogfood.** Verify exact, infeasible, and
-   relaxed examples from source and installed wheel while preserving the
-   scientist-space facade.
+1. **H2 — enzyme and operation semantics: implemented.** Vendor-neutral
+   characterized enzymes, request provisioning, ordered reaction stages,
+   concurrent operations, and state-aware active-site checks share one pure
+   replay authority.
+2. **H3 — shared local-neighborhood contract: implemented.** One bounded
+   exact-first request/result envelope carries discrete relaxation shells,
+   exact realization records, reversible geometry groups, and truthful
+   completion.
+3. **H4 — foldback neighborhood: implemented.** Exact cleavage programs
+   discover junction offset, loop length, and annealing-arm geometry.
+4. **H5 — basal neighborhood: implemented.** Nicking and pairing are
+   endpoint-aware; Type IIS end generation is confined to clone-ready routes.
+5. **H6 — materialization and composition: implemented.** Exact precursor and
+   auxiliary materials compose through the bounded staged cross-product while
+   preserving complete-realization and final-product identities.
+6. **H7 — scientific projections: implemented.** Neutral tidy relations and
+   deterministic SVGs expose local feasibility, relaxation, complete
+   composition, and an explicitly selected exact trajectory without manuscript
+   composition.
+7. **H8 — public documentation and dogfood: implemented.** The narrow
+   `hop_design.construction` facade, strict external source, portable bundle,
+   opaque receipts, and reference contracts are present. Exact, infeasible,
+   relaxed, and composed-PCR source-versus-installed-wheel dogfood provides the
+   installed-artifact proof.
 
 The current small `hop_design.spaces` journey is unchanged. Circularized-source
 chemistry, thermodynamic and enzyme-performance prediction, study history,
 experimental evidence, and manuscript assembly remain deferred or
 consumer-owned.
+
+The construction facade is not a second scientist quickstart. Its ten-name
+allowlist accepts strict files and a separately verified design authority. Raw
+construction models remain internal, and no compatibility alias exposes their
+former or current internal paths.
 
 ### Bounded symbolic method assessment
 

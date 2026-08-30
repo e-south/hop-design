@@ -7,7 +7,7 @@ audience:
   - security reviewers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-30
 doc_type: reference
 ---
 
@@ -33,13 +33,28 @@ traversal. Verification rejects symlinks and unmanifested files. Bundle writing
 refuses any pre-existing target instead of merging or overwriting content.
 
 FASTA and CSV readers create the same strict payload records as inline callers
-under byte, record-count, and total-nucleotide limits. JSON/YAML specs enforce a
-byte limit; YAML uses safe deserialization followed by strict schema dispatch.
-All file readers reject symlinks. Substrate-space preview and compilation,
+under byte, record-count, and total-nucleotide limits. JSON/YAML specs are read
+once through one checked file descriptor and enforce a byte limit before strict
+schema dispatch. JSON and YAML reject duplicate mapping keys; YAML also rejects
+anchors, aliases, and merge keys. All file readers reject symlinks.
+Substrate-space preview and compilation,
 symbolic expansion, and design-space planning enforce cardinality before
 allocation. Design-set verification recursively inventories member bundles and
 rejects unsafe or unexpected files. The offline review embeds no remote
 resources. Remote/network resolution stays outside the deterministic core.
+
+Construction source files follow the same bounded regular-file contract. The
+reader accepts only `.json`, `.yaml`, and `.yml`, rejects path replacement while
+opening, rejects documents larger than one megabyte before decoding, requires a
+mapping root, and dispatches only `hop.construction-source/v1`. The source
+cannot embed or assert a design authority; compilation loads the separately
+supplied design-bundle directory through complete semantic verification.
+
+Construction-bundle loading rejects unsafe paths, symlinks, incomplete or
+extra inventories, modified embedded design artifacts, and checksum-consistent
+scientific forgeries through exact semantic replay. Construction authorities
+and projection packets use create-only atomic directories and never merge into
+an existing destination.
 
 ## Release gate
 

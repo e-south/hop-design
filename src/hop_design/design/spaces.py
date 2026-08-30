@@ -11,7 +11,6 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -38,6 +37,7 @@ from hop_design.design.space.authority import (
     seal_design_set,
 )
 from hop_design.export.bundle import BundleIntegrityError, verify_manifested_bundle_contents
+from hop_design.export.publication import publish_directory_create_only
 from hop_design.export.space_package import design_set_artifacts, write_space_projections
 from hop_design.kernel.bundle_identity import design_set_id, manifest_digest_for_design_set
 from hop_design.models.design_space import (
@@ -232,7 +232,7 @@ def compile_space(
             foldback_ref=FOLDBACK_REF,
             basal_ref=BASAL_REF,
         )
-        os.replace(staging, output)
+        publish_directory_create_only(staging, output)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise

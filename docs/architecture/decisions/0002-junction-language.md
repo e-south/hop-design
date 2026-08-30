@@ -7,16 +7,18 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-20
+last_verified: 2026-08-30
 doc_type: decision
-amended_by: hop-adr-0020
+amended_by: hop-adr-0026
 ---
 
 # ADR 0002: Canonical junction language
 
-> Amended by [ADR 0020](0020-separate-design-derivation-from-method-chronology.md):
-> design derivations no longer use a `ProcessingRoute`; only named method plans
-> own ordered production chronology.
+> Amended by [ADR 0020](0020-separate-design-derivation-from-method-chronology.md)
+> and [ADR 0026](0026-compose-complete-construction-chronology.md): design
+> derivations no longer use a `ProcessingRoute` or own ordered chronology;
+> construction routes and named methods own their respective molecular
+> histories.
 
 ## Context
 

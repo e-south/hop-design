@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: explanation
 journey:
   - compile
@@ -41,7 +41,7 @@ payload, evaluates structural relationships, and produces one deterministic
 `HairpinEncodingInsert`. Successful compilation establishes design identity;
 it makes no production-method claim.
 
-## 2. Construction discovery
+## 2. Construction discovery and composition
 
 A construction request starts from the final duplex payload, selects a
 source-realization route family and requested endpoint, and asks which exact
@@ -54,6 +54,13 @@ realization, neutral order, reversible geometry and final-product groups, and
 whether the declared space was completed, proved infeasible, or truncated.
 Grouping does not replace realization identity, and selection remains
 caller-owned.
+
+The file-oriented construction operation accepts local requests in one strict
+source document and the design as a separate verified bundle. HOP discovers
+and replay-verifies the local authorities, composes the bounded whole route,
+requires the exact endpoint encoding to agree with the verified design, and
+can persist one portable construction bundle. The source cannot assert design
+or result identities.
 
 ## 3. Method language
 
@@ -70,10 +77,12 @@ generation merely because a clone-ready endpoint does.
 
 ## 4. Provenance and verification
 
-Design and method bundles are separate immutable authorities. Byte checks and
-semantic replay establish internal consistency. A digest-equality relation can
-bind a design encoding to a method product's encoding projection, but one valid
-bundle does not imply that a second valid bundle is related to it.
+Design, construction, and method bundles are distinct immutable authorities.
+A construction bundle embeds and replay-verifies the design authority used for
+whole-route composition. A method bundle records one named method request and
+its derived products independently. Byte checks and semantic replay establish
+internal consistency; one valid authority does not imply laboratory execution
+or that an unrelated authority belongs to it.
 
 ## 5. Ecosystem and downstream use
 
