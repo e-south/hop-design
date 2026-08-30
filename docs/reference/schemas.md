@@ -18,10 +18,9 @@ journey:
 
 # Current schema identifiers
 
-This table documents the unreleased `0.1.0a7` source candidate. The latest published wheel is `0.1.0a6`; use the documentation shipped with that artifact
-for its accepted schemas. Contributor-checkout examples in this repository use
-the candidate contracts below. Do not submit these identifiers to an a6
-installation.
+This table documents the `0.1.0a7` source and release schemas. Use the tagged
+documentation shipped with a release artifact; do not submit these identifiers
+to an earlier installation.
 
 | Schema ID | Root model | Purpose |
 | --- | --- | --- |

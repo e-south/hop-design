@@ -23,7 +23,7 @@ private consumer migration.
 
 ## Released foundation
 
-The public `v0.1.0a6` artifact provides:
+The public `v0.1.0a7` artifact provides:
 
 - exact and DNA IUPAC design compilation;
 - strict payload, foldback, basal, paired-stem, coordinate, and feature models;
@@ -37,11 +37,8 @@ The public `v0.1.0a6` artifact provides:
 
 ## Current pre-1.0 semantic line
 
-The next prerelease candidate deliberately breaks the alpha schemas and public
-facade to close seven ontology and usability defects:
-
-The local package version for this candidate is `v0.1.0a7`; it is not a
-published artifact until the release gate below passes.
+The current prerelease deliberately breaks the preceding alpha schemas and
+public facade to close seven ontology and usability defects:
 
 1. Pair kind becomes an invariant physical observation; policy cannot relabel
    G:T as a hard mismatch.
@@ -81,7 +78,7 @@ validation, lossless grouping, the linear-route boundary, and cross-repository
 ownership are frozen before public schemas change.
 
 The implementation remains organized in dependency order. H2 through H8 are
-present on the current source candidate:
+present in the current release:
 
 1. **H2 — enzyme and operation semantics: implemented.** Vendor-neutral
    characterized enzymes, request provisioning, ordered reaction stages,

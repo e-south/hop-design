@@ -20,8 +20,8 @@ No physical construction, QC, or activity record is attached.
 | Project status | Current contract |
 | --- | --- |
 | Maturity | HOP is alpha software; schemas and public APIs may change before 1.0. |
-| Published release | [v0.1.0a6](https://github.com/e-south/hop-design/releases/tag/v0.1.0a6), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a6). |
-| Source line | Main and this documentation describe unreleased v0.1.0a7. |
+| Published release | [v0.1.0a7](https://github.com/e-south/hop-design/releases/tag/v0.1.0a7), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7). |
+| Source line | Main and the tagged documentation describe the v0.1.0a7 release contract. |
 | Distribution | Release artifacts are published through [GitHub Releases](https://github.com/e-south/hop-design/releases), not PyPI. |
 
 ## Choose a route

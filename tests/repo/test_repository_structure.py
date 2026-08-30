@@ -53,13 +53,18 @@ def test_governance_and_release_routes_exist() -> None:
         assert (REPO_ROOT / relative_path).is_file(), relative_path
 
 
-def test_public_roadmap_distinguishes_release_and_candidate_lines() -> None:
+def test_public_documentation_names_the_project_version_as_the_release() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         version = tomllib.load(handle)["project"]["version"]
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
     roadmap = (REPO_ROOT / "docs" / "dev" / "plans" / "roadmap.md").read_text(encoding="utf-8")
 
-    assert "public `v0.1.0a6` artifact" in roadmap
-    assert f"candidate is `v{version}`" in roadmap
+    wheel_name = f"hop_design-{version}-py3-none-any.whl"
+    assert f"[v{version}](https://github.com/e-south/hop-design/releases/tag/v{version})" in readme
+    assert f"tree/v{version}" in readme
+    assert wheel_name in quickstart
+    assert f"public `v{version}` artifact" in roadmap
     assert "Research Studies" not in roadmap
     assert "billing" not in roadmap.lower()
 

@@ -16,10 +16,9 @@ journey:
 
 # Quickstart
 
-This page targets the unreleased v0.1.0a7 source checkout. The latest
-published wheel is v0.1.0a6 and uses the preceding schema generation; use its
-[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a6)
-when operating the wheel.
+This page targets the v0.1.0a7 source checkout and published wheel. Use its
+[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7)
+when operating the release artifact.
 
 Download a versioned wheel and `SHA256SUMS` from
 [GitHub Releases](https://github.com/e-south/hop-design/releases), verify the
@@ -28,17 +27,17 @@ published on PyPI.
 
 ```bash
 # macOS
-grep 'hop_design-0.1.0a6-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
+grep 'hop_design-0.1.0a7-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
 # Linux
-grep 'hop_design-0.1.0a6-py3-none-any.whl$' SHA256SUMS | sha256sum -c -
+grep 'hop_design-0.1.0a7-py3-none-any.whl$' SHA256SUMS | sha256sum -c -
 uv venv --python 3.12
 source .venv/bin/activate
-uv pip install ./hop_design-0.1.0a6-py3-none-any.whl
+uv pip install ./hop_design-0.1.0a7-py3-none-any.whl
 hop-design compile --sequence ACGT --design-id exact-demo --out build/exact
 ```
 
-The published a6 wheel supports the single-design command above. The current
-unreleased a7 source adds the scientist-facing substrate-space journey below.
+The published a7 wheel supports the single-design command above and the
+scientist-facing substrate-space journey below.
 
 From a contributor checkout:
 
@@ -83,9 +82,8 @@ A strict JSON or YAML specification uses the same endpoint:
 uv run hop-design compile --spec examples/generic-symbolic.yaml --out build/from-spec
 ```
 
-The release-wheel command above uses the a6 contract shipped with that wheel.
-The contributor-checkout commands below exercise the unreleased a7 source
-candidate. In the current source candidate, use `hop.design/v2` for the named generic demonstration and
+The release-wheel and contributor-checkout commands use the same a7 contract.
+Use `hop.design/v2` for the named generic demonstration and
 `hop.resolved-design/v2` when foldback and basal components are supplied by the
 caller. A design spec records deterministic design derivation, not an ordered
 construction or laboratory chronology. A resolved release projection requires
