@@ -28,6 +28,7 @@ from hop_design.models.enzymes import (
     characterized_enzyme_digest,
 )
 from hop_design.models.junction import Strand
+from hop_design.models.molecular_state import CohesiveEnd, StrandEnd
 from hop_design.models.physical import JunctionPairKind, SiteOrientation, classify_literal_pair
 from hop_design.models.sequence import (
     iupac_bases,
@@ -252,6 +253,45 @@ class BasalEnzymeBinding(HopModel):
         )
         if self.reference_cut != expected_reference or self.complement_cut != expected_complement:
             raise ValueError("Basal binding cuts must replay its enzyme definition.")
+
+
+def derive_cohesive_end(
+    *,
+    side: Literal["left", "right"],
+    top_sequence: str,
+    binding: BasalEnzymeBinding,
+    primary_strand_id: str,
+    complementary_strand_id: str,
+) -> CohesiveEnd:
+    """Derive one exact cohesive end from an exact binding and cut geometry."""
+    if binding.reference_cut is None or binding.complement_cut is None:
+        raise ValueError("cohesive-end-unavailable")
+    primary = binding.reference_cut.offset
+    complement = binding.complement_cut.offset
+    if primary == complement:
+        raise ValueError("cohesive-end-unavailable")
+    span = Span(
+        start=Boundary(offset=min(primary, complement)),
+        end=Boundary(offset=max(primary, complement)),
+    )
+    aligned = top_sequence[span.start.offset : span.end.offset]
+    if primary < complement:
+        protruding = primary_strand_id if side == "left" else complementary_strand_id
+        sequence = aligned if side == "left" else reverse_complement_iupac(aligned)
+        polarity = StrandEnd.FIVE_PRIME
+    else:
+        protruding = complementary_strand_id if side == "left" else primary_strand_id
+        sequence = reverse_complement_iupac(aligned) if side == "left" else aligned
+        polarity = StrandEnd.THREE_PRIME
+    return CohesiveEnd(
+        product_end=side,
+        protruding_strand_id=protruding,
+        overhang_end=polarity,
+        sequence=sequence,
+        source_span=span,
+        primary_cut=binding.reference_cut,
+        complementary_cut=binding.complement_cut,
+    )
 
 
 class BasalBoundaryControl(HopModel):

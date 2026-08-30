@@ -637,6 +637,46 @@ def test_pcr_endpoint_addition_preserves_direct_canonical_authority(tmp_path: Pa
     )
 
 
+def test_clone_endpoint_addition_preserves_pcr_canonical_authority(tmp_path: Path) -> None:
+    result, _, _ = _valid_pcr_result(tmp_path)
+
+    assert result.result_id == (
+        "hop:construction-space-result/"
+        "496e52d4abc4ecfe61293fc6338dde29ae5fe88b02558e3d06abf5fadc560bd2@1"
+    )
+    assert (
+        hashlib.sha256(canonical_json_bytes(result)).hexdigest()
+        == (
+            "2d516fbcc98c73f66291350ca2ee21c6beac56603afa42d9b9eaaa98ee86dfdc"  # pragma: allowlist secret  # noqa: E501
+        )
+    )
+    assert tuple(item.materialized_realization_id for item in result.realizations) == (
+        "hop:materialized-construction/"
+        "362dc73bc427c0a6045686ea90eba46fabffd0191e97333cb8c38394e269c1a7@1",
+        "hop:materialized-construction/"
+        "4a1f9f7fdce9208a34fcbef78a16e37622ea923d012a1bdc289938fa3b5169ae@1",
+    )
+    assert tuple(item.construction_program.program_id for item in result.realizations) == (
+        "hop:construction-program/"
+        "11988297cf8980429f3269a6bacc94ef388a70857443a831bdd99f6f1494f2ca@1",
+        "hop:construction-program/"
+        "56ab4dbb9d1531bc91e07772b858929c6d980a7eb00e2b2f490871ea41613751@1",
+    )
+    assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
+        "hop:final-product/d19850d0caffdcb47866535ea8b9b8dc296e18b3d5f28c8e9c0c9b1f49a1ccb2@1",
+        "hop:final-product/a40b77f7fec01ebae3113ce6f419ab4f7bd046d422836f3f3ae58bbbc71f51fb@1",
+    )
+    assert (
+        tuple(
+            hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
+        )
+        == (
+            "453e9e6cd1d2a670e34dec7c7801a19206d57203a4ffee9b3bf0f919e0350d99",  # pragma: allowlist secret  # noqa: E501
+            "9c3ad24fc9e40ec60986965d651a2494ed21fb20878366a2090f6babf2a2c4a4",  # pragma: allowlist secret  # noqa: E501
+        )
+    )
+
+
 def test_direct_endpoint_accepts_a_valid_bottom_basal_nick_without_pcr_splitting(
     tmp_path: Path,
 ) -> None:

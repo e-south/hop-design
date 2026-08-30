@@ -194,10 +194,13 @@ PcrTransitionAuthority = (
 
 
 class DuplexFinalProductReference(HopModel):
-    """Exact content address over both PCR strands and their molecular graph."""
+    """Exact content address over both duplex strands and their molecular graph."""
 
     final_product_id: str = Field(pattern=r"^hop:final-product/[0-9a-f]{64}@1$")
-    endpoint: Literal[ConstructionEndpoint.HAIRPIN_PCR_DUPLEX]
+    endpoint: Literal[
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    ]
     sequence: str
     topology: Literal["linear_duplex"] = "linear_duplex"
     end_descriptors: tuple[str, str, str, str]
@@ -217,16 +220,21 @@ class DuplexFinalProductReference(HopModel):
     def validate_identity(self) -> DuplexFinalProductReference:
         content = self.model_dump(mode="json", exclude={"final_product_id"})
         if self.final_product_id != _content_id("final-product", 1, content):
-            raise ValueError("PCR product identity must seal the complete duplex graph.")
+            raise ValueError("Duplex product identity must seal the complete molecular graph.")
         if self.sequence != self.strands[0].sequence:
-            raise ValueError("PCR reference sequence must equal the ordered top strand.")
+            raise ValueError("Duplex reference sequence must equal the ordered top strand.")
         expected_ends = tuple(
             end.value
             for strand in self.strands
             for end in (strand.five_prime_end, strand.three_prime_end)
         )
-        if self.end_descriptors != expected_ends or self.cohesive_ends:
-            raise ValueError("PCR product must seal exact blunt strand-end chemistry.")
+        if self.end_descriptors != expected_ends:
+            raise ValueError("Duplex product must seal exact strand-end chemistry.")
+        if self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+            if self.cohesive_ends:
+                raise ValueError("PCR product must preserve exact blunt ends.")
+        elif tuple(end.product_end for end in self.cohesive_ends) != ("left", "right"):
+            raise ValueError("Clone-ready product must preserve left and right cohesive ends.")
         return self
 
 

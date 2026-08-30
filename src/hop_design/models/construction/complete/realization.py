@@ -23,6 +23,7 @@ from hop_design.models.construction.accounting import (
 from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.payload import (
+    ConstructionEndpoint,
     PayloadSourceMap,
     PayloadSourceSegment,
     SourceOrientation,
@@ -32,6 +33,7 @@ from hop_design.models.construction.realization import CompleteConstructionReali
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
 
+from .clone.validation import validate_clone_realization
 from .material_disposition import (
     RouteMaterialDispositionSpan,
     derive_route_material_dispositions,
@@ -47,6 +49,7 @@ from .product import MaterializedFinalProduct
 from .program import ConstructionProgram
 from .request import DesignAuthorityReference, ExactConstructionMaterial
 from .source_authority import validate_local_authorities
+from .state import ConstructionStatePhase
 
 
 class MaterializedConstructionRealization(HopModel):
@@ -104,16 +107,24 @@ class MaterializedConstructionRealization(HopModel):
             local_realization_ids=self.realization.local_realization_ids,
         )
         validate_initial_material_state(self.construction_program.states[0], self.materials)
-        is_direct = self.final_product.reference.endpoint.value == "ssdna_hairpin"
+        endpoint = self.final_product.reference.endpoint
+        is_direct = endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
         if is_direct and self.route_material_dispositions:
             raise ValueError("Direct ssDNA endpoint cannot contain PCR-only material dispositions.")
-        if not is_direct and (
-            self.construction_program.states[-1].phase.value != "hairpin_pcr_duplex"
+        if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
+            self.construction_program.states[-1].phase
+            is not ConstructionStatePhase.HAIRPIN_PCR_DUPLEX
             or self.final_product.reference.topology != "linear_duplex"
         ):
             raise ValueError(
                 "Materialized endpoint and topology must match exact route chronology."
             )
+        if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX and (
+            self.construction_program.states[-1].phase
+            is not ConstructionStatePhase.CLONE_READY_DUPLEX
+            or self.final_product.reference.topology != "linear_duplex"
+        ):
+            raise ValueError("Clone-ready endpoint and topology must match exact route chronology.")
         if is_direct:
             validate_route_derivation(
                 self.construction_program,
@@ -176,12 +187,12 @@ class MaterializedConstructionRealization(HopModel):
                 )
             if (
                 self.final_product.reference.topology != "single_stranded_hairpin"
-                or terminal.phase.value != "ligated_product"
+                or terminal.phase is not ConstructionStatePhase.LIGATED_PRODUCT
             ):
                 raise ValueError(
                     "Materialized direct endpoint, topology, and terminal phase must be exact."
                 )
-        else:
+        elif endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
             validate_pcr_realization(self)
             expected_dispositions = derive_route_material_dispositions(
                 materials=self.materials,
@@ -193,6 +204,20 @@ class MaterializedConstructionRealization(HopModel):
                     "PCR route material dispositions must replay exact endpoint lineage "
                     "and removal."
                 )
+        elif endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+            validate_clone_realization(self)
+            expected_dispositions = derive_route_material_dispositions(
+                materials=self.materials,
+                program=self.construction_program,
+                material_function_spans=self.final_product.material_function_spans,
+            )
+            if self.route_material_dispositions != expected_dispositions:
+                raise ValueError(
+                    "Clone route material dispositions must replay exact endpoint lineage "
+                    "and removal."
+                )
+        else:
+            raise ValueError(f"Unsupported materialized endpoint: {endpoint.value}.")
         stage_ids = tuple(
             stage.stage_id
             for program in self.construction_program.reaction_programs

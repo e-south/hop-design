@@ -17,14 +17,12 @@ from hop_design.models.construction import (
     BasalPairClass,
 )
 from hop_design.models.construction.basal import (
-    BasalEnzymeBinding,
     BasalPairingProfile,
     BasalPairRecord,
     derive_basal_pair_class,
 )
 from hop_design.models.coordinates import Boundary, Span
-from hop_design.models.molecular_state import CohesiveEnd, StrandEnd
-from hop_design.models.sequence import normalize_dna_sequence, reverse_complement_iupac
+from hop_design.models.sequence import normalize_dna_sequence
 
 
 def _compact_symbol(pair_class: BasalPairClass) -> Literal["M", "W", "X"]:
@@ -78,43 +76,4 @@ def resolve_basal_pairing_profile(
         or Span(start=Boundary(offset=0), end=Boundary(offset=len(adapter))),
         pairs=tuple(pairs),
         compact_profile="".join(pair.compact_symbol for pair in pairs),
-    )
-
-
-def derive_cohesive_end(
-    *,
-    side: Literal["left", "right"],
-    top_sequence: str,
-    binding: BasalEnzymeBinding,
-    primary_strand_id: str,
-    complementary_strand_id: str,
-) -> CohesiveEnd:
-    """Derive one exact cohesive end from the actual binding and cut coordinates."""
-    if binding.reference_cut is None or binding.complement_cut is None:
-        raise ValueError("cohesive-end-unavailable")
-    primary = binding.reference_cut.offset
-    complement = binding.complement_cut.offset
-    if primary == complement:
-        raise ValueError("cohesive-end-unavailable")
-    span = Span(
-        start=Boundary(offset=min(primary, complement)),
-        end=Boundary(offset=max(primary, complement)),
-    )
-    aligned = top_sequence[span.start.offset : span.end.offset]
-    if primary < complement:
-        protruding = primary_strand_id if side == "left" else complementary_strand_id
-        sequence = aligned if side == "left" else reverse_complement_iupac(aligned)
-        polarity = StrandEnd.FIVE_PRIME
-    else:
-        protruding = complementary_strand_id if side == "left" else primary_strand_id
-        sequence = reverse_complement_iupac(aligned) if side == "left" else aligned
-        polarity = StrandEnd.THREE_PRIME
-    return CohesiveEnd(
-        product_end=side,
-        protruding_strand_id=protruding,
-        overhang_end=polarity,
-        sequence=sequence,
-        source_span=span,
-        primary_cut=binding.reference_cut,
-        complementary_cut=binding.complement_cut,
     )

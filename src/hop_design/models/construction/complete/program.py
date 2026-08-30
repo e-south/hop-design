@@ -119,6 +119,12 @@ class ConstructionProgram(HopModel):
                         ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
                     ),
                 },
+                ConstructionTransitionKind.END_GENERATION: {
+                    (
+                        ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
+                        ConstructionStatePhase.CLONE_READY_DUPLEX,
+                    ),
+                },
                 ConstructionTransitionKind.DENATURATION: {
                     (
                         ConstructionStatePhase.CLEAVED_DUPLEX,

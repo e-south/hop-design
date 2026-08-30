@@ -22,10 +22,7 @@ from hop_design.design.construction.verification import (
     verify_basal_neighborhood_result,
     verify_foldback_neighborhood_result,
 )
-from hop_design.models.construction import (
-    ConstructionEndpoint,
-    SearchCompletionStatus,
-)
+from hop_design.models.construction import SearchCompletionStatus
 from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
     BasalRealizationRecord,
@@ -114,13 +111,6 @@ def _discover_constructions_raw(
         raise ValueError("Foldback detailed result identity does not match the request.")
     if (None if basal is None else basal.result_id) != request.basal_result_id:
         raise ValueError("Basal detailed result identity does not match the request.")
-    if request.endpoint not in {
-        ConstructionEndpoint.SSDNA_HAIRPIN,
-        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-    }:
-        raise NotImplementedError(
-            f"Complete-route composition does not yet materialize {request.endpoint.value}."
-        )
     foldback_records = tuple(
         item
         for item in foldback.realizations

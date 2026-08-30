@@ -48,6 +48,7 @@ from .validation import (
     expected_material_accounting,
     validate_accepted_realization,
     validate_combination_evaluations,
+    validate_endpoint_evidence,
 )
 
 
@@ -245,18 +246,7 @@ class ConstructionSpaceResult(HopModel):
             if item.materialized_realization_id is not None
         }
         for realization in self.realizations:
-            if realization.final_product.reference.endpoint is not self.request.endpoint:
-                raise ValueError("Final product endpoint must match the exact request.")
-            if self.request.endpoint.value == "ssdna_hairpin" and (
-                realization.final_product.reference.topology != "single_stranded_hairpin"
-                or realization.construction_program.states[-1].phase.value != "ligated_product"
-            ):
-                raise ValueError("Direct final product topology and terminal phase must match.")
-            if self.request.endpoint.value == "hairpin_pcr_duplex" and (
-                realization.final_product.reference.topology != "linear_duplex"
-                or realization.construction_program.states[-1].phase.value != "hairpin_pcr_duplex"
-            ):
-                raise ValueError("PCR final product topology and terminal phase must match.")
+            validate_endpoint_evidence(self.request, realization)
             validate_accepted_realization(
                 request=self.request,
                 provenance=self.provenance,

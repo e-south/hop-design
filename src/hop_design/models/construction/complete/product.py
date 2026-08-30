@@ -67,6 +67,10 @@ class MaterializedFinalProduct(HopModel):
             self.reference, DuplexFinalProductReference
         ):
             raise ValueError("Hairpin PCR endpoint requires an exact PCR duplex reference.")
+        elif self.reference.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX and not isinstance(
+            self.reference, DuplexFinalProductReference
+        ):
+            raise ValueError("Clone-ready endpoint requires an exact duplex reference.")
         if self.reference.sequence != self.strands[0].sequence:
             raise ValueError("Final-product reference must equal its primary exact strand.")
         expected_ends = tuple(
@@ -81,7 +85,7 @@ class MaterializedFinalProduct(HopModel):
             or self.pairings != self.reference.pairings
             or self.cohesive_ends != self.reference.cohesive_ends
         ):
-            raise ValueError("PCR final product must equal its exact duplex reference graph.")
+            raise ValueError("Duplex final product must equal its exact reference graph.")
         return self
 
 

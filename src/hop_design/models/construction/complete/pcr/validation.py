@@ -19,7 +19,6 @@ from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.junction import Strand
 from hop_design.models.method import BindingOrientation
 from hop_design.models.physical import JunctionPairKind
-from hop_design.models.plan import FeatureRole
 
 from ..route_schedule import derive_pcr_reaction_program
 from ..state import ConstructionStatePhase
@@ -95,11 +94,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     prefix_length = len(source.sequence_5prime) - len(
         item.foldback_authority.source_reference_sequence
     )
-    return_arm = next(
-        feature.sequence
-        for feature in item.design.plan.hairpin_encoding_insert.features
-        if feature.role is FeatureRole.BASAL_RIGHT_ARM
-    )
+    return_arm = item.materials[2].sequence_5prime
     if basal.basal_nick.boundary.offset != prefix_length:
         raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
     expected_reaction = derive_pcr_reaction_program(
@@ -108,7 +103,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         prefix=source.sequence_5prime[:prefix_length],
         return_arm=return_arm,
     )
-    if program.reaction_programs != (expected_reaction,):
+    if not program.reaction_programs or program.reaction_programs[0] != expected_reaction:
         raise ValueError("PCR enzyme phase must replay the exact basal-open local authorities.")
     expected_cleaved = pcr_cleaved_strands(
         expected_reaction,
@@ -134,79 +129,90 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     )
     if program.states[3].molecules != expected_selected:
         raise ValueError("PCR selection must retain the exact source and foldback fragments.")
+    pcr_indexes = tuple(
+        index
+        for index, state in enumerate(program.states)
+        if state.phase is ConstructionStatePhase.HAIRPIN_PCR_DUPLEX
+    )
+    if len(pcr_indexes) != 1:
+        raise ValueError("PCR-bearing routes require one exact PCR duplex state.")
+    pcr_index = pcr_indexes[0]
     expected_tail = (
         ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
         ConstructionStatePhase.ADAPTER_ANNEALED,
         ConstructionStatePhase.ADAPTER_LIGATED,
         ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
     )
-    if tuple(state.phase for state in program.states[-4:]) != expected_tail:
+    actual_tail = tuple(state.phase for state in program.states[pcr_index - 3 : pcr_index + 1])
+    if actual_tail != expected_tail:
         raise ValueError("PCR route must preserve exact foldback, adapter, and duplex phases.")
-    if any(
+    if item.final_product.reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and any(
         transition.kind is ConstructionTransitionKind.END_GENERATION
         for transition in program.transitions
     ):
         raise ValueError("A PCR endpoint cannot contain end-generation evidence.")
-    adapter_transition = program.transitions[-3]
+    adapter_transition = program.transitions[pcr_index - 3]
     adapter_authority = adapter_transition.pcr_authority
     if not isinstance(adapter_authority, AdapterAnnealingAuthority):
         raise ValueError("PCR route requires the exact basal adapter-pairing authority.")
-    closed, adapter_strand = program.states[-3].molecules
+    closed, adapter_strand = program.states[pcr_index - 2].molecules
     validate_adapter_pairing_profile(
         adapter_authority,
         basal=basal,
         closed_strand_id=closed.strand_id,
         adapter_strand_id=adapter_strand.strand_id,
     )
-    terminal_transition = program.transitions[-1]
+    terminal_transition = program.transitions[pcr_index - 1]
     if not isinstance(terminal_transition.pcr_authority, PrimerExtensionAuthority):
         raise ValueError("PCR endpoint requires one exact primer-extension authority.")
     product = item.final_product
     reference = product.reference
-    terminal = program.states[-1]
-    if (
-        not isinstance(reference, DuplexFinalProductReference)
-        or reference.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
-        or reference.topology != "linear_duplex"
-        or product.strands != terminal.molecules
-        or product.pairings != terminal.pairings
-        or product.cohesive_ends
-    ):
-        raise ValueError("PCR endpoint must equal its exact terminal duplex graph.")
-    projection = product.encoding_projection
-    if (
-        projection.orientation is not BindingOrientation.SAME_5TO3
-        or projection.source_span.start.offset != 0
-        or projection.source_span.end.offset > len(product.strands[0].sequence)
-        or product.strands[0].sequence[
-            projection.source_span.start.offset : projection.source_span.end.offset
-        ]
-        != projection.sequence
-    ):
-        raise ValueError("PCR design encoding must be an exact top-strand subspan.")
-    if (
-        projection.sequence != item.design.encoding_sequence
-        or projection.sequence_digest != item.design.encoding_digest
-    ):
-        raise ValueError("PCR endpoint encoding projection must equal the verified design.")
+    pcr_state = program.states[pcr_index]
+    if reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if (
+            not isinstance(reference, DuplexFinalProductReference)
+            or reference.topology != "linear_duplex"
+            or product.strands != pcr_state.molecules
+            or product.pairings != pcr_state.pairings
+            or product.cohesive_ends
+        ):
+            raise ValueError("PCR endpoint must equal its exact terminal duplex graph.")
+        projection = product.encoding_projection
+        if (
+            projection.orientation is not BindingOrientation.SAME_5TO3
+            or projection.source_span.start.offset != 0
+            or projection.source_span.end.offset > len(product.strands[0].sequence)
+            or product.strands[0].sequence[
+                projection.source_span.start.offset : projection.source_span.end.offset
+            ]
+            != projection.sequence
+        ):
+            raise ValueError("PCR design encoding must be an exact top-strand subspan.")
+        if (
+            projection.sequence != item.design.encoding_sequence
+            or projection.sequence_digest != item.design.encoding_digest
+        ):
+            raise ValueError("PCR endpoint encoding projection must equal the verified design.")
     extension = terminal_transition.pcr_authority
     expected_functions = material_function_spans(
         materials=item.materials,
-        top=terminal.molecules[0],
-        bottom=terminal.molecules[1],
+        top=pcr_state.molecules[0],
+        bottom=pcr_state.molecules[1],
     )
-    if extension.material_function_spans != expected_functions or (
-        product.material_function_spans != expected_functions
-    ):
+    if extension.material_function_spans != expected_functions:
         raise ValueError("PCR material-function spans must replay exact retained lineage.")
     expected_fates = endpoint_fate_spans(
         item.design.plan.hairpin_encoding_insert.features,
-        len(item.design.encoding_sequence),
+        len(pcr_state.molecules[0].sequence),
+        design_source_span=product.encoding_projection.source_span,
     )
-    if extension.endpoint_sequence_fate_spans != expected_fates or (
-        product.endpoint_sequence_fate_spans != expected_fates
-    ):
+    if extension.endpoint_sequence_fate_spans != expected_fates:
         raise ValueError("PCR sequence-fate spans must replay exact design features.")
+    if reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if product.material_function_spans != expected_functions:
+            raise ValueError("PCR material-function spans must replay exact retained lineage.")
+        if product.endpoint_sequence_fate_spans != expected_fates:
+            raise ValueError("PCR sequence-fate spans must replay exact design features.")
 
 
 __all__ = ["validate_adapter_pairing_profile", "validate_pcr_realization"]

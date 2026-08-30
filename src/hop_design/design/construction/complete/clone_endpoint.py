@@ -1,9 +1,9 @@
 """
 --------------------------------------------------------------------------------
 HOP Design
-src/hop_design/design/construction/complete/pcr_endpoint.py
+src/hop_design/design/construction/complete/clone_endpoint.py
 
-Builds one exact materialized hairpin PCR endpoint realization.
+Builds one exact destination-neutral clone-ready duplex realization.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -26,9 +26,21 @@ from hop_design.models.construction.basal import (
 )
 from hop_design.models.construction.complete import (
     ConstructionDiscoveryRequest,
+    ConstructionProgram,
+    ConstructionState,
+    ConstructionStatePhase,
+    ConstructionTransition,
+    ConstructionTransitionKind,
     DuplexFinalProductReference,
     MaterializedConstructionRealization,
     MaterializedFinalProduct,
+    ReactionBoundaryMapping,
+)
+from hop_design.models.construction.complete.clone import (
+    CloneEndGenerationError,
+    clone_endpoint_fate_spans,
+    derive_clone_digest,
+    derive_clone_end_program,
 )
 from hop_design.models.construction.complete.evaluation import (
     CombinationEvaluation,
@@ -37,6 +49,7 @@ from hop_design.models.construction.complete.evaluation import (
 from hop_design.models.construction.complete.material_disposition import (
     derive_route_material_dispositions,
 )
+from hop_design.models.construction.complete.pcr.products import material_function_spans
 from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
     FoldbackNeighborhoodDiscoveryResult,
@@ -44,13 +57,12 @@ from hop_design.models.construction.foldback import (
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.junction import Strand
-from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import SequenceProjection
 
 from .pcr import materialize_pcr_program
 
 
-def pcr_realization(
+def clone_realization(
     request: ConstructionDiscoveryRequest,
     *,
     foldback: FoldbackLocalRealization,
@@ -59,7 +71,7 @@ def pcr_realization(
     basal_result: BasalNeighborhoodDiscoveryResult,
     evaluation: CombinationEvaluation,
 ) -> MaterializedConstructionRealization | CompositionRejectionCode:
-    """Materialize one exact PCR endpoint or return one intrinsic rejection."""
+    """Materialize one exact clone-ready endpoint or return one intrinsic rejection."""
     if evaluation.rejection_reason is not None:
         return evaluation.rejection_reason
     if any(
@@ -69,28 +81,32 @@ def pcr_realization(
             evaluation.return_arm,
             evaluation.source,
             evaluation.source_complement,
+            evaluation.pcr_template_sequence,
+            evaluation.design_parent_span,
+            evaluation.end_generation_program,
             request.materialization.adapter,
             request.materialization.forward_primer,
             request.materialization.reverse_primer,
         )
     ):
-        raise ValueError("Compatible PCR composition requires every exact route material.")
+        raise ValueError("Compatible clone composition requires every exact route authority.")
     prefix = evaluation.prefix
     return_arm = evaluation.return_arm
     source = evaluation.source
     source_complement = evaluation.source_complement
+    design_parent_span = evaluation.design_parent_span
+    end_generation_program = evaluation.end_generation_program
     adapter = request.materialization.adapter
     forward = request.materialization.forward_primer
     reverse = request.materialization.reverse_primer
     assert prefix is not None and return_arm is not None
     assert source is not None and source_complement is not None
+    assert design_parent_span is not None and end_generation_program is not None
     assert adapter is not None and forward is not None and reverse is not None
     if basal.basal_nick.strand is not Strand.BOTTOM:
-        raise ValueError("PCR basal opening requires an exact bottom-strand basal nick.")
-    if basal.basal_nick.boundary.offset != len(prefix):
-        raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
+        raise ValueError("Clone basal opening requires one exact bottom-strand nick.")
     encoding = request.design.plan.hairpin_encoding_insert
-    program, extension = materialize_pcr_program(
+    pcr_program, _ = materialize_pcr_program(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
@@ -102,12 +118,57 @@ def pcr_realization(
         reverse_primer=reverse,
         evaluation=evaluation,
         encoding_features=encoding.features,
-        design_source_span=Span(
-            start=Boundary(offset=0),
-            end=Boundary(offset=len(encoding.sequence)),
+        design_source_span=design_parent_span,
+    )
+    pcr_state = pcr_program.states[-1]
+    try:
+        digest = derive_clone_digest(
+            basal=basal,
+            foldback=foldback,
+            pcr_state=pcr_state,
+            design_sequence=request.design.encoding_sequence,
+            design_digest=request.design.encoding_digest,
+        )
+        replayed_end_program = derive_clone_end_program(
+            pcr_state=pcr_state,
+            digest=digest,
+        )
+    except CloneEndGenerationError:
+        return CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE
+    if replayed_end_program != end_generation_program:
+        return CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE
+    terminal = ConstructionState.create(
+        molecules=digest.strands,
+        phase=ConstructionStatePhase.CLONE_READY_DUPLEX,
+        pairings=digest.pairings,
+    )
+    boundary = ReactionBoundaryMapping.create(
+        reaction_program_id=end_generation_program.program_id,
+        pre_state_id=pcr_state.state_id,
+        post_state_id=terminal.state_id,
+        pre_strands=pcr_state.molecules,
+        post_strands=terminal.molecules,
+        pre_pairings=pcr_state.pairings,
+        post_pairings=terminal.pairings,
+        pre_bonds=pcr_state.formed_bonds,
+        post_bonds=terminal.formed_bonds,
+    )
+    end_transition = ConstructionTransition.create(
+        kind=ConstructionTransitionKind.END_GENERATION,
+        pre_state_id=pcr_state.state_id,
+        post_state_id=terminal.state_id,
+        reaction_program_id=end_generation_program.program_id,
+        reaction_boundary_mapping=boundary,
+    )
+    program = ConstructionProgram.create(
+        states=(*pcr_program.states, terminal),
+        transitions=(*pcr_program.transitions, end_transition),
+        reaction_programs=(*pcr_program.reaction_programs, end_generation_program),
+        stage_assessments=(
+            *pcr_program.stage_assessments,
+            *evaluation.end_generation_stage_assessments,
         ),
     )
-    terminal = program.states[-1]
     reference = DuplexFinalProductReference.create(
         endpoint=request.endpoint,
         sequence=terminal.molecules[0].sequence,
@@ -119,7 +180,27 @@ def pcr_realization(
         ),
         strands=terminal.molecules,
         pairings=terminal.pairings,
-        cohesive_ends=(),
+        cohesive_ends=digest.cohesive_ends,
+    )
+    functions = material_function_spans(
+        materials=(source, source_complement, adapter, forward, reverse),
+        top=terminal.molecules[0],
+        bottom=terminal.molecules[1],
+    )
+    fates = clone_endpoint_fate_spans(features=encoding.features, digest=digest)
+    product = MaterializedFinalProduct(
+        reference=reference,
+        strands=terminal.molecules,
+        encoding_projection=SequenceProjection(
+            sequence=encoding.sequence,
+            sequence_digest=encoding.sequence_digest,
+            source_span=digest.encoding_projection.source_span,
+            orientation=digest.encoding_projection.orientation,
+        ),
+        pairings=terminal.pairings,
+        cohesive_ends=digest.cohesive_ends,
+        material_function_spans=functions,
+        endpoint_sequence_fate_spans=fates,
     )
     local_ids = (basal.basal_realization_id, foldback.foldback_realization_id)
     complete = CompleteConstructionRealization.create(
@@ -129,22 +210,6 @@ def pcr_realization(
             stage.stage_id for phase in program.reaction_programs for stage in phase.stages
         ),
         final_product_id=reference.final_product_id,
-    )
-    product = MaterializedFinalProduct(
-        reference=reference,
-        strands=terminal.molecules,
-        encoding_projection=SequenceProjection(
-            sequence=encoding.sequence,
-            sequence_digest=encoding.sequence_digest,
-            source_span=Span(
-                start=Boundary(offset=0),
-                end=Boundary(offset=len(encoding.sequence)),
-            ),
-            orientation=BindingOrientation.SAME_5TO3,
-        ),
-        pairings=terminal.pairings,
-        material_function_spans=extension.material_function_spans,
-        endpoint_sequence_fate_spans=extension.endpoint_sequence_fate_spans,
     )
     materials = (source, source_complement, adapter, forward, reverse)
     return MaterializedConstructionRealization.create(
@@ -193,9 +258,9 @@ def pcr_realization(
         route_material_dispositions=derive_route_material_dispositions(
             materials=materials,
             program=program,
-            material_function_spans=extension.material_function_spans,
+            material_function_spans=functions,
         ),
     )
 
 
-__all__ = ["pcr_realization"]
+__all__ = ["clone_realization"]

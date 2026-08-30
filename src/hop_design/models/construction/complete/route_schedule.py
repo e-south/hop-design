@@ -16,7 +16,7 @@ from hop_design.models.construction.foldback import (
     FoldbackCleavageProgramKind,
     FoldbackLocalRealization,
 )
-from hop_design.models.construction.payload import _content_id
+from hop_design.models.construction.payload import ConstructionEndpoint, _content_id
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.reactions import (
     DeclaredEnzymeBinding,
@@ -134,8 +134,14 @@ def derive_direct_reaction_program(
     )
     basal_operations: tuple[ReactionOperation, ...] = ()
     if basal is not None:
-        if len(basal.reaction_programs) != 1 or len(basal.reaction_programs[0].stages) != 1:
-            raise ValueError("Direct composition supports one exact basal nick phase.")
+        expected_program_count = (
+            2 if basal.projection.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX else 1
+        )
+        if (
+            len(basal.reaction_programs) != expected_program_count
+            or len(basal.reaction_programs[0].stages) != 1
+        ):
+            raise ValueError("Pre-hairpin composition requires one exact basal nick phase.")
         basal_operations = tuple(
             _operation(operation, namespace=namespace)
             for operation in basal.reaction_programs[0].stages[0].operations

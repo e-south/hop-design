@@ -29,6 +29,7 @@ from hop_design.models.construction.foldback import (
     FoldbackNeighborhoodDiscoveryResult,
 )
 
+from .clone_endpoint import clone_realization
 from .direct import direct_realization
 from .pcr_endpoint import pcr_realization
 
@@ -53,15 +54,26 @@ def materialize_endpoint(
             evaluation=evaluation,
         )
     if basal is None or basal_result is None:
-        raise ValueError("PCR composition requires one exact basal authority.")
-    return pcr_realization(
-        request,
-        foldback=foldback,
-        basal=basal,
-        foldback_result=foldback_result,
-        basal_result=basal_result,
-        evaluation=evaluation,
-    )
+        raise ValueError("A duplex endpoint requires one exact basal authority.")
+    if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        return pcr_realization(
+            request,
+            foldback=foldback,
+            basal=basal,
+            foldback_result=foldback_result,
+            basal_result=basal_result,
+            evaluation=evaluation,
+        )
+    if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        return clone_realization(
+            request,
+            foldback=foldback,
+            basal=basal,
+            foldback_result=foldback_result,
+            basal_result=basal_result,
+            evaluation=evaluation,
+        )
+    raise ValueError(f"Unsupported complete-construction endpoint: {request.endpoint.value}.")
 
 
 __all__ = ["materialize_endpoint"]

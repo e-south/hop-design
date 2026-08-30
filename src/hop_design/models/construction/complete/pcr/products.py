@@ -181,18 +181,50 @@ def _fate(role: FeatureRole) -> EndpointSequenceFate:
 def endpoint_fate_spans(
     features: tuple[SequenceFeature, ...],
     length: int,
+    *,
+    design_source_span: Span | None = None,
 ) -> tuple[EndpointSequenceFateSpan, ...]:
     """Project exact plan-feature fates across both ordered endpoint strands."""
+    source_span = design_source_span or _span(0, length)
+    if source_span.length.value != sum(feature.span.length.value for feature in features):
+        raise ValueError("PCR design span must equal the complete ordered feature length.")
+    if source_span.end.offset > length:
+        raise ValueError("PCR design span must lie inside the complete template.")
+    top_segments: list[tuple[Span, EndpointSequenceFate]] = []
+    if source_span.start.offset:
+        top_segments.append(
+            (_span(0, source_span.start.offset), EndpointSequenceFate.TRANSIENT_CONSTRUCTION)
+        )
+    top_segments.extend(
+        (
+            _span(
+                source_span.start.offset + feature.span.start.offset,
+                source_span.start.offset + feature.span.end.offset,
+            ),
+            _fate(feature.role),
+        )
+        for feature in features
+    )
+    if source_span.end.offset < length:
+        top_segments.append(
+            (
+                _span(source_span.end.offset, length),
+                EndpointSequenceFate.TRANSIENT_CONSTRUCTION,
+            )
+        )
     records: list[EndpointSequenceFateSpan] = []
     for endpoint_strand in EndpointStrand:
-        ordered = features if endpoint_strand is EndpointStrand.TOP else tuple(reversed(features))
-        for feature in ordered:
+        ordered = (
+            tuple(top_segments)
+            if endpoint_strand is EndpointStrand.TOP
+            else tuple(reversed(top_segments))
+        )
+        for source, fate in ordered:
             span = (
-                feature.span
+                source
                 if endpoint_strand is EndpointStrand.TOP
-                else _span(length - feature.span.end.offset, length - feature.span.start.offset)
+                else _span(length - source.end.offset, length - source.start.offset)
             )
-            fate = _fate(feature.role)
             if (
                 records
                 and records[-1].endpoint_strand is endpoint_strand

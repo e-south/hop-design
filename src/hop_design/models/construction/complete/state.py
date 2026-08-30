@@ -36,6 +36,7 @@ class ConstructionStatePhase(StrEnum):
     ADAPTER_ANNEALED = "adapter_annealed"
     ADAPTER_LIGATED = "adapter_ligated"
     HAIRPIN_PCR_DUPLEX = "hairpin_pcr_duplex"
+    CLONE_READY_DUPLEX = "clone_ready_duplex"
 
 
 class ConstructionState(HopModel):
@@ -113,6 +114,7 @@ class ConstructionState(HopModel):
             ConstructionStatePhase.ADAPTER_ANNEALED,
             ConstructionStatePhase.ADAPTER_LIGATED,
             ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
+            ConstructionStatePhase.CLONE_READY_DUPLEX,
         }
         unpaired_phases = {
             ConstructionStatePhase.DENATURED_FRAGMENTS,

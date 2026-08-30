@@ -17,6 +17,7 @@ from hop_design.models.construction.accounting import SearchCompletionStatus
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.payload import (
+    ConstructionEndpoint,
     SourceOrientation,
     validate_linear_source_map,
 )
@@ -30,6 +31,7 @@ from .authority import (
 )
 from .evaluation import CompositionRejectionCode, evaluate_combination
 from .request import ConstructionDiscoveryRequest, derived_source_material_id
+from .state import ConstructionStatePhase
 
 
 def validate_payload_source_map(request: ConstructionDiscoveryRequest, realization: Any) -> None:
@@ -54,6 +56,34 @@ def validate_payload_source_map(request: ConstructionDiscoveryRequest, realizati
         )
     if "".join(payload_parts) != request.payload.payload.sequence:
         raise ValueError("The payload source map must replay exact requested payload bytes.")
+
+
+def validate_endpoint_evidence(
+    request: ConstructionDiscoveryRequest,
+    realization: Any,
+) -> None:
+    """Require final topology and terminal phase to match the requested endpoint."""
+    if realization.final_product.reference.endpoint is not request.endpoint:
+        raise ValueError("Final product endpoint must match the exact request.")
+    topology = realization.final_product.reference.topology
+    terminal_phase = realization.construction_program.states[-1].phase
+    if request.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN and (
+        topology != "single_stranded_hairpin"
+        or terminal_phase is not ConstructionStatePhase.LIGATED_PRODUCT
+    ):
+        raise ValueError("Direct final product topology and terminal phase must match.")
+    if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
+        topology != "linear_duplex"
+        or terminal_phase is not ConstructionStatePhase.HAIRPIN_PCR_DUPLEX
+    ):
+        raise ValueError("PCR final product topology and terminal phase must match.")
+    if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX and (
+        topology != "linear_duplex"
+        or terminal_phase is not ConstructionStatePhase.CLONE_READY_DUPLEX
+        or tuple(end.product_end for end in realization.final_product.cohesive_ends)
+        != ("left", "right")
+    ):
+        raise ValueError("Clone-ready topology, terminal phase, and cohesive ends must match.")
 
 
 def validate_accepted_realization(
@@ -197,11 +227,27 @@ def validate_combination_evaluations(
         realization = realizations_by_id.get(disposition.materialized_realization_id)
         if realization is None:
             raise ValueError("Accepted combination evaluation must bind its realization.")
+        expected_programs = (
+            (evaluation.reaction_program, evaluation.end_generation_program)
+            if evaluation.end_generation_program is not None
+            else (evaluation.reaction_program,)
+        )
+        expected_assessments = (
+            *evaluation.stage_assessments,
+            *evaluation.end_generation_stage_assessments,
+        )
+        endpoint_matches = (
+            realization.final_product.encoding_projection.sequence == evaluation.final_sequence
+            and realization.final_product.encoding_projection.source_span
+            == evaluation.design_parent_span
+            if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+            else realization.final_product.reference.sequence == evaluation.final_sequence
+        )
         if (
             tuple(realization.materials[:2]) != (evaluation.source, evaluation.source_complement)
-            or realization.construction_program.reaction_programs != (evaluation.reaction_program,)
-            or realization.construction_program.stage_assessments != evaluation.stage_assessments
-            or realization.final_product.reference.sequence != evaluation.final_sequence
+            or realization.construction_program.reaction_programs != expected_programs
+            or realization.construction_program.stage_assessments != expected_assessments
+            or not endpoint_matches
         ):
             raise ValueError("Accepted realization must equal exact combination evaluation.")
 
@@ -265,5 +311,6 @@ __all__ = [
     "expected_material_accounting",
     "validate_accepted_realization",
     "validate_combination_evaluations",
+    "validate_endpoint_evidence",
     "validate_payload_source_map",
 ]

@@ -14,7 +14,6 @@ from __future__ import annotations
 from hop_design.kernel.construction.basal import (
     BasalProgramCandidate,
     BasalSequenceSolution,
-    derive_cohesive_end,
 )
 from hop_design.kernel.molecular_states import (
     observe_pair,
@@ -25,6 +24,7 @@ from hop_design.models.construction.basal import (
     BasalAdapterLigatedProduct,
     BasalPcrCopyState,
     BasalRestrictionProduct,
+    derive_cohesive_end,
 )
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import EnzymeRole

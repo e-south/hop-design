@@ -87,6 +87,7 @@ def materialize_pcr_program(
     reverse_primer: ExactConstructionMaterial,
     evaluation: CombinationEvaluation,
     encoding_features: tuple[SequenceFeature, ...],
+    design_source_span: Span,
 ) -> tuple[ConstructionProgram, PrimerExtensionAuthority]:
     """Materialize the exact basal-open intermediate through the PCR duplex."""
     if evaluation.reaction_program is None or evaluation.rejection_reason is not None:
@@ -155,9 +156,9 @@ def materialize_pcr_program(
         phase=ConstructionStatePhase.ANNEALED_COMPLEX,
         pairings=foldback_pairs,
     )
-    if evaluation.final_sequence is None:
-        raise ValueError("PCR materialization requires one exact final sequence.")
-    closed_sequence = evaluation.final_sequence.removesuffix(return_arm)
+    if evaluation.pcr_template_sequence is None:
+        raise ValueError("PCR materialization requires one exact PCR template sequence.")
+    closed_sequence = evaluation.pcr_template_sequence.removesuffix(return_arm)
     closed_lineage = tuple(
         item.model_copy(update={"product_index": index})
         for index, item in enumerate(
@@ -292,7 +293,11 @@ def materialize_pcr_program(
         top=top,
         bottom=bottom,
     )
-    fates = endpoint_fate_spans(encoding_features, len(ligated.sequence))
+    fates = endpoint_fate_spans(
+        encoding_features,
+        len(ligated.sequence),
+        design_source_span=design_source_span,
+    )
     extension = PrimerExtensionAuthority.create(
         pre_state_id=adapter_ligated.state_id,
         post_state_id=pcr_state.state_id,

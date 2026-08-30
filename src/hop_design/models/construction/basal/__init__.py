@@ -18,6 +18,7 @@ from .pairing import (
     BasalPairingProfile,
     BasalPairRecord,
     derive_basal_pair_class,
+    derive_cohesive_end,
 )
 from .realization import BasalRealizationRecord
 from .result import BasalNeighborhoodDiscoveryResult
@@ -49,4 +50,5 @@ __all__ = [
     "BasalRealizationRecord",
     "BasalRestrictionProduct",
     "derive_basal_pair_class",
+    "derive_cohesive_end",
 ]
