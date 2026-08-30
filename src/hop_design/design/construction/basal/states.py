@@ -15,10 +15,6 @@ from hop_design.kernel.construction.basal import (
     BasalProgramCandidate,
     BasalSequenceSolution,
 )
-from hop_design.models.molecular_replay import (
-    observe_pair,
-    reindex_lineage,
-)
 from hop_design.models.construction.basal import (
     BasalAdapterAnnealedComplex,
     BasalAdapterLigatedProduct,
@@ -28,6 +24,10 @@ from hop_design.models.construction.basal import (
 )
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import EnzymeRole
+from hop_design.models.molecular_replay import (
+    observe_pair,
+    reindex_lineage,
+)
 from hop_design.models.molecular_state import (
     CovalentBond,
     EndChemistry,

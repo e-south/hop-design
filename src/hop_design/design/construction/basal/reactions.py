@@ -15,7 +15,6 @@ from hop_design.kernel.construction.basal import (
     BasalProgramCandidate,
     BasalSequenceSolution,
 )
-from hop_design.models.molecular_replay import strand_from_sequence
 from hop_design.models.catalog import ResolvedNickSite
 from hop_design.models.construction import (
     BasalTarget,
@@ -26,6 +25,7 @@ from hop_design.models.construction.basal import (
 from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.junction import Strand
 from hop_design.models.method_states import MultiSiteNickedDuplex
+from hop_design.models.molecular_replay import strand_from_sequence
 from hop_design.models.molecular_state import (
     EndChemistry,
     LineageStrand,

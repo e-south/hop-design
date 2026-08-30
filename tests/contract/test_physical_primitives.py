@@ -6,8 +6,8 @@ import itertools
 
 import pytest
 
-from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.junction import JunctionPairObservation
+from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.physical import (
     JunctionPairKind,
     SiteOrientation,

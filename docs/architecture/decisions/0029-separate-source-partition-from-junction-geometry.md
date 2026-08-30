@@ -61,4 +61,3 @@ Search status remains `complete`, `infeasible`, or `truncated`. Enzyme-subset
 order is deterministic replay metadata, never a score. Catalog provenance,
 empirical performance, column recovery, PCR thermodynamics, and experimental
 selection remain caller-owned evidence or policy.
-

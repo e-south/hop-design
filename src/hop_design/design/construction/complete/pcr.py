@@ -11,7 +11,6 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.complete import (
     AdapterAnnealingAuthority,
@@ -37,6 +36,7 @@ from hop_design.models.construction.complete.route_lineage import material_stran
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
+from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.molecular_state import (
     CovalentBond,
     LineageStrand,
