@@ -43,6 +43,7 @@ from hop_design.models.construction.complete.local_authority import (
 )
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 
+from .design_authority import assert_design_authority
 from .endpoint import materialize_endpoint
 from .results import build_result
 
@@ -68,35 +69,6 @@ class VerifiedConstructionSpaceResult:
         object.__setattr__(self, "basal", basal)
 
 
-def _assert_design_reference(
-    request: ConstructionDiscoveryRequest,
-    design: VerifiedHopBundle,
-) -> None:
-    encoding = design.plan.hairpin_encoding_insert
-    observed = (
-        design.bundle.bundle_id,
-        design.spec,
-        design.plan,
-        design.plan.plan_id,
-        design.plan.design_id,
-        design.spec.payload.sequence,
-        encoding.sequence,
-        encoding.sequence_digest,
-    )
-    expected = (
-        request.design.bundle.bundle_id,
-        request.design.spec,
-        request.design.plan,
-        request.design.plan_id,
-        request.design.design_id,
-        request.design.payload_sequence,
-        request.design.encoding_sequence,
-        request.design.encoding_digest,
-    )
-    if observed != expected:
-        raise ValueError("Construction request must bind the exact verified HOP design bundle.")
-
-
 def _discover_constructions_raw(
     request: ConstructionDiscoveryRequest,
     *,
@@ -105,7 +77,7 @@ def _discover_constructions_raw(
     design: VerifiedHopBundle,
 ) -> ConstructionSpaceResult:
     """Compose every exact compatible local combination within declared bounds."""
-    _assert_design_reference(request, design)
+    assert_design_authority(request, design)
     validate_local_authority_compatibility(request, foldback=foldback, basal=basal)
     if foldback.result_id != request.foldback_result_id:
         raise ValueError("Foldback detailed result identity does not match the request.")
@@ -148,6 +120,22 @@ def _discover_constructions_raw(
             foldback_policy=foldback.neighborhood.request.enzyme_provisioning,
             basal_policy=(None if basal is None else basal.discovery.request.enzyme_provisioning),
         )
+        if evaluation.truncation_reason is not None:
+            dispositions.append(
+                CompositionDisposition(
+                    ordinal=ordinal,
+                    foldback_realization_id=foldback_record.foldback_realization_id,
+                    basal_realization_id=(
+                        None if basal_record is None else basal_record.basal_realization_id
+                    ),
+                    status=CompositionDispositionStatus.TRUNCATED,
+                    truncation_reason=evaluation.truncation_reason,
+                    candidate_enzyme_programs=evaluation.candidate_enzyme_programs,
+                    recognition_placements_attempted=(evaluation.recognition_placements_attempted),
+                    constraint_systems_attempted=evaluation.constraint_systems_attempted,
+                )
+            )
+            continue
         record = materialize_endpoint(
             request,
             foldback=foldback_record,
@@ -190,6 +178,11 @@ def _discover_constructions_raw(
         )
     if truncation is None and examined < nominal:
         truncation = "max_combinations"
+    endpoint_truncation_reasons = tuple(
+        dict.fromkeys(
+            item.truncation_reason for item in dispositions if item.truncation_reason is not None
+        )
+    )
     exact = tuple(records)
     if (
         request.whole_route_constraints.require_all_combinations_valid
@@ -235,7 +228,7 @@ def _discover_constructions_raw(
     )
     status = (
         SearchCompletionStatus.TRUNCATED
-        if truncation or upstream_truncation_reasons
+        if truncation or endpoint_truncation_reasons or upstream_truncation_reasons
         else SearchCompletionStatus.COMPLETE
         if exact
         else SearchCompletionStatus.INFEASIBLE
@@ -246,6 +239,7 @@ def _discover_constructions_raw(
         realizations=exact,
         failures=failures,
         truncation=truncation,
+        endpoint_truncation_reasons=endpoint_truncation_reasons,
         upstream_truncation_reasons=upstream_truncation_reasons,
         foldback_count=len(foldback_records),
         basal_count=(0 if basal is None else len(basal_records)),

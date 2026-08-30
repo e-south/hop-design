@@ -13,7 +13,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.construction.payload import ConstructionEndpoint
+from hop_design.models.enzymes import EnzymeRole
 
 from ..pcr import DuplexFinalProductReference
 from ..pcr.products import material_function_spans
@@ -48,16 +50,30 @@ def validate_clone_realization(realization: MaterializedConstructionRealization)
     ):
         raise ValueError("Clone-ready route must append one exact end-generation phase.")
     pcr_state, terminal = program.states[-2:]
+    release_program = program.reaction_programs[-1]
+    bindings = tuple(
+        ConstructionEnzymeBinding.create(
+            enzyme_id=operation.enzyme_id,
+            role=EnzymeRole.END_GENERATION,
+            strand=None,
+            recognition_span=operation.intended_binding.recognition_span,
+            orientation=operation.intended_binding.orientation,
+            reference_cut=operation.intended_binding.reference_cut,
+            complement_cut=operation.intended_binding.complement_cut,
+        )
+        for operation in release_program.stages[0].operations
+    )
+    if len(bindings) != 2:
+        raise ValueError("Clone-ready release requires two exact endpoint bindings.")
     digest = derive_clone_digest(
-        basal=basal,
-        foldback=item.foldback_authority,
+        bindings=(bindings[0], bindings[1]),
         pcr_state=pcr_state,
         design_sequence=item.design.encoding_sequence,
         design_digest=item.design.encoding_digest,
     )
     expected_program = derive_clone_end_program(pcr_state=pcr_state, digest=digest)
     if program.reaction_programs[-1] != expected_program:
-        raise ValueError("Clone end-generation program must replay exact lifted bindings.")
+        raise ValueError("Clone end-generation program must replay exact endpoint bindings.")
     if (
         terminal.molecules != digest.strands
         or terminal.pairings != digest.pairings

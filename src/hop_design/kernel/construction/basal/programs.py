@@ -14,16 +14,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from hop_design.models.construction import (
-    BasalNickStrand,
     BasalPairAllowance,
     BasalTarget,
     ConstructionEndpoint,
+    NickStrandSelection,
 )
 from hop_design.models.construction.basal import (
-    BasalEnzymeBinding,
     BasalPairingProfile,
     derive_basal_pair_class,
 )
+from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import (
     CharacterizedEnzyme,
@@ -41,13 +41,10 @@ _BASES = ("A", "C", "G", "T")
 
 @dataclass(frozen=True, slots=True)
 class BasalProgramCandidate:
-    """One oriented nick program and optional facing Type IIS program."""
+    """One oriented basal nick program."""
 
     nick_enzyme: CharacterizedEnzyme
     nick_orientation: SiteOrientation
-    end_enzyme: CharacterizedEnzyme | None
-    left_end_orientation: SiteOrientation | None
-    right_end_orientation: SiteOrientation | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +55,7 @@ class BasalSequenceSolution:
     adapter_sequence: str | None
     payload_span: Span
     pairing_profile: BasalPairingProfile | None
-    enzyme_bindings: tuple[BasalEnzymeBinding, ...]
+    enzyme_bindings: tuple[ConstructionEnzymeBinding, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,41 +113,19 @@ def iter_basal_programs(
         if enzyme.enzyme_class is EnzymeClass.NICKASE
         and policy.permits(enzyme.enzyme_id, role=EnzymeRole.BASAL_NICK)
     )
-    end_options: tuple[CharacterizedEnzyme | None, ...] = (None,)
-    if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
-        end_options = tuple(
-            enzyme
-            for enzyme in sorted(policy.catalog.enzymes, key=lambda item: item.enzyme_id)
-            if enzyme.enzyme_class is EnzymeClass.DUPLEX_RESTRICTION
-            and policy.permits(enzyme.enzyme_id, role=EnzymeRole.END_GENERATION)
-        )
+    if endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        raise ValueError("Basal local discovery requires the hairpin PCR intermediate.")
     for nickase in nickases:
         for nick_orientation in _orientations(nickase):
             controlled = (
                 Strand.TOP if nick_orientation is SiteOrientation.FORWARD else Strand.BOTTOM
             )
             if (
-                target.nick_strand is not BasalNickStrand.ANY
+                target.nick_strand is not NickStrandSelection.ANY
                 and controlled is not target.nick_strand
             ):
                 continue
-            for end_enzyme in end_options:
-                if end_enzyme is None:
-                    programs.append(
-                        BasalProgramCandidate(nickase, nick_orientation, None, None, None)
-                    )
-                    continue
-                for left_orientation in _orientations(end_enzyme):
-                    for right_orientation in _orientations(end_enzyme):
-                        programs.append(
-                            BasalProgramCandidate(
-                                nickase,
-                                nick_orientation,
-                                end_enzyme,
-                                left_orientation,
-                                right_orientation,
-                            )
-                        )
+            programs.append(BasalProgramCandidate(nickase, nick_orientation))
     return tuple(programs)
 
 
@@ -178,9 +153,9 @@ def _binding(
     strand: Strand | None,
     orientation: SiteOrientation,
     start: int,
-) -> BasalEnzymeBinding:
+) -> ConstructionEnzymeBinding:
     reference, complement = _oriented_cuts(enzyme, orientation=orientation, site_start=start)
-    return BasalEnzymeBinding.create(
+    return ConstructionEnzymeBinding.create(
         enzyme_id=enzyme.enzyme_id,
         role=role,
         strand=strand,

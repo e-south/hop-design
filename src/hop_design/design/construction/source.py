@@ -39,7 +39,7 @@ from hop_design.models.payload import ExactPayload
 
 def _load_construction_source(path: str | Path) -> ConstructionSource:
     mapping = load_source_mapping(path)
-    if mapping.get("schema") != "hop.construction-source/v2":
+    if mapping.get("schema") != "hop.construction-source/v3":
         raise ValueError(f"Unsupported HOP construction source schema: {mapping.get('schema')!r}.")
     return ConstructionSource.model_validate_json(json.dumps(mapping, separators=(",", ":")))
 
@@ -91,6 +91,7 @@ def compile_construction_source(
         foldback_result_id=foldback.result.result_id,
         basal_result_id=None if basal is None else basal.result.result_id,
         materialization=source.composition.materialization,
+        release=source.composition.release,
         design=DesignAuthorityReference(
             bundle=design.bundle,
             spec=design.spec,

@@ -13,12 +13,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from hop_design.models.construction.basal import (
-    BasalEnzymeBinding,
-    BasalRealizationRecord,
+from hop_design.models.construction.enzyme_binding import (
+    ConstructionEnzymeBinding,
     derive_cohesive_end,
 )
-from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.coordinates import Span
 from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import (
@@ -32,19 +30,14 @@ from hop_design.models.physical import classify_literal_pair
 from hop_design.models.sequence import reverse_complement_iupac
 
 from ..state import ConstructionState, ConstructionStatePhase
-from .geometry import (
-    CloneEndGenerationError,
-    derive_clone_cut_geometry,
-    lift_clone_end_bindings,
-    validate_clone_binding_definitions,
-)
+from .geometry import CloneEndGenerationError, derive_clone_cut_geometry
 
 
 @dataclass(frozen=True, slots=True)
 class CloneDigest:
     """Pure derived facts for one complete clone-ready digest."""
 
-    bindings: tuple[BasalEnzymeBinding, BasalEnzymeBinding]
+    bindings: tuple[ConstructionEnzymeBinding, ConstructionEnzymeBinding]
     parent_length: int
     primary_parent_span: Span
     complementary_parent_span: Span
@@ -113,8 +106,7 @@ def _clone_pairings(
 
 def derive_clone_digest(
     *,
-    basal: BasalRealizationRecord,
-    foldback: FoldbackLocalRealization,
+    bindings: tuple[ConstructionEnzymeBinding, ConstructionEnzymeBinding],
     pcr_state: ConstructionState,
     design_sequence: str,
     design_digest: str,
@@ -129,12 +121,6 @@ def derive_clone_digest(
     if bottom_parent.sequence != reverse_complement_iupac(top_parent.sequence):
         raise CloneEndGenerationError("Clone digestion requires exact PCR complementarity.")
     parent_length = len(bottom_parent.sequence)
-    bindings = lift_clone_end_bindings(basal=basal, foldback=foldback)
-    validate_clone_binding_definitions(
-        bindings=bindings,
-        basal=basal,
-        sequence=top_parent.sequence,
-    )
     geometry = derive_clone_cut_geometry(
         bindings=bindings,
         parent_length=parent_length,

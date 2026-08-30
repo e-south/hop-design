@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.coordinates import Span
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
@@ -32,6 +33,7 @@ class CompositionRejectionCode(StrEnum):
     PCR_PAIRING_PROFILE_MISMATCH = "pcr-pairing-profile-mismatch"
     PCR_PRIMER_MISMATCH = "pcr-primer-mismatch"
     CLONE_END_GENERATION_INCOMPATIBLE = "clone-end-generation-incompatible"
+    CLONE_END_GENERATION_AMBIGUOUS = "clone-end-generation-ambiguous"
     ALL_COMBINATIONS_VALID_REQUIRED = "all-combinations-valid-required"
 
 
@@ -43,6 +45,7 @@ class CombinationEvaluation:
     candidate_enzyme_programs: int
     recognition_placements_attempted: int
     constraint_systems_attempted: int
+    truncation_reason: str | None = None
     prefix: str | None = None
     return_arm: str | None = None
     source: ExactConstructionMaterial | None = None
@@ -51,6 +54,9 @@ class CombinationEvaluation:
     stage_assessments: tuple[ReactionStageAssessment, ...] = ()
     end_generation_program: ReactionProgram | None = None
     end_generation_stage_assessments: tuple[ReactionStageAssessment, ...] = ()
+    end_generation_bindings: tuple[ConstructionEnzymeBinding, ConstructionEnzymeBinding] | None = (
+        None
+    )
     pcr_template_sequence: str | None = None
     design_parent_span: Span | None = None
     final_sequence: str | None = None

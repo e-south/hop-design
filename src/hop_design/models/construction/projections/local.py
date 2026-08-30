@@ -24,14 +24,18 @@ from hop_design.models.construction.accounting import (
 )
 from hop_design.models.construction.basal.pairing import BasalPairRecord
 from hop_design.models.construction.foldback.binding import FoldbackCleavageProgramKind
-from hop_design.models.construction.payload import ConstructionEndpoint
+from hop_design.models.construction.payload import ConstructionEndpoint, SourceOrientation
 from hop_design.models.construction.projection import ProjectionReference
+from hop_design.models.construction.relaxation import SequenceDomainPartition
 from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import CohesiveEnd
 
-FOLDBACK_PROJECTION_RENDERER_VERSION = "foldback-projections/2"
-BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/1"
+FOLDBACK_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/3"
+FOLDBACK_PART_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/4"
+FOLDBACK_RELAXATION_RENDERER_VERSION = "foldback-projections/2"
+FOLDBACK_PART_RELAXATION_RENDERER_VERSION = "foldback-projections/3"
+BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/2"
+BASAL_PART_PROJECTION_RENDERER_VERSION = "basal-projections/3"
 
 
 class FoldbackFeasibilityRow(HopModel):
@@ -40,6 +44,8 @@ class FoldbackFeasibilityRow(HopModel):
     local_realization_id: str = Field(pattern=r"^hop:local-realization/[0-9a-f]{64}@1$")
     foldback_realization_id: str = Field(pattern=r"^hop:foldback-realization/[0-9a-f]{64}@1$")
     program_kind: FoldbackCleavageProgramKind
+    nick_strand: Strand
+    source_orientation: SourceOrientation
     relaxation_radius: int = Field(ge=0)
     nick_offset_within_foldback_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
@@ -49,38 +55,34 @@ class FoldbackFeasibilityRow(HopModel):
 
 
 class BasalFeasibilityRow(HopModel):
-    """One exact basal realization and its endpoint-dependent material dimensions."""
+    """One exact basal realization and its PCR-intermediate material dimensions."""
 
     local_realization_id: str = Field(pattern=r"^hop:local-realization/[0-9a-f]{64}@1$")
     basal_realization_id: str = Field(pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$")
     relaxation_radius: int = Field(ge=0)
     nick_strand: Strand
     nick_offset_nt: int = Field(ge=0)
-    type_iis_cut_offset_nt: int | None = Field(default=None, ge=0)
     pairing_profile: str | None
     pairing_classes: tuple[BasalPairClass, ...]
     literal_pairs: tuple[BasalPairRecord, ...]
     retained_nt: int = Field(ge=0)
     transient_nt: int = Field(ge=0)
     auxiliary_nt: int = Field(ge=0)
-    cohesive_end_count: int = Field(ge=0)
-    cohesive_ends: tuple[CohesiveEnd, ...]
 
     @model_validator(mode="after")
     def validate_exact_details(self) -> BasalFeasibilityRow:
         if self.pairing_classes != tuple(item.pair_class for item in self.literal_pairs):
             raise ValueError("Basal pairing classes must replay every literal pair.")
-        if self.cohesive_end_count != len(self.cohesive_ends):
-            raise ValueError("Basal cohesive-end count must equal the exact cohesive ends.")
         return self
 
 
 class FoldbackFeasibilityProjection(HopModel):
     """Neutral foldback feasibility relation over exact realization authorities."""
 
-    schema_id: Literal["hop.foldback-feasibility-landscape/v2"] = Field(
-        default="hop.foldback-feasibility-landscape/v2", alias="schema"
-    )
+    schema_id: Literal[
+        "hop.foldback-feasibility-landscape/v3",
+        "hop.foldback-feasibility-landscape/v4",
+    ] = Field(default="hop.foldback-feasibility-landscape/v3", alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
@@ -90,6 +92,10 @@ class FoldbackFeasibilityProjection(HopModel):
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     endpoint: ConstructionEndpoint
     status: SearchCompletionStatus
+    sequence_partition: SequenceDomainPartition | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     realization_count: int = Field(ge=0)
     rejected_count: int = Field(ge=0)
     truncation_reasons: tuple[str, ...]
@@ -97,6 +103,12 @@ class FoldbackFeasibilityProjection(HopModel):
 
     @model_validator(mode="after")
     def validate_projection(self) -> FoldbackFeasibilityProjection:
+        _validate_partition_schema(
+            schema_id=self.schema_id,
+            sequence_partition=self.sequence_partition,
+            unpartitioned_schema="hop.foldback-feasibility-landscape/v3",
+            partitioned_schema="hop.foldback-feasibility-landscape/v4",
+        )
         _validate_feasibility_status(
             status=self.status,
             realization_count=self.realization_count,
@@ -118,9 +130,10 @@ class FoldbackFeasibilityProjection(HopModel):
 class BasalFeasibilityProjection(HopModel):
     """Neutral basal feasibility relation with explicit requested endpoint."""
 
-    schema_id: Literal["hop.basal-feasibility-landscape/v1"] = Field(
-        default="hop.basal-feasibility-landscape/v1", alias="schema"
-    )
+    schema_id: Literal[
+        "hop.basal-feasibility-landscape/v2",
+        "hop.basal-feasibility-landscape/v3",
+    ] = Field(default="hop.basal-feasibility-landscape/v2", alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
@@ -130,6 +143,10 @@ class BasalFeasibilityProjection(HopModel):
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     endpoint: ConstructionEndpoint
     status: SearchCompletionStatus
+    sequence_partition: SequenceDomainPartition | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     realization_count: int = Field(ge=0)
     rejected_count: int = Field(ge=0)
     truncation_reasons: tuple[str, ...]
@@ -137,6 +154,12 @@ class BasalFeasibilityProjection(HopModel):
 
     @model_validator(mode="after")
     def validate_projection(self) -> BasalFeasibilityProjection:
+        _validate_partition_schema(
+            schema_id=self.schema_id,
+            sequence_partition=self.sequence_partition,
+            unpartitioned_schema="hop.basal-feasibility-landscape/v2",
+            partitioned_schema="hop.basal-feasibility-landscape/v3",
+        )
         _validate_feasibility_status(
             status=self.status,
             realization_count=self.realization_count,
@@ -144,30 +167,10 @@ class BasalFeasibilityProjection(HopModel):
             ids=tuple(row.local_realization_id for row in self.realizations),
             truncation_reasons=self.truncation_reasons,
         )
-        if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN and any(
-            row.pairing_profile is not None
-            or row.literal_pairs
-            or row.type_iis_cut_offset_nt is not None
-            or row.cohesive_ends
-            for row in self.realizations
+        if self.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX or any(
+            row.pairing_profile is None or not row.literal_pairs for row in self.realizations
         ):
-            raise ValueError("Direct basal projections cannot report PCR or cohesive-end facts.")
-        if self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and any(
-            row.pairing_profile is None
-            or not row.literal_pairs
-            or row.type_iis_cut_offset_nt is not None
-            or row.cohesive_ends
-            for row in self.realizations
-        ):
-            raise ValueError("PCR basal projections require pairing without cohesive ends.")
-        if self.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX and any(
-            row.pairing_profile is None
-            or not row.literal_pairs
-            or row.type_iis_cut_offset_nt is None
-            or len(row.cohesive_ends) != 2
-            for row in self.realizations
-        ):
-            raise ValueError("Clone-ready basal projections require pairing and two cohesive ends.")
+            raise ValueError("Basal projections require the exact hairpin PCR intermediate.")
         _validate_projection_reference(
             schema_id=self.schema_id,
             reference=self.projection_reference,
@@ -212,7 +215,10 @@ class RelaxationFrontierProjection(HopModel):
     """Exact-first relaxation frontier without inferred shell failure categories."""
 
     schema_id: Literal[
-        "hop.foldback-relaxation-frontier/v2", "hop.basal-relaxation-frontier/v1"
+        "hop.foldback-relaxation-frontier/v2",
+        "hop.foldback-relaxation-frontier/v3",
+        "hop.basal-relaxation-frontier/v1",
+        "hop.basal-relaxation-frontier/v2",
     ] = Field(alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
@@ -229,12 +235,30 @@ class RelaxationFrontierProjection(HopModel):
     family: Literal["foldback", "basal"]
     endpoint: ConstructionEndpoint
     status: SearchCompletionStatus
+    sequence_partition: SequenceDomainPartition | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     coordinate_names: tuple[str, ...]
     truncation_reasons: tuple[str, ...]
     shells: tuple[RelaxationShellProjection, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
     def validate_projection(self) -> RelaxationFrontierProjection:
+        if self.family == "foldback":
+            _validate_partition_schema(
+                schema_id=self.schema_id,
+                sequence_partition=self.sequence_partition,
+                unpartitioned_schema="hop.foldback-relaxation-frontier/v2",
+                partitioned_schema="hop.foldback-relaxation-frontier/v3",
+            )
+        else:
+            _validate_partition_schema(
+                schema_id=self.schema_id,
+                sequence_partition=self.sequence_partition,
+                unpartitioned_schema="hop.basal-relaxation-frontier/v1",
+                partitioned_schema="hop.basal-relaxation-frontier/v2",
+            )
         radii = tuple(shell.radius for shell in self.shells)
         if radii != tuple(range(len(radii))):
             raise ValueError("Relaxation-frontier shells must be contiguous and exact-first.")
@@ -268,6 +292,18 @@ LocalScientificProjection = Annotated[
     FoldbackFeasibilityProjection | BasalFeasibilityProjection | RelaxationFrontierProjection,
     Field(discriminator="schema_id"),
 ]
+
+
+def _validate_partition_schema(
+    *,
+    schema_id: str,
+    sequence_partition: SequenceDomainPartition | None,
+    unpartitioned_schema: str,
+    partitioned_schema: str,
+) -> None:
+    expected = partitioned_schema if sequence_partition is not None else unpartitioned_schema
+    if schema_id != expected:
+        raise ValueError("Projection schema must match its sequence-domain scope.")
 
 
 def _validate_feasibility_status(

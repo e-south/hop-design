@@ -11,151 +11,17 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.molecular_state import (
-    EndChemistry,
-    Fragment,
     LineageStrand,
     MaterialBaseLineage,
     MolecularStrand,
 )
-from hop_design.models.physical import Strand
 from hop_design.models.reactions import ReactionMolecule
 
+from .evaluation_inputs import LinearSourceEmbedding
+from .materials import MaterialOccurrence, foldback_occurrences
 from .request import ExactConstructionMaterial
-
-
-@dataclass(frozen=True, slots=True)
-class MaterialOccurrence:
-    """Exact material span and terminal chemistry for one reaction strand."""
-
-    start: int
-    five_prime_end: EndChemistry
-    three_prime_end: EndChemistry
-
-
-def foldback_occurrences(
-    molecules: tuple[ReactionMolecule, ...],
-    *,
-    fragments: tuple[Fragment, ...],
-    prefix_length: int,
-    source: ExactConstructionMaterial,
-    source_complement: ExactConstructionMaterial,
-) -> dict[str, tuple[MaterialOccurrence, MaterialOccurrence | None]]:
-    """Resolve reaction strands from exact local fragment coordinates."""
-    local_source_length = len(source.sequence_5prime) - prefix_length
-    full_length = len(source.sequence_5prime)
-    fragments_by_id = {item.fragment_id: item for item in fragments}
-    fragments_by_span = {
-        (
-            item.precursor_strand,
-            item.precursor_span.start.offset,
-            item.precursor_span.end.offset,
-        ): item
-        for item in fragments
-    }
-    occurrences: dict[str, tuple[MaterialOccurrence, MaterialOccurrence | None]] = {}
-    for molecule in molecules:
-        local_id = molecule.molecule_id.rsplit("-", maxsplit=1)[-1]
-        if molecule.molecule_id.endswith("-source") or local_id == "source":
-            local_end = len(molecule.reference_sequence_5prime) - prefix_length
-            top = fragments_by_span.get((Strand.TOP, 0, local_end))
-            bottom = fragments_by_span.get((Strand.BOTTOM, 0, local_end))
-            reference = MaterialOccurrence(
-                start=0,
-                five_prime_end=source.five_prime_end if top is None else top.five_prime_end,
-                three_prime_end=source.three_prime_end if top is None else top.three_prime_end,
-            )
-            complement = None
-            if molecule.complement_sequence_5prime is not None:
-                complement = MaterialOccurrence(
-                    start=full_length - len(molecule.complement_sequence_5prime),
-                    five_prime_end=(
-                        source_complement.five_prime_end
-                        if bottom is None
-                        else bottom.five_prime_end
-                    ),
-                    three_prime_end=(
-                        source_complement.three_prime_end
-                        if bottom is None
-                        else bottom.three_prime_end
-                    ),
-                )
-        elif molecule.molecule_id.endswith("-released-duplex") or local_id == "released-duplex":
-            local_start = local_source_length - len(molecule.reference_sequence_5prime)
-            top = fragments_by_span[(Strand.TOP, local_start, local_source_length)]
-            bottom = fragments_by_span[(Strand.BOTTOM, local_start, local_source_length)]
-            reference = MaterialOccurrence(
-                start=prefix_length + local_start,
-                five_prime_end=top.five_prime_end,
-                three_prime_end=top.three_prime_end,
-            )
-            complement = (
-                None
-                if molecule.complement_sequence_5prime is None
-                else MaterialOccurrence(
-                    start=0,
-                    five_prime_end=bottom.five_prime_end,
-                    three_prime_end=bottom.three_prime_end,
-                )
-            )
-        else:
-            if molecule.molecule_id.endswith("-pcr-bottom-retained"):
-                fragment = next(
-                    item
-                    for fragment_id, item in fragments_by_id.items()
-                    if fragment_id.startswith("bottom-") and fragment_id in molecule.molecule_id
-                )
-                occurrences[molecule.molecule_id] = (
-                    MaterialOccurrence(
-                        start=full_length - (prefix_length + fragment.precursor_span.end.offset),
-                        five_prime_end=source_complement.five_prime_end,
-                        three_prime_end=EndChemistry.HYDROXYL,
-                    ),
-                    None,
-                )
-                continue
-            if molecule.molecule_id.endswith("-pcr-bottom-return-arm"):
-                occurrences[molecule.molecule_id] = (
-                    MaterialOccurrence(
-                        start=full_length - prefix_length,
-                        five_prime_end=EndChemistry.PHOSPHATE,
-                        three_prime_end=source_complement.three_prime_end,
-                    ),
-                    None,
-                )
-                continue
-            matched_fragment = next(
-                (
-                    item
-                    for fragment_id, item in fragments_by_id.items()
-                    if molecule.molecule_id.endswith(fragment_id)
-                ),
-                None,
-            )
-            if matched_fragment is None:
-                raise ValueError("Foldback reaction molecule lacks an exact fragment authority.")
-            source_start = (
-                0
-                if matched_fragment.precursor_span.start.offset == 0
-                else prefix_length + matched_fragment.precursor_span.start.offset
-            )
-            source_end = prefix_length + matched_fragment.precursor_span.end.offset
-            reference_start = (
-                source_start
-                if matched_fragment.precursor_strand is Strand.TOP
-                else full_length - source_end
-            )
-            reference = MaterialOccurrence(
-                start=reference_start,
-                five_prime_end=matched_fragment.five_prime_end,
-                three_prime_end=matched_fragment.three_prime_end,
-            )
-            complement = None
-        occurrences[molecule.molecule_id] = (reference, complement)
-    return occurrences
 
 
 def material_strand(
@@ -182,34 +48,6 @@ def material_strand(
     )
 
 
-def whole_source_occurrences(
-    molecules: tuple[ReactionMolecule, ...],
-    *,
-    source: ExactConstructionMaterial,
-    source_complement: ExactConstructionMaterial,
-) -> dict[str, tuple[MaterialOccurrence, MaterialOccurrence | None]]:
-    """Resolve a reaction state that preserves the complete exact source duplex."""
-    occurrences: dict[str, tuple[MaterialOccurrence, MaterialOccurrence | None]] = {}
-    for molecule in molecules:
-        if molecule.reference_sequence_5prime != source.sequence_5prime or (
-            molecule.complement_sequence_5prime != source_complement.sequence_5prime
-        ):
-            raise ValueError("Basal reaction state must preserve the complete exact source duplex.")
-        occurrences[molecule.molecule_id] = (
-            MaterialOccurrence(
-                start=0,
-                five_prime_end=source.five_prime_end,
-                three_prime_end=source.three_prime_end,
-            ),
-            MaterialOccurrence(
-                start=0,
-                five_prime_end=source_complement.five_prime_end,
-                three_prime_end=source_complement.three_prime_end,
-            ),
-        )
-    return occurrences
-
-
 def reaction_molecule_strands(
     molecule: ReactionMolecule,
     *,
@@ -220,11 +58,10 @@ def reaction_molecule_strands(
     complement_occurrence: MaterialOccurrence | None,
 ) -> tuple[MolecularStrand, ...]:
     """Map one reaction molecule into exact material coordinates."""
-    primary_material = source
-    primary_lineage = LineageStrand.PRIMARY
-    if molecule.complement_sequence_5prime is None and "bottom-" in molecule.molecule_id:
-        primary_material = source_complement
-        primary_lineage = LineageStrand.COMPLEMENTARY
+    primary_material = (
+        source if reference_occurrence.origin_strand is LineageStrand.PRIMARY else source_complement
+    )
+    primary_lineage = reference_occurrence.origin_strand
     output = [
         _subsequence_strand(
             f"{namespace}-{molecule.molecule_id}-top",
@@ -249,6 +86,54 @@ def reaction_molecule_strands(
     return tuple(output)
 
 
+def lift_reaction_molecules(
+    molecules: tuple[ReactionMolecule, ...],
+    *,
+    foldback: FoldbackLocalRealization,
+    embedding: LinearSourceEmbedding,
+    source: ExactConstructionMaterial,
+    source_complement: ExactConstructionMaterial,
+) -> tuple[ReactionMolecule, ...]:
+    """Lift local reaction molecules into their exact complete-source coordinates."""
+    occurrences = foldback_occurrences(
+        molecules,
+        fragments=foldback.molecular_fragments,
+        embedding=embedding,
+        source=source,
+        source_complement=source_complement,
+    )
+    lifted: list[ReactionMolecule] = []
+    for molecule in molecules:
+        reference_occurrence, complement_occurrence = occurrences[molecule.molecule_id]
+        reference_material = (
+            source
+            if reference_occurrence.origin_strand is LineageStrand.PRIMARY
+            else source_complement
+        )
+        reference = reference_material.sequence_5prime[
+            reference_occurrence.start : reference_occurrence.start + reference_occurrence.length
+        ]
+        complement = None
+        if complement_occurrence is not None:
+            complement_material = (
+                source
+                if complement_occurrence.origin_strand is LineageStrand.PRIMARY
+                else source_complement
+            )
+            complement = complement_material.sequence_5prime[
+                complement_occurrence.start : complement_occurrence.start
+                + complement_occurrence.length
+            ]
+        lifted.append(
+            ReactionMolecule(
+                molecule_id=molecule.molecule_id,
+                reference_sequence_5prime=reference,
+                complement_sequence_5prime=complement,
+            )
+        )
+    return tuple(lifted)
+
+
 def _subsequence_strand(
     strand_id: str,
     sequence: str,
@@ -258,9 +143,11 @@ def _subsequence_strand(
     occurrence: MaterialOccurrence,
 ) -> MolecularStrand:
     start = occurrence.start
-    end = start + len(sequence)
+    end = start + occurrence.length
     if start < 0 or end > len(material.sequence_5prime):
         raise ValueError("Reaction-state occurrence must lie within its exact material.")
+    if occurrence.length != len(sequence):
+        raise ValueError("Reaction-state occurrence length must match the exact molecule.")
     if material.sequence_5prime[start:end] != sequence:
         raise ValueError(
             "Reaction-state occurrence must replay the exact material bytes: "
@@ -288,7 +175,7 @@ def derive_post_cleavage_strands(
     *,
     namespace: str,
     foldback: FoldbackLocalRealization,
-    prefix_length: int,
+    embedding: LinearSourceEmbedding,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
 ) -> tuple[MolecularStrand, ...]:
@@ -296,7 +183,7 @@ def derive_post_cleavage_strands(
     occurrences = foldback_occurrences(
         molecules,
         fragments=foldback.molecular_fragments,
-        prefix_length=prefix_length,
+        embedding=embedding,
         source=source,
         source_complement=source_complement,
     )
@@ -316,10 +203,8 @@ def derive_post_cleavage_strands(
 
 
 __all__ = [
-    "MaterialOccurrence",
     "derive_post_cleavage_strands",
-    "foldback_occurrences",
+    "lift_reaction_molecules",
     "material_strand",
     "reaction_molecule_strands",
-    "whole_source_occurrences",
 ]

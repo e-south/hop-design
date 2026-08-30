@@ -77,6 +77,7 @@ for required in \
   'examples/construction-relaxed.yaml' \
   'examples/discover_basal_candidates.py' \
   'examples/fixed-site-three-base-context.yaml' \
+  'examples/foldback-local-partition.yaml' \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
   'examples/linear-source-method.json' \
@@ -145,14 +146,57 @@ if [[ "$source_facades" != "$wheel_facades" ]]; then
   exit 1
 fi
 
+local_foldback_request='examples/foldback-local-partition.yaml'
+run_local_neighborhood_smoke() {
+  local output="$1"
+  shift
+  "$@" - "$local_foldback_request" "$output" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+import hop_design.construction as construction
+
+request = Path(sys.argv[1])
+output = Path(sys.argv[2])
+receipt = construction.discover_local_neighborhood(request)
+payload = json.loads(receipt.json_bytes)
+strands = {
+    realization["foldback_nick"]["strand"] for realization in payload["realizations"]
+}
+if receipt.family != "foldback" or receipt.status != "complete":
+    raise SystemExit("local foldback partition did not complete")
+if strands != {"top", "bottom"}:
+    raise SystemExit(f"local foldback partition omitted physical strands: {sorted(strands)}")
+result = receipt.write(output) / "result.json"
+loaded = construction.load_verified_local_neighborhood(result)
+if loaded.result_id != receipt.result_id or loaded.json_bytes != receipt.json_bytes:
+    raise SystemExit("local foldback partition failed reload verification")
+print(result)
+PY
+}
+
+source_local_result="$(
+  run_local_neighborhood_smoke "$smoke_root/source-local-foldback" uv run --locked python
+)"
+wheel_local_result="$(
+  run_local_neighborhood_smoke \
+    "$smoke_root/wheel-local-foldback" \
+    "$smoke_root/venv/bin/python"
+)"
+if ! cmp -s "$source_local_result" "$wheel_local_result"; then
+  echo "source/wheel local-neighborhood canonical result mismatch" >&2
+  exit 1
+fi
+
 for construction_case in composed-pcr exact infeasible relaxed; do
   construction_trajectory_id=''
   if [[ "$construction_case" == "composed-pcr" ]]; then
-    construction_trajectory_id='hop:materialized-construction/362dc73bc427c0a6045686ea90eba46fabffd0191e97333cb8c38394e269c1a7@1'
+    construction_trajectory_id='hop:materialized-construction/b88be4ad64c5f0ccbf402ac0444f2ae8c71a6126443f6db5881f35678c92acce@1'
   elif [[ "$construction_case" == "exact" ]]; then
-    construction_trajectory_id='hop:materialized-construction/af61b54ab34978e6c2ee044216cc132fbe8177765f11ff07639a116efe1c08b2@1'
+    construction_trajectory_id='hop:materialized-construction/debc17979724b69376bab81d62e3d81d4a690120bc76ee0f2a96f70d22f30fc1@1'
   elif [[ "$construction_case" == "relaxed" ]]; then
-    construction_trajectory_id='hop:materialized-construction/4ce8ee05f2a7dc4ba0ef78aa287dd76b5c7d8973aa7470408c2022f2bd91d65c@1'
+    construction_trajectory_id='hop:materialized-construction/1e627dfb5d709b837ed30efa77941541d0b8fcaecf93978ef4a9a22b669f8459@1'
   fi
   if [[ -n "$construction_trajectory_id" ]]; then
     source_construction="$(uv run --locked python examples/compile_construction.py \

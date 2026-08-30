@@ -1,6 +1,6 @@
-schema: hop.construction-source/v2
+schema: hop.construction-source/v3
 foldback:
-  schema: hop.local-neighborhood-request/v2
+  schema: hop.local-neighborhood-request/v3
   name: null
   payload:
     schema: hop.final-payload/v1
@@ -90,7 +90,7 @@ foldback:
     max_search_nodes: 100
     max_realizations: 100
 basal:
-  schema: hop.local-neighborhood-request/v2
+  schema: hop.local-neighborhood-request/v3
   name: null
   payload:
     schema: hop.final-payload/v1
@@ -120,7 +120,6 @@ basal:
     - profile_position: 3
       allowed_class: match
     ligation_proximal_match_required: true
-    end_generation: null
   hard_constraints:
     preserve_payload: true
     forbid_unintended_actionable_sites: true
@@ -184,17 +183,22 @@ composition:
       five_prime_end: phosphate
       three_prime_end: hydroxyl
     forward_primer:
-      material_id: forward-primer
-      origin: synthesized
-      sequence_5prime: AAAA
-      five_prime_end: phosphate
-      three_prime_end: hydroxyl
+      oligo:
+        material_id: forward-primer
+        origin: synthesized
+        sequence_5prime: AAAA
+        five_prime_end: phosphate
+        three_prime_end: hydroxyl
+      annealing_length_nt: 4
     reverse_primer:
-      material_id: reverse-primer
-      origin: synthesized
-      sequence_5prime: AAAA
-      five_prime_end: phosphate
-      three_prime_end: hydroxyl
+      oligo:
+        material_id: reverse-primer
+        origin: synthesized
+        sequence_5prime: AAAA
+        five_prime_end: phosphate
+        three_prime_end: hydroxyl
+      annealing_length_nt: 4
+  release: null
   whole_route_constraints:
     preserve_payload: true
     reject_unintended_actionable_sites: true

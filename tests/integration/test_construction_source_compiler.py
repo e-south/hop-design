@@ -22,6 +22,9 @@ from hop_design.models.construction.complete import (
     CompositionEnumerationPolicy,
     LinearSourceMaterializationSpec,
     MaterialOrigin,
+    PcrPrimer,
+    ReleaseSideRequirement,
+    TypeIisReleaseRequest,
     WholeRouteConstraints,
 )
 from hop_design.models.construction.source import (
@@ -29,14 +32,19 @@ from hop_design.models.construction.source import (
     ConstructionSource,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import EndChemistry
+from hop_design.models.molecular_state import EndChemistry, StrandEnd
+from hop_design.models.physical import SiteOrientation
 from hop_design.models.sequence import reverse_complement_iupac
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
     _request,
     _terminus_enzyme,
 )
-from tests.integration.test_complete_construction_clone import _clone_fixture
+from tests.integration.test_complete_construction_clone import (
+    _clone_fixture,
+    _provisioning,
+    _type_iis,
+)
 from tests.integration.test_complete_construction_discovery import (
     _basal_result,
     _material,
@@ -50,6 +58,7 @@ def _materialization(
     adapter=None,
     forward_primer=None,
     reverse_primer=None,
+    primer_annealing_length_nt: int | None = None,
 ) -> LinearSourceMaterializationSpec:
     return LinearSourceMaterializationSpec(
         source_origin=MaterialOrigin.SYNTHESIZED,
@@ -59,8 +68,30 @@ def _materialization(
         source_complement_five_prime_end=EndChemistry.PHOSPHATE,
         source_complement_three_prime_end=EndChemistry.HYDROXYL,
         adapter=adapter,
-        forward_primer=forward_primer,
-        reverse_primer=reverse_primer,
+        forward_primer=(
+            None
+            if forward_primer is None
+            else PcrPrimer(
+                oligo=forward_primer,
+                annealing_length_nt=(
+                    primer_annealing_length_nt
+                    if primer_annealing_length_nt is not None
+                    else len(forward_primer.sequence_5prime)
+                ),
+            )
+        ),
+        reverse_primer=(
+            None
+            if reverse_primer is None
+            else PcrPrimer(
+                oligo=reverse_primer,
+                annealing_length_nt=(
+                    primer_annealing_length_nt
+                    if primer_annealing_length_nt is not None
+                    else len(reverse_primer.sequence_5prime)
+                ),
+            )
+        ),
     )
 
 
@@ -70,14 +101,16 @@ def _source(
     endpoint: ConstructionEndpoint,
     materialization: LinearSourceMaterializationSpec,
     basal=None,
+    release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v2",
+        schema="hop.construction-source/v3",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
             endpoint=endpoint,
             materialization=materialization,
+            release=release,
             whole_route_constraints=WholeRouteConstraints(),
             enumeration=CompositionEnumerationPolicy(
                 max_combinations=10_000,
@@ -160,11 +193,26 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
         endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
         materialization=_materialization(
             adapter=_material(clone_adapter.material_id, clone_adapter.sequence_5prime),
-            forward_primer=_material("forward-primer", complete_pcr_top[:4]),
+            forward_primer=_material("forward-primer", f"GGTCTC{complete_pcr_top[:4]}"),
             reverse_primer=_material(
                 "reverse-primer",
-                reverse_complement_iupac(complete_pcr_top[-4:]),
+                f"GGTCTC{reverse_complement_iupac(complete_pcr_top[-4:])}",
             ),
+            primer_annealing_length_nt=4,
+        ),
+        release=TypeIisReleaseRequest(
+            enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
+            left=ReleaseSideRequirement(
+                orientation=SiteOrientation.FORWARD,
+                cohesive_end_sequence=complete_pcr_top[:4],
+                overhang_end=StrandEnd.FIVE_PRIME,
+            ),
+            right=ReleaseSideRequirement(
+                orientation=SiteOrientation.REVERSE,
+                cohesive_end_sequence=reverse_complement_iupac(complete_pcr_top[-4:]),
+                overhang_end=StrandEnd.FIVE_PRIME,
+            ),
+            max_site_pairs=16,
         ),
     )
     clone = compile_construction_source(
@@ -259,7 +307,7 @@ def test_file_source_rejects_unknown_schema_before_discovery(tmp_path: Path) -> 
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
         materialization=_materialization(),
     ).model_dump(mode="json", by_alias=True)
-    document["schema"] = "hop.construction-source/v3"
+    document["schema"] = "hop.construction-source/v2"
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
 
     with pytest.raises(ValueError, match="Unsupported HOP construction source schema"):

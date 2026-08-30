@@ -17,9 +17,6 @@ from hop_design.models.construction import (
     FinalProductReference,
     MethodResolutionStatus,
     NeighborhoodClaimBoundary,
-    PayloadSourceMap,
-    PayloadSourceSegment,
-    SourceOrientation,
 )
 from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
@@ -35,6 +32,10 @@ from hop_design.models.construction.complete.evaluation import (
     CombinationEvaluation,
     CompositionRejectionCode,
     evaluate_combination,
+)
+from hop_design.models.construction.complete.evaluation_inputs import (
+    derive_complete_payload_source_map,
+    derive_linear_source_embedding,
 )
 from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
@@ -59,8 +60,16 @@ def _materials(
             source,
             source_complement,
             request.materialization.adapter,
-            request.materialization.forward_primer,
-            request.materialization.reverse_primer,
+            (
+                None
+                if request.materialization.forward_primer is None
+                else request.materialization.forward_primer.oligo
+            ),
+            (
+                None
+                if request.materialization.reverse_primer is None
+                else request.materialization.reverse_primer.oligo
+            ),
         )
         if item is not None
     )
@@ -145,21 +154,15 @@ def direct_realization(
         ),
         orientation=BindingOrientation.SAME_5TO3,
     )
-    source_map = PayloadSourceMap(
-        segments=(
-            PayloadSourceSegment(
-                payload_span=Span(
-                    start=request.payload.basal_boundary,
-                    end=request.payload.foldback_boundary,
-                ),
-                source_material_id=source.material_id,
-                source_span=Span(
-                    start=Boundary(offset=len(prefix)),
-                    end=Boundary(offset=len(prefix) + len(foldback.payload_sequence)),
-                ),
-                orientation=SourceOrientation.FORWARD,
-            ),
-        )
+    embedding = derive_linear_source_embedding(
+        foldback=foldback,
+        prefix=prefix,
+        return_arm=return_arm,
+    )
+    source_map = derive_complete_payload_source_map(
+        foldback=foldback,
+        embedding=embedding,
+        source_material_id=source.material_id,
     )
     geometry_ids = (
         *(

@@ -69,11 +69,28 @@ class RelaxationPolicy(HopModel):
         return self
 
 
+class SequenceDomainPartition(HopModel):
+    """One disjoint part of canonical exact sequence-solution enumeration."""
+
+    part_count: int = Field(ge=2, le=256)
+    part_index: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_index(self) -> SequenceDomainPartition:
+        if self.part_index >= self.part_count:
+            raise ValueError("sequence-partition part_index must be less than part_count.")
+        return self
+
+
 class EnumerationPolicy(HopModel):
     """Finite execution limits that do not change the scientific problem identity."""
 
     max_search_nodes: int = Field(ge=1)
     max_realizations: int = Field(ge=1)
+    sequence_partition: SequenceDomainPartition | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
 
 def geometry_coordinate_value(target: LocalGeometryTarget, coordinate_name: str) -> int:

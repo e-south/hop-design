@@ -19,9 +19,7 @@ from hop_design.models.catalog import ResolvedNickSite
 from hop_design.models.construction import (
     BasalTarget,
 )
-from hop_design.models.construction.basal import (
-    BasalEnzymeBinding,
-)
+from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.junction import Strand
 from hop_design.models.method_states import MultiSiteNickedDuplex
@@ -42,10 +40,10 @@ from hop_design.models.reactions import (
 from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.models.strand_state import NickEvent
 
-_ROUTE_VERSION = "linear-source-basal/2"
+_ROUTE_VERSION = "linear-source-basal/3"
 
 
-def _declared(binding: BasalEnzymeBinding) -> DeclaredEnzymeBinding:
+def _declared(binding: ConstructionEnzymeBinding) -> DeclaredEnzymeBinding:
     return DeclaredEnzymeBinding(
         recognition_span=binding.recognition_span,
         orientation=binding.orientation,

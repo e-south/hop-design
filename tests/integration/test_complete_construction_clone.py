@@ -19,32 +19,36 @@ from pydantic import ValidationError
 import hop_design as hop
 from hop_design.design.bundle import load_verified_bundle
 from hop_design.design.construction.basal import discover_basal_neighborhood
+from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.models.construction import (
     BasalPairAllowance,
     BasalTarget,
     ConstructionConstraints,
     ConstructionEndpoint,
-    EndGenerationRequest,
     EnumerationPolicy,
     FinalPayloadReference,
+    FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
     RelaxationMode,
     RelaxationPolicy,
     RouteFamily,
     SearchCompletionStatus,
+    SourceOrientation,
 )
 from hop_design.models.construction.complete import (
+    CompositionDispositionStatus,
     ConstructionProgram,
+    ConstructionSpaceResult,
     ConstructionStatePhase,
     ConstructionTransitionKind,
     MaterializedConstructionRealization,
     MaterialRetentionDisposition,
+    PcrPrimer,
+    ReleaseSideRequirement,
+    TypeIisReleaseRequest,
 )
-from hop_design.models.construction.complete.clone import (
-    CloneEndGenerationError,
-    derive_clone_end_program_for_template,
-)
+from hop_design.models.construction.complete.clone import derive_clone_end_program_for_template
 from hop_design.models.construction.complete.clone.validation import validate_clone_realization
 from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
@@ -55,6 +59,7 @@ from hop_design.models.coordinates import Boundary
 from hop_design.models.enzymes import (
     CharacterizedEnzyme,
     EnzymeClass,
+    EnzymeRole,
     RecognitionOrientationSemantics,
     ResultingEndModel,
     SubstrateRequirement,
@@ -64,6 +69,7 @@ from hop_design.models.junction import Strand
 from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import EndChemistry, StrandEnd
 from hop_design.models.payload import ExactPayload
+from hop_design.models.physical import SiteOrientation
 from hop_design.models.reactions import ReactionProgram
 from hop_design.models.references import ExternalRef
 from hop_design.models.sequence import reverse_complement_iupac
@@ -71,6 +77,11 @@ from tests.contract.test_basal_construction_discovery import (
     _pairing_constraints,
     _provisioning,
     _type_iis,
+)
+from tests.contract.test_foldback_construction_discovery import (
+    _nickase,
+    _request,
+    _terminus_enzyme,
 )
 from tests.integration.test_complete_construction_discovery import (
     _construction_request,
@@ -118,23 +129,15 @@ def _clone_basal_result(
             payload=payload,
             family=LocalNeighborhoodFamily.BASAL,
             route_family=RouteFamily.LINEAR_SOURCE_V1,
-            endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+            endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
             target=BasalTarget(
                 nick_strand=Strand.BOTTOM,
                 nick_offset_nt=0,
                 pairing_constraints=_pairing_constraints(pairing_allowances),
                 ligation_proximal_match_required=True,
-                end_generation=EndGenerationRequest(
-                    type_iis_cut_offset_nt=0,
-                    requested_overhangs=requested_overhangs,
-                ),
             ),
             hard_constraints=ConstructionConstraints(),
-            enzyme_provisioning=_provisioning(
-                nickase,
-                _type_iis(),
-                max_operations=3,
-            ),
+            enzyme_provisioning=_provisioning(nickase, max_operations=1),
             relaxation=RelaxationPolicy(
                 mode=RelaxationMode.EXACT_ONLY,
                 max_radius=0,
@@ -158,10 +161,9 @@ def _clone_fixture(tmp_path: Path):
     adapter = next(
         item for item in basal_realization.materials if item.material_id == "ligation-adapter"
     )
-    local_pcr_top = basal_realization.hairpin_pcr_duplex.top_strand.sequence
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    complete_pcr_top = f"{local_pcr_top[:6]}{encoding}{local_pcr_top[-6:]}"
+    complete_pcr_top = encoding
     return payload, foldback, basal, design, adapter, complete_pcr_top, encoding
 
 
@@ -174,10 +176,30 @@ def _clone_request(tmp_path: Path):
         design=design,
         endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
         adapter=_material(adapter.material_id, adapter.sequence_5prime),
-        forward_primer=_material("forward-primer", complete_pcr_top[:4]),
-        reverse_primer=_material(
-            "reverse-primer",
-            reverse_complement_iupac(complete_pcr_top[-4:]),
+        forward_primer=PcrPrimer(
+            oligo=_material("forward-primer", f"GGTCTC{complete_pcr_top[:4]}"),
+            annealing_length_nt=4,
+        ),
+        reverse_primer=PcrPrimer(
+            oligo=_material(
+                "reverse-primer",
+                f"GGTCTC{reverse_complement_iupac(complete_pcr_top[-4:])}",
+            ),
+            annealing_length_nt=4,
+        ),
+        release=TypeIisReleaseRequest(
+            enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
+            left=ReleaseSideRequirement(
+                orientation=SiteOrientation.FORWARD,
+                cohesive_end_sequence=encoding[:4],
+                overhang_end=StrandEnd.FIVE_PRIME,
+            ),
+            right=ReleaseSideRequirement(
+                orientation=SiteOrientation.REVERSE,
+                cohesive_end_sequence=reverse_complement_iupac(encoding[-4:]),
+                overhang_end=StrandEnd.FIVE_PRIME,
+            ),
+            max_site_pairs=16,
         ),
     )
     return request, foldback, basal, design, complete_pcr_top, encoding
@@ -236,14 +258,9 @@ def _reseal_program(
     )
 
 
-def test_clone_end_generation_requires_local_authorities_or_lifted_bindings() -> None:
-    with pytest.raises(
-        CloneEndGenerationError,
-        match="local authorities or lifted bindings",
-    ):
+def test_clone_end_generation_requires_endpoint_owned_bindings() -> None:
+    with pytest.raises(TypeError, match="bindings"):
         derive_clone_end_program_for_template(
-            basal=None,
-            foldback=None,
             pcr_top="AAAA",
             design_sequence="AAAA",
         )
@@ -252,38 +269,7 @@ def test_clone_end_generation_requires_local_authorities_or_lifted_bindings() ->
 def test_clone_ready_endpoint_extends_exact_pcr_route_through_end_generation(
     tmp_path: Path,
 ) -> None:
-    payload = _payload()
-    foldback = _foldback(payload)
-    basal = _clone_basal_result(payload)
-    assert basal.discovery.status is SearchCompletionStatus.COMPLETE
-    assert len(basal.realizations) == 1
-
-    basal_realization = basal.realizations[0]
-    assert basal_realization.hairpin_pcr_duplex is not None
-    adapter = next(
-        item for item in basal_realization.materials if item.material_id == "ligation-adapter"
-    )
-    local_pcr_top = basal_realization.hairpin_pcr_duplex.top_strand.sequence
-    design = _verified_design(tmp_path)
-    encoding = design.plan.hairpin_encoding_insert.sequence
-    complete_pcr_top = f"{local_pcr_top[:6]}{encoding}{local_pcr_top[-6:]}"
-    request = _construction_request(
-        payload=payload,
-        foldback=foldback,
-        basal=basal,
-        design=design,
-        endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
-        forward_primer=_material("forward-primer", complete_pcr_top[:4]),
-        reverse_primer=_material(
-            "reverse-primer",
-            reverse_complement_iupac(complete_pcr_top[-4:]),
-        ),
-    )
-
-    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
-
-    assert result.status is SearchCompletionStatus.COMPLETE
+    result, basal, _, encoding = _valid_clone_result(tmp_path)
     realization = result.realizations[0]
     program = realization.construction_program
     assert tuple(state.phase for state in program.states[-2:]) == (
@@ -300,35 +286,22 @@ def test_clone_ready_endpoint_extends_exact_pcr_route_through_end_generation(
     assert end_generation[0].reaction_program_id == program.reaction_programs[-1].program_id
 
     pcr_state, terminal = program.states[-2:]
-    assert pcr_state.molecules[0].sequence == complete_pcr_top
-    assert complete_pcr_top[:6] == "GGTCTC"
-    assert complete_pcr_top[-6:] == "GAGACC"
+    assert pcr_state.molecules[0].sequence == f"GGTCTC{encoding}GAGACC"
     assert terminal.molecules[0].sequence == encoding[:-4]
     assert terminal.molecules[1].sequence == reverse_complement_iupac(encoding[4:])
 
-    local_end_bindings = tuple(
-        operation.intended_binding
-        for operation in basal_realization.reaction_programs[-1].stages[0].operations
+    basal_realization = basal.realizations[0]
+    assert len(basal_realization.reaction_programs) == 1
+    assert all(
+        operation.role is EnzymeRole.BASAL_NICK
+        for stage in basal_realization.reaction_programs[0].stages
+        for operation in stage.operations
     )
     complete_end_bindings = tuple(
         operation.intended_binding
         for operation in program.reaction_programs[-1].stages[0].operations
     )
-    assert complete_end_bindings[0] == local_end_bindings[0]
-    right_lift = len(foldback.realizations[0].retained_sequence) - len(payload.payload.sequence)
-    assert (
-        complete_end_bindings[1].recognition_span.start.offset
-        - local_end_bindings[1].recognition_span.start.offset
-        == right_lift
-    )
-    assert (
-        complete_end_bindings[1].reference_cut.offset - local_end_bindings[1].reference_cut.offset
-        == right_lift
-    )
-    assert (
-        complete_end_bindings[1].complement_cut.offset - local_end_bindings[1].complement_cut.offset
-        == right_lift
-    )
+    assert len(complete_end_bindings) == 2
 
     assert tuple(end.product_end for end in realization.final_product.cohesive_ends) == (
         "left",
@@ -340,12 +313,74 @@ def test_clone_ready_endpoint_extends_exact_pcr_route_through_end_generation(
     )
     projection = realization.final_product.encoding_projection
     assert projection.sequence == encoding
-    assert projection.source_span.start.offset == len(local_pcr_top[:6])
-    assert projection.source_span.end.offset == len(local_pcr_top[:6]) + len(encoding)
+    assert projection.source_span.start.offset == 6
+    assert projection.source_span.end.offset == 6 + len(encoding)
     assert projection.orientation is BindingOrientation.SAME_5TO3
 
 
-def test_clone_ready_endpoint_preserves_distal_basal_mismatch_as_asymmetric_ends(
+def test_clone_ready_accepts_both_duplex_foldback_orientations(
+    tmp_path: Path,
+) -> None:
+    base, _, basal, design, _, _ = _clone_request(tmp_path)
+    foldback = discover_foldback_neighborhood(
+        _request(
+            _nickase(
+                motif="TCAGATGCTGA",
+                cut_offset=0,
+                orientation_semantics=RecognitionOrientationSemantics.BOTH_ORIENTATIONS,
+            ),
+            _terminus_enzyme(),
+            target=FoldbackTarget(
+                nick_offset_within_foldback_nt=0,
+                loop_length_nt=3,
+                annealing_arm_length_bp=4,
+            ),
+        )
+    )
+    materialization = base.materialization.model_copy(
+        update={"source_five_prime_end": EndChemistry.PHOSPHATE}
+    )
+    request = type(base).model_validate(
+        base.model_dump(mode="python")
+        | {
+            "foldback_result_id": foldback.result_id,
+            "materialization": materialization,
+        }
+    )
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == 3
+    assert result.failure_reasons == ()
+    foldback_by_id = {item.foldback_realization_id: item for item in foldback.realizations}
+    assert {
+        foldback_by_id[item.foldback_realization_id].foldback_nick.strand
+        for item in result.realizations
+    } == {Strand.TOP, Strand.BOTTOM}
+    assert {item.payload_source_map.segments[0].orientation for item in result.realizations} == {
+        SourceOrientation.FORWARD,
+        SourceOrientation.REVERSE_COMPLEMENT,
+    }
+    assert len({item.materialized_realization_id for item in result.realizations}) == 3
+    assert len({item.construction_program.program_id for item in result.realizations}) == 3
+    for item in result.realizations:
+        local = foldback_by_id[item.foldback_realization_id]
+        assert (
+            item.payload_source_map.segments[0].orientation
+            is local.payload_source_map.segments[0].orientation
+        )
+        material_ids = {material.material_id for material in item.materials}
+        assert {
+            lineage.origin_id
+            for state in item.construction_program.states
+            for strand in state.molecules
+            for lineage in strand.lineage
+        } <= material_ids
+        assert item.final_product.encoding_projection.sequence == request.design.encoding_sequence
+
+
+def test_clone_endpoint_does_not_infer_release_ends_from_basal_pairing_mismatch(
     tmp_path: Path,
 ) -> None:
     payload = _payload()
@@ -358,33 +393,21 @@ def test_clone_ready_endpoint_preserves_distal_basal_mismatch_as_asymmetric_ends
             BasalPairAllowance.MISMATCH,
             BasalPairAllowance.MATCH,
         ),
-        nickase_pattern="GAGACC",
-        nickase_cut_offset_reference=-4,
-        requested_overhangs=("ATAA", "AGAA"),
+        nickase_pattern="TTTT",
+        nickase_cut_offset_reference=0,
     )
     assert basal.discovery.status is SearchCompletionStatus.COMPLETE
-    basal_realization = next(
-        item
-        for item in basal.realizations
-        if next(
-            material.sequence_5prime
-            for material in item.materials
-            if material.material_id == "ligation-adapter"
-        )
-        == "TTCTGAGACC"
-    )
+    basal_realization = basal.realizations[0]
     assert basal_realization.hairpin_pcr_duplex is not None
     adapter = next(
         item for item in basal_realization.materials if item.material_id == "ligation-adapter"
     )
-    local_pcr_top = basal_realization.hairpin_pcr_duplex.top_strand.sequence
     design = _verified_distal_mismatch_design(
         tmp_path,
         left_arm="ATAA",
         right_arm="TTCT",
     )
     encoding = design.plan.hairpin_encoding_insert.sequence
-    complete_pcr_top = f"{local_pcr_top[:6]}{encoding}{local_pcr_top[-6:]}"
     request = _construction_request(
         payload=payload,
         foldback=foldback,
@@ -392,45 +415,71 @@ def test_clone_ready_endpoint_preserves_distal_basal_mismatch_as_asymmetric_ends
         design=design,
         endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
         adapter=_material(adapter.material_id, adapter.sequence_5prime),
-        forward_primer=_material("forward-primer", complete_pcr_top[:4]),
-        reverse_primer=_material(
-            "reverse-primer",
-            reverse_complement_iupac(complete_pcr_top[-4:]),
+        forward_primer=PcrPrimer(
+            oligo=_material("forward-primer", f"GGTCTC{encoding[:4]}"),
+            annealing_length_nt=4,
+        ),
+        reverse_primer=PcrPrimer(
+            oligo=_material(
+                "reverse-primer",
+                f"GGTCTC{reverse_complement_iupac(encoding[-4:])}",
+            ),
+            annealing_length_nt=4,
+        ),
+        release=TypeIisReleaseRequest(
+            enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
+            left=ReleaseSideRequirement(
+                orientation=SiteOrientation.FORWARD,
+                cohesive_end_sequence=encoding[:4],
+                overhang_end=StrandEnd.FIVE_PRIME,
+            ),
+            right=ReleaseSideRequirement(
+                orientation=SiteOrientation.REVERSE,
+                cohesive_end_sequence=reverse_complement_iupac(encoding[-4:]),
+                overhang_end=StrandEnd.FIVE_PRIME,
+            ),
+            max_site_pairs=16,
         ),
     )
 
     result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
 
-    assert result.status is SearchCompletionStatus.COMPLETE
-    assert tuple(end.sequence for end in result.realizations[0].final_product.cohesive_ends) == (
-        "ATAA",
-        "AGAA",
-    )
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert result.realizations == ()
+    assert {item.code for item in result.failure_reasons} == {
+        CompositionRejectionCode.BASAL_SOURCE_MAP_INCOMPATIBLE
+    }
 
 
 def test_clone_ready_reports_shared_pcr_primer_failures_as_infeasible(
     tmp_path: Path,
 ) -> None:
-    payload, foldback, basal, design, adapter, complete_pcr_top, _ = _clone_fixture(tmp_path)
+    base, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    forward = base.materialization.forward_primer
+    assert forward is not None
     invalid_forward_primers = (
-        _material("forward-primer", complete_pcr_top[:4]).model_copy(
-            update={"three_prime_end": EndChemistry.PHOSPHATE}
+        forward.model_copy(
+            update={
+                "oligo": forward.oligo.model_copy(
+                    update={"three_prime_end": EndChemistry.PHOSPHATE}
+                )
+            }
         ),
-        _material("forward-primer", "CCCC"),
+        forward.model_copy(
+            update={
+                "oligo": forward.oligo.model_copy(
+                    update={"sequence_5prime": f"{forward.five_prime_handle}CCCC"}
+                )
+            }
+        ),
     )
     for forward_primer in invalid_forward_primers:
-        request = _construction_request(
-            payload=payload,
-            foldback=foldback,
-            basal=basal,
-            design=design,
-            endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
-            adapter=_material(adapter.material_id, adapter.sequence_5prime),
-            forward_primer=forward_primer,
-            reverse_primer=_material(
-                "reverse-primer",
-                reverse_complement_iupac(complete_pcr_top[-4:]),
-            ),
+        request = base.model_copy(
+            update={
+                "materialization": base.materialization.model_copy(
+                    update={"forward_primer": forward_primer}
+                )
+            }
         )
 
         result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
@@ -445,24 +494,20 @@ def test_clone_ready_reports_shared_pcr_primer_failures_as_infeasible(
 def test_clone_ready_rejects_shortened_and_wrong_full_adapter_materials(
     tmp_path: Path,
 ) -> None:
-    payload, foldback, basal, design, adapter, complete_pcr_top, _ = _clone_fixture(tmp_path)
+    base, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    adapter = base.materialization.adapter
+    assert adapter is not None
     invalid_adapters = (
-        adapter.sequence_5prime[:-6],
+        adapter.sequence_5prime[:-1],
         f"{adapter.sequence_5prime[:-1]}{_substitute_first_base(adapter.sequence_5prime[-1:])}",
     )
     for sequence in invalid_adapters:
-        request = _construction_request(
-            payload=payload,
-            foldback=foldback,
-            basal=basal,
-            design=design,
-            endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
-            adapter=_material(adapter.material_id, sequence),
-            forward_primer=_material("forward-primer", complete_pcr_top[:4]),
-            reverse_primer=_material(
-                "reverse-primer",
-                reverse_complement_iupac(complete_pcr_top[-4:]),
-            ),
+        request = base.model_copy(
+            update={
+                "materialization": base.materialization.model_copy(
+                    update={"adapter": adapter.model_copy(update={"sequence_5prime": sequence})}
+                )
+            }
         )
 
         result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
@@ -474,52 +519,36 @@ def test_clone_ready_rejects_shortened_and_wrong_full_adapter_materials(
         }
 
 
-def test_clone_evaluator_rejects_full_adapter_that_breaks_end_generation(
+def test_clone_evaluator_rejects_adapter_mismatch_before_endpoint_release(
     tmp_path: Path,
 ) -> None:
-    payload, foldback, basal, design, adapter, complete_pcr_top, _ = _clone_fixture(tmp_path)
+    request, foldback, basal, _, _, _ = _clone_request(tmp_path)
+    adapter = request.materialization.adapter
+    assert adapter is not None
     changed_adapter_sequence = (
         f"{adapter.sequence_5prime[:-1]}{_substitute_first_base(adapter.sequence_5prime[-1:])}"
     )
-    changed_complete_pcr_top = f"{complete_pcr_top[:-1]}{changed_adapter_sequence[-1]}"
     changed_material = _material(adapter.material_id, changed_adapter_sequence)
-    basal_realization = basal.realizations[0]
-    changed_basal = basal_realization.model_copy(
+    request = request.model_copy(
         update={
-            "materials": tuple(
-                changed_material if item.material_id == adapter.material_id else item
-                for item in basal_realization.materials
+            "materialization": request.materialization.model_copy(
+                update={"adapter": changed_material}
             )
         }
-    )
-    request = _construction_request(
-        payload=payload,
-        foldback=foldback,
-        basal=basal,
-        design=design,
-        endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
-        adapter=changed_material,
-        forward_primer=_material("forward-primer", changed_complete_pcr_top[:4]),
-        reverse_primer=_material(
-            "reverse-primer",
-            reverse_complement_iupac(changed_complete_pcr_top[-4:]),
-        ),
     )
 
     evaluation = evaluate_combination(
         request,
         foldback=foldback.realizations[0],
-        basal=changed_basal,
+        basal=basal.realizations[0],
         foldback_policy=foldback.neighborhood.request.enzyme_provisioning,
         basal_policy=basal.discovery.request.enzyme_provisioning,
     )
 
-    assert evaluation.rejection_reason is (
-        CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE
-    )
+    assert evaluation.rejection_reason is CompositionRejectionCode.PCR_ADAPTER_MISMATCH
 
 
-def test_clone_rejects_resealed_lifted_end_generation_binding_forgeries(
+def test_clone_rejects_resealed_endpoint_binding_forgeries(
     tmp_path: Path,
 ) -> None:
     result, _, _, _ = _valid_clone_result(tmp_path)
@@ -584,7 +613,10 @@ def test_clone_rejects_resealed_lifted_end_generation_binding_forgeries(
             stage_assessments=(*program.stage_assessments[:-1], changed_assessment),
         )
 
-        with pytest.raises(ValidationError, match="exact lifted bindings"):
+        with pytest.raises(
+            ValidationError,
+            match=r"exact verified design encoding|exact endpoint bindings",
+        ):
             MaterializedConstructionRealization.create(
                 **content,
                 construction_program=resealed,
@@ -764,3 +796,47 @@ def test_clone_route_rejects_forged_transient_removal_disposition(tmp_path: Path
             **content,
             route_material_dispositions=changed_records,
         )
+
+
+def test_clone_release_bound_produces_replayable_truncated_result(tmp_path: Path) -> None:
+    request, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    reverse = request.materialization.reverse_primer
+    assert reverse is not None and request.release is not None
+    second_reverse_site = reverse_complement_iupac("AGAGACCAGAGACC")
+    data = request.model_dump(by_alias=True)
+    data["materialization"]["reverse_primer"]["oligo"]["sequence_5prime"] = (
+        second_reverse_site + reverse.annealing_sequence
+    )
+    data["release"]["max_site_pairs"] = 1
+    bounded = type(request).model_validate(data)
+
+    result = _discover_raw(bounded, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.TRUNCATED
+    assert result.truncation_reasons == ("endpoint:max_site_pairs",)
+    assert result.failure_reasons == ()
+    assert result.accounting.truncated_combinations == result.accounting.nominal_combinations
+    assert all(
+        item.status is CompositionDispositionStatus.TRUNCATED
+        and item.truncation_reason == "endpoint:max_site_pairs"
+        for item in result.combination_dispositions
+    )
+
+    first = result.combination_dispositions[0]
+    forged_disposition = first.model_copy(
+        update={
+            "status": CompositionDispositionStatus.REJECTED,
+            "rejection_reason": CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE,
+            "truncation_reason": None,
+        }
+    )
+    forged = result.model_copy(
+        update={
+            "combination_dispositions": (
+                forged_disposition,
+                *result.combination_dispositions[1:],
+            )
+        }
+    )
+    with pytest.raises(ValidationError, match=r"replay|derive|truncation"):
+        ConstructionSpaceResult.model_validate(forged.model_dump(mode="python"))

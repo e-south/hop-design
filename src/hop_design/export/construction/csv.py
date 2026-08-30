@@ -170,6 +170,7 @@ def _write_foldback(buffer: io.StringIO, projection: FoldbackFeasibilityProjecti
         "route_implementation_version",
         "endpoint",
         "status",
+        *_partition_fields(projection),
         "digital_design",
         "method",
         "physical_construction",
@@ -178,6 +179,8 @@ def _write_foldback(buffer: io.StringIO, projection: FoldbackFeasibilityProjecti
         "local_realization_id",
         "foldback_realization_id",
         "program_kind",
+        "nick_strand",
+        "source_orientation",
         "relaxation_radius",
         "nick_offset_within_foldback_nt",
         "loop_length_nt",
@@ -208,6 +211,7 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         "route_implementation_version",
         "endpoint",
         "status",
+        *_partition_fields(projection),
         "digital_design",
         "method",
         "physical_construction",
@@ -218,15 +222,12 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         "relaxation_radius",
         "nick_strand",
         "nick_offset_nt",
-        "type_iis_cut_offset_nt",
         "pairing_profile",
         "pairing_classes",
         "literal_pairs_json",
         "retained_nt",
         "transient_nt",
         "auxiliary_nt",
-        "cohesive_end_count",
-        "cohesive_ends_json",
         "truncation_reasons",
     )
     writer = _writer(buffer, fields)
@@ -236,15 +237,9 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         values = row.model_dump(mode="json") if row is not None else {}
         if row is not None:
             values.pop("literal_pairs")
-            values.pop("cohesive_ends")
             values["pairing_classes"] = ";".join(item.value for item in row.pairing_classes)
             values["literal_pairs_json"] = json.dumps(
                 [item.model_dump(mode="json") for item in row.literal_pairs],
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-            values["cohesive_ends_json"] = json.dumps(
-                [item.model_dump(mode="json") for item in row.cohesive_ends],
                 sort_keys=True,
                 separators=(",", ":"),
             )
@@ -262,6 +257,7 @@ def _write_relaxation(buffer: io.StringIO, projection: RelaxationFrontierProject
         "family",
         "endpoint",
         "status",
+        *_partition_fields(projection),
         "digital_design",
         "method",
         "physical_construction",
@@ -306,7 +302,8 @@ def _write_relaxation(buffer: io.StringIO, projection: RelaxationFrontierProject
 
 def _base(projection: LocalScientificProjection) -> dict[str, object]:
     claims = projection.claim_boundary
-    return {
+    partition = projection.sequence_partition
+    base: dict[str, object] = {
         "schema": projection.schema_id,
         "projection_id": projection.projection_id,
         "source_result_id": projection.source_result_id,
@@ -322,3 +319,15 @@ def _base(projection: LocalScientificProjection) -> dict[str, object]:
         "biological_activity": claims.biological_activity.value,
         "truncation_reasons": ";".join(projection.truncation_reasons),
     }
+    if partition is not None:
+        base.update(
+            sequence_part_count=partition.part_count,
+            sequence_part_index=partition.part_index,
+        )
+    return base
+
+
+def _partition_fields(projection: LocalScientificProjection) -> tuple[str, ...]:
+    if projection.sequence_partition is None:
+        return ()
+    return ("sequence_part_count", "sequence_part_index")

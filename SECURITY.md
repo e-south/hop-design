@@ -46,9 +46,20 @@ resources. Remote/network resolution stays outside the deterministic core.
 Construction source files follow the same bounded regular-file contract. The
 reader accepts only `.json`, `.yaml`, and `.yml`, rejects path replacement while
 opening, rejects documents larger than one megabyte before decoding, requires a
-mapping root, and dispatches only `hop.construction-source/v1`. The source
+mapping root, and dispatches only `hop.construction-source/v3`. The source
 cannot embed or assert a design authority; compilation loads the separately
 supplied design-bundle directory through complete semantic verification.
+
+Standalone local-neighborhood results are generated rather than authored and
+may contain complete bounded feasibility and rejection evidence. Their portable
+loader uses the same descriptor-safe mapping reader with a distinct 64 MiB
+limit. Requests remain limited to one megabyte and the public seam rejects
+search-node or realization bounds above 100,000. Result loading checks the same
+embedded bounds before deterministic replay. Results above their byte envelope
+are rejected rather than partially decoded or silently truncated. A declared
+sequence-domain partition is limited to 256 parts, binds execution identity,
+and cannot be combined with stopping or compatibility semantics that require a
+whole-domain conclusion.
 
 Construction-bundle loading rejects unsafe paths, symlinks, incomplete or
 extra inventories, modified embedded design artifacts, and checksum-consistent

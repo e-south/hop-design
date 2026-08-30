@@ -36,7 +36,8 @@ The active foldback target contains:
 
 - `nick_offset_within_foldback_nt`;
 - `loop_length_nt`; and
-- `annealing_arm_length_bp`.
+- `annealing_arm_length_bp`; and
+- `nick_strand`, whose default is `any`.
 
 The offset is measured from the fixed payload/foldback boundary into the first
 annealing arm and must not exceed that arm's length. Let payload length be
@@ -57,16 +58,25 @@ contributes the remaining foldback bases and the paired payload arm. Literal
 foldback pairs therefore retain their exact pre-ligation fragment identities;
 one pair may span two fragments.
 
-The public construction contract moves to v2 as one coordinated cutover. HOP
-does not reinterpret v1 authorities, accept the retired field, or provide an
-alias. Design and named-method authorities remain unchanged.
+Foldback-local discovery starts from a duplex source. `nick_strand: any`
+examines both oriented physical nick events supported by the provisioned
+enzyme. `top` and `bottom` constrain that domain when the caller has a physical
+reason to do so; they are not preference or ranking fields. A bottom-strand
+route uses the reverse-complement source orientation and remains a distinct
+precursor and lineage authority even when its retained hairpin is sequence-
+equivalent to a top-strand route.
+
+The public construction contract moves to v3 as one coordinated cutover. HOP
+does not reinterpret v1 or v2 authorities, accept the retired field, or provide
+an alias. Design and named-method authorities remain unchanged.
 
 ## Consequences
 
 Foldback discovery can recover internal-nick geometries while preserving one
 biological payload boundary. Source length, released fragments, lineage,
-ligation, retained construction count, projection rows, and all construction
-identities derive from the explicit offset.
+ligation, retained construction count, nick strand, source orientation,
+projection rows, and all construction identities derive from the explicit
+target and oriented molecular replay.
 
 The change does not make auxiliary cleanup nicks part of the foldback target.
 Multi-site source partitioning and endpoint materialization remain separate

@@ -34,11 +34,13 @@ from hop_design.export.construction import (
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
+    EnumerationPolicy,
     FailureReasonCount,
     RelaxationCoordinate,
     RelaxationMode,
     RelaxationPolicy,
     SearchCompletionStatus,
+    SequenceDomainPartition,
     grouped_realization_projection,
 )
 from tests.contract.test_basal_construction_discovery import _request as basal_request
@@ -57,6 +59,100 @@ def _csv_rows(content: bytes) -> list[dict[str, str]]:
     return list(csv.DictReader(io.StringIO(content.decode("utf-8"))))
 
 
+def _partitioned(request, *, part_count: int = 2, part_index: int = 0):
+    return request.model_copy(
+        update={
+            "enumeration": EnumerationPolicy(
+                max_search_nodes=request.enumeration.max_search_nodes,
+                max_realizations=request.enumeration.max_realizations,
+                sequence_partition=SequenceDomainPartition(
+                    part_count=part_count,
+                    part_index=part_index,
+                ),
+            )
+        }
+    )
+
+
+@pytest.mark.parametrize("family", ["foldback", "basal"])
+def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
+    family: str,
+) -> None:
+    partition = SequenceDomainPartition(part_count=3, part_index=1)
+    if family == "foldback":
+        result = discover_foldback_neighborhood(
+            _partitioned(
+                foldback_request(
+                    foldback_nickase(motif="ACANTT"),
+                    max_search_nodes=100,
+                    max_realizations=100,
+                ),
+                part_count=partition.part_count,
+                part_index=partition.part_index,
+            )
+        )
+        feasibility = project_foldback_feasibility(result)
+    else:
+        result = discover_basal_neighborhood(
+            _partitioned(
+                basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX),
+                part_count=partition.part_count,
+                part_index=partition.part_index,
+            )
+        )
+        feasibility = project_basal_feasibility(result)
+    relaxation = project_relaxation_frontier(result)
+
+    for projection in (feasibility, relaxation):
+        assert projection.sequence_partition == partition
+        rendered = json.loads(render_projection_json(projection))
+        assert rendered["sequence_partition"] == {"part_count": 3, "part_index": 1}
+        rows = _csv_rows(render_projection_csv(projection))
+        assert rows
+        assert {row["sequence_part_count"] for row in rows} == {"3"}
+        assert {row["sequence_part_index"] for row in rows} == {"1"}
+    expected_schemas = {
+        "foldback": (
+            "hop.foldback-feasibility-landscape/v4",
+            "hop.foldback-relaxation-frontier/v3",
+        ),
+        "basal": (
+            "hop.basal-feasibility-landscape/v3",
+            "hop.basal-relaxation-frontier/v2",
+        ),
+    }
+    assert (feasibility.schema_id, relaxation.schema_id) == expected_schemas[family]
+    mismatched = feasibility.model_dump(mode="python", by_alias=True)
+    mismatched["schema"] = {
+        "foldback": "hop.foldback-feasibility-landscape/v3",
+        "basal": "hop.basal-feasibility-landscape/v2",
+    }[family]
+    with pytest.raises(ValidationError, match="sequence-domain scope"):
+        type(feasibility).model_validate(mismatched)
+
+
+def test_infeasible_partition_svg_cannot_claim_exhaustive_whole_domain_search() -> None:
+    result = discover_foldback_neighborhood(
+        _partitioned(
+            foldback_request(foldback_nickase(motif="GACA", cut_offset=4)),
+            part_count=4,
+            part_index=2,
+        )
+    )
+    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+
+    for projection in (
+        project_foldback_feasibility(result),
+        project_relaxation_frontier(result),
+    ):
+        svg = render_projection_svg(projection).decode("utf-8")
+        assert "sequence-domain part 3 of 4" in svg
+        assert 'data-sequence-part-count="4"' in svg
+        assert 'data-sequence-part-index="2"' in svg
+        assert "exhaustive search" not in svg
+        assert "complete relaxation frontier" not in svg
+
+
 def test_foldback_projection_preserves_exact_membership_and_truthful_status() -> None:
     result = discover_foldback_neighborhood(
         foldback_request(foldback_nickase(), foldback_terminus_enzyme())
@@ -68,7 +164,8 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
     assert projection.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
     assert projection.source_result_id == result.result_id
     assert projection.projection_reference.result_id == result.result_id
-    assert projection.projection_reference.renderer_version == "foldback-projections/2"
+    assert projection.schema_id == "hop.foldback-feasibility-landscape/v3"
+    assert projection.projection_reference.renderer_version == "foldback-feasibility-projections/3"
     assert projection.provenance == result.neighborhood.provenance
     assert projection.claim_boundary == result.neighborhood.claim_boundary
     assert (
@@ -76,7 +173,7 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
         == grouped_realization_projection(
             result_id=result.result_id,
             projection_schema=projection.schema_id,
-            renderer_version="foldback-projections/2",
+            renderer_version="foldback-feasibility-projections/3",
             realization_ids=tuple(
                 item.local_realization.local_realization_id for item in result.realizations
             ),
@@ -90,6 +187,12 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
     assert tuple(row.foldback_realization_id for row in projection.realizations) == tuple(
         item.foldback_realization_id for item in result.realizations
     )
+    assert tuple(row.nick_strand for row in projection.realizations) == tuple(
+        item.foldback_nick.strand for item in result.realizations
+    )
+    assert tuple(row.source_orientation for row in projection.realizations) == tuple(
+        item.payload_source_map.segments[0].orientation for item in result.realizations
+    )
     assert {row.program_kind for row in projection.realizations} == {
         "single_cleavage",
         "sequential_terminus_plus_nick",
@@ -100,31 +203,49 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
         row.local_realization_id for row in projection.realizations
     ]
     assert all(row["status"] == "complete" for row in csv_rows)
-    assert render_projection_json(projection) == render_projection_json(projection)
+    assert [row["nick_strand"] for row in csv_rows] == [
+        item.foldback_nick.strand.value for item in result.realizations
+    ]
+    assert [row["source_orientation"] for row in csv_rows] == [
+        item.payload_source_map.segments[0].orientation.value for item in result.realizations
+    ]
+    rendered_json = json.loads(render_projection_json(projection))
+    assert "sequence_partition" not in rendered_json
+    assert "sequence_part_count" not in csv_rows[0]
+    assert "sequence_part_index" not in csv_rows[0]
 
     svg = render_projection_svg(projection).decode("utf-8")
     assert (
-        "Foldback discovery identified 2 exact local route realizations under the declared "
-        "molecular model."
+        f"Foldback discovery identified {len(result.realizations)} exact local route realizations "
+        "under the declared molecular model."
     ) in svg
     assert "complete route composition and" in svg
     assert "physical construction are not established" in svg
     assert 'data-status="complete"' in svg
+    assert "data-sequence-part" not in svg
     assert "data-local-realization-id" not in svg
     assert "data-realization-ids" in svg
+    assert "top strand · forward source" in svg
+    assert "bottom strand · reverse-complement source" in svg
     assert "rank" not in svg.lower()
+
+    legacy = projection.model_dump(mode="python", by_alias=True)
+    legacy["schema"] = "hop.foldback-feasibility-landscape/v2"
+    with pytest.raises(ValidationError, match=r"hop\.foldback-feasibility-landscape/v3"):
+        type(projection).model_validate(legacy)
 
 
 def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
-    result = discover_basal_neighborhood(basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
+    result = discover_basal_neighborhood(basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
 
     projection = project_basal_feasibility(result)
 
     assert projection.status is SearchCompletionStatus.COMPLETE
-    assert projection.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+    assert projection.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+    assert projection.schema_id == "hop.basal-feasibility-landscape/v2"
     assert projection.source_result_id == result.result_id
     assert projection.projection_reference.result_id == result.result_id
-    assert projection.projection_reference.renderer_version == "basal-projections/1"
+    assert projection.projection_reference.renderer_version == "basal-projections/2"
     assert projection.provenance == result.discovery.provenance
     assert projection.claim_boundary == result.discovery.claim_boundary
     assert tuple(row.basal_realization_id for row in projection.realizations) == tuple(
@@ -134,30 +255,24 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
     assert all(row.retained_nt >= 0 for row in projection.realizations)
     assert all(row.transient_nt >= 0 for row in projection.realizations)
     assert all(row.auxiliary_nt >= 0 for row in projection.realizations)
-    assert all(row.cohesive_end_count > 0 for row in projection.realizations)
     for row, source in zip(projection.realizations, result.realizations, strict=True):
         achieved = source.local_realization.achieved_geometry
         assert row.nick_strand == achieved.nick_strand
         assert row.nick_offset_nt == achieved.nick_offset_nt
-        assert row.type_iis_cut_offset_nt == achieved.end_generation.type_iis_cut_offset_nt
         assert row.literal_pairs == source.projection.pairing_profile.pairs
-        assert row.cohesive_ends == source.projection.cohesive_ends
 
     csv_row = _csv_rows(render_projection_csv(projection))[0]
     assert csv_row["nick_strand"] == projection.realizations[0].nick_strand.value
-    assert int(csv_row["type_iis_cut_offset_nt"]) == (
-        projection.realizations[0].type_iis_cut_offset_nt
-    )
     assert json.loads(csv_row["literal_pairs_json"]) == [
         item.model_dump(mode="json") for item in projection.realizations[0].literal_pairs
     ]
-    assert json.loads(csv_row["cohesive_ends_json"]) == [
-        item.model_dump(mode="json") for item in projection.realizations[0].cohesive_ends
-    ]
     assert csv_row["physical_construction"] == "not_recorded"
+    assert "sequence_part_count" not in csv_row
+    assert "sequence_part_index" not in csv_row
 
     frontier = project_relaxation_frontier(result)
     assert frontier.source_result_id == result.result_id
+    assert frontier.schema_id == "hop.basal-relaxation-frontier/v1"
     assert tuple(
         (
             shell.status,
@@ -184,14 +299,15 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
         type(projection).model_validate(content)
 
     svg = render_projection_svg(projection).decode("utf-8")
-    assert "clone-ready duplex endpoint" in svg
-    assert 'data-endpoint="clone_ready_duplex"' in svg
+    assert "hairpin PCR duplex endpoint" in svg
+    assert 'data-endpoint="hairpin_pcr_duplex"' in svg
     assert f'data-result-id="{result.result_id}"' in svg
-    assert 'data-renderer-version="basal-projections/1"' in svg
+    assert 'data-renderer-version="basal-projections/2"' in svg
     assert 'data-physical-construction="not_recorded"' in svg
+    assert "data-sequence-part" not in svg
     assert "top strand · offset" in svg
-    assert "Type IIS offset" in svg
-    assert "left" in svg and "right" in svg
+    assert "Pairing and exact material accounting" in svg
+    assert "literal pair patterns" in svg
     assert "data-local-realization-id" not in svg
     assert "data-realization-ids" in svg
     assert "performance" not in svg.lower()
@@ -225,7 +341,7 @@ def test_relaxation_frontier_preserves_empty_shells_and_exact_membership() -> No
     assert projection.coordinate_names == ("annealing_arm_length_bp",)
     assert [(shell.radius, shell.realization_count) for shell in projection.shells] == [
         (0, 0),
-        (1, 1),
+        (1, 2),
     ]
     assert tuple(shell.status for shell in projection.shells) == ("complete", "complete")
     assert tuple(shell.candidate_count for shell in projection.shells) == tuple(
@@ -238,8 +354,8 @@ def test_relaxation_frontier_preserves_empty_shells_and_exact_membership() -> No
         shell.failure_reasons for shell in result.neighborhood.shells
     )
     assert projection.shells[0].realization_ids == ()
-    assert projection.shells[1].realization_ids == (
-        result.realizations[0].local_realization.local_realization_id,
+    assert projection.shells[1].realization_ids == tuple(
+        item.local_realization.local_realization_id for item in result.realizations
     )
 
     rows = _csv_rows(render_projection_csv(projection))
@@ -257,7 +373,7 @@ def test_relaxation_frontier_preserves_empty_shells_and_exact_membership() -> No
     svg = render_projection_svg(projection).decode("utf-8")
     assert "Feasibility first appeared one step from the requested geometry." in svg
     assert 'data-realization-count="0"' in svg
-    assert 'data-realization-count="1"' in svg
+    assert 'data-realization-count="2"' in svg
     assert 'data-shell-status="complete"' in svg
     assert "candidates" in svg and "rejected" in svg
 

@@ -11,16 +11,17 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from hop_design.models.construction.complete import ExactConstructionMaterial
-from hop_design.models.construction.complete.route_lineage import (
+from hop_design.models.construction.complete.materials import (
     MaterialOccurrence,
     foldback_occurrences,
-    material_strand,
-    reaction_molecule_strands,
     whole_source_occurrences,
 )
+from hop_design.models.construction.complete.route_lineage import (
+    material_strand,
+    reaction_molecule_strands,
+)
 from hop_design.models.construction.foldback import FoldbackLocalRealization
-from hop_design.models.molecular_state import MolecularStrand
+from hop_design.models.molecular_state import CovalentBond, MolecularStrand
 
 
 def final_hairpin_strand(
@@ -28,33 +29,32 @@ def final_hairpin_strand(
     foldback: FoldbackLocalRealization,
     prefix: str,
     return_arm: str,
-    source: ExactConstructionMaterial,
-    source_complement: ExactConstructionMaterial,
     selected_strands: tuple[MolecularStrand, ...],
+    ligation_bond: CovalentBond,
 ) -> MolecularStrand:
     """Ligate the exact selected source fragments without reconstructing lineage."""
-    top = next(
+    upstream = next(
         strand
         for strand in selected_strands
-        if all(item.origin_id == source.material_id for item in strand.lineage)
+        if strand.strand_id == ligation_bond.upstream_strand_id
     )
-    bottom = next(
+    downstream = next(
         strand
         for strand in selected_strands
-        if all(item.origin_id == source_complement.material_id for item in strand.lineage)
+        if strand.strand_id == ligation_bond.downstream_strand_id
     )
     expected = prefix + foldback.retained_sequence + return_arm
-    if top.sequence + bottom.sequence != expected:
+    if upstream.sequence + downstream.sequence != expected:
         raise ValueError("Selected fragments must concatenate to the exact hairpin product.")
     lineage = tuple(
         item.model_copy(update={"product_index": index})
-        for index, item in enumerate((*top.lineage, *bottom.lineage))
+        for index, item in enumerate((*upstream.lineage, *downstream.lineage))
     )
     return MolecularStrand(
         strand_id="complete-ssdna-hairpin",
         sequence=expected,
-        five_prime_end=top.five_prime_end,
-        three_prime_end=bottom.three_prime_end,
+        five_prime_end=upstream.five_prime_end,
+        three_prime_end=downstream.three_prime_end,
         lineage=lineage,
     )
 

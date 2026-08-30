@@ -45,6 +45,7 @@ class FoldbackTerminusKind(StrEnum):
 class FoldbackMaterialRequirement(StrEnum):
     """Route material property that local discovery cannot itself satisfy."""
 
+    SOURCE_TOP_5PRIME_PHOSPHATE = "source_top_5prime_phosphate"
     SOURCE_BOTTOM_5PRIME_PHOSPHATE = "source_bottom_5prime_phosphate"
 
 

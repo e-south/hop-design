@@ -11,8 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from hop_design.models.construction.basal import BasalEnzymeBinding, BasalRealizationRecord
-from hop_design.models.construction.foldback import FoldbackLocalRealization
+from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.coordinates import Span
 from hop_design.models.enzymes import EnzymeRole
@@ -31,12 +30,10 @@ from .digest import CloneDigest
 from .geometry import (
     CloneEndGenerationError,
     derive_clone_cut_geometry,
-    lift_clone_end_bindings,
-    validate_clone_binding_definitions,
 )
 
 
-def _declared(binding: BasalEnzymeBinding) -> DeclaredEnzymeBinding:
+def _declared(binding: ConstructionEnzymeBinding) -> DeclaredEnzymeBinding:
     return DeclaredEnzymeBinding(
         recognition_span=binding.recognition_span,
         orientation=binding.orientation,
@@ -53,8 +50,6 @@ def derive_clone_end_program(
     """Derive one concurrent Type IIS program from exact complete-route facts."""
     top, _ = pcr_state.molecules
     program, projection = derive_clone_end_program_for_template(
-        basal=None,
-        foldback=None,
         pcr_top=top.sequence,
         bindings=digest.bindings,
         design_sequence=digest.encoding_projection.sequence,
@@ -69,20 +64,11 @@ def derive_clone_end_program(
 
 def derive_clone_end_program_for_template(
     *,
-    basal: BasalRealizationRecord | None,
-    foldback: FoldbackLocalRealization | None,
     pcr_top: str,
     design_sequence: str,
-    bindings: tuple[BasalEnzymeBinding, BasalEnzymeBinding] | None = None,
+    bindings: tuple[ConstructionEnzymeBinding, ConstructionEnzymeBinding],
 ) -> tuple[ReactionProgram, Span]:
     """Derive exact end-generation reaction bytes from one complete PCR template."""
-    if bindings is None:
-        if basal is None or foldback is None:
-            raise CloneEndGenerationError(
-                "Clone end generation requires local authorities or lifted bindings."
-            )
-        bindings = lift_clone_end_bindings(basal=basal, foldback=foldback)
-    validate_clone_binding_definitions(bindings=bindings, basal=basal, sequence=pcr_top)
     geometry = derive_clone_cut_geometry(
         bindings=bindings,
         parent_length=len(pcr_top),

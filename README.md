@@ -21,7 +21,7 @@ No physical construction, QC, or activity record is attached.
 | --- | --- |
 | Maturity | HOP is alpha software; schemas and public APIs may change before 1.0. |
 | Published release | [v0.1.0a7](https://github.com/e-south/hop-design/releases/tag/v0.1.0a7), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7). |
-| Source line | The unreleased v0.1.0a8 candidate contains the construction-contract v2 cutover; use tagged v0.1.0a7 documentation with the published wheel. |
+| Source line | The unreleased v0.1.0a8 candidate contains the construction-contract v3 cutover; use tagged v0.1.0a7 documentation with the published wheel. |
 | Distribution | Release artifacts are published through [GitHub Releases](https://github.com/e-south/hop-design/releases), not PyPI. |
 
 ## Choose a route

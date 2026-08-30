@@ -19,9 +19,18 @@ from pydantic import ValidationError
 
 import hop_design.construction as construction
 from hop_design.design.construction.source_partition import discover_source_partitions
+from hop_design.models.construction import SearchCompletionStatus
 from hop_design.models.construction.source_partition import (
     SourcePartitionDiscoveryResult,
+    SourcePartitionDispositionKind,
+    SourcePartitionFailure,
     SourcePartitionTruncationReason,
+)
+from hop_design.models.construction.source_partition.replay import (
+    replay_source_partition_candidate,
+)
+from hop_design.models.construction.source_partition.result import (
+    source_partition_realization_id,
 )
 from hop_design.models.enzymes import VendorMetadata
 from tests.integration.test_source_partition_discovery import _request
@@ -160,6 +169,161 @@ def test_result_rejects_inexact_truncation_reason() -> None:
         _revalidate(forged)
 
 
+def test_disposition_contract_rejects_noncanonical_and_incoherent_states() -> None:
+    result = discover_source_partitions(_request())
+    rejected = result.dispositions[0]
+    accepted = result.dispositions[-1]
+
+    with pytest.raises(ValidationError, match="enzyme ids must be unique and canonical"):
+        rejected.__class__.model_validate(
+            rejected.model_copy(update={"enzyme_ids": rejected.enzyme_ids * 2}).model_dump(
+                mode="python"
+            )
+        )
+    with pytest.raises(ValidationError, match="failure codes must be unique and canonical"):
+        rejected.__class__.model_validate(
+            rejected.model_copy(update={"failure_codes": rejected.failure_codes * 2}).model_dump(
+                mode="python"
+            )
+        )
+    with pytest.raises(ValidationError, match="accepted source partition requires"):
+        accepted.__class__.model_validate(
+            accepted.model_copy(update={"failure_codes": rejected.failure_codes}).model_dump(
+                mode="python"
+            )
+        )
+    with pytest.raises(ValidationError, match="rejected source partition requires"):
+        rejected.__class__.model_validate(
+            rejected.model_copy(update={"failure_codes": ()}).model_dump(mode="python")
+        )
+
+
+def test_result_contract_rejects_authority_inventory_and_replay_forgeries() -> None:
+    result = discover_source_partitions(_request())
+    rejected = result.dispositions[0]
+    accepted = result.dispositions[-1]
+    realization = result.realizations[0]
+    forged_id = "hop:source-partition-realization/" + "0" * 64 + "@1"
+
+    for forged, message in (
+        (
+            result.model_copy(
+                update={"problem_id": "hop:source-partition-problem/" + "0" * 64 + "@1"}
+            ),
+            "bind the exact request identities",
+        ),
+        (
+            result.model_copy(update={"candidate_space_size": result.candidate_space_size + 1}),
+            "candidate-space size must replay exactly",
+        ),
+        (
+            result.model_copy(update={"examined_nodes": result.examined_nodes - 1}),
+            "nodes must equal recorded dispositions",
+        ),
+        (
+            result.model_copy(
+                update={"dispositions": (result.dispositions[1], result.dispositions[0], accepted)}
+            ),
+            "canonical search prefix",
+        ),
+        (
+            result.model_copy(update={"realizations": (realization, realization)}),
+            "realization ids must be unique",
+        ),
+        (
+            result.model_copy(update={"realizations": ()}),
+            "bind every realization",
+        ),
+        (
+            result.model_copy(
+                update={
+                    "dispositions": (
+                        rejected.model_copy(
+                            update={
+                                "candidate_id": "hop:source-partition-candidate/" + "0" * 64 + "@1"
+                            }
+                        ),
+                        *result.dispositions[1:],
+                    )
+                }
+            ),
+            "candidate identity must replay exactly",
+        ),
+        (
+            result.model_copy(
+                update={
+                    "dispositions": (
+                        rejected.model_copy(
+                            update={
+                                "failure_codes": (
+                                    SourcePartitionFailure.NONPARTITIONING_TERMINAL_CUT,
+                                )
+                            }
+                        ),
+                        *result.dispositions[1:],
+                    )
+                }
+            ),
+            "Rejected source-partition evidence must replay exactly",
+        ),
+        (
+            result.model_copy(
+                update={
+                    "dispositions": (
+                        *result.dispositions[:-1],
+                        accepted.model_copy(
+                            update={
+                                "disposition": SourcePartitionDispositionKind.REJECTED,
+                                "failure_codes": (
+                                    SourcePartitionFailure.RETAINED_FRAGMENT_SET_MISMATCH,
+                                ),
+                                "realization_id": None,
+                            }
+                        ),
+                    ),
+                    "realizations": (),
+                }
+            ),
+            "replayable source partition must be accepted",
+        ),
+        (
+            result.model_copy(
+                update={
+                    "dispositions": (
+                        *result.dispositions[:-1],
+                        accepted.model_copy(update={"realization_id": forged_id}),
+                    ),
+                    "realizations": (realization.model_copy(update={"realization_id": forged_id}),),
+                }
+            ),
+            "realization identity must replay exactly",
+        ),
+        (
+            result.model_copy(update={"status": SearchCompletionStatus.INFEASIBLE}),
+            "completion status must follow exact search accounting",
+        ),
+        (
+            result.model_copy(
+                update={"result_id": "hop:source-partition-result/" + "0" * 64 + "@1"}
+            ),
+            "result identity must replay exact result content",
+        ),
+    ):
+        with pytest.raises(ValidationError, match=message):
+            _revalidate(forged)
+
+
+def test_realization_identity_rejects_a_failed_candidate_replay() -> None:
+    request = _request()
+    failed = replay_source_partition_candidate(
+        request,
+        enzyme_ids=("example:enzyme/bottom-repeat@1",),
+    )
+
+    with pytest.raises(ValueError, match="Only an accepted source partition"):
+        source_partition_realization_id(request, failed)
+
+
 def test_public_loader_rejects_unsupported_schema_and_symlink(tmp_path: Path) -> None:
     source = tmp_path / "request.json"
     mapping = _request().model_dump(mode="json", by_alias=True)
@@ -174,3 +338,28 @@ def test_public_loader_rejects_unsupported_schema_and_symlink(tmp_path: Path) ->
     link.symlink_to(target)
     with pytest.raises(ValueError, match="must not be a symlink"):
         construction.discover_source_partition(link)
+
+
+def test_public_result_loader_rejects_schema_symlink_and_resealed_forgery(
+    tmp_path: Path,
+) -> None:
+    result = discover_source_partitions(_request())
+    mapping = result.model_dump(mode="json", by_alias=True)
+
+    unsupported = tmp_path / "unsupported-result.json"
+    unsupported.write_text(json.dumps({**mapping, "schema": "hop.source-partition-result/v2"}))
+    with pytest.raises(ValueError, match="Unsupported HOP source-partition result schema"):
+        construction.load_verified_source_partition(unsupported)
+
+    valid = tmp_path / "valid-result.json"
+    valid.write_text(json.dumps(mapping))
+    link = tmp_path / "result-link.json"
+    link.symlink_to(valid)
+    with pytest.raises(ValueError, match="must not be a symlink"):
+        construction.load_verified_source_partition(link)
+
+    mapping["result_id"] = "hop:source-partition-result/" + "0" * 64 + "@1"
+    forged = tmp_path / "forged-result.json"
+    forged.write_text(json.dumps(mapping))
+    with pytest.raises(ValidationError, match="result identity must replay exact result content"):
+        construction.load_verified_source_partition(forged)

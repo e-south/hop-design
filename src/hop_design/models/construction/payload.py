@@ -221,13 +221,15 @@ def validate_linear_source_payload(payload: FinalPayloadReference) -> None:
 def validate_linear_source_map(
     payload: FinalPayloadReference,
     source_map: PayloadSourceMap,
+    *,
+    allowed_orientations: tuple[SourceOrientation, ...] = (SourceOrientation.FORWARD,),
 ) -> None:
-    """Require the current route's one contiguous forward payload encoding."""
+    """Require the current route's one contiguous payload encoding."""
     if len(source_map.segments) != 1:
         raise ValueError("linear_source/v1 requires one contiguous source segment.")
     segment = source_map.segments[0]
     expected = Span(start=payload.basal_boundary, end=payload.foldback_boundary)
     if segment.payload_span != expected:
         raise ValueError("The linear source segment must cover the complete final payload.")
-    if segment.orientation is not SourceOrientation.FORWARD:
+    if segment.orientation not in allowed_orientations:
         raise ValueError("linear_source/v1 requires a forward payload source segment.")

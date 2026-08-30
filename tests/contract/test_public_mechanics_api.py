@@ -152,7 +152,11 @@ VIEW_OPERATIONS = {
 
 CONSTRUCTION_OPERATIONS = {
     "compile_construction",
+    "discover_local_neighborhood",
+    "discover_source_partition",
     "load_verified_construction_bundle",
+    "load_verified_local_neighborhood",
+    "load_verified_source_partition",
     "project_basal_feasibility",
     "project_complete_construction_summary",
     "project_construction_trajectory",
@@ -163,6 +167,8 @@ CONSTRUCTION_OPERATIONS = {
 CONSTRUCTION_FACADE = {
     "ConstructionCompilation",
     "ConstructionProjection",
+    "LocalNeighborhoodDiscovery",
+    "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
 } | CONSTRUCTION_OPERATIONS
 

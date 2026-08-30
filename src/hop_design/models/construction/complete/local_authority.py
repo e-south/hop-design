@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
+from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.sequence import iupac_bases
 
 from .request import ConstructionDiscoveryRequest
@@ -52,7 +53,7 @@ def validate_local_authority_compatibility(
             exact=payload,
         )
         or basal_request.route_family is not request.route_family
-        or basal_request.endpoint is not request.endpoint
+        or basal_request.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
     ):
         raise ValueError("Basal payload authority does not match the complete request.")
 

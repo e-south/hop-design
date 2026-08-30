@@ -25,11 +25,14 @@ from tests.integration.test_source_partition_discovery import _request as source
 PUBLIC_NAMES = [
     "ConstructionCompilation",
     "ConstructionProjection",
+    "LocalNeighborhoodDiscovery",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compile_construction",
+    "discover_local_neighborhood",
     "discover_source_partition",
     "load_verified_construction_bundle",
+    "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",
     "project_complete_construction_summary",
@@ -54,10 +57,24 @@ def test_construction_facade_is_an_exact_allowlist() -> None:
     for receipt_type in (
         construction.ConstructionCompilation,
         construction.ConstructionProjection,
+        construction.LocalNeighborhoodDiscovery,
         construction.SourcePartitionDiscovery,
         construction.VerifiedConstructionBundle,
     ):
         assert tuple(inspect.signature(receipt_type).parameters) == ()
+
+
+def test_construction_facade_decision_records_the_exact_allowlist() -> None:
+    decision = (
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "architecture"
+        / "decisions"
+        / "0027-file-oriented-construction-facade.md"
+    ).read_text(encoding="utf-8")
+
+    for name in PUBLIC_NAMES:
+        assert f"`{name}`" in decision
 
 
 def test_construction_receipts_expose_scientific_accounting_not_authority_models(
@@ -143,8 +160,8 @@ def test_construction_local_projections_require_explicit_family_selection(
         family="basal",
     )
 
-    assert foldback.schema_id == "hop.foldback-feasibility-landscape/v2"
-    assert basal.schema_id == "hop.basal-feasibility-landscape/v1"
+    assert foldback.schema_id == "hop.foldback-feasibility-landscape/v3"
+    assert basal.schema_id == "hop.basal-feasibility-landscape/v2"
     assert foldback_frontier.schema_id == "hop.foldback-relaxation-frontier/v2"
     assert basal_frontier.schema_id == "hop.basal-relaxation-frontier/v1"
     with pytest.raises(ValueError, match="family must be foldback or basal"):
@@ -177,11 +194,15 @@ def test_source_partition_discovery_is_file_oriented_and_portable(tmp_path: Path
     assert discovery.candidate_space_size == 3
     assert discovery.examined_nodes == 3
     assert discovery.accepted_realizations == 1
+    assert len(discovery.realization_ids) == 1
+    assert discovery.problem_id.startswith("hop:source-partition-problem/")
+    assert discovery.request_id.startswith("hop:source-partition-request/")
     assert discovery.result_id.startswith("hop:source-partition-result/")
     assert discovery.json_bytes.endswith(b"\n")
     assert discovery.csv_bytes.startswith(b"candidate_id,enzyme_ids,disposition")
     assert not hasattr(discovery, "request")
     assert not hasattr(discovery, "result")
+    assert repr(discovery).startswith("SourcePartitionDiscovery(status='complete'")
 
     output = discovery.write(tmp_path / "partition")
     assert {item.name for item in output.iterdir()} == {"data.csv", "result.json"}

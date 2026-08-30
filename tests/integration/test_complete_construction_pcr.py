@@ -28,6 +28,7 @@ from hop_design.models.construction import (
     FinalPayloadReference,
     FoldbackTarget,
     SearchCompletionStatus,
+    SourceOrientation,
 )
 from hop_design.models.construction.complete import (
     AdapterLigationAuthority,
@@ -50,13 +51,13 @@ from hop_design.models.construction.complete.evaluation import (
 )
 from hop_design.models.construction.complete.pcr.replay import validate_pcr_transition
 from hop_design.models.construction.complete.pcr.route import select_pcr_fragments
+from hop_design.models.construction.complete.pcr.schedule import derive_pcr_reaction_program
 from hop_design.models.construction.complete.pcr.validation import (
     validate_adapter_pairing_profile,
     validate_pcr_realization,
 )
 from hop_design.models.construction.complete.route_schedule import (
     derive_direct_reaction_program,
-    derive_pcr_reaction_program,
 )
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.coordinates import Boundary, Span
@@ -144,6 +145,80 @@ def _valid_pcr_result(tmp_path: Path):
     )
 
 
+def test_pcr_composition_accepts_both_duplex_foldback_orientations(
+    tmp_path: Path,
+) -> None:
+    payload = _payload()
+    foldback = discover_foldback_neighborhood(
+        _request(
+            _nickase(
+                motif="TCAGATGCTGA",
+                cut_offset=0,
+                orientation_semantics=RecognitionOrientationSemantics.BOTH_ORIENTATIONS,
+            ),
+            _terminus_enzyme(),
+            target=FoldbackTarget(
+                nick_offset_within_foldback_nt=0,
+                loop_length_nt=3,
+                annealing_arm_length_bp=4,
+            ),
+        )
+    )
+    basal = _basal_result(
+        payload,
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        nick_strand=Strand.BOTTOM,
+    )
+    design = _verified_design(tmp_path)
+    encoding = design.plan.hairpin_encoding_insert.sequence
+    adapter = next(
+        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
+    )
+    request = _construction_request(
+        payload=payload,
+        foldback=foldback,
+        basal=basal,
+        design=design,
+        endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        source_five_prime_end=EndChemistry.PHOSPHATE,
+        complement_five_prime_end=EndChemistry.PHOSPHATE,
+        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        forward_primer=_material("forward-primer", encoding[:4]),
+        reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
+    )
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == 3
+    assert result.failure_reasons == ()
+    foldback_by_id = {item.foldback_realization_id: item for item in foldback.realizations}
+    assert {
+        foldback_by_id[item.foldback_realization_id].foldback_nick.strand
+        for item in result.realizations
+    } == {Strand.TOP, Strand.BOTTOM}
+    assert {item.payload_source_map.segments[0].orientation for item in result.realizations} == {
+        SourceOrientation.FORWARD,
+        SourceOrientation.REVERSE_COMPLEMENT,
+    }
+    assert len({item.materialized_realization_id for item in result.realizations}) == 3
+    assert len({item.construction_program.program_id for item in result.realizations}) == 3
+    for item in result.realizations:
+        local = foldback_by_id[item.foldback_realization_id]
+        assert (
+            item.payload_source_map.segments[0].orientation
+            is local.payload_source_map.segments[0].orientation
+        )
+        material_ids = {material.material_id for material in item.materials}
+        assert {
+            lineage.origin_id
+            for state in item.construction_program.states
+            for strand in state.molecules
+            for lineage in strand.lineage
+        } <= material_ids
+        assert item.final_product.encoding_projection.sequence == encoding
+
+
 def _verified_distal_mismatch_design(tmp_path: Path):
     spec = _component_spec().model_copy(update={"payload": ExactPayload(sequence="GACA")})
     basal = spec.basal.model_copy(
@@ -223,7 +298,11 @@ def test_hairpin_pcr_endpoint_materializes_exact_adapter_and_primer_route(
     assert realization.final_product.cohesive_ends == ()
     assert sum(len(item.sequence) for item in terminal.molecules) == 2 * len(top_sequence)
     functions = realization.final_product.material_function_spans
-    assert {item.function for item in functions} == set(MaterialFunction)
+    assert {
+        MaterialFunction.SOURCE_REFERENCE,
+        MaterialFunction.FORWARD_PRIMER,
+        MaterialFunction.REVERSE_PRIMER,
+    }.issubset(item.function for item in functions)
     assert all(item.material_span.length.value > 1 for item in functions)
     assert all(
         item.fate.value != "destination_associated"
@@ -300,7 +379,10 @@ def test_hairpin_pcr_preserves_a_literal_distal_mismatch_through_copying(
         for item in realization.final_product.material_function_spans
         if item.function is MaterialFunction.REVERSE_PRIMER
     )
-    assert {item.endpoint_strand.value for item in reverse_primer_spans} == {"bottom"}
+    assert {item.endpoint_strand.value for item in reverse_primer_spans} == {
+        "top",
+        "bottom",
+    }
 
 
 def test_pcr_fragment_selection_requires_exact_return_arm_identity(tmp_path: Path) -> None:
@@ -397,6 +479,58 @@ def test_primer_extension_rejects_resealed_product_chemistry_and_lineage(
                 pre_state=program.states[-2],
                 post_state=changed_state,
             )
+
+
+def test_primer_extension_replay_rejects_overlapping_annealing_spans(
+    tmp_path: Path,
+) -> None:
+    result, _, _ = _valid_pcr_result(tmp_path)
+    realization = result.realizations[0]
+    program = realization.construction_program
+    transition = program.transitions[-1]
+    authority = transition.pcr_authority
+    assert isinstance(authority, PrimerExtensionAuthority)
+    template = program.states[-2].molecules[0]
+    annealing_length = len(template.sequence) // 2 + 1
+    forward = authority.forward_primer.model_copy(
+        update={
+            "oligo": authority.forward_primer.oligo.model_copy(
+                update={"sequence_5prime": template.sequence[:annealing_length]}
+            ),
+            "annealing_length_nt": annealing_length,
+        }
+    )
+    reverse = authority.reverse_primer.model_copy(
+        update={
+            "oligo": authority.reverse_primer.oligo.model_copy(
+                update={
+                    "sequence_5prime": reverse_complement_iupac(
+                        template.sequence[-annealing_length:]
+                    )
+                }
+            ),
+            "annealing_length_nt": annealing_length,
+        }
+    )
+    changed_authority = PrimerExtensionAuthority.create(
+        pre_state_id=authority.pre_state_id,
+        post_state_id=authority.post_state_id,
+        forward_primer=forward,
+        reverse_primer=reverse,
+        bindings=authority.bindings,
+        products=authority.products,
+        pairings=authority.pairings,
+        material_function_spans=authority.material_function_spans,
+        endpoint_sequence_fate_spans=authority.endpoint_sequence_fate_spans,
+    )
+
+    with pytest.raises(ValueError, match="annealing spans must not overlap"):
+        validate_pcr_transition(
+            kind=transition.kind,
+            authority=changed_authority,
+            pre_state=program.states[-2],
+            post_state=program.states[-1],
+        )
 
 
 def test_hairpin_pcr_endpoint_reports_adapter_mismatch_as_infeasible(
@@ -602,25 +736,25 @@ def test_pcr_endpoint_addition_preserves_direct_canonical_authority(tmp_path: Pa
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "2148768149d98507d9bf8e60ac8b60e5886a14cff55d0aaa60e3ee7df41450b0@1"
+        "7f4f77dfede0fc85f20e9b26fd89a16ce4c4a68850e0ce0e2374b2765ec0544f@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "aa278811521500e80ae5ca0f275372c38411f04c41a83e1579cb886a8e38b221"  # pragma: allowlist secret  # noqa: E501
+            "b25d53b1da68b76d82086469acf21ce86d93e2d72bcbbd93465051051b129353"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "d13e8cd92b4cafc412903e881c9e0e1e04fbef9aa2c4acadfc6a49934b0a807d@1",
+        "ff7e17482f71320f445a20de77eda0c55bc33a259e1b5b7c2d61f1c98557fea3@1",
         "hop:materialized-construction/"
-        "c5b2f1c647375f85b18282e73ec6b121b0acb6b5630f820eae4523f77b2163cb@1",
+        "0a6ff3c714355e3341976f50272ef16e961532818a2f144723db72d2222a9926@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "985cc2ff57ba21b6e6a93d52ef185767af5188fae350d332ba0d9796ce9af7c7@1",
+        "29155e85c3d47dc32edced691a0d69713301ed0c950d2129f001981e9a8519d0@1",
         "hop:construction-program/"
-        "880f4c4d1cb9ca27ec16682d399cd19a310b2707f031f2f8eae41b15f47502e2@1",
+        "d0dd0f43109d3f2673921e602dbd60ee63039fde3ecf6632426881beeef1dd39@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/31ec12c1d24c9c10e6c8bc22e815aac01842be4fc019cc18a2a36962f5117237@1",
@@ -631,8 +765,8 @@ def test_pcr_endpoint_addition_preserves_direct_canonical_authority(tmp_path: Pa
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "b93ba72e00231239ea52e10cabe8ea0c4d822bac70f2c0191f61abc2fade2037",  # pragma: allowlist secret  # noqa: E501
-            "d7266f832d0ccaa2482cd2fe7c720882a67883c8af00061b5c4c7446956d6711",  # pragma: allowlist secret  # noqa: E501
+            "23e0086bc44f5e50092f05ffb101c034debe571c7ee19020bb4aa3501f9bd6fa",  # pragma: allowlist secret  # noqa: E501
+            "840769191b7bf2d5df6e47e325c45f1b142ac8781556d1b8e5c4c7b1d5ac398f",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -642,37 +776,37 @@ def test_clone_endpoint_addition_preserves_pcr_canonical_authority(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "6bf69f666e0b620eaf6e05bbe45c53724d5a1a1ecbc6d7a95d5d80202abcc687@1"
+        "4d6a60b20fd026dffa594a50d34fd736f14bbd9136f139d2b198448f5537b2a1@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "205702ff004a8885b24d053bf7df5b364d34fe75c16ede1390ec9ad3a6b33f16"  # pragma: allowlist secret  # noqa: E501
+            "399a9a5bc8b6f6653806b42a9b07bdfc8f7cccebf963b2a42815e59e87f5661d"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "af7b4879fd0a88e82541cd0348451e4ab9ca0f18e94436818f5d3ed319bee96f@1",
+        "b88be4ad64c5f0ccbf402ac0444f2ae8c71a6126443f6db5881f35678c92acce@1",
         "hop:materialized-construction/"
-        "64b1cb95a9c01ac8c998fe3227988821bdf10a4474ba9d19c9301ceaa08f9a77@1",
+        "2087452dd62c7626da15d3e46c3182c838d81b8d4dbe843b02c45c8e138dcee4@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "c429fc83b7d3b49f433dd4a5a871822e292756fed69567d054ccdec1a24b1187@1",
+        "09b84755dcb9ff407871833f8869c48c305a9f402d0e9ba9acd1cdb2d7b8ed6f@1",
         "hop:construction-program/"
-        "28ee7c4e98f71af19dfca6ffbfcdf3dce0862aea30ec36dd0fcf88fda3e79b74@1",
+        "1d458110f35985fb061a47e0129fb6745a1ade511153dbfabb6bd7a521298183@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
-        "hop:final-product/d19850d0caffdcb47866535ea8b9b8dc296e18b3d5f28c8e9c0c9b1f49a1ccb2@1",
-        "hop:final-product/a40b77f7fec01ebae3113ce6f419ab4f7bd046d422836f3f3ae58bbbc71f51fb@1",
+        "hop:final-product/edde3feef815df530c09322173575dbea786e9a8983376112603959575cd0747@1",
+        "hop:final-product/ab470fa196935d67c99a93b2f1c87e33223a7bb46284e059759384a06090084a@1",
     )
     assert (
         tuple(
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "82298ce60e65419db257a7abacafdc9e595d5ea472c0373999062404fa55a11d",  # pragma: allowlist secret  # noqa: E501
-            "baacdd56485150329b2ec0a6670644fafdafc7d9b19643ba3834a899331817b8",  # pragma: allowlist secret  # noqa: E501
+            "5ad323880a7a5c1839185d2efe2cd1c00eed1d47ac56f6a45fce88e26f872f39",  # pragma: allowlist secret  # noqa: E501
+            "ec0196bfbc08e938f6e82ecc09f8ae736d80edb889c6043489f4d2ea26198f02",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -937,18 +1071,28 @@ def test_pcr_reaction_program_has_content_bound_endpoint_specific_identity(
         basal=basal,
         prefix=prefix,
         return_arm=adapter,
+        source=realization.materials[0],
+        source_complement=realization.materials[1],
     )
     pcr = derive_pcr_reaction_program(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
         return_arm=adapter,
+        source=realization.materials[0],
+        source_complement=realization.materials[1],
     )
+    changed_adapter = "A" + adapter[1:]
     changed = derive_pcr_reaction_program(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm="A" + adapter[1:],
+        return_arm=changed_adapter,
+        source=realization.materials[0],
+        source_complement=_material(
+            "changed-source-complement",
+            reverse_complement_iupac(foldback.source_reference_sequence) + changed_adapter,
+        ),
     )
 
     assert pcr.program_id != direct.program_id
@@ -1172,7 +1316,11 @@ def test_pcr_transition_replay_rejects_exact_molecular_forgery_matrix(
             extension.model_copy(
                 update={
                     "forward_primer": extension.forward_primer.model_copy(
-                        update={"three_prime_end": EndChemistry.PHOSPHATE}
+                        update={
+                            "oligo": extension.forward_primer.oligo.model_copy(
+                                update={"three_prime_end": EndChemistry.PHOSPHATE}
+                            )
+                        }
                     )
                 }
             ),
@@ -1209,15 +1357,19 @@ def test_pcr_transition_replay_rejects_exact_molecular_forgery_matrix(
             ),
             extension_pre,
             extension_post,
-            "spans must bind both exact primers",
+            "spans must bind exact route material roles",
         ),
         (
             extension.model_copy(
                 update={
                     "forward_primer": extension.forward_primer.model_copy(
                         update={
-                            "sequence_5prime": _substitute_first_base(
-                                extension.forward_primer.sequence_5prime
+                            "oligo": extension.forward_primer.oligo.model_copy(
+                                update={
+                                    "sequence_5prime": _substitute_first_base(
+                                        extension.forward_primer.oligo.sequence_5prime
+                                    )
+                                }
                             )
                         }
                     )
@@ -1225,7 +1377,7 @@ def test_pcr_transition_replay_rejects_exact_molecular_forgery_matrix(
             ),
             extension_pre,
             extension_post,
-            "preserve both exact primer sequences",
+            "products must be exact reverse complements",
         ),
         (
             extension.model_copy(update={"bindings": (changed_binding, extension.bindings[1])}),

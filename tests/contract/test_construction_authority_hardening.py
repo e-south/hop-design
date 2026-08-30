@@ -349,7 +349,10 @@ def test_neighborhood_result_rejects_resealed_claim_group_and_inventory_drift() 
         }
     )
     content = result.model_dump(mode="python")
-    content["achieved_geometry_groups"] = (wrong_geometry,)
+    content["achieved_geometry_groups"] = (
+        wrong_geometry,
+        *result.achieved_geometry_groups[1:],
+    )
     with pytest.raises(ValidationError, match="group key must match"):
         type(result).model_validate(content)
 

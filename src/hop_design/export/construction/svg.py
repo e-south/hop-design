@@ -23,6 +23,7 @@ from hop_design.models.construction.projections import (
     LocalScientificProjection,
     RelaxationFrontierProjection,
 )
+from hop_design.models.construction.relaxation import SequenceDomainPartition
 
 from .complete_svg import render_complete_projection_svg
 from .svg_common import ACCENT, WASH
@@ -34,12 +35,21 @@ from .trajectory_svg import render_complete_trajectory_svg
 class _BasalGroupKey(NamedTuple):
     nick_strand: str
     nick_offset_nt: int
-    type_iis_cut_offset_nt: int | None
     pairing_profile: str | None
     retained_nt: int
     transient_nt: int
     auxiliary_nt: int
-    cohesive_end_count: int
+
+
+class _FoldbackGroupKey(NamedTuple):
+    program_kind: str
+    nick_strand: str
+    source_orientation: str
+    nick_offset_within_foldback_nt: int
+    loop_length_nt: int
+    annealing_arm_length_bp: int
+    retained_construction_nt: int
+    transient_construction_nt: int
 
 
 def render_projection_svg(
@@ -64,22 +74,30 @@ def render_projection_svg(
 
 
 def _render_foldback(projection: FoldbackFeasibilityProjection) -> bytes:
-    title = _feasibility_title("Foldback", projection.status, projection.realization_count)
-    grouped: dict[tuple[object, ...], list[str]] = {}
+    title = _feasibility_title(
+        "Foldback",
+        projection.status,
+        projection.realization_count,
+        projection.sequence_partition,
+    )
+    grouped: dict[_FoldbackGroupKey, list[str]] = {}
     for item in projection.realizations:
-        key = (
-            item.program_kind,
-            item.nick_offset_within_foldback_nt,
-            item.loop_length_nt,
-            item.annealing_arm_length_bp,
-            item.retained_construction_nt,
-            item.transient_construction_nt,
+        key = _FoldbackGroupKey(
+            program_kind=item.program_kind.value,
+            nick_strand=item.nick_strand.value,
+            source_orientation=item.source_orientation.value,
+            nick_offset_within_foldback_nt=item.nick_offset_within_foldback_nt,
+            loop_length_nt=item.loop_length_nt,
+            annealing_arm_length_bp=item.annealing_arm_length_bp,
+            retained_construction_nt=item.retained_construction_nt,
+            transient_construction_nt=item.transient_construction_nt,
         )
         grouped.setdefault(key, []).append(item.local_realization_id)
     rows = []
     for index, (group_key, realization_ids) in enumerate(grouped.items()):
-        program, offset, loop, arm, retained, transient = group_key
+        program, nick_strand, source_orientation, offset, loop, arm, retained, transient = group_key
         y = 236 + index * 38
+        route = f"{nick_strand} strand · {source_orientation.replace('_', '-')} source"
         geometry = (
             f"offset {offset} nt · loop {loop} nt · arm {arm} bp · "
             f"retained {retained} nt · transient {transient} nt"
@@ -88,7 +106,8 @@ def _render_foldback(projection: FoldbackFeasibilityProjection) -> bytes:
             f'<g data-realization-count="{len(realization_ids)}" '
             f'data-realization-ids="{_escape(" ".join(realization_ids))}">'
             f'<text x="72" y="{y}" class="body">{_escape(program)}</text>'
-            f'<text x="360" y="{y}" class="body">{_escape(geometry)}</text>'
+            f'<text x="300" y="{y}" class="body">{_escape(route)}</text>'
+            f'<text x="600" y="{y}" class="body">{_escape(geometry)}</text>'
             f'<text x="1080" y="{y}" class="body">n={len(realization_ids)}</text></g>'
         )
     body = (
@@ -105,18 +124,21 @@ Rows group identical observed dimensions; exact membership remains in the tidy o
 
 def _render_basal(projection: BasalFeasibilityProjection) -> bytes:
     endpoint = _endpoint_label(projection.endpoint)
-    title = _feasibility_title("Basal", projection.status, projection.realization_count)
+    title = _feasibility_title(
+        "Basal",
+        projection.status,
+        projection.realization_count,
+        projection.sequence_partition,
+    )
     grouped: dict[_BasalGroupKey, list[BasalFeasibilityRow]] = {}
     for item in projection.realizations:
         key = _BasalGroupKey(
             nick_strand=item.nick_strand.value,
             nick_offset_nt=item.nick_offset_nt,
-            type_iis_cut_offset_nt=item.type_iis_cut_offset_nt,
             pairing_profile=item.pairing_profile,
             retained_nt=item.retained_nt,
             transient_nt=item.transient_nt,
             auxiliary_nt=item.auxiliary_nt,
-            cohesive_end_count=item.cohesive_end_count,
         )
         grouped.setdefault(key, []).append(item)
     rows = []
@@ -134,22 +156,10 @@ def _render_basal(projection: BasalFeasibilityProjection) -> bytes:
         if literal_pair_patterns:
             pairing += f" · {len(literal_pair_patterns)} literal pair patterns"
         route = f"{group_key.nick_strand} strand · offset {group_key.nick_offset_nt} nt"
-        if group_key.type_iis_cut_offset_nt is not None:
-            route += f" · Type IIS offset {group_key.type_iis_cut_offset_nt} nt"
-        end_pairs = {
-            tuple(
-                (end.product_end, end.sequence, end.overhang_end.value)
-                for end in item.cohesive_ends
-            )
-            for item in projection.realizations
-            if item in group_rows
-        }
-        ends = f" · {len(end_pairs)} distinct left/right end pairs" if end_pairs else ""
         material = (
             f"retained {group_key.retained_nt} nt · "
             f"transient {group_key.transient_nt} nt · "
-            f"auxiliary {group_key.auxiliary_nt} nt · "
-            f"cohesive ends {group_key.cohesive_end_count}{ends}"
+            f"auxiliary {group_key.auxiliary_nt} nt"
         )
         realization_ids = [item.local_realization_id for item in group_rows]
         rows.append(
@@ -175,14 +185,21 @@ Rows group identical observed dimensions; no preference is inferred.</text>
 
 def _render_relaxation(projection: RelaxationFrontierProjection) -> bytes:
     first_hit = next((shell.radius for shell in projection.shells if shell.realization_count), None)
+    partition = projection.sequence_partition
+    scope = _partition_scope(partition)
     if first_hit == 0:
-        title = "Feasibility was present at the requested geometry."
+        title = f"Feasibility was present at the requested geometry{scope}."
     elif first_hit == 1:
-        title = "Feasibility first appeared one step from the requested geometry."
+        title = f"Feasibility first appeared one step from the requested geometry{scope}."
     elif first_hit is not None:
-        title = f"Feasibility first appeared {first_hit} steps from the requested geometry."
+        title = f"Feasibility first appeared {first_hit} steps from the requested geometry{scope}."
     elif projection.status is SearchCompletionStatus.INFEASIBLE:
-        title = "No feasible realization was found across the complete relaxation frontier."
+        if partition is None:
+            title = "No feasible realization was found across the complete relaxation frontier."
+        else:
+            title = (
+                f"No feasible realization was found{scope} across its examined relaxation frontier."
+            )
     else:
         title = "The relaxation frontier ended before feasibility was established."
     scale_width = 920
@@ -223,17 +240,28 @@ replay the source shell accounting; exact realization membership remains in SVG 
     return _document(title=title, body=body, height=438)
 
 
-def _feasibility_title(family: str, status: SearchCompletionStatus, count: int) -> str:
+def _feasibility_title(
+    family: str,
+    status: SearchCompletionStatus,
+    count: int,
+    partition: SequenceDomainPartition | None,
+) -> str:
     lower = family.lower()
+    scope = _partition_scope(partition)
     if status is SearchCompletionStatus.COMPLETE:
         noun = "realization" if count == 1 else "realizations"
         return (
             f"{family} discovery identified {count} exact local route {noun} "
-            "under the declared molecular model."
+            f"under the declared molecular model{scope}."
         )
     if status is SearchCompletionStatus.INFEASIBLE:
+        if partition is not None:
+            return f"No compatible local {lower} route was identified{scope}."
         return f"No compatible local {lower} route was identified after exhaustive search."
-    return f"{family} discovery was truncated with {count} observed exact local route realizations."
+    return (
+        f"{family} discovery was truncated with {count} observed exact local route "
+        f"realizations{scope}."
+    )
 
 
 def _status_header(
@@ -241,12 +269,13 @@ def _status_header(
     title: str,
 ) -> str:
     claims = projection.claim_boundary
+    partition_attributes = _partition_attributes(projection.sequence_partition)
     return f"""
 <g data-status="{projection.status.value}" data-endpoint="{projection.endpoint.value}"
 data-projection-id="{projection.projection_id}"
 data-result-id="{projection.source_result_id}"
 data-hop-version="{_escape(projection.provenance.hop_version)}"
-data-renderer-version="{_escape(projection.renderer_version)}"
+data-renderer-version="{_escape(projection.renderer_version)}"{partition_attributes}
 data-digital-design="{claims.digital_design.value}"
 data-method="{claims.method.value}"
 data-physical-construction="{claims.physical_construction.value}"
@@ -259,6 +288,21 @@ physical construction are not established.</text>
 </g>
 <line x1="72" y1="150" x2="1128" y2="150" class="rule"/>
 """
+
+
+def _partition_scope(partition: SequenceDomainPartition | None) -> str:
+    if partition is None:
+        return ""
+    return f" in sequence-domain part {partition.part_index + 1} of {partition.part_count}"
+
+
+def _partition_attributes(partition: SequenceDomainPartition | None) -> str:
+    if partition is None:
+        return ""
+    return (
+        f'\ndata-sequence-part-count="{partition.part_count}" '
+        f'data-sequence-part-index="{partition.part_index}"'
+    )
 
 
 def _endpoint_label(endpoint: ConstructionEndpoint) -> str:

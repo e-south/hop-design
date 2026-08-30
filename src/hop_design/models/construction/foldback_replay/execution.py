@@ -83,18 +83,25 @@ def replay_foldback_route(
 ) -> FoldbackRouteReplay:
     """Derive every physical foldback state from exact source and cut authorities."""
     payload_nt = len(payload_sequence)
-    junction = payload_nt
-    nick = junction + target.nick_offset_within_foldback_nt
     arm_nt = target.annealing_arm_length_bp
     foldback_nt = target.loop_length_nt + 2 * arm_nt
-    terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
     source = source_reference_sequence
+    if not isinstance(target.nick_strand, Strand):
+        raise ValueError("Foldback replay requires one exact nick strand.")
+    if target.nick_strand is Strand.TOP:
+        junction = payload_nt
+        nick = junction + target.nick_offset_within_foldback_nt
+        terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
+    else:
+        junction = len(source) - payload_nt
+        nick = junction - target.nick_offset_within_foldback_nt
+        terminus = junction - foldback_nt + target.nick_offset_within_foldback_nt
     nick_binding = next(
         binding for binding in enzyme_bindings if binding.role is EnzymeRole.FOLDBACK_NICK
     )
     foldback_nick = FoldbackBoundaryControl(
         kind=FoldbackTerminusKind.ENZYME_CLEAVAGE,
-        strand=Strand.TOP,
+        strand=target.nick_strand,
         boundary=Boundary(offset=nick),
         end_chemistry=EndChemistry.HYDROXYL,
         enzyme_id=nick_binding.enzyme_id,
@@ -102,18 +109,25 @@ def replay_foldback_route(
         binding_id=nick_binding.binding_id,
     )
     if program_kind is FoldbackCleavageProgramKind.SINGLE_CLEAVAGE:
-        if len(source) != terminus:
+        if (target.nick_strand is Strand.TOP and len(source) != terminus) or (
+            target.nick_strand is Strand.BOTTOM and terminus != 0
+        ):
             raise ValueError("A single-cleavage source must physically end at its terminus.")
-        source_bottom_five_prime = EndChemistry.PHOSPHATE
-        top_cuts: tuple[int, ...] = (nick,)
-        bottom_cuts: tuple[int, ...] = ()
+        source_top_five_prime = (
+            EndChemistry.PHOSPHATE if target.nick_strand is Strand.BOTTOM else EndChemistry.HYDROXYL
+        )
+        source_bottom_five_prime = (
+            EndChemistry.PHOSPHATE if target.nick_strand is Strand.TOP else EndChemistry.HYDROXYL
+        )
+        top_cuts: tuple[int, ...] = (nick,) if target.nick_strand is Strand.TOP else ()
+        bottom_cuts: tuple[int, ...] = (nick,) if target.nick_strand is Strand.BOTTOM else ()
         release_cut = DuplexCut(
             top=Boundary(offset=terminus),
             bottom=Boundary(offset=terminus),
         )
         terminus_control = FoldbackBoundaryControl(
             kind=FoldbackTerminusKind.SOURCE_TERMINUS,
-            strand=Strand.BOTTOM,
+            strand=(Strand.BOTTOM if target.nick_strand is Strand.TOP else Strand.TOP),
             boundary=Boundary(offset=terminus),
             end_chemistry=EndChemistry.PHOSPHATE,
         )
@@ -125,16 +139,17 @@ def replay_foldback_route(
             offset=terminus
         ) or terminus_binding.complement_cut != Boundary(offset=terminus):
             raise ValueError("The current foldback replay requires a blunt terminus cut.")
+        source_top_five_prime = EndChemistry.HYDROXYL
         source_bottom_five_prime = EndChemistry.HYDROXYL
-        top_cuts = (nick, terminus)
-        bottom_cuts = (terminus,)
+        top_cuts = (nick, terminus) if target.nick_strand is Strand.TOP else (terminus,)
+        bottom_cuts = (terminus,) if target.nick_strand is Strand.TOP else (terminus, nick)
         release_cut = DuplexCut(
             top=terminus_binding.reference_cut,
             bottom=terminus_binding.complement_cut,
         )
         terminus_control = FoldbackBoundaryControl(
             kind=FoldbackTerminusKind.ENZYME_CLEAVAGE,
-            strand=Strand.BOTTOM,
+            strand=(Strand.BOTTOM if target.nick_strand is Strand.TOP else Strand.TOP),
             boundary=Boundary(offset=terminus),
             end_chemistry=EndChemistry.PHOSPHATE,
             enzyme_id=terminus_binding.enzyme_id,
@@ -145,7 +160,7 @@ def replay_foldback_route(
     source_top = _strand(
         strand_id="source-top",
         sequence=source,
-        five_prime_end=EndChemistry.HYDROXYL,
+        five_prime_end=source_top_five_prime,
         origin_strand=LineageStrand.PRIMARY,
         origin_indexes=range(len(source)),
     )
@@ -163,68 +178,82 @@ def replay_foldback_route(
         top_five_prime_end=source_top.five_prime_end,
         bottom_five_prime_end=source_bottom.five_prime_end,
     )
-    top = next(
-        fragment
-        for fragment in fragments
-        if fragment.precursor_strand is Strand.TOP
-        and fragment.precursor_span
-        == Span(
-            start=Boundary(offset=0),
-            end=Boundary(offset=nick),
+    if target.nick_strand is Strand.TOP:
+        upstream = next(
+            fragment
+            for fragment in fragments
+            if fragment.precursor_strand is Strand.TOP
+            and fragment.precursor_span == Span(start=Boundary(offset=0), end=Boundary(offset=nick))
         )
-    )
-    bottom = next(
-        fragment
-        for fragment in fragments
-        if fragment.precursor_strand is Strand.BOTTOM
-        and fragment.precursor_span
-        == Span(
-            start=Boundary(offset=0),
-            end=Boundary(offset=terminus),
+        downstream = next(
+            fragment
+            for fragment in fragments
+            if fragment.precursor_strand is Strand.BOTTOM
+            and fragment.precursor_span
+            == Span(start=Boundary(offset=0), end=Boundary(offset=terminus))
         )
-    )
+        route = StrandExposureRoute.BOTTOM_ACTIVE_AFTER_TOP_NICK
+        active_span = Span(start=Boundary(offset=0), end=Boundary(offset=terminus))
+        active_lineage = range(terminus - 1, -1, -1)
+    else:
+        upstream = next(
+            fragment
+            for fragment in fragments
+            if fragment.precursor_strand is Strand.BOTTOM
+            and fragment.precursor_span
+            == Span(start=Boundary(offset=nick), end=Boundary(offset=len(source)))
+        )
+        downstream = next(
+            fragment
+            for fragment in fragments
+            if fragment.precursor_strand is Strand.TOP
+            and fragment.precursor_span
+            == Span(start=Boundary(offset=terminus), end=Boundary(offset=len(source)))
+        )
+        route = StrandExposureRoute.TOP_ACTIVE_AFTER_BOTTOM_NICK
+        active_span = Span(start=Boundary(offset=terminus), end=Boundary(offset=len(source)))
+        active_lineage = range(terminus, len(source))
     projection = ReleasedStrandState(
-        route=StrandExposureRoute.BOTTOM_ACTIVE_AFTER_TOP_NICK,
+        route=route,
         precursor_top_strand=source,
-        active_strand=Strand.BOTTOM,
-        retained_partner_strand=Strand.TOP,
-        nick=NickEvent(boundary=Boundary(offset=nick), strand=Strand.TOP),
+        active_strand=downstream.precursor_strand,
+        retained_partner_strand=upstream.precursor_strand,
+        nick=NickEvent(boundary=Boundary(offset=nick), strand=target.nick_strand),
         release_cut=release_cut,
-        active_product_precursor_span=Span(
-            start=Boundary(offset=0),
-            end=Boundary(offset=terminus),
+        active_product_precursor_span=active_span,
+        active_nick_boundary=Boundary(
+            offset=(terminus - nick if target.nick_strand is Strand.TOP else nick - terminus)
         ),
-        active_nick_boundary=Boundary(offset=terminus - nick),
-        active_product_sequence=bottom.sequence,
-        retained_partner_sequence=top.sequence,
+        active_product_sequence=downstream.sequence,
+        retained_partner_sequence=upstream.sequence,
         active_product_lineage=tuple(
             BaseLineage(
                 active_index=index,
-                precursor_strand=Strand.BOTTOM,
+                precursor_strand=downstream.precursor_strand,
                 precursor_index=precursor_index,
             )
-            for index, precursor_index in enumerate(range(terminus - 1, -1, -1))
+            for index, precursor_index in enumerate(active_lineage)
         ),
     )
 
-    if top.three_prime_end is not EndChemistry.HYDROXYL:
+    if upstream.three_prime_end is not EndChemistry.HYDROXYL:
         raise ValueError("Foldback ligation requires a three-prime hydroxyl.")
-    if bottom.five_prime_end is not EndChemistry.PHOSPHATE:
+    if downstream.five_prime_end is not EndChemistry.PHOSPHATE:
         raise ValueError("Foldback ligation requires a five-prime phosphate.")
     bond = CovalentBond(
-        upstream_strand_id=top.fragment_id,
+        upstream_strand_id=upstream.fragment_id,
         upstream_end=StrandEnd.THREE_PRIME,
-        downstream_strand_id=bottom.fragment_id,
+        downstream_strand_id=downstream.fragment_id,
         downstream_end=StrandEnd.FIVE_PRIME,
     )
     ligated = MolecularStrand(
         strand_id="ligated-foldback-strand",
-        sequence=top.sequence + bottom.sequence,
-        five_prime_end=top.five_prime_end,
-        three_prime_end=bottom.three_prime_end,
-        lineage=_reindex_lineage((top.lineage, bottom.lineage)),
+        sequence=upstream.sequence + downstream.sequence,
+        five_prime_end=upstream.five_prime_end,
+        three_prime_end=downstream.three_prime_end,
+        lineage=_reindex_lineage((upstream.lineage, downstream.lineage)),
     )
-    foldback = ligated.sequence[junction : junction + foldback_nt]
+    foldback = ligated.sequence[payload_nt : payload_nt + foldback_nt]
     retained_arm = foldback[:arm_nt]
     loop_start = arm_nt
     loop_end = loop_start + target.loop_length_nt
@@ -238,13 +267,13 @@ def replay_foldback_route(
     pairs = tuple(
         StrandPairObservation(
             left_strand_id=(
-                top.fragment_id
+                upstream.fragment_id
                 if index < target.nick_offset_within_foldback_nt
-                else bottom.fragment_id
+                else downstream.fragment_id
             ),
-            right_strand_id=bottom.fragment_id,
+            right_strand_id=downstream.fragment_id,
             left_index=(
-                junction + index
+                payload_nt + index
                 if index < target.nick_offset_within_foldback_nt
                 else index - target.nick_offset_within_foldback_nt
             ),
@@ -266,7 +295,7 @@ def replay_foldback_route(
         bindings=enzyme_bindings,
         fragments=fragments,
     )
-    retained_ids = {top.fragment_id, bottom.fragment_id}
+    retained_ids = {upstream.fragment_id, downstream.fragment_id}
     return FoldbackRouteReplay(
         source_top_strand=source_top,
         source_bottom_strand=source_bottom,

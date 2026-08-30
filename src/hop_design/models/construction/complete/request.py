@@ -25,7 +25,9 @@ from hop_design.models.construction.payload import (
     RouteFamily,
     _content_id,
 )
-from hop_design.models.molecular_state import EndChemistry
+from hop_design.models.enzymes import EnzymeClass, EnzymeProvisioningPolicy, EnzymeRole
+from hop_design.models.molecular_state import EndChemistry, StrandEnd
+from hop_design.models.physical import SiteOrientation
 from hop_design.models.plan import HopPlan
 from hop_design.models.sequence import normalize_dna_sequence
 from hop_design.models.spec import DesignSpec
@@ -59,6 +61,81 @@ class ExactConstructionMaterial(HopModel):
         return normalize_dna_sequence(value, allow_degenerate=False)
 
 
+class PcrPrimer(HopModel):
+    """One exact oligo with a terminal three-prime annealing segment."""
+
+    oligo: ExactConstructionMaterial
+    annealing_length_nt: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_annealing_length(self) -> PcrPrimer:
+        if self.annealing_length_nt > len(self.oligo.sequence_5prime):
+            raise ValueError("Primer annealing length cannot exceed the exact oligo length.")
+        return self
+
+    @property
+    def annealing_sequence(self) -> str:
+        """Return the terminal three-prime segment that binds the template."""
+        return self.oligo.sequence_5prime[-self.annealing_length_nt :]
+
+    @property
+    def five_prime_handle(self) -> str:
+        """Return exact primer sequence outside the terminal annealing segment."""
+        return self.oligo.sequence_5prime[: -self.annealing_length_nt]
+
+
+class ReleaseSideRequirement(HopModel):
+    """One oriented cohesive-end requirement at a clone endpoint side."""
+
+    orientation: SiteOrientation
+    cohesive_end_sequence: str
+    overhang_end: StrandEnd
+
+    @field_validator("cohesive_end_sequence", mode="before")
+    @classmethod
+    def normalize_cohesive_end(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Cohesive-end sequence must be a DNA string.")
+        return normalize_dna_sequence(value, allow_degenerate=False)
+
+
+class TypeIisReleaseRequest(HopModel):
+    """Caller-provisioned bounded search for one oriented Type IIS site pair."""
+
+    enzyme_provisioning: EnzymeProvisioningPolicy
+    left: ReleaseSideRequirement
+    right: ReleaseSideRequirement
+    max_site_pairs: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_release_policy(self) -> TypeIisReleaseRequest:
+        candidates = tuple(
+            enzyme
+            for enzyme in self.enzyme_provisioning.catalog.enzymes
+            if self.enzyme_provisioning.permits(
+                enzyme.enzyme_id,
+                role=EnzymeRole.END_GENERATION,
+            )
+        )
+        if len(candidates) != 1:
+            raise ValueError(
+                "Type IIS release requires exactly one provisioned end-generation enzyme."
+            )
+        if any(enzyme.enzyme_class is not EnzymeClass.DUPLEX_RESTRICTION for enzyme in candidates):
+            raise ValueError("Type IIS release requires duplex restriction enzymes.")
+        enzyme = candidates[0]
+        complement_offset = enzyme.cut_offset_complement_strand
+        if complement_offset is None or not (
+            (
+                enzyme.cut_offset_reference_strand >= enzyme.recognition_length
+                and complement_offset >= enzyme.recognition_length
+            )
+            or (enzyme.cut_offset_reference_strand <= 0 and complement_offset <= 0)
+        ):
+            raise ValueError("A Type IIS release enzyme must cleave outside its recognition site.")
+        return self
+
+
 def derived_source_material_id(sequence: str, *, complementary: bool) -> str:
     """Return the deterministic identity label for one route-derived source strand."""
     normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
@@ -77,8 +154,8 @@ class LinearSourceMaterializationSpec(HopModel):
     source_complement_five_prime_end: EndChemistry
     source_complement_three_prime_end: EndChemistry
     adapter: ExactConstructionMaterial | None = None
-    forward_primer: ExactConstructionMaterial | None = None
-    reverse_primer: ExactConstructionMaterial | None = None
+    forward_primer: PcrPrimer | None = None
+    reverse_primer: PcrPrimer | None = None
 
     @model_validator(mode="after")
     def validate_unique_auxiliaries(self) -> LinearSourceMaterializationSpec:
@@ -86,8 +163,8 @@ class LinearSourceMaterializationSpec(HopModel):
             item
             for item in (
                 self.adapter,
-                self.forward_primer,
-                self.reverse_primer,
+                None if self.forward_primer is None else self.forward_primer.oligo,
+                None if self.reverse_primer is None else self.reverse_primer.oligo,
             )
             if item is not None
         )
@@ -177,8 +254,8 @@ class CompositionEnumerationPolicy(HopModel):
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v2"] = Field(
-        default="hop.construction-discovery-request/v2", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v3"] = Field(
+        default="hop.construction-discovery-request/v3", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily
@@ -190,6 +267,7 @@ class ConstructionDiscoveryRequest(HopModel):
         pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$",
     )
     materialization: LinearSourceMaterializationSpec
+    release: TypeIisReleaseRequest | None = None
     design: DesignAuthorityReference
     whole_route_constraints: WholeRouteConstraints
     enumeration: CompositionEnumerationPolicy
@@ -207,13 +285,18 @@ class ConstructionDiscoveryRequest(HopModel):
             self.materialization.reverse_primer,
         )
         if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-            if any(item is not None for item in auxiliaries):
+            if any(item is not None for item in auxiliaries) or self.release is not None:
                 raise ValueError("A direct endpoint must omit adapter and PCR primers.")
         elif self.basal_result_id is None or any(item is None for item in auxiliaries):
             raise ValueError(
                 "PCR-bearing endpoints require an exact adapter and both primers "
                 "plus basal authority."
             )
+        elif self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+            if self.release is not None:
+                raise ValueError("A hairpin PCR endpoint must omit clone release.")
+        elif self.release is None:
+            raise ValueError("A clone-ready endpoint requires exact Type IIS release.")
         return self
 
     @property
@@ -227,6 +310,7 @@ class ConstructionDiscoveryRequest(HopModel):
             "foldback_result_id": self.foldback_result_id,
             "basal_result_id": self.basal_result_id,
             "materialization": self.materialization.model_dump(mode="json"),
+            "release": None if self.release is None else self.release.model_dump(mode="json"),
             "design": self.design.model_dump(mode="json"),
             "whole_route_constraints": self.whole_route_constraints.model_dump(mode="json"),
         }
@@ -246,6 +330,9 @@ __all__ = [
     "ExactConstructionMaterial",
     "LinearSourceMaterializationSpec",
     "MaterialOrigin",
+    "PcrPrimer",
+    "ReleaseSideRequirement",
+    "TypeIisReleaseRequest",
     "WholeRouteConstraints",
     "derived_source_material_id",
 ]

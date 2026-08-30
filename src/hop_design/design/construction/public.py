@@ -38,6 +38,8 @@ from hop_design.export.construction import (
     render_projection_svg,
 )
 from hop_design.export.publication import publish_directory_create_only
+from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
+from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.projections import (
     CompleteConstructionSummaryProjection,
     CompleteConstructionTrajectoryProjection,
@@ -46,6 +48,11 @@ from hop_design.models.construction.projections import (
 
 from .complete.bundle import ConstructionCompilation, VerifiedConstructionBundle
 from .complete.discovery import VerifiedConstructionSpaceResult
+from .local_public import (
+    LocalNeighborhoodDiscovery,
+    discover_local_neighborhood,
+    load_verified_local_neighborhood,
+)
 from .source_partition import (
     SourcePartitionDiscovery,
     discover_source_partition,
@@ -156,6 +163,31 @@ def _source(
     return receipt._verified_source()
 
 
+def _foldback_source(
+    receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
+) -> FoldbackNeighborhoodDiscoveryResult:
+    if isinstance(receipt, LocalNeighborhoodDiscovery):
+        result = receipt._verified_source()
+        if not isinstance(result, FoldbackNeighborhoodDiscoveryResult):
+            raise ValueError("Local-neighborhood receipt contains basal evidence, not foldback.")
+        return result
+    return _source(receipt).foldback.result
+
+
+def _basal_source(
+    receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
+) -> BasalNeighborhoodDiscoveryResult:
+    if isinstance(receipt, LocalNeighborhoodDiscovery):
+        result = receipt._verified_source()
+        if not isinstance(result, BasalNeighborhoodDiscoveryResult):
+            raise ValueError("Local-neighborhood receipt contains foldback evidence, not basal.")
+        return result
+    basal = _source(receipt).basal
+    if basal is None:
+        raise ValueError("This construction does not contain a basal authority.")
+    return basal.result
+
+
 def _packet(
     projection: (
         LocalScientificProjection
@@ -205,20 +237,17 @@ def load_verified_construction_bundle(
 
 
 def project_foldback_feasibility(
-    receipt: ConstructionCompilation | VerifiedConstructionBundle,
+    receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
 ) -> ConstructionProjection:
     """Project every exact foldback realization from one verified construction."""
-    return _packet(_project_foldback_feasibility(_source(receipt).foldback.result))
+    return _packet(_project_foldback_feasibility(_foldback_source(receipt)))
 
 
 def project_basal_feasibility(
-    receipt: ConstructionCompilation | VerifiedConstructionBundle,
+    receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
 ) -> ConstructionProjection:
     """Project every exact basal realization from one verified construction."""
-    basal = _source(receipt).basal
-    if basal is None:
-        raise ValueError("This construction does not contain a basal authority.")
-    return _packet(_project_basal_feasibility(basal.result))
+    return _packet(_project_basal_feasibility(_basal_source(receipt)))
 
 
 def project_complete_construction_summary(
@@ -243,29 +272,29 @@ def project_construction_trajectory(
 
 
 def project_relaxation_frontier(
-    receipt: ConstructionCompilation | VerifiedConstructionBundle,
+    receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
     *,
     family: Literal["foldback", "basal"],
 ) -> ConstructionProjection:
     """Project one explicitly selected local relaxation family."""
-    source = _source(receipt)
     if family == "foldback":
-        return _packet(_project_relaxation_frontier(source.foldback.result))
+        return _packet(_project_relaxation_frontier(_foldback_source(receipt)))
     if family == "basal":
-        if source.basal is None:
-            raise ValueError("This construction does not contain a basal authority.")
-        return _packet(_project_relaxation_frontier(source.basal.result))
+        return _packet(_project_relaxation_frontier(_basal_source(receipt)))
     raise ValueError("Construction projection family must be foldback or basal.")
 
 
 __all__ = [
     "ConstructionCompilation",
     "ConstructionProjection",
+    "LocalNeighborhoodDiscovery",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compile_construction",
+    "discover_local_neighborhood",
     "discover_source_partition",
     "load_verified_construction_bundle",
+    "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",
     "project_complete_construction_summary",

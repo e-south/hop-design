@@ -22,6 +22,7 @@ from hop_design.models.construction import (
     LocalRealization,
     NeighborhoodDiscoveryResult,
     PayloadSourceMap,
+    SourceOrientation,
     validate_linear_source_map,
 )
 from hop_design.models.coordinates import Boundary
@@ -39,7 +40,7 @@ from hop_design.models.reactions import (
     ReactionProgram,
     ReactionStageAssessment,
 )
-from hop_design.models.sequence import iupac_bases, normalize_dna_sequence
+from hop_design.models.sequence import iupac_bases, normalize_dna_sequence, reverse_complement_iupac
 from hop_design.models.strand_state import ReleasedStrandState
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
@@ -118,12 +119,24 @@ class FoldbackLocalRealization(HopModel):
         digest = sha256_digest(canonical_json_bytes(content)).removeprefix("sha256:")
         if self.foldback_realization_id != f"hop:foldback-realization/{digest}@1":
             raise ValueError("Foldback realization identity must seal every molecular fact.")
-        validate_linear_source_map(self._payload_reference(), self.payload_source_map)
+        validate_linear_source_map(
+            self._payload_reference(),
+            self.payload_source_map,
+            allowed_orientations=(
+                SourceOrientation.FORWARD,
+                SourceOrientation.REVERSE_COMPLEMENT,
+            ),
+        )
         source_segment = self.payload_source_map.segments[0]
         mapped = self.source_reference_sequence[
             source_segment.source_span.start.offset : source_segment.source_span.end.offset
         ]
-        if mapped != self.payload_sequence:
+        expected_payload = (
+            mapped
+            if source_segment.orientation is SourceOrientation.FORWARD
+            else reverse_complement_iupac(mapped)
+        )
+        if expected_payload != self.payload_sequence:
             raise ValueError("Payload source mapping must replay the exact payload bytes.")
         if self.local_realization.local_sequence != self.source_reference_sequence:
             raise ValueError("Local realization sequence must equal the exact source reference.")
@@ -143,15 +156,21 @@ class FoldbackLocalRealization(HopModel):
             raise ValueError("A foldback realization cannot contain a rejected reaction stage.")
         if self.foldback_nick.strand is self.terminus.strand:
             raise ValueError("Foldback nick and terminus must control different strands.")
-        if self.foldback_nick.strand is not Strand.TOP or self.terminus.strand is not Strand.BOTTOM:
-            raise ValueError("The linear foldback route uses a reference nick and complement end.")
+        if self.terminus.strand is not (
+            Strand.BOTTOM if self.foldback_nick.strand is Strand.TOP else Strand.TOP
+        ):
+            raise ValueError("Foldback nick and terminus strands must be physically opposite.")
         expected_stages = (
             1 if self.program_kind is FoldbackCleavageProgramKind.SINGLE_CLEAVAGE else 2
         )
         if len(self.reaction_program.stages) != expected_stages:
             raise ValueError("Foldback cleavage-program kind must match its exact stage count.")
         expected_requirements = (
-            (FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE,)
+            (
+                FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE
+                if self.foldback_nick.strand is Strand.TOP
+                else FoldbackMaterialRequirement.SOURCE_TOP_5PRIME_PHOSPHATE,
+            )
             if self.program_kind is FoldbackCleavageProgramKind.SINGLE_CLEAVAGE
             else ()
         )
@@ -213,8 +232,8 @@ class FoldbackLocalRealization(HopModel):
 class FoldbackNeighborhoodDiscoveryResult(HopModel):
     """Shared neighborhood authority plus lossless foldback-family evidence."""
 
-    schema_id: Literal["hop.foldback-neighborhood-result/v2"] = Field(
-        default="hop.foldback-neighborhood-result/v2", alias="schema"
+    schema_id: Literal["hop.foldback-neighborhood-result/v3"] = Field(
+        default="hop.foldback-neighborhood-result/v3", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     neighborhood: NeighborhoodDiscoveryResult

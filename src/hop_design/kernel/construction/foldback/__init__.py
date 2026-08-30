@@ -12,7 +12,6 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections.abc import Iterator
-from dataclasses import dataclass
 from itertools import product
 
 from hop_design.models.construction import FoldbackTarget
@@ -24,94 +23,16 @@ from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import (
     CharacterizedEnzyme,
     EnzymeClass,
-    EnzymeProvisioningPolicy,
     EnzymeRole,
-    RecognitionOrientationSemantics,
 )
 from hop_design.models.physical import SiteOrientation, Strand
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 
+from .orientation import mirror_solution, opposite_orientation
+from .programs import FoldbackProgramCandidate, iter_foldback_programs
+from .solutions import FoldbackPlacementFailure, FoldbackSequenceSolution
+
 _BASES = ("A", "C", "G", "T")
-
-
-@dataclass(frozen=True, slots=True)
-class FoldbackProgramCandidate:
-    """One finite enzyme and orientation program before sequence placement."""
-
-    kind: FoldbackCleavageProgramKind
-    nick_enzyme: CharacterizedEnzyme
-    terminus_enzyme: CharacterizedEnzyme | None
-    terminus_orientation: SiteOrientation | None
-
-
-@dataclass(frozen=True, slots=True)
-class FoldbackSequenceSolution:
-    """One exact source and its intended enzyme bindings."""
-
-    source_reference_sequence: str
-    retained_sequence: str
-    loop_sequence: str
-    foldback_arm_sequence: str
-    junction_boundary: int
-    terminus_boundary: int
-    enzyme_bindings: tuple[FoldbackEnzymeBinding, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class FoldbackPlacementFailure:
-    """One stable reason a concrete program cannot realize a geometry."""
-
-    code: str
-
-
-def iter_foldback_programs(
-    policy: EnzymeProvisioningPolicy,
-) -> tuple[FoldbackProgramCandidate, ...]:
-    """Enumerate single and sequential programs in policy-neutral canonical order."""
-    nickases = tuple(
-        sorted(
-            (
-                enzyme
-                for enzyme in policy.catalog.enzymes
-                if enzyme.enzyme_class is EnzymeClass.NICKASE
-                and policy.permits(enzyme.enzyme_id, role=EnzymeRole.FOLDBACK_NICK)
-            ),
-            key=lambda enzyme: enzyme.enzyme_id,
-        )
-    )
-    terminus_options: list[tuple[CharacterizedEnzyme, SiteOrientation]] = []
-    for enzyme in sorted(policy.catalog.enzymes, key=lambda item: item.enzyme_id):
-        if not policy.permits(enzyme.enzyme_id, role=EnzymeRole.TERMINUS_DEFINITION):
-            continue
-        if enzyme.enzyme_class is not EnzymeClass.DUPLEX_RESTRICTION:
-            continue
-        terminus_options.append((enzyme, SiteOrientation.FORWARD))
-        if (
-            enzyme.recognition_orientation_semantics
-            is RecognitionOrientationSemantics.BOTH_ORIENTATIONS
-        ):
-            terminus_options.append((enzyme, SiteOrientation.REVERSE))
-
-    programs = [
-        FoldbackProgramCandidate(
-            kind=FoldbackCleavageProgramKind.SINGLE_CLEAVAGE,
-            nick_enzyme=nickase,
-            terminus_enzyme=None,
-            terminus_orientation=None,
-        )
-        for nickase in nickases
-    ]
-    programs.extend(
-        FoldbackProgramCandidate(
-            kind=FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK,
-            nick_enzyme=nickase,
-            terminus_enzyme=terminus,
-            terminus_orientation=orientation,
-        )
-        for nickase in nickases
-        for terminus, orientation in terminus_options
-    )
-    return tuple(programs)
 
 
 def _oriented_pattern(enzyme: CharacterizedEnzyme, orientation: SiteOrientation) -> str:
@@ -202,6 +123,38 @@ def iter_foldback_program_solutions(
     program: FoldbackProgramCandidate,
 ) -> Iterator[FoldbackSequenceSolution | FoldbackPlacementFailure]:
     """Enumerate every exact local source for one target and enzyme program."""
+    if not isinstance(target.nick_strand, Strand):
+        raise ValueError("Foldback sequence discovery requires one exact nick strand.")
+    if target.nick_strand is Strand.BOTTOM:
+        if program.nick_orientation is not SiteOrientation.REVERSE:
+            yield FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
+            return
+        mirrored_program = FoldbackProgramCandidate(
+            kind=program.kind,
+            nick_enzyme=program.nick_enzyme,
+            nick_orientation=SiteOrientation.FORWARD,
+            terminus_enzyme=program.terminus_enzyme,
+            terminus_orientation=(
+                opposite_orientation(program.terminus_orientation)
+                if program.terminus_orientation is not None
+                else None
+            ),
+        )
+        mirrored_target = target.model_copy(update={"nick_strand": Strand.TOP})
+        for solution in iter_foldback_program_solutions(
+            payload_sequence=payload_sequence,
+            target=mirrored_target,
+            program=mirrored_program,
+        ):
+            yield (
+                solution
+                if isinstance(solution, FoldbackPlacementFailure)
+                else mirror_solution(solution)
+            )
+        return
+    if program.nick_orientation is not SiteOrientation.FORWARD:
+        yield FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
+        return
     payload_nt = len(payload_sequence)
     arm_nt = target.annealing_arm_length_bp
     junction = payload_nt
@@ -212,7 +165,7 @@ def iter_foldback_program_solutions(
     nick_binding = _place_binding(
         program.nick_enzyme,
         role=EnzymeRole.FOLDBACK_NICK,
-        orientation=SiteOrientation.FORWARD,
+        orientation=program.nick_orientation,
         controlled_strand=Strand.TOP,
         controlled_boundary=nick,
     )

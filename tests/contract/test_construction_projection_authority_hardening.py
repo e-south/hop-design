@@ -50,35 +50,22 @@ from tests.contract.test_foldback_construction_discovery import (
 
 
 @pytest.mark.parametrize(
-    ("source_endpoint", "changed_endpoint", "message"),
+    "changed_endpoint",
     [
-        (
-            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            ConstructionEndpoint.SSDNA_HAIRPIN,
-            "Direct basal projections",
-        ),
-        (
-            ConstructionEndpoint.CLONE_READY_DUPLEX,
-            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            "PCR basal projections",
-        ),
-        (
-            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            ConstructionEndpoint.CLONE_READY_DUPLEX,
-            "Clone-ready basal projections",
-        ),
+        ConstructionEndpoint.SSDNA_HAIRPIN,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
     ],
 )
 def test_basal_projection_rejects_endpoint_evidence_leakage(
-    source_endpoint: ConstructionEndpoint,
     changed_endpoint: ConstructionEndpoint,
-    message: str,
 ) -> None:
-    source = project_basal_feasibility(discover_basal_neighborhood(basal_request(source_endpoint)))
+    source = project_basal_feasibility(
+        discover_basal_neighborhood(basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
+    )
     content = source.model_dump(by_alias=True)
     content["endpoint"] = changed_endpoint
 
-    with pytest.raises(ValidationError, match=message):
+    with pytest.raises(ValidationError, match="exact hairpin PCR intermediate"):
         BasalFeasibilityProjection.model_validate(content)
 
 
@@ -173,30 +160,27 @@ def test_basal_endpoint_projection_requires_exact_complement_and_endpoint_minima
 
     direct = pcr.model_dump(mode="python")
     direct["endpoint"] = ConstructionEndpoint.SSDNA_HAIRPIN
-    with pytest.raises(ValidationError, match="must not contain adapter or PCR evidence"):
+    with pytest.raises(ValidationError):
         BasalEndpointProjection.model_validate(direct)
 
 
 def test_material_partition_requires_exact_endpoint_state_and_singular_partition() -> None:
+    record = discover_basal_neighborhood(
+        basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
+    ).realizations[0]
     retained = BasalMaterialRecord(
         material_id="retained-product",
         role=BasalMaterialRole.RETAINED,
-        sequence_5prime="ACTG",
+        sequence_5prime=record.hairpin_pcr_duplex.top_strand.sequence,
     )
     duplicate = retained.model_copy(update={"material_id": "retained-copy"})
     with pytest.raises(ValueError, match="must be singular"):
         assert_material_partition(
-            endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-            source_precursor_sequence="ACTG",
-            pcr_duplex=None,
-            restriction_product=None,
+            pcr_duplex=record.hairpin_pcr_duplex,
             materials=(retained, duplicate),
         )
-    with pytest.raises(ValueError, match="requires its exact duplex state"):
+    with pytest.raises(ValueError, match="must replay"):
         assert_material_partition(
-            endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            source_precursor_sequence="ACTG",
-            pcr_duplex=None,
-            restriction_product=None,
-            materials=(retained,),
+            pcr_duplex=record.hairpin_pcr_duplex,
+            materials=(retained.model_copy(update={"sequence_5prime": "ACTG"}),),
         )

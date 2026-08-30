@@ -20,7 +20,6 @@ from hop_design.kernel.construction.basal import (
 )
 from hop_design.models.construction import (
     BasalTarget,
-    ConstructionEndpoint,
     LocalNeighborhoodRequest,
     LocalRealization,
     PayloadSourceMap,
@@ -40,13 +39,14 @@ from hop_design.models.construction.basal import (
     BasalMaterialRole,
     BasalRealizationRecord,
 )
+from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.coordinates import Span
-from hop_design.models.enzymes import EnzymeRole, characterized_enzyme_digest
+from hop_design.models.enzymes import characterized_enzyme_digest
 from hop_design.models.junction import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
 
 from .reactions import _nick_program, _nicked_duplex
-from .states import _end_program, _pcr_states, _restriction_product
+from .states import _pcr_states
 
 
 def _failure_code(codes: tuple[str, ...]) -> str:
@@ -68,9 +68,13 @@ def _realization(
     solution: BasalSequenceSolution,
     relaxation_radius: int,
 ) -> BasalRealizationRecord | str:
+    if request.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        raise ValueError("Basal realization requires the hairpin PCR duplex endpoint.")
     if not isinstance(target.nick_strand, Strand):
         raise ValueError("Basal realizations require one exact nick strand.")
-    required_operations = 3 if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX else 1
+    if solution.pairing_profile is None:
+        raise ValueError("Basal realizations require one exact pairing profile.")
+    required_operations = 1
     if (
         request.enzyme_provisioning.max_operations is not None
         and required_operations > request.enzyme_provisioning.max_operations
@@ -84,42 +88,16 @@ def _realization(
         return _failure_code(tuple(item.code for item in nick_assessment.report.diagnostics))
     nicked = _nicked_duplex(solution, target)
     annealed, adapter_ligated, duplex = _pcr_states(solution)
-    restriction = None
+    if annealed is None or adapter_ligated is None or duplex is None:
+        raise RuntimeError("Basal discovery must materialize its exact PCR intermediate.")
     programs = [nick_program]
     assessments = list(nick_assessment.stage_assessments)
-    if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
-        if duplex is None:
-            return "pcr-state-unavailable"
-        try:
-            restriction = _restriction_product(solution, duplex)
-        except ValueError as error:
-            return str(error)
-        end_program = _end_program(duplex, restriction, solution, route)
-        end_assessment = assess_reaction_program(
-            program=end_program, policy=request.enzyme_provisioning
-        )
-        if end_assessment.report.has_errors:
-            return _failure_code(tuple(item.code for item in end_assessment.report.diagnostics))
-        programs.append(end_program)
-        assessments.extend(end_assessment.stage_assessments)
-    cohesive_ends = restriction.cohesive_ends if restriction is not None else ()
-    requested = (
-        set(target.end_generation.requested_overhangs)
-        if target.end_generation is not None
-        else set()
-    )
-    if requested and any(end.sequence not in requested for end in cohesive_ends):
-        return "requested-overhang-unavailable"
-    pcr_reference = duplex.top_strand.sequence if duplex is not None else None
+    pcr_reference = duplex.top_strand.sequence
     projection = BasalEndpointProjection(
         endpoint=request.endpoint,
         pairing_profile=solution.pairing_profile,
         pcr_reference_sequence=pcr_reference,
-        pcr_complement_sequence=duplex.bottom_strand.sequence if duplex is not None else None,
-        cohesive_ends=cohesive_ends,
-        asymmetric_end_encoding=len(cohesive_ends) == 2
-        and (cohesive_ends[0].sequence, cohesive_ends[0].overhang_end)
-        != (cohesive_ends[1].sequence, cohesive_ends[1].overhang_end),
+        pcr_complement_sequence=duplex.bottom_strand.sequence,
     )
     stage_ids = tuple(stage.stage_id for program in programs for stage in program.stages)
     local = LocalRealization.create(
@@ -149,34 +127,15 @@ def _realization(
     )
     if operative is None:
         return "basal-nick-cut-unavailable"
-    enzymes = (route.nick_enzyme,) + ((route.end_enzyme,) if route.end_enzyme is not None else ())
+    enzymes = (route.nick_enzyme,)
     definitions = tuple(
         BasalEnzymeDefinition(
             enzyme_id=enzyme.enzyme_id, digest=characterized_enzyme_digest(enzyme), enzyme=enzyme
         )
         for enzyme in enzymes
     )
-    if restriction is not None:
-        retained_sequence = restriction.primary_strand.sequence
-        end_bindings = sorted(
-            (
-                binding
-                for binding in solution.enzyme_bindings
-                if binding.role is EnzymeRole.END_GENERATION
-            ),
-            key=lambda item: item.recognition_span.start.offset,
-        )
-        left_cut = end_bindings[0].reference_cut
-        right_cut = end_bindings[1].reference_cut
-        if left_cut is None or right_cut is None or pcr_reference is None:
-            return "end-generation-cut-model"
-        transient_sequence = pcr_reference[: left_cut.offset] + pcr_reference[right_cut.offset :]
-    elif pcr_reference is not None:
-        retained_sequence = pcr_reference
-        transient_sequence = ""
-    else:
-        retained_sequence = solution.source_precursor_sequence
-        transient_sequence = ""
+    retained_sequence = pcr_reference
+    transient_sequence = ""
     materials = [
         BasalMaterialRecord(
             material_id="retained-product",
@@ -193,8 +152,6 @@ def _realization(
             )
         )
     if solution.adapter_sequence:
-        if pcr_reference is None:
-            raise RuntimeError("Adapter-bearing realization lost its PCR reference.")
         materials.append(
             BasalMaterialRecord(
                 material_id="ligation-adapter",
@@ -208,7 +165,7 @@ def _realization(
     }
     changed = tuple(
         name
-        for name in ("nick_offset_nt", "end_generation.type_iis_cut_offset_nt")
+        for name in ("nick_offset_nt",)
         if _coordinate_changed(cast(BasalTarget, request.target), target, name)
     )
     return BasalRealizationRecord.create(
@@ -232,7 +189,6 @@ def _realization(
         adapter_annealed_complex=annealed,
         adapter_ligated_product=adapter_ligated,
         hairpin_pcr_duplex=duplex,
-        restriction_digest_product=restriction,
         materials=tuple(materials),
         material_accounting=BasalMaterialAccounting(
             retained_nt=totals[BasalMaterialRole.RETAINED],

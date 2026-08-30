@@ -12,9 +12,11 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from hop_design.models.construction.foldback import FoldbackLocalRealization
+from hop_design.models.construction.payload import SourceOrientation
 from hop_design.models.molecular_state import MolecularStrand
 from hop_design.models.reactions import ReactionProgram
 
+from ..evaluation_inputs import replay_linear_source_embedding
 from ..request import ExactConstructionMaterial
 from ..route_lineage import derive_post_cleavage_strands
 
@@ -28,11 +30,18 @@ def pcr_cleaved_strands(
     source_complement: ExactConstructionMaterial,
 ) -> tuple[MolecularStrand, ...]:
     """Lift the exact enzyme product into material-coordinate strands."""
+    prefix, _, embedding = replay_linear_source_embedding(
+        foldback=foldback,
+        source_sequence=source.sequence_5prime,
+        complement_sequence=source_complement.sequence_5prime,
+    )
+    if len(prefix) != prefix_length:
+        raise ValueError("PCR prefix length must equal the exact source embedding.")
     return derive_post_cleavage_strands(
         reaction.states[-1].molecules,
         namespace="pcr-enzyme-product",
         foldback=foldback,
-        prefix_length=prefix_length,
+        embedding=embedding,
         source=source,
         source_complement=source_complement,
     )
@@ -47,42 +56,43 @@ def select_pcr_fragments(
     return_arm: str,
 ) -> tuple[MolecularStrand, MolecularStrand]:
     """Select exact source and return-arm-excluded complement fragment identities."""
-    released = next(
-        (item for item in molecules if item.strand_id.endswith("-pcr-bottom-return-arm-top")),
-        None,
+    orientation = foldback.payload_source_map.segments[0].orientation
+    released_suffix = (
+        "-pcr-bottom-return-arm-top"
+        if orientation is SourceOrientation.FORWARD
+        else "-pcr-top-return-arm-top"
     )
+    released_material_id = (
+        source_complement_material_id
+        if orientation is SourceOrientation.FORWARD
+        else source_material_id
+    )
+    released = next((item for item in molecules if item.strand_id.endswith(released_suffix)), None)
     if (
         released is None
         or released.sequence != return_arm
-        or any(item.origin_id != source_complement_material_id for item in released.lineage)
+        or any(item.origin_id != released_material_id for item in released.lineage)
     ):
         raise ValueError("PCR basal nick must create the exact removable return-arm fragment.")
-    retained_local_id = foldback.annealing_pairs[0].right_strand_id
-    retained = next(
-        (
-            item
-            for item in molecules
-            if f"-{retained_local_id}-" in item.strand_id
-            and item.strand_id != released.strand_id
-            and all(lineage.origin_id == source_complement_material_id for lineage in item.lineage)
-        ),
-        None,
+    selected = tuple(
+        item
+        for item in molecules
+        if item.strand_id != released.strand_id
+        and not any(
+            item.strand_id.endswith(fragment_id + "-top")
+            for fragment_id in foldback.released_fragment_ids
+        )
     )
-    source = next(
-        (
-            item
-            for item in molecules
-            if all(lineage.origin_id == source_material_id for lineage in item.lineage)
-            and not any(
-                item.strand_id.endswith(fragment_id + "-top")
-                for fragment_id in foldback.released_fragment_ids
-            )
-        ),
-        None,
-    )
-    if source is None or retained is None:
+
+    def exact_ligation_strand(local_id: str) -> MolecularStrand | None:
+        matches = tuple(item for item in selected if f"-{local_id}-" in item.strand_id)
+        return matches[0] if len(matches) == 1 else None
+
+    upstream = exact_ligation_strand(foldback.ligation_bond.upstream_strand_id)
+    downstream = exact_ligation_strand(foldback.ligation_bond.downstream_strand_id)
+    if upstream is None or downstream is None or upstream.strand_id == downstream.strand_id:
         raise ValueError("PCR fragment selection must bind exact retained local identities.")
-    return source, retained
+    return upstream, downstream
 
 
 __all__ = ["pcr_cleaved_strands", "select_pcr_fragments"]

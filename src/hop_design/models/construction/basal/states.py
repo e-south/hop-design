@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
@@ -19,11 +20,8 @@ from hop_design.models.base import HopModel
 from hop_design.models.construction import (
     ConstructionEndpoint,
 )
-from hop_design.models.coordinates import Span
 from hop_design.models.molecular_state import (
-    CohesiveEnd,
     CovalentBond,
-    EndChemistry,
     MolecularStrand,
     StrandPairObservation,
 )
@@ -145,63 +143,12 @@ class BasalPcrCopyState(HopModel):
         return self
 
 
-class BasalRestrictionProduct(HopModel):
-    """Exact clone-ready product derived from two characterized bindings."""
-
-    binding_ids: tuple[str, str]
-    primary_parent_span: Span
-    complementary_parent_span: Span
-    primary_strand: MolecularStrand
-    complementary_strand: MolecularStrand
-    cohesive_ends: tuple[CohesiveEnd, CohesiveEnd]
-
-    @model_validator(mode="after")
-    def validate_parent_spans(self) -> BasalRestrictionProduct:
-        if self.primary_parent_span.length.value != len(self.primary_strand.sequence):
-            raise ValueError("Primary restriction span must equal its exact strand length.")
-        if self.complementary_parent_span.length.value != len(self.complementary_strand.sequence):
-            raise ValueError("Complementary restriction span must equal its exact strand length.")
-        return self
-
-    def assert_parent_replay(self, parent: BasalPcrCopyState) -> None:
-        """Replay both product strands against exact PCR-parent coordinates."""
-        for product, source, span in (
-            (self.primary_strand, parent.top_strand, self.primary_parent_span),
-            (
-                self.complementary_strand,
-                parent.bottom_strand,
-                self.complementary_parent_span,
-            ),
-        ):
-            start = span.start.offset
-            end = span.end.offset
-            expected_lineage = tuple(
-                item.model_copy(update={"product_index": index})
-                for index, item in enumerate(source.lineage[start:end])
-            )
-            if (
-                start >= end
-                or end > len(source.sequence)
-                or product.sequence != source.sequence[start:end]
-                or product.lineage != expected_lineage
-                or product.five_prime_end is not EndChemistry.PHOSPHATE
-                or product.three_prime_end is not EndChemistry.HYDROXYL
-            ):
-                raise ValueError(
-                    "Clone restriction product must replay its exact parent coordinates, "
-                    "sequence, lineage, and end chemistry."
-                )
-
-
 def assert_material_partition(
     *,
-    endpoint: ConstructionEndpoint,
-    source_precursor_sequence: str,
-    pcr_duplex: BasalPcrCopyState | None,
-    restriction_product: BasalRestrictionProduct | None,
+    pcr_duplex: BasalPcrCopyState,
     materials: tuple[BasalMaterialRecord, ...],
 ) -> None:
-    """Validate endpoint-relative retained and transient sequence accounting."""
+    """Validate retained and transient accounting for the basal PCR intermediate."""
     retained = tuple(
         item.sequence_5prime for item in materials if item.role is BasalMaterialRole.RETAINED
     )
@@ -210,74 +157,29 @@ def assert_material_partition(
     )
     if len(retained) != 1 or len(transient) > 1:
         raise ValueError("Endpoint retained and transient partition must be singular.")
-    expected_transient: tuple[str, ...]
-    if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-        expected_retained = source_precursor_sequence
-        expected_transient = ()
-    elif endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-        if pcr_duplex is None:
-            raise ValueError("PCR material accounting requires its exact duplex state.")
-        expected_retained = pcr_duplex.top_strand.sequence
-        expected_transient = ()
-    else:
-        if pcr_duplex is None or restriction_product is None:
-            raise ValueError("Clone material accounting requires exact digest states.")
-        sequence = pcr_duplex.top_strand.sequence
-        start = restriction_product.primary_parent_span.start.offset
-        end = restriction_product.primary_parent_span.end.offset
-        expected_retained = sequence[start:end]
-        outside = sequence[:start] + sequence[end:]
-        expected_transient = (outside,) if outside else ()
-    if retained != (expected_retained,) or transient != expected_transient:
+    if retained != (pcr_duplex.top_strand.sequence,) or transient:
         raise ValueError(
             "Endpoint retained and transient partition must replay nonoverlapping sequence."
         )
 
 
 class BasalEndpointProjection(HopModel):
-    """Exact molecular obligations established for one endpoint."""
+    """Exact molecular obligations established for the basal PCR intermediate."""
 
-    endpoint: ConstructionEndpoint
-    pairing_profile: BasalPairingProfile | None = None
-    pcr_reference_sequence: str | None = None
-    pcr_complement_sequence: str | None = None
-    cohesive_ends: tuple[CohesiveEnd, ...] = ()
-    asymmetric_end_encoding: bool = False
+    endpoint: Literal[ConstructionEndpoint.HAIRPIN_PCR_DUPLEX]
+    pairing_profile: BasalPairingProfile
+    pcr_reference_sequence: str
+    pcr_complement_sequence: str
 
     @field_validator("pcr_reference_sequence", "pcr_complement_sequence", mode="before")
     @classmethod
-    def normalize_optional_sequence(cls, value: object) -> str | None:
-        if value is None:
-            return None
+    def normalize_optional_sequence(cls, value: object) -> str:
         if not isinstance(value, str):
             raise ValueError("Basal endpoint sequences must be DNA strings.")
         return normalize_dna_sequence(value, allow_degenerate=False)
 
     @model_validator(mode="after")
     def validate_endpoint(self) -> BasalEndpointProjection:
-        if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-            if self.pairing_profile is not None or self.pcr_reference_sequence is not None:
-                raise ValueError("A direct endpoint must not contain adapter or PCR evidence.")
-        else:
-            if self.pairing_profile is None or self.pcr_reference_sequence is None:
-                raise ValueError("PCR-bearing endpoints require exact pairing and copied strands.")
-            if (
-                reverse_complement_iupac(self.pcr_reference_sequence)
-                != self.pcr_complement_sequence
-            ):
-                raise ValueError("The PCR complement must derive from the complete reference.")
-        if self.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
-            if tuple(end.product_end for end in self.cohesive_ends) != ("left", "right"):
-                raise ValueError("Clone-ready endpoints require left and right cohesive ends.")
-        elif self.cohesive_ends:
-            raise ValueError("Only clone-ready endpoints may contain cohesive ends.")
-        expected = len(self.cohesive_ends) == 2 and (
-            self.cohesive_ends[0].sequence,
-            self.cohesive_ends[0].overhang_end,
-        ) != (
-            self.cohesive_ends[1].sequence,
-            self.cohesive_ends[1].overhang_end,
-        )
-        if self.asymmetric_end_encoding is not expected:
-            raise ValueError("Asymmetric-end status must derive from exact cohesive ends.")
+        if reverse_complement_iupac(self.pcr_reference_sequence) != self.pcr_complement_sequence:
+            raise ValueError("The PCR complement must derive from the complete reference.")
         return self

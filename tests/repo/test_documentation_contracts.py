@@ -152,11 +152,13 @@ def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces()
 
 def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
     discovery = (REPO_ROOT / "docs" / "discovery" / "overview.md").read_text(encoding="utf-8")
+    mental_model = (REPO_ROOT / "docs" / "start" / "mental-model.md").read_text(encoding="utf-8")
     view_contracts = (REPO_ROOT / "docs" / "reference" / "view-contracts.md").read_text(
         encoding="utf-8"
     )
     reliability = (REPO_ROOT / "RELIABILITY.md").read_text(encoding="utf-8")
     normalized = " ".join(discovery.split())
+    normalized_mental_model = " ".join(mental_model.split())
     normalized_views = " ".join(view_contracts.split())
     normalized_reliability = " ".join(reliability.split())
 
@@ -171,12 +173,17 @@ def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
     assert "infeasible" in discovery
     assert "truncated" in discovery
     assert "does not establish physical construction" in normalized
+    assert (
+        "Foldback-local discovery treats the PCR-amplified material as a duplex"
+        in normalized_mental_model
+    )
+    assert "searches both exact nick strands by default" in normalized_mental_model
     assert "local construction projection" in normalized
     for schema_id in (
-        "hop.foldback-feasibility-landscape/v2",
-        "hop.basal-feasibility-landscape/v1",
-        "hop.foldback-relaxation-frontier/v2",
-        "hop.basal-relaxation-frontier/v1",
+        "hop.foldback-feasibility-landscape/v4",
+        "hop.basal-feasibility-landscape/v3",
+        "hop.foldback-relaxation-frontier/v3",
+        "hop.basal-relaxation-frontier/v2",
     ):
         assert schema_id in view_contracts
     assert "verified against its exact source result" in normalized_views

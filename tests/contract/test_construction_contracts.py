@@ -25,7 +25,6 @@ from hop_design.models.construction import (
     ConstructionExecution,
     ConstructionPreferences,
     DigitalDesignStatus,
-    EndGenerationRequest,
     EnumerationPolicy,
     FailureReasonCount,
     FinalPayloadReference,
@@ -384,17 +383,7 @@ def test_payload_pair_state_identity_is_canonical_and_respects_authored_domains(
     )
 
 
-def test_set_valued_request_inputs_have_canonical_ordering() -> None:
-    first_end_request = EndGenerationRequest(
-        type_iis_cut_offset_nt=4,
-        requested_overhangs=("GGCC", "AATT"),
-    )
-    second_end_request = EndGenerationRequest(
-        type_iis_cut_offset_nt=4,
-        requested_overhangs=("AATT", "GGCC"),
-    )
-    assert first_end_request == second_end_request
-
+def test_relaxation_coordinates_have_canonical_ordering() -> None:
     first_policy = RelaxationPolicy(
         mode=RelaxationMode.THROUGH_RADIUS,
         max_radius=1,
@@ -416,7 +405,7 @@ def test_set_valued_request_inputs_have_canonical_ordering() -> None:
     )
 
 
-def test_endpoint_specific_basal_targets_reject_leaked_requirements() -> None:
+def test_basal_targets_are_limited_to_the_hairpin_pcr_intermediate() -> None:
     pairing = (
         BasalPairingConstraint(
             profile_position=0,
@@ -433,20 +422,11 @@ def test_endpoint_specific_basal_targets_reject_leaked_requirements() -> None:
         "enumeration": EnumerationPolicy(max_search_nodes=10, max_realizations=10),
     }
 
-    LocalNeighborhoodRequest(
-        **base,
-        endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-        target=BasalTarget(nick_strand=Strand.TOP, nick_offset_nt=0),
-    )
-    with pytest.raises(ValidationError, match="must not request end generation"):
+    with pytest.raises(ValidationError, match="hairpin_pcr_duplex"):
         LocalNeighborhoodRequest(
             **base,
             endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-            target=BasalTarget(
-                nick_strand=Strand.TOP,
-                nick_offset_nt=0,
-                end_generation=EndGenerationRequest(type_iis_cut_offset_nt=4),
-            ),
+            target=BasalTarget(nick_strand=Strand.TOP, nick_offset_nt=0),
         )
     with pytest.raises(ValidationError, match="requires pairing constraints"):
         LocalNeighborhoodRequest(
@@ -455,21 +435,23 @@ def test_endpoint_specific_basal_targets_reject_leaked_requirements() -> None:
             target=BasalTarget(nick_strand=Strand.TOP, nick_offset_nt=0),
         )
 
-    clone_request = LocalNeighborhoodRequest(
+    pcr_request = LocalNeighborhoodRequest(
         **base,
-        endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+        endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         target=BasalTarget(
             nick_strand=Strand.TOP,
             nick_offset_nt=0,
             pairing_constraints=pairing,
             ligation_proximal_match_required=True,
-            end_generation=EndGenerationRequest(
-                type_iis_cut_offset_nt=4,
-                requested_overhangs=("AATT", "GGCC"),
-            ),
         ),
     )
-    assert clone_request.target.end_generation is not None
+    assert pcr_request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+    with pytest.raises(ValidationError, match="hairpin_pcr_duplex"):
+        LocalNeighborhoodRequest(
+            **base,
+            endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+            target=pcr_request.target,
+        )
 
 
 def test_local_request_family_must_match_target() -> None:
@@ -525,7 +507,7 @@ def test_relaxation_shells_are_exact_first_bounded_and_directionally_unbiased() 
         )
 
 
-def test_relaxation_supports_nested_endpoint_geometry_coordinates() -> None:
+def test_relaxation_supports_basal_local_geometry_coordinates() -> None:
     pairing = (
         BasalPairingConstraint(
             profile_position=0,
@@ -537,16 +519,15 @@ def test_relaxation_supports_nested_endpoint_geometry_coordinates() -> None:
         nick_offset_nt=0,
         pairing_constraints=pairing,
         ligation_proximal_match_required=True,
-        end_generation=EndGenerationRequest(type_iis_cut_offset_nt=4),
     )
     policy = RelaxationPolicy(
         mode=RelaxationMode.THROUGH_RADIUS,
         max_radius=1,
         coordinates=(
             RelaxationCoordinate(
-                name="end_generation.type_iis_cut_offset_nt",
-                minimum=3,
-                maximum=5,
+                name="nick_offset_nt",
+                minimum=-1,
+                maximum=1,
             ),
         ),
     )
@@ -554,7 +535,7 @@ def test_relaxation_supports_nested_endpoint_geometry_coordinates() -> None:
         payload=_payload(),
         family=LocalNeighborhoodFamily.BASAL,
         route_family=RouteFamily.LINEAR_SOURCE_V1,
-        endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+        endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         target=target,
         hard_constraints=ConstructionConstraints(),
         enzyme_provisioning=_enzyme_provisioning(),
@@ -565,10 +546,10 @@ def test_relaxation_supports_nested_endpoint_geometry_coordinates() -> None:
     shells = relaxation_shells(request.target, request.relaxation)
     assert [shell.radius for shell in shells] == [0, 1]
     assert {
-        geometry.end_generation.type_iis_cut_offset_nt
+        geometry.nick_offset_nt
         for geometry in shells[1].geometries
-        if isinstance(geometry, BasalTarget) and geometry.end_generation is not None
-    } == {3, 5}
+        if isinstance(geometry, BasalTarget)
+    } == {-1, 1}
 
 
 def test_relaxation_shell_accounting_partitions_every_examined_candidate() -> None:
@@ -888,7 +869,7 @@ def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> 
         **result_metadata,
     )
     assert infeasible.result_id.startswith("hop:neighborhood-result/")
-    assert infeasible.schema_id == "hop.neighborhood-discovery-result/v2"
+    assert infeasible.schema_id == "hop.neighborhood-discovery-result/v3"
     assert infeasible.provenance.enzyme_catalog_digest == request.enzyme_catalog_digest
     assert infeasible.payload_compatibility.exhaustive is True
     assert infeasible.claim_boundary.physical_construction == "not_recorded"

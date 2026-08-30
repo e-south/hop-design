@@ -29,7 +29,7 @@ substrate-space journey and does not select an experimentally preferred route.
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v2`; and
+   `hop.construction-source/v3`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
@@ -37,12 +37,13 @@ request, the requested endpoint, exact route materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v2
-foldback: <hop.local-neighborhood-request/v2 mapping>
-basal: <hop.local-neighborhood-request/v2 mapping or null>
+schema: hop.construction-source/v3
+foldback: <hop.local-neighborhood-request/v3 mapping>
+basal: <hop.local-neighborhood-request/v3 mapping or null>
 composition:
   endpoint: ssdna_hairpin | hairpin_pcr_duplex | clone_ready_duplex
   materialization: <exact linear-source materials and end chemistry>
+  release: <exact oriented Type IIS endpoint release or null>
   whole_route_constraints: <intrinsic route constraints>
   enumeration:
     max_combinations: <positive integer>
@@ -62,7 +63,7 @@ Endpoint obligations fail closed:
 | --- | --- | --- | --- |
 | `ssdna_hairpin` | omitted | omitted | omitted |
 | `hairpin_pcr_duplex` | required | required | omitted |
-| `clone_ready_duplex` | required | required | required by the matching basal request |
+| `clone_ready_duplex` | required PCR-intermediate authority | required | required by the endpoint release request |
 
 The foldback and basal requests, when both are present, must describe the same
 payload space. The exact payload in the verified design must belong to that

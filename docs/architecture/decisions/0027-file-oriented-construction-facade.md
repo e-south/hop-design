@@ -16,8 +16,8 @@ amended_by: hop-adr-0028
 # ADR 0027: Compile construction from strict files behind a narrow facade
 
 > Amended by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md):
-> the active construction source is v2 and uses an explicit nick offset within
-> the retained foldback arm.
+> the active construction source is v3 and represents duplex foldback nick
+> orientation explicitly.
 
 ## Context
 
@@ -35,27 +35,37 @@ and verified.
 ## Decision
 
 `hop_design.construction` is the file-oriented construction facade. The caller
-provides one strict `hop.construction-source/v2` JSON or YAML file and one
+provides one strict `hop.construction-source/v3` JSON or YAML file and one
 separate verified design-bundle path. HOP loads the design authority, discovers
 and verifies the declared foldback and optional basal neighborhoods, derives
 the complete request, composes the route, and returns an opaque
 `ConstructionCompilation` receipt.
 
 The source document owns local requests, endpoint-dependent exact materials,
-whole-route constraints, and finite enumeration policy. It cannot author a
-design authority, result identifier, realization identifier, projection
-choice, output path, timestamp, or environment record. Direct, PCR, and
-clone-ready endpoints have fail-closed structural requirements.
+oriented endpoint release, whole-route constraints, and finite enumeration
+policy. It cannot author a design authority, result identifier, realization
+identifier, projection choice, output path, timestamp, or environment record.
+Direct, PCR, and clone-ready endpoints have fail-closed structural
+requirements.
 
 The exact public allowlist is:
 
 - `ConstructionCompilation`;
-- `VerifiedConstructionBundle`;
 - `ConstructionProjection`;
+- `LocalNeighborhoodDiscovery`;
+- `SourcePartitionDiscovery`;
+- `VerifiedConstructionBundle`;
 - `compile_construction`;
+- `discover_local_neighborhood`;
+- `discover_source_partition`;
 - `load_verified_construction_bundle`;
-- the foldback, basal, relaxation, complete-summary, and explicitly selected
-  trajectory projection operations.
+- `load_verified_local_neighborhood`;
+- `load_verified_source_partition`;
+- `project_basal_feasibility`;
+- `project_complete_construction_summary`;
+- `project_construction_trajectory`;
+- `project_foldback_feasibility`; and
+- `project_relaxation_frontier`.
 
 Receipts expose only scalar identity and accounting plus create-only writing.
 Projection packets expose deterministic JSON, optional CSV, and SVG bytes.
@@ -71,6 +81,10 @@ without copying HOP models or importing private modules. A projection must be
 requested from an opaque verified receipt; trajectory projection additionally
 requires one exact accepted realization identity and never auto-selects an
 exemplar.
+
+Standalone local-neighborhood discovery returns one replay-verified family
+receipt. It establishes only the declared foldback or basal neighborhood and
+cannot be interpreted as a complete-route authority.
 
 The source compiler may report complete, infeasible, or truncated discovery.
 None of those digital states establishes physical construction, QC,

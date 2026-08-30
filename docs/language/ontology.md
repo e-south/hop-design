@@ -59,7 +59,9 @@ family-specific target geometry, required constraints, design preferences,
 caller-provisioned enzymes, explicit relaxation, and finite enumeration. Its
 result preserves requested and achieved geometry, relaxation shell, every
 exact realization, rejection accounting, completion evidence, and reversible
-projections.
+projections. Large exact sequence domains may be divided into deterministic,
+disjoint execution parts without changing the molecular problem or realization
+identities. One part does not establish whole-domain payload compatibility.
 
 A foldback target is described by `nick_offset_within_foldback_nt`, `loop_length_nt`, and
 `annealing_arm_length_bp`. A basal target describes endpoint-dependent nick

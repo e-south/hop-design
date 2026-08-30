@@ -20,6 +20,7 @@ from hop_design.models.construction.complete import (
     ConstructionState,
     ConstructionStatePhase,
     ExactConstructionMaterial,
+    PcrPrimer,
     PrimerExtensionAuthority,
 )
 from hop_design.models.construction.complete.evaluation import CombinationEvaluation
@@ -83,8 +84,8 @@ def materialize_pcr_program(
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
     adapter: ExactConstructionMaterial,
-    forward_primer: ExactConstructionMaterial,
-    reverse_primer: ExactConstructionMaterial,
+    forward_primer: PcrPrimer,
+    reverse_primer: PcrPrimer,
     evaluation: CombinationEvaluation,
     encoding_features: tuple[SequenceFeature, ...],
     design_source_span: Span,
@@ -271,32 +272,44 @@ def materialize_pcr_program(
     bindings = (
         PrimerBinding(
             binding_id="complete-forward-primer-binding",
-            primer_id=forward_primer.material_id,
+            primer_id=forward_primer.oligo.material_id,
             template_strand_id=f"{ligated.strand_id}-derived-complement",
-            template_span=_span(
-                len(ligated.sequence) - len(forward_primer.sequence_5prime), len(ligated.sequence)
-            ),
+            template_span=_span(0, forward_primer.annealing_length_nt),
             orientation=BindingOrientation.REVERSE_COMPLEMENT_5TO3,
         ),
         PrimerBinding(
             binding_id="complete-reverse-primer-binding",
-            primer_id=reverse_primer.material_id,
+            primer_id=reverse_primer.oligo.material_id,
             template_strand_id=ligated.strand_id,
             template_span=_span(
-                len(ligated.sequence) - len(reverse_primer.sequence_5prime), len(ligated.sequence)
+                len(ligated.sequence) - reverse_primer.annealing_length_nt,
+                len(ligated.sequence),
             ),
             orientation=BindingOrientation.REVERSE_COMPLEMENT_5TO3,
         ),
     )
     functions = material_function_spans(
-        materials=(source, source_complement, adapter, forward_primer, reverse_primer),
+        materials=(
+            source,
+            source_complement,
+            adapter,
+            forward_primer.oligo,
+            reverse_primer.oligo,
+        ),
         top=top,
         bottom=bottom,
     )
     fates = endpoint_fate_spans(
         encoding_features,
-        len(ligated.sequence),
-        design_source_span=design_source_span,
+        len(top.sequence),
+        design_source_span=Span(
+            start=Boundary(
+                offset=design_source_span.start.offset + len(forward_primer.five_prime_handle)
+            ),
+            end=Boundary(
+                offset=design_source_span.end.offset + len(forward_primer.five_prime_handle)
+            ),
+        ),
     )
     extension = PrimerExtensionAuthority.create(
         pre_state_id=adapter_ligated.state_id,

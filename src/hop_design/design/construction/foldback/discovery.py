@@ -32,6 +32,7 @@ from hop_design.models.construction import (
     NeighborhoodClaimBoundary,
     NeighborhoodDiscoveryResult,
     NeighborhoodProvenance,
+    NickStrandSelection,
     PayloadCompatibilityAccounting,
     PayloadCompatibilityStatus,
     RelaxationMode,
@@ -43,7 +44,9 @@ from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
     FoldbackNeighborhoodDiscoveryResult,
 )
+from hop_design.models.physical import Strand
 
+from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
 from .realization import (
     _ROUTE_VERSION,
     _geometry_groups,
@@ -65,7 +68,6 @@ def discover_foldback_neighborhood(
     if request.endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
         raise ValueError("Foldback-local discovery currently resolves the ssDNA hairpin endpoint.")
 
-    routes = iter_foldback_programs(request.enzyme_provisioning)
     payload_total = _payload_cardinality(request)
     records: list[FoldbackLocalRealization] = []
     shell_summaries: list[RelaxationShellSummary] = []
@@ -80,54 +82,66 @@ def discover_foldback_neighborhood(
         if examined_nodes >= request.enumeration.max_search_nodes:
             truncation_reason = "max_search_nodes"
             break
-        if len(records) >= request.enumeration.max_realizations:
-            truncation_reason = "max_realizations"
-            break
         shell_ids: list[str] = []
         shell_failures: Counter[str] = Counter()
         shell_rejected = 0
         for geometry in shell.geometries:
             if not isinstance(geometry, FoldbackTarget):
                 raise ValueError("Foldback relaxation produced a non-foldback geometry.")
-            for payload_sequence in _payload_assignments(request):
-                for route in routes:
-                    for solution in iter_foldback_program_solutions(
-                        payload_sequence=payload_sequence,
-                        target=geometry,
-                        program=route,
-                    ):
-                        if examined_nodes >= request.enumeration.max_search_nodes:
-                            truncation_reason = "max_search_nodes"
+            exact_geometries = (
+                tuple(geometry.model_copy(update={"nick_strand": strand}) for strand in Strand)
+                if geometry.nick_strand is NickStrandSelection.ANY
+                else (geometry,)
+            )
+            for exact_geometry in exact_geometries:
+                routes = iter_foldback_programs(
+                    request.enzyme_provisioning,
+                    target=exact_geometry,
+                )
+                for payload_sequence in _payload_assignments(request):
+                    for route in routes:
+                        for solution in partition_sequence_domain(
+                            iter_foldback_program_solutions(
+                                payload_sequence=payload_sequence,
+                                target=exact_geometry,
+                                program=route,
+                            ),
+                            request.enumeration.sequence_partition,
+                        ):
+                            if examined_nodes >= request.enumeration.max_search_nodes:
+                                truncation_reason = "max_search_nodes"
+                                break
+                            examined_nodes += 1
+                            if isinstance(solution, FoldbackPlacementFailure):
+                                failures[solution.code] += 1
+                                shell_failures[solution.code] += 1
+                                rejected_count += 1
+                                shell_rejected += 1
+                                payload_failures[payload_sequence].add(solution.code)
+                                continue
+                            record = _realization(
+                                request=request,
+                                payload_sequence=payload_sequence,
+                                target=exact_geometry,
+                                route=route,
+                                solution=solution,
+                                relaxation_radius=shell.radius,
+                            )
+                            if isinstance(record, str):
+                                failures[record] += 1
+                                shell_failures[record] += 1
+                                rejected_count += 1
+                                shell_rejected += 1
+                                payload_failures[payload_sequence].add(record)
+                                continue
+                            if len(records) >= request.enumeration.max_realizations:
+                                truncation_reason = "max_realizations"
+                                break
+                            records.append(record)
+                            shell_ids.append(record.local_realization.local_realization_id)
+                            compatible_payloads.add(payload_sequence)
+                        if truncation_reason is not None:
                             break
-                        if len(records) >= request.enumeration.max_realizations:
-                            truncation_reason = "max_realizations"
-                            break
-                        examined_nodes += 1
-                        if isinstance(solution, FoldbackPlacementFailure):
-                            failures[solution.code] += 1
-                            shell_failures[solution.code] += 1
-                            rejected_count += 1
-                            shell_rejected += 1
-                            payload_failures[payload_sequence].add(solution.code)
-                            continue
-                        record = _realization(
-                            request=request,
-                            payload_sequence=payload_sequence,
-                            target=geometry,
-                            route=route,
-                            solution=solution,
-                            relaxation_radius=shell.radius,
-                        )
-                        if isinstance(record, str):
-                            failures[record] += 1
-                            shell_failures[record] += 1
-                            rejected_count += 1
-                            shell_rejected += 1
-                            payload_failures[payload_sequence].add(record)
-                            continue
-                        records.append(record)
-                        shell_ids.append(record.local_realization.local_realization_id)
-                        compatible_payloads.add(payload_sequence)
                     if truncation_reason is not None:
                         break
                 if truncation_reason is not None:
@@ -161,6 +175,10 @@ def discover_foldback_neighborhood(
             break
 
     exact_records = tuple(records)
+    partition_accounting = partition_payload_accounting(
+        request.enumeration.sequence_partition,
+        total_assignments=payload_total,
+    )
     if truncation_reason is not None:
         status = SearchCompletionStatus.TRUNCATED
         payload_accounting = PayloadCompatibilityAccounting(
@@ -171,47 +189,53 @@ def discover_foldback_neighborhood(
         )
     elif exact_records:
         status = SearchCompletionStatus.COMPLETE
-        excluded = payload_total - len(compatible_payloads)
-        payload_accounting = PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=payload_total,
-            compatible_assignments=len(compatible_payloads),
-            excluded_assignments=excluded,
-            conflict_counts=tuple(
-                FailureReasonCount(code=code, count=count)
-                for code, count in sorted(
-                    Counter(
-                        code
-                        for payload, codes in payload_failures.items()
-                        if payload not in compatible_payloads
-                        for code in codes
-                    ).items()
-                )
-                if count <= excluded
-            ),
-            exhaustive=True,
-        )
-    else:
-        payload_conflicts = Counter(
-            (
-                "payload-recognition-conflict"
-                if "payload-recognition-conflict" in payload_failures[payload]
-                else "payload-no-foldback-realization"
+        if partition_accounting is not None:
+            payload_accounting = partition_accounting
+        else:
+            excluded = payload_total - len(compatible_payloads)
+            payload_accounting = PayloadCompatibilityAccounting(
+                status=PayloadCompatibilityStatus.COMPLETE,
+                total_assignments=payload_total,
+                compatible_assignments=len(compatible_payloads),
+                excluded_assignments=excluded,
+                conflict_counts=tuple(
+                    FailureReasonCount(code=code, count=count)
+                    for code, count in sorted(
+                        Counter(
+                            code
+                            for payload, codes in payload_failures.items()
+                            if payload not in compatible_payloads
+                            for code in codes
+                        ).items()
+                    )
+                    if count <= excluded
+                ),
+                exhaustive=True,
             )
-            for payload in _payload_assignments(request)
-        )
+    else:
         status = SearchCompletionStatus.INFEASIBLE
-        payload_accounting = PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=payload_total,
-            compatible_assignments=0,
-            excluded_assignments=payload_total,
-            conflict_counts=tuple(
-                FailureReasonCount(code=code, count=count)
-                for code, count in sorted(payload_conflicts.items())
-            ),
-            exhaustive=True,
-        )
+        if partition_accounting is not None:
+            payload_accounting = partition_accounting
+        else:
+            payload_conflicts = Counter(
+                (
+                    "payload-recognition-conflict"
+                    if "payload-recognition-conflict" in payload_failures[payload]
+                    else "payload-no-foldback-realization"
+                )
+                for payload in _payload_assignments(request)
+            )
+            payload_accounting = PayloadCompatibilityAccounting(
+                status=PayloadCompatibilityStatus.COMPLETE,
+                total_assignments=payload_total,
+                compatible_assignments=0,
+                excluded_assignments=payload_total,
+                conflict_counts=tuple(
+                    FailureReasonCount(code=code, count=count)
+                    for code, count in sorted(payload_conflicts.items())
+                ),
+                exhaustive=True,
+            )
 
     if (
         truncation_reason is None
@@ -276,7 +300,9 @@ def discover_foldback_neighborhood(
             route_implementation_version=_ROUTE_VERSION,
             enzyme_catalog_digest=request.enzyme_catalog_digest,
         ),
-        projection_inventory=_projection_inventory(),
+        projection_inventory=_projection_inventory(
+            partitioned=request.enumeration.sequence_partition is not None
+        ),
         claim_boundary=NeighborhoodClaimBoundary(
             digital_design=DigitalDesignStatus.VERIFIED,
             method=MethodResolutionStatus.NOT_RESOLVED,

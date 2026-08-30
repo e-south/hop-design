@@ -41,6 +41,15 @@ All operations and receipts in this section use `hop_design.construction`.
   loads one strict file and a separate verified design authority, discovers
   local neighborhoods, composes the bounded whole route, and returns an opaque
   write-capable receipt.
+- `discover_local_neighborhood(source_path) -> LocalNeighborhoodDiscovery`
+  runs one strict foldback or basal neighborhood request and returns an opaque,
+  replay-verified family receipt without claiming a complete route. Large exact
+  sequence domains may declare one canonical `sequence_partition`; each result
+  remains complete only for that part, preserves molecular realization ids, and
+  does not claim whole-domain payload compatibility.
+- `load_verified_local_neighborhood(result_path) -> LocalNeighborhoodDiscovery`
+  loads only the active v3 foldback or basal family result and repeats exact
+  deterministic discovery replay.
 - `discover_source_partition(source_path) -> SourcePartitionDiscovery`
   enumerates canonical nonempty subsets of provisioned strand-exposure
   nickases, applies every actionable site, derives all denatured fragments,

@@ -29,6 +29,7 @@ from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResul
 from hop_design.models.construction.complete import (
     CompositionAccounting,
     CompositionDisposition,
+    CompositionDispositionStatus,
     CompositionMaterialAccounting,
     ConstructionCompositionExecution,
     ConstructionCompositionProvenance,
@@ -92,6 +93,7 @@ def build_result(
     realizations: tuple[MaterializedConstructionRealization, ...],
     failures: Counter[str],
     truncation: str | None,
+    endpoint_truncation_reasons: tuple[str, ...],
     upstream_truncation_reasons: tuple[str, ...],
     foldback_count: int,
     basal_count: int,
@@ -130,8 +132,15 @@ def build_result(
             pruned_before_execution=0,
             executed_combinations=examined,
             examined_combinations=examined,
-            rejected_after_execution=examined - len(realizations),
-            rejected_combinations=examined - len(realizations),
+            rejected_after_execution=sum(
+                item.status is CompositionDispositionStatus.REJECTED for item in dispositions
+            ),
+            rejected_combinations=sum(
+                item.status is CompositionDispositionStatus.REJECTED for item in dispositions
+            ),
+            truncated_combinations=sum(
+                item.status is CompositionDispositionStatus.TRUNCATED for item in dispositions
+            ),
             valid_realizations=len(realizations),
             candidate_enzyme_programs=sum(item.candidate_enzyme_programs for item in dispositions),
             recognition_placements_attempted=sum(
@@ -146,7 +155,10 @@ def build_result(
         failure_reasons=tuple(
             FailureReasonCount(code=code, count=count) for code, count in sorted(failures.items())
         ),
-        truncation_reasons=((truncation,) if truncation else ()),
+        truncation_reasons=(
+            *((truncation,) if truncation else ()),
+            *endpoint_truncation_reasons,
+        ),
         upstream_truncation_reasons=upstream_truncation_reasons,
         provenance=ConstructionCompositionProvenance(
             hop_version=hop_version,
