@@ -108,6 +108,7 @@ import hop_design as hop
 import hop_design.construction as construction
 import hop_design.discovery as discovery
 import hop_design.methods as methods
+import hop_design.spaces as spaces
 import hop_design.views as views
 
 print(json.dumps({
@@ -115,6 +116,7 @@ print(json.dumps({
     "construction": construction.__all__,
     "discovery": discovery.__all__,
     "methods": methods.__all__,
+    "spaces": spaces.__all__,
     "views": views.__all__,
 }, sort_keys=True))
 PY
@@ -125,6 +127,7 @@ import hop_design as hop
 import hop_design.construction as construction
 import hop_design.discovery as discovery
 import hop_design.methods as methods
+import hop_design.spaces as spaces
 import hop_design.views as views
 
 print(json.dumps({
@@ -132,6 +135,7 @@ print(json.dumps({
     "construction": construction.__all__,
     "discovery": discovery.__all__,
     "methods": methods.__all__,
+    "spaces": spaces.__all__,
     "views": views.__all__,
 }, sort_keys=True))
 PY

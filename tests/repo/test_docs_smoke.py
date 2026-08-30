@@ -70,6 +70,8 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     assert "'examples/verify_design_method_handoff.py'" in wheel_smoke
     assert 'tar -xzf "$sdist_path" -C "$sdist_extract_root"' in wheel_smoke
     assert '--content-root "$sdist_root"' in wheel_smoke
+    assert wheel_smoke.count("import hop_design.spaces as spaces") == 2
+    assert wheel_smoke.count('"spaces": spaces.__all__') == 2
 
 
 def test_docs_smoke_bounds_child_execution_time() -> None:
