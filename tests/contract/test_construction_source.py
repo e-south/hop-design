@@ -231,6 +231,24 @@ def test_source_loader_rejects_duplicate_mapping_keys(
         load_source_mapping(source)
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        '1: numeric\n"1": text\n',
+        "outer:\n  1: numeric\n",
+    ],
+)
+def test_source_loader_rejects_non_string_yaml_mapping_keys(
+    tmp_path: Path,
+    content: str,
+) -> None:
+    source = tmp_path / "non-string-key.yaml"
+    source.write_text(content, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="mapping keys must be strings"):
+        load_source_mapping(source)
+
+
 def test_source_loader_rejects_yaml_alias_expansion(tmp_path: Path) -> None:
     source = tmp_path / "aliases.yaml"
     source.write_text(

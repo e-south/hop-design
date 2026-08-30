@@ -58,11 +58,9 @@ def _unique_yaml_mapping(
         if key_node.tag == "tag:yaml.org,2002:merge":
             raise ValueError("HOP source YAML aliases, anchors, or merge keys are not supported.")
         key = loader.construct_object(key_node, deep=deep)
-        try:
-            duplicate = key in mapping
-        except TypeError as error:
-            raise ValueError("HOP source mapping keys must be scalar values.") from error
-        if duplicate:
+        if not isinstance(key, str):
+            raise ValueError("HOP source YAML mapping keys must be strings.")
+        if key in mapping:
             raise ValueError(f"HOP source contains duplicate mapping key: {key!r}.")
         mapping[key] = loader.construct_object(value_node, deep=deep)
     return mapping
