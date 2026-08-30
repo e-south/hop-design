@@ -181,9 +181,8 @@ records, evidence interpretation, manuscript claims, or publication figures.
 Research Studies owns scientific questions, frozen HOP inputs and outputs,
 experimental observations, interpretation, and promotion of candidate assets.
 manufold owns the manuscript premise, claim ceiling, evidence cutoff, accepted
-snapshot imports, captions, and final composition. Downstream applications,
-including Retron work, consume HOP without defining this generic construction
-contract.
+snapshot imports, captions, and final composition. Downstream applications
+consume HOP without defining this generic construction contract.
 
 ## Consequences
 

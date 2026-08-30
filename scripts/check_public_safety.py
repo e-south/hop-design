@@ -19,7 +19,7 @@ SKIP_FILES = {"check_public_safety.py"}
 PATTERNS = {
     "machine-local user path": re.compile(r"(?:/Users/|/home/[A-Za-z0-9._-]+/|Dropbox/projects)"),
     "neighbor-repository identity": re.compile(
-        r"(?:research-studies|cruncher|dnadesign|eco1)", re.IGNORECASE
+        r"(?:research-studies|cruncher|dnadesign|eco1|retron)", re.IGNORECASE
     ),
     "private key material": re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
     "token-like credential": re.compile(

@@ -1,4 +1,4 @@
-"""Versioned, visible defaults for the generic non-retron demonstration."""
+"""Versioned, visible defaults for the generic hairpin demonstration."""
 
 from __future__ import annotations
 
