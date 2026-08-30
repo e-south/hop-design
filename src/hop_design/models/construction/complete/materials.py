@@ -14,8 +14,37 @@ from __future__ import annotations
 from hop_design.models.molecular_state import LineageStrand
 from hop_design.models.physical import classify_literal_pair
 
-from .request import ExactConstructionMaterial
+from .request import (
+    ConstructionDiscoveryRequest,
+    ExactConstructionMaterial,
+    derived_source_material_id,
+)
 from .state import ConstructionState, ConstructionStatePhase
+
+
+def derive_source_materials(
+    request: ConstructionDiscoveryRequest,
+    sequence: str,
+    complement_sequence: str,
+) -> tuple[ExactConstructionMaterial, ExactConstructionMaterial]:
+    """Derive the exact source pair from one request's materialization policy."""
+    policy = request.materialization
+    return (
+        ExactConstructionMaterial(
+            material_id=derived_source_material_id(sequence, complementary=False),
+            origin=policy.source_origin,
+            sequence_5prime=sequence,
+            five_prime_end=policy.source_five_prime_end,
+            three_prime_end=policy.source_three_prime_end,
+        ),
+        ExactConstructionMaterial(
+            material_id=derived_source_material_id(complement_sequence, complementary=True),
+            origin=policy.source_complement_origin,
+            sequence_5prime=complement_sequence,
+            five_prime_end=policy.source_complement_five_prime_end,
+            three_prime_end=policy.source_complement_three_prime_end,
+        ),
+    )
 
 
 def validate_initial_material_state(
@@ -77,4 +106,4 @@ def validate_initial_material_state(
         raise ValueError("Construction source state requires complete complement pairing.")
 
 
-__all__ = ["validate_initial_material_state"]
+__all__ = ["derive_source_materials", "validate_initial_material_state"]

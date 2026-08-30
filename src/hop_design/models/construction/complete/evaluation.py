@@ -19,26 +19,25 @@ from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
     FoldbackMaterialRequirement,
 )
-from hop_design.models.construction.payload import SourceOrientation, _content_id
-from hop_design.models.enzymes import (
-    CharacterizedEnzyme,
-    CharacterizedEnzymeCatalog,
-    EnzymeProvisioningPolicy,
-    EnzymeRole,
-    EnzymeRoleRestriction,
+from hop_design.models.construction.payload import (
+    ConstructionEndpoint,
+    SourceOrientation,
 )
+from hop_design.models.enzymes import EnzymeProvisioningPolicy
+from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.plan import FeatureRole
 from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 from hop_design.models.sequence import reverse_complement_iupac
 
+from .materials import derive_source_materials
+from .provisioning import merge_provisioning_policies
 from .request import (
     ConstructionDiscoveryRequest,
     ExactConstructionMaterial,
-    derived_source_material_id,
 )
-from .route_schedule import derive_direct_reaction_program
+from .route_schedule import derive_direct_reaction_program, derive_pcr_reaction_program
 
 
 class CompositionRejectionCode(StrEnum):
@@ -48,6 +47,10 @@ class CompositionRejectionCode(StrEnum):
     SOURCE_END_CHEMISTRY_MISMATCH = "source-end-chemistry-mismatch"
     GLOBAL_ACTIONABLE_SITE_CONFLICT = "global-actionable-site-conflict"
     DESIGN_ENCODING_MISMATCH = "design-encoding-mismatch"
+    PCR_BASAL_OPEN_INCOMPATIBLE = "pcr-basal-open-incompatible"
+    PCR_ADAPTER_MISMATCH = "pcr-adapter-mismatch"
+    PCR_PAIRING_PROFILE_MISMATCH = "pcr-pairing-profile-mismatch"
+    PCR_PRIMER_MISMATCH = "pcr-primer-mismatch"
     ALL_COMBINATIONS_VALID_REQUIRED = "all-combinations-valid-required"
 
 
@@ -117,90 +120,6 @@ def _prefix(
     return design_prefix if prefix == basal_left else None
 
 
-def _source_materials(
-    request: ConstructionDiscoveryRequest,
-    sequence: str,
-    complement_sequence: str,
-) -> tuple[ExactConstructionMaterial, ExactConstructionMaterial]:
-    policy = request.materialization
-    return (
-        ExactConstructionMaterial(
-            material_id=derived_source_material_id(sequence, complementary=False),
-            origin=policy.source_origin,
-            sequence_5prime=sequence,
-            five_prime_end=policy.source_five_prime_end,
-            three_prime_end=policy.source_three_prime_end,
-        ),
-        ExactConstructionMaterial(
-            material_id=derived_source_material_id(complement_sequence, complementary=True),
-            origin=policy.source_complement_origin,
-            sequence_5prime=complement_sequence,
-            five_prime_end=policy.source_complement_five_prime_end,
-            three_prime_end=policy.source_complement_three_prime_end,
-        ),
-    )
-
-
-def _catalog_entries(
-    policies: tuple[EnzymeProvisioningPolicy, ...],
-) -> tuple[CharacterizedEnzyme, ...]:
-    entries: dict[str, CharacterizedEnzyme] = {}
-    for policy in policies:
-        for enzyme in policy.catalog.enzymes:
-            previous = entries.setdefault(enzyme.enzyme_id, enzyme)
-            if previous != enzyme:
-                raise ValueError("Complete route cannot merge conflicting enzyme definitions.")
-    return tuple(entries[key] for key in sorted(entries))
-
-
-def merge_provisioning_policies(
-    policies: tuple[EnzymeProvisioningPolicy, ...],
-) -> EnzymeProvisioningPolicy:
-    """Merge exact local policies without weakening restrictions or limits."""
-    enzymes = _catalog_entries(policies)
-    restrictions: dict[EnzymeRole, EnzymeRoleRestriction] = {}
-    for policy in policies:
-        for restriction in policy.role_restrictions:
-            previous = restrictions.setdefault(restriction.role, restriction)
-            if previous != restriction:
-                raise ValueError("Complete route cannot merge conflicting role restrictions.")
-    limits = tuple(policy.max_operations for policy in policies)
-    return EnzymeProvisioningPolicy(
-        catalog=CharacterizedEnzymeCatalog(
-            catalog_id=_content_id(
-                "enzyme-catalog",
-                1,
-                tuple(item.model_dump(mode="json") for item in enzymes),
-            ),
-            enzymes=enzymes,
-        ),
-        allowed_enzyme_ids=tuple(
-            sorted(
-                {
-                    enzyme_id
-                    for policy in policies
-                    for enzyme_id in (
-                        policy.allowed_enzyme_ids
-                        or tuple(item.enzyme_id for item in policy.catalog.enzymes)
-                    )
-                }
-            )
-        ),
-        forbidden_enzyme_ids=tuple(
-            sorted({item for policy in policies for item in policy.forbidden_enzyme_ids})
-        ),
-        reserved_enzyme_ids=tuple(
-            sorted({item for policy in policies for item in policy.reserved_enzyme_ids})
-        ),
-        max_operations=(
-            None
-            if any(item is None for item in limits)
-            else sum(item for item in limits if item is not None)
-        ),
-        role_restrictions=tuple(restrictions[key] for key in sorted(restrictions)),
-    )
-
-
 def evaluate_combination(
     request: ConstructionDiscoveryRequest,
     *,
@@ -224,11 +143,107 @@ def evaluate_combination(
             constraint_systems_attempted=constraint_systems_attempted,
         )
     _, return_arm, _ = _design_context(request)
-    source, complement = _source_materials(
+    source, complement = derive_source_materials(
         request,
         prefix + foldback.source_reference_sequence,
         reverse_complement_iupac(foldback.source_reference_sequence) + return_arm,
     )
+    if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if (
+            basal is None
+            or basal.basal_nick.strand is not Strand.BOTTOM
+            or basal.basal_nick.boundary.offset != len(prefix)
+        ):
+            return CombinationEvaluation(
+                rejection_reason=CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE,
+                prefix=prefix,
+                return_arm=return_arm,
+                source=source,
+                source_complement=complement,
+                candidate_enzyme_programs=candidate_enzyme_programs,
+                recognition_placements_attempted=recognition_placements_attempted,
+                constraint_systems_attempted=constraint_systems_attempted,
+            )
+        adapter = request.materialization.adapter
+        local_adapter = next(
+            (item for item in basal.materials if item.material_id == "ligation-adapter"),
+            None,
+        )
+        if (
+            adapter is None
+            or local_adapter is None
+            or adapter.sequence_5prime != return_arm
+            or local_adapter.sequence_5prime != return_arm
+            or adapter.five_prime_end is not EndChemistry.PHOSPHATE
+            or adapter.three_prime_end is not EndChemistry.HYDROXYL
+        ):
+            return CombinationEvaluation(
+                rejection_reason=CompositionRejectionCode.PCR_ADAPTER_MISMATCH,
+                prefix=prefix,
+                return_arm=return_arm,
+                source=source,
+                source_complement=complement,
+                candidate_enzyme_programs=candidate_enzyme_programs,
+                recognition_placements_attempted=recognition_placements_attempted,
+                constraint_systems_attempted=constraint_systems_attempted,
+            )
+        profile = basal.projection.pairing_profile
+        complex_state = basal.adapter_annealed_complex
+        if (
+            profile is None
+            or complex_state is None
+            or len(profile.pairs) != len(return_arm)
+            or tuple(
+                (
+                    pair.left_index - profile.source_span.start.offset,
+                    pair.right_index,
+                    pair.left_base,
+                    pair.right_base,
+                )
+                for pair in complex_state.pairs
+            )
+            != tuple(
+                (
+                    pair.source_index,
+                    pair.adapter_index,
+                    pair.source_base,
+                    pair.adapter_base,
+                )
+                for pair in profile.pairs
+            )
+        ):
+            return CombinationEvaluation(
+                rejection_reason=CompositionRejectionCode.PCR_PAIRING_PROFILE_MISMATCH,
+                prefix=prefix,
+                return_arm=return_arm,
+                source=source,
+                source_complement=complement,
+                candidate_enzyme_programs=candidate_enzyme_programs,
+                recognition_placements_attempted=recognition_placements_attempted,
+                constraint_systems_attempted=constraint_systems_attempted,
+            )
+        forward = request.materialization.forward_primer
+        reverse = request.materialization.reverse_primer
+        encoding = request.design.encoding_sequence
+        if (
+            forward is None
+            or reverse is None
+            or forward.three_prime_end is not EndChemistry.HYDROXYL
+            or reverse.three_prime_end is not EndChemistry.HYDROXYL
+            or forward.sequence_5prime != encoding[: len(forward.sequence_5prime)]
+            or reverse.sequence_5prime
+            != reverse_complement_iupac(encoding[-len(reverse.sequence_5prime) :])
+        ):
+            return CombinationEvaluation(
+                rejection_reason=CompositionRejectionCode.PCR_PRIMER_MISMATCH,
+                prefix=prefix,
+                return_arm=return_arm,
+                source=source,
+                source_complement=complement,
+                candidate_enzyme_programs=candidate_enzyme_programs,
+                recognition_placements_attempted=recognition_placements_attempted,
+                constraint_systems_attempted=constraint_systems_attempted,
+            )
     if (
         FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE in foldback.material_requirements
         and complement.five_prime_end is not EndChemistry.PHOSPHATE
@@ -248,11 +263,20 @@ def evaluate_combination(
         if basal_policy is None:
             raise ValueError("Basal composition requires its exact provisioning policy.")
         policies = (foldback_policy, basal_policy)
-    program = derive_direct_reaction_program(
-        foldback=foldback,
-        basal=basal,
-        prefix=prefix,
-        return_arm=return_arm,
+    program = (
+        derive_pcr_reaction_program(
+            foldback=foldback,
+            basal=basal,
+            prefix=prefix,
+            return_arm=return_arm,
+        )
+        if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and basal is not None
+        else derive_direct_reaction_program(
+            foldback=foldback,
+            basal=basal,
+            prefix=prefix,
+            return_arm=return_arm,
+        )
     )
     assessment = assess_reaction_program(
         program=program,
@@ -306,5 +330,4 @@ __all__ = [
     "CombinationEvaluation",
     "CompositionRejectionCode",
     "evaluate_combination",
-    "merge_provisioning_policies",
 ]

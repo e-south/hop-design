@@ -11,7 +11,6 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from enum import StrEnum
 from itertools import pairwise
 from typing import Any, cast
 
@@ -19,146 +18,12 @@ from pydantic import Field, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.construction.payload import _content_id
-from hop_design.models.molecular_state import MolecularStrand, StrandPairObservation
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
-from .associations import ConstructionBondState
+from .pcr.replay import validate_pcr_transition
 from .state import ConstructionState, ConstructionStatePhase
+from .transition import ConstructionTransition, ConstructionTransitionKind
 from .transition_replay import validate_non_enzyme_transition
-
-
-class ExactStateRelation(HopModel):
-    """Content identity binding one exact derived state to its exact precursor state."""
-
-    relation_id: str = Field(pattern=r"^hop:state-relation/[0-9a-f]{64}@1$")
-    pre_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
-    post_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
-
-    @classmethod
-    def create(cls, *, pre_state_id: str, post_state_id: str) -> ExactStateRelation:
-        content = {"pre_state_id": pre_state_id, "post_state_id": post_state_id}
-        return cls(
-            relation_id=_content_id("state-relation", 1, content),
-            pre_state_id=pre_state_id,
-            post_state_id=post_state_id,
-        )
-
-    @model_validator(mode="after")
-    def validate_identity(self) -> ExactStateRelation:
-        expected = _content_id(
-            "state-relation",
-            1,
-            {"pre_state_id": self.pre_state_id, "post_state_id": self.post_state_id},
-        )
-        if self.relation_id != expected:
-            raise ValueError("State-relation identity must seal both exact state identities.")
-        if self.pre_state_id == self.post_state_id:
-            raise ValueError("A derived-state relation must change the exact molecular state.")
-        return self
-
-
-class ReactionBoundaryMapping(HopModel):
-    """Exact relation from one reaction phase boundary to construction strands."""
-
-    mapping_id: str = Field(pattern=r"^hop:reaction-boundary-mapping/[0-9a-f]{64}@1$")
-    reaction_program_id: str
-    pre_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
-    post_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
-    pre_strands: tuple[MolecularStrand, ...] = Field(min_length=1)
-    post_strands: tuple[MolecularStrand, ...] = Field(min_length=1)
-    pre_pairings: tuple[StrandPairObservation, ...] = ()
-    post_pairings: tuple[StrandPairObservation, ...] = ()
-    pre_bonds: tuple[ConstructionBondState, ...] = ()
-    post_bonds: tuple[ConstructionBondState, ...] = ()
-
-    @classmethod
-    def create(cls, **content: object) -> ReactionBoundaryMapping:
-        draft = cls.model_construct(mapping_id="", **cast(Any, content))
-        seed = draft.model_dump(mode="json", exclude={"mapping_id"})
-        return cls.model_validate(
-            {"mapping_id": _content_id("reaction-boundary-mapping", 1, seed), **content}
-        )
-
-    @model_validator(mode="after")
-    def validate_identity(self) -> ReactionBoundaryMapping:
-        content = self.model_dump(mode="json", exclude={"mapping_id"})
-        if self.mapping_id != _content_id("reaction-boundary-mapping", 1, content):
-            raise ValueError("Reaction-boundary identity must seal exact mapped strands.")
-        return self
-
-
-class ConstructionTransitionKind(StrEnum):
-    """Closed physical transition kinds in complete construction chronology."""
-
-    ENZYME_PHASE = "enzyme_phase"
-    DENATURATION = "denaturation"
-    FRAGMENT_SELECTION = "fragment_selection"
-    ANNEALING = "annealing"
-    LIGATION = "ligation"
-    PRIMER_EXTENSION = "primer_extension"
-    END_GENERATION = "end_generation"
-
-
-_ENZYME_KINDS = {
-    ConstructionTransitionKind.ENZYME_PHASE,
-    ConstructionTransitionKind.END_GENERATION,
-}
-
-
-class ConstructionTransition(HopModel):
-    """One exact chronological transition with one authoritative evidence mode."""
-
-    transition_id: str = Field(pattern=r"^hop:construction-transition/[0-9a-f]{64}@1$")
-    kind: ConstructionTransitionKind
-    pre_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
-    post_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
-    reaction_program_id: str | None = None
-    reaction_boundary_mapping: ReactionBoundaryMapping | None = None
-    exact_relation: ExactStateRelation | None = None
-
-    @classmethod
-    def create(cls, **content: object) -> ConstructionTransition:
-        draft = cls.model_construct(transition_id="", **cast(Any, content))
-        seed = draft.model_dump(mode="json", exclude={"transition_id"})
-        return cls.model_validate(
-            {"transition_id": _content_id("construction-transition", 1, seed), **content}
-        )
-
-    @model_validator(mode="after")
-    def validate_authority(self) -> ConstructionTransition:
-        content = self.model_dump(mode="json", exclude={"transition_id"})
-        if self.transition_id != _content_id("construction-transition", 1, content):
-            raise ValueError("Construction-transition identity must seal its exact authority.")
-        if self.kind in _ENZYME_KINDS:
-            if (
-                self.reaction_program_id is None
-                or self.reaction_boundary_mapping is None
-                or self.exact_relation is not None
-            ):
-                raise ValueError(
-                    "An enzyme transition requires a ReactionProgram and exact boundary mapping."
-                )
-            mapping = self.reaction_boundary_mapping
-            if (
-                mapping.reaction_program_id != self.reaction_program_id
-                or mapping.pre_state_id != self.pre_state_id
-                or mapping.post_state_id != self.post_state_id
-            ):
-                raise ValueError("Reaction-boundary mapping must bind the transition authority.")
-            if mapping.pre_strands == mapping.post_strands:
-                raise ValueError("An enzyme phase must change the exact molecular state.")
-        elif (
-            self.reaction_program_id is not None
-            or self.reaction_boundary_mapping is not None
-            or self.exact_relation is None
-        ):
-            raise ValueError("A non-enzyme transition requires only an exact state relation.")
-        if self.exact_relation is not None and (
-            self.exact_relation.pre_state_id != self.pre_state_id
-            or self.exact_relation.post_state_id != self.post_state_id
-        ):
-            raise ValueError("Exact state relation must bind the transition boundaries.")
-        return self
 
 
 class ConstructionProgram(HopModel):
@@ -231,18 +96,58 @@ class ConstructionProgram(HopModel):
             pre_state = states_by_id[transition.pre_state_id]
             post_state = states_by_id[transition.post_state_id]
             phases = expected_phases.get(transition.kind)
+            allowed_phases = {
+                ConstructionTransitionKind.LIGATION: {
+                    (
+                        ConstructionStatePhase.ANNEALED_COMPLEX,
+                        ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
+                    ),
+                    (
+                        ConstructionStatePhase.ADAPTER_ANNEALED,
+                        ConstructionStatePhase.ADAPTER_LIGATED,
+                    ),
+                },
+                ConstructionTransitionKind.ANNEALING: {
+                    (
+                        ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
+                        ConstructionStatePhase.ADAPTER_ANNEALED,
+                    ),
+                },
+                ConstructionTransitionKind.PRIMER_EXTENSION: {
+                    (
+                        ConstructionStatePhase.ADAPTER_LIGATED,
+                        ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
+                    ),
+                },
+                ConstructionTransitionKind.DENATURATION: {
+                    (
+                        ConstructionStatePhase.CLEAVED_DUPLEX,
+                        ConstructionStatePhase.DENATURED_FRAGMENTS,
+                    ),
+                },
+            }
             if (
                 phases is not None
                 and ConstructionStatePhase.UNSPECIFIED not in {pre_state.phase, post_state.phase}
                 and (pre_state.phase, post_state.phase) != phases
+                and (pre_state.phase, post_state.phase)
+                not in allowed_phases.get(transition.kind, set())
             ):
                 raise ValueError("Construction transition must preserve physical phase order.")
             if transition.reaction_program_id is None:
-                validate_non_enzyme_transition(
-                    kind=transition.kind.value,
-                    pre_state=pre_state,
-                    post_state=post_state,
-                )
+                if transition.pcr_authority is None:
+                    validate_non_enzyme_transition(
+                        kind=transition.kind.value,
+                        pre_state=pre_state,
+                        post_state=post_state,
+                    )
+                else:
+                    validate_pcr_transition(
+                        kind=transition.kind,
+                        authority=transition.pcr_authority,
+                        pre_state=pre_state,
+                        post_state=post_state,
+                    )
                 continue
             program = programs[transition.reaction_program_id]
             mapping = transition.reaction_boundary_mapping
@@ -327,8 +232,4 @@ __all__ = [
     "ConstructionProgram",
     "ConstructionState",
     "ConstructionStatePhase",
-    "ConstructionTransition",
-    "ConstructionTransitionKind",
-    "ExactStateRelation",
-    "ReactionBoundaryMapping",
 ]

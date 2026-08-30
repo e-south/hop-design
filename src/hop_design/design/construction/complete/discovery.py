@@ -46,7 +46,7 @@ from hop_design.models.construction.complete.local_authority import (
 )
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 
-from .direct import direct_realization
+from .endpoint import materialize_endpoint
 from .results import build_result
 
 
@@ -114,7 +114,10 @@ def _discover_constructions_raw(
         raise ValueError("Foldback detailed result identity does not match the request.")
     if (None if basal is None else basal.result_id) != request.basal_result_id:
         raise ValueError("Basal detailed result identity does not match the request.")
-    if request.endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
+    if request.endpoint not in {
+        ConstructionEndpoint.SSDNA_HAIRPIN,
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+    }:
         raise NotImplementedError(
             f"Complete-route composition does not yet materialize {request.endpoint.value}."
         )
@@ -155,7 +158,7 @@ def _discover_constructions_raw(
             foldback_policy=foldback.neighborhood.request.enzyme_provisioning,
             basal_policy=(None if basal is None else basal.discovery.request.enzyme_provisioning),
         )
-        record = direct_realization(
+        record = materialize_endpoint(
             request,
             foldback=foldback_record,
             basal=basal_record,

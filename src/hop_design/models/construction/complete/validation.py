@@ -254,7 +254,8 @@ def expected_material_accounting(realizations: tuple[Any, ...]) -> CompositionMa
             for item in realization.materials[2:]
         ),
         endpoint_product_nt=sum(
-            len(item.final_product.reference.sequence) for item in realizations
+            sum(len(strand.sequence) for strand in item.final_product.strands)
+            for item in realizations
         ),
     )
 

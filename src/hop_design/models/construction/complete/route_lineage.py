@@ -102,7 +102,32 @@ def foldback_occurrences(
                 )
             )
         else:
-            fragment = next(
+            if molecule.molecule_id.endswith("-pcr-bottom-retained"):
+                fragment = next(
+                    item
+                    for fragment_id, item in fragments_by_id.items()
+                    if fragment_id.startswith("bottom-") and fragment_id in molecule.molecule_id
+                )
+                occurrences[molecule.molecule_id] = (
+                    MaterialOccurrence(
+                        start=full_length - (prefix_length + fragment.precursor_span.end.offset),
+                        five_prime_end=source_complement.five_prime_end,
+                        three_prime_end=EndChemistry.HYDROXYL,
+                    ),
+                    None,
+                )
+                continue
+            if molecule.molecule_id.endswith("-pcr-bottom-return-arm"):
+                occurrences[molecule.molecule_id] = (
+                    MaterialOccurrence(
+                        start=full_length - prefix_length,
+                        five_prime_end=EndChemistry.PHOSPHATE,
+                        three_prime_end=source_complement.three_prime_end,
+                    ),
+                    None,
+                )
+                continue
+            matched_fragment = next(
                 (
                     item
                     for fragment_id, item in fragments_by_id.items()
@@ -110,23 +135,23 @@ def foldback_occurrences(
                 ),
                 None,
             )
-            if fragment is None:
+            if matched_fragment is None:
                 raise ValueError("Foldback reaction molecule lacks an exact fragment authority.")
             source_start = (
                 0
-                if fragment.precursor_span.start.offset == 0
-                else prefix_length + fragment.precursor_span.start.offset
+                if matched_fragment.precursor_span.start.offset == 0
+                else prefix_length + matched_fragment.precursor_span.start.offset
             )
-            source_end = prefix_length + fragment.precursor_span.end.offset
+            source_end = prefix_length + matched_fragment.precursor_span.end.offset
             reference_start = (
                 source_start
-                if fragment.precursor_strand is Strand.TOP
+                if matched_fragment.precursor_strand is Strand.TOP
                 else full_length - source_end
             )
             reference = MaterialOccurrence(
                 start=reference_start,
-                five_prime_end=fragment.five_prime_end,
-                three_prime_end=fragment.three_prime_end,
+                five_prime_end=matched_fragment.five_prime_end,
+                three_prime_end=matched_fragment.three_prime_end,
             )
             complement = None
         occurrences[molecule.molecule_id] = (reference, complement)
@@ -237,7 +262,10 @@ def _subsequence_strand(
     if start < 0 or end > len(material.sequence_5prime):
         raise ValueError("Reaction-state occurrence must lie within its exact material.")
     if material.sequence_5prime[start:end] != sequence:
-        raise ValueError("Reaction-state occurrence must replay the exact material bytes.")
+        raise ValueError(
+            "Reaction-state occurrence must replay the exact material bytes: "
+            f"{sequence!r} != {material.sequence_5prime[start:end]!r}."
+        )
     return MolecularStrand(
         strand_id=strand_id,
         sequence=sequence,
@@ -272,7 +300,7 @@ def derive_post_cleavage_strands(
         source=source,
         source_complement=source_complement,
     )
-    return tuple(
+    strands = tuple(
         strand
         for molecule in molecules
         for strand in reaction_molecule_strands(
@@ -284,6 +312,7 @@ def derive_post_cleavage_strands(
             complement_occurrence=occurrences[molecule.molecule_id][1],
         )
     )
+    return strands
 
 
 __all__ = [

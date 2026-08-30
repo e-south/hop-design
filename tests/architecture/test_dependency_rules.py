@@ -104,6 +104,7 @@ def test_reaction_replay_is_model_owned_without_kernel_compatibility_alias() -> 
 
     assert (package_root / "models" / "reaction_replay" / "__init__.py").is_file()
     assert not (package_root / "kernel" / "reactions").exists()
+    assert not (package_root / "kernel" / "reactions.py").exists()
 
     from hop_design.models.reaction_replay import (
         assess_reaction_program,

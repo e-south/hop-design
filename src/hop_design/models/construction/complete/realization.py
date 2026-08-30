@@ -32,12 +32,17 @@ from hop_design.models.construction.realization import CompleteConstructionReali
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
 
+from .material_disposition import (
+    RouteMaterialDispositionSpan,
+    derive_route_material_dispositions,
+)
 from .material_replay import (
     validate_foldback_annealing,
     validate_route_derivation,
     validate_route_material_lineage,
 )
 from .materials import validate_initial_material_state
+from .pcr.validation import validate_pcr_realization
 from .product import MaterializedFinalProduct
 from .program import ConstructionProgram
 from .request import DesignAuthorityReference, ExactConstructionMaterial
@@ -66,6 +71,10 @@ class MaterializedConstructionRealization(HopModel):
     geometry_ids: tuple[str, ...] = Field(min_length=1)
     relaxation_radii: tuple[int, ...] = Field(min_length=1)
     claim_boundary: NeighborhoodClaimBoundary
+    route_material_dispositions: tuple[RouteMaterialDispositionSpan, ...] = Field(
+        default=(),
+        exclude_if=lambda value: not value,
+    )
 
     @classmethod
     def create(cls, **content: object) -> MaterializedConstructionRealization:
@@ -81,6 +90,7 @@ class MaterializedConstructionRealization(HopModel):
     @model_validator(mode="after")
     def validate_realization(self) -> MaterializedConstructionRealization:
         DesignAuthorityReference.model_validate(self.design.model_dump(mode="python"))
+        MaterializedFinalProduct.model_validate(self.final_product.model_dump(mode="python"))
         content = self.model_dump(mode="json", exclude={"materialized_realization_id"})
         if self.materialized_realization_id != _content_id("materialized-construction", 1, content):
             raise ValueError("Materialized identity must seal every complete-route fact.")
@@ -94,18 +104,29 @@ class MaterializedConstructionRealization(HopModel):
             local_realization_ids=self.realization.local_realization_ids,
         )
         validate_initial_material_state(self.construction_program.states[0], self.materials)
-        validate_route_derivation(
-            self.construction_program,
-            foldback=self.foldback_authority,
-            basal=self.basal_authority,
-            materials=self.materials,
-        )
-        validate_route_material_lineage(self.construction_program, self.materials)
-        validate_foldback_annealing(
-            self.construction_program,
-            foldback=self.foldback_authority,
-            materials=self.materials,
-        )
+        is_direct = self.final_product.reference.endpoint.value == "ssdna_hairpin"
+        if is_direct and self.route_material_dispositions:
+            raise ValueError("Direct ssDNA endpoint cannot contain PCR-only material dispositions.")
+        if not is_direct and (
+            self.construction_program.states[-1].phase.value != "hairpin_pcr_duplex"
+            or self.final_product.reference.topology != "linear_duplex"
+        ):
+            raise ValueError(
+                "Materialized endpoint and topology must match exact route chronology."
+            )
+        if is_direct:
+            validate_route_derivation(
+                self.construction_program,
+                foldback=self.foldback_authority,
+                basal=self.basal_authority,
+                materials=self.materials,
+            )
+            validate_route_material_lineage(self.construction_program, self.materials)
+            validate_foldback_annealing(
+                self.construction_program,
+                foldback=self.foldback_authority,
+                materials=self.materials,
+            )
         prefix_length = len(self.materials[0].sequence_5prime) - len(
             self.foldback_authority.source_reference_sequence
         )
@@ -143,22 +164,35 @@ class MaterializedConstructionRealization(HopModel):
         ):
             raise ValueError("Final product reference must seal exact terminal end chemistry.")
         projection = self.final_product.encoding_projection
-        if (
-            projection.source_span.start.offset != 0
-            or projection.source_span.end.offset != len(terminal.molecules[0].sequence)
-            or projection.orientation is not BindingOrientation.SAME_5TO3
-        ):
-            raise ValueError(
-                "Direct encoding projection must be full-span in the terminal 5-to-3 orientation."
+        if is_direct:
+            if (
+                projection.source_span.start.offset != 0
+                or projection.source_span.end.offset != len(terminal.molecules[0].sequence)
+                or projection.orientation is not BindingOrientation.SAME_5TO3
+            ):
+                raise ValueError(
+                    "Direct encoding projection must be full-span in the terminal "
+                    "5-to-3 orientation."
+                )
+            if (
+                self.final_product.reference.topology != "single_stranded_hairpin"
+                or terminal.phase.value != "ligated_product"
+            ):
+                raise ValueError(
+                    "Materialized direct endpoint, topology, and terminal phase must be exact."
+                )
+        else:
+            validate_pcr_realization(self)
+            expected_dispositions = derive_route_material_dispositions(
+                materials=self.materials,
+                program=self.construction_program,
+                material_function_spans=self.final_product.material_function_spans,
             )
-        if (
-            self.final_product.reference.endpoint.value != "ssdna_hairpin"
-            or self.final_product.reference.topology != "single_stranded_hairpin"
-            or terminal.phase.value != "ligated_product"
-        ):
-            raise ValueError(
-                "Materialized direct endpoint, topology, and terminal phase must be exact."
-            )
+            if self.route_material_dispositions != expected_dispositions:
+                raise ValueError(
+                    "PCR route material dispositions must replay exact endpoint lineage "
+                    "and removal."
+                )
         stage_ids = tuple(
             stage.stage_id
             for program in self.construction_program.reaction_programs

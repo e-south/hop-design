@@ -39,6 +39,8 @@ from hop_design.design.construction.verification import (
     verify_foldback_neighborhood_result,
 )
 from hop_design.models.construction import (
+    BasalPairAllowance,
+    BasalPairingConstraint,
     BasalTarget,
     CompleteConstructionRealization,
     ConstructionConstraints,
@@ -112,17 +114,35 @@ from tests.contract.test_foldback_construction_discovery import (
 from tests.integration.test_resolved_compile import _component_spec
 
 
-def _basal_result(payload: FinalPayloadReference):
+def _basal_result(
+    payload: FinalPayloadReference,
+    endpoint: ConstructionEndpoint = ConstructionEndpoint.SSDNA_HAIRPIN,
+    nick_strand: Strand = Strand.TOP,
+    nick_offset_nt: int = 0,
+    pairing_allowances: tuple[BasalPairAllowance, ...] | None = None,
+    recognition_pattern: str | None = None,
+    cut_offset_reference_strand: int | None = None,
+):
     enzyme = CharacterizedEnzyme(
         enzyme_id="example:enzyme/complete-basal@1",
         canonical_name="complete-basal",
         enzyme_class=EnzymeClass.NICKASE,
         target_molecule=TargetMolecule.DNA,
-        recognition_pattern="AAAA",
-        recognition_orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
+        recognition_pattern=(
+            recognition_pattern or ("TTTT" if nick_strand is Strand.BOTTOM else "AAAA")
+        ),
+        recognition_orientation_semantics=(
+            RecognitionOrientationSemantics.BOTH_ORIENTATIONS
+            if nick_strand is Strand.BOTTOM
+            else RecognitionOrientationSemantics.DECLARED_ONLY
+        ),
         recognition_length=4,
         substrate_requirement=SubstrateRequirement.DUPLEX_DNA,
-        cut_offset_reference_strand=4,
+        cut_offset_reference_strand=(
+            cut_offset_reference_strand
+            if cut_offset_reference_strand is not None
+            else (0 if nick_strand is Strand.BOTTOM else 4)
+        ),
         cut_offset_complement_strand=None,
         resulting_end_model=ResultingEndModel.NICK,
         characterization_source=ExternalRef(
@@ -152,8 +172,27 @@ def _basal_result(payload: FinalPayloadReference):
             payload=payload,
             family=LocalNeighborhoodFamily.BASAL,
             route_family=RouteFamily.LINEAR_SOURCE_V1,
-            endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-            target=BasalTarget(nick_strand=Strand.TOP, nick_offset_nt=0),
+            endpoint=endpoint,
+            target=BasalTarget(
+                nick_strand=nick_strand,
+                nick_offset_nt=nick_offset_nt,
+                pairing_constraints=(
+                    ()
+                    if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
+                    else tuple(
+                        BasalPairingConstraint(
+                            profile_position=index,
+                            allowed_class=allowed,
+                        )
+                        for index, allowed in enumerate(
+                            pairing_allowances or (BasalPairAllowance.MATCH,) * 4
+                        )
+                    )
+                ),
+                ligation_proximal_match_required=(
+                    endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+                ),
+            ),
             hard_constraints=ConstructionConstraints(),
             enzyme_provisioning=provisioning,
             relaxation=RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=0),
@@ -185,12 +224,16 @@ def _construction_request(
     design,
     complement_five_prime_end: EndChemistry = EndChemistry.PHOSPHATE,
     require_all: bool = False,
+    endpoint: ConstructionEndpoint = ConstructionEndpoint.SSDNA_HAIRPIN,
+    adapter: ExactConstructionMaterial | None = None,
+    forward_primer: ExactConstructionMaterial | None = None,
+    reverse_primer: ExactConstructionMaterial | None = None,
 ) -> ConstructionDiscoveryRequest:
     encoding = design.plan.hairpin_encoding_insert
     return ConstructionDiscoveryRequest(
         payload=payload,
         route_family=RouteFamily.LINEAR_SOURCE_V1,
-        endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
+        endpoint=endpoint,
         foldback_result_id=foldback.result_id,
         basal_result_id=None if basal is None else basal.result_id,
         materialization=LinearSourceMaterializationSpec(
@@ -200,6 +243,9 @@ def _construction_request(
             source_complement_origin=MaterialOrigin.SYNTHESIZED,
             source_complement_five_prime_end=complement_five_prime_end,
             source_complement_three_prime_end=EndChemistry.HYDROXYL,
+            adapter=adapter,
+            forward_primer=forward_primer,
+            reverse_primer=reverse_primer,
         ),
         design=DesignAuthorityReference(
             bundle=design.bundle,
@@ -602,7 +648,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
             basal=basal,
             design=design,
         )
-    with pytest.raises(NotImplementedError, match="does not yet materialize"):
+    with pytest.raises(ValueError, match="requires one exact basal authority"):
         _discover_raw(
             request.model_copy(
                 update={
@@ -919,7 +965,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
     changed_terminal_product = realization.final_product.model_copy(
         update={"strands": (changed_terminal_strand,)}
     )
-    with pytest.raises(ValidationError, match="terminal construction state"):
+    with pytest.raises(ValidationError, match="exact strand-end chemistry"):
         MaterializedConstructionRealization.create(
             realization=realization.realization,
             foldback_authority=realization.foldback_authority,

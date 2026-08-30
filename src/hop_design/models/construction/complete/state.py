@@ -32,6 +32,10 @@ class ConstructionStatePhase(StrEnum):
     SELECTED_FRAGMENTS = "selected_fragments"
     ANNEALED_COMPLEX = "annealed_complex"
     LIGATED_PRODUCT = "ligated_product"
+    FOLDBACK_CLOSED_HAIRPIN = "foldback_closed_hairpin"
+    ADAPTER_ANNEALED = "adapter_annealed"
+    ADAPTER_LIGATED = "adapter_ligated"
+    HAIRPIN_PCR_DUPLEX = "hairpin_pcr_duplex"
 
 
 class ConstructionState(HopModel):
@@ -105,6 +109,10 @@ class ConstructionState(HopModel):
             ConstructionStatePhase.CLEAVED_DUPLEX,
             ConstructionStatePhase.ANNEALED_COMPLEX,
             ConstructionStatePhase.LIGATED_PRODUCT,
+            ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
+            ConstructionStatePhase.ADAPTER_ANNEALED,
+            ConstructionStatePhase.ADAPTER_LIGATED,
+            ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
         }
         unpaired_phases = {
             ConstructionStatePhase.DENATURED_FRAGMENTS,
@@ -114,8 +122,14 @@ class ConstructionState(HopModel):
             raise ValueError("A paired construction phase requires exact base associations.")
         if self.phase in unpaired_phases and self.pairings:
             raise ValueError("An unpaired construction phase must not retain base associations.")
-        if (self.phase is ConstructionStatePhase.LIGATED_PRODUCT) != bool(self.formed_bonds):
-            raise ValueError("Only a ligated product state requires exact formed-bond evidence.")
+        bonded_phases = {
+            ConstructionStatePhase.LIGATED_PRODUCT,
+            ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
+            ConstructionStatePhase.ADAPTER_ANNEALED,
+            ConstructionStatePhase.ADAPTER_LIGATED,
+        }
+        if (self.phase in bonded_phases) != bool(self.formed_bonds):
+            raise ValueError("Only covalently closed route phases require formed-bond evidence.")
         expected = _content_id(
             "construction-state",
             1,

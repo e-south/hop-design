@@ -72,7 +72,15 @@ def annealed_pairings(
         )
     )
     bottom_id = foldback.annealing_pairs[0].left_strand_id
-    bottom = next(strand for strand in strands if f"-{bottom_id}-" in strand.strand_id)
+    bottom = next(
+        (strand for strand in strands if f"-{bottom_id}-" in strand.strand_id),
+        None,
+    )
+    if bottom is None:
+        raise ValueError(
+            "Foldback annealing strand must survive exact fragment selection: "
+            f"{bottom_id!r} not in {tuple(item.strand_id for item in strands)!r}."
+        )
     pairs.extend(
         item.model_copy(
             update={
