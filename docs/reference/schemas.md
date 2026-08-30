@@ -45,6 +45,8 @@ shipped with that artifact.
 | `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization |
 | `hop.hairpin-junction-route-search-result/v2` | `HairpinJunctionRouteSearchResult` | Bounded continuity join across junction processes |
 | `hop.construction-source/v2` | public file source | Strict foldback, optional basal, endpoint-materialization, whole-route-constraint, and finite-enumeration input; the design bundle remains a separate verified path |
+| `hop.source-partition-request/v1` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, length selection, and finite subset-enumeration bounds |
+| `hop.source-partition-result/v1` | public discovery result | Replay-verified nick sites, denatured fragments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
 | `hop.final-payload/v1` | internal construction model | Final-product payload coordinates, authored reference strand, boundaries, and derived pairing authority |
 | `hop.local-neighborhood-request/v2` | internal construction model | Exact foldback or basal target, route, endpoint, enzyme policy, relaxation, and finite bounds |
 | `hop.neighborhood-discovery-result/v2` | internal construction model | Shared exact-first local accounting, shells, grouping, provenance, and completion status |
@@ -67,8 +69,8 @@ shipped with that artifact.
 | `hop.method-bundle/v2` | `MethodBundle` | Content-addressed method plan and artifacts |
 | `hop.workflow-view/v1` | `WorkflowView` | Renderer-independent panels and tracks |
 
-The construction source, construction bundle, and six generated construction
-projection schemas are active external contracts through
+The construction source, source-partition request/result, construction bundle,
+and six generated construction projection schemas are active external contracts through
 `hop_design.construction`. The request and result schemas in that pipeline are
 active replay authorities but remain internal: callers do not construct or
 import their raw models through the public facade.

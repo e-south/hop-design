@@ -34,17 +34,29 @@ experimental evidence, assay semantics, larger construct placement, private proc
 catalogs, or private application profiles. Callers link their own records
 through neutral external references.
 
-The accepted construction-discovery spine is payload-first:
+The accepted construction-discovery graph is payload-first:
 
 ```text
-final-payload specification
-  -> route family
-  -> requested endpoint
-  -> foldback and basal local realizations
-  -> staged whole-route composition
-  -> exact endpoint products
-  -> reversible scientific projections
+final-payload specification + route family + requested endpoint
+  |-> foldback local realizations
+  |-> basal local realizations
+  |-> source-partition realizations
+  `-> endpoint materialization
+                  |
+                  v
+       staged whole-route composition
+                  |
+                  v
+       exact endpoint products and reversible projections
 ```
+
+Local junction discovery owns only the sequence and reaction geometry at one
+payload boundary. Source-partition discovery owns provisioned nickase subsets,
+all actionable sites, denatured fragments, length selection, and the exact
+required survivor relation. PCR handles, primer binding, Type IIS release, and
+other endpoint periphery are route-materialization concerns. A study may run
+these bounded competencies independently; complete composition may claim only
+the authorities explicitly present in its request.
 
 The public construction entrypoint binds that spine to files without exposing
 its model graph:
@@ -113,7 +125,9 @@ Construction discovery reuses the specialist discovery, molecular-state,
 method, and view layers. Its shared local-neighborhood contract must not enter
 the seven-name `hop_design.spaces` facade or inflate the package root. Foldback
 and basal targets share result, completeness, relaxation, and identity
-semantics while retaining family-specific geometry.
+semantics while retaining family-specific geometry. Source partitioning is a
+sibling authority rather than a basal-neighborhood subtype. Its public receipt
+is exposed only through `hop_design.construction`.
 
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules explicitly, and fails on unknown first-party

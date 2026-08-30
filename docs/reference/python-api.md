@@ -41,6 +41,15 @@ All operations and receipts in this section use `hop_design.construction`.
   loads one strict file and a separate verified design authority, discovers
   local neighborhoods, composes the bounded whole route, and returns an opaque
   write-capable receipt.
+- `discover_source_partition(source_path) -> SourcePartitionDiscovery`
+  enumerates canonical nonempty subsets of provisioned strand-exposure
+  nickases, applies every actionable site, derives all denatured fragments,
+  applies the declared length selection, and accepts only exact required
+  survivor spans. The opaque receipt exposes exact search accounting and
+  deterministic JSON/CSV bytes.
+- `load_verified_source_partition(result_path) -> SourcePartitionDiscovery`
+  safely reopens canonical result JSON and repeats molecular, candidate-space,
+  completion, and identity replay before returning the same opaque receipt.
 - `load_verified_construction_bundle(path) -> VerifiedConstructionBundle`
   checks portable bytes and semantically replays the embedded design, local
   authorities, complete result, and root manifest.
@@ -64,7 +73,13 @@ materialization, composition, verification, and projection. They do not
 establish laboratory construction, destination compatibility, QC, activity,
 yield, or an optimized route.
 
-See the [construction guide](../guides/compile-construction.md),
+Source partitioning is not basal discovery. Its nick functions distinguish a
+retained-fragment boundary from excluded-fragment cleanup. Canonical enzyme
+subset order is replay metadata, not rank. PCR handles and primer
+thermodynamics are outside this local search.
+
+See the [construction guide](../guides/compile-construction.md), the
+[source-partition guide](../guides/discover-source-partitions.md),
 [construction-bundle layout](construction-bundle-layout.md), and
 [construction projection contracts](view-contracts.md#complete-construction-projections).
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from hop_design.kernel.molecular_states import build_lineage, observe_pair, reindex_lineage
+from hop_design.models.molecular_replay import build_lineage, observe_pair, reindex_lineage
 from hop_design.kernel.site_scanning import scan_release_agent
 from hop_design.models.catalog import SiteOrientation
 from hop_design.models.coordinates import Boundary, Span

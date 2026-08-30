@@ -15,7 +15,7 @@ from hop_design.kernel.construction.basal import (
     BasalProgramCandidate,
     BasalSequenceSolution,
 )
-from hop_design.kernel.molecular_states import (
+from hop_design.models.molecular_replay import (
     observe_pair,
     reindex_lineage,
 )

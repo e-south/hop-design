@@ -7,7 +7,7 @@ audience:
   - API consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-30
 doc_type: explanation
 ---
 
@@ -57,9 +57,9 @@ doc_type: explanation
 - Catalog discovery and molecular compilation are separate operations.
   Discovery reports physical placement facts and explicit truncation; caller
   selection policy cannot silently become HOP ordering.
-- Foldback construction targets use explicit junction-offset, loop-length, and
-  annealing-arm-length fields. Public contracts contain no positional mnemonic
-  aliases.
+- Foldback construction targets use explicit nick-offset-within-foldback,
+  loop-length, and annealing-arm-length fields. The biological payload boundary
+  is fixed independently of the nick position.
 - Basal pairing is ordered from the payload-proximal ligation position outward
   and retains literal bases and physical classifications. Type IIS processing
   exists only for an endpoint that requests generated ends.
@@ -70,6 +70,15 @@ doc_type: explanation
   resolve against one pre-stage molecular state, and unintended sites fail a
   route only when physically actionable in the stage where the enzyme is
   present.
+- Source-partition discovery enumerates nonempty subsets of caller-provisioned
+  strand-exposure nickases. Applying an enzyme means applying every actionable
+  site in the exact source duplex. A candidate is accepted only when the
+  declared length rule retains exactly the required strand spans. Auxiliary
+  cleanup nicks remain route-level facts and never become basal geometry.
+- PCR handles, primer binding, and end release are endpoint-materialization
+  facts. Exact primer sequences may be checked for sequence binding, but no
+  thermodynamic feasibility claim exists without a separately declared model
+  and conditions.
 - Local realization, complete realization, exact final product, and achieved
   geometry have distinct identities. Grouping is a reversible projection and
   cannot discard or merge exact realization authorities.

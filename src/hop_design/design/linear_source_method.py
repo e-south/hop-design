@@ -16,7 +16,7 @@ from hop_design.design.linear_source_states.product import (
     resolve_selected_pairs,
 )
 from hop_design.design.method import resolve_linear_source_hairpin_pcr_materials
-from hop_design.kernel.molecular_states import (
+from hop_design.models.molecular_replay import (
     build_denatured_fragments,
     reindex_lineage,
     strand_from_sequence,
@@ -99,7 +99,9 @@ def compile_linear_source_multinick_hairpin_pcr(
         top_cut_boundaries=top_cuts,
         bottom_cut_boundaries=bottom_cuts,
         top_five_prime_end=source_duplex.top_strand.five_prime_end,
+        top_three_prime_end=source_duplex.top_strand.three_prime_end,
         bottom_five_prime_end=source_duplex.bottom_strand.five_prime_end,
+        bottom_three_prime_end=source_duplex.bottom_strand.three_prime_end,
     )
     denatured = DenaturedFragmentSet(
         precursor_top_sequence=source_duplex.top_strand.sequence,

@@ -46,6 +46,11 @@ from hop_design.models.construction.projections import (
 
 from .complete.bundle import ConstructionCompilation, VerifiedConstructionBundle
 from .complete.discovery import VerifiedConstructionSpaceResult
+from .source_partition import (
+    SourcePartitionDiscovery,
+    discover_source_partition,
+    load_verified_source_partition,
+)
 
 
 @dataclass(frozen=True, init=False, repr=False)
@@ -256,9 +261,12 @@ def project_relaxation_frontier(
 __all__ = [
     "ConstructionCompilation",
     "ConstructionProjection",
+    "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compile_construction",
+    "discover_source_partition",
     "load_verified_construction_bundle",
+    "load_verified_source_partition",
     "project_basal_feasibility",
     "project_complete_construction_summary",
     "project_construction_trajectory",

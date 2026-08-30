@@ -33,6 +33,7 @@ No physical construction, QC, or activity record is attached.
 | Install a release and compile a first design | [Quickstart](docs/guides/quickstart.md) |
 | Load payload records or use advanced composable axes | [Payload-source guide](docs/guides/payload-sources-and-expansion.md) |
 | Find compatible candidates under explicit limits | [Discovery guide](docs/guides/discover-compatible-basal-candidates.md) |
+| Find multi-nick programs that create an exact fragment partition | [Source-partition guide](docs/guides/discover-source-partitions.md) |
 | Compile one strict payload-centered construction route | [Construction guide](docs/guides/compile-construction.md) |
 | Resolve an exact named production method | [Method guide](docs/guides/resolve-production-method.md) |
 | Render typed foldback or basal views | [Component-view guide](docs/guides/render-component-views.md) |
@@ -46,6 +47,11 @@ No physical construction, QC, or activity record is attached.
 specialist surfaces for single-design derivation, complete construction,
 bounded searches, named methods, and typed projections. They are not required
 for the first substrate-space journey.
+
+Construction questions are not one global optimizer. Foldback geometry, basal
+geometry, route-level source partitioning, and downstream endpoint
+materialization are separate bounded competencies. HOP preserves every valid
+result in canonical order; a study chooses which route to test.
 
 ## Claim boundary
 

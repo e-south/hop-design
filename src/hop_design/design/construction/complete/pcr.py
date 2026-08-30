@@ -11,7 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from hop_design.kernel.molecular_states import observe_pair
+from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.complete import (
     AdapterAnnealingAuthority,
