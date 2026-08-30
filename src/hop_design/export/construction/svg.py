@@ -11,23 +11,22 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-import html
 from typing import NamedTuple
 
 from hop_design.models.construction import ConstructionEndpoint, SearchCompletionStatus
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     BasalFeasibilityRow,
+    CompleteConstructionSummaryProjection,
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
     RelaxationFrontierProjection,
 )
 
-_INK = "#17211d"
-_MUTED = "#5b6661"
-_RULE = "#cbd3cf"
-_ACCENT = "#176b54"
-_WASH = "#eef4f1"
+from .complete_svg import render_complete_projection_svg
+from .svg_common import ACCENT, WASH
+from .svg_common import escape as _escape
+from .svg_common import render_document as _document
 
 
 class _BasalGroupKey(NamedTuple):
@@ -41,8 +40,12 @@ class _BasalGroupKey(NamedTuple):
     cohesive_end_count: int
 
 
-def render_projection_svg(projection: LocalScientificProjection) -> bytes:
+def render_projection_svg(
+    projection: LocalScientificProjection | CompleteConstructionSummaryProjection,
+) -> bytes:
     """Render one scientific relation without molecular recomputation or ranking."""
+    if isinstance(projection, CompleteConstructionSummaryProjection):
+        return render_complete_projection_svg(projection)
     if isinstance(projection, FoldbackFeasibilityProjection):
         return _render_foldback(projection)
     if isinstance(projection, BasalFeasibilityProjection):
@@ -189,8 +192,8 @@ def _render_relaxation(projection: RelaxationFrontierProjection) -> bytes:
             f'data-failure-reasons="{_escape(failures)}" '
             f'data-realization-ids="{_escape(ids)}">'
             f'<circle cx="{x:.1f}" cy="260" r="22" '
-            f'fill="{_ACCENT if shell.realization_count else _WASH}" '
-            f'stroke="{_ACCENT}" stroke-width="2"/>'
+            f'fill="{ACCENT if shell.realization_count else WASH}" '
+            f'stroke="{ACCENT}" stroke-width="2"/>'
             f'<text x="{x:.1f}" y="266" text-anchor="middle" class="body">'
             f"{shell.realization_count}</text>"
             f'<text x="{x:.1f}" y="306" text-anchor="middle" class="small">'
@@ -256,28 +259,3 @@ def _endpoint_label(endpoint: ConstructionEndpoint) -> str:
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX: "hairpin PCR duplex endpoint",
         ConstructionEndpoint.CLONE_READY_DUPLEX: "clone-ready duplex endpoint",
     }[endpoint]
-
-
-def _document(*, title: str, body: str, height: int) -> bytes:
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="{height}"
-viewBox="0 0 1200 {height}" role="img" aria-labelledby="figure-title figure-description">
-<title id="figure-title">{_escape(title)}</title>
-<desc id="figure-description">Neutral scientific projection of typed local
-construction discovery.</desc>
-<style>
-text {{ fill:{_INK}; font-family:Arial, Helvetica, sans-serif; }}
-.title {{ font-size:28px; font-weight:700; }}
-.subtitle {{ font-size:17px; fill:{_MUTED}; }}
-.label {{ font-size:14px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }}
-.body {{ font-size:16px; }}
-.small {{ font-size:13px; fill:{_MUTED}; }}
-.rule {{ stroke:{_RULE}; stroke-width:1.5; }}
-</style>
-<rect width="100%" height="100%" fill="#ffffff"/>
-{body}
-</svg>
-""".encode()
-
-
-def _escape(value: object) -> str:
-    return html.escape(str(value), quote=True)

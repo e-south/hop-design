@@ -11,6 +11,10 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from .complete import (
+    CompleteConstructionSummaryProjection,
+    CompleteConstructionSummaryRow,
+)
 from .local import (
     BasalFeasibilityProjection,
     BasalFeasibilityRow,
@@ -24,6 +28,8 @@ from .local import (
 __all__ = [
     "BasalFeasibilityProjection",
     "BasalFeasibilityRow",
+    "CompleteConstructionSummaryProjection",
+    "CompleteConstructionSummaryRow",
     "FoldbackFeasibilityProjection",
     "FoldbackFeasibilityRow",
     "LocalScientificProjection",

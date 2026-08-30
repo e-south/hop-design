@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from hop_design.models.bundle import ArtifactManifestEntry, MethodBundle
+from hop_design.models.construction.bundle import ConstructionBundle
 from hop_design.models.design_space import HairpinDesignSet
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
@@ -72,3 +73,40 @@ def method_bundle_id(*, request_id: str, manifest_digest: str) -> str:
     request_suffix = sha256_digest(request_id.encode()).removeprefix("sha256:")[:12]
     content_suffix = manifest_digest.removeprefix("sha256:")[:16]
     return f"hop:method-bundle/{request_suffix}/{content_suffix}"
+
+
+def construction_manifest_seed(
+    *,
+    result_id: str,
+    design_bundle_id: str,
+    result_digest: str,
+    artifacts: Sequence[ArtifactManifestEntry],
+) -> dict[str, object]:
+    """Return the canonical identity seed for one construction bundle."""
+    return {
+        "artifacts": [item.model_dump(mode="json") for item in artifacts],
+        "design_bundle_id": design_bundle_id,
+        "result_digest": result_digest,
+        "result_id": result_id,
+    }
+
+
+def manifest_digest_for_construction_bundle(bundle: ConstructionBundle) -> str:
+    """Recompute the content identity of a loaded construction bundle."""
+    return sha256_digest(
+        canonical_json_bytes(
+            construction_manifest_seed(
+                result_id=bundle.result_id,
+                design_bundle_id=bundle.design_bundle_id,
+                result_digest=bundle.result_digest,
+                artifacts=bundle.artifacts,
+            )
+        )
+    )
+
+
+def construction_bundle_id(*, result_id: str, manifest_digest: str) -> str:
+    """Derive a stable construction-bundle id without embedding a caller path."""
+    result_suffix = sha256_digest(result_id.encode()).removeprefix("sha256:")[:12]
+    content_suffix = manifest_digest.removeprefix("sha256:")[:16]
+    return f"hop:construction-bundle/{result_suffix}/{content_suffix}"

@@ -28,7 +28,7 @@ class ProjectionReference(HopModel):
     result_id: str = Field(
         pattern=(
             r"^hop:(?:neighborhood-result|foldback-neighborhood-result|"
-            r"basal-neighborhood-result|construction-result)/[0-9a-f]{64}@1$"
+            r"basal-neighborhood-result)/[0-9a-f]{64}@1$"
         )
     )
     projection_schema: str

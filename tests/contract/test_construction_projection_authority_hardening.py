@@ -23,6 +23,7 @@ from hop_design.design.construction.projections import (
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
+    ProjectionReference,
     RelaxationCoordinate,
     RelaxationMode,
     RelaxationPolicy,
@@ -92,6 +93,18 @@ def test_projection_authorities_reject_duplicate_membership_and_status_drift() -
     content["realization_count"] = 2
     with pytest.raises(ValidationError, match="must not repeat"):
         FoldbackFeasibilityProjection.model_validate(content)
+
+
+def test_local_projection_reference_rejects_the_dead_complete_result_spelling() -> None:
+    with pytest.raises(ValidationError, match="result_id"):
+        ProjectionReference(
+            projection_id=f"hop:projection/{'0' * 64}@1",
+            result_id=f"hop:construction-result/{'1' * 64}@1",
+            projection_schema="hop.example/v1",
+            renderer_version="example/1",
+            realization_ids=(),
+            groups=(),
+        )
 
     infeasible = project_foldback_feasibility(
         discover_foldback_neighborhood(

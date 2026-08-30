@@ -11,6 +11,10 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from .complete import (
+    project_complete_construction_summary,
+    verify_complete_construction_projection,
+)
 from .local import (
     project_basal_feasibility,
     project_foldback_feasibility,
@@ -20,7 +24,9 @@ from .local import (
 
 __all__ = [
     "project_basal_feasibility",
+    "project_complete_construction_summary",
     "project_foldback_feasibility",
     "project_relaxation_frontier",
+    "verify_complete_construction_projection",
     "verify_local_projection",
 ]

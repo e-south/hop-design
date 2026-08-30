@@ -27,6 +27,7 @@ from .accounting import (
     RelaxationShellSummary,
     SearchCompletionStatus,
 )
+from .bundle import ConstructionBundle
 from .payload import (
     ConstructionEndpoint,
     FinalPayloadReference,
@@ -85,6 +86,7 @@ __all__ = [
     "BasalPairingConstraint",
     "BasalTarget",
     "CompleteConstructionRealization",
+    "ConstructionBundle",
     "ConstructionConstraints",
     "ConstructionEndpoint",
     "ConstructionExecution",
