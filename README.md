@@ -5,24 +5,23 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
 
-HOP helps scientists describe a DNA hairpin, calculate the sequence that must
-pair with it, and check whether a supported way of making it fits the design.
-It produces exact, verifiable design and method records; it does not predict
-whether a laboratory experiment will succeed.
+Specify the duplex context you want to test. HOP returns the complete paired
+hairpin designs and a stable handoff for construction and measurement. It does
+not predict whether a laboratory experiment will succeed.
 
-Define one bounded duplex substrate space, preview its exact size, and compile
-a verified digital design package with a readable sequence index and review.
-The public tracer asks how activity varies across three paired context
-positions: three `N` positions define 64 exact assignments and compile to one
-complete sequence-indexed design package. This establishes verified digital
-design only. Named-method and destination compatibility are not evaluated;
-physical construction, QC, and biological activity are not recorded.
+The first journey is `question → substrate rule → exact paired designs → CSV,
+FASTA, generic projections, and verified handoff`. HOP previews bounded spaces
+without allocation and compiles every member in deterministic order. The tool
+does not choose a biological target or publication example; application and
+figure decisions remain with the study that consumes the design package.
+
+No physical construction, QC, or activity record is attached.
 
 | Project status | Current contract |
 | --- | --- |
 | Maturity | HOP is alpha software; schemas and public APIs may change before 1.0. |
-| Published release | [v0.1.0a6](https://github.com/e-south/hop-design/releases/tag/v0.1.0a6), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a6). |
-| Source line | Main and this documentation describe unreleased v0.1.0a7. |
+| Published release | [v0.1.0a7](https://github.com/e-south/hop-design/releases/tag/v0.1.0a7), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7). |
+| Source line | Main and the tagged documentation describe the v0.1.0a7 release contract. |
 | Distribution | Release artifacts are published through [GitHub Releases](https://github.com/e-south/hop-design/releases), not PyPI. |
 
 ## Choose a route
@@ -34,22 +33,30 @@ physical construction, QC, and biological activity are not recorded.
 | Install a release and compile a first design | [Quickstart](docs/guides/quickstart.md) |
 | Load payload records or use advanced composable axes | [Payload-source guide](docs/guides/payload-sources-and-expansion.md) |
 | Find compatible candidates under explicit limits | [Discovery guide](docs/guides/discover-compatible-basal-candidates.md) |
+| Compile one strict payload-centered construction route | [Construction guide](docs/guides/compile-construction.md) |
 | Resolve an exact named production method | [Method guide](docs/guides/resolve-production-method.md) |
 | Render typed foldback or basal views | [Component-view guide](docs/guides/render-component-views.md) |
 | Verify bundles and compare a design/method handoff | [Provenance and verification](docs/provenance/overview.md) |
 | Place or assess a product downstream | [Ownership boundaries](docs/ecosystem/ownership-boundaries.md) |
 | Navigate concepts, guides, reference, and maintenance | [Documentation map](docs/index.md) |
 
-The CLI covers common design compilation. Discovery, named methods, typed
-views, and integration use the Python surfaces documented by each route.
+`hop_design.spaces` is the scientist-facing facade. The package root
+`hop_design` and the sibling `hop_design.construction`,
+`hop_design.discovery`, `hop_design.methods`, and `hop_design.views` facades are
+specialist surfaces for single-design derivation, complete construction,
+bounded searches, named methods, and typed projections. They are not required
+for the first substrate-space journey.
 
 ## Claim boundary
 
 A compiled encoding establishes deterministic design derivation. A verified
-method bundle establishes replay of one named molecular method. Neither claim
-establishes empirical cleavage efficiency, destination compatibility,
-laboratory yield, or experimental success. A restriction product is
-destination-neutral until a downstream system evaluates a destination.
+construction bundle establishes deterministic local discovery, bounded digital
+route composition, and its exact `complete`, `infeasible`, or `truncated`
+status and accounting. A verified method bundle establishes replay of one named
+molecular method. None of these claims establishes empirical cleavage
+efficiency, destination compatibility, laboratory yield, or experimental
+success. A restriction product is destination-neutral until a downstream
+system evaluates a destination.
 
 ## Project routes
 

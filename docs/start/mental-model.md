@@ -1,14 +1,14 @@
 ---
 doc_id: hop-mental-model
-title: Five claims HOP keeps separate
-intent: Establish the distinct claims made by design, discovery, methods, verification, and downstream use.
+title: Claims HOP keeps separate
+intent: Establish the distinct claims made by payload specification, construction discovery, methods, verification, and downstream use.
 audience:
   - users
   - integrators
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-30
 doc_type: explanation
 journey:
   - compile
@@ -18,7 +18,7 @@ journey:
   - integrate
 ---
 
-# Five claims HOP keeps separate
+# Claims HOP keeps separate
 
 The most important HOP invariant is a chain of non-equivalences:
 
@@ -30,7 +30,9 @@ a sequence exists
     != the experiment succeeds
 ```
 
-HOP represents those questions on five sibling surfaces.
+HOP represents those questions on sibling surfaces. The same separation holds
+when the starting point is a bounded substrate space or a payload-centered
+construction request.
 
 ## 1. Design language
 
@@ -39,28 +41,48 @@ payload, evaluates structural relationships, and produces one deterministic
 `HairpinEncodingInsert`. Successful compilation establishes design identity;
 it makes no production-method claim.
 
-## 2. Discovery language
+## 2. Construction discovery and composition
 
-A discovery query asks a bounded competency question, such as which catalog
-geometries can place a cut or support a declared junction. Its result reports
-candidate identity, neutral order, and whether the declared space was completed,
-proved infeasible, or truncated. Selection remains caller-owned.
+A construction request starts from the final duplex payload, selects a
+source-realization route family and requested endpoint, and asks which exact
+foldback and basal neighborhood realizations satisfy the declared geometry and
+molecular constraints. Source coordinates are route-specific; they never
+replace final-payload coordinates as the biological authority.
+
+Discovery is finite and exact-first. Its result reports every exact
+realization, neutral order, reversible geometry and final-product groups, and
+whether the declared space was completed, proved infeasible, or truncated.
+Grouping does not replace realization identity, and selection remains
+caller-owned.
+
+The file-oriented construction operation accepts local requests in one strict
+source document and the design as a separate verified bundle. HOP discovers
+and replay-verifies the local authorities, composes the bounded whole route,
+requires the exact endpoint encoding to agree with the verified design, and
+can persist one portable construction bundle. The source cannot assert design
+or result identities.
 
 ## 3. Method language
 
 A method request supplies exact materials to one named production method. A
 successful method compiler derives exact molecular states, transitions, and a
-destination-neutral product. Only the method plan owns temporal production
-history. A design derivation owns no ordered production chronology, although a
-resolved design may preserve caller-asserted nick or release geometry used to
-derive its encoding.
+destination-neutral product. Only a route or method plan owns temporal
+production history. Construction routes use ordered reaction stages;
+concurrent operations in one stage resolve against the same pre-stage state. A
+design derivation owns no ordered production chronology.
+
+The requested endpoint determines method obligations. A direct
+single-stranded hairpin does not require adapter capture, PCR, or Type IIS end
+generation merely because a clone-ready endpoint does.
 
 ## 4. Provenance and verification
 
-Design and method bundles are separate immutable authorities. Byte checks and
-semantic replay establish internal consistency. A digest-equality relation can
-bind a design encoding to a method product's encoding projection, but one valid
-bundle does not imply that a second valid bundle is related to it.
+Design, construction, and method bundles are distinct immutable authorities.
+A construction bundle embeds and replay-verifies the design authority used for
+whole-route composition. A method bundle records one named method request and
+its derived products independently. Byte checks and semantic replay establish
+internal consistency; one valid authority does not imply laboratory execution
+or that an unrelated authority belongs to it.
 
 ## 5. Ecosystem and downstream use
 
@@ -72,15 +94,20 @@ not redefine HOP anatomy or retroactively change method feasibility.
 campaign or human intent
           |
           v
- design --+-- discovery -- caller selection
+ payload -+-- local discovery -- exact realizations
           |
-          +-- named method -- destination-neutral product
+          +-- route composition -- requested endpoint product
           |
           +-- provenance and verification
                               |
                               v
-             placement, assessment, study, execution
+             study evidence, manuscript, downstream use
 ```
+
+HOP owns the molecular computation through the verified endpoint projection.
+Research Studies owns experimental observations and scientific asset
+promotion. manufold owns manuscript claims, evidence cutoff, and accepted
+composition.
 
 Continue with the [design language](../language/overview.md),
 [discovery language](../discovery/overview.md), [method language](../methods/overview.md),

@@ -7,7 +7,7 @@ its progressive-disclosure references as the task requires.
 
 | Requested work | Load |
 | --- | --- |
-| Explain or use the design language, discovery, named methods, typed views, bundle verification, or immutable handoffs | `.agents/skills/hop-design-user/SKILL.md` |
+| Explain or use the design language, payload-centered construction, discovery, named methods, typed views, bundle verification, or immutable handoffs | `.agents/skills/hop-design-user/SKILL.md` |
 | Change or review code, schemas, architecture, documentation, tests, packaging, CI, or releases | `.agents/skills/hop-maintainer/SKILL.md` |
 
 Do not load both skills for routine work. Cross the boundary only when a user

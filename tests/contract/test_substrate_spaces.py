@@ -21,24 +21,16 @@ from hop_design.design.spaces import SubstrateMemberCompilationError
 from hop_design.models.design_space import HairpinDesignMember, VariableAssignment
 
 
-def _space_data(*, variable: str = "NNN", max_members: int = 64) -> dict[str, object]:
+def _space_data(*, variable: str = "NNN") -> dict[str, object]:
     return {
         "schema": "hop/substrate-space/v1",
         "name": "fixed-site-three-base-context",
-        "context": {
-            "question": "How does activity vary across paired context positions?",
-            "activity": "internal DNA-binding or processing activity",
-            "readout": "sequence-indexed downstream assay",
-        },
-        "payload": {
-            "segments": [
-                {"fixed": "ACTG"},
-                {"variable": variable, "name": "context"},
-                {"fixed": "GATC", "name": "recognition-site"},
-            ]
-        },
-        "hairpin": {"defaults_ref": "hop:defaults/generic-hairpin-design@2"},
-        "enumeration": {"mode": "exhaustive", "max_members": max_members},
+        "question": "How does activity vary across paired context positions?",
+        "payload": [
+            {"fixed": "ACTG"},
+            {"variable": variable, "label": "context"},
+            {"fixed": "GATC", "label": "recognition-site"},
+        ],
     }
 
 
@@ -71,72 +63,60 @@ def test_preview_reports_one_complete_bounded_space_without_enumerating_members(
         ("A", "C", "G", "T"),
     )
     assert preview.theoretical_cardinality == 64
-    assert preview.max_members == 64
+    assert preview.compilation_limit == 256
     assert preview.message is None
     assert not hasattr(preview, "members")
 
 
-def test_preview_blocks_a_valid_space_above_its_explicit_bound() -> None:
-    spec = spaces.SubstrateSpaceSpec.model_validate(_space_data(variable="NNNNNN", max_members=256))
+def test_preview_blocks_a_valid_space_above_the_supported_release_envelope() -> None:
+    spec = spaces.SubstrateSpaceSpec.model_validate(_space_data(variable="NNNNN"))
 
     preview = spaces.preview_space(spec)
 
     assert preview.state == "blocked"
-    assert preview.theoretical_cardinality == 4096
-    assert preview.max_members == 256
+    assert preview.theoretical_cardinality == 1024
+    assert preview.compilation_limit == 256
     assert preview.message == (
-        "This valid specification defines 4096 exact assignments. "
-        "Compilation is blocked by max_members=256."
+        "This valid specification defines 1024 exact assignments. "
+        "Compilation supports up to 256 designs in this release."
     )
 
 
-def test_preview_marks_an_unresolved_defaults_reference_invalid() -> None:
-    data = _space_data()
-    data["hairpin"] = {"defaults_ref": "hop:defaults/unknown@1"}
-    spec = spaces.SubstrateSpaceSpec.model_validate(data)
-
-    preview = spaces.preview_space(spec)
-
-    assert preview.state == "invalid"
-    assert preview.message == (
-        "Unknown defaults reference 'hop:defaults/unknown@1'; "
-        "locked catalog supports 'hop:defaults/generic-hairpin-design@2'."
-    )
-
-
-def test_spec_reports_the_member_bound_as_an_implementation_ceiling() -> None:
-    with pytest.raises(
-        ValidationError,
-        match="max_members cannot exceed the current implementation ceiling of 100,000",
+def test_scientist_spec_rejects_hairpin_and_enumeration_policy() -> None:
+    for field, value in (
+        ("hairpin", {"defaults_ref": "hop:defaults/generic-hairpin-design@2"}),
+        ("enumeration", {"mode": "exhaustive", "max_members": 64}),
     ):
-        spaces.SubstrateSpaceSpec.model_validate(_space_data(max_members=100_001))
+        data = _space_data()
+        data[field] = value
+        with pytest.raises(ValidationError, match=field):
+            spaces.SubstrateSpaceSpec.model_validate(data)
 
 
 def test_spec_rejects_a_second_authored_arm_and_noncanonical_fixed_bases() -> None:
     second_arm = _space_data()
-    second_arm["payload"] = {
-        "segments": [{"fixed": "ACTG"}, {"variable": "NNN"}, {"fixed": "GATC"}],
-        "paired_segments": [{"fixed": "GATC"}, {"variable": "NNN"}, {"fixed": "CAGT"}],
-    }
-    with pytest.raises(ValidationError, match="paired_segments"):
+    second_arm["paired_payload"] = [
+        {"fixed": "GATC"},
+        {"variable": "NNN"},
+        {"fixed": "CAGT"},
+    ]
+    with pytest.raises(ValidationError, match="paired_payload"):
         spaces.SubstrateSpaceSpec.model_validate(second_arm)
 
     noncanonical = _space_data()
-    noncanonical["payload"] = {"segments": [{"fixed": "ACNG"}]}
+    noncanonical["payload"] = [{"fixed": "ACNG"}]
     with pytest.raises(ValidationError, match="exact DNA"):
         spaces.SubstrateSpaceSpec.model_validate(noncanonical)
 
 
 def test_segment_names_are_optional_but_unique() -> None:
     data = _space_data()
-    data["payload"] = {
-        "segments": [
-            {"fixed": "ACTG", "name": "context"},
-            {"variable": "NNN", "name": "context"},
-        ]
-    }
+    data["payload"] = [
+        {"fixed": "ACTG", "label": "context"},
+        {"variable": "NNN", "label": "context"},
+    ]
 
-    with pytest.raises(ValidationError, match="Segment names must be unique"):
+    with pytest.raises(ValidationError, match="Segment labels must be unique"):
         spaces.SubstrateSpaceSpec.model_validate(data)
 
 
@@ -158,7 +138,7 @@ def test_member_bundle_paths_are_confined_to_the_collection_member_root() -> Non
 
 
 def test_member_compilation_error_identifies_the_authored_assignment() -> None:
-    spec = spaces.SubstrateSpaceSpec.model_validate(_space_data(variable="RYN", max_members=16))
+    spec = spaces.SubstrateSpaceSpec.model_validate(_space_data(variable="RYN"))
     assignments = (
         VariableAssignment(position=5, base="A"),
         VariableAssignment(position=6, base="G"),

@@ -1,3 +1,14 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/architecture/test_dependency_rules.py
+
+Tests package dependency direction and public-facade boundaries.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import sys
@@ -20,6 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
         ("models/bad.py", "from hop_design import design"),
         ("models/bad.py", "from .. import design"),
         ("models/bad.py", "from hop_design.discovery import search_basal_candidates"),
+        ("design/bad.py", "from hop_design.construction import compile_construction"),
         ("design/bad.py", "from hop_design.methods import MethodBundle"),
         ("design/bad.py", "from hop_design.spaces import compile_space"),
         ("api.py", "from hop_design.cli import app"),
@@ -38,6 +50,10 @@ def test_forbidden_absolute_relative_and_root_imports_fail(path: str, source: st
     [
         ("design/good.py", "from hop_design.kernel import bundle_identity"),
         ("cli.py", "from hop_design.api import compile"),
+        (
+            "construction.py",
+            "from hop_design.design.construction.public import compile_construction",
+        ),
         ("discovery.py", "from hop_design.design.discovery import search_nicking_placements"),
         ("spaces.py", "from hop_design.design.spaces import preview_space"),
     ],
@@ -97,3 +113,21 @@ def test_temporal_method_replay_has_truthful_ownership_and_bounded_modules() -> 
         path = REPO_ROOT / relative_path
         assert path.is_file(), relative_path
         assert len(path.read_text(encoding="utf-8").splitlines()) <= 300, relative_path
+
+
+def test_reaction_replay_is_model_owned_without_kernel_compatibility_alias() -> None:
+    package_root = REPO_ROOT / "src" / "hop_design"
+
+    assert (package_root / "models" / "reaction_replay" / "__init__.py").is_file()
+    assert not (package_root / "kernel" / "reactions").exists()
+    assert not (package_root / "kernel" / "reactions.py").exists()
+
+    from hop_design.models.reaction_replay import (
+        assess_reaction_program,
+        assess_reaction_stage,
+        scan_actionable_sites,
+    )
+
+    assert callable(assess_reaction_program)
+    assert callable(assess_reaction_stage)
+    assert callable(scan_actionable_sites)

@@ -1,0 +1,58 @@
+schema: hop.resolved-design/v2
+design_id: resolved-demo
+payload:
+  kind: exact
+  sequence: GACA
+foldback:
+  precursor_sequence: CCTCAGCA
+  retained_tract_span:
+    start:
+      offset: 2
+    end:
+      offset: 6
+  source_turn_span:
+    start:
+      offset: 6
+    end:
+      offset: 8
+  protected_region:
+    start:
+      offset: 0
+    end:
+      offset: 2
+  turn_extension: T
+  foldback_arm: CTGA
+  constraints:
+    max_non_watson_crick_pairs: 0
+    terminal_watson_crick_bp_min: 4
+    terminal_watson_crick_bp_max: 4
+    max_uninterrupted_watson_crick_bp: 4
+    max_added_nt: 5
+    required_turn_nt: 3
+    allow_protected_region_non_watson_crick_pairs: false
+basal:
+  pairing:
+    left_arm: AAAA
+    right_arm: TTTT
+  constraints:
+    pairing_index_kind: pair-count-weighted@1
+    require_terminal_watson_crick: true
+    allow_active_gt_wobble: true
+    max_active_hard_mismatches: 0
+    max_active_non_watson_crick_pairs: 0
+    forbid_active_middle_double_hard: true
+    minimum_active_pair_support_index: 4.0
+    maximum_active_pair_disruption_index: 0.0
+    require_outer_hard_for_active_double: true
+    reject_compact_profiles: []
+    reserve_compact_profiles: []
+  acceptance: active_only
+  terminal_nick: null
+release: null
+defaults_ref: example:defaults/resolved@1
+catalog_ref: example:processing-catalog/synthetic@1
+constraint_profile_ref: example:constraint-profile/explicit@1
+design_derivation_ref: example:design-derivation/evaluated-components@1
+constraints:
+  max_candidates: 1
+external_refs: []

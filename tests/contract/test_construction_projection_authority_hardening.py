@@ -1,0 +1,202 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/contract/test_construction_projection_authority_hardening.py
+
+Tests local construction projections against endpoint and membership drift.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
+from __future__ import annotations
+
+import pytest
+from pydantic import ValidationError
+
+from hop_design.design.construction.basal import discover_basal_neighborhood
+from hop_design.design.construction.foldback import discover_foldback_neighborhood
+from hop_design.design.construction.projections import (
+    project_basal_feasibility,
+    project_foldback_feasibility,
+    project_relaxation_frontier,
+)
+from hop_design.models.construction import (
+    ConstructionEndpoint,
+    ProjectionReference,
+    RelaxationCoordinate,
+    RelaxationMode,
+    RelaxationPolicy,
+    SearchCompletionStatus,
+)
+from hop_design.models.construction.basal import (
+    BasalEndpointProjection,
+    BasalMaterialRecord,
+    BasalMaterialRole,
+)
+from hop_design.models.construction.basal.states import assert_material_partition
+from hop_design.models.construction.projections import (
+    BasalFeasibilityProjection,
+    FoldbackFeasibilityProjection,
+    RelaxationFrontierProjection,
+)
+from hop_design.models.sequence import reverse_complement_iupac
+from tests.contract.test_basal_construction_discovery import _request as basal_request
+from tests.contract.test_foldback_construction_discovery import _nickase as foldback_nickase
+from tests.contract.test_foldback_construction_discovery import _request as foldback_request
+from tests.contract.test_foldback_construction_discovery import (
+    _terminus_enzyme as foldback_terminus_enzyme,
+)
+
+
+@pytest.mark.parametrize(
+    ("source_endpoint", "changed_endpoint", "message"),
+    [
+        (
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.SSDNA_HAIRPIN,
+            "Direct basal projections",
+        ),
+        (
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            "PCR basal projections",
+        ),
+        (
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+            "Clone-ready basal projections",
+        ),
+    ],
+)
+def test_basal_projection_rejects_endpoint_evidence_leakage(
+    source_endpoint: ConstructionEndpoint,
+    changed_endpoint: ConstructionEndpoint,
+    message: str,
+) -> None:
+    source = project_basal_feasibility(discover_basal_neighborhood(basal_request(source_endpoint)))
+    content = source.model_dump(by_alias=True)
+    content["endpoint"] = changed_endpoint
+
+    with pytest.raises(ValidationError, match=message):
+        BasalFeasibilityProjection.model_validate(content)
+
+
+def test_projection_authorities_reject_duplicate_membership_and_status_drift() -> None:
+    foldback = project_foldback_feasibility(
+        discover_foldback_neighborhood(
+            foldback_request(foldback_nickase(), foldback_terminus_enzyme())
+        )
+    )
+    content = foldback.model_dump(by_alias=True)
+    content["realizations"] = (foldback.realizations[0], foldback.realizations[0])
+    content["realization_count"] = 2
+    with pytest.raises(ValidationError, match="must not repeat"):
+        FoldbackFeasibilityProjection.model_validate(content)
+
+
+def test_local_projection_reference_rejects_the_dead_complete_result_spelling() -> None:
+    with pytest.raises(ValidationError, match="result_id"):
+        ProjectionReference(
+            projection_id=f"hop:projection/{'0' * 64}@1",
+            result_id=f"hop:construction-result/{'1' * 64}@1",
+            projection_schema="hop.example/v1",
+            renderer_version="example/1",
+            realization_ids=(),
+            groups=(),
+        )
+
+    infeasible = project_foldback_feasibility(
+        discover_foldback_neighborhood(
+            foldback_request(foldback_nickase(motif="GACA", cut_offset=4))
+        )
+    )
+    content = infeasible.model_dump(by_alias=True)
+    content["status"] = SearchCompletionStatus.COMPLETE
+    with pytest.raises(ValidationError, match="Complete projections require"):
+        FoldbackFeasibilityProjection.model_validate(content)
+
+
+def test_relaxation_projection_rejects_cross_shell_membership_and_false_completion() -> None:
+    relaxation = RelaxationPolicy(
+        mode=RelaxationMode.FIRST_FEASIBLE_SHELL,
+        max_radius=1,
+        coordinates=(RelaxationCoordinate(name="annealing_arm_length_bp", minimum=3, maximum=4),),
+    )
+    source = project_relaxation_frontier(
+        discover_foldback_neighborhood(
+            foldback_request(foldback_nickase(motif="GACATTT"), relaxation=relaxation)
+        )
+    )
+    realized_id = source.shells[1].realization_ids[0]
+    duplicated_shell = source.shells[0].model_copy(
+        update={
+            "candidate_count": source.shells[0].candidate_count + 1,
+            "realization_count": 1,
+            "realization_ids": (realized_id,),
+        }
+    )
+    content = source.model_dump(by_alias=True)
+    content["shells"] = (duplicated_shell, source.shells[1])
+    with pytest.raises(ValidationError, match="partition exact membership"):
+        RelaxationFrontierProjection.model_validate(content)
+
+    truncated = project_relaxation_frontier(
+        discover_foldback_neighborhood(
+            foldback_request(
+                foldback_nickase(),
+                foldback_terminus_enzyme(),
+                max_search_nodes=1,
+            )
+        )
+    )
+    content = truncated.model_dump(by_alias=True)
+    content["truncation_reasons"] = ()
+    with pytest.raises(ValidationError, match="require a reason"):
+        RelaxationFrontierProjection.model_validate(content)
+
+
+def test_basal_endpoint_projection_requires_exact_complement_and_endpoint_minimality() -> None:
+    pcr = (
+        discover_basal_neighborhood(basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
+        .realizations[0]
+        .projection
+    )
+    content = pcr.model_dump(mode="python")
+    assert pcr.pcr_reference_sequence is not None
+    content["pcr_complement_sequence"] = pcr.pcr_reference_sequence
+    assert content["pcr_complement_sequence"] != reverse_complement_iupac(
+        pcr.pcr_reference_sequence
+    )
+    with pytest.raises(ValidationError, match="must derive from the complete reference"):
+        BasalEndpointProjection.model_validate(content)
+
+    direct = pcr.model_dump(mode="python")
+    direct["endpoint"] = ConstructionEndpoint.SSDNA_HAIRPIN
+    with pytest.raises(ValidationError, match="must not contain adapter or PCR evidence"):
+        BasalEndpointProjection.model_validate(direct)
+
+
+def test_material_partition_requires_exact_endpoint_state_and_singular_partition() -> None:
+    retained = BasalMaterialRecord(
+        material_id="retained-product",
+        role=BasalMaterialRole.RETAINED,
+        sequence_5prime="ACTG",
+    )
+    duplicate = retained.model_copy(update={"material_id": "retained-copy"})
+    with pytest.raises(ValueError, match="must be singular"):
+        assert_material_partition(
+            endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
+            source_precursor_sequence="ACTG",
+            pcr_duplex=None,
+            restriction_product=None,
+            materials=(retained, duplicate),
+        )
+    with pytest.raises(ValueError, match="requires its exact duplex state"):
+        assert_material_partition(
+            endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            source_precursor_sequence="ACTG",
+            pcr_duplex=None,
+            restriction_product=None,
+            materials=(retained,),
+        )

@@ -11,7 +11,6 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -38,6 +37,7 @@ from hop_design.design.space.authority import (
     seal_design_set,
 )
 from hop_design.export.bundle import BundleIntegrityError, verify_manifested_bundle_contents
+from hop_design.export.publication import publish_directory_create_only
 from hop_design.export.space_package import design_set_artifacts, write_space_projections
 from hop_design.kernel.bundle_identity import design_set_id, manifest_digest_for_design_set
 from hop_design.models.design_space import (
@@ -49,6 +49,8 @@ from hop_design.models.design_space import (
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 from hop_design.models.space.scientist import MolecularSubstrateSpace
 from hop_design.serialization import canonical_json_bytes, sha256_digest
+
+SCIENTIST_COMPILE_MEMBER_LIMIT = 256
 
 
 @dataclass(frozen=True)
@@ -74,7 +76,7 @@ class SubstrateMemberCompilationError(ValueError):
 
 
 def _authored_payload(spec: SubstrateSpaceSpec) -> str:
-    return "".join((segment.fixed or segment.variable or "") for segment in spec.payload.segments)
+    return "".join((segment.fixed or segment.variable or "") for segment in spec.payload)
 
 
 def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
@@ -84,7 +86,7 @@ def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
     variable_positions: list[int] = []
     variable_domains: list[tuple[str, ...]] = []
     cursor = 1
-    for segment in spec.payload.segments:
+    for segment in spec.payload:
         sequence = segment.fixed or segment.variable or ""
         for symbol in sequence:
             if segment.fixed is not None:
@@ -98,17 +100,12 @@ def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
             cursor += 1
     cardinality = prod(len(domain) for domain in variable_domains)
     state: Literal["ready", "blocked", "invalid"]
-    if spec.hairpin.defaults_ref != DEFAULTS_REF:
-        state = "invalid"
-        message = (
-            f"Unknown defaults reference {spec.hairpin.defaults_ref!r}; "
-            f"locked catalog supports {DEFAULTS_REF!r}."
-        )
-    elif cardinality > spec.enumeration.max_members:
+    if cardinality > SCIENTIST_COMPILE_MEMBER_LIMIT:
         state = "blocked"
         message = (
             f"This valid specification defines {cardinality} exact assignments. "
-            f"Compilation is blocked by max_members={spec.enumeration.max_members}."
+            f"Compilation supports up to {SCIENTIST_COMPILE_MEMBER_LIMIT} designs "
+            "in this release."
         )
     else:
         state = "ready"
@@ -126,7 +123,7 @@ def preview_space(spec: SubstrateSpaceSpec) -> SubstrateSpacePreview:
             (position, length - position + 1) for position in range(1, length + 1)
         ),
         theoretical_cardinality=cardinality,
-        max_members=spec.enumeration.max_members,
+        compilation_limit=SCIENTIST_COMPILE_MEMBER_LIMIT,
         message=message,
     )
 
@@ -235,7 +232,7 @@ def compile_space(
             foldback_ref=FOLDBACK_REF,
             basal_ref=BASAL_REF,
         )
-        os.replace(staging, output)
+        publish_directory_create_only(staging, output)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise

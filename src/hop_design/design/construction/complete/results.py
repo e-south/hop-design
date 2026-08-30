@@ -1,0 +1,191 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/construction/complete/results.py
+
+Builds authoritative complete-construction results and reversible groupings.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from importlib.metadata import version
+
+from hop_design.models.construction import (
+    DigitalDesignStatus,
+    FailureReasonCount,
+    MethodResolutionStatus,
+    NeighborhoodClaimBoundary,
+    ProjectionInventoryItem,
+    ProjectionInventoryStatus,
+    RealizationGroup,
+    RealizationGrouping,
+    SearchCompletionStatus,
+)
+from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
+from hop_design.models.construction.complete import (
+    CompositionAccounting,
+    CompositionDisposition,
+    CompositionMaterialAccounting,
+    ConstructionCompositionExecution,
+    ConstructionCompositionProvenance,
+    ConstructionDiscoveryRequest,
+    ConstructionSpaceResult,
+    MaterializedConstructionRealization,
+)
+from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
+from hop_design.models.construction.payload import _content_id
+
+
+def _groups(
+    realizations: tuple[MaterializedConstructionRealization, ...],
+    *,
+    grouping: RealizationGrouping,
+) -> tuple[RealizationGroup, ...]:
+    grouped: dict[str, list[str]] = defaultdict(list)
+    for realization in realizations:
+        key = (
+            _content_id("geometry", 1, realization.geometry_ids)
+            if grouping is RealizationGrouping.ACHIEVED_GEOMETRY
+            else realization.final_product.reference.final_product_id
+        )
+        grouped[key].append(realization.materialized_realization_id)
+    return tuple(
+        RealizationGroup(
+            grouping=grouping,
+            group_key=key,
+            realization_ids=tuple(ids),
+            multiplicity=len(ids),
+        )
+        for key, ids in sorted(grouped.items())
+    )
+
+
+def _material_accounting(
+    realizations: tuple[MaterializedConstructionRealization, ...],
+) -> CompositionMaterialAccounting:
+    return CompositionMaterialAccounting(
+        source_material_nt=sum(
+            len(item.sequence_5prime)
+            for realization in realizations
+            for item in realization.materials[:2]
+        ),
+        auxiliary_material_nt=sum(
+            len(item.sequence_5prime)
+            for realization in realizations
+            for item in realization.materials[2:]
+        ),
+        endpoint_product_nt=sum(
+            sum(len(strand.sequence) for strand in item.final_product.strands)
+            for item in realizations
+        ),
+    )
+
+
+def build_result(
+    *,
+    request: ConstructionDiscoveryRequest,
+    status: SearchCompletionStatus,
+    realizations: tuple[MaterializedConstructionRealization, ...],
+    failures: Counter[str],
+    truncation: str | None,
+    upstream_truncation_reasons: tuple[str, ...],
+    foldback_count: int,
+    basal_count: int,
+    nominal: int,
+    examined: int,
+    foldback_authority: FoldbackNeighborhoodDiscoveryResult,
+    basal_authority: BasalNeighborhoodDiscoveryResult | None,
+    design_bundle_id: str,
+    dispositions: tuple[CompositionDisposition, ...],
+) -> ConstructionSpaceResult:
+    """Build one sealed result from exact composition outcomes."""
+    geometry_groups = _groups(realizations, grouping=RealizationGrouping.ACHIEVED_GEOMETRY)
+    product_groups = _groups(realizations, grouping=RealizationGrouping.FINAL_PRODUCT)
+    problem = request.problem_id
+    hop_version = version("hop-design")
+    execution = ConstructionCompositionExecution(
+        problem_id=problem,
+        hop_version=hop_version,
+        enumeration=request.enumeration,
+    )
+    return ConstructionSpaceResult.create(
+        problem_id=problem,
+        execution_id=execution.execution_id,
+        execution=execution,
+        status=status,
+        request=request,
+        foldback_authority=foldback_authority,
+        basal_authority=basal_authority,
+        realizations=realizations,
+        geometry_groups=geometry_groups,
+        final_product_groups=product_groups,
+        accounting=CompositionAccounting(
+            foldback_local_realizations=foldback_count,
+            basal_local_realizations=basal_count,
+            nominal_combinations=nominal,
+            pruned_before_execution=0,
+            executed_combinations=examined,
+            examined_combinations=examined,
+            rejected_after_execution=examined - len(realizations),
+            rejected_combinations=examined - len(realizations),
+            valid_realizations=len(realizations),
+            candidate_enzyme_programs=sum(item.candidate_enzyme_programs for item in dispositions),
+            recognition_placements_attempted=sum(
+                item.recognition_placements_attempted for item in dispositions
+            ),
+            constraint_systems_attempted=sum(
+                item.constraint_systems_attempted for item in dispositions
+            ),
+            distinct_geometry_groups=len(geometry_groups),
+            distinct_final_products=len(product_groups),
+        ),
+        failure_reasons=tuple(
+            FailureReasonCount(code=code, count=count) for code, count in sorted(failures.items())
+        ),
+        truncation_reasons=((truncation,) if truncation else ()),
+        upstream_truncation_reasons=upstream_truncation_reasons,
+        provenance=ConstructionCompositionProvenance(
+            hop_version=hop_version,
+            foldback_result_id=foldback_authority.result_id,
+            basal_result_id=(None if basal_authority is None else basal_authority.result_id),
+            design_bundle_id=design_bundle_id,
+            foldback_realization_ids=tuple(
+                item.foldback_realization_id
+                for item in foldback_authority.realizations
+                if item.payload_sequence == request.payload.payload.sequence
+            ),
+            basal_realization_ids=(
+                ()
+                if basal_authority is None
+                else tuple(
+                    item.basal_realization_id
+                    for item in basal_authority.realizations
+                    if item.payload_sequence == request.payload.payload.sequence
+                )
+            ),
+        ),
+        projection_inventory=(
+            ProjectionInventoryItem(
+                projection_schema="hop.complete-construction-summary/v1",
+                renderer_version="complete-construction-projections/1",
+                status=ProjectionInventoryStatus.NOT_GENERATED,
+            ),
+        ),
+        material_accounting=_material_accounting(realizations),
+        claim_boundary=NeighborhoodClaimBoundary(
+            digital_design=DigitalDesignStatus.VERIFIED,
+            method=(
+                MethodResolutionStatus.RESOLVED
+                if status is SearchCompletionStatus.COMPLETE
+                else MethodResolutionStatus.NOT_RESOLVED
+            ),
+        ),
+        combination_dispositions=dispositions,
+    )
+
+
+__all__ = ["build_result"]

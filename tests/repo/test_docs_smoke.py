@@ -1,3 +1,14 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/repo/test_docs_smoke.py
+
+Tests installed-package documentation journeys and construction examples.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import json
@@ -29,6 +40,12 @@ def test_docs_smoke_exercises_the_public_documentation_journey() -> None:
     assert summary["payload_record_bundles_verified"] == 3
     assert summary["design_surfaces"] == ["exact", "symbolic", "spec"]
     assert summary["discovery_statuses"] == ["complete", "infeasible", "truncated"]
+    assert summary["construction_statuses"] == {
+        "composed-pcr": "complete",
+        "exact": "complete",
+        "infeasible": "infeasible",
+        "relaxed": "complete",
+    }
     assert summary["method_authoring_verified"] is True
     assert summary["method_bundle_verified"] is True
     assert summary["handoff_verified"] is True
@@ -42,11 +59,19 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     assert '"$smoke_root/venv/bin/python" scripts/docs-smoke' in wheel_smoke
     assert "'examples/fixed-site-three-base-context.yaml'" in wheel_smoke
     assert "'examples/compile_payload_records.py'" in wheel_smoke
+    assert "'examples/compile_construction.py'" in wheel_smoke
+    assert "'examples/construction-exact-design.yaml'" in wheel_smoke
+    assert "'examples/construction-composed-pcr.yaml'" in wheel_smoke
+    assert "'examples/construction-exact.yaml'" in wheel_smoke
+    assert "'examples/construction-infeasible.yaml'" in wheel_smoke
+    assert "'examples/construction-relaxed.yaml'" in wheel_smoke
     assert "'examples/linear-source-matched-design.yaml'" in wheel_smoke
     assert "'examples/author_linear_source_method.py'" in wheel_smoke
     assert "'examples/verify_design_method_handoff.py'" in wheel_smoke
     assert 'tar -xzf "$sdist_path" -C "$sdist_extract_root"' in wheel_smoke
     assert '--content-root "$sdist_root"' in wheel_smoke
+    assert wheel_smoke.count("import hop_design.spaces as spaces") == 2
+    assert wheel_smoke.count('"spaces": spaces.__all__') == 2
 
 
 def test_docs_smoke_bounds_child_execution_time() -> None:

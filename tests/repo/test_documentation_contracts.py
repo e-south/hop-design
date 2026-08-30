@@ -1,3 +1,14 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/repo/test_documentation_contracts.py
+
+Tests documentation metadata, links, examples, and durable claim language.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -9,14 +20,17 @@ import tomllib
 from pathlib import Path
 from types import ModuleType
 
+import pytest
 import yaml
 
 import hop_design as hop
+import hop_design.construction as hop_construction
 import hop_design.discovery as hop_discovery
 import hop_design.methods as hop_methods
 import hop_design.spaces as hop_spaces
 import hop_design.views as hop_views
 from hop_design import api as hop_api
+from tests.support.claim_language import assert_no_positive_downstream_claims
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -43,11 +57,10 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "CONTRIBUTING.md" in readme
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
-    assert "HOP helps scientists describe a DNA hairpin" in readme
-    assert "Define one bounded duplex substrate space" in readme
-    assert "three `N` positions define 64 exact assignments" in readme
-    assert "Named-method and destination compatibility are not evaluated" in readme
-    assert "physical construction, QC, and biological activity are not recorded" in readme
+    assert "Specify the duplex context you want to test" in readme
+    assert "question → substrate rule → exact paired designs" in readme
+    assert "does not choose a biological target or publication example" in readme
+    assert "No physical construction, QC, or activity record is attached" in readme
     assert "docs/guides/substrate-spaces.md" in readme
     assert "domain-specific language" not in readme
     assert "```" not in readme
@@ -56,7 +69,7 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert len(readme.splitlines()) <= 80
 
 
-def test_scientist_surface_uses_the_64_member_space_as_its_first_journey() -> None:
+def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     guide = (REPO_ROOT / "docs" / "guides" / "substrate-spaces.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
@@ -73,17 +86,27 @@ def test_scientist_surface_uses_the_64_member_space_as_its_first_journey() -> No
     assert "hop-design space compile" in guide
     assert "hop-design verify" in guide
     assert "64 exact" in guide
+    assert "verification fixture" in guide
+    assert "publication claim" in guide
     assert "review.html" in guide
-    assert "Physical construction, QC, and biological activity were not recorded" in guide
-    assert "implementation ceiling" in guide
-    assert "normalized authored specification" in guide
+    assert "No physical construction, QC, or activity record is attached" in guide
+    assert "256" in guide
+    assert "tested release envelope" in guide
+    assert "source.yaml" not in guide
     assert "--dry-run" in cli
     assert "--out is optional with `--dry-run`" in cli
     assert spec_path.is_file()
-    spec = hop_spaces.SubstrateSpaceSpec.model_validate(yaml.safe_load(spec_path.read_text()))
+    spec_text = spec_path.read_text()
+    for removed_field in ("context:", "hairpin:", "enumeration:", "max_members"):
+        assert removed_field not in spec_text
+    spec = hop_spaces.SubstrateSpaceSpec.model_validate(yaml.safe_load(spec_text))
     preview = hop_spaces.preview_space(spec)
     assert preview.state == "ready"
     assert preview.theoretical_cardinality == 64
+    assert "three `N` positions define 64 exact designs" not in readme
+    assert "publication-oriented" not in (
+        REPO_ROOT / "src" / "hop_design" / "export" / "space_figures.py"
+    ).read_text(encoding="utf-8")
 
 
 def test_public_docs_route_the_five_sibling_surfaces() -> None:
@@ -108,6 +131,83 @@ def test_public_docs_route_the_five_sibling_surfaces() -> None:
     )
     assert "sequence-and-cut compatible" in processing
     assert "empirical cleavage efficiency" in processing
+
+
+def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    language = (REPO_ROOT / "docs" / "language" / "overview.md").read_text(encoding="utf-8")
+    docs_index = (REPO_ROOT / "docs" / "index.md").read_text(encoding="utf-8")
+    public_text = "\n".join((readme, language, docs_index))
+
+    assert "`hop_design.spaces` is the scientist-facing facade" in public_text
+    for specialist_surface in (
+        "`hop_design`",
+        "`hop_design.discovery`",
+        "`hop_design.methods`",
+        "`hop_design.views`",
+    ):
+        assert specialist_surface in public_text
+    assert "small public vocabulary" not in language.lower()
+
+
+def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
+    discovery = (REPO_ROOT / "docs" / "discovery" / "overview.md").read_text(encoding="utf-8")
+    view_contracts = (REPO_ROOT / "docs" / "reference" / "view-contracts.md").read_text(
+        encoding="utf-8"
+    )
+    reliability = (REPO_ROOT / "RELIABILITY.md").read_text(encoding="utf-8")
+    normalized = " ".join(discovery.split())
+    normalized_views = " ".join(view_contracts.split())
+    normalized_reliability = " ".join(reliability.split())
+
+    assert "Exact targets are examined before enabled relaxation shells" in normalized
+    assert "requested geometry" in normalized
+    assert "achieved geometry" in normalized
+    assert "not an optimization" in normalized
+    assert "declared stopping rule" in normalized
+    assert "through_radius" in discovery
+    assert "first_feasible_shell" in discovery
+    assert "every candidate in the declared neighborhood was examined" not in normalized
+    assert "infeasible" in discovery
+    assert "truncated" in discovery
+    assert "does not establish physical construction" in normalized
+    assert "local construction projection" in normalized
+    for schema_id in (
+        "hop.foldback-feasibility-landscape/v1",
+        "hop.basal-feasibility-landscape/v1",
+        "hop.foldback-relaxation-frontier/v1",
+        "hop.basal-relaxation-frontier/v1",
+    ):
+        assert schema_id in view_contracts
+    assert "verified against its exact source result" in normalized_views
+    assert "Only the final examined shell may be partial" in normalized_reliability
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    (
+        "README.md",
+        "docs/index.md",
+        "docs/guides/quickstart.md",
+        "docs/start/why-hop.md",
+        "docs/discovery/overview.md",
+        "docs/reference/view-contracts.md",
+    ),
+)
+def test_default_scientist_surfaces_do_not_make_positive_downstream_claims(
+    relative_path: str,
+) -> None:
+    text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+    assert_no_positive_downstream_claims(text, surface=relative_path)
+
+
+def test_public_claim_language_keeps_digital_derivation_narrow() -> None:
+    why_hop = (REPO_ROOT / "docs" / "start" / "why-hop.md").read_text(encoding="utf-8")
+    cli = (REPO_ROOT / "src" / "hop_design" / "cli.py").read_text(encoding="utf-8")
+
+    assert "constraint-checked hairpin anatomy" in why_hop
+    assert "bundle validated" not in cli.lower()
+    assert "design derivation verified; no files written" in cli.lower()
 
 
 def test_action_routes_have_runnable_public_examples() -> None:
@@ -527,6 +627,11 @@ def test_every_stable_operation_is_named_in_the_api_reference() -> None:
         name for name in hop_spaces.__all__ if name.startswith(("compile_", "load_", "preview_"))
     )
     operations.update(
+        name
+        for name in hop_construction.__all__
+        if name.startswith(("compile_", "load_", "project_"))
+    )
+    operations.update(
         name for name in hop_discovery.__all__ if name.startswith(("classify_", "scan_", "search_"))
     )
     operations.update(
@@ -550,6 +655,7 @@ def test_public_prose_does_not_use_removed_specialized_root_operations() -> None
     specialized_operations = {
         name
         for name in (
+            *hop_construction.__all__,
             *hop_discovery.__all__,
             *hop_methods.__all__,
             *hop_views.__all__,

@@ -7,7 +7,7 @@ audience:
   - bundle consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-30
 doc_type: reference
 ---
 
@@ -42,6 +42,17 @@ trajectory, FASTA, GenBank, artifact inventory, manifest digest, and bundle ID
 to match byte for byte. A checksum-valid reseal of one generated artifact is
 therefore rejected.
 
+`construction-bundle.json` inventories one exact complete-construction result
+and every byte of the separately verified design bundle embedded below
+`authorities/design/`. Verification checks the root result and manifest
+digests, construction and design identities, exact artifact inventory, and
+safe paths. It then semantically replays the design authority, each embedded
+foldback and optional basal authority, whole-route composition, reaction-site
+assessment, endpoint products, disposition accounting, rejection reasons, and
+grouping. Finally, it recompiles the expected construction bundle and requires
+exact artifact and manifest equality. Construction-bundle and projection
+writes are atomic and create-only.
+
 A hairpin design set inventories its normalized per-position molecular domains,
 resolved hairpin defaults reference, and every byte of every unique member
 bundle below `bundle/`. Verification recomputes collection identity, replays
@@ -74,7 +85,8 @@ by foldback by basal by release Cartesian cardinality before allocating rows and
 fails above `max_designs`.
 
 A substrate-space preview computes cardinality arithmetically before member
-allocation. A valid space above `max_members` is `blocked`; compilation writes
+allocation. The scientist surface compiles through its tested 256-design
+release envelope. A valid larger space is `blocked`; compilation writes
 nothing. V1 does not truncate or publish partial authoritative sets.
 
 Basal candidate discovery calculates the exact left-arm by right-arm IUPAC
@@ -83,6 +95,24 @@ at most `max_hits`, reports reserve and reject exclusions for every examined
 non-hit, and distinguishes node truncation from result truncation. Candidate
 identity covers the exact pairing request and complete evaluation; result
 validation rejects domain, accounting, canonical-ordinal, and order drift.
+
+Payload-centered foldback and basal neighborhood discovery examines the exact
+target before each enabled discrete relaxation radius. Every examined shell
+accounts for candidates as accepted plus rejected and partitions rejections by
+observed primary failure category. Only the final examined shell may be
+partial, and only when a named bound makes the result `truncated`; `complete`
+and `infeasible` results contain only complete shells. Projection verification
+rebuilds feasibility rows and relaxation membership from the exact source
+result, so a checksum-consistent subset, reordering, or extra row is rejected.
+
+Complete construction composition computes the nominal local Cartesian
+cardinality before evaluation, examines only its canonical bounded prefix, and
+records accepted plus rejected dispositions for every examined combination.
+`complete` and `infeasible` require full nominal exhaustion; `truncated`
+requires an exact local or composition reason. Accepted realizations remain
+separately identifiable even when achieved-geometry or final-product groups
+coincide. A trajectory projection requires an explicit accepted realization
+identity and never treats canonical order as preference.
 
 Basal processing-geometry discovery evaluates at most `max_search_nodes`
 nicking agents and returns at most `max_hits`. Every examined agent has one
@@ -131,7 +161,12 @@ all agree. Method-material plans reject terminal-binding or chemistry drift.
 ## Degraded modes
 
 There is no permissive fallback for an unknown schema, catalog reference,
-profile, route, or corrupted bundle. The built-in SVG renderer has no plotting
+profile, route, source endpoint, or corrupted bundle. Construction sources are
+bounded regular nonsymlink JSON/YAML mappings read through one checked file
+descriptor. Duplicate keys and YAML aliases, anchors, and merge keys are
+rejected before model validation. Sources dispatch only the exact
+`hop.construction-source/v1` schema; the design authority is loaded from a
+separate verified bundle path. The built-in SVG renderer has no plotting
 dependency and consumes only a typed workflow view. Optional future renderers
 may be absent without blocking the typed plan, but they may not recompute
 molecular state.

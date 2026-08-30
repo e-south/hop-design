@@ -14,6 +14,7 @@ from __future__ import annotations
 from itertools import product
 from typing import Literal
 
+from hop_design.catalog.defaults import DEFAULTS_REF
 from hop_design.kernel.bundle_identity import design_set_id, manifest_digest_for_design_set
 from hop_design.models.bundle import ArtifactManifestEntry
 from hop_design.models.design_space import (
@@ -32,14 +33,14 @@ CANONICAL_DNA_ORDER: tuple[Literal["A", "C", "G", "T"], ...] = ("A", "C", "G", "
 def molecular_space(spec: SubstrateSpaceSpec) -> MolecularSubstrateSpace:
     """Project authored rules into their normalized molecular authority."""
     payload_domains: list[tuple[Literal["A", "C", "G", "T"], ...]] = []
-    for segment in spec.payload.segments:
+    for segment in spec.payload:
         sequence = segment.fixed or segment.variable or ""
         for symbol in sequence:
             bases = iupac_bases(symbol)
             payload_domains.append(tuple(base for base in CANONICAL_DNA_ORDER if base in bases))
     return MolecularSubstrateSpace(
         payload_domains=tuple(payload_domains),
-        defaults_ref=spec.hairpin.defaults_ref,
+        defaults_ref=DEFAULTS_REF,
     )
 
 
@@ -51,7 +52,7 @@ def assignment_text(
     assignments_by_position = {assignment.position: assignment.base for assignment in assignments}
     labels: list[str] = []
     cursor = 1
-    for segment in spec.payload.segments:
+    for segment in spec.payload:
         sequence = segment.fixed or segment.variable or ""
         segment_positions = tuple(range(cursor, cursor + len(sequence)))
         cursor += len(sequence)
@@ -64,8 +65,8 @@ def assignment_text(
         )
         if not assigned:
             continue
-        if segment.name is not None:
-            labels.append(f"{segment.name}={''.join(base for _, base in assigned)}")
+        if segment.label is not None:
+            labels.append(f"{segment.label}={''.join(base for _, base in assigned)}")
         else:
             labels.extend(f"{position}={base}" for position, base in assigned)
     return "; ".join(labels) or "fixed payload"
@@ -119,7 +120,7 @@ def provisional_design_set(
     return HairpinDesignSet(
         design_set_id="hop:design-set/pending/pending",
         spec_digest=spec_digest,
-        defaults_ref=spec.hairpin.defaults_ref,
+        defaults_ref=DEFAULTS_REF,
         theoretical_cardinality=len(members),
         enumerated_assignments=len(members),
         unique_designs=unique_designs,

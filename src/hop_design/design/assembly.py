@@ -8,8 +8,13 @@ from types import MappingProxyType
 
 from hop_design.design.result import Compilation
 from hop_design.export.fasta import render_fasta
-from hop_design.kernel.bundle_identity import bundle_id, manifest_seed
-from hop_design.models.bundle import ArtifactManifestEntry, HopBundle, ProvenanceRecord
+from hop_design.models.bundle import (
+    ArtifactManifestEntry,
+    HopBundle,
+    ProvenanceRecord,
+    bundle_id,
+    bundle_manifest_seed,
+)
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.derivation import PlanDesignDerivation
 from hop_design.models.diagnostics import CheckReport
@@ -20,6 +25,7 @@ from hop_design.models.plan import (
     HopPlan,
     SequenceFeature,
     SequenceRecord,
+    derive_plan_id,
 )
 from hop_design.models.spec import DesignSpec
 from hop_design.models.stem import PairedStemExtension
@@ -97,15 +103,12 @@ def assemble_compilation(
         ),
     )
 
-    plan_seed = canonical_json_bytes(
-        {
-            "compiler_version": compiler_version,
-            "lock": lock.model_dump(mode="json"),
-            "design_derivation": derivation.model_dump(mode="json"),
-            "spec_digest": spec_digest,
-        }
+    plan_id = derive_plan_id(
+        design_id=spec.design_id,
+        spec_digest=spec_digest,
+        lock=lock,
+        design_derivation=derivation,
     )
-    plan_id = f"hop:plan/{spec.design_id}/{sha256_digest(plan_seed).removeprefix('sha256:')[:16]}"
     plan = HopPlan(
         plan_id=plan_id,
         design_id=spec.design_id,
@@ -157,7 +160,7 @@ def assemble_compilation(
         )
         for path, content in sorted(artifact_bytes.items())
     )
-    manifest_data = manifest_seed(
+    manifest_data = bundle_manifest_seed(
         design_id=spec.design_id,
         spec_digest=spec_digest,
         plan_digest=plan_digest,

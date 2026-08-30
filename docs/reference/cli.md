@@ -23,16 +23,15 @@ hop-design verify BUNDLE_DIRECTORY
 `space preview` accepts a strict `hop/substrate-space/v1` YAML or JSON file,
 reports the actual ordered IUPAC domain at each variable position, computes
 exact cardinality without enumerating members, and writes nothing. A valid
-specification above its declared `max_members` is reported as `blocked` with
-exit code zero. `max_members` must be between 1 and the current implementation
-ceiling of 100,000. Invalid input returns nonzero.
+specification above the tested 256-design release envelope is reported as
+`blocked` with exit code zero. Invalid input returns nonzero.
 
 `space compile` re-previews, exhaustively expands, compiles and verifies every
 exact member, writes the design-set authority and human projections in a
 sibling temporary directory, and commits the complete package atomically. It
 never publishes an authoritative partial set. Success reports complete,
 unique, and duplicate counts before paths, followed by the same downstream
-non-evidence recorded in the manifest.
+evidence boundary recorded in the manifest.
 
 `verify` accepts either a design-set `bundle/` containing `manifest.json` or an
 existing single-design bundle containing `hop-bundle.json`. It rejects a

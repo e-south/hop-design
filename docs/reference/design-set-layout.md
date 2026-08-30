@@ -30,7 +30,11 @@ deterministically ordered set of verified exact digital hairpin designs?
 │   ├── spec.json
 │   ├── manifest.json
 │   └── members/<member-id>/
-├── source.yaml
+├── figures/
+│   ├── 01-substrate-space.svg
+│   └── 02-design-set.svg
+├── handoff/
+│   └── scientific-receipt.svg
 ├── designs.csv
 ├── sequences.fasta
 └── review.html
@@ -38,16 +42,21 @@ deterministically ordered set of verified exact digital hairpin designs?
 
 Only `bundle/` is authoritative. `spec.json` contains the normalized ordered
 per-position DNA domains and resolved versioned hairpin defaults reference.
-It excludes display names, descriptive context, segment labels, equivalent
-segment boundaries, and execution bounds. `manifest.json` uses
+It excludes display names, the optional question, segment labels, and
+equivalent segment boundaries. `manifest.json` uses
 `hop.hairpin-design-set/v2` and records exact cardinality, complete coverage,
 canonical enumeration order, member assignments, member-bundle paths and
 identities, final-encoding digests, the closed claim-status matrix, and a
 complete recursive artifact inventory. Each unique member directory is an
 unchanged verified `HopBundle`.
 
-The source YAML, CSV, FASTA, and self-contained HTML are regenerable
-projections. Editing or regenerating them does not change design-set identity.
+The SVG, CSV, FASTA, and self-contained HTML files are regenerable
+projections. The substrate-space projection shows the authored rule, derived
+pairing, exact cardinality, selected fixed context, and one expanded member.
+The design-set diagnostic includes every assignment in deterministic non-ranked order.
+The evidence receipt renders the manifest-backed claim status. These generic
+outputs do not select a paper example or panel composition. Editing or
+regenerating any projection does not change design-set identity.
 
 ## Invariants and identity
 
@@ -61,10 +70,10 @@ directories.
 The canonical specification digest follows the molecular domain vector and
 fixed hairpin context. Equivalent molecular rules therefore keep the same
 space digest, member identities, bundle bytes, and design-set identifier even
-when presentation metadata or a permissive allocation bound changes. The
-design-set identifier is derived from the manifest digest without embedding a
-display name. Every file below `bundle/` except `manifest.json` is inventoried
-by path, byte count, media type, and SHA-256 digest.
+when presentation metadata changes. The design-set identifier is derived from
+the manifest digest without embedding a display name. Every file below
+`bundle/` except `manifest.json` is inventoried by path, byte count, media type,
+and SHA-256 digest.
 
 The claim-status matrix records complete space accounting, replay-verified
 digital designs, method and destination questions that were not evaluated,
@@ -78,9 +87,9 @@ collection, writes projections, and renames the complete directory atomically.
 A blocked space, failed member, corrupt collection, or existing destination
 leaves no committed output.
 
-This release supports exhaustive compilation up to `max_members=100000`.
-Preview remains symbolic and reports spaces above a lower submitted bound as
-blocked; no streaming or authoritative partial set is available.
+This release supports exhaustive compilation through a tested release envelope
+of 256 exact designs. Preview remains symbolic above that envelope and reports
+the space as blocked; no streaming or authoritative partial set is available.
 
 `load_verified_design_set` rejects missing, symlinked, modified,
 unmanifested, noncanonical, or path-unsafe content. It recomputes the

@@ -16,18 +16,15 @@ import io
 from collections.abc import Mapping
 from pathlib import Path
 
-import yaml
-
+from hop_design.export.space_figures import (
+    render_design_set_svg,
+    render_scientific_receipt_svg,
+    render_substrate_space_svg,
+)
 from hop_design.export.spaces import render_review_html
 from hop_design.models.bundle import ArtifactManifestEntry
 from hop_design.models.design_space import HairpinDesignSet, SubstrateSpaceSpec
 from hop_design.serialization import sha256_digest
-
-
-def render_source_yaml(spec: SubstrateSpaceSpec) -> bytes:
-    """Render a normalized authored specification as a non-authoritative projection."""
-    data = spec.model_dump(mode="json", by_alias=True, exclude_none=True)
-    return yaml.safe_dump(data, sort_keys=False, allow_unicode=True).encode("utf-8")
 
 
 def render_designs_csv(
@@ -116,9 +113,23 @@ def write_space_projections(
     basal_ref: str,
 ) -> None:
     """Write regenerable human and sequence projections outside the authority."""
-    (root / "source.yaml").write_bytes(render_source_yaml(spec))
+    figures_root = root / "figures"
+    handoff_root = root / "handoff"
+    figures_root.mkdir()
+    handoff_root.mkdir()
     (root / "designs.csv").write_bytes(render_designs_csv(design_set, member_encodings))
     (root / "sequences.fasta").write_bytes(render_sequences_fasta(design_set, member_encodings))
+    (figures_root / "01-substrate-space.svg").write_bytes(
+        render_substrate_space_svg(
+            spec,
+            design_set,
+            member_encodings,
+            defaults_display_name=defaults_display_name,
+            defaults_anatomy_summary=defaults_anatomy_summary,
+        )
+    )
+    (figures_root / "02-design-set.svg").write_bytes(render_design_set_svg(design_set))
+    (handoff_root / "scientific-receipt.svg").write_bytes(render_scientific_receipt_svg(design_set))
     (root / "review.html").write_bytes(
         render_review_html(
             spec,
@@ -136,6 +147,5 @@ __all__ = [
     "design_set_artifacts",
     "render_designs_csv",
     "render_sequences_fasta",
-    "render_source_yaml",
     "write_space_projections",
 ]

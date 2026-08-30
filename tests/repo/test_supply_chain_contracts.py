@@ -149,8 +149,12 @@ def test_release_workflow_verifies_before_publishing_and_cannot_publish_to_pypi(
     assert '"${GITHUB_REF_NAME}" dist/*' in text
     assert "--verify-tag" in text
     assert "--generate-notes" in text
+    assert "--draft" in text
+    assert 'gh release edit "${GITHUB_REF_NAME}" --draft=false' in text
+    assert text.index("gh release create") < text.index("gh release edit")
     assert "gh release upload" not in text
     assert "--clobber" not in text
+    assert not any("actions/checkout" in str(step) for step in jobs["publish"]["steps"])
 
 
 def test_source_distribution_includes_readme_routed_public_content() -> None:

@@ -1,13 +1,13 @@
 ---
 doc_id: hop-schema-reference
-title: Current source schema identifiers
-intent: List the exact schemas accepted by the unreleased current source candidate.
+title: Current schema identifiers
+intent: List the exact authored, authority, and projection schemas in the unreleased current candidate.
 audience:
   - integrators
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-08-30
 doc_type: reference
 journey:
   - compile
@@ -16,16 +16,15 @@ journey:
   - verify
 ---
 
-# Current source schema identifiers
+# Current schema identifiers
 
-This table documents the unreleased `0.1.0a7` source candidate. The latest published wheel is `0.1.0a6`; use the documentation shipped with that artifact
-for its accepted schemas. Contributor-checkout examples in this repository use
-the candidate contracts below. Do not submit these identifiers to an a6
-installation.
+This table documents the `0.1.0a7` source and release schemas. Use the tagged
+documentation shipped with a release artifact; do not submit these identifiers
+to an earlier installation.
 
 | Schema ID | Root model | Purpose |
 | --- | --- | --- |
-| `hop/substrate-space/v1` | `SubstrateSpaceSpec` | One bounded, segmented authored payload arm and exhaustive member bound |
+| `hop/substrate-space/v1` | `SubstrateSpaceSpec` | One labeled fixed-and-variable authored payload arm with an optional question |
 | `hop.hairpin-design-set/v2` | `HairpinDesignSet` | Complete content-addressed digital design-set manifest |
 | `hop.molecular-substrate-space/v1` | `MolecularSubstrateSpace` | Normalized per-position molecular authority for one substrate space |
 | `hop.design/v2` | `HopSpec` | Named generic design intent |
@@ -45,6 +44,21 @@ installation.
 | `hop.released-foldback-precursor-search-request/v1` | `ReleasedFoldbackPrecursorSearchRequest` | Selected geometry and caller precursor domain |
 | `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization |
 | `hop.hairpin-junction-route-search-result/v2` | `HairpinJunctionRouteSearchResult` | Bounded continuity join across junction processes |
+| `hop.construction-source/v1` | public file source | Strict foldback, optional basal, endpoint-materialization, whole-route-constraint, and finite-enumeration input; the design bundle remains a separate verified path |
+| `hop.final-payload/v1` | internal construction model | Final-product payload coordinates, authored reference strand, boundaries, and derived pairing authority |
+| `hop.local-neighborhood-request/v1` | internal construction model | Exact foldback or basal target, route, endpoint, enzyme policy, relaxation, and finite bounds |
+| `hop.neighborhood-discovery-result/v1` | internal construction model | Shared exact-first local accounting, shells, grouping, provenance, and completion status |
+| `hop.foldback-neighborhood-result/v1` | internal construction model | Replayable exact foldback realizations and their detailed molecular authorities |
+| `hop.basal-neighborhood-result/v1` | internal construction model | Replayable endpoint-aware basal realizations and detailed molecular authorities |
+| `hop.construction-discovery-request/v1` | internal construction model | Verified design reference, local result references, exact materialization, route constraints, and composition bounds |
+| `hop.construction-space-result/v1` | internal construction model | Complete examined composition prefix, exact accepted routes, endpoint products, accounting, grouping, and claim boundary |
+| `hop.construction-bundle/v1` | portable construction manifest | Content-addressed complete-construction result and embedded verified design authority |
+| `hop.foldback-feasibility-landscape/v1` | public construction projection | Every exact foldback realization and achieved construction dimensions |
+| `hop.basal-feasibility-landscape/v1` | public construction projection | Every exact basal realization and endpoint-dependent pairing, nick, cut, and cohesive-end facts |
+| `hop.foldback-relaxation-frontier/v1` | public construction projection | Exact examined foldback shells with complete or partial accounting |
+| `hop.basal-relaxation-frontier/v1` | public construction projection | Exact examined basal shells with complete or partial accounting |
+| `hop.complete-construction-summary/v1` | public construction projection | Lossless disposition, grouping, material, failure, and truncation relation over one verified complete result |
+| `hop.complete-construction-trajectory/v1` | public construction projection | One explicitly selected accepted realization with its exact molecular chronology |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
 | `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
 | `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Exact method inputs, agents, selection, and projection |
@@ -52,6 +66,17 @@ installation.
 | `hop.linear-source-multinick-hairpin-pcr-result/v2` | `LinearSourceMultinickHairpinPcrResult` | Orthogonal method outcome and optional plan |
 | `hop.method-bundle/v2` | `MethodBundle` | Content-addressed method plan and artifacts |
 | `hop.workflow-view/v1` | `WorkflowView` | Renderer-independent panels and tracks |
+
+The construction source, construction bundle, and six generated construction
+projection schemas are active external contracts through
+`hop_design.construction`. The request and result schemas in that pipeline are
+active replay authorities but remain internal: callers do not construct or
+import their raw models through the public facade.
+
+`hop.foldback-nucleotide-exemplar/v1` and
+`hop.foldback-geometry-count-table/v1` are reserved projection identifiers in
+the foldback inventory. No current public model, renderer, or reader accepts
+them, and an inventory entry marked `not_generated` is not an artifact claim.
 
 Serialized documents use the JSON key `schema`. Exact IDs are dispatch
 contracts: unknown or retired versions fail and are never interpreted as the

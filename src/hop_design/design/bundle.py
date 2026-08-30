@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 
 from hop_design.design.compile import compile_spec
 from hop_design.export.bundle import (
@@ -21,10 +22,13 @@ from hop_design.serialization import canonical_json_bytes
 class VerifiedHopBundle(VerifiedBundleContents):
     """Bundle content admitted only after deterministic semantic replay."""
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "artifacts", MappingProxyType(dict(self.artifacts)))
+        verify_hop_bundle_semantics(self)
 
-def load_verified_bundle(bundle_path: str | Path) -> VerifiedHopBundle:
-    """Load content only after integrity checks and complete semantic replay."""
-    contents = verify_bundle_contents(bundle_path)
+
+def verify_hop_bundle_semantics(contents: VerifiedBundleContents) -> None:
+    """Require exact in-memory agreement with deterministic specification replay."""
     try:
         expected = compile_spec(contents.spec)
     except Exception as exc:
@@ -36,10 +40,19 @@ def load_verified_bundle(bundle_path: str | Path) -> VerifiedHopBundle:
         raise BundleIntegrityError(
             "Bundle artifacts disagree with the deterministic spec-to-plan replay."
         )
+    if canonical_json_bytes(contents.provenance) != expected.artifacts["provenance.json"]:
+        raise BundleIntegrityError(
+            "Bundle provenance disagrees with the deterministic spec-to-plan replay."
+        )
     if expected.bundle != contents.bundle:
         raise BundleIntegrityError(
             "Bundle manifest disagrees with the deterministic spec-to-plan replay."
         )
+
+
+def load_verified_bundle(bundle_path: str | Path) -> VerifiedHopBundle:
+    """Load content only after integrity checks and complete semantic replay."""
+    contents = verify_bundle_contents(bundle_path)
     return VerifiedHopBundle(
         bundle=contents.bundle,
         spec=contents.spec,
@@ -59,4 +72,10 @@ def write_bundle(compilation: WritableCompilation, output: Path) -> Path:
     return write_bundle_files(compilation, output, verifier=verify_bundle)
 
 
-__all__ = ["VerifiedHopBundle", "load_verified_bundle", "verify_bundle", "write_bundle"]
+__all__ = [
+    "VerifiedHopBundle",
+    "load_verified_bundle",
+    "verify_bundle",
+    "verify_hop_bundle_semantics",
+    "write_bundle",
+]

@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Exercise the public documentation journey through one installed HOP package."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+scripts/docs-smoke
+
+Exercises the public documentation journey through one installed HOP package.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -129,10 +138,13 @@ def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
         content_root=content_root,
     )
     _require(
-        "Space: 64 exact assignments (4 \u00d7 4 \u00d7 4)" in preview,
+        "64 exact designs (4 \u00d7 4 \u00d7 4)" in preview,
         "substrate-space cardinality changed",
     )
-    _require("Compilation: ready" in preview, "substrate-space preview is not ready")
+    _require(
+        "Ready for exhaustive digital compilation" in preview,
+        "substrate-space preview is not ready",
+    )
 
     output = smoke_root / "substrate-space"
     _run(
@@ -165,7 +177,7 @@ def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
     _require(isinstance(summary, dict), "substrate-space verification must emit an object")
     _require(summary.get("coverage") == "complete", "substrate-space coverage is not complete")
     _require(summary.get("design_count") == 64, "substrate-space design count changed")
-    for projection in ("designs.csv", "sequences.fasta", "review.html", "source.yaml"):
+    for projection in ("designs.csv", "sequences.fasta", "review.html"):
         _require((output / projection).is_file(), f"substrate-space output omitted {projection}")
     return 64
 
@@ -326,6 +338,62 @@ def _exercise_component_views(smoke_root: Path, *, content_root: Path) -> None:
     )
 
 
+def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str, str]:
+    expected = {
+        "composed-pcr": "complete",
+        "exact": "complete",
+        "infeasible": "infeasible",
+        "relaxed": "complete",
+    }
+    trajectories = {
+        "composed-pcr": (
+            "hop:materialized-construction/"
+            "362dc73bc427c0a6045686ea90eba46fabffd0191e97333cb8c38394e269c1a7@1"
+        ),
+        "exact": (
+            "hop:materialized-construction/"
+            "af61b54ab34978e6c2ee044216cc132fbe8177765f11ff07639a116efe1c08b2@1"
+        ),
+        "relaxed": (
+            "hop:materialized-construction/"
+            "4ce8ee05f2a7dc4ba0ef78aa287dd76b5c7d8973aa7470408c2022f2bd91d65c@1"
+        ),
+    }
+    statuses: dict[str, str] = {}
+    for case, expected_status in expected.items():
+        arguments = [
+            "examples/compile_construction.py",
+            "--design",
+            "examples/construction-exact-design.yaml",
+            "--source",
+            f"examples/construction-{case}.yaml",
+            "--out",
+            str(smoke_root / f"construction-{case}"),
+        ]
+        if case in trajectories:
+            arguments.extend(["--trajectory-realization-id", trajectories[case]])
+        summary = _json_output(
+            f"{case} construction dogfood",
+            arguments,
+            content_root=content_root,
+        )
+        _require(isinstance(summary, dict), "construction dogfood must emit an object")
+        _require(summary.get("bundle_verified") is True, "construction bundle was not replayed")
+        status = summary.get("status")
+        _require(status == expected_status, f"{case} construction status changed")
+        selected = summary.get("selected_trajectory_realization_id")
+        realization_ids = summary.get("materialized_realization_ids")
+        if status == "complete":
+            _require(
+                isinstance(realization_ids, list) and selected in realization_ids,
+                f"{case} trajectory did not select an accepted realization",
+            )
+        else:
+            _require(selected is None, "infeasible construction invented a trajectory")
+        statuses[case] = str(status)
+    return statuses
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--content-root", type=Path, default=REPO_ROOT)
@@ -344,12 +412,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         _exercise_method_authoring(smoke_root, content_root=content_root)
         _exercise_handoff(smoke_root, content_root=content_root)
         _exercise_component_views(smoke_root, content_root=content_root)
+        construction_statuses = _exercise_construction(smoke_root, content_root=content_root)
 
     print(
         json.dumps(
             {
                 "design_surfaces": ["exact", "symbolic", "spec"],
                 "component_views_verified": True,
+                "construction_statuses": construction_statuses,
                 "discovery_statuses": discovery_statuses,
                 "handoff_verified": True,
                 "method_authoring_verified": True,

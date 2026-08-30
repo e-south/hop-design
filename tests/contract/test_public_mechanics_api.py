@@ -1,9 +1,21 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/contract/test_public_mechanics_api.py
+
+Tests the exact supported names of HOP's specialist public facades.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import inspect
 import typing
 
 import hop_design as hop
+import hop_design.construction as construction
 import hop_design.discovery as discovery
 import hop_design.methods as methods
 import hop_design.views as views
@@ -137,6 +149,22 @@ VIEW_OPERATIONS = {
     "build_released_workflow_view",
     "render_workflow_svg",
 }
+
+CONSTRUCTION_OPERATIONS = {
+    "compile_construction",
+    "load_verified_construction_bundle",
+    "project_basal_feasibility",
+    "project_complete_construction_summary",
+    "project_construction_trajectory",
+    "project_foldback_feasibility",
+    "project_relaxation_frontier",
+}
+
+CONSTRUCTION_FACADE = {
+    "ConstructionCompilation",
+    "ConstructionProjection",
+    "VerifiedConstructionBundle",
+} | CONSTRUCTION_OPERATIONS
 
 DISCOVERY_FACADE = {
     "AdditionalNickConstraint",
@@ -311,6 +339,13 @@ def test_view_facade_exposes_projection_and_rendering_only() -> None:
     assert not hasattr(views, "compile")
 
 
+def test_construction_facade_exposes_file_oriented_compilation_and_projections() -> None:
+    assert set(construction.__all__) == CONSTRUCTION_FACADE
+    assert len(construction.__all__) == len(CONSTRUCTION_FACADE)
+    assert all(hasattr(construction, name) for name in construction.__all__)
+    assert all(callable(getattr(construction, name)) for name in CONSTRUCTION_OPERATIONS)
+
+
 def _hop_annotation_types(annotation: object) -> set[type[object]]:
     origin = typing.get_origin(annotation)
     if origin is not None:
@@ -325,7 +360,7 @@ def _hop_annotation_types(annotation: object) -> set[type[object]]:
 
 
 def test_public_operation_annotations_are_reachable_from_a_public_facade() -> None:
-    facades = (hop, discovery, methods, views)
+    facades = (hop, construction, discovery, methods, views)
     exported_names = {name for facade in facades for name in facade.__all__}
     missing: dict[str, set[str]] = {}
     for facade in facades:
@@ -344,10 +379,11 @@ def test_public_operation_annotations_are_reachable_from_a_public_facade() -> No
 
 
 def test_public_model_annotations_are_reachable_from_a_public_facade() -> None:
-    facades = (hop, discovery, methods, views)
+    facades = (hop, construction, discovery, methods, views)
     missing: dict[str, set[str]] = {}
     allowed_names_by_facade = {
         hop: set(hop.__all__),
+        construction: set(construction.__all__),
         discovery: set(hop.__all__) | set(discovery.__all__),
         methods: set(hop.__all__) | set(methods.__all__),
         views: set().union(*(set(facade.__all__) for facade in facades)),

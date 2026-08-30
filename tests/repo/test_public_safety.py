@@ -23,3 +23,19 @@ def test_public_safety_rejects_symlinks_and_oversized_files(
     output = capsys.readouterr().out
     assert "linked.txt: repository symlink is not allowed" in output
     assert "oversized.bin: file exceeds the 2 MB public-safety limit" in output
+
+
+def test_public_safety_rejects_downstream_application_identity(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    (tmp_path / "application.txt").write_text(
+        "This generic producer is affiliated with " + "ret" + "ron work.",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_public_safety, "REPO_ROOT", tmp_path)
+
+    assert check_public_safety.main() == 1
+    output = capsys.readouterr().out
+    assert "application.txt:1: neighbor-repository identity" in output

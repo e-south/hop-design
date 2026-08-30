@@ -21,6 +21,9 @@ journey:
   publication.
 - [Implementation and migration roadmap](plans/roadmap.md) orders package
   readiness, downstream adoption, and predecessor removal.
+- [Payload-centered construction realignment gap audit](HOP-construction-realignment-gap-audit.md)
+  maps the current authorities and dependency-ordered implementation seams for
+  advanced construction discovery.
 - [Public concept documentation contract](documentation-contract.md) defines
   the claim and non-claim template for new product surfaces.
 - [Architecture decisions](../architecture/decisions/) record public contract

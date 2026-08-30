@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-23
+last_verified: 2026-08-30
 doc_type: index
 journey:
   - install
@@ -26,6 +26,12 @@ Follow the shortest route that answers your question. The CLI supports the
 common design-compilation path; discovery, method resolution, and typed
 integration use Python.
 
+`hop_design.spaces` is the scientist-facing facade. The package root
+`hop_design`, plus `hop_design.construction`, `hop_design.discovery`,
+`hop_design.methods`, and `hop_design.views`, are specialist surfaces for
+questions that require the design language, complete route construction,
+bounded discovery, named methods, or typed projections.
+
 ## Start here
 
 1. **Why HOP:** [Why HOP](start/why-hop.md) explains the product's narrow-waist role.
@@ -37,7 +43,7 @@ integration use Python.
 4. **Install and compile:** [Quickstart](guides/quickstart.md) covers the
    scientist-facing space and existing single-design routes.
 5. **Design language:** [Language overview](language/overview.md) introduces the
-   small public vocabulary and routes to the formal ontology.
+   specialist vocabulary and routes to the formal ontology.
 6. **Discovery language:** [Discovery overview](discovery/overview.md) explains
    bounded competency questions; [the discovery guide](guides/discover-compatible-basal-candidates.md)
    runs one complete and one truncated query.
@@ -51,13 +57,19 @@ integration use Python.
    [view](reference/view-contracts.md) contracts. The
    [component-view guide](guides/render-component-views.md) renders foldback and
    basal anatomy without inventing processing states.
-9. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
+9. **Compile a complete construction:** [Construction guide](guides/compile-construction.md)
+   binds one strict source to a separate verified design, writes one portable
+   authority, and exports neutral scientific projections.
+10. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
    defines what remains caller-owned and how broader campaign systems can call HOP.
 
-## Five sibling surfaces
+## Sibling semantic surfaces
 
 - [Design language](language/overview.md): anatomy, authored inputs, derived
   relationships, invariants, and deterministic encoding.
+- [Payload-centered construction](guides/compile-construction.md): strict local
+  requests plus a separate verified design, complete bounded route
+  composition, portable replay, and neutral projections.
 - [Discovery language](discovery/overview.md): deterministic bounded queries,
   candidate identity, completeness, and neutral order.
 - [Method language](methods/overview.md): exact materials, molecular states,
@@ -75,6 +87,9 @@ integration use Python.
   and explicit expansion budgets.
 - [Payload sources and expansion](guides/payload-sources-and-expansion.md):
   iterables, FASTA, CSV, duplicate policy, and concrete variants.
+- [Payload-centered construction](guides/compile-construction.md): strict
+  source compilation, opaque receipts, portable replay, and neutral
+  projections.
 - [Component views](guides/render-component-views.md): runnable, route-neutral
   foldback and basal SVGs backed by typed JSON.
 - [CLI](reference/cli.md) and [Python API](reference/python-api.md).
@@ -82,6 +97,8 @@ integration use Python.
   processing discovery, or released-foldback composition without one monolith.
 - [Linear-source method materials](reference/linear-source-method-materials.md):
   declared oligos, terminal chemistry, and binding checks.
+- [Construction bundle layout](reference/construction-bundle-layout.md): exact
+  inventory, embedded design authority, and complete semantic replay.
 - [Schema identifiers](reference/schemas.md), [formal ontology](language/ontology.md),
   and [relationships and invariants](language/relationships-and-invariants.md).
 

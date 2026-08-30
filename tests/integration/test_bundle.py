@@ -7,8 +7,7 @@ import pytest
 
 import hop_design as hop
 from hop_design.export.bundle import BundleIntegrityError, verify_bundle_contents
-from hop_design.kernel.bundle_identity import bundle_id, manifest_digest_for_bundle
-from hop_design.models.bundle import HopBundle
+from hop_design.models.bundle import HopBundle, bundle_id, manifest_digest_for_bundle
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 EXPECTED_FILES = {
@@ -121,6 +120,24 @@ def test_load_verified_bundle_returns_typed_semantic_contents(tmp_path: Path) ->
     assert "final-insert.fasta" not in loaded.artifacts
 
 
+def test_verified_bundle_rejects_direct_construction_without_semantic_replay(
+    tmp_path: Path,
+) -> None:
+    loaded = hop.load_verified_bundle(
+        hop.compile(sequence="ACGT", design_id="demo").write(tmp_path / "demo")
+    )
+    other_plan = hop.compile(sequence="TGCA", design_id="other").plan
+
+    with pytest.raises(BundleIntegrityError, match="deterministic replay"):
+        hop.VerifiedHopBundle(
+            bundle=loaded.bundle,
+            spec=loaded.spec,
+            plan=other_plan,
+            provenance=loaded.provenance,
+            artifacts=loaded.artifacts,
+        )
+
+
 def test_integrity_parser_does_not_claim_semantic_verification(tmp_path: Path) -> None:
     output = hop.compile(sequence="ACGT", design_id="demo").write(tmp_path / "demo")
 
@@ -209,7 +226,7 @@ def test_bundle_verification_rejects_resealed_plan_identity_drift(tmp_path: Path
     plan["design_id"] = "other"
     _replace_artifact_and_reseal_bundle(output, "hop-plan.json", canonical_json_bytes(plan))
 
-    with pytest.raises(BundleIntegrityError, match="design identity"):
+    with pytest.raises(BundleIntegrityError, match=r"plan identity|design identity"):
         verify_bundle(output)
 
 
@@ -220,7 +237,7 @@ def test_bundle_verification_rejects_resealed_plan_spec_digest_drift(tmp_path: P
     plan["spec_digest"] = f"sha256:{'0' * 64}"
     _replace_artifact_and_reseal_bundle(output, "hop-plan.json", canonical_json_bytes(plan))
 
-    with pytest.raises(BundleIntegrityError, match="exact spec digest"):
+    with pytest.raises(BundleIntegrityError, match=r"plan identity|exact spec digest"):
         verify_bundle(output)
 
 
@@ -237,7 +254,7 @@ def test_bundle_verification_rejects_resealed_spec_lock_drift(tmp_path: Path) ->
     plan["spec_digest"] = sha256_digest(spec_content)
     _replace_artifact_and_reseal_bundle(output, "hop-plan.json", canonical_json_bytes(plan))
 
-    with pytest.raises(BundleIntegrityError, match="lock does not match"):
+    with pytest.raises(BundleIntegrityError, match=r"plan identity|lock does not match"):
         verify_bundle(output)
 
 
@@ -265,7 +282,7 @@ def test_bundle_verification_rejects_resealed_spec_plan_payload_drift(
         canonical_json_bytes(provenance),
     )
 
-    with pytest.raises(BundleIntegrityError, match="spec and plan disagree"):
+    with pytest.raises(BundleIntegrityError, match=r"plan identity|spec and plan disagree"):
         verify_bundle(output)
 
 
