@@ -13,13 +13,18 @@ from __future__ import annotations
 
 from hop_design.models.construction.projections import (
     CompleteConstructionSummaryProjection,
+    CompleteConstructionTrajectoryProjection,
     LocalScientificProjection,
 )
 from hop_design.serialization import canonical_json_bytes
 
 
 def render_projection_json(
-    projection: LocalScientificProjection | CompleteConstructionSummaryProjection,
+    projection: (
+        LocalScientificProjection
+        | CompleteConstructionSummaryProjection
+        | CompleteConstructionTrajectoryProjection
+    ),
 ) -> bytes:
     """Render one typed scientific projection as canonical JSON bytes."""
     return canonical_json_bytes(projection)

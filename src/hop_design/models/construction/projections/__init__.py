@@ -24,12 +24,14 @@ from .local import (
     RelaxationFrontierProjection,
     RelaxationShellProjection,
 )
+from .trajectory import CompleteConstructionTrajectoryProjection
 
 __all__ = [
     "BasalFeasibilityProjection",
     "BasalFeasibilityRow",
     "CompleteConstructionSummaryProjection",
     "CompleteConstructionSummaryRow",
+    "CompleteConstructionTrajectoryProjection",
     "FoldbackFeasibilityProjection",
     "FoldbackFeasibilityRow",
     "LocalScientificProjection",
