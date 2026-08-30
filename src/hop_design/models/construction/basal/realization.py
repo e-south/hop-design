@@ -21,14 +21,15 @@ from hop_design.models.base import HopModel
 from hop_design.models.construction import (
     BasalPairAllowance,
     BasalTarget,
-    ConstructionEndpoint,
     LocalRealization,
     PayloadSourceMap,
 )
+from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.enzymes import (
     EnzymeRole,
 )
 from hop_design.models.method_states import MultiSiteNickedDuplex
+from hop_design.models.molecular_state import LineageStrand
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 from hop_design.models.sequence import (
     reverse_complement_iupac,
@@ -36,7 +37,7 @@ from hop_design.models.sequence import (
 from hop_design.serialization import canonical_json_bytes
 
 from .identity import basal_realization_id
-from .pairing import BasalBoundaryControl, BasalEnzymeBinding, BasalEnzymeDefinition
+from .pairing import BasalBoundaryControl, BasalEnzymeDefinition
 from .states import (
     BasalAdapterAnnealedComplex,
     BasalAdapterLigatedProduct,
@@ -45,7 +46,6 @@ from .states import (
     BasalMaterialRecord,
     BasalMaterialRole,
     BasalPcrCopyState,
-    BasalRestrictionProduct,
     assert_material_partition,
 )
 
@@ -59,17 +59,16 @@ class BasalRealizationRecord(HopModel):
     source_precursor_sequence: str
     payload_source_map: PayloadSourceMap
     enzyme_definitions: tuple[BasalEnzymeDefinition, ...]
-    enzyme_bindings: tuple[BasalEnzymeBinding, ...]
+    enzyme_bindings: tuple[ConstructionEnzymeBinding, ...]
     basal_nick: BasalBoundaryControl
     pairing_constraints: tuple[BasalPairAllowance, ...]
     projection: BasalEndpointProjection
     reaction_programs: tuple[ReactionProgram, ...]
     stage_assessments: tuple[ReactionStageAssessment, ...]
     nicked_duplex: MultiSiteNickedDuplex
-    adapter_annealed_complex: BasalAdapterAnnealedComplex | None
-    adapter_ligated_product: BasalAdapterLigatedProduct | None
-    hairpin_pcr_duplex: BasalPcrCopyState | None
-    restriction_digest_product: BasalRestrictionProduct | None
+    adapter_annealed_complex: BasalAdapterAnnealedComplex
+    adapter_ligated_product: BasalAdapterLigatedProduct
+    hairpin_pcr_duplex: BasalPcrCopyState
     materials: tuple[BasalMaterialRecord, ...]
     material_accounting: BasalMaterialAccounting
     relaxation_radius: int = Field(ge=0)
@@ -84,10 +83,7 @@ class BasalRealizationRecord(HopModel):
     def validate_realization(self) -> BasalRealizationRecord:
         if self.basal_realization_id != basal_realization_id(self):
             raise ValueError("basal_realization_id must seal the complete exact route evidence.")
-        expected_local_sequence = (
-            self.projection.pcr_reference_sequence or self.source_precursor_sequence
-        )
-        if self.local_realization.local_sequence != expected_local_sequence:
+        if self.local_realization.local_sequence != self.projection.pcr_reference_sequence:
             raise ValueError(
                 "Local realization sequence must equal its exact endpoint-bearing state."
             )
@@ -133,13 +129,9 @@ class BasalRealizationRecord(HopModel):
             raise ValueError("Basal material accounting must derive from exact materials.")
         self._validate_route_states()
         assert_material_partition(
-            endpoint=self.projection.endpoint,
-            source_precursor_sequence=self.source_precursor_sequence,
             pcr_duplex=self.hairpin_pcr_duplex,
-            restriction_product=self.restriction_digest_product,
             materials=self.materials,
         )
-        self._validate_endpoint_minimality()
         return self
 
     def _validate_enzyme_replay(self) -> None:
@@ -149,14 +141,11 @@ class BasalRealizationRecord(HopModel):
         }:
             raise ValueError("Embedded enzyme definitions must cover every binding exactly.")
         for binding in self.enzyme_bindings:
-            sequence = self.source_precursor_sequence
-            if binding.role is EnzymeRole.END_GENERATION:
-                if self.hairpin_pcr_duplex is None:
-                    raise ValueError("End-generation bindings require an exact duplex state.")
-                sequence = self.hairpin_pcr_duplex.top_strand.sequence
+            if binding.role is not EnzymeRole.BASAL_NICK:
+                raise ValueError("Basal local authority may contain only basal-nick bindings.")
             binding.assert_definition_replay(
                 enzyme=definitions[binding.enzyme_id],
-                sequence=sequence,
+                sequence=self.source_precursor_sequence,
             )
         stages = tuple(stage for program in self.reaction_programs for stage in program.stages)
         if len({item.binding_id for item in self.enzyme_bindings}) != len(self.enzyme_bindings):
@@ -262,17 +251,6 @@ class BasalRealizationRecord(HopModel):
             or nick_site.nick.strand is not self.basal_nick.strand
         ):
             raise ValueError("Nicked-duplex evidence must replay the exact basal binding.")
-        if self.projection.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-            return
-        if (
-            self.adapter_annealed_complex is None
-            or self.adapter_ligated_product is None
-            or self.hairpin_pcr_duplex is None
-            or self.projection.pairing_profile is None
-        ):
-            raise ValueError(
-                "PCR-bearing endpoints require exact annealing, ligation, and PCR states."
-            )
         adapter = next(
             item.sequence_5prime
             for item in self.materials
@@ -289,53 +267,18 @@ class BasalRealizationRecord(HopModel):
             != reverse_complement_iupac(expected_ligated)
         ):
             raise ValueError("PCR strands must copy the complete adapter-ligated duplex exactly.")
-        if self.projection.endpoint is not ConstructionEndpoint.CLONE_READY_DUPLEX:
-            return
-        if len(self.reaction_programs) != 2 or self.restriction_digest_product is None:
-            raise ValueError("Clone-ready endpoint requires one exact Type IIS program.")
-        end_program = self.reaction_programs[1]
-        pre = end_program.states[0].molecules
-        post = end_program.states[1].molecules
+        top = self.hairpin_pcr_duplex.top_strand
+        bottom = self.hairpin_pcr_duplex.bottom_strand
+        ligated = self.adapter_ligated_product.strand
         if (
-            len(pre) != 1
-            or pre[0].reference_sequence_5prime != self.hairpin_pcr_duplex.top_strand.sequence
-            or pre[0].complement_sequence_5prime != self.hairpin_pcr_duplex.bottom_strand.sequence
+            top.lineage != ligated.lineage
+            or top.five_prime_end is not ligated.five_prime_end
+            or top.three_prime_end is not ligated.three_prime_end
+            or tuple(item.origin_id for item in bottom.lineage)
+            != (ligated.strand_id,) * len(bottom.sequence)
+            or tuple(item.origin_strand for item in bottom.lineage)
+            != (LineageStrand.COMPLEMENTARY,) * len(bottom.sequence)
+            or tuple(item.origin_index for item in bottom.lineage)
+            != tuple(reversed(range(len(bottom.sequence))))
         ):
-            raise ValueError("Type IIS program must act on the exact PCR duplex.")
-        expected_post = {
-            self.restriction_digest_product.primary_strand.sequence,
-            self.restriction_digest_product.complementary_strand.sequence,
-        }
-        if {item.reference_sequence_5prime for item in post} != expected_post:
-            raise ValueError(
-                "Type IIS program post-state must equal the exact restriction product."
-            )
-        end_bindings = tuple(
-            item.binding_id
-            for item in self.enzyme_bindings
-            if item.role is EnzymeRole.END_GENERATION
-        )
-        if self.restriction_digest_product.binding_ids != end_bindings:
-            raise ValueError("Restriction product must preserve both Type IIS bindings.")
-        if self.projection.cohesive_ends != self.restriction_digest_product.cohesive_ends:
-            raise ValueError("Endpoint projection must preserve the exact restriction ends.")
-        self.restriction_digest_product.assert_parent_replay(self.hairpin_pcr_duplex)
-
-    def _validate_endpoint_minimality(self) -> None:
-        endpoint = self.projection.endpoint
-        if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-            if any(
-                item is not None
-                for item in (
-                    self.adapter_annealed_complex,
-                    self.adapter_ligated_product,
-                    self.hairpin_pcr_duplex,
-                    self.restriction_digest_product,
-                )
-            ):
-                raise ValueError("A direct basal endpoint must remain adapter-free and PCR-free.")
-        elif endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-            if self.restriction_digest_product is not None:
-                raise ValueError("A PCR endpoint must not contain clone-ready digestion.")
-        elif self.restriction_digest_product is None:
-            raise ValueError("A clone-ready endpoint requires an exact restriction product.")
+            raise ValueError("PCR strands must replay exact adapter-ligated lineage and ends.")

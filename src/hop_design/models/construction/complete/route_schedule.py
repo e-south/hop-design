@@ -16,8 +16,9 @@ from hop_design.models.construction.foldback import (
     FoldbackCleavageProgramKind,
     FoldbackLocalRealization,
 )
-from hop_design.models.construction.payload import ConstructionEndpoint, _content_id
+from hop_design.models.construction.payload import SourceOrientation, _content_id
 from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.physical import SiteOrientation
 from hop_design.models.reactions import (
     DeclaredEnzymeBinding,
     ReactionMolecule,
@@ -26,7 +27,10 @@ from hop_design.models.reactions import (
     ReactionStage,
     ReactionState,
 )
-from hop_design.models.sequence import reverse_complement_iupac
+
+from .evaluation_inputs import derive_linear_source_embedding
+from .request import ExactConstructionMaterial
+from .route_lineage import lift_reaction_molecules
 
 
 def _shift_binding(binding: DeclaredEnzymeBinding, offset: int) -> DeclaredEnzymeBinding:
@@ -44,25 +48,28 @@ def _shift_binding(binding: DeclaredEnzymeBinding, offset: int) -> DeclaredEnzym
     )
 
 
-def _lift_molecule(
-    molecule: ReactionMolecule,
+def _reverse_binding(
+    binding: DeclaredEnzymeBinding,
     *,
-    payload: str,
-    prefix: str,
-    return_arm: str,
-) -> ReactionMolecule:
-    reference = molecule.reference_sequence_5prime
-    complement = molecule.complement_sequence_5prime
-    if reference.startswith(payload):
-        reference = prefix + reference
-        if complement is not None:
-            complement += return_arm
-    elif complement is None and reference.endswith(reverse_complement_iupac(payload)):
-        reference += return_arm
-    return ReactionMolecule(
-        molecule_id=molecule.molecule_id,
-        reference_sequence_5prime=reference,
-        complement_sequence_5prime=complement,
+    source_length: int,
+) -> DeclaredEnzymeBinding:
+    """Map one local binding onto the opposite physical strand orientation."""
+
+    def reversed_boundary(boundary: Boundary | None) -> Boundary | None:
+        return None if boundary is None else Boundary(offset=source_length - boundary.offset)
+
+    return DeclaredEnzymeBinding(
+        recognition_span=Span(
+            start=Boundary(offset=source_length - binding.recognition_span.end.offset),
+            end=Boundary(offset=source_length - binding.recognition_span.start.offset),
+        ),
+        orientation=(
+            SiteOrientation.REVERSE
+            if binding.orientation is SiteOrientation.FORWARD
+            else SiteOrientation.FORWARD
+        ),
+        reference_cut=reversed_boundary(binding.complement_cut),
+        complement_cut=reversed_boundary(binding.reference_cut),
     )
 
 
@@ -71,8 +78,11 @@ def _operation(
     *,
     namespace: str,
     binding_offset: int = 0,
+    reverse_source_length: int | None = None,
 ) -> ReactionOperation:
     binding = operation.intended_binding
+    if reverse_source_length is not None:
+        binding = _reverse_binding(binding, source_length=reverse_source_length)
     if binding_offset:
         binding = _shift_binding(binding, binding_offset)
     return ReactionOperation(
@@ -105,18 +115,28 @@ def derive_direct_reaction_program(
     basal: BasalRealizationRecord | None,
     prefix: str,
     return_arm: str,
+    source: ExactConstructionMaterial,
+    source_complement: ExactConstructionMaterial,
 ) -> ReactionProgram:
     """Derive exact operations and states from the two detailed local authorities."""
     local = foldback.reaction_program
+    embedding = derive_linear_source_embedding(
+        foldback=foldback,
+        prefix=prefix,
+        return_arm=return_arm,
+    )
+    if (
+        source.sequence_5prime != embedding.source_sequence
+        or source_complement.sequence_5prime != embedding.complement_sequence
+    ):
+        raise ValueError("Complete route materials must equal the exact source embedding.")
     lifted = tuple(
-        tuple(
-            _lift_molecule(
-                molecule,
-                payload=foldback.payload_sequence,
-                prefix=prefix,
-                return_arm=return_arm,
-            )
-            for molecule in state.molecules
+        lift_reaction_molecules(
+            state.molecules,
+            foldback=foldback,
+            embedding=embedding,
+            source=source,
+            source_complement=source_complement,
         )
         for state in local.states
     )
@@ -134,16 +154,18 @@ def derive_direct_reaction_program(
     )
     basal_operations: tuple[ReactionOperation, ...] = ()
     if basal is not None:
-        expected_program_count = (
-            2 if basal.projection.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX else 1
-        )
-        if (
-            len(basal.reaction_programs) != expected_program_count
-            or len(basal.reaction_programs[0].stages) != 1
-        ):
+        if len(basal.reaction_programs) != 1 or len(basal.reaction_programs[0].stages) != 1:
             raise ValueError("Pre-hairpin composition requires one exact basal nick phase.")
         basal_operations = tuple(
-            _operation(operation, namespace=namespace)
+            _operation(
+                operation,
+                namespace=namespace,
+                reverse_source_length=(
+                    len(source.sequence_5prime)
+                    if embedding.source_orientation is SourceOrientation.REVERSE_COMPLEMENT
+                    else None
+                ),
+            )
             for operation in basal.reaction_programs[0].stages[0].operations
         )
     if foldback.program_kind is FoldbackCleavageProgramKind.SINGLE_CLEAVAGE:
@@ -158,7 +180,11 @@ def derive_direct_reaction_program(
                 post_state_id=states[1].state_id,
                 operations=basal_operations
                 + tuple(
-                    _operation(operation, namespace=namespace, binding_offset=len(prefix))
+                    _operation(
+                        operation,
+                        namespace=namespace,
+                        binding_offset=embedding.local_reference_offset,
+                    )
                     for operation in local.stages[0].operations
                 ),
             ),
@@ -174,7 +200,11 @@ def derive_direct_reaction_program(
                 pre_state_id=states[0].state_id,
                 post_state_id=states[1].state_id,
                 operations=tuple(
-                    _operation(operation, namespace=namespace, binding_offset=len(prefix))
+                    _operation(
+                        operation,
+                        namespace=namespace,
+                        binding_offset=embedding.local_reference_offset,
+                    )
                     for operation in local.stages[0].operations
                 ),
             ),
@@ -184,7 +214,11 @@ def derive_direct_reaction_program(
                 post_state_id=states[2].state_id,
                 operations=basal_operations
                 + tuple(
-                    _operation(operation, namespace=namespace, binding_offset=len(prefix))
+                    _operation(
+                        operation,
+                        namespace=namespace,
+                        binding_offset=embedding.local_reference_offset,
+                    )
                     for operation in local.stages[1].operations
                 ),
             ),
@@ -196,97 +230,4 @@ def derive_direct_reaction_program(
     )
 
 
-def derive_pcr_reaction_program(
-    *,
-    foldback: FoldbackLocalRealization,
-    basal: BasalRealizationRecord,
-    prefix: str,
-    return_arm: str,
-) -> ReactionProgram:
-    """Derive the exact basal-nicked program with a split complement product."""
-    direct = derive_direct_reaction_program(
-        foldback=foldback,
-        basal=basal,
-        prefix=prefix,
-        return_arm=return_arm,
-    )
-    final = direct.states[-1]
-    molecules: list[ReactionMolecule] = []
-    split_count = 0
-    for molecule in final.molecules:
-        if (
-            molecule.complement_sequence_5prime is None
-            and "bottom-" in molecule.molecule_id
-            and molecule.reference_sequence_5prime.endswith(return_arm)
-            and len(molecule.reference_sequence_5prime) > len(return_arm)
-        ):
-            split_count += 1
-            sequence = molecule.reference_sequence_5prime
-            split = len(sequence) - len(return_arm)
-            molecules.extend(
-                (
-                    ReactionMolecule(
-                        molecule_id=f"{molecule.molecule_id}-pcr-bottom-retained",
-                        reference_sequence_5prime=sequence[:split],
-                        complement_sequence_5prime=None,
-                    ),
-                    ReactionMolecule(
-                        molecule_id=f"{molecule.molecule_id}-pcr-bottom-return-arm",
-                        reference_sequence_5prime=sequence[split:],
-                        complement_sequence_5prime=None,
-                    ),
-                )
-            )
-            continue
-        if molecule.complement_sequence_5prime is None:
-            molecules.append(molecule)
-            continue
-        split_count += 1
-        complement = molecule.complement_sequence_5prime
-        split = len(complement) - len(return_arm)
-        molecules.extend(
-            (
-                ReactionMolecule(
-                    molecule_id=f"{molecule.molecule_id}-top",
-                    reference_sequence_5prime=molecule.reference_sequence_5prime,
-                    complement_sequence_5prime=None,
-                ),
-                ReactionMolecule(
-                    molecule_id=f"{molecule.molecule_id}-pcr-bottom-retained",
-                    reference_sequence_5prime=complement[:split],
-                    complement_sequence_5prime=None,
-                ),
-                ReactionMolecule(
-                    molecule_id=f"{molecule.molecule_id}-pcr-bottom-return-arm",
-                    reference_sequence_5prime=complement[split:],
-                    complement_sequence_5prime=None,
-                ),
-            )
-        )
-    if split_count != 1:
-        raise ValueError("PCR reaction program must split one exact complement strand.")
-    states = (*direct.states[:-1], final.model_copy(update={"molecules": tuple(molecules)}))
-    stages = tuple(
-        stage.model_copy(update={"post_state_id": states[index + 1].state_id})
-        for index, stage in enumerate(direct.stages)
-    )
-    program_digest = (
-        _content_id(
-            "pcr-reaction-program",
-            1,
-            {
-                "foldback_realization_id": foldback.foldback_realization_id,
-                "basal_realization_id": basal.basal_realization_id,
-                "prefix": prefix,
-                "return_arm": return_arm,
-                "states": tuple(item.model_dump(mode="json") for item in states),
-                "stages": tuple(item.model_dump(mode="json") for item in stages),
-            },
-        )
-        .split("/")[-1]
-        .split("@")[0]
-    )
-    return ReactionProgram(program_id=f"pcr-route-{program_digest}", states=states, stages=stages)
-
-
-__all__ = ["derive_direct_reaction_program", "derive_pcr_reaction_program"]
+__all__ = ["derive_direct_reaction_program"]

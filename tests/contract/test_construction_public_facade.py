@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import inspect
+import json
 from pathlib import Path
 
 import pytest
@@ -19,13 +20,20 @@ import pytest
 import hop_design.construction as construction
 from hop_design.design.construction.complete.bundle import compile_construction_bundle
 from tests.integration.test_complete_construction_bundle import _verified_construction
+from tests.integration.test_source_partition_discovery import _request as source_partition_request
 
 PUBLIC_NAMES = [
     "ConstructionCompilation",
     "ConstructionProjection",
+    "LocalNeighborhoodDiscovery",
+    "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compile_construction",
+    "discover_local_neighborhood",
+    "discover_source_partition",
     "load_verified_construction_bundle",
+    "load_verified_local_neighborhood",
+    "load_verified_source_partition",
     "project_basal_feasibility",
     "project_complete_construction_summary",
     "project_construction_trajectory",
@@ -49,9 +57,24 @@ def test_construction_facade_is_an_exact_allowlist() -> None:
     for receipt_type in (
         construction.ConstructionCompilation,
         construction.ConstructionProjection,
+        construction.LocalNeighborhoodDiscovery,
+        construction.SourcePartitionDiscovery,
         construction.VerifiedConstructionBundle,
     ):
         assert tuple(inspect.signature(receipt_type).parameters) == ()
+
+
+def test_construction_facade_decision_records_the_exact_allowlist() -> None:
+    decision = (
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "architecture"
+        / "decisions"
+        / "0027-file-oriented-construction-facade.md"
+    ).read_text(encoding="utf-8")
+
+    for name in PUBLIC_NAMES:
+        assert f"`{name}`" in decision
 
 
 def test_construction_receipts_expose_scientific_accounting_not_authority_models(
@@ -108,7 +131,7 @@ def test_construction_projection_packet_is_portable_and_create_only(tmp_path: Pa
     assert summary.json_bytes.endswith(b"\n")
     assert summary.csv_bytes is not None
     assert summary.svg_bytes.startswith(b"<svg")
-    assert trajectory.schema_id == "hop.complete-construction-trajectory/v1"
+    assert trajectory.schema_id == "hop.complete-construction-trajectory/v2"
     assert trajectory.csv_bytes is None
 
     output = summary.write(tmp_path / "summary")
@@ -137,9 +160,9 @@ def test_construction_local_projections_require_explicit_family_selection(
         family="basal",
     )
 
-    assert foldback.schema_id == "hop.foldback-feasibility-landscape/v1"
-    assert basal.schema_id == "hop.basal-feasibility-landscape/v1"
-    assert foldback_frontier.schema_id == "hop.foldback-relaxation-frontier/v1"
+    assert foldback.schema_id == "hop.foldback-feasibility-landscape/v3"
+    assert basal.schema_id == "hop.basal-feasibility-landscape/v2"
+    assert foldback_frontier.schema_id == "hop.foldback-relaxation-frontier/v2"
     assert basal_frontier.schema_id == "hop.basal-relaxation-frontier/v1"
     with pytest.raises(ValueError, match="family must be foldback or basal"):
         construction.project_relaxation_frontier(
@@ -153,3 +176,39 @@ def test_basal_projection_rejects_a_route_without_basal_authority(tmp_path: Path
 
     with pytest.raises(ValueError, match="does not contain a basal authority"):
         construction.project_basal_feasibility(compilation)
+
+
+def test_source_partition_discovery_is_file_oriented_and_portable(tmp_path: Path) -> None:
+    source = tmp_path / "source-partition.json"
+    source.write_text(
+        json.dumps(
+            source_partition_request().model_dump(mode="json", by_alias=True),
+            sort_keys=True,
+        )
+    )
+
+    discovery = construction.discover_source_partition(source)
+
+    assert isinstance(discovery, construction.SourcePartitionDiscovery)
+    assert discovery.status == "complete"
+    assert discovery.candidate_space_size == 3
+    assert discovery.examined_nodes == 3
+    assert discovery.accepted_realizations == 1
+    assert len(discovery.realization_ids) == 1
+    assert discovery.problem_id.startswith("hop:source-partition-problem/")
+    assert discovery.request_id.startswith("hop:source-partition-request/")
+    assert discovery.result_id.startswith("hop:source-partition-result/")
+    assert discovery.json_bytes.endswith(b"\n")
+    assert discovery.csv_bytes.startswith(b"candidate_id,enzyme_ids,disposition")
+    assert not hasattr(discovery, "request")
+    assert not hasattr(discovery, "result")
+    assert repr(discovery).startswith("SourcePartitionDiscovery(status='complete'")
+
+    output = discovery.write(tmp_path / "partition")
+    assert {item.name for item in output.iterdir()} == {"data.csv", "result.json"}
+    loaded = construction.load_verified_source_partition(output / "result.json")
+    assert loaded.result_id == discovery.result_id
+    assert loaded.json_bytes == discovery.json_bytes
+    assert loaded.csv_bytes == discovery.csv_bytes
+    with pytest.raises(FileExistsError, match="Refusing to replace existing"):
+        discovery.write(output)

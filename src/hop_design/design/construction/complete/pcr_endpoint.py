@@ -16,9 +16,6 @@ from hop_design.models.construction import (
     DigitalDesignStatus,
     MethodResolutionStatus,
     NeighborhoodClaimBoundary,
-    PayloadSourceMap,
-    PayloadSourceSegment,
-    SourceOrientation,
 )
 from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
@@ -33,6 +30,10 @@ from hop_design.models.construction.complete import (
 from hop_design.models.construction.complete.evaluation import (
     CombinationEvaluation,
     CompositionRejectionCode,
+)
+from hop_design.models.construction.complete.evaluation_inputs import (
+    derive_complete_payload_source_map,
+    derive_linear_source_embedding,
 )
 from hop_design.models.construction.complete.material_disposition import (
     derive_route_material_dispositions,
@@ -146,26 +147,19 @@ def pcr_realization(
         material_function_spans=extension.material_function_spans,
         endpoint_sequence_fate_spans=extension.endpoint_sequence_fate_spans,
     )
-    materials = (source, source_complement, adapter, forward, reverse)
+    materials = (source, source_complement, adapter, forward.oligo, reverse.oligo)
     return MaterializedConstructionRealization.create(
         realization=complete,
         foldback_authority=foldback,
         basal_authority=basal,
-        payload_source_map=PayloadSourceMap(
-            segments=(
-                PayloadSourceSegment(
-                    payload_span=Span(
-                        start=request.payload.basal_boundary,
-                        end=request.payload.foldback_boundary,
-                    ),
-                    source_material_id=source.material_id,
-                    source_span=Span(
-                        start=Boundary(offset=len(prefix)),
-                        end=Boundary(offset=len(prefix) + len(foldback.payload_sequence)),
-                    ),
-                    orientation=SourceOrientation.FORWARD,
-                ),
-            )
+        payload_source_map=derive_complete_payload_source_map(
+            foldback=foldback,
+            embedding=derive_linear_source_embedding(
+                foldback=foldback,
+                prefix=prefix,
+                return_arm=return_arm,
+            ),
+            source_material_id=source.material_id,
         ),
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=basal.basal_realization_id,

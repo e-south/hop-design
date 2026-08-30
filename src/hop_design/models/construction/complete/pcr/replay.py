@@ -41,20 +41,26 @@ def _route_material_functions(
         identity = (item.origin_id, item.origin_strand)
         if not runs or runs[-1] != identity:
             runs.append(identity)
-    expected_strands = (
-        LineageStrand.PRIMARY,
-        LineageStrand.COMPLEMENTARY,
-        LineageStrand.PRIMARY,
-    )
-    if len(runs) != 3 or tuple(strand for _, strand in runs) != expected_strands:
+    if (
+        len(runs) != 3
+        or {strand for _, strand in runs[:2]}
+        != {LineageStrand.PRIMARY, LineageStrand.COMPLEMENTARY}
+        or runs[2][1] is not LineageStrand.PRIMARY
+    ):
         raise ValueError("PCR template lineage must preserve exact route material roles.")
-    source_reference, source_complement, adapter = (material_id for material_id, _ in runs)
+    source_reference = next(
+        material_id for material_id, strand in runs[:2] if strand is LineageStrand.PRIMARY
+    )
+    source_complement = next(
+        material_id for material_id, strand in runs[:2] if strand is LineageStrand.COMPLEMENTARY
+    )
+    adapter = runs[2][0]
     material_ids = (
         source_reference,
         source_complement,
         adapter,
-        authority.forward_primer.material_id,
-        authority.reverse_primer.material_id,
+        authority.forward_primer.oligo.material_id,
+        authority.reverse_primer.oligo.material_id,
     )
     if len(set(material_ids)) != len(MaterialFunction):
         raise ValueError("PCR route material roles must bind distinct exact materials.")
@@ -167,13 +173,12 @@ def _validate_primer_extension(
     top, bottom = authority.products
     forward, reverse = authority.forward_primer, authority.reverse_primer
     if (
-        forward.three_prime_end is not EndChemistry.HYDROXYL
-        or reverse.three_prime_end is not EndChemistry.HYDROXYL
+        forward.oligo.three_prime_end is not EndChemistry.HYDROXYL
+        or reverse.oligo.three_prime_end is not EndChemistry.HYDROXYL
     ):
         raise ValueError("PCR primers require exact three-prime hydroxyl chemistry.")
-    if top.sequence != template.sequence or bottom.sequence != reverse_complement_iupac(
-        template.sequence
-    ):
+    expected_top, expected_bottom = pcr_products(template, forward, reverse)
+    if top.sequence != expected_top.sequence or bottom.sequence != expected_bottom.sequence:
         raise ValueError("Primer extension products must be exact reverse complements.")
     if post_state.pairings != authority.pairings or len(post_state.pairings) != len(top.sequence):
         raise ValueError("PCR duplex authority must cover every exact base pair.")
@@ -199,8 +204,8 @@ def _validate_primer_extension(
     function_by_role = {
         item.function: item.material_id for item in authority.material_function_spans
     }
-    if function_by_role[MaterialFunction.FORWARD_PRIMER] != forward.material_id or (
-        function_by_role[MaterialFunction.REVERSE_PRIMER] != reverse.material_id
+    if function_by_role[MaterialFunction.FORWARD_PRIMER] != forward.oligo.material_id or (
+        function_by_role[MaterialFunction.REVERSE_PRIMER] != reverse.oligo.material_id
     ):
         raise ValueError("PCR material-function spans must bind both exact primers.")
     validate_material_function_spans(
@@ -209,23 +214,23 @@ def _validate_primer_extension(
         top=top,
         bottom=bottom,
     )
-    fwd_length = len(forward.sequence_5prime)
-    rev_length = len(reverse.sequence_5prime)
-    if top.sequence[:fwd_length] != forward.sequence_5prime or (
-        bottom.sequence[:rev_length] != reverse.sequence_5prime
+    fwd_length = len(forward.oligo.sequence_5prime)
+    rev_length = len(reverse.oligo.sequence_5prime)
+    if top.sequence[:fwd_length] != forward.oligo.sequence_5prime or (
+        bottom.sequence[:rev_length] != reverse.oligo.sequence_5prime
     ):
         raise ValueError("PCR products must preserve both exact primer sequences.")
     expected_bindings = (
         (
-            forward.material_id,
+            forward.oligo.material_id,
             f"{template.strand_id}-derived-complement",
-            len(template.sequence) - fwd_length,
-            len(template.sequence),
+            0,
+            forward.annealing_length_nt,
         ),
         (
-            reverse.material_id,
+            reverse.oligo.material_id,
             template.strand_id,
-            len(template.sequence) - rev_length,
+            len(template.sequence) - reverse.annealing_length_nt,
             len(template.sequence),
         ),
     )
@@ -244,8 +249,9 @@ def _validate_primer_extension(
     ):
         raise ValueError("PCR primer bindings must replay exact template boundaries.")
     if (
-        reverse.sequence_5prime != reverse_complement_iupac(template.sequence[-rev_length:])
-        or forward.sequence_5prime != template.sequence[:fwd_length]
+        reverse.annealing_sequence
+        != reverse_complement_iupac(template.sequence[-reverse.annealing_length_nt :])
+        or forward.annealing_sequence != template.sequence[: forward.annealing_length_nt]
     ):
         raise ValueError("PCR primer sequences must match their exact template sites.")
     if authority.products != pcr_products(template, forward, reverse):

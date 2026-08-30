@@ -28,7 +28,7 @@ from hop_design.models.molecular_state import (
     StrandPairObservation,
 )
 
-from ..request import ExactConstructionMaterial
+from ..request import ExactConstructionMaterial, PcrPrimer
 
 
 class MaterialFunction(StrEnum):
@@ -145,12 +145,12 @@ class PrimerExtensionAuthority(HopModel):
     authority_id: str = Field(pattern=r"^hop:primer-extension/[0-9a-f]{64}@1$")
     pre_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
     post_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
-    forward_primer: ExactConstructionMaterial
-    reverse_primer: ExactConstructionMaterial
+    forward_primer: PcrPrimer
+    reverse_primer: PcrPrimer
     bindings: tuple[PrimerBinding, PrimerBinding]
     products: tuple[MolecularStrand, MolecularStrand]
     pairings: tuple[StrandPairObservation, ...] = Field(min_length=1)
-    material_function_spans: tuple[MaterialFunctionSpan, ...] = Field(min_length=5)
+    material_function_spans: tuple[MaterialFunctionSpan, ...] = Field(min_length=2)
     endpoint_sequence_fate_spans: tuple[EndpointSequenceFateSpan, ...] = Field(min_length=4)
 
     @classmethod
@@ -166,11 +166,17 @@ class PrimerExtensionAuthority(HopModel):
         content = self.model_dump(mode="json", exclude={"authority_id"})
         if self.authority_id != _content_id("primer-extension", 1, content):
             raise ValueError("Primer-extension identity must seal exact copied products.")
-        primer_ids = (self.forward_primer.material_id, self.reverse_primer.material_id)
+        primer_ids = (
+            self.forward_primer.oligo.material_id,
+            self.reverse_primer.oligo.material_id,
+        )
         if tuple(item.primer_id for item in self.bindings) != primer_ids:
             raise ValueError("Primer bindings must preserve exact declared primer order.")
-        if {item.function for item in self.material_function_spans} != set(MaterialFunction):
-            raise ValueError("Material-function spans must cover every exact input role.")
+        if not {
+            MaterialFunction.FORWARD_PRIMER,
+            MaterialFunction.REVERSE_PRIMER,
+        }.issubset(item.function for item in self.material_function_spans):
+            raise ValueError("Material-function spans must retain both exact primer roles.")
         by_strand: dict[EndpointStrand, list[Span]] = {strand: [] for strand in EndpointStrand}
         for item in self.endpoint_sequence_fate_spans:
             by_strand[item.endpoint_strand].append(item.endpoint_span)

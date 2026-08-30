@@ -35,7 +35,7 @@ from tests.integration.test_complete_construction_pcr import _payload
 def _source_document() -> dict[str, object]:
     foldback = _request(_nickase(), _terminus_enzyme())
     return {
-        "schema": "hop.construction-source/v1",
+        "schema": "hop.construction-source/v3",
         "foldback": foldback.model_dump(mode="json", by_alias=True),
         "basal": None,
         "composition": {
@@ -72,8 +72,14 @@ def _pcr_source_document() -> dict[str, object]:
     materialization.update(
         {
             "adapter": _material("adapter", "ACGT").model_dump(mode="json"),
-            "forward_primer": _material("forward-primer", "GACA").model_dump(mode="json"),
-            "reverse_primer": _material("reverse-primer", "TGTC").model_dump(mode="json"),
+            "forward_primer": {
+                "oligo": _material("forward-primer", "GACA").model_dump(mode="json"),
+                "annealing_length_nt": 4,
+            },
+            "reverse_primer": {
+                "oligo": _material("reverse-primer", "TGTC").model_dump(mode="json"),
+                "annealing_length_nt": 4,
+            },
         }
     )
     composition["materialization"] = materialization
@@ -99,11 +105,19 @@ def test_construction_source_loads_strict_json_and_yaml(
         json.dumps(load_source_mapping(source_path), separators=(",", ":"))
     )
 
-    assert loaded.schema_id == "hop.construction-source/v1"
+    assert loaded.schema_id == "hop.construction-source/v3"
     assert loaded.composition.endpoint == "ssdna_hairpin"
     assert loaded.composition.materialization.source_complement_five_prime_end is (
         EndChemistry.PHOSPHATE
     )
+
+
+def test_construction_source_rejects_the_superseded_contract() -> None:
+    document = _source_document()
+    document["schema"] = "hop.construction-source/v1"
+
+    with pytest.raises(ValidationError, match=r"hop\.construction-source/v3"):
+        ConstructionSource.model_validate_json(json.dumps(document))
 
 
 def test_construction_source_rejects_unknown_or_internal_schema_fields() -> None:
@@ -166,10 +180,10 @@ def test_construction_source_rejects_local_endpoint_and_payload_drift() -> None:
         ConstructionSource.model_validate_json(json.dumps(wrong_foldback_endpoint))
 
     wrong_basal_endpoint = _pcr_source_document()
-    composition = dict(wrong_basal_endpoint["composition"])  # type: ignore[arg-type]
-    composition["endpoint"] = "clone_ready_duplex"
-    wrong_basal_endpoint["composition"] = composition
-    with pytest.raises(ValidationError, match="Basal discovery must match"):
+    basal = dict(wrong_basal_endpoint["basal"])  # type: ignore[arg-type]
+    basal["endpoint"] = "ssdna_hairpin"
+    wrong_basal_endpoint["basal"] = basal
+    with pytest.raises(ValidationError, match="hairpin_pcr_duplex"):
         ConstructionSource.model_validate_json(json.dumps(wrong_basal_endpoint))
 
     wrong_payload = _pcr_source_document()

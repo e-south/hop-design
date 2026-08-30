@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Literal
 
-from hop_design.kernel.molecular_states import build_lineage, observe_pair, reindex_lineage
 from hop_design.kernel.site_scanning import scan_release_agent
 from hop_design.models.catalog import SiteOrientation
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.linear_source_method import LinearSourceMultinickHairpinPcrRequest
 from hop_design.models.method import BindingOrientation
 from hop_design.models.method_states import HairpinPcrDuplex, RestrictionDigestProduct
+from hop_design.models.molecular_replay import build_lineage, observe_pair, reindex_lineage
 from hop_design.models.molecular_state import (
     CohesiveEnd,
     EndChemistry,

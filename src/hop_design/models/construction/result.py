@@ -41,8 +41,8 @@ from .request import LocalNeighborhoodRequest, geometry_id, problem_id
 class NeighborhoodDiscoveryResult(HopModel):
     """Exact local realizations with explicit bounded-search completion evidence."""
 
-    schema_id: Literal["hop.neighborhood-discovery-result/v1"] = Field(
-        default="hop.neighborhood-discovery-result/v1", alias="schema"
+    schema_id: Literal["hop.neighborhood-discovery-result/v3"] = Field(
+        default="hop.neighborhood-discovery-result/v3", alias="schema"
     )
     status: SearchCompletionStatus
     request: LocalNeighborhoodRequest
@@ -83,6 +83,14 @@ class NeighborhoodDiscoveryResult(HopModel):
         if self.payload_compatibility.total_assignments != payload_cardinality:
             raise ValueError(
                 "Payload accounting must replay the exact request payload cardinality."
+            )
+        partitioned = self.request.enumeration.sequence_partition is not None
+        if (
+            partitioned
+            and self.payload_compatibility.status is not PayloadCompatibilityStatus.NOT_COMPUTED
+        ):
+            raise ValueError(
+                "A sequence-domain part cannot claim whole-domain payload compatibility."
             )
         radii = tuple(shell.radius for shell in self.shells)
         if not radii or radii[0] != 0 or radii != tuple(range(len(radii))):

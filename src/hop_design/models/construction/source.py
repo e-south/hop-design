@@ -21,6 +21,7 @@ from hop_design.models.base import HopModel
 from .complete.request import (
     CompositionEnumerationPolicy,
     LinearSourceMaterializationSpec,
+    TypeIisReleaseRequest,
     WholeRouteConstraints,
 )
 from .payload import ConstructionEndpoint, LocalNeighborhoodFamily, RouteFamily
@@ -42,6 +43,7 @@ class ConstructionCompositionSource(HopModel):
 
     endpoint: ConstructionEndpoint
     materialization: LinearSourceMaterializationSpec
+    release: TypeIisReleaseRequest | None = None
     whole_route_constraints: WholeRouteConstraints
     enumeration: CompositionEnumerationPolicy
 
@@ -49,7 +51,7 @@ class ConstructionCompositionSource(HopModel):
 class ConstructionSource(HopModel):
     """One strict external source for deterministic complete construction."""
 
-    schema_id: Literal["hop.construction-source/v1"] = Field(alias="schema")
+    schema_id: Literal["hop.construction-source/v3"] = Field(alias="schema")
     foldback: LocalNeighborhoodRequest
     basal: LocalNeighborhoodRequest | None = None
     composition: ConstructionCompositionSource
@@ -98,6 +100,8 @@ class ConstructionSource(HopModel):
                 raise ValueError("A direct endpoint must omit basal discovery.")
             if any(item is not None for item in auxiliaries):
                 raise ValueError("A direct endpoint must omit adapter and PCR primers.")
+            if self.composition.release is not None:
+                raise ValueError("A direct endpoint must omit clone release.")
             return self
 
         if self.basal is None:
@@ -107,11 +111,18 @@ class ConstructionSource(HopModel):
         if (
             self.basal.family is not LocalNeighborhoodFamily.BASAL
             or self.basal.route_family is not RouteFamily.LINEAR_SOURCE_V1
-            or self.basal.endpoint is not endpoint
+            or self.basal.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
         ):
-            raise ValueError("Basal discovery must match the final linear-source endpoint.")
+            raise ValueError(
+                "Basal discovery must resolve the linear source through the hairpin PCR duplex."
+            )
         if self.basal.payload.payload_spec_id != self.foldback.payload.payload_spec_id:
             raise ValueError("Foldback and basal discovery must describe the same payload space.")
+        if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+            if self.composition.release is not None:
+                raise ValueError("A hairpin PCR endpoint must omit clone release.")
+        elif self.composition.release is None:
+            raise ValueError("A clone-ready endpoint requires exact Type IIS release.")
         return self
 
 

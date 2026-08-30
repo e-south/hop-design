@@ -28,7 +28,7 @@ class ConstructionCompositionExecution(HopModel):
 
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     hop_version: str
-    route_implementation_version: Literal["complete-construction/1"] = "complete-construction/1"
+    route_implementation_version: Literal["complete-construction/3"] = "complete-construction/3"
     enumeration: CompositionEnumerationPolicy
     environment: dict[str, str] = Field(default_factory=dict)
 
@@ -42,7 +42,7 @@ class ConstructionCompositionProvenance(HopModel):
     """Exact upstream authorities and implementation identity for composition."""
 
     hop_version: str
-    route_implementation_version: Literal["complete-construction/1"] = "complete-construction/1"
+    route_implementation_version: Literal["complete-construction/3"] = "complete-construction/3"
     foldback_result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     basal_result_id: str | None = Field(
         default=None,
@@ -66,6 +66,7 @@ class CompositionDispositionStatus(StrEnum):
 
     ACCEPTED = "accepted"
     REJECTED = "rejected"
+    TRUNCATED = "truncated"
 
 
 class CompositionDisposition(HopModel):
@@ -83,6 +84,7 @@ class CompositionDisposition(HopModel):
         pattern=r"^hop:materialized-construction/[0-9a-f]{64}@1$",
     )
     rejection_reason: CompositionRejectionCode | None = None
+    truncation_reason: str | None = None
     candidate_enzyme_programs: int = Field(ge=0)
     recognition_placements_attempted: int = Field(ge=0)
     constraint_systems_attempted: int = Field(ge=0)
@@ -90,11 +92,13 @@ class CompositionDisposition(HopModel):
     def model_post_init(self, __context: object) -> None:
         accepted = self.materialized_realization_id is not None
         rejected = self.rejection_reason is not None
+        truncated = self.truncation_reason is not None
         expected = {
-            CompositionDispositionStatus.ACCEPTED: (True, False),
-            CompositionDispositionStatus.REJECTED: (False, True),
+            CompositionDispositionStatus.ACCEPTED: (True, False, False),
+            CompositionDispositionStatus.REJECTED: (False, True, False),
+            CompositionDispositionStatus.TRUNCATED: (False, False, True),
         }[self.status]
-        if (accepted, rejected) != expected:
+        if (accepted, rejected, truncated) != expected:
             raise ValueError("Combination disposition fields must match its exact status.")
 
 

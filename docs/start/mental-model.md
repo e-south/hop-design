@@ -49,6 +49,11 @@ foldback and basal neighborhood realizations satisfy the declared geometry and
 molecular constraints. Source coordinates are route-specific; they never
 replace final-payload coordinates as the biological authority.
 
+Foldback-local discovery treats the PCR-amplified material as a duplex. Unless
+the caller constrains the physical nick strand, HOP searches both exact nick
+strands by default and retains only routes permitted by the enzyme's declared
+recognition orientation and cut contract.
+
 Discovery is finite and exact-first. Its result reports every exact
 realization, neutral order, reversible geometry and final-product groups, and
 whether the declared space was completed, proved infeasible, or truncated.

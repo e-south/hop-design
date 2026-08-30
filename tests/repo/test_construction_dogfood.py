@@ -18,6 +18,9 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
+
+import hop_design.construction as construction
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE = REPO_ROOT / "examples" / "compile_construction.py"
@@ -31,17 +34,18 @@ SOURCES = {
 TRAJECTORY_REALIZATION_IDS = {
     "composed-pcr": (
         "hop:materialized-construction/"
-        "362dc73bc427c0a6045686ea90eba46fabffd0191e97333cb8c38394e269c1a7@1"
+        "b88be4ad64c5f0ccbf402ac0444f2ae8c71a6126443f6db5881f35678c92acce@1"
     ),
     "exact": (
         "hop:materialized-construction/"
-        "af61b54ab34978e6c2ee044216cc132fbe8177765f11ff07639a116efe1c08b2@1"
+        "debc17979724b69376bab81d62e3d81d4a690120bc76ee0f2a96f70d22f30fc1@1"
     ),
     "relaxed": (
         "hop:materialized-construction/"
-        "4ce8ee05f2a7dc4ba0ef78aa287dd76b5c7d8973aa7470408c2022f2bd91d65c@1"
+        "1e627dfb5d709b837ed30efa77941541d0b8fcaecf93978ef4a9a22b669f8459@1"
     ),
 }
+LOCAL_FOLDBACK_PARTITION = REPO_ROOT / "examples" / "foldback-local-partition.yaml"
 
 
 def _run_example(tmp_path: Path, case: str, suffix: str) -> dict[str, object]:
@@ -182,3 +186,37 @@ def test_docs_and_wheel_smoke_share_the_construction_example() -> None:
         assert f"'{path.relative_to(REPO_ROOT)}'" in wheel_smoke
     assert "source_construction" in wheel_smoke
     assert "wheel_construction" in wheel_smoke
+
+
+def test_local_foldback_partition_defaults_to_both_strands_and_replays(tmp_path: Path) -> None:
+    authored = yaml.safe_load(LOCAL_FOLDBACK_PARTITION.read_text(encoding="utf-8"))
+
+    assert "nick_strand" not in authored["target"]
+    assert authored["enumeration"]["sequence_partition"] == {
+        "part_count": 2,
+        "part_index": 0,
+    }
+
+    receipt = construction.discover_local_neighborhood(LOCAL_FOLDBACK_PARTITION)
+    result = json.loads(receipt.json_bytes)
+    strands = {realization["foldback_nick"]["strand"] for realization in result["realizations"]}
+
+    assert receipt.family == "foldback"
+    assert receipt.status == "complete"
+    assert strands == {"top", "bottom"}
+    output = receipt.write(tmp_path / "foldback-partition")
+    loaded = construction.load_verified_local_neighborhood(output / "result.json")
+    assert loaded.result_id == receipt.result_id
+    assert loaded.json_bytes == receipt.json_bytes
+
+
+def test_wheel_smoke_exercises_local_foldback_partition_source_parity() -> None:
+    wheel_smoke = (REPO_ROOT / "scripts" / "wheel-smoke").read_text(encoding="utf-8")
+
+    assert "'examples/foldback-local-partition.yaml'" in wheel_smoke
+    assert "discover_local_neighborhood" in wheel_smoke
+    assert "load_verified_local_neighborhood" in wheel_smoke
+    assert 'strands != {"top", "bottom"}' in wheel_smoke
+    assert "source_local_result" in wheel_smoke
+    assert "wheel_local_result" in wheel_smoke
+    assert 'cmp -s "$source_local_result" "$wheel_local_result"' in wheel_smoke

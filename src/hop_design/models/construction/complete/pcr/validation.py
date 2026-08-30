@@ -18,9 +18,13 @@ from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.junction import Strand
 from hop_design.models.method import BindingOrientation
+from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.physical import JunctionPairKind
+from hop_design.models.sequence import reverse_complement_iupac
 
-from ..route_schedule import derive_pcr_reaction_program
+from ..evaluation_inputs import replay_linear_source_embedding
+from ..evaluation_result import CompositionRejectionCode
+from ..request import ConstructionDiscoveryRequest
 from ..state import ConstructionStatePhase
 from ..transition import ConstructionTransitionKind
 from .authority import (
@@ -30,9 +34,80 @@ from .authority import (
 )
 from .products import endpoint_fate_spans, material_function_spans
 from .route import pcr_cleaved_strands, select_pcr_fragments
+from .schedule import derive_pcr_reaction_program
 
 if TYPE_CHECKING:
     from ..realization import MaterializedConstructionRealization
+
+
+def evaluate_pcr_compatibility(
+    request: ConstructionDiscoveryRequest,
+    *,
+    basal: BasalRealizationRecord | None,
+    prefix: str,
+    return_arm: str,
+    pcr_template: str,
+) -> CompositionRejectionCode | None:
+    """Return the first closed rejection for one exact PCR route context."""
+    if (
+        basal is None
+        or basal.basal_nick.strand is not Strand.BOTTOM
+        or basal.basal_nick.boundary.offset != len(prefix)
+    ):
+        return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
+    adapter = request.materialization.adapter
+    local_adapter = next(
+        (item for item in basal.materials if item.material_id == "ligation-adapter"),
+        None,
+    )
+    if (
+        adapter is None
+        or local_adapter is None
+        or adapter.sequence_5prime != return_arm
+        or local_adapter.sequence_5prime != return_arm
+        or adapter.five_prime_end is not EndChemistry.PHOSPHATE
+        or adapter.three_prime_end is not EndChemistry.HYDROXYL
+    ):
+        return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
+    profile = basal.projection.pairing_profile
+    complex_state = basal.adapter_annealed_complex
+    if (
+        profile is None
+        or complex_state is None
+        or profile.adapter_span.end.offset > len(return_arm)
+        or tuple(
+            (
+                pair.left_index - profile.source_span.start.offset,
+                pair.right_index,
+                pair.left_base,
+                pair.right_base,
+            )
+            for pair in complex_state.pairs
+        )
+        != tuple(
+            (
+                pair.source_index,
+                pair.adapter_index,
+                pair.source_base,
+                pair.adapter_base,
+            )
+            for pair in profile.pairs
+        )
+    ):
+        return CompositionRejectionCode.PCR_PAIRING_PROFILE_MISMATCH
+    forward = request.materialization.forward_primer
+    reverse = request.materialization.reverse_primer
+    if (
+        forward is None
+        or reverse is None
+        or forward.oligo.three_prime_end is not EndChemistry.HYDROXYL
+        or reverse.oligo.three_prime_end is not EndChemistry.HYDROXYL
+        or forward.annealing_sequence != pcr_template[: forward.annealing_length_nt]
+        or reverse.annealing_sequence
+        != reverse_complement_iupac(pcr_template[-reverse.annealing_length_nt :])
+    ):
+        return CompositionRejectionCode.PCR_PRIMER_MISMATCH
+    return None
 
 
 def validate_adapter_pairing_profile(
@@ -91,17 +166,22 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR route requires one exact bottom-strand basal nick authority.")
     source, source_complement = item.materials[:2]
-    prefix_length = len(source.sequence_5prime) - len(
-        item.foldback_authority.source_reference_sequence
+    prefix, _, _ = replay_linear_source_embedding(
+        foldback=item.foldback_authority,
+        source_sequence=source.sequence_5prime,
+        complement_sequence=source_complement.sequence_5prime,
     )
+    prefix_length = len(prefix)
     return_arm = item.materials[2].sequence_5prime
     if basal.basal_nick.boundary.offset != prefix_length:
         raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
     expected_reaction = derive_pcr_reaction_program(
         foldback=item.foldback_authority,
         basal=basal,
-        prefix=source.sequence_5prime[:prefix_length],
+        prefix=prefix,
         return_arm=return_arm,
+        source=source,
+        source_complement=source_complement,
     )
     if not program.reaction_programs or program.reaction_programs[0] != expected_reaction:
         raise ValueError("PCR enzyme phase must replay the exact basal-open local authorities.")
@@ -215,4 +295,8 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
             raise ValueError("PCR sequence-fate spans must replay exact design features.")
 
 
-__all__ = ["validate_adapter_pairing_profile", "validate_pcr_realization"]
+__all__ = [
+    "evaluate_pcr_compatibility",
+    "validate_adapter_pairing_profile",
+    "validate_pcr_realization",
+]

@@ -162,3 +162,67 @@ def test_foldback_realization_identity_rejects_mutated_molecular_content(
     content = {key: value for key, value in data.items() if key != "foldback_realization_id"}
     with pytest.raises(ValidationError, match=r"mapping|replay|derive"):
         FoldbackLocalRealization.create(**content)
+
+
+@pytest.mark.parametrize(
+    ("case", "message"),
+    (
+        ("local_sequence", "Local realization sequence"),
+        ("binding_ids", "binding ids"),
+        ("stage_ids", "stage ids"),
+        ("stage_assessments", "Stage assessments"),
+        ("controlled_strand", "different strands"),
+        ("program_kind", "stage count"),
+        ("material_requirements", "material requirements"),
+        ("retained_count", "Retained construction count"),
+        ("transient_count", "Transient construction count"),
+    ),
+)
+def test_resealed_foldback_realization_rejects_internally_inconsistent_authorities(
+    case: str,
+    message: str,
+) -> None:
+    realization = discover_foldback_neighborhood(_request(_nickase())).realizations[0]
+    content = {
+        name: getattr(realization, name)
+        for name in type(realization).model_fields
+        if name != "foldback_realization_id"
+    }
+    if case == "local_sequence":
+        content["local_realization"] = type(realization.local_realization).create(
+            local_sequence="AAAA",
+            enzyme_binding_ids=realization.local_realization.enzyme_binding_ids,
+            stage_ids=realization.local_realization.stage_ids,
+            achieved_geometry=realization.local_realization.achieved_geometry,
+        )
+    elif case == "binding_ids":
+        content["local_realization"] = type(realization.local_realization).create(
+            local_sequence=realization.local_realization.local_sequence,
+            enzyme_binding_ids=(),
+            stage_ids=realization.local_realization.stage_ids,
+            achieved_geometry=realization.local_realization.achieved_geometry,
+        )
+    elif case == "stage_ids":
+        content["local_realization"] = type(realization.local_realization).create(
+            local_sequence=realization.local_realization.local_sequence,
+            enzyme_binding_ids=realization.local_realization.enzyme_binding_ids,
+            stage_ids=(),
+            achieved_geometry=realization.local_realization.achieved_geometry,
+        )
+    elif case == "stage_assessments":
+        content["stage_assessments"] = ()
+    elif case == "controlled_strand":
+        content["terminus"] = realization.terminus.model_copy(
+            update={"strand": realization.foldback_nick.strand}
+        )
+    elif case == "program_kind":
+        content["program_kind"] = FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK
+    elif case == "material_requirements":
+        content["material_requirements"] = ()
+    elif case == "retained_count":
+        content["retained_construction_nt"] = realization.retained_construction_nt + 1
+    else:
+        content["transient_construction_nt"] = realization.transient_construction_nt + 1
+
+    with pytest.raises(ValidationError, match=message):
+        FoldbackLocalRealization.create(**content)

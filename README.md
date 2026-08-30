@@ -21,7 +21,7 @@ No physical construction, QC, or activity record is attached.
 | --- | --- |
 | Maturity | HOP is alpha software; schemas and public APIs may change before 1.0. |
 | Published release | [v0.1.0a7](https://github.com/e-south/hop-design/releases/tag/v0.1.0a7), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7). |
-| Source line | Main and the tagged documentation describe the v0.1.0a7 release contract. |
+| Source line | The unreleased v0.1.0a8 candidate contains the construction-contract v3 cutover; use tagged v0.1.0a7 documentation with the published wheel. |
 | Distribution | Release artifacts are published through [GitHub Releases](https://github.com/e-south/hop-design/releases), not PyPI. |
 
 ## Choose a route
@@ -33,6 +33,7 @@ No physical construction, QC, or activity record is attached.
 | Install a release and compile a first design | [Quickstart](docs/guides/quickstart.md) |
 | Load payload records or use advanced composable axes | [Payload-source guide](docs/guides/payload-sources-and-expansion.md) |
 | Find compatible candidates under explicit limits | [Discovery guide](docs/guides/discover-compatible-basal-candidates.md) |
+| Find multi-nick programs that create an exact fragment partition | [Source-partition guide](docs/guides/discover-source-partitions.md) |
 | Compile one strict payload-centered construction route | [Construction guide](docs/guides/compile-construction.md) |
 | Resolve an exact named production method | [Method guide](docs/guides/resolve-production-method.md) |
 | Render typed foldback or basal views | [Component-view guide](docs/guides/render-component-views.md) |
@@ -46,6 +47,11 @@ No physical construction, QC, or activity record is attached.
 specialist surfaces for single-design derivation, complete construction,
 bounded searches, named methods, and typed projections. They are not required
 for the first substrate-space journey.
+
+Construction questions are not one global optimizer. Foldback geometry, basal
+geometry, route-level source partitioning, and downstream endpoint
+materialization are separate bounded competencies. HOP preserves every valid
+result in canonical order; a study chooses which route to test.
 
 ## Claim boundary
 

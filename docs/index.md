@@ -60,7 +60,10 @@ bounded discovery, named methods, or typed projections.
 9. **Compile a complete construction:** [Construction guide](guides/compile-construction.md)
    binds one strict source to a separate verified design, writes one portable
    authority, and exports neutral scientific projections.
-10. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
+10. **Discover a source partition:** [Source-partition guide](guides/discover-source-partitions.md)
+    searches bounded nickase subsets for an exact denatured-fragment and
+    length-selection outcome without calling that route-level process basal geometry.
+11. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
    defines what remains caller-owned and how broader campaign systems can call HOP.
 
 ## Sibling semantic surfaces
@@ -90,6 +93,9 @@ bounded discovery, named methods, or typed projections.
 - [Payload-centered construction](guides/compile-construction.md): strict
   source compilation, opaque receipts, portable replay, and neutral
   projections.
+- [Source partitioning](guides/discover-source-partitions.md): provisioned
+  nickase subsets, exact sites, denatured fragments, size-selected survivors,
+  and truthful search accounting.
 - [Component views](guides/render-component-views.md): runnable, route-neutral
   foldback and basal SVGs backed by typed JSON.
 - [CLI](reference/cli.md) and [Python API](reference/python-api.md).

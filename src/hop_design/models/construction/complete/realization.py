@@ -25,15 +25,16 @@ from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.payload import (
     ConstructionEndpoint,
     PayloadSourceMap,
-    PayloadSourceSegment,
-    SourceOrientation,
     _content_id,
 )
 from hop_design.models.construction.realization import CompleteConstructionRealization
-from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
 
 from .clone.validation import validate_clone_realization
+from .evaluation_inputs import (
+    derive_complete_payload_source_map,
+    replay_linear_source_embedding,
+)
 from .material_disposition import (
     RouteMaterialDispositionSpan,
     derive_route_material_dispositions,
@@ -138,26 +139,15 @@ class MaterializedConstructionRealization(HopModel):
                 foldback=self.foldback_authority,
                 materials=self.materials,
             )
-        prefix_length = len(self.materials[0].sequence_5prime) - len(
-            self.foldback_authority.source_reference_sequence
+        _, _, embedding = replay_linear_source_embedding(
+            foldback=self.foldback_authority,
+            source_sequence=self.materials[0].sequence_5prime,
+            complement_sequence=self.materials[1].sequence_5prime,
         )
-        expected_payload_map = PayloadSourceMap(
-            segments=(
-                PayloadSourceSegment(
-                    payload_span=Span(
-                        start=Boundary(offset=0),
-                        end=Boundary(offset=len(self.foldback_authority.payload_sequence)),
-                    ),
-                    source_material_id=self.materials[0].material_id,
-                    source_span=Span(
-                        start=Boundary(offset=prefix_length),
-                        end=Boundary(
-                            offset=prefix_length + len(self.foldback_authority.payload_sequence)
-                        ),
-                    ),
-                    orientation=SourceOrientation.FORWARD,
-                ),
-            )
+        expected_payload_map = derive_complete_payload_source_map(
+            foldback=self.foldback_authority,
+            embedding=embedding,
+            source_material_id=self.materials[0].material_id,
         )
         if self.payload_source_map != expected_payload_map:
             raise ValueError(

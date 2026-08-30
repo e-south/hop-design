@@ -20,18 +20,34 @@ from hop_design.models.construction.payload import (
     ConstructionEndpoint,
 )
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
-from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import reverse_complement_iupac
 
-from .clone import CloneEndGenerationError, derive_clone_end_program_for_template
-from .evaluation_inputs import derive_route_prefix, derive_route_return_arm
+from .clone import (
+    CloneEndGenerationError,
+    derive_clone_end_program_for_template,
+    discover_endpoint_release,
+)
+from .evaluation_inputs import (
+    derive_linear_source_embedding,
+    derive_route_prefix,
+    derive_route_return_arm,
+)
 from .evaluation_result import CombinationEvaluation, CompositionRejectionCode
 from .materials import derive_source_materials
+from .pcr.schedule import derive_pcr_reaction_program
+from .pcr.validation import evaluate_pcr_compatibility
 from .provisioning import merge_provisioning_policies
 from .request import ConstructionDiscoveryRequest
-from .route_schedule import derive_direct_reaction_program, derive_pcr_reaction_program
+from .route_schedule import derive_direct_reaction_program
+
+
+def _reverse_handle_sequence(request: ConstructionDiscoveryRequest) -> str:
+    reverse = request.materialization.reverse_primer
+    if reverse is None or not reverse.five_prime_handle:
+        return ""
+    return reverse_complement_iupac(reverse.five_prime_handle)
 
 
 def evaluate_combination(
@@ -65,10 +81,15 @@ def evaluate_combination(
             recognition_placements_attempted=recognition_placements_attempted,
             constraint_systems_attempted=constraint_systems_attempted,
         )
+    embedding = derive_linear_source_embedding(
+        foldback=foldback,
+        prefix=prefix,
+        return_arm=return_arm,
+    )
     source, complement = derive_source_materials(
         request,
-        prefix + foldback.source_reference_sequence,
-        reverse_complement_iupac(foldback.source_reference_sequence) + return_arm,
+        embedding.source_sequence,
+        embedding.complement_sequence,
     )
     pcr_bearing = request.endpoint in {
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
@@ -76,92 +97,16 @@ def evaluate_combination(
     }
     pcr_template = prefix + foldback.retained_sequence + return_arm
     if pcr_bearing:
-        if (
-            basal is None
-            or basal.basal_nick.strand is not Strand.BOTTOM
-            or basal.basal_nick.boundary.offset != len(prefix)
-        ):
-            return CombinationEvaluation(
-                rejection_reason=CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE,
-                prefix=prefix,
-                return_arm=return_arm,
-                source=source,
-                source_complement=complement,
-                candidate_enzyme_programs=candidate_enzyme_programs,
-                recognition_placements_attempted=recognition_placements_attempted,
-                constraint_systems_attempted=constraint_systems_attempted,
-            )
-        adapter = request.materialization.adapter
-        local_adapter = next(
-            (item for item in basal.materials if item.material_id == "ligation-adapter"),
-            None,
+        pcr_rejection = evaluate_pcr_compatibility(
+            request,
+            basal=basal,
+            prefix=prefix,
+            return_arm=return_arm,
+            pcr_template=pcr_template,
         )
-        if (
-            adapter is None
-            or local_adapter is None
-            or adapter.sequence_5prime != return_arm
-            or local_adapter.sequence_5prime != return_arm
-            or adapter.five_prime_end is not EndChemistry.PHOSPHATE
-            or adapter.three_prime_end is not EndChemistry.HYDROXYL
-        ):
+        if pcr_rejection is not None:
             return CombinationEvaluation(
-                rejection_reason=CompositionRejectionCode.PCR_ADAPTER_MISMATCH,
-                prefix=prefix,
-                return_arm=return_arm,
-                source=source,
-                source_complement=complement,
-                candidate_enzyme_programs=candidate_enzyme_programs,
-                recognition_placements_attempted=recognition_placements_attempted,
-                constraint_systems_attempted=constraint_systems_attempted,
-            )
-        profile = basal.projection.pairing_profile
-        complex_state = basal.adapter_annealed_complex
-        if (
-            profile is None
-            or complex_state is None
-            or profile.adapter_span.end.offset > len(return_arm)
-            or tuple(
-                (
-                    pair.left_index - profile.source_span.start.offset,
-                    pair.right_index,
-                    pair.left_base,
-                    pair.right_base,
-                )
-                for pair in complex_state.pairs
-            )
-            != tuple(
-                (
-                    pair.source_index,
-                    pair.adapter_index,
-                    pair.source_base,
-                    pair.adapter_base,
-                )
-                for pair in profile.pairs
-            )
-        ):
-            return CombinationEvaluation(
-                rejection_reason=CompositionRejectionCode.PCR_PAIRING_PROFILE_MISMATCH,
-                prefix=prefix,
-                return_arm=return_arm,
-                source=source,
-                source_complement=complement,
-                candidate_enzyme_programs=candidate_enzyme_programs,
-                recognition_placements_attempted=recognition_placements_attempted,
-                constraint_systems_attempted=constraint_systems_attempted,
-            )
-        forward = request.materialization.forward_primer
-        reverse = request.materialization.reverse_primer
-        if (
-            forward is None
-            or reverse is None
-            or forward.three_prime_end is not EndChemistry.HYDROXYL
-            or reverse.three_prime_end is not EndChemistry.HYDROXYL
-            or forward.sequence_5prime != pcr_template[: len(forward.sequence_5prime)]
-            or reverse.sequence_5prime
-            != reverse_complement_iupac(pcr_template[-len(reverse.sequence_5prime) :])
-        ):
-            return CombinationEvaluation(
-                rejection_reason=CompositionRejectionCode.PCR_PRIMER_MISMATCH,
+                rejection_reason=pcr_rejection,
                 prefix=prefix,
                 return_arm=return_arm,
                 source=source,
@@ -171,6 +116,9 @@ def evaluate_combination(
                 constraint_systems_attempted=constraint_systems_attempted,
             )
     if (
+        FoldbackMaterialRequirement.SOURCE_TOP_5PRIME_PHOSPHATE in foldback.material_requirements
+        and source.five_prime_end is not EndChemistry.PHOSPHATE
+    ) or (
         FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE in foldback.material_requirements
         and complement.five_prime_end is not EndChemistry.PHOSPHATE
     ):
@@ -195,6 +143,8 @@ def evaluate_combination(
             basal=basal,
             prefix=prefix,
             return_arm=return_arm,
+            source=source,
+            source_complement=complement,
         )
         if pcr_bearing and basal is not None
         else derive_direct_reaction_program(
@@ -202,6 +152,8 @@ def evaluate_combination(
             basal=basal,
             prefix=prefix,
             return_arm=return_arm,
+            source=source,
+            source_complement=complement,
         )
     )
     merged_policy = merge_provisioning_policies(policies)
@@ -213,14 +165,47 @@ def evaluate_combination(
     end_assessment = None
     design_parent_span = None
     if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
-        if basal is None:
-            raise ValueError("Clone composition requires one exact basal authority.")
+        release_request = request.release
+        if basal is None or release_request is None:
+            raise ValueError("Clone composition requires basal and endpoint-release authority.")
+        forward = request.materialization.forward_primer
+        reverse = request.materialization.reverse_primer
+        assert forward is not None and reverse is not None
+        pcr_product = forward.five_prime_handle + pcr_template + _reverse_handle_sequence(request)
+        release = discover_endpoint_release(
+            request=release_request,
+            pcr_top=pcr_product,
+            design_sequence=request.design.encoding_sequence,
+        )
+        if release.bindings is None:
+            return CombinationEvaluation(
+                rejection_reason=(
+                    None
+                    if release.truncated
+                    else CompositionRejectionCode.CLONE_END_GENERATION_AMBIGUOUS
+                    if release.ambiguous
+                    else CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE
+                ),
+                truncation_reason=("endpoint:max_site_pairs" if release.truncated else None),
+                prefix=prefix,
+                return_arm=return_arm,
+                source=source,
+                source_complement=complement,
+                reaction_program=program,
+                stage_assessments=assessment.stage_assessments,
+                pcr_template_sequence=pcr_template,
+                final_sequence=request.design.encoding_sequence,
+                candidate_enzyme_programs=(candidate_enzyme_programs + release.examined_site_pairs),
+                recognition_placements_attempted=(
+                    recognition_placements_attempted + release.examined_site_pairs * 2
+                ),
+                constraint_systems_attempted=constraint_systems_attempted,
+            )
         try:
             end_program, design_parent_span = derive_clone_end_program_for_template(
-                basal=basal,
-                foldback=foldback,
-                pcr_top=pcr_template,
+                pcr_top=pcr_product,
                 design_sequence=request.design.encoding_sequence,
+                bindings=release.bindings,
             )
         except CloneEndGenerationError:
             return CombinationEvaluation(
@@ -237,12 +222,23 @@ def evaluate_combination(
                 recognition_placements_attempted=recognition_placements_attempted,
                 constraint_systems_attempted=constraint_systems_attempted,
             )
+        merged_policy = merge_provisioning_policies(
+            (*policies, release_request.enzyme_provisioning)
+        )
         end_assessment = assess_reaction_program(program=end_program, policy=merged_policy)
-    final_sequence = (
-        request.design.encoding_sequence
-        if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
-        else pcr_template
-    )
+        end_generation_bindings = release.bindings
+    else:
+        end_generation_bindings = None
+    final_sequence = pcr_template
+    if pcr_bearing:
+        forward = request.materialization.forward_primer
+        reverse = request.materialization.reverse_primer
+        assert forward is not None and reverse is not None
+        final_sequence = (
+            forward.five_prime_handle + pcr_template + _reverse_handle_sequence(request)
+        )
+    if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        final_sequence = request.design.encoding_sequence
     if assessment.report.has_errors or (
         end_assessment is not None and end_assessment.report.has_errors
     ):
@@ -258,6 +254,7 @@ def evaluate_combination(
             end_generation_stage_assessments=(
                 () if end_assessment is None else end_assessment.stage_assessments
             ),
+            end_generation_bindings=end_generation_bindings,
             pcr_template_sequence=pcr_template if pcr_bearing else None,
             design_parent_span=design_parent_span,
             final_sequence=final_sequence,
@@ -295,6 +292,7 @@ def evaluate_combination(
         end_generation_stage_assessments=(
             () if end_assessment is None else end_assessment.stage_assessments
         ),
+        end_generation_bindings=end_generation_bindings,
         pcr_template_sequence=pcr_template if pcr_bearing else None,
         design_parent_span=design_parent_span,
         final_sequence=final_sequence,

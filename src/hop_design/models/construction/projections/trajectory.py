@@ -27,8 +27,8 @@ COMPLETE_CONSTRUCTION_TRAJECTORY_RENDERER_VERSION: Literal["complete-constructio
 class CompleteConstructionTrajectoryProjection(HopModel):
     """One caller-selected accepted route embedded without scientific reduction."""
 
-    schema_id: Literal["hop.complete-construction-trajectory/v1"] = Field(
-        default="hop.complete-construction-trajectory/v1",
+    schema_id: Literal["hop.complete-construction-trajectory/v2"] = Field(
+        default="hop.complete-construction-trajectory/v2",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:complete-construction-trajectory/[0-9a-f]{64}@1$")

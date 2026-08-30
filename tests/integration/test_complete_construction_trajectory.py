@@ -226,7 +226,7 @@ def test_complete_trajectory_embeds_one_selected_route_verbatim(
         materialized_realization_id=selected.materialized_realization_id,
     )
 
-    assert projection.schema_id == "hop.complete-construction-trajectory/v1"
+    assert projection.schema_id == "hop.complete-construction-trajectory/v2"
     assert projection.renderer_version == "complete-construction-trajectory/1"
     assert projection.source_result_id == source.result.result_id
     assert projection.composition_ordinal == disposition.ordinal

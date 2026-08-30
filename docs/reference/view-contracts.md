@@ -71,14 +71,19 @@ SVG is a deterministic convenience artifact. Neither is experimental evidence.
 Payload-centered foldback and basal discovery also support a narrower family
 of local scientific projections:
 
-- `hop.foldback-feasibility-landscape/v1` records every exact foldback local
-  realization and its achieved dimensions;
-- `hop.basal-feasibility-landscape/v1` records every exact basal local
-  realization, including endpoint-dependent pairing, nick, cut, and cohesive-
-  end facts;
-- `hop.foldback-relaxation-frontier/v1` and
-  `hop.basal-relaxation-frontier/v1` record exact-first shell membership,
-  complete or partial shell accounting, and observed rejection categories.
+- `hop.foldback-feasibility-landscape/v3` records every exact foldback local
+  realization from one unpartitioned search;
+  `hop.foldback-feasibility-landscape/v4` carries the same relation for one
+  declared sequence-domain part and includes its exact part scope;
+- `hop.basal-feasibility-landscape/v2` records every exact basal local
+  realization from one unpartitioned search;
+  `hop.basal-feasibility-landscape/v3` carries the same relation for one
+  declared sequence-domain part and includes its exact part scope;
+- `hop.foldback-relaxation-frontier/v2` and
+  `hop.basal-relaxation-frontier/v1` record unpartitioned exact-first shell
+  membership; `hop.foldback-relaxation-frontier/v3` and
+  `hop.basal-relaxation-frontier/v2` carry one declared part, complete or
+  partial shell accounting, and observed rejection categories.
 
 Each projection carries its source-result identity, renderer version,
 provenance, and claim boundary. A projection is verified against its exact
@@ -86,6 +91,12 @@ source result by rebuilding the typed relation and requiring canonical
 equality; a resealed subset, reordering, or invented row is rejected. JSON,
 CSV, and SVG renderers preserve that relation without ranking candidates or
 recalculating molecular state.
+
+When local execution declares a `sequence_partition`, every projection carries
+its exact part count and zero-based part index. JSON and CSV expose those typed
+fields, while SVG titles and metadata describe only the declared part. One
+complete or infeasible part never represents an exhaustive whole-domain search;
+aggregate coverage requires every verified, disjoint part.
 
 These projections establish local feasibility only under the declared
 molecular model. They do not establish a complete construction route,
@@ -101,7 +112,7 @@ product, endpoint, and material facts; rejected rows carry one derived
 rejection reason. Counts, failure partitions, material totals, group
 membership, and truncation evidence replay the source result exactly.
 
-`hop.complete-construction-trajectory/v1` embeds the exact chronology of one
+`hop.complete-construction-trajectory/v2` embeds the exact chronology of one
 explicitly selected accepted materialized realization. It has no CSV form
 because it is a structured molecular-state sequence rather than a table. The
 public operation requires `materialized_realization_id`; HOP never selects an

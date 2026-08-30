@@ -23,7 +23,6 @@ from hop_design.kernel.construction.basal import (
     iter_basal_programs,
 )
 from hop_design.models.construction import (
-    BasalNickStrand,
     BasalTarget,
     ConstructionExecution,
     DigitalDesignStatus,
@@ -34,6 +33,7 @@ from hop_design.models.construction import (
     NeighborhoodClaimBoundary,
     NeighborhoodDiscoveryResult,
     NeighborhoodProvenance,
+    NickStrandSelection,
     PayloadCompatibilityAccounting,
     PayloadCompatibilityStatus,
     RelaxationMode,
@@ -48,6 +48,7 @@ from hop_design.models.construction.basal import (
 from hop_design.models.junction import Strand
 from hop_design.models.sequence import iupac_bases
 
+from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
 from .reactions import _ROUTE_VERSION
 from .realization import _groups, _realization
 
@@ -71,7 +72,7 @@ def _payload_cardinality(request: LocalNeighborhoodRequest) -> int:
 
 
 def _exact_strand_targets(target: BasalTarget) -> tuple[BasalTarget, ...]:
-    if target.nick_strand is not BasalNickStrand.ANY:
+    if target.nick_strand is not NickStrandSelection.ANY:
         return (target,)
     return tuple(target.model_copy(update={"nick_strand": strand}) for strand in Strand)
 
@@ -113,11 +114,14 @@ def discover_basal_neighborhood(
                 )
                 for payload_sequence in _payload_assignments(request):
                     for route in routes:
-                        for solution in iter_basal_program_solutions(
-                            payload_sequence=payload_sequence,
-                            target=exact_geometry,
-                            endpoint=request.endpoint,
-                            program=route,
+                        for solution in partition_sequence_domain(
+                            iter_basal_program_solutions(
+                                payload_sequence=payload_sequence,
+                                target=exact_geometry,
+                                endpoint=request.endpoint,
+                                program=route,
+                            ),
+                            request.enumeration.sequence_partition,
                         ):
                             if examined >= request.enumeration.max_search_nodes:
                                 truncation = "max_search_nodes"
@@ -183,6 +187,10 @@ def discover_basal_neighborhood(
         ):
             break
     exact = tuple(records)
+    partition_accounting = partition_payload_accounting(
+        request.enumeration.sequence_partition,
+        total_assignments=payload_total,
+    )
     if truncation:
         status = SearchCompletionStatus.TRUNCATED
         accounting = PayloadCompatibilityAccounting(
@@ -193,47 +201,53 @@ def discover_basal_neighborhood(
         )
     elif exact:
         status = SearchCompletionStatus.COMPLETE
-        excluded = payload_total - len(compatible_payloads)
-        accounting = PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=payload_total,
-            compatible_assignments=len(compatible_payloads),
-            excluded_assignments=excluded,
-            conflict_counts=tuple(
-                FailureReasonCount(code=code, count=count)
-                for code, count in sorted(
-                    Counter(
-                        code
-                        for payload, codes in payload_failures.items()
-                        if payload not in compatible_payloads
-                        for code in codes
-                    ).items()
-                )
-                if count <= excluded
-            ),
-            exhaustive=True,
-        )
+        if partition_accounting is not None:
+            accounting = partition_accounting
+        else:
+            excluded = payload_total - len(compatible_payloads)
+            accounting = PayloadCompatibilityAccounting(
+                status=PayloadCompatibilityStatus.COMPLETE,
+                total_assignments=payload_total,
+                compatible_assignments=len(compatible_payloads),
+                excluded_assignments=excluded,
+                conflict_counts=tuple(
+                    FailureReasonCount(code=code, count=count)
+                    for code, count in sorted(
+                        Counter(
+                            code
+                            for payload, codes in payload_failures.items()
+                            if payload not in compatible_payloads
+                            for code in codes
+                        ).items()
+                    )
+                    if count <= excluded
+                ),
+                exhaustive=True,
+            )
     else:
         status = SearchCompletionStatus.INFEASIBLE
-        payload_conflicts = Counter(
-            (
-                "payload-recognition-conflict"
-                if "recognition-payload-conflict" in payload_failures[payload]
-                else "payload-no-basal-realization"
+        if partition_accounting is not None:
+            accounting = partition_accounting
+        else:
+            payload_conflicts = Counter(
+                (
+                    "payload-recognition-conflict"
+                    if "recognition-payload-conflict" in payload_failures[payload]
+                    else "payload-no-basal-realization"
+                )
+                for payload in _payload_assignments(request)
             )
-            for payload in _payload_assignments(request)
-        )
-        accounting = PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=payload_total,
-            compatible_assignments=0,
-            excluded_assignments=payload_total,
-            conflict_counts=tuple(
-                FailureReasonCount(code=code, count=count)
-                for code, count in sorted(payload_conflicts.items())
-            ),
-            exhaustive=True,
-        )
+            accounting = PayloadCompatibilityAccounting(
+                status=PayloadCompatibilityStatus.COMPLETE,
+                total_assignments=payload_total,
+                compatible_assignments=0,
+                excluded_assignments=payload_total,
+                conflict_counts=tuple(
+                    FailureReasonCount(code=code, count=count)
+                    for code, count in sorted(payload_conflicts.items())
+                ),
+                exhaustive=True,
+            )
     if (
         truncation is None
         and exact

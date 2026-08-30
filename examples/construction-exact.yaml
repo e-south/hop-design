@@ -1,6 +1,6 @@
-schema: hop.construction-source/v1
+schema: hop.construction-source/v3
 foldback:
-  schema: hop.local-neighborhood-request/v1
+  schema: hop.local-neighborhood-request/v3
   name: null
   payload:
     schema: hop.final-payload/v1
@@ -18,7 +18,7 @@ foldback:
   endpoint: ssdna_hairpin
   target:
     family: foldback
-    junction_offset_nt: 0
+    nick_offset_within_foldback_nt: 0
     loop_length_nt: 3
     annealing_arm_length_bp: 4
   hard_constraints:
@@ -102,6 +102,7 @@ composition:
     adapter: null
     forward_primer: null
     reverse_primer: null
+  release: null
   whole_route_constraints:
     preserve_payload: true
     reject_unintended_actionable_sites: true

@@ -24,7 +24,7 @@ from hop_design.models.molecular_state import (
 from hop_design.models.plan import FeatureRole, SequenceFeature
 from hop_design.models.sequence import reverse_complement_iupac
 
-from ..request import ExactConstructionMaterial
+from ..request import ExactConstructionMaterial, PcrPrimer
 from .authority import (
     EndpointSequenceFate,
     EndpointSequenceFateSpan,
@@ -38,49 +38,108 @@ def _span(start: int, end: int) -> Span:
     return Span(start=Boundary(offset=start), end=Boundary(offset=end))
 
 
-def _product_lineage(
-    template: MolecularStrand,
-    primer: ExactConstructionMaterial,
+def _lineage_record(
     *,
-    reverse_template: bool,
+    product_index: int,
+    origin_id: str,
+    origin_strand: LineageStrand,
+    origin_index: int,
+) -> MaterialBaseLineage:
+    return MaterialBaseLineage(
+        product_index=product_index,
+        origin_id=origin_id,
+        origin_strand=origin_strand,
+        origin_index=origin_index,
+    )
+
+
+def validate_pcr_annealing_spans(
+    template_length: int,
+    forward: PcrPrimer,
+    reverse: PcrPrimer,
+) -> None:
+    """Require nonoverlapping terminal primer-binding spans on one template."""
+    if forward.annealing_length_nt + reverse.annealing_length_nt > template_length:
+        raise ValueError("PCR primer annealing spans must not overlap on the template.")
+
+
+def _top_lineage(
+    template: MolecularStrand,
+    forward: PcrPrimer,
+    reverse: PcrPrimer,
 ) -> tuple[MaterialBaseLineage, ...]:
-    length = len(template.sequence)
-    primer_length = len(primer.sequence_5prime)
     records: list[MaterialBaseLineage] = []
-    for index in range(length):
-        if index < primer_length:
-            record = MaterialBaseLineage(
-                product_index=index,
-                origin_id=primer.material_id,
+    for index in range(len(forward.oligo.sequence_5prime)):
+        records.append(
+            _lineage_record(
+                product_index=len(records),
+                origin_id=forward.oligo.material_id,
                 origin_strand=LineageStrand.PRIMARY,
                 origin_index=index,
             )
-        else:
-            template_index = length - 1 - index if reverse_template else index
-            record = template.lineage[template_index].model_copy(update={"product_index": index})
-        records.append(record)
-    return tuple(records)
+        )
+    middle = template.lineage[
+        forward.annealing_length_nt : len(template.sequence) - reverse.annealing_length_nt
+    ]
+    records.extend(
+        item.model_copy(update={"product_index": len(records) + index})
+        for index, item in enumerate(middle)
+    )
+    records.extend(
+        _lineage_record(
+            product_index=len(records),
+            origin_id=reverse.oligo.material_id,
+            origin_strand=LineageStrand.COMPLEMENTARY,
+            origin_index=index,
+        )
+        for index in reversed(range(len(reverse.oligo.sequence_5prime)))
+    )
+    return tuple(
+        item.model_copy(update={"product_index": index}) for index, item in enumerate(records)
+    )
 
 
 def pcr_products(
     template: MolecularStrand,
-    forward: ExactConstructionMaterial,
-    reverse: ExactConstructionMaterial,
+    forward: PcrPrimer,
+    reverse: PcrPrimer,
 ) -> tuple[MolecularStrand, MolecularStrand]:
     """Derive the ordered PCR duplex with exact primer and template lineage."""
+    validate_pcr_annealing_spans(len(template.sequence), forward, reverse)
+    middle = template.sequence[
+        forward.annealing_length_nt : len(template.sequence) - reverse.annealing_length_nt
+    ]
+    top_sequence = (
+        forward.oligo.sequence_5prime
+        + middle
+        + reverse_complement_iupac(reverse.oligo.sequence_5prime)
+    )
+    top_lineage = _top_lineage(template, forward, reverse)
     top = MolecularStrand(
         strand_id="complete-hairpin-pcr-top",
-        sequence=template.sequence,
-        five_prime_end=forward.five_prime_end,
+        sequence=top_sequence,
+        five_prime_end=forward.oligo.five_prime_end,
         three_prime_end=EndChemistry.HYDROXYL,
-        lineage=_product_lineage(template, forward, reverse_template=False),
+        lineage=top_lineage,
     )
     bottom = MolecularStrand(
         strand_id="complete-hairpin-pcr-bottom",
-        sequence=reverse_complement_iupac(template.sequence),
-        five_prime_end=reverse.five_prime_end,
+        sequence=reverse_complement_iupac(top_sequence),
+        five_prime_end=reverse.oligo.five_prime_end,
         three_prime_end=EndChemistry.HYDROXYL,
-        lineage=_product_lineage(template, reverse, reverse_template=True),
+        lineage=tuple(
+            _lineage_record(
+                product_index=index,
+                origin_id=record.origin_id,
+                origin_strand=(
+                    LineageStrand.COMPLEMENTARY
+                    if record.origin_strand is LineageStrand.PRIMARY
+                    else LineageStrand.PRIMARY
+                ),
+                origin_index=record.origin_index,
+            )
+            for index, record in enumerate(reversed(top_lineage))
+        ),
     )
     return top, bottom
 
@@ -254,4 +313,5 @@ __all__ = [
     "material_function_spans",
     "pcr_products",
     "validate_material_function_spans",
+    "validate_pcr_annealing_spans",
 ]

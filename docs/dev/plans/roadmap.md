@@ -37,7 +37,7 @@ The public `v0.1.0a7` artifact provides:
 
 ## Current pre-1.0 semantic line
 
-The current prerelease deliberately breaks the preceding alpha schemas and
+The unreleased `v0.1.0a8` candidate deliberately breaks the preceding alpha schemas and
 public facade to close seven ontology and usability defects:
 
 1. Pair kind becomes an invariant physical observation; policy cannot relabel
@@ -89,7 +89,7 @@ present in the current release:
    exact realization records, reversible geometry groups, and truthful
    completion.
 3. **H4 — foldback neighborhood: implemented.** Exact cleavage programs
-   discover junction offset, loop length, and annealing-arm geometry.
+   discover nick offset within the foldback, loop length, and annealing-arm geometry.
 4. **H5 — basal neighborhood: implemented.** Nicking and pairing are
    endpoint-aware; Type IIS end generation is confined to clone-ready routes.
 5. **H6 — materialization and composition: implemented.** Exact precursor and

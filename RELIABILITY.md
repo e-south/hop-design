@@ -165,10 +165,20 @@ profile, route, source endpoint, or corrupted bundle. Construction sources are
 bounded regular nonsymlink JSON/YAML mappings read through one checked file
 descriptor. Duplicate keys and YAML aliases, anchors, and merge keys are
 rejected before model validation. Sources dispatch only the exact
-`hop.construction-source/v1` schema; the design authority is loaded from a
+`hop.construction-source/v3` schema; the design authority is loaded from a
 separate verified bundle path. The built-in SVG renderer has no plotting
 dependency and consumes only a typed workflow view. Optional future renderers
 may be absent without blocking the typed plan, but they may not recompute
 molecular state.
+
+Standalone local-neighborhood requests retain the one-megabyte authored-source
+limit and may declare at most 100,000 search nodes and 100,000 realizations.
+Portable local-neighborhood results have a separate 64 MiB envelope because
+they contain bounded candidate, rejection, and replay evidence. The loader
+checks embedded execution bounds before semantic replay. A larger study must
+narrow its declared search or use every member of a deterministic, disjoint
+sequence-domain partition. Each part remains independently replayable and
+cannot claim whole-domain payload compatibility; the loader never treats an
+oversized result as a partial authority.
 External observations may be unavailable without invalidating a prospective
 HOP bundle because execution evidence is caller-owned.

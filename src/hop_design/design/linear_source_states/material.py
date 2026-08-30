@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pydantic import JsonValue
 
-from hop_design.kernel.molecular_states import strand_from_sequence
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.diagnostics import Diagnostic, Severity
 from hop_design.models.linear_source_method import (
@@ -21,6 +20,7 @@ from hop_design.models.method import (
     ProcessMaterialRole,
 )
 from hop_design.models.method_states import SourcePcrDuplex
+from hop_design.models.molecular_replay import strand_from_sequence
 from hop_design.models.molecular_state import (
     EndChemistry,
     LineageStrand,

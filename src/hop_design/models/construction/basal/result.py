@@ -31,8 +31,8 @@ from .realization import BasalRealizationRecord
 class BasalNeighborhoodDiscoveryResult(HopModel):
     """Shared discovery authority plus lossless exact basal route records."""
 
-    schema_id: Literal["hop.basal-neighborhood-result/v1"] = Field(
-        default="hop.basal-neighborhood-result/v1", alias="schema"
+    schema_id: Literal["hop.basal-neighborhood-result/v3"] = Field(
+        default="hop.basal-neighborhood-result/v3", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
     discovery: NeighborhoodDiscoveryResult

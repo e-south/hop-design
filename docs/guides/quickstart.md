@@ -16,9 +16,10 @@ journey:
 
 # Quickstart
 
-This page targets the v0.1.0a7 source checkout and published wheel. Use its
+This page distinguishes the unreleased v0.1.0a8 source candidate from the
+published v0.1.0a7 wheel. Use the release's
 [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7)
-when operating the release artifact.
+when operating the published artifact.
 
 Download a versioned wheel and `SHA256SUMS` from
 [GitHub Releases](https://github.com/e-south/hop-design/releases), verify the
@@ -36,7 +37,8 @@ uv pip install ./hop_design-0.1.0a7-py3-none-any.whl
 hop-design compile --sequence ACGT --design-id exact-demo --out build/exact
 ```
 
-The published a7 wheel supports the single-design command above and the
+The release-wheel command above uses the a7 contract. The published a7 wheel supports the
+single-design command above and the
 scientist-facing substrate-space journey below.
 
 From a contributor checkout:

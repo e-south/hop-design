@@ -40,11 +40,12 @@ from hop_design.models.construction.foldback import (
 )
 from hop_design.models.construction.foldback_replay import replay_foldback_route
 from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.physical import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import iupac_bases
 
 _BASES = ("A", "C", "G", "T")
-_ROUTE_VERSION = "linear-source-foldback/1"
+_ROUTE_VERSION = "linear-source-foldback/3"
 
 
 def _payload_assignments(request: LocalNeighborhoodRequest) -> Iterator[str]:
@@ -98,7 +99,11 @@ def _realization(
     bindings = solution.enzyme_bindings
     material_requirements: tuple[FoldbackMaterialRequirement, ...]
     if route.kind is FoldbackCleavageProgramKind.SINGLE_CLEAVAGE:
-        material_requirements = (FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE,)
+        material_requirements = (
+            FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE
+            if target.nick_strand is Strand.TOP
+            else FoldbackMaterialRequirement.SOURCE_TOP_5PRIME_PHOSPHATE,
+        )
     else:
         material_requirements = ()
     stage_ids = tuple(stage.stage_id for stage in replay.reaction_program.stages)
@@ -112,7 +117,7 @@ def _realization(
     changed_coordinates = tuple(
         name
         for name in (
-            "junction_offset_nt",
+            "nick_offset_within_foldback_nt",
             "loop_length_nt",
             "annealing_arm_length_bp",
         )
@@ -135,10 +140,26 @@ def _realization(
                     ),
                     source_material_id="linear-source",
                     source_span=Span(
-                        start=Boundary(offset=0),
-                        end=Boundary(offset=len(payload_sequence)),
+                        start=Boundary(
+                            offset=(
+                                0
+                                if target.nick_strand is Strand.TOP
+                                else len(solution.source_reference_sequence) - len(payload_sequence)
+                            )
+                        ),
+                        end=Boundary(
+                            offset=(
+                                len(payload_sequence)
+                                if target.nick_strand is Strand.TOP
+                                else len(solution.source_reference_sequence)
+                            )
+                        ),
                     ),
-                    orientation=SourceOrientation.FORWARD,
+                    orientation=(
+                        SourceOrientation.FORWARD
+                        if target.nick_strand is Strand.TOP
+                        else SourceOrientation.REVERSE_COMPLEMENT
+                    ),
                 ),
             )
         ),
@@ -161,7 +182,7 @@ def _realization(
         stage_assessments=assessment.stage_assessments,
         relaxation_radius=relaxation_radius,
         changed_coordinates=changed_coordinates,
-        retained_construction_nt=(target.junction_offset_nt + target.loop_length_nt + 2 * arm_nt),
+        retained_construction_nt=(target.loop_length_nt + 2 * arm_nt),
         transient_construction_nt=(
             sum(
                 fragment.precursor_span.length.value
@@ -191,17 +212,42 @@ def _geometry_groups(
     )
 
 
-def _projection_inventory() -> tuple[ProjectionInventoryItem, ...]:
-    return tuple(
+def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem, ...]:
+    feasibility_schema = (
+        "hop.foldback-feasibility-landscape/v4"
+        if partitioned
+        else "hop.foldback-feasibility-landscape/v3"
+    )
+    feasibility_renderer = (
+        "foldback-feasibility-projections/4"
+        if partitioned
+        else "foldback-feasibility-projections/3"
+    )
+    relaxation_schema = (
+        "hop.foldback-relaxation-frontier/v3"
+        if partitioned
+        else "hop.foldback-relaxation-frontier/v2"
+    )
+    relaxation_renderer = "foldback-projections/3" if partitioned else "foldback-projections/2"
+    return (
         ProjectionInventoryItem(
-            projection_schema=schema,
-            renderer_version="foldback-projections/1",
+            projection_schema="hop.foldback-nucleotide-exemplar/v1",
+            renderer_version="foldback-projections/2",
             status=ProjectionInventoryStatus.NOT_GENERATED,
-        )
-        for schema in (
-            "hop.foldback-nucleotide-exemplar/v1",
-            "hop.foldback-geometry-count-table/v1",
-            "hop.foldback-feasibility-landscape/v1",
-            "hop.foldback-relaxation-frontier/v1",
-        )
+        ),
+        ProjectionInventoryItem(
+            projection_schema="hop.foldback-geometry-count-table/v1",
+            renderer_version="foldback-projections/2",
+            status=ProjectionInventoryStatus.NOT_GENERATED,
+        ),
+        ProjectionInventoryItem(
+            projection_schema=feasibility_schema,
+            renderer_version=feasibility_renderer,
+            status=ProjectionInventoryStatus.NOT_GENERATED,
+        ),
+        ProjectionInventoryItem(
+            projection_schema=relaxation_schema,
+            renderer_version=relaxation_renderer,
+            status=ProjectionInventoryStatus.NOT_GENERATED,
+        ),
     )

@@ -56,6 +56,7 @@ from .relaxation import (
     RelaxationCoordinate,
     RelaxationMode,
     RelaxationPolicy,
+    SequenceDomainPartition,
     geometry_coordinate_value,
     geometry_fixed_projection,
     geometry_with_coordinate_value,
@@ -67,20 +68,18 @@ from .request import (
 )
 from .result import NeighborhoodDiscoveryResult
 from .targets import (
-    BasalNickStrand,
     BasalPairAllowance,
     BasalPairClass,
     BasalPairingConstraint,
     BasalTarget,
     ConstructionConstraints,
     ConstructionPreferences,
-    EndGenerationRequest,
     FoldbackTarget,
     LocalGeometryTarget,
+    NickStrandSelection,
 )
 
 __all__ = [
-    "BasalNickStrand",
     "BasalPairAllowance",
     "BasalPairClass",
     "BasalPairingConstraint",
@@ -92,7 +91,6 @@ __all__ = [
     "ConstructionExecution",
     "ConstructionPreferences",
     "DigitalDesignStatus",
-    "EndGenerationRequest",
     "EnumerationPolicy",
     "ExperimentalEvidenceStatus",
     "FailureReasonCount",
@@ -107,6 +105,7 @@ __all__ = [
     "NeighborhoodClaimBoundary",
     "NeighborhoodDiscoveryResult",
     "NeighborhoodProvenance",
+    "NickStrandSelection",
     "PairState",
     "PairStateException",
     "PayloadCompatibilityAccounting",
@@ -124,6 +123,7 @@ __all__ = [
     "RelaxationShellSummary",
     "RouteFamily",
     "SearchCompletionStatus",
+    "SequenceDomainPartition",
     "SourceOrientation",
     "geometry_coordinate_value",
     "geometry_fixed_projection",

@@ -37,10 +37,12 @@ from hop_design.models.construction import (
     RelaxationPolicy,
     RouteFamily,
     SearchCompletionStatus,
+    SourceOrientation,
     problem_id,
 )
 from hop_design.models.construction.foldback import (
     FoldbackCleavageProgramKind,
+    FoldbackMaterialRequirement,
     FoldbackNeighborhoodDiscoveryResult,
 )
 from hop_design.models.coordinates import Boundary
@@ -57,6 +59,7 @@ from hop_design.models.enzymes import (
     TargetMolecule,
 )
 from hop_design.models.payload import DegeneratePayload, ExactPayload
+from hop_design.models.physical import Strand
 from hop_design.models.references import ExternalRef
 
 
@@ -163,7 +166,7 @@ def _request(
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
         target=target
         or FoldbackTarget(
-            junction_offset_nt=0,
+            nick_offset_within_foldback_nt=0,
             loop_length_nt=3,
             annealing_arm_length_bp=3,
         ),
@@ -185,6 +188,24 @@ def _request(
     )
 
 
+def test_foldback_target_rejects_ambiguous_or_out_of_arm_nick_coordinates() -> None:
+    with pytest.raises(ValidationError, match="nick_offset_within_foldback_nt"):
+        FoldbackTarget.model_validate(
+            {
+                "junction_offset_nt": 0,
+                "loop_length_nt": 3,
+                "annealing_arm_length_bp": 3,
+            }
+        )
+
+    with pytest.raises(ValidationError, match="first annealing arm"):
+        FoldbackTarget(
+            nick_offset_within_foldback_nt=4,
+            loop_length_nt=3,
+            annealing_arm_length_bp=3,
+        )
+
+
 def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_groups() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
 
@@ -197,20 +218,21 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
         FoldbackCleavageProgramKind.SINGLE_CLEAVAGE,
         FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK,
     }
-    assert len(result.neighborhood.achieved_geometry_groups) == 1
+    assert len(result.neighborhood.achieved_geometry_groups) == 2
     assert {item.projection_schema for item in result.neighborhood.projection_inventory} == {
         "hop.foldback-nucleotide-exemplar/v1",
         "hop.foldback-geometry-count-table/v1",
-        "hop.foldback-feasibility-landscape/v1",
-        "hop.foldback-relaxation-frontier/v1",
+        "hop.foldback-feasibility-landscape/v3",
+        "hop.foldback-relaxation-frontier/v2",
     }
     assert all(item.status == "not_generated" for item in result.neighborhood.projection_inventory)
-    group = result.neighborhood.achieved_geometry_groups[0]
-    assert group.multiplicity == len(result.realizations)
-    assert group.realization_ids == tuple(
-        item.local_realization.local_realization_id for item in result.realizations
+    assert sum(group.multiplicity for group in result.neighborhood.achieved_geometry_groups) == len(
+        result.realizations
     )
-    assert len(set(group.realization_ids)) == len(result.realizations)
+    assert {
+        realization.local_realization.achieved_geometry.nick_strand
+        for realization in result.realizations
+    } == {Strand.TOP, Strand.BOTTOM}
 
     for realization in result.realizations:
         assert realization.foldback_arm_sequence == "TGT"
@@ -219,13 +241,137 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
             ("C", "G"),
             ("A", "T"),
         ]
-        assert realization.ligation_bond.upstream_strand_id == "top-0-4"
-        assert realization.ligation_bond.downstream_strand_id == "bottom-0-13"
         assert realization.retained_sequence == "GACAACAAAATGTTGTC"
-        assert (
-            realization.local_realization.achieved_geometry
-            == _request(_nickase(), _terminus_enzyme()).target
+    assert {
+        (
+            realization.ligation_bond.upstream_strand_id,
+            realization.ligation_bond.downstream_strand_id,
         )
+        for realization in result.realizations
+    } == {
+        ("top-0-4", "bottom-0-13"),
+        ("bottom-9-13", "top-0-13"),
+    }
+
+
+def test_foldback_discovery_searches_both_physical_nick_strands_by_default() -> None:
+    result = discover_foldback_neighborhood(_request(_nickase()))
+
+    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == 2
+    assert {item.foldback_nick.strand.value for item in result.realizations} == {
+        "top",
+        "bottom",
+    }
+    assert {item.source_reference_sequence for item in result.realizations} == {
+        "GACAACATTTTGT",
+        "ACAAAATGTTGTC",
+    }
+    assert {item.retained_sequence for item in result.realizations} == {"GACAACAAAATGTTGTC"}
+    by_strand = {item.foldback_nick.strand: item for item in result.realizations}
+    assert by_strand[Strand.TOP].payload_source_map.segments[0].orientation is (
+        SourceOrientation.FORWARD
+    )
+    assert by_strand[Strand.BOTTOM].payload_source_map.segments[0].orientation is (
+        SourceOrientation.REVERSE_COMPLEMENT
+    )
+    assert by_strand[Strand.TOP].material_requirements == (
+        FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE,
+    )
+    assert by_strand[Strand.BOTTOM].material_requirements == (
+        FoldbackMaterialRequirement.SOURCE_TOP_5PRIME_PHOSPHATE,
+    )
+    assert by_strand[Strand.BOTTOM].released_state.route.value == ("top_active_after_bottom_nick")
+
+
+def test_any_strand_discovery_is_the_union_of_exact_strand_searches() -> None:
+    target = FoldbackTarget(
+        nick_offset_within_foldback_nt=0,
+        loop_length_nt=3,
+        annealing_arm_length_bp=3,
+    )
+    any_strand = discover_foldback_neighborhood(_request(_nickase(), target=target))
+    exact_results = tuple(
+        discover_foldback_neighborhood(
+            _request(
+                _nickase(),
+                target=target.model_copy(update={"nick_strand": strand}),
+            )
+        )
+        for strand in (Strand.TOP, Strand.BOTTOM)
+    )
+
+    any_ids = {item.foldback_realization_id for item in any_strand.realizations}
+    exact_ids = {
+        item.foldback_realization_id for result in exact_results for item in result.realizations
+    }
+    assert any_ids == exact_ids
+    assert len(any_ids) == 2
+    assert {
+        item.foldback_nick.strand for result in exact_results for item in result.realizations
+    } == {Strand.TOP, Strand.BOTTOM}
+
+
+@pytest.mark.parametrize("nick_strand", (Strand.TOP, Strand.BOTTOM))
+def test_foldback_discovery_honors_an_exact_physical_nick_strand(
+    nick_strand: Strand,
+) -> None:
+    target = FoldbackTarget(
+        nick_strand=nick_strand,
+        nick_offset_within_foldback_nt=0,
+        loop_length_nt=3,
+        annealing_arm_length_bp=3,
+    )
+    result = discover_foldback_neighborhood(_request(_nickase(), target=target))
+
+    assert {item.foldback_nick.strand for item in result.realizations} == {nick_strand}
+
+
+def test_declared_only_nickase_does_not_fabricate_a_bottom_strand_route() -> None:
+    target = FoldbackTarget(
+        nick_strand=Strand.BOTTOM,
+        nick_offset_within_foldback_nt=0,
+        loop_length_nt=3,
+        annealing_arm_length_bp=3,
+    )
+    result = discover_foldback_neighborhood(
+        _request(
+            _nickase(
+                orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
+            ),
+            target=target,
+        )
+    )
+
+    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+    assert result.realizations == ()
+
+
+def test_bottom_strand_sequential_route_replays_its_mirrored_source_lineage() -> None:
+    result = discover_foldback_neighborhood(
+        _request(
+            _nickase(),
+            _terminus_enzyme(
+                motif="AAGC",
+                orientation_semantics=RecognitionOrientationSemantics.BOTH_ORIENTATIONS,
+            ),
+        )
+    )
+    realization = next(
+        item
+        for item in result.realizations
+        if item.foldback_nick.strand is Strand.BOTTOM
+        and item.program_kind is FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK
+    )
+
+    assert realization.source_reference_sequence == "GCTTACAAAATGTTGTC"
+    assert realization.terminus.strand is Strand.TOP
+    assert realization.terminus.boundary == Boundary(offset=4)
+    assert realization.payload_source_map.segments[0].orientation is (
+        SourceOrientation.REVERSE_COMPLEMENT
+    )
+    assert realization.retained_sequence == "GACAACAAAATGTTGTC"
+    assert realization.released_state.route.value == "top_active_after_bottom_nick"
 
 
 def test_foldback_relaxation_is_exact_first_and_stops_at_complete_first_shell() -> None:
@@ -247,11 +393,12 @@ def test_foldback_relaxation_is_exact_first_and_stops_at_complete_first_shell() 
     assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
     assert [(shell.radius, len(shell.realization_ids)) for shell in result.neighborhood.shells] == [
         (0, 0),
-        (1, 1),
+        (1, 2),
     ]
     realization = result.realizations[0]
     assert realization.local_realization.achieved_geometry == FoldbackTarget(
-        junction_offset_nt=0,
+        nick_strand=Strand.TOP,
+        nick_offset_within_foldback_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=4,
     )
@@ -417,6 +564,31 @@ def test_foldback_payload_recognition_conflict_is_accounted_without_repair() -> 
     assert result.neighborhood.request.payload.payload.sequence == "GACA"
 
 
+def test_foldback_discovery_places_the_nick_inside_the_retained_tract() -> None:
+    result = discover_foldback_neighborhood(
+        _request(
+            _nickase(motif="CCTNAGC", cut_offset=2),
+            target=FoldbackTarget(
+                nick_offset_within_foldback_nt=3,
+                loop_length_nt=4,
+                annealing_arm_length_bp=7,
+            ),
+            max_search_nodes=100_000,
+            max_realizations=100_000,
+        )
+    )
+
+    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert result.neighborhood.request.payload.payload.sequence == "GACA"
+    assert any(
+        realization.retained_sequence == "GACATCCTCAGCCCGCTGAGGATGTC"
+        and realization.source_reference_sequence == "GACATCCTCAGCGGGCTGA"
+        and realization.enzyme_bindings[0].recognition_span.start.offset == 5
+        and realization.enzyme_bindings[0].reference_cut == Boundary(offset=7)
+        for realization in result.realizations
+    )
+
+
 def test_foldback_result_rejects_lossy_family_detail_membership() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
     data = result.model_dump(mode="python")
@@ -437,7 +609,7 @@ def test_foldback_result_rejects_reordered_family_detail_membership() -> None:
 
 def test_foldback_family_identity_binds_all_detailed_evidence() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
-    assert result.schema_id == "hop.foldback-neighborhood-result/v1"
+    assert result.schema_id == "hop.foldback-neighborhood-result/v3"
     assert result.model_dump(mode="json", by_alias=True)["schema"] == result.schema_id
     assert result.model_dump(mode="json")["result_id"] == result.result_id
     first = result.realizations[0]
@@ -500,20 +672,37 @@ def test_foldback_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() ->
     relaxation = RelaxationPolicy(
         mode=RelaxationMode.THROUGH_RADIUS,
         max_radius=1,
-        coordinates=(RelaxationCoordinate(name="junction_offset_nt", minimum=0, maximum=1),),
+        coordinates=(
+            RelaxationCoordinate(
+                name="nick_offset_within_foldback_nt",
+                minimum=0,
+                maximum=1,
+            ),
+        ),
     )
 
-    for limits in (
-        {"max_search_nodes": shell.candidate_count, "max_realizations": 100},
-        {"max_search_nodes": 100, "max_realizations": len(shell.realization_ids)},
-    ):
-        result = discover_foldback_neighborhood(
-            _request(_nickase(), relaxation=relaxation, **limits)
+    node_bounded = discover_foldback_neighborhood(
+        _request(
+            _nickase(),
+            relaxation=relaxation,
+            max_search_nodes=shell.candidate_count,
+            max_realizations=100,
         )
+    )
+    realization_bounded = discover_foldback_neighborhood(
+        _request(
+            _nickase(),
+            relaxation=relaxation,
+            max_search_nodes=100,
+            max_realizations=len(shell.realization_ids),
+        )
+    )
 
-        assert result.neighborhood.status is SearchCompletionStatus.TRUNCATED
-        assert tuple(item.radius for item in result.neighborhood.shells) == (0,)
-        assert result.neighborhood.shells[0].complete is True
+    assert node_bounded.neighborhood.status is SearchCompletionStatus.TRUNCATED
+    assert tuple(item.radius for item in node_bounded.neighborhood.shells) == (0,)
+    assert node_bounded.neighborhood.shells[0].complete is True
+    assert realization_bounded.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert tuple(item.radius for item in realization_bounded.neighborhood.shells) == (0, 1)
 
 
 def test_foldback_wrapper_rejects_partial_final_shell_resealed_as_complete() -> None:
@@ -566,20 +755,21 @@ def test_single_cleavage_rejects_a_site_extending_beyond_the_physical_source_end
 
 def test_foldback_target_coordinates_drive_exact_sites_fragments_and_pairing() -> None:
     target = FoldbackTarget(
-        junction_offset_nt=1,
+        nick_strand=Strand.TOP,
+        nick_offset_within_foldback_nt=1,
         loop_length_nt=4,
         annealing_arm_length_bp=2,
     )
-    result = discover_foldback_neighborhood(_request(_nickase(motif="CATTTT"), target=target))
+    result = discover_foldback_neighborhood(_request(_nickase(motif="ATTTTT"), target=target))
     realization = result.realizations[0]
     binding = realization.enzyme_bindings[0]
 
     assert realization.local_realization.achieved_geometry == target
     assert realization.foldback_nick.boundary.offset == 5
-    assert realization.terminus.boundary.offset == 13
+    assert realization.terminus.boundary.offset == 11
     assert (binding.recognition_span.start.offset, binding.recognition_span.end.offset) == (5, 11)
     assert binding.reference_cut.offset == 5
-    assert realization.retained_sequence == "GACA" + "A" + "CA" + "AAAA" + "TG" + "TTGTC"
+    assert realization.retained_sequence == "GACA" + "AA" + "AAAA" + "TT" + "TGTC"
     assert {
         fragment.fragment_id: fragment.sequence
         for fragment in realization.molecular_fragments
@@ -590,11 +780,11 @@ def test_foldback_target_coordinates_drive_exact_sites_fragments_and_pairing() -
         }
     } == {
         "top-0-5": "GACAA",
-        "bottom-0-13": "CAAAAATGTTGTC",
+        "bottom-0-11": "AAAAATTTGTC",
     }
     assert [(pair.left_index, pair.right_index) for pair in realization.annealing_pairs] == [
-        (0, 7),
-        (1, 6),
+        (4, 6),
+        (0, 5),
     ]
 
 
@@ -647,7 +837,7 @@ def test_all_member_first_feasible_search_continues_past_a_partial_shell() -> No
         max_radius=1,
         coordinates=(
             RelaxationCoordinate(
-                name="junction_offset_nt",
+                name="nick_offset_within_foldback_nt",
                 minimum=0,
                 maximum=1,
             ),

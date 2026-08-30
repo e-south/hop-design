@@ -18,9 +18,9 @@ journey:
 
 # Current schema identifiers
 
-This table documents the `0.1.0a7` source and release schemas. Use the tagged
-documentation shipped with a release artifact; do not submit these identifiers
-to an earlier installation.
+This table documents the unreleased `0.1.0a8` source candidate. The published
+`0.1.0a7` release retains construction-contract v1; use the tagged documentation
+shipped with that artifact.
 
 | Schema ID | Root model | Purpose |
 | --- | --- | --- |
@@ -44,21 +44,27 @@ to an earlier installation.
 | `hop.released-foldback-precursor-search-request/v1` | `ReleasedFoldbackPrecursorSearchRequest` | Selected geometry and caller precursor domain |
 | `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization |
 | `hop.hairpin-junction-route-search-result/v2` | `HairpinJunctionRouteSearchResult` | Bounded continuity join across junction processes |
-| `hop.construction-source/v1` | public file source | Strict foldback, optional basal, endpoint-materialization, whole-route-constraint, and finite-enumeration input; the design bundle remains a separate verified path |
+| `hop.construction-source/v3` | public file source | Strict foldback, optional PCR-basal, endpoint-materialization, whole-route-constraint, and finite-enumeration input; the design bundle remains a separate verified path |
+| `hop.source-partition-request/v1` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, length selection, and finite subset-enumeration bounds |
+| `hop.source-partition-result/v1` | public discovery result | Replay-verified nick sites, denatured fragments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
 | `hop.final-payload/v1` | internal construction model | Final-product payload coordinates, authored reference strand, boundaries, and derived pairing authority |
-| `hop.local-neighborhood-request/v1` | internal construction model | Exact foldback or basal target, route, endpoint, enzyme policy, relaxation, and finite bounds |
-| `hop.neighborhood-discovery-result/v1` | internal construction model | Shared exact-first local accounting, shells, grouping, provenance, and completion status |
-| `hop.foldback-neighborhood-result/v1` | internal construction model | Replayable exact foldback realizations and their detailed molecular authorities |
-| `hop.basal-neighborhood-result/v1` | internal construction model | Replayable endpoint-aware basal realizations and detailed molecular authorities |
-| `hop.construction-discovery-request/v1` | internal construction model | Verified design reference, local result references, exact materialization, route constraints, and composition bounds |
-| `hop.construction-space-result/v1` | internal construction model | Complete examined composition prefix, exact accepted routes, endpoint products, accounting, grouping, and claim boundary |
-| `hop.construction-bundle/v1` | portable construction manifest | Content-addressed complete-construction result and embedded verified design authority |
-| `hop.foldback-feasibility-landscape/v1` | public construction projection | Every exact foldback realization and achieved construction dimensions |
-| `hop.basal-feasibility-landscape/v1` | public construction projection | Every exact basal realization and endpoint-dependent pairing, nick, cut, and cohesive-end facts |
-| `hop.foldback-relaxation-frontier/v1` | public construction projection | Exact examined foldback shells with complete or partial accounting |
-| `hop.basal-relaxation-frontier/v1` | public construction projection | Exact examined basal shells with complete or partial accounting |
+| `hop.local-neighborhood-request/v3` | internal construction model | Exact foldback or PCR-basal target, route, local endpoint, enzyme policy, relaxation, and finite bounds |
+| `hop.neighborhood-discovery-result/v3` | internal construction model | Shared exact-first local accounting, shells, grouping, provenance, and completion status |
+| `hop.foldback-neighborhood-result/v3` | portable local construction result | Replayable exact duplex foldback realizations with nick-strand, source-orientation, and molecular lineage authorities |
+| `hop.basal-neighborhood-result/v3` | portable local construction result | Replayable basal realizations terminating at the hairpin PCR duplex authority |
+| `hop.construction-discovery-request/v3` | internal construction model | Verified design reference, local result references, PCR primers, optional endpoint release, route constraints, and composition bounds |
+| `hop.construction-space-result/v3` | internal construction model | Complete examined composition prefix, exact accepted routes, endpoint products, accounting, grouping, and claim boundary |
+| `hop.construction-bundle/v3` | portable construction manifest | Content-addressed complete-construction result and embedded verified design authority |
+| `hop.foldback-feasibility-landscape/v3` | public construction projection | Every exact foldback realization from one unpartitioned search with its physical nick strand, source orientation, and achieved construction dimensions |
+| `hop.foldback-feasibility-landscape/v4` | public construction projection | Every exact foldback realization from one declared sequence-domain part, with its part scope and achieved construction dimensions |
+| `hop.basal-feasibility-landscape/v2` | public construction projection | Every exact basal realization from one unpartitioned search with its PCR-intermediate pairing, nick, and material facts |
+| `hop.basal-feasibility-landscape/v3` | public construction projection | Every exact basal realization from one declared sequence-domain part, with its part scope and PCR-intermediate facts |
+| `hop.foldback-relaxation-frontier/v2` | public construction projection | Exact examined foldback shells from one unpartitioned search with complete or partial accounting |
+| `hop.foldback-relaxation-frontier/v3` | public construction projection | Exact examined foldback shells from one declared sequence-domain part with complete or partial accounting |
+| `hop.basal-relaxation-frontier/v1` | public construction projection | Exact examined basal shells from one unpartitioned search with complete or partial accounting |
+| `hop.basal-relaxation-frontier/v2` | public construction projection | Exact examined basal shells from one declared sequence-domain part with complete or partial accounting |
 | `hop.complete-construction-summary/v1` | public construction projection | Lossless disposition, grouping, material, failure, and truncation relation over one verified complete result |
-| `hop.complete-construction-trajectory/v1` | public construction projection | One explicitly selected accepted realization with its exact molecular chronology |
+| `hop.complete-construction-trajectory/v2` | public construction projection | One explicitly selected accepted realization with its exact molecular chronology |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
 | `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
 | `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Exact method inputs, agents, selection, and projection |
@@ -67,11 +73,28 @@ to an earlier installation.
 | `hop.method-bundle/v2` | `MethodBundle` | Content-addressed method plan and artifacts |
 | `hop.workflow-view/v1` | `WorkflowView` | Renderer-independent panels and tracks |
 
-The construction source, construction bundle, and six generated construction
-projection schemas are active external contracts through
+The construction source, source-partition request/result, construction bundle,
+and six generated construction projection schemas are active external contracts through
 `hop_design.construction`. The request and result schemas in that pipeline are
 active replay authorities but remain internal: callers do not construct or
 import their raw models through the public facade.
+
+Authored construction and local-neighborhood source documents are limited to
+one megabyte. Public local-neighborhood requests may declare at most 100,000
+search nodes and 100,000 realizations. Portable local-neighborhood result JSON
+is bounded separately at 64 MiB because it records complete candidate,
+rejection, and replay evidence. Result loading enforces the embedded execution
+limits before replay. Searches that would exceed either envelope may use a
+declared canonical `sequence_partition` of 2 through 256 parts. Every part is a
+replayable local authority over a deterministic, disjoint portion of the exact
+sequence domain; realization and construction-problem identities remain
+unchanged. A part may be complete for its declared domain but reports
+whole-domain payload compatibility as `not_computed`. Partitioning is
+incompatible with `first_feasible_shell` stopping and all-member compatibility
+constraints. An owning study must verify every ordered part, reject truncation,
+and prove pairwise-disjoint realization membership before describing the family
+as an exhaustive aggregate. HOP never silently narrows or publishes an
+undeclared partial local authority.
 
 `hop.foldback-nucleotide-exemplar/v1` and
 `hop.foldback-geometry-count-table/v1` are reserved projection identifiers in

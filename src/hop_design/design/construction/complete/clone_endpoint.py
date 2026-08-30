@@ -16,9 +16,6 @@ from hop_design.models.construction import (
     DigitalDesignStatus,
     MethodResolutionStatus,
     NeighborhoodClaimBoundary,
-    PayloadSourceMap,
-    PayloadSourceSegment,
-    SourceOrientation,
 )
 from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
@@ -45,6 +42,10 @@ from hop_design.models.construction.complete.clone import (
 from hop_design.models.construction.complete.evaluation import (
     CombinationEvaluation,
     CompositionRejectionCode,
+)
+from hop_design.models.construction.complete.evaluation_inputs import (
+    derive_complete_payload_source_map,
+    derive_linear_source_embedding,
 )
 from hop_design.models.construction.complete.material_disposition import (
     derive_route_material_dispositions,
@@ -84,6 +85,7 @@ def clone_realization(
             evaluation.pcr_template_sequence,
             evaluation.design_parent_span,
             evaluation.end_generation_program,
+            evaluation.end_generation_bindings,
             request.materialization.adapter,
             request.materialization.forward_primer,
             request.materialization.reverse_primer,
@@ -96,16 +98,26 @@ def clone_realization(
     source_complement = evaluation.source_complement
     design_parent_span = evaluation.design_parent_span
     end_generation_program = evaluation.end_generation_program
+    end_generation_bindings = evaluation.end_generation_bindings
     adapter = request.materialization.adapter
     forward = request.materialization.forward_primer
     reverse = request.materialization.reverse_primer
     assert prefix is not None and return_arm is not None
     assert source is not None and source_complement is not None
     assert design_parent_span is not None and end_generation_program is not None
+    assert end_generation_bindings is not None
     assert adapter is not None and forward is not None and reverse is not None
     if basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("Clone basal opening requires one exact bottom-strand nick.")
     encoding = request.design.plan.hairpin_encoding_insert
+    template_sequence = evaluation.pcr_template_sequence
+    assert template_sequence is not None
+    template_design_start = template_sequence.find(encoding.sequence)
+    if (
+        template_design_start < 0
+        or template_sequence.find(encoding.sequence, template_design_start + 1) >= 0
+    ):
+        return CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE
     pcr_program, _ = materialize_pcr_program(
         foldback=foldback,
         basal=basal,
@@ -118,13 +130,15 @@ def clone_realization(
         reverse_primer=reverse,
         evaluation=evaluation,
         encoding_features=encoding.features,
-        design_source_span=design_parent_span,
+        design_source_span=Span(
+            start=Boundary(offset=template_design_start),
+            end=Boundary(offset=template_design_start + len(encoding.sequence)),
+        ),
     )
     pcr_state = pcr_program.states[-1]
     try:
         digest = derive_clone_digest(
-            basal=basal,
-            foldback=foldback,
+            bindings=end_generation_bindings,
             pcr_state=pcr_state,
             design_sequence=request.design.encoding_sequence,
             design_digest=request.design.encoding_digest,
@@ -183,7 +197,7 @@ def clone_realization(
         cohesive_ends=digest.cohesive_ends,
     )
     functions = material_function_spans(
-        materials=(source, source_complement, adapter, forward, reverse),
+        materials=(source, source_complement, adapter, forward.oligo, reverse.oligo),
         top=terminal.molecules[0],
         bottom=terminal.molecules[1],
     )
@@ -211,26 +225,19 @@ def clone_realization(
         ),
         final_product_id=reference.final_product_id,
     )
-    materials = (source, source_complement, adapter, forward, reverse)
+    materials = (source, source_complement, adapter, forward.oligo, reverse.oligo)
     return MaterializedConstructionRealization.create(
         realization=complete,
         foldback_authority=foldback,
         basal_authority=basal,
-        payload_source_map=PayloadSourceMap(
-            segments=(
-                PayloadSourceSegment(
-                    payload_span=Span(
-                        start=request.payload.basal_boundary,
-                        end=request.payload.foldback_boundary,
-                    ),
-                    source_material_id=source.material_id,
-                    source_span=Span(
-                        start=Boundary(offset=len(prefix)),
-                        end=Boundary(offset=len(prefix) + len(foldback.payload_sequence)),
-                    ),
-                    orientation=SourceOrientation.FORWARD,
-                ),
-            )
+        payload_source_map=derive_complete_payload_source_map(
+            foldback=foldback,
+            embedding=derive_linear_source_embedding(
+                foldback=foldback,
+                prefix=prefix,
+                return_arm=return_arm,
+            ),
+            source_material_id=source.material_id,
         ),
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=basal.basal_realization_id,

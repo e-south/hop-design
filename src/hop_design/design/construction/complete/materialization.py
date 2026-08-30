@@ -24,6 +24,9 @@ from hop_design.models.construction.complete import (
     ReactionBoundaryMapping,
 )
 from hop_design.models.construction.complete.evaluation import CombinationEvaluation
+from hop_design.models.construction.complete.evaluation_inputs import (
+    derive_linear_source_embedding,
+)
 from hop_design.models.construction.complete.route_lineage import (
     derive_post_cleavage_strands,
     material_strand,
@@ -122,11 +125,16 @@ def materialize_direct_program(
     )
     states = [initial]
     transitions = []
+    embedding = derive_linear_source_embedding(
+        foldback=foldback,
+        prefix=prefix,
+        return_arm=return_arm,
+    )
     exact_product_strands = derive_post_cleavage_strands(
         released_molecules,
         namespace="foldback-enzyme-product",
         foldback=foldback,
-        prefix_length=len(prefix),
+        embedding=embedding,
         source=source,
         source_complement=source_complement,
     )
@@ -144,7 +152,7 @@ def materialize_direct_program(
         released_molecules,
         namespace="foldback-released",
         foldback=foldback,
-        prefix_length=len(prefix),
+        embedding=embedding,
         source=source,
         source_complement=source_complement,
     )
@@ -167,13 +175,13 @@ def materialize_direct_program(
     )
     # Family replay establishes the exact ligation substrate; composition extends it
     # with the basal prefix and its antiparallel return arm.
+    ligation_bond = _global_ligation_bond(foldback, selected.molecules)
     final = final_hairpin_strand(
         foldback=foldback,
         prefix=prefix,
         return_arm=return_arm,
-        source=source,
-        source_complement=source_complement,
         selected_strands=selected.molecules,
+        ligation_bond=ligation_bond,
     )
     annealed_pairs = annealed_pairings(
         selected.molecules,
@@ -182,7 +190,6 @@ def materialize_direct_program(
         complement_id=source_complement.material_id,
         source_length=len(source.sequence_5prime),
     )
-    ligation_bond = _global_ligation_bond(foldback, selected.molecules)
     annealed = ConstructionState.create(
         molecules=selected.molecules,
         phase=ConstructionStatePhase.ANNEALED_COMPLEX,

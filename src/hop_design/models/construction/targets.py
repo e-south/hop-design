@@ -19,18 +19,28 @@ from pydantic import Field, field_validator, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.junction import Strand
 from hop_design.models.references import ReferenceId
-from hop_design.models.sequence import (
-    normalize_dna_sequence,
-)
+
+
+class NickStrandSelection(StrEnum):
+    """Whether local discovery should search either exact nick strand."""
+
+    ANY = "any"
 
 
 class FoldbackTarget(HopModel):
     """Requested retained foldback geometry in final-payload coordinates."""
 
     family: Literal["foldback"] = "foldback"
-    junction_offset_nt: int = Field(ge=0)
+    nick_strand: Strand | NickStrandSelection = NickStrandSelection.ANY
+    nick_offset_within_foldback_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_nick_offset(self) -> FoldbackTarget:
+        if self.nick_offset_within_foldback_nt > self.annealing_arm_length_bp:
+            raise ValueError("The foldback nick must lie within the first annealing arm.")
+        return self
 
 
 class BasalPairClass(StrEnum):
@@ -57,43 +67,14 @@ class BasalPairingConstraint(HopModel):
     allowed_class: BasalPairAllowance
 
 
-class BasalNickStrand(StrEnum):
-    """Whether basal discovery should search either exact nick strand."""
-
-    ANY = "any"
-
-
-class EndGenerationRequest(HopModel):
-    """Optional exact or discoverable end geometry for a clone-ready endpoint."""
-
-    type_iis_cut_offset_nt: int = Field(ge=0)
-    requested_overhangs: tuple[str, ...] = ()
-
-    @field_validator("requested_overhangs", mode="before")
-    @classmethod
-    def normalize_overhangs(cls, value: object) -> tuple[str, ...]:
-        if not isinstance(value, (tuple, list)):
-            raise ValueError("Requested overhangs must be a sequence collection.")
-        return tuple(
-            sorted(normalize_dna_sequence(overhang, allow_degenerate=False) for overhang in value)
-        )
-
-    @model_validator(mode="after")
-    def validate_overhangs(self) -> EndGenerationRequest:
-        if len(self.requested_overhangs) != len(set(self.requested_overhangs)):
-            raise ValueError("Requested overhangs must be unique.")
-        return self
-
-
 class BasalTarget(HopModel):
-    """Endpoint-dependent basal nick, pairing, and optional end-generation target."""
+    """Basal nick and adapter-pairing geometry through the PCR intermediate."""
 
     family: Literal["basal"] = "basal"
-    nick_strand: Strand | BasalNickStrand
+    nick_strand: Strand | NickStrandSelection
     nick_offset_nt: int = Field(ge=0)
     pairing_constraints: tuple[BasalPairingConstraint, ...] = ()
     ligation_proximal_match_required: bool = False
-    end_generation: EndGenerationRequest | None = None
 
     @model_validator(mode="after")
     def validate_pairing_constraints(self) -> BasalTarget:

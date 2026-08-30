@@ -173,6 +173,28 @@ def _declared_binding(binding: FoldbackEnzymeBinding) -> DeclaredEnzymeBinding:
     )
 
 
+def _shifted_declared_binding(
+    binding: FoldbackEnzymeBinding, *, offset: int
+) -> DeclaredEnzymeBinding:
+    return DeclaredEnzymeBinding(
+        recognition_span=Span(
+            start=Boundary(offset=binding.recognition_span.start.offset - offset),
+            end=Boundary(offset=binding.recognition_span.end.offset - offset),
+        ),
+        orientation=binding.orientation,
+        reference_cut=(
+            Boundary(offset=binding.reference_cut.offset - offset)
+            if binding.reference_cut is not None
+            else None
+        ),
+        complement_cut=(
+            Boundary(offset=binding.complement_cut.offset - offset)
+            if binding.complement_cut is not None
+            else None
+        ),
+    )
+
+
 def _reaction_program(
     *,
     source: str,
@@ -228,19 +250,22 @@ def _reaction_program(
     terminus_binding = next(
         binding for binding in bindings if binding.role is EnzymeRole.TERMINUS_DEFINITION
     )
+    retains_left = nick_binding.strand is Strand.TOP
+    retained_source = source[:terminus] if retains_left else source[terminus:]
+    released_source = source[terminus:] if retains_left else source[:terminus]
     intermediate_molecules = [
         ReactionMolecule(
             molecule_id="source",
-            reference_sequence_5prime=source[:terminus],
-            complement_sequence_5prime=reverse_complement_iupac(source[:terminus]),
+            reference_sequence_5prime=retained_source,
+            complement_sequence_5prime=reverse_complement_iupac(retained_source),
         )
     ]
-    if terminus < len(source):
+    if released_source:
         intermediate_molecules.append(
             ReactionMolecule(
                 molecule_id="released-duplex",
-                reference_sequence_5prime=source[terminus:],
-                complement_sequence_5prime=reverse_complement_iupac(source[terminus:]),
+                reference_sequence_5prime=released_source,
+                complement_sequence_5prime=reverse_complement_iupac(released_source),
             )
         )
     intermediate_state = ReactionState(
@@ -254,6 +279,15 @@ def _reaction_program(
         molecule_id="source",
         intended_binding=_declared_binding(terminus_binding),
     )
+    if not retains_left:
+        nick_operation = nick_operation.model_copy(
+            update={
+                "intended_binding": _shifted_declared_binding(
+                    nick_binding,
+                    offset=terminus,
+                )
+            }
+        )
     return ReactionProgram(
         program_id="foldback-sequential-cleavage",
         states=(source_state, intermediate_state, released_state),

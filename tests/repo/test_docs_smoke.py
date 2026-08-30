@@ -58,6 +58,7 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     assert "uv run --locked python scripts/docs-smoke" in agent_verify
     assert '"$smoke_root/venv/bin/python" scripts/docs-smoke' in wheel_smoke
     assert "'examples/fixed-site-three-base-context.yaml'" in wheel_smoke
+    assert "'examples/foldback-local-partition.yaml'" in wheel_smoke
     assert "'examples/compile_payload_records.py'" in wheel_smoke
     assert "'examples/compile_construction.py'" in wheel_smoke
     assert "'examples/construction-exact-design.yaml'" in wheel_smoke

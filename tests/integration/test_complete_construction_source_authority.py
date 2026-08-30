@@ -33,7 +33,9 @@ from hop_design.models.construction.complete import (
     CompositionEnumerationPolicy,
     ConstructionDiscoveryRequest,
     ConstructionProgram,
+    ConstructionSpaceResult,
     ConstructionState,
+    ConstructionStatePhase,
     ConstructionTransition,
     DesignAuthorityReference,
     ExactStateRelation,
@@ -50,6 +52,9 @@ from hop_design.models.construction.complete.evaluation import (
 from hop_design.models.construction.complete.source_authority import (
     validate_local_authorities,
     validate_result_authorities,
+)
+from hop_design.models.construction.complete.transition_replay import (
+    validate_non_enzyme_transition,
 )
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.realization import FinalProductReference
@@ -86,7 +91,7 @@ def _case(tmp_path: Path):
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -142,6 +147,16 @@ def _reseal_realization(record, **updates: object) -> MaterializedConstructionRe
     }
     content.update(updates)
     return MaterializedConstructionRealization.create(**content)
+
+
+def _reseal_result(record, **updates: object) -> ConstructionSpaceResult:
+    content = {
+        name: getattr(record, name)
+        for name in ConstructionSpaceResult.model_fields
+        if name != "result_id"
+    }
+    content.update(updates)
+    return ConstructionSpaceResult.create(**content)
 
 
 def _reseal_program(
@@ -273,6 +288,192 @@ def test_result_rejects_resealed_nonmember_foldback_authority(tmp_path: Path) ->
             realization=complete,
             foldback_authority=replacement_local,
             foldback_realization_id=replacement_local.foldback_realization_id,
+        )
+
+
+@pytest.mark.parametrize(
+    ("update", "message"),
+    (
+        (
+            lambda result: {
+                "provenance": result.provenance.model_copy(update={"hop_version": "forged"})
+            },
+            "Provenance HOP version",
+        ),
+        (
+            lambda result: {"upstream_truncation_reasons": ("foldback:invented-bound",)},
+            "replay exact local authorities",
+        ),
+        (
+            lambda result: {"realizations": (*result.realizations, result.realizations[0])},
+            "must not repeat realizations",
+        ),
+        (
+            lambda result: {
+                "material_accounting": result.material_accounting.model_copy(
+                    update={
+                        "endpoint_product_nt": result.material_accounting.endpoint_product_nt + 1
+                    }
+                )
+            },
+            "Material accounting must derive",
+        ),
+    ),
+)
+def test_complete_result_rejects_resealed_authority_forgery_matrix(
+    tmp_path: Path,
+    update: Callable[[Any], dict[str, object]],
+    message: str,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+
+    with pytest.raises(ValidationError, match=message):
+        _reseal_result(result, **update(result))
+
+
+def test_complete_result_replays_disposition_work_metrics(tmp_path: Path) -> None:
+    _, _, _, result = _case(tmp_path)
+    disposition = result.combination_dispositions[0]
+    changed_disposition = disposition.model_copy(
+        update={"candidate_enzyme_programs": disposition.candidate_enzyme_programs + 1}
+    )
+    changed_accounting = result.accounting.model_copy(
+        update={"candidate_enzyme_programs": result.accounting.candidate_enzyme_programs + 1}
+    )
+
+    with pytest.raises(ValidationError, match="Disposition metrics"):
+        _reseal_result(
+            result,
+            combination_dispositions=(
+                changed_disposition,
+                *result.combination_dispositions[1:],
+            ),
+            accounting=changed_accounting,
+        )
+
+
+def test_non_enzyme_transition_replay_rejects_molecular_forgery_matrix(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+    program = result.realizations[0].construction_program
+    cleaved, denatured, selected, annealed, ligated = program.states[1:]
+
+    changed_denatured_strand = denatured.molecules[0].model_copy(
+        update={"five_prime_end": EndChemistry.PHOSPHATE}
+    )
+    changed_denatured = ConstructionState.create(
+        molecules=(changed_denatured_strand, *denatured.molecules[1:]),
+        phase=denatured.phase,
+    )
+    with pytest.raises(ValueError, match="preserve exact strands, chemistry, and lineage"):
+        validate_non_enzyme_transition(
+            kind="denaturation",
+            pre_state=cleaved,
+            post_state=changed_denatured,
+        )
+
+    foreign_selected_strand = selected.molecules[0].model_copy(update={"strand_id": "foreign"})
+    foreign_selected = ConstructionState.create(
+        molecules=(foreign_selected_strand, *selected.molecules[1:]),
+        phase=selected.phase,
+    )
+    with pytest.raises(ValueError, match="retain only exact precursor strands"):
+        validate_non_enzyme_transition(
+            kind="fragment_selection",
+            pre_state=denatured,
+            post_state=foreign_selected,
+        )
+
+    changed_annealed_strand = annealed.molecules[0].model_copy(
+        update={"three_prime_end": EndChemistry.PHOSPHATE}
+    )
+    changed_annealed = ConstructionState.create(
+        molecules=(changed_annealed_strand, *annealed.molecules[1:]),
+        phase=annealed.phase,
+        pairings=annealed.pairings,
+    )
+    with pytest.raises(ValueError, match="preserve exact strand sequence, chemistry, and lineage"):
+        validate_non_enzyme_transition(
+            kind="annealing",
+            pre_state=selected,
+            post_state=changed_annealed,
+        )
+
+    broken_bond = ligated.formed_bonds[0].model_copy(
+        update={
+            "bond": ligated.formed_bonds[0].bond.model_copy(
+                update={"upstream_strand_id": "absent-precursor"}
+            )
+        }
+    )
+    broken_ligated = ConstructionState.create(
+        molecules=ligated.molecules,
+        phase=ligated.phase,
+        pairings=ligated.pairings,
+        formed_bonds=(broken_bond,),
+    )
+    with pytest.raises(ValueError, match="reference exact precursor strands"):
+        validate_non_enzyme_transition(
+            kind="ligation",
+            pre_state=annealed,
+            post_state=broken_ligated,
+        )
+
+    with pytest.raises(ValueError, match="explicit template-copying authority"):
+        validate_non_enzyme_transition(
+            kind="primer_extension",
+            pre_state=annealed,
+            post_state=ligated,
+        )
+
+
+def test_construction_program_rejects_resealed_program_authority_matrix(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+    program = result.realizations[0].construction_program
+
+    with pytest.raises(ValidationError, match="ReactionProgram ids must be unique"):
+        ConstructionProgram.create(
+            states=program.states,
+            transitions=program.transitions,
+            reaction_programs=(*program.reaction_programs, program.reaction_programs[0]),
+            stage_assessments=program.stage_assessments,
+        )
+
+    with pytest.raises(ValidationError, match="referenced exactly once"):
+        ConstructionProgram.create(
+            states=program.states,
+            transitions=program.transitions,
+            reaction_programs=(),
+            stage_assessments=(),
+        )
+
+    wrong_phase = ConstructionState.create(
+        molecules=program.states[0].molecules,
+        phase=ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
+        pairings=program.states[0].pairings,
+    )
+    with pytest.raises(ValidationError, match="preserve physical phase order"):
+        _reseal_program(program, (wrong_phase, *program.states[1:]))
+
+    first_assessment = program.stage_assessments[0]
+    first_binding = first_assessment.intended_bindings[0]
+    forged_assessment = first_assessment.model_copy(
+        update={
+            "intended_bindings": (
+                first_binding.model_copy(update={"enzyme_id": "forged-enzyme"}),
+                *first_assessment.intended_bindings[1:],
+            )
+        }
+    )
+    with pytest.raises(ValidationError, match="replay its declared operation"):
+        ConstructionProgram.create(
+            states=program.states,
+            transitions=program.transitions,
+            reaction_programs=program.reaction_programs,
+            stage_assessments=(forged_assessment, *program.stage_assessments[1:]),
         )
 
 
@@ -700,7 +901,7 @@ def test_payload_source_occurrence_is_exact_when_payload_bytes_repeat(tmp_path: 
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                junction_offset_nt=0,
+                nick_offset_within_foldback_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),

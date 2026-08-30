@@ -36,7 +36,14 @@ from .state import ConstructionStatePhase
 
 def validate_payload_source_map(request: ConstructionDiscoveryRequest, realization: Any) -> None:
     """Require mapped material bytes to replay the exact requested payload."""
-    validate_linear_source_map(request.payload, realization.payload_source_map)
+    validate_linear_source_map(
+        request.payload,
+        realization.payload_source_map,
+        allowed_orientations=(
+            SourceOrientation.FORWARD,
+            SourceOrientation.REVERSE_COMPLEMENT,
+        ),
+    )
     source_materials = {item.material_id: item for item in realization.materials}
     payload_parts: list[str] = []
     for segment in sorted(
@@ -101,7 +108,11 @@ def validate_accepted_realization(
     policy = request.materialization
     expected_auxiliaries = tuple(
         item
-        for item in (policy.adapter, policy.forward_primer, policy.reverse_primer)
+        for item in (
+            policy.adapter,
+            None if policy.forward_primer is None else policy.forward_primer.oligo,
+            None if policy.reverse_primer is None else policy.reverse_primer.oligo,
+        )
         if item is not None
     )
     if (
@@ -213,6 +224,13 @@ def validate_combination_evaluations(
     realizations_by_id = {item.materialized_realization_id: item for item in realizations}
     for disposition, evaluation in evaluated:
         expected_reason = evaluation.rejection_reason
+        if evaluation.truncation_reason is not None:
+            if (
+                disposition.status is not CompositionDispositionStatus.TRUNCATED
+                or disposition.truncation_reason != evaluation.truncation_reason
+            ):
+                raise ValueError("Disposition truncation must equal exact combination evaluation.")
+            continue
         if expected_reason is None and apply_require_all:
             expected_reason = CompositionRejectionCode.ALL_COMBINATIONS_VALID_REQUIRED
         if expected_reason is not None:
@@ -262,6 +280,7 @@ def expected_accounting(
     """Derive every canonical composition count from exact dispositions."""
     examined = len(dispositions)
     rejected = sum(item.status is CompositionDispositionStatus.REJECTED for item in dispositions)
+    truncated = sum(item.status is CompositionDispositionStatus.TRUNCATED for item in dispositions)
     accepted = sum(item.status is CompositionDispositionStatus.ACCEPTED for item in dispositions)
     return {
         "foldback_local_realizations": len(provenance.foldback_realization_ids),
@@ -273,6 +292,7 @@ def expected_accounting(
         "examined_combinations": examined,
         "rejected_after_execution": rejected,
         "rejected_combinations": rejected,
+        "truncated_combinations": truncated,
         "valid_realizations": accepted,
         "candidate_enzyme_programs": sum(item.candidate_enzyme_programs for item in dispositions),
         "recognition_placements_attempted": sum(

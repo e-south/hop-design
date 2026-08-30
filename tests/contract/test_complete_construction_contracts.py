@@ -30,6 +30,7 @@ from hop_design.models.construction import (
     RealizationGroup,
     RealizationGrouping,
     RouteFamily,
+    SourceOrientation,
 )
 from hop_design.models.construction.complete import (
     CompositionAccounting,
@@ -49,10 +50,14 @@ from hop_design.models.construction.complete import (
     ExactStateRelation,
     LinearSourceMaterializationSpec,
     MaterialOrigin,
+    PcrPrimer,
     ReactionBoundaryMapping,
+    ReleaseSideRequirement,
+    TypeIisReleaseRequest,
     WholeRouteConstraints,
 )
 from hop_design.models.construction.complete.accounting import validate_realization_groups
+from hop_design.models.construction.complete.evaluation_inputs import LinearSourceEmbedding
 from hop_design.models.construction.complete.materials import validate_initial_material_state
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.coordinates import Boundary
@@ -67,9 +72,11 @@ from hop_design.models.molecular_state import (
     StrandPairObservation,
 )
 from hop_design.models.payload import ExactPayload
+from hop_design.models.physical import SiteOrientation
 from hop_design.models.plan import HopPlan
 from hop_design.models.reactions import ReactionMolecule
 from hop_design.models.references import ExternalRef
+from tests.contract.test_endpoint_materialization import _release_policy
 from tests.integration.test_resolved_compile import _component_spec
 
 
@@ -127,12 +134,18 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
         forward_primer=(
             None
             if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-            else _material("forward-primer", "GGACA")
+            else PcrPrimer(
+                oligo=_material("forward-primer", "GGACA"),
+                annealing_length_nt=5,
+            )
         ),
         reverse_primer=(
             None
             if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-            else _material("reverse-primer", "GGACA")
+            else PcrPrimer(
+                oligo=_material("reverse-primer", "GGACA"),
+                annealing_length_nt=5,
+            )
         ),
     )
     return ConstructionDiscoveryRequest(
@@ -146,6 +159,24 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
             else "hop:basal-neighborhood-result/" + "b" * 64 + "@1"
         ),
         materialization=materialization,
+        release=(
+            TypeIisReleaseRequest(
+                enzyme_provisioning=_release_policy(),
+                left=ReleaseSideRequirement(
+                    orientation=SiteOrientation.FORWARD,
+                    cohesive_end_sequence="AATG",
+                    overhang_end=StrandEnd.FIVE_PRIME,
+                ),
+                right=ReleaseSideRequirement(
+                    orientation=SiteOrientation.REVERSE,
+                    cohesive_end_sequence="CGCT",
+                    overhang_end=StrandEnd.FIVE_PRIME,
+                ),
+                max_site_pairs=16,
+            )
+            if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+            else None
+        ),
         design=_design(),
         whole_route_constraints=WholeRouteConstraints(),
         enumeration=CompositionEnumerationPolicy(
@@ -158,7 +189,7 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
 
 def test_direct_endpoint_forbids_adapter_and_pcr_materials() -> None:
     direct = _request(ConstructionEndpoint.SSDNA_HAIRPIN)
-    assert direct.schema_id == "hop.construction-discovery-request/v1"
+    assert direct.schema_id == "hop.construction-discovery-request/v3"
     assert direct.model_dump(mode="json", by_alias=True)["schema"] == direct.schema_id
     assert direct.basal_result_id is None
     assert direct.materialization.adapter is None
@@ -299,7 +330,10 @@ def test_material_and_design_authorities_are_sequence_and_digest_exact() -> None
     duplicate_auxiliary = request.materialization.model_copy(
         update={
             "adapter": _material("duplicate", "AAAA"),
-            "forward_primer": _material("duplicate", "CCCC"),
+            "forward_primer": PcrPrimer(
+                oligo=_material("duplicate", "CCCC"),
+                annealing_length_nt=4,
+            ),
         }
     ).model_dump(mode="python")
     with pytest.raises(ValidationError, match="ids must be unique"):
@@ -384,8 +418,10 @@ def test_reaction_lineage_uses_declared_occurrence_for_repeated_subsequences() -
         source_complement=complement,
         reference_occurrence=MaterialOccurrence(
             start=4,
+            length=4,
             five_prime_end=EndChemistry.PHOSPHATE,
             three_prime_end=EndChemistry.HYDROXYL,
+            origin_strand=LineageStrand.PRIMARY,
         ),
         complement_occurrence=None,
     )
@@ -556,7 +592,7 @@ def test_construction_transition_authorities_are_exact_and_state_changing() -> N
     (
         ({"executed_combinations": 0}, "Executed and examined"),
         ({"rejected_after_execution": 1}, "Post-execution rejection"),
-        ({"valid_realizations": 0}, "partition into rejected and valid"),
+        ({"valid_realizations": 0}, "partition into rejected, truncated, and valid"),
         ({"nominal_combinations": 0}, "cannot exceed the nominal"),
         (
             {"nominal_combinations": 1, "pruned_before_execution": 1},
@@ -576,6 +612,7 @@ def test_composition_accounting_rejects_nonreplayable_counts(
         "examined_combinations": 1,
         "rejected_after_execution": 0,
         "rejected_combinations": 0,
+        "truncated_combinations": 0,
         "valid_realizations": 1,
         "candidate_enzyme_programs": 1,
         "recognition_placements_attempted": 1,
@@ -655,8 +692,10 @@ def test_lineage_mapping_rejects_missing_or_inexact_material_occurrences() -> No
     )
     occurrence = MaterialOccurrence(
         start=0,
+        length=4,
         five_prime_end=EndChemistry.PHOSPHATE,
         three_prime_end=EndChemistry.HYDROXYL,
+        origin_strand=LineageStrand.PRIMARY,
     )
     with pytest.raises(ValueError, match="exact complement occurrence"):
         reaction_molecule_strands(
@@ -680,8 +719,10 @@ def test_lineage_mapping_rejects_missing_or_inexact_material_occurrences() -> No
                 source_complement=complement,
                 reference_occurrence=MaterialOccurrence(
                     start=start,
+                    length=4,
                     five_prime_end=EndChemistry.PHOSPHATE,
                     three_prime_end=EndChemistry.HYDROXYL,
+                    origin_strand=LineageStrand.PRIMARY,
                 ),
                 complement_occurrence=None,
             )
@@ -701,7 +742,14 @@ def test_lineage_mapping_rejects_missing_or_inexact_material_occurrences() -> No
                 ),
             ),
             fragments=(),
-            prefix_length=0,
+            embedding=LinearSourceEmbedding(
+                source_sequence=source.sequence_5prime,
+                complement_sequence=complement.sequence_5prime,
+                local_reference_offset=0,
+                local_complement_offset=0,
+                local_source_length=len(source.sequence_5prime),
+                source_orientation=SourceOrientation.FORWARD,
+            ),
             source=source,
             source_complement=complement,
         )

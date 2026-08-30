@@ -147,12 +147,13 @@ class ReleasedStrandState(HopModel):
             if self.active_strand is Strand.TOP
             else self.release_cut.bottom.offset
         )
-        origin = self.active_product_precursor_span.start.offset
-        if self.active_product_precursor_span.end.offset != active_cut:
-            raise ValueError("Active-product span must end at the active-strand release cut.")
-        if origin > self.nick.boundary.offset or self.nick.boundary.offset > active_cut:
-            raise ValueError("Released-state origin, nick, and active cut must be ordered.")
-        active_top_slice = self.precursor_top_strand[origin:active_cut]
+        active_start = self.active_product_precursor_span.start.offset
+        active_end = self.active_product_precursor_span.end.offset
+        if active_cut not in (active_start, active_end):
+            raise ValueError("Active-product span must meet the active-strand release cut.")
+        if not active_start <= self.nick.boundary.offset <= active_end:
+            raise ValueError("The nick must lie within the active-product source span.")
+        active_top_slice = self.precursor_top_strand[active_start:active_end]
         expected_active_sequence = (
             active_top_slice
             if self.active_strand is Strand.TOP
@@ -160,20 +161,25 @@ class ReleasedStrandState(HopModel):
         )
         if self.active_product_sequence != expected_active_sequence:
             raise ValueError("Active-product sequence must derive from the precursor and route.")
-        retained_top_prefix = self.precursor_top_strand[: self.nick.boundary.offset]
+        retains_left = active_cut == active_end
+        retained_top = (
+            self.precursor_top_strand[: self.nick.boundary.offset]
+            if retains_left
+            else self.precursor_top_strand[self.nick.boundary.offset :]
+        )
         expected_partner_sequence = (
-            retained_top_prefix
+            retained_top
             if self.retained_partner_strand is Strand.TOP
-            else reverse_complement_iupac(retained_top_prefix)
-            if retained_top_prefix
+            else reverse_complement_iupac(retained_top)
+            if retained_top
             else ""
         )
         if self.retained_partner_sequence != expected_partner_sequence:
             raise ValueError("Retained-partner sequence must derive from the precursor and route.")
         expected_nick_boundary = (
-            self.nick.boundary.offset - origin
+            self.nick.boundary.offset - active_start
             if self.active_strand is Strand.TOP
-            else active_cut - self.nick.boundary.offset
+            else active_end - self.nick.boundary.offset
         )
         if self.active_nick_boundary.offset != expected_nick_boundary:
             raise ValueError("Active nick boundary must use active-product orientation.")

@@ -12,7 +12,6 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections.abc import Iterator
-from dataclasses import dataclass
 from itertools import product
 
 from hop_design.models.construction import FoldbackTarget
@@ -24,94 +23,16 @@ from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import (
     CharacterizedEnzyme,
     EnzymeClass,
-    EnzymeProvisioningPolicy,
     EnzymeRole,
-    RecognitionOrientationSemantics,
 )
 from hop_design.models.physical import SiteOrientation, Strand
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 
+from .orientation import mirror_solution, opposite_orientation
+from .programs import FoldbackProgramCandidate, iter_foldback_programs
+from .solutions import FoldbackPlacementFailure, FoldbackSequenceSolution
+
 _BASES = ("A", "C", "G", "T")
-
-
-@dataclass(frozen=True, slots=True)
-class FoldbackProgramCandidate:
-    """One finite enzyme and orientation program before sequence placement."""
-
-    kind: FoldbackCleavageProgramKind
-    nick_enzyme: CharacterizedEnzyme
-    terminus_enzyme: CharacterizedEnzyme | None
-    terminus_orientation: SiteOrientation | None
-
-
-@dataclass(frozen=True, slots=True)
-class FoldbackSequenceSolution:
-    """One exact source and its intended enzyme bindings."""
-
-    source_reference_sequence: str
-    retained_sequence: str
-    loop_sequence: str
-    foldback_arm_sequence: str
-    junction_boundary: int
-    terminus_boundary: int
-    enzyme_bindings: tuple[FoldbackEnzymeBinding, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class FoldbackPlacementFailure:
-    """One stable reason a concrete program cannot realize a geometry."""
-
-    code: str
-
-
-def iter_foldback_programs(
-    policy: EnzymeProvisioningPolicy,
-) -> tuple[FoldbackProgramCandidate, ...]:
-    """Enumerate single and sequential programs in policy-neutral canonical order."""
-    nickases = tuple(
-        sorted(
-            (
-                enzyme
-                for enzyme in policy.catalog.enzymes
-                if enzyme.enzyme_class is EnzymeClass.NICKASE
-                and policy.permits(enzyme.enzyme_id, role=EnzymeRole.FOLDBACK_NICK)
-            ),
-            key=lambda enzyme: enzyme.enzyme_id,
-        )
-    )
-    terminus_options: list[tuple[CharacterizedEnzyme, SiteOrientation]] = []
-    for enzyme in sorted(policy.catalog.enzymes, key=lambda item: item.enzyme_id):
-        if not policy.permits(enzyme.enzyme_id, role=EnzymeRole.TERMINUS_DEFINITION):
-            continue
-        if enzyme.enzyme_class is not EnzymeClass.DUPLEX_RESTRICTION:
-            continue
-        terminus_options.append((enzyme, SiteOrientation.FORWARD))
-        if (
-            enzyme.recognition_orientation_semantics
-            is RecognitionOrientationSemantics.BOTH_ORIENTATIONS
-        ):
-            terminus_options.append((enzyme, SiteOrientation.REVERSE))
-
-    programs = [
-        FoldbackProgramCandidate(
-            kind=FoldbackCleavageProgramKind.SINGLE_CLEAVAGE,
-            nick_enzyme=nickase,
-            terminus_enzyme=None,
-            terminus_orientation=None,
-        )
-        for nickase in nickases
-    ]
-    programs.extend(
-        FoldbackProgramCandidate(
-            kind=FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK,
-            nick_enzyme=nickase,
-            terminus_enzyme=terminus,
-            terminus_orientation=orientation,
-        )
-        for nickase in nickases
-        for terminus, orientation in terminus_options
-    )
-    return tuple(programs)
 
 
 def _oriented_pattern(enzyme: CharacterizedEnzyme, orientation: SiteOrientation) -> str:
@@ -202,18 +123,51 @@ def iter_foldback_program_solutions(
     program: FoldbackProgramCandidate,
 ) -> Iterator[FoldbackSequenceSolution | FoldbackPlacementFailure]:
     """Enumerate every exact local source for one target and enzyme program."""
+    if not isinstance(target.nick_strand, Strand):
+        raise ValueError("Foldback sequence discovery requires one exact nick strand.")
+    if target.nick_strand is Strand.BOTTOM:
+        if program.nick_orientation is not SiteOrientation.REVERSE:
+            yield FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
+            return
+        mirrored_program = FoldbackProgramCandidate(
+            kind=program.kind,
+            nick_enzyme=program.nick_enzyme,
+            nick_orientation=SiteOrientation.FORWARD,
+            terminus_enzyme=program.terminus_enzyme,
+            terminus_orientation=(
+                opposite_orientation(program.terminus_orientation)
+                if program.terminus_orientation is not None
+                else None
+            ),
+        )
+        mirrored_target = target.model_copy(update={"nick_strand": Strand.TOP})
+        for solution in iter_foldback_program_solutions(
+            payload_sequence=payload_sequence,
+            target=mirrored_target,
+            program=mirrored_program,
+        ):
+            yield (
+                solution
+                if isinstance(solution, FoldbackPlacementFailure)
+                else mirror_solution(solution)
+            )
+        return
+    if program.nick_orientation is not SiteOrientation.FORWARD:
+        yield FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
+        return
     payload_nt = len(payload_sequence)
     arm_nt = target.annealing_arm_length_bp
-    junction = payload_nt + target.junction_offset_nt
+    junction = payload_nt
+    nick = junction + target.nick_offset_within_foldback_nt
     foldback_nt = 2 * arm_nt + target.loop_length_nt
-    terminus = junction + foldback_nt
+    terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
 
     nick_binding = _place_binding(
         program.nick_enzyme,
         role=EnzymeRole.FOLDBACK_NICK,
-        orientation=SiteOrientation.FORWARD,
+        orientation=program.nick_orientation,
         controlled_strand=Strand.TOP,
-        controlled_boundary=junction,
+        controlled_boundary=nick,
     )
     if nick_binding is None:
         yield FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
@@ -282,47 +236,48 @@ def iter_foldback_program_solutions(
     if any(not domain for domain in domains):
         yield FoldbackPlacementFailure(code="overlapping-sequence-conflict")
         return
-    junction_domains = tuple(
-        tuple(base for base in _BASES if base in domains[coordinate])
-        for coordinate in range(payload_nt, junction)
-    )
+    arm_domain_sets = [set(_BASES) for _ in range(arm_nt)]
+    loop_domain_sets = [set(_BASES) for _ in range(target.loop_length_nt)]
+    for source_offset in range(foldback_nt - target.nick_offset_within_foldback_nt):
+        final_index = foldback_nt - 1 - source_offset
+        source_domain = domains[junction + source_offset]
+        if final_index < arm_nt:
+            arm_domain_sets[final_index] &= {
+                base for base in _BASES if reverse_complement_iupac(base) in source_domain
+            }
+        elif final_index < arm_nt + target.loop_length_nt:
+            loop_index = final_index - arm_nt
+            loop_domain_sets[loop_index] &= {
+                base for base in _BASES if reverse_complement_iupac(base) in source_domain
+            }
+        else:
+            arm_index = foldback_nt - 1 - final_index
+            arm_domain_sets[arm_index] &= source_domain
     arm_domains = tuple(
-        tuple(
-            base
-            for base in _BASES
-            if base in domains[junction + index]
-            and reverse_complement_iupac(base) in domains[terminus - 1 - index]
-        )
-        for index in range(arm_nt)
+        tuple(base for base in _BASES if base in domain) for domain in arm_domain_sets
     )
     loop_domains = tuple(
-        tuple(
-            base
-            for base in _BASES
-            if reverse_complement_iupac(base)
-            in domains[junction + arm_nt + target.loop_length_nt - 1 - index]
-        )
-        for index in range(target.loop_length_nt)
+        tuple(base for base in _BASES if base in domain) for domain in loop_domain_sets
     )
     if any(not domain for domain in (*arm_domains, *loop_domains)):
         yield FoldbackPlacementFailure(code="foldback-pairing-conflict")
         return
     canonical_source = [next(base for base in _BASES if base in domain) for domain in domains]
-    for junction_assignment, arm_assignment, loop_assignment in product(
-        product(*junction_domains),
+    for arm_assignment, loop_assignment in product(
         product(*arm_domains),
         product(*loop_domains),
     ):
         source_bases = canonical_source.copy()
-        source_bases[payload_nt:junction] = junction_assignment
         arm = "".join(arm_assignment)
         loop = "".join(loop_assignment)
         foldback = arm + loop + reverse_complement_iupac(arm)
-        source_bases[junction:terminus] = reverse_complement_iupac(foldback)
+        source_bases[junction:terminus] = reverse_complement_iupac(
+            foldback[target.nick_offset_within_foldback_nt :]
+        )
         if any(base not in domains[coordinate] for coordinate, base in enumerate(source_bases)):
             continue
         source = "".join(source_bases)
-        foldback_segment = reverse_complement_iupac(source[junction:terminus])
+        foldback_segment = foldback
         retained_arm = foldback_segment[:arm_nt]
         loop_start = arm_nt
         loop_end = loop_start + target.loop_length_nt
@@ -332,7 +287,9 @@ def iter_foldback_program_solutions(
             raise RuntimeError("Foldback source constraints lost literal arm complementarity.")
         yield FoldbackSequenceSolution(
             source_reference_sequence=source,
-            retained_sequence=(payload_sequence + "".join(junction_assignment) + foldback_segment),
+            retained_sequence=(
+                payload_sequence + foldback_segment + reverse_complement_iupac(payload_sequence)
+            ),
             loop_sequence=realized_loop,
             foldback_arm_sequence=realized_arm,
             junction_boundary=junction,

@@ -1,4 +1,13 @@
-"""Pure derivations for strand lineage, fragments, and physical pair calls."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/models/molecular_replay.py
+
+Replays strand lineage, denatured fragments, and physical base-pair observations.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -54,8 +63,11 @@ def build_denatured_fragments(
     top_cut_boundaries: tuple[int, ...],
     bottom_cut_boundaries: tuple[int, ...],
     top_five_prime_end: EndChemistry,
+    top_three_prime_end: EndChemistry,
     bottom_five_prime_end: EndChemistry,
+    bottom_three_prime_end: EndChemistry,
 ) -> tuple[Fragment, ...]:
+    """Replay all strand fragments from exact nick boundaries and source end chemistry."""
     length = len(source_top_sequence)
     top_boundaries = (0, *top_cut_boundaries, length)
     bottom_boundaries = (0, *bottom_cut_boundaries, length)
@@ -72,7 +84,7 @@ def build_denatured_fragments(
                 lineage_direction=LineageDirection.FORWARD,
                 sequence=source_top_sequence[start:end],
                 five_prime_end=(top_five_prime_end if start == 0 else EndChemistry.PHOSPHATE),
-                three_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=(top_three_prime_end if end == length else EndChemistry.HYDROXYL),
                 lineage=build_lineage(
                     origin_id=source_id,
                     origin_strand=LineageStrand.PRIMARY,
@@ -93,7 +105,7 @@ def build_denatured_fragments(
                 lineage_direction=LineageDirection.REVERSE,
                 sequence=reverse_complement_iupac(source_top_sequence[start:end]),
                 five_prime_end=(bottom_five_prime_end if end == length else EndChemistry.PHOSPHATE),
-                three_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=(bottom_three_prime_end if start == 0 else EndChemistry.HYDROXYL),
                 lineage=build_lineage(
                     origin_id=source_id,
                     origin_strand=LineageStrand.COMPLEMENTARY,

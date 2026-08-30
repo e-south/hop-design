@@ -71,25 +71,29 @@ def annealed_pairings(
             source_length=source_length,
         )
     )
-    bottom_id = foldback.annealing_pairs[0].left_strand_id
-    bottom = next(
-        (strand for strand in strands if f"-{bottom_id}-" in strand.strand_id),
-        None,
-    )
-    if bottom is None:
-        raise ValueError(
-            "Foldback annealing strand must survive exact fragment selection: "
-            f"{bottom_id!r} not in {tuple(item.strand_id for item in strands)!r}."
+    for item in foldback.annealing_pairs:
+        left = next(
+            (strand for strand in strands if f"-{item.left_strand_id}-" in strand.strand_id),
+            None,
         )
-    pairs.extend(
-        item.model_copy(
-            update={
-                "left_strand_id": bottom.strand_id,
-                "right_strand_id": bottom.strand_id,
-            }
+        right = next(
+            (strand for strand in strands if f"-{item.right_strand_id}-" in strand.strand_id),
+            None,
         )
-        for item in foldback.annealing_pairs
-    )
+        if left is None or right is None:
+            raise ValueError(
+                "Foldback annealing strands must survive exact fragment selection: "
+                f"{(item.left_strand_id, item.right_strand_id)!r} not in "
+                f"{tuple(strand.strand_id for strand in strands)!r}."
+            )
+        pairs.append(
+            item.model_copy(
+                update={
+                    "left_strand_id": left.strand_id,
+                    "right_strand_id": right.strand_id,
+                }
+            )
+        )
     return tuple(pairs)
 
 

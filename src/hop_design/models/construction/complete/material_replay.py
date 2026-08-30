@@ -14,6 +14,7 @@ from __future__ import annotations
 from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 
+from .evaluation_inputs import replay_linear_source_embedding
 from .pairing_replay import annealed_pairings, duplex_pairings
 from .program import ConstructionProgram
 from .request import ExactConstructionMaterial
@@ -75,14 +76,18 @@ def validate_route_derivation(
 ) -> None:
     """Replay the global enzyme program and fragments from exact local authorities."""
     source, source_complement = materials[:2]
-    prefix_length = len(source.sequence_5prime) - len(foldback.source_reference_sequence)
-    if prefix_length < 0 or not source.sequence_5prime.endswith(foldback.source_reference_sequence):
-        raise ValueError("Complete source must lift the exact foldback precursor.")
+    prefix, return_arm, embedding = replay_linear_source_embedding(
+        foldback=foldback,
+        source_sequence=source.sequence_5prime,
+        complement_sequence=source_complement.sequence_5prime,
+    )
     expected_program = derive_direct_reaction_program(
         foldback=foldback,
         basal=basal,
-        prefix=source.sequence_5prime[:prefix_length],
-        return_arm=(source_complement.sequence_5prime[-prefix_length:] if prefix_length else ""),
+        prefix=prefix,
+        return_arm=return_arm,
+        source=source,
+        source_complement=source_complement,
     )
     if program.reaction_programs != (expected_program,):
         raise ValueError("Complete enzyme operations must derive from exact local authorities.")
@@ -91,7 +96,7 @@ def validate_route_derivation(
         molecules,
         namespace="foldback-enzyme-product",
         foldback=foldback,
-        prefix_length=prefix_length,
+        embedding=embedding,
         source=source,
         source_complement=source_complement,
     )
@@ -99,7 +104,7 @@ def validate_route_derivation(
         molecules,
         namespace="foldback-released",
         foldback=foldback,
-        prefix_length=prefix_length,
+        embedding=embedding,
         source=source,
         source_complement=source_complement,
     )

@@ -55,8 +55,8 @@ from .validation import (
 class ConstructionSpaceResult(HopModel):
     """Truthful bounded whole-route result with reversible exact grouping."""
 
-    schema_id: Literal["hop.construction-space-result/v1"] = Field(
-        default="hop.construction-space-result/v1", alias="schema"
+    schema_id: Literal["hop.construction-space-result/v3"] = Field(
+        default="hop.construction-space-result/v3", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
@@ -235,6 +235,14 @@ class ConstructionSpaceResult(HopModel):
             for item in self.combination_dispositions
             if item.status is CompositionDispositionStatus.REJECTED
         )
+        truncated_reasons = tuple(
+            dict.fromkeys(
+                item.truncation_reason
+                for item in self.combination_dispositions
+                if item.status is CompositionDispositionStatus.TRUNCATED
+                and item.truncation_reason is not None
+            )
+        )
         replayed_accounting = expected_accounting(
             provenance=self.provenance,
             dispositions=self.combination_dispositions,
@@ -287,15 +295,18 @@ class ConstructionSpaceResult(HopModel):
             )
         if self.material_accounting != expected_material_accounting(self.realizations):
             raise ValueError("Material accounting must derive from exact route materials.")
-        expected_local_reason = self._local_truncation_reason()
-        expected_local_reasons = () if expected_local_reason is None else (expected_local_reason,)
+        expected_local_reason = self._composition_truncation_reason()
+        expected_local_reasons = (
+            *((expected_local_reason,) if expected_local_reason is not None else ()),
+            *truncated_reasons,
+        )
         if self.truncation_reasons != expected_local_reasons:
             raise ValueError(
-                "Local truncation reasons must replay the examined prefix and execution bounds."
+                "Truncation reasons must replay endpoint search and composition bounds."
             )
         expected_status = (
             SearchCompletionStatus.TRUNCATED
-            if expected_local_reason is not None or expected_upstream_reasons
+            if expected_local_reason is not None or truncated_reasons or expected_upstream_reasons
             else SearchCompletionStatus.COMPLETE
             if ids
             else SearchCompletionStatus.INFEASIBLE
@@ -313,7 +324,7 @@ class ConstructionSpaceResult(HopModel):
             raise ValueError("result_id must seal the complete construction-space result.")
         return self
 
-    def _local_truncation_reason(self) -> str | None:
+    def _composition_truncation_reason(self) -> str | None:
         examined = len(self.combination_dispositions)
         nominal = self.accounting.nominal_combinations
         if examined == nominal:

@@ -49,6 +49,9 @@ from .request import (
     ExactConstructionMaterial,
     LinearSourceMaterializationSpec,
     MaterialOrigin,
+    PcrPrimer,
+    ReleaseSideRequirement,
+    TypeIisReleaseRequest,
     WholeRouteConstraints,
     derived_source_material_id,
 )
@@ -95,9 +98,12 @@ __all__ = [
     "MaterialRetentionDisposition",
     "MaterializedConstructionRealization",
     "MaterializedFinalProduct",
+    "PcrPrimer",
     "PrimerExtensionAuthority",
     "ReactionBoundaryMapping",
+    "ReleaseSideRequirement",
     "RouteMaterialDispositionSpan",
+    "TypeIisReleaseRequest",
     "WholeRouteConstraints",
     "derived_source_material_id",
 ]
