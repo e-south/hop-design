@@ -200,18 +200,32 @@ class HopPlan(HopModel):
         elif self.design_derivation.kind == "evaluated_components":
             if self.source_oligo.sequence != encoding.sequence:
                 raise ValueError("Component derivation requires source and encoding equality.")
-            expected_roles = _feature_roles(
-                has_stem_extension=self.design_derivation.stem_extension is not None
-            )
+            stem_extension = self.design_derivation.stem_extension
+            expected_roles = _feature_roles(has_stem_extension=stem_extension is not None)
             if actual_roles != expected_roles:
                 raise ValueError(
                     "Hairpin-encoding features must use the declared generic-route order."
                 )
-            foldback_sequence = self.design_derivation.foldback.junction.sequence
-            basal_left_arm = self.design_derivation.basal.junction.left_arm
-            basal_right_arm = self.design_derivation.basal.junction.right_arm
-            foldback_ref = self.design_derivation.foldback.junction.junction_id
-            basal_ref = self.design_derivation.basal.junction.junction_id
+            foldback = self.design_derivation.foldback.junction
+            basal = self.design_derivation.basal.junction
+            foldback_sequence = foldback.sequence
+            basal_left_arm = basal.left_arm
+            basal_right_arm = basal.right_arm
+            foldback_ref = foldback.junction_id
+            basal_ref = basal.junction_id
+        elif self.design_derivation.kind == "exact_junction_components":
+            if self.source_oligo.sequence != encoding.sequence:
+                raise ValueError("Component derivation requires source and encoding equality.")
+            expected_roles = _feature_roles(has_stem_extension=False)
+            if actual_roles != expected_roles:
+                raise ValueError(
+                    "Hairpin-encoding features must use the declared generic-route order."
+                )
+            foldback_sequence = self.design_derivation.foldback_junction.sequence
+            basal_left_arm = self.design_derivation.basal_junction.left_arm
+            basal_right_arm = self.design_derivation.basal_junction.right_arm
+            foldback_ref = self.design_derivation.foldback_junction.junction_id
+            basal_ref = self.design_derivation.basal_junction.junction_id
         else:
             expected_source = (
                 self.design_derivation.foldback.precursor_sequence
@@ -249,11 +263,13 @@ class HopPlan(HopModel):
             raise ValueError("Basal-left feature must equal the resolved basal junction.")
         if feature_by_role[FeatureRole.BASAL_RIGHT_ARM].sequence != basal_right_arm:
             raise ValueError("Basal-right feature must equal the resolved basal junction.")
-        stem_extension = (
-            None
-            if self.design_derivation.kind == "catalog_junctions"
-            else self.design_derivation.stem_extension
-        )
+        if (
+            self.design_derivation.kind == "evaluated_components"
+            or self.design_derivation.kind == "resolved_junction_geometry"
+        ):
+            stem_extension = self.design_derivation.stem_extension
+        else:
+            stem_extension = None
         if stem_extension is not None and (
             feature_by_role[FeatureRole.STEM_EXTENSION_LEFT_ARM].sequence != stem_extension.left_arm
             or feature_by_role[FeatureRole.STEM_EXTENSION_RIGHT_ARM].sequence

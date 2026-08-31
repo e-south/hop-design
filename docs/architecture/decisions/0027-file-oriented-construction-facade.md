@@ -56,6 +56,7 @@ The exact public allowlist is:
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
 - `compile_construction`;
+- `compile_design_from_local_realizations`;
 - `discover_local_neighborhood`;
 - `discover_source_partition`;
 - `load_verified_construction_bundle`;
@@ -85,6 +86,12 @@ exemplar.
 Standalone local-neighborhood discovery returns one replay-verified family
 receipt. It establishes only the declared foldback or basal neighborhood and
 cannot be interpreted as a complete-route authority.
+
+For a PCR-bearing endpoint, a caller may explicitly select one realization
+from each verified local receipt and compile their exact molecular junctions
+into a route-neutral design authority. The selection operation returns the
+existing `Compilation` type. Search-result identities, execution bounds, and
+reaction chronology do not enter the design specification or plan identity.
 
 The source compiler may report complete, infeasible, or truncated discovery.
 None of those digital states establishes physical construction, QC,

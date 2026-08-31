@@ -152,6 +152,7 @@ VIEW_OPERATIONS = {
 
 CONSTRUCTION_OPERATIONS = {
     "compile_construction",
+    "compile_design_from_local_realizations",
     "discover_local_neighborhood",
     "discover_source_partition",
     "load_verified_construction_bundle",

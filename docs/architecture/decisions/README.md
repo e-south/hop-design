@@ -38,6 +38,7 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0028: Separate the foldback boundary from the nick position](0028-separate-foldback-boundary-from-nick-position.md) — amends 0025 and 0027
 - [0029: Separate source partition from junction geometry](0029-separate-source-partition-from-junction-geometry.md) — amends 0026
 - [0030: Partition exact local sequence domains without changing molecular identity](0030-partition-exact-local-sequence-domains.md)
+- [0031: Derive exact designs from selected local realizations](0031-derive-designs-from-local-realizations.md)
 
 ## Hairpin language
 

@@ -17,6 +17,7 @@ from hop_design.models.sequence import (
     normalize_dna_sequence,
     reverse_complement_iupac,
 )
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 
 class JunctionPairObservation(HopModel):
@@ -65,6 +66,40 @@ class JunctionPairObservation(HopModel):
     def is_match(self) -> bool:
         """Return whether this observation is Watson-Crick paired."""
         return self.kind is JunctionPairKind.WATSON_CRICK
+
+
+def derive_exact_foldback_junction_id(
+    *,
+    sequence: str,
+    retained_nt: int,
+    turn_nt: int,
+    pairs: tuple[JunctionPairObservation, ...],
+) -> str:
+    """Return content identity for one exact foldback junction."""
+    seed = {
+        "sequence": sequence,
+        "retained_nt": retained_nt,
+        "turn_nt": turn_nt,
+        "pairs": [pair.model_dump(mode="json") for pair in pairs],
+    }
+    digest = sha256_digest(canonical_json_bytes(seed)).removeprefix("sha256:")
+    return f"hop:foldback-junction/exact-{digest}@1"
+
+
+def derive_exact_basal_junction_id(
+    *,
+    left_arm: str,
+    right_arm: str,
+    pairs: tuple[JunctionPairObservation, ...],
+) -> str:
+    """Return content identity for one exact basal junction."""
+    seed = {
+        "left_arm": left_arm,
+        "right_arm": right_arm,
+        "pairs": [pair.model_dump(mode="json") for pair in pairs],
+    }
+    digest = sha256_digest(canonical_json_bytes(seed)).removeprefix("sha256:")
+    return f"hop:basal-junction/exact-{digest}@1"
 
 
 class FoldbackJunction(HopModel):
@@ -178,4 +213,6 @@ __all__ = [
     "JunctionPairObservation",
     "Strand",
     "classify_literal_pair",
+    "derive_exact_basal_junction_id",
+    "derive_exact_foldback_junction_id",
 ]

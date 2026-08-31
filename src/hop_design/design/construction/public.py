@@ -48,6 +48,7 @@ from hop_design.models.construction.projections import (
 
 from .complete.bundle import ConstructionCompilation, VerifiedConstructionBundle
 from .complete.discovery import VerifiedConstructionSpaceResult
+from .design_authority import compile_design_from_local_realizations
 from .local_public import (
     LocalNeighborhoodDiscovery,
     discover_local_neighborhood,
@@ -291,6 +292,7 @@ __all__ = [
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compile_construction",
+    "compile_design_from_local_realizations",
     "discover_local_neighborhood",
     "discover_source_partition",
     "load_verified_construction_bundle",

@@ -62,6 +62,9 @@ The public construction entrypoint binds that spine to files without exposing
 its model graph:
 
 ```text
+verified local receipts + explicit realization ids
+  -> route-neutral exact design authority
+
 strict construction source + separately verified HopBundle
   -> verified local authorities
   -> verified complete construction
@@ -73,6 +76,13 @@ The source owns requests, exact materials, constraints, and bounds. The design
 bundle owns design identity and encoding. The construction bundle embeds the
 unchanged design authority needed for replay and owns only the complete-route
 result and its inventory.
+
+The local-to-design bridge admits only explicit selections from replay-verified
+receipts. Its exact-junction design schema contains molecular components, not
+search result ids, bounds, relaxation history, enzyme programs, or construction
+chronology. The bridge supports PCR-bearing endpoints, whose basal component is
+present in local evidence; it does not invent a basal component for a direct
+single-stranded endpoint.
 
 Final-payload coordinates are shared authority. Source coordinates and source
 segmentation belong to the selected route family. The current linear-source

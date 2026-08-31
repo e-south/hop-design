@@ -89,8 +89,22 @@ class ResolvedJunctionDerivation(HopModel):
         return self
 
 
+class ExactJunctionComponentDerivation(HopModel):
+    """Exact route-neutral junction components selected from verified authorities."""
+
+    derivation_id: ReferenceId
+    kind: Literal["exact_junction_components"] = "exact_junction_components"
+    description: str = Field(min_length=1)
+    catalog_ref: ReferenceId
+    foldback_junction: FoldbackJunction
+    basal_junction: BasalJunction
+
+
 PlanDesignDerivation = Annotated[
-    CatalogJunctionDerivation | EvaluatedComponentDerivation | ResolvedJunctionDerivation,
+    CatalogJunctionDerivation
+    | EvaluatedComponentDerivation
+    | ExactJunctionComponentDerivation
+    | ResolvedJunctionDerivation,
     Field(discriminator="kind"),
 ]
 
@@ -98,6 +112,7 @@ PlanDesignDerivation = Annotated[
 __all__ = [
     "CatalogJunctionDerivation",
     "EvaluatedComponentDerivation",
+    "ExactJunctionComponentDerivation",
     "PlanDesignDerivation",
     "ResolvedJunctionDerivation",
 ]

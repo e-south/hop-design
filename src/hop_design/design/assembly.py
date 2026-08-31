@@ -27,14 +27,14 @@ from hop_design.models.plan import (
     SequenceRecord,
     derive_plan_id,
 )
-from hop_design.models.spec import DesignSpec
+from hop_design.models.spec import DesignAuthoritySpec
 from hop_design.models.stem import PairedStemExtension
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 
 def assemble_compilation(
     *,
-    spec: DesignSpec,
+    spec: DesignAuthoritySpec,
     report: CheckReport,
     derivation: PlanDesignDerivation,
     catalog_ref: str,
