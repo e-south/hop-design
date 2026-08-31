@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from .production import ProducedMaterialBinding
 from .spec import (
     ExactConstructionMaterial,
     LinearSourceMaterializationSpec,
@@ -23,4 +24,5 @@ __all__ = [
     "LinearSourceMaterializationSpec",
     "MaterialOrigin",
     "PcrPrimer",
+    "ProducedMaterialBinding",
 ]

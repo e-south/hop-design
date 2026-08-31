@@ -29,6 +29,7 @@ from .material import (
     LinearSourceMaterializationSpec,
     MaterialOrigin,
     PcrPrimer,
+    ProducedMaterialBinding,
 )
 from .material_disposition import (
     EndpointMaterialOccurrence,
@@ -108,6 +109,7 @@ __all__ = [
     "MaterializedFinalProduct",
     "PcrPrimer",
     "PrimerExtensionAuthority",
+    "ProducedMaterialBinding",
     "ReactionBoundaryMapping",
     "ReleaseSideRequirement",
     "RouteMaterialDispositionSpan",

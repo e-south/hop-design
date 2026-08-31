@@ -94,6 +94,34 @@ def test_source_duplex_preparation_replays_products_bindings_and_lineage() -> No
     assert bottom.five_prime_end is EndChemistry.PHOSPHATE
     assert top.three_prime_end is EndChemistry.HYDROXYL
     assert bottom.three_prime_end is EndChemistry.HYDROXYL
+    assert tuple(
+        (
+            binding.product_strand_id,
+            binding.material.sequence_5prime,
+            binding.material.five_prime_end,
+            binding.material.three_prime_end,
+            binding.material.origin,
+        )
+        for binding in authority.produced_material_bindings
+    ) == (
+        (
+            top.strand_id,
+            top.sequence,
+            top.five_prime_end,
+            top.three_prime_end,
+            MaterialOrigin.PCR_DERIVED,
+        ),
+        (
+            bottom.strand_id,
+            bottom.sequence,
+            bottom.five_prime_end,
+            bottom.three_prime_end,
+            MaterialOrigin.PCR_DERIVED,
+        ),
+    )
+    assert tuple(
+        binding.product_state_id for binding in authority.produced_material_bindings
+    ) == (authority.product_state.state_id, authority.product_state.state_id)
     assert tuple(item.origin_id for item in top.lineage) == (
         ("source-forward-primer",) * 4
         + ("source-ssdna",) * 4
@@ -197,7 +225,15 @@ def test_source_duplex_preparation_rejects_invalid_inputs(
 
 @pytest.mark.parametrize(
     "mutation",
-    ("authority_id", "binding", "product_sequence", "product_lineage", "pairings"),
+    (
+        "authority_id",
+        "binding",
+        "product_sequence",
+        "product_lineage",
+        "pairings",
+        "produced_material",
+        "produced_state",
+    ),
 )
 def test_source_duplex_preparation_rejects_forged_authority(mutation: str) -> None:
     authority = _authority()
@@ -212,6 +248,14 @@ def test_source_duplex_preparation_rejects_forged_authority(mutation: str) -> No
         data["product_state"]["molecules"][0]["lineage"][0]["origin_id"] = "forged"
     elif mutation == "pairings":
         data["product_state"]["pairings"] = data["product_state"]["pairings"][:-1]
+    elif mutation == "produced_material":
+        data["produced_material_bindings"][0]["material"]["sequence_5prime"] = (
+            "TCGTGGAATTCC"
+        )
+    elif mutation == "produced_state":
+        data["produced_material_bindings"][0]["product_state_id"] = (
+            f"hop:construction-state/{'0' * 64}@1"
+        )
     else:  # pragma: no cover - parameter table is closed above
         raise AssertionError(mutation)
 

@@ -27,7 +27,13 @@ from hop_design.models.molecular_state import (
 )
 from hop_design.models.sequence import reverse_complement_iupac
 
-from ..material import ExactConstructionMaterial, PcrPrimer
+from ..material import (
+    ExactConstructionMaterial,
+    MaterialOrigin,
+    PcrPrimer,
+    ProducedMaterialBinding,
+)
+from ..materials import derived_source_material_id
 from ..pcr.products import pcr_products, validate_pcr_annealing_spans
 from ..state import ConstructionState, ConstructionStatePhase
 
@@ -154,6 +160,23 @@ def _derived_content(
         phase=ConstructionStatePhase.DUPLEX,
         pairings=pairings,
     )
+    produced_material_bindings = tuple(
+        ProducedMaterialBinding(
+            material=ExactConstructionMaterial(
+                material_id=derived_source_material_id(
+                    strand.sequence,
+                    complementary=index == 1,
+                ),
+                origin=MaterialOrigin.PCR_DERIVED,
+                sequence_5prime=strand.sequence,
+                five_prime_end=strand.five_prime_end,
+                three_prime_end=strand.three_prime_end,
+            ),
+            product_state_id=product_state.state_id,
+            product_strand_id=strand.strand_id,
+        )
+        for index, strand in enumerate(product_state.molecules)
+    )
     return {
         "source_ssdna": source_ssdna,
         "forward_primer": forward_primer,
@@ -161,6 +184,7 @@ def _derived_content(
         "payload_source_span": payload_source_span,
         "bindings": bindings,
         "product_state": product_state,
+        "produced_material_bindings": produced_material_bindings,
     }
 
 
@@ -176,6 +200,7 @@ class SourceDuplexPreparationAuthority(HopModel):
     payload_source_span: Span
     bindings: tuple[PrimerBinding, PrimerBinding]
     product_state: ConstructionState
+    produced_material_bindings: tuple[ProducedMaterialBinding, ProducedMaterialBinding]
 
     @classmethod
     def create(cls, **content: object) -> SourceDuplexPreparationAuthority:
@@ -200,6 +225,8 @@ class SourceDuplexPreparationAuthority(HopModel):
             raise ValueError("Source-duplex preparation bindings must replay exactly.")
         if self.product_state != expected["product_state"]:
             raise ValueError("Source-duplex preparation product must replay exactly.")
+        if self.produced_material_bindings != expected["produced_material_bindings"]:
+            raise ValueError("Source-duplex produced-material bindings must replay exactly.")
         content = self.model_dump(mode="json", exclude={"authority_id"})
         if self.authority_id != _content_id("source-duplex-preparation", 1, content):
             raise ValueError("Source-duplex preparation identity must seal every exact fact.")
