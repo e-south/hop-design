@@ -167,6 +167,9 @@ def test_foldback_annealing_replaces_competing_source_duplex_pairs() -> None:
 
     assert compose_foldback_pairings(duplex, foldback) == foldback
 
+    with pytest.raises(ValueError, match="each strand coordinate once"):
+        compose_foldback_pairings(duplex, (*foldback, *foldback))
+
 
 @pytest.mark.parametrize(
     ("strands", "embedding", "expected_indexes"),
@@ -254,3 +257,57 @@ def test_foldback_pairings_require_one_exact_selected_lineage_coordinate() -> No
                 source_id="source-material",
                 complement_id="complement-material",
             )
+
+
+def test_foldback_pairings_reject_forged_local_and_selected_coordinates() -> None:
+    fragments, local_pair = _local_foldback_pairing_fixture()
+    source, complement = _selected_pair("GGAC", "GTCC")
+    embedding = LinearSourceEmbedding(
+        source_sequence="GGAC",
+        complement_sequence="GTCC",
+        local_reference_offset=2,
+        local_complement_offset=0,
+        local_source_length=2,
+        source_orientation=SourceOrientation.FORWARD,
+    )
+
+    for changed_pair, message in (
+        (local_pair.model_copy(update={"left_index": 2}), "within its exact fragment"),
+        (
+            local_pair.model_copy(update={"left_base": "C"}),
+            "replay its exact fragment coordinate",
+        ),
+        (
+            local_pair.model_copy(update={"left_strand_id": "absent-fragment"}),
+            "exact local fragment authorities",
+        ),
+    ):
+        with pytest.raises(ValueError, match=message):
+            lift_foldback_pairings(
+                (source, complement),
+                fragments=fragments,
+                pairings=(changed_pair,),
+                embedding=embedding,
+                source_id="source-material",
+                complement_id="complement-material",
+            )
+
+    with pytest.raises(ValueError, match="unique identities"):
+        lift_foldback_pairings(
+            (source, complement),
+            fragments=(fragments[0], fragments[0]),
+            pairings=(local_pair,),
+            embedding=embedding,
+            source_id="source-material",
+            complement_id="complement-material",
+        )
+    changed_source = source.model_copy(update={"sequence": "GGTC"})
+    with pytest.raises(ValueError, match="replay the selected material"):
+        lift_foldback_pairings(
+            (changed_source, complement),
+            fragments=fragments,
+            pairings=(local_pair,),
+            embedding=embedding,
+            source_id="source-material",
+            complement_id="complement-material",
+        )
