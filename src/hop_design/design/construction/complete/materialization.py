@@ -87,7 +87,7 @@ def materialize_direct_program(
     foldback: FoldbackLocalRealization,
     basal: BasalRealizationRecord | None,
     prefix: str,
-    return_arm: str,
+    source_return_arm: str,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
     evaluation: CombinationEvaluation,
@@ -99,7 +99,7 @@ def materialize_direct_program(
         or evaluation.source != source
         or evaluation.source_complement != source_complement
         or evaluation.prefix != prefix
-        or evaluation.return_arm != return_arm
+        or evaluation.source_return_arm != source_return_arm
     ):
         return None
     reaction = evaluation.reaction_program
@@ -128,7 +128,7 @@ def materialize_direct_program(
     embedding = derive_linear_source_embedding(
         foldback=foldback,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     exact_product_strands = derive_post_cleavage_strands(
         released_molecules,
@@ -174,18 +174,19 @@ def materialize_direct_program(
         phase=ConstructionStatePhase.SELECTED_FRAGMENTS,
     )
     # Family replay establishes the exact ligation substrate; composition extends it
-    # with the basal prefix and its antiparallel return arm.
+    # with the retained source prefix and its antiparallel source return arm.
     ligation_bond = _global_ligation_bond(foldback, selected.molecules)
     final = final_hairpin_strand(
         foldback=foldback,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         selected_strands=selected.molecules,
         ligation_bond=ligation_bond,
     )
     annealed_pairs = annealed_pairings(
         selected.molecules,
         foldback=foldback,
+        embedding=embedding,
         source_id=source.material_id,
         complement_id=source_complement.material_id,
         source_length=len(source.sequence_5prime),

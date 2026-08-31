@@ -3,7 +3,7 @@
 HOP Design
 src/hop_design/models/construction/complete/evaluation_inputs.py
 
-Derives exact complete-route prefix and return-arm inputs from bound authorities.
+Derives complete-route source periphery and design spans from bound authorities.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from hop_design.models.construction import (
+    ConstructionEndpoint,
     PayloadSourceMap,
     PayloadSourceSegment,
     SourceOrientation,
@@ -43,7 +44,7 @@ def derive_linear_source_embedding(
     *,
     foldback: FoldbackLocalRealization,
     prefix: str,
-    return_arm: str,
+    source_return_arm: str,
 ) -> LinearSourceEmbedding:
     """Embed one verified local foldback source without choosing a preferred strand."""
     if len(foldback.payload_source_map.segments) != 1:
@@ -54,7 +55,7 @@ def derive_linear_source_embedding(
     if segment.orientation is SourceOrientation.FORWARD:
         return LinearSourceEmbedding(
             source_sequence=prefix + local_source,
-            complement_sequence=local_complement + return_arm,
+            complement_sequence=local_complement + source_return_arm,
             local_reference_offset=len(prefix),
             local_complement_offset=0,
             local_source_length=len(local_source),
@@ -62,7 +63,7 @@ def derive_linear_source_embedding(
         )
     if segment.orientation is SourceOrientation.REVERSE_COMPLEMENT:
         return LinearSourceEmbedding(
-            source_sequence=local_source + return_arm,
+            source_sequence=local_source + source_return_arm,
             complement_sequence=prefix + local_complement,
             local_reference_offset=0,
             local_complement_offset=len(prefix),
@@ -111,23 +112,23 @@ def replay_linear_source_embedding(
     local_length = len(local_source)
     if segment.orientation is SourceOrientation.FORWARD:
         prefix = source_sequence[:-local_length]
-        return_arm = complement_sequence[local_length:]
+        source_return_arm = complement_sequence[local_length:]
     elif segment.orientation is SourceOrientation.REVERSE_COMPLEMENT:
-        return_arm = source_sequence[local_length:]
+        source_return_arm = source_sequence[local_length:]
         prefix = complement_sequence[:-local_length]
     else:
         raise ValueError("Complete source replay requires an exact source orientation.")
     embedding = derive_linear_source_embedding(
         foldback=foldback,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     if (
         embedding.source_sequence != source_sequence
         or embedding.complement_sequence != complement_sequence
     ):
         raise ValueError("Complete source must equal the verified foldback embedding.")
-    return prefix, return_arm, embedding
+    return prefix, source_return_arm, embedding
 
 
 def _design_context(request: ConstructionDiscoveryRequest) -> tuple[str, str, str]:
@@ -176,36 +177,65 @@ def derive_route_prefix(
         or basal.source_precursor_sequence[start:end] != payload
     ):
         return None
-    prefix = basal.source_precursor_sequence[:start]
-    return design_prefix if prefix == basal_left else None
-
-
-def derive_route_return_arm(
-    request: ConstructionDiscoveryRequest,
-    basal: BasalRealizationRecord | None,
-) -> str | None:
-    """Return the exact terminal arm or full clone adapter required by the endpoint."""
-    _, design_return_arm, _ = _design_context(request)
-    if basal is None:
-        return design_return_arm
-    adapter = next(
-        (
-            item.sequence_5prime
-            for item in basal.materials
-            if item.material_id == "ligation-adapter"
-        ),
-        None,
-    )
-    if adapter != design_return_arm:
+    profile = basal.projection.pairing_profile
+    if (
+        profile is None
+        or profile.source_span.end.offset != start
+        or profile.source_span.end.offset > len(basal.source_precursor_sequence)
+        or basal.source_precursor_sequence[
+            profile.source_span.start.offset : profile.source_span.end.offset
+        ]
+        != basal_left
+        or design_prefix != basal_left
+    ):
         return None
-    return adapter
+    return basal.source_precursor_sequence[:start]
+
+
+def derive_pcr_design_parent_span(
+    request: ConstructionDiscoveryRequest,
+    *,
+    prefix: str,
+    top_sequence: str,
+) -> Span | None:
+    """Locate the exact HOP design within one route-bearing PCR product."""
+    forward = request.materialization.forward_primer
+    if forward is None:
+        return None
+    design_prefix, _, _ = _design_context(request)
+    if not prefix.endswith(design_prefix):
+        return None
+    start = len(forward.five_prime_handle) + len(prefix) - len(design_prefix)
+    end = start + len(request.design.encoding_sequence)
+    if top_sequence[start:end] != request.design.encoding_sequence:
+        return None
+    return Span(start=Boundary(offset=start), end=Boundary(offset=end))
+
+
+def derive_source_return_arm(prefix: str) -> str:
+    """Derive the antiparallel PCR-source arm paired to the retained prefix."""
+    return reverse_complement_iupac(prefix)
+
+
+def derive_endpoint_source_return_arm(
+    request: ConstructionDiscoveryRequest,
+    *,
+    prefix: str,
+) -> str:
+    """Derive the exact source-return arm required by the requested endpoint."""
+    if request.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
+        _, design_return_arm, _ = _design_context(request)
+        return design_return_arm
+    return derive_source_return_arm(prefix)
 
 
 __all__ = [
     "LinearSourceEmbedding",
     "derive_complete_payload_source_map",
+    "derive_endpoint_source_return_arm",
     "derive_linear_source_embedding",
+    "derive_pcr_design_parent_span",
     "derive_route_prefix",
-    "derive_route_return_arm",
+    "derive_source_return_arm",
     "replay_linear_source_embedding",
 ]

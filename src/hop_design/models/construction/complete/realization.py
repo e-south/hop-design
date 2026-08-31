@@ -134,11 +134,11 @@ class MaterializedConstructionRealization(HopModel):
                 materials=self.materials,
             )
             validate_route_material_lineage(self.construction_program, self.materials)
-            validate_foldback_annealing(
-                self.construction_program,
-                foldback=self.foldback_authority,
-                materials=self.materials,
-            )
+        validate_foldback_annealing(
+            self.construction_program,
+            foldback=self.foldback_authority,
+            materials=self.materials,
+        )
         _, _, embedding = replay_linear_source_embedding(
             foldback=self.foldback_authority,
             source_sequence=self.materials[0].sequence_5prime,

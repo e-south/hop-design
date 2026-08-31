@@ -30,9 +30,10 @@ from .clone import (
     discover_endpoint_release,
 )
 from .evaluation_inputs import (
+    derive_endpoint_source_return_arm,
     derive_linear_source_embedding,
+    derive_pcr_design_parent_span,
     derive_route_prefix,
-    derive_route_return_arm,
 )
 from .evaluation_result import CombinationEvaluation, CompositionRejectionCode
 from .materials import derive_source_materials
@@ -72,19 +73,11 @@ def evaluate_combination(
             recognition_placements_attempted=recognition_placements_attempted,
             constraint_systems_attempted=constraint_systems_attempted,
         )
-    return_arm = derive_route_return_arm(request, basal)
-    if return_arm is None:
-        return CombinationEvaluation(
-            rejection_reason=CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE,
-            prefix=prefix,
-            candidate_enzyme_programs=candidate_enzyme_programs,
-            recognition_placements_attempted=recognition_placements_attempted,
-            constraint_systems_attempted=constraint_systems_attempted,
-        )
+    source_return_arm = derive_endpoint_source_return_arm(request, prefix=prefix)
     embedding = derive_linear_source_embedding(
         foldback=foldback,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     source, complement = derive_source_materials(
         request,
@@ -95,20 +88,23 @@ def evaluate_combination(
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }
-    pcr_template = prefix + foldback.retained_sequence + return_arm
+    adapter = request.materialization.adapter
+    endpoint_return = (
+        source_return_arm if not pcr_bearing else "" if adapter is None else adapter.sequence_5prime
+    )
+    pcr_template = prefix + foldback.retained_sequence + endpoint_return
     if pcr_bearing:
         pcr_rejection = evaluate_pcr_compatibility(
             request,
             basal=basal,
             prefix=prefix,
-            return_arm=return_arm,
             pcr_template=pcr_template,
         )
         if pcr_rejection is not None:
             return CombinationEvaluation(
                 rejection_reason=pcr_rejection,
                 prefix=prefix,
-                return_arm=return_arm,
+                source_return_arm=source_return_arm,
                 source=source,
                 source_complement=complement,
                 candidate_enzyme_programs=candidate_enzyme_programs,
@@ -125,7 +121,7 @@ def evaluate_combination(
         return CombinationEvaluation(
             rejection_reason=CompositionRejectionCode.SOURCE_END_CHEMISTRY_MISMATCH,
             prefix=prefix,
-            return_arm=return_arm,
+            source_return_arm=source_return_arm,
             source=source,
             source_complement=complement,
             candidate_enzyme_programs=candidate_enzyme_programs,
@@ -142,7 +138,7 @@ def evaluate_combination(
             foldback=foldback,
             basal=basal,
             prefix=prefix,
-            return_arm=return_arm,
+            source_return_arm=source_return_arm,
             source=source,
             source_complement=complement,
         )
@@ -151,7 +147,7 @@ def evaluate_combination(
             foldback=foldback,
             basal=basal,
             prefix=prefix,
-            return_arm=return_arm,
+            source_return_arm=source_return_arm,
             source=source,
             source_complement=complement,
         )
@@ -188,7 +184,7 @@ def evaluate_combination(
                 ),
                 truncation_reason=("endpoint:max_site_pairs" if release.truncated else None),
                 prefix=prefix,
-                return_arm=return_arm,
+                source_return_arm=source_return_arm,
                 source=source,
                 source_complement=complement,
                 reaction_program=program,
@@ -211,7 +207,7 @@ def evaluate_combination(
             return CombinationEvaluation(
                 rejection_reason=CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE,
                 prefix=prefix,
-                return_arm=return_arm,
+                source_return_arm=source_return_arm,
                 source=source,
                 source_complement=complement,
                 reaction_program=program,
@@ -237,6 +233,12 @@ def evaluate_combination(
         final_sequence = (
             forward.five_prime_handle + pcr_template + _reverse_handle_sequence(request)
         )
+        if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+            design_parent_span = derive_pcr_design_parent_span(
+                request,
+                prefix=prefix,
+                top_sequence=final_sequence,
+            )
     if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
         final_sequence = request.design.encoding_sequence
     if assessment.report.has_errors or (
@@ -245,7 +247,7 @@ def evaluate_combination(
         return CombinationEvaluation(
             rejection_reason=CompositionRejectionCode.GLOBAL_ACTIONABLE_SITE_CONFLICT,
             prefix=prefix,
-            return_arm=return_arm,
+            source_return_arm=source_return_arm,
             source=source,
             source_complement=complement,
             reaction_program=program,
@@ -262,19 +264,23 @@ def evaluate_combination(
             recognition_placements_attempted=recognition_placements_attempted,
             constraint_systems_attempted=constraint_systems_attempted,
         )
-    if (
-        request.endpoint is not ConstructionEndpoint.CLONE_READY_DUPLEX
-        and final_sequence != request.design.encoding_sequence
-    ):
+    if request.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
+        design_encoding_matches = final_sequence == request.design.encoding_sequence
+    elif request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        design_encoding_matches = design_parent_span is not None
+    else:
+        design_encoding_matches = True
+    if not design_encoding_matches:
         return CombinationEvaluation(
             rejection_reason=CompositionRejectionCode.DESIGN_ENCODING_MISMATCH,
             prefix=prefix,
-            return_arm=return_arm,
+            source_return_arm=source_return_arm,
             source=source,
             source_complement=complement,
             reaction_program=program,
             stage_assessments=assessment.stage_assessments,
             pcr_template_sequence=pcr_template if pcr_bearing else None,
+            design_parent_span=design_parent_span,
             final_sequence=final_sequence,
             candidate_enzyme_programs=candidate_enzyme_programs,
             recognition_placements_attempted=recognition_placements_attempted,
@@ -283,7 +289,7 @@ def evaluate_combination(
     return CombinationEvaluation(
         rejection_reason=None,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=complement,
         reaction_program=program,

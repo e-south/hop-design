@@ -60,8 +60,9 @@ MethodRequest
 ```
 
 A method plan is the only HOP object that owns temporal production history. Its
-bundle records the exact request, complete plan, trajectory, physical products,
-and derived exports.
+bundle records the exact request, complete plan, trajectory, modeled molecular
+products, and derived exports. Replay does not establish that a molecule was
+constructed or recovered.
 
 ## Verification
 

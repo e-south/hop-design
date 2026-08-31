@@ -254,13 +254,22 @@ def validate_combination_evaluations(
             *evaluation.stage_assessments,
             *evaluation.end_generation_stage_assessments,
         )
-        endpoint_matches = (
-            realization.final_product.encoding_projection.sequence == evaluation.final_sequence
-            and realization.final_product.encoding_projection.source_span
-            == evaluation.design_parent_span
-            if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
-            else realization.final_product.reference.sequence == evaluation.final_sequence
-        )
+        if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+            endpoint_matches = (
+                realization.final_product.encoding_projection.sequence == evaluation.final_sequence
+                and realization.final_product.encoding_projection.source_span
+                == evaluation.design_parent_span
+            )
+        elif request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+            endpoint_matches = (
+                realization.final_product.reference.sequence == evaluation.final_sequence
+                and realization.final_product.encoding_projection.source_span
+                == evaluation.design_parent_span
+            )
+        else:
+            endpoint_matches = (
+                realization.final_product.reference.sequence == evaluation.final_sequence
+            )
         if (
             tuple(realization.materials[:2]) != (evaluation.source, evaluation.source_complement)
             or realization.construction_program.reaction_programs != expected_programs

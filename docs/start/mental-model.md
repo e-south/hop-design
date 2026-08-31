@@ -70,8 +70,8 @@ or result identities.
 ## 3. Method language
 
 A method request supplies exact materials to one named production method. A
-successful method compiler derives exact molecular states, transitions, and a
-destination-neutral product. Only a route or method plan owns temporal
+successful method compiler derives exact modeled molecular states, transitions,
+and a destination-neutral molecular-product model. Only a route or method plan owns temporal
 production history. Construction routes use ordered reaction stages;
 concurrent operations in one stage resolve against the same pre-stage state. A
 design derivation owns no ordered production chronology.
@@ -79,6 +79,10 @@ design derivation owns no ordered production chronology.
 The requested endpoint determines method obligations. A direct
 single-stranded hairpin does not require adapter capture, PCR, or Type IIS end
 generation merely because a clone-ready endpoint does.
+
+Replay verifies that those modeled states and products follow from the request.
+It does not establish laboratory execution, physical construction, or recovery
+of a molecule.
 
 ## 4. Provenance and verification
 

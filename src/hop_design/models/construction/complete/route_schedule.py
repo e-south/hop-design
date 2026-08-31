@@ -114,7 +114,7 @@ def derive_direct_reaction_program(
     foldback: FoldbackLocalRealization,
     basal: BasalRealizationRecord | None,
     prefix: str,
-    return_arm: str,
+    source_return_arm: str,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
 ) -> ReactionProgram:
@@ -123,7 +123,7 @@ def derive_direct_reaction_program(
     embedding = derive_linear_source_embedding(
         foldback=foldback,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     if (
         source.sequence_5prime != embedding.source_sequence

@@ -24,6 +24,9 @@ from hop_design.models.construction.complete import (
     PrimerExtensionAuthority,
 )
 from hop_design.models.construction.complete.evaluation import CombinationEvaluation
+from hop_design.models.construction.complete.evaluation_inputs import (
+    derive_linear_source_embedding,
+)
 from hop_design.models.construction.complete.pcr.products import (
     endpoint_fate_spans,
     material_function_spans,
@@ -80,7 +83,7 @@ def materialize_pcr_program(
     foldback: FoldbackLocalRealization,
     basal: BasalRealizationRecord,
     prefix: str,
-    return_arm: str,
+    source_return_arm: str,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
     adapter: ExactConstructionMaterial,
@@ -88,7 +91,7 @@ def materialize_pcr_program(
     reverse_primer: PcrPrimer,
     evaluation: CombinationEvaluation,
     encoding_features: tuple[SequenceFeature, ...],
-    design_source_span: Span,
+    design_endpoint_span: Span,
 ) -> tuple[ConstructionProgram, PrimerExtensionAuthority]:
     """Materialize the exact basal-open intermediate through the PCR duplex."""
     if evaluation.reaction_program is None or evaluation.rejection_reason is not None:
@@ -134,7 +137,7 @@ def materialize_pcr_program(
         foldback=foldback,
         source_material_id=source.material_id,
         source_complement_material_id=source_complement.material_id,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     denatured_molecules = cleaved.molecules
     denatured = ConstructionState.create(
@@ -145,9 +148,15 @@ def materialize_pcr_program(
         molecules=selected_fragments,
         phase=ConstructionStatePhase.SELECTED_FRAGMENTS,
     )
+    embedding = derive_linear_source_embedding(
+        foldback=foldback,
+        prefix=prefix,
+        source_return_arm=source_return_arm,
+    )
     foldback_pairs = annealed_pairings(
         selected.molecules,
         foldback=foldback,
+        embedding=embedding,
         source_id=source.material_id,
         complement_id=source_complement.material_id,
         source_length=len(source.sequence_5prime),
@@ -159,7 +168,9 @@ def materialize_pcr_program(
     )
     if evaluation.pcr_template_sequence is None:
         raise ValueError("PCR materialization requires one exact PCR template sequence.")
-    closed_sequence = evaluation.pcr_template_sequence.removesuffix(return_arm)
+    if not evaluation.pcr_template_sequence.endswith(adapter.sequence_5prime):
+        raise ValueError("PCR template must terminate in the exact ligation adapter.")
+    closed_sequence = evaluation.pcr_template_sequence[: -len(adapter.sequence_5prime)]
     closed_lineage = tuple(
         item.model_copy(update={"product_index": index})
         for index, item in enumerate(
@@ -186,8 +197,8 @@ def materialize_pcr_program(
     )
     adapter_strand = _lineage_strand(adapter)
     profile = basal.projection.pairing_profile
-    if profile is None or adapter.sequence_5prime != return_arm:
-        raise ValueError("PCR adapter must equal the exact omitted basal return arm.")
+    if profile is None:
+        raise ValueError("PCR adapter requires one exact basal pairing profile.")
     adapter_pairs = tuple(
         observe_pair(
             left_strand_id=closed.strand_id,
@@ -302,14 +313,7 @@ def materialize_pcr_program(
     fates = endpoint_fate_spans(
         encoding_features,
         len(top.sequence),
-        design_source_span=Span(
-            start=Boundary(
-                offset=design_source_span.start.offset + len(forward_primer.five_prime_handle)
-            ),
-            end=Boundary(
-                offset=design_source_span.end.offset + len(forward_primer.five_prime_handle)
-            ),
-        ),
+        design_source_span=design_endpoint_span,
     )
     extension = PrimerExtensionAuthority.create(
         pre_state_id=adapter_ligated.state_id,

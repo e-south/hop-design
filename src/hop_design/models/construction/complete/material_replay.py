@@ -56,9 +56,15 @@ def validate_foldback_annealing(
     annealed = next(
         item for item in program.states if item.phase is ConstructionStatePhase.ANNEALED_COMPLEX
     )
+    _, _, embedding = replay_linear_source_embedding(
+        foldback=foldback,
+        source_sequence=materials[0].sequence_5prime,
+        complement_sequence=materials[1].sequence_5prime,
+    )
     expected = annealed_pairings(
         selected.molecules,
         foldback=foldback,
+        embedding=embedding,
         source_id=materials[0].material_id,
         complement_id=materials[1].material_id,
         source_length=len(materials[0].sequence_5prime),
@@ -76,7 +82,7 @@ def validate_route_derivation(
 ) -> None:
     """Replay the global enzyme program and fragments from exact local authorities."""
     source, source_complement = materials[:2]
-    prefix, return_arm, embedding = replay_linear_source_embedding(
+    prefix, source_return_arm, embedding = replay_linear_source_embedding(
         foldback=foldback,
         source_sequence=source.sequence_5prime,
         complement_sequence=source_complement.sequence_5prime,
@@ -85,7 +91,7 @@ def validate_route_derivation(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
     )

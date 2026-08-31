@@ -28,7 +28,7 @@ def final_hairpin_strand(
     *,
     foldback: FoldbackLocalRealization,
     prefix: str,
-    return_arm: str,
+    source_return_arm: str,
     selected_strands: tuple[MolecularStrand, ...],
     ligation_bond: CovalentBond,
 ) -> MolecularStrand:
@@ -43,7 +43,7 @@ def final_hairpin_strand(
         for strand in selected_strands
         if strand.strand_id == ligation_bond.downstream_strand_id
     )
-    expected = prefix + foldback.retained_sequence + return_arm
+    expected = prefix + foldback.retained_sequence + source_return_arm
     if upstream.sequence + downstream.sequence != expected:
         raise ValueError("Selected fragments must concatenate to the exact hairpin product.")
     lineage = tuple(

@@ -110,8 +110,9 @@ models
   lower-level integrity reader; `result.py` owns the write-capable compilation
   result.
 - A method bundle is separate from a design bundle. It proves how one named
-  method request resolves into molecular states and exported physical products;
-  it does not redefine design identity or claim destination readiness.
+  method request resolves into modeled molecular states and products; it does
+  not redefine design identity or claim destination readiness, physical
+  construction, or recovery.
 - `api` is the package-root design-language operation facade. Thin top-level
   `spaces`, `construction`, `discovery`, `methods`, and `views` facades expose
   the scientist-facing workflow and specialized competency surfaces without
@@ -183,6 +184,14 @@ site validity depends on molecular availability in that stage. Compactness is
 an endpoint projection over retained non-payload sequence, not total source
 length. Geometry and final-product grouping remain reversible projections over
 exact realization authorities.
+
+For a PCR-bearing linear-source route, the retained source prefix may extend
+beyond the local basal pairing span. Its source-return arm is the reverse
+complement of that complete prefix and is removed after basal nicking. The
+ligation adapter is a separate exact material paired only through the declared
+basal profile. The verified design may therefore occupy a nonzero subspan of
+the PCR product, with outer source periphery and primer handles remaining
+explicit.
 
 HOP may emit neutral tidy data and diagram-ready molecular projections.
 Research Studies owns scientific runs, observations, interpretation, and asset

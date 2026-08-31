@@ -1,7 +1,7 @@
 ---
 doc_id: hop-hairpin-components
 title: Hairpin components
-intent: Explain the sequence regions and physical products owned by HOP.
+intent: Explain the sequence regions and modeled molecular products owned by HOP.
 audience:
   - users
   - integrators
@@ -78,10 +78,13 @@ basal junction itself.
 feature map. Despite the word “insert,” it does not claim a physical duplex or
 destination readiness.
 
-`HairpinPcrDuplex` is a concrete two-strand product of a named method.
+`HairpinPcrDuplex` is the exact two-strand product modeled by a named method.
 `RestrictionDigestProduct` is a destination-neutral duplex fragment made from
 that product. A caller creates an `AssemblyFragment` only after choosing a
 destination, orientation, and compatible ends.
+
+These records are digital molecular authorities. Verification replays their
+derivation but does not establish that a molecule was constructed or recovered.
 
 See the [method language](../methods/overview.md) for event order and the
 [formal ontology](ontology.md) for exact contract names.

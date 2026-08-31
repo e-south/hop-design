@@ -47,7 +47,7 @@ class CombinationEvaluation:
     constraint_systems_attempted: int
     truncation_reason: str | None = None
     prefix: str | None = None
-    return_arm: str | None = None
+    source_return_arm: str | None = None
     source: ExactConstructionMaterial | None = None
     source_complement: ExactConstructionMaterial | None = None
     reaction_program: ReactionProgram | None = None

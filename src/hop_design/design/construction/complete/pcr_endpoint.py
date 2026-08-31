@@ -43,7 +43,6 @@ from hop_design.models.construction.foldback import (
     FoldbackNeighborhoodDiscoveryResult,
 )
 from hop_design.models.construction.payload import _content_id
-from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.junction import Strand
 from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import SequenceProjection
@@ -67,25 +66,28 @@ def pcr_realization(
         item is None
         for item in (
             evaluation.prefix,
-            evaluation.return_arm,
+            evaluation.source_return_arm,
             evaluation.source,
             evaluation.source_complement,
             request.materialization.adapter,
             request.materialization.forward_primer,
             request.materialization.reverse_primer,
+            evaluation.design_parent_span,
         )
     ):
         raise ValueError("Compatible PCR composition requires every exact route material.")
     prefix = evaluation.prefix
-    return_arm = evaluation.return_arm
+    source_return_arm = evaluation.source_return_arm
     source = evaluation.source
     source_complement = evaluation.source_complement
     adapter = request.materialization.adapter
     forward = request.materialization.forward_primer
     reverse = request.materialization.reverse_primer
-    assert prefix is not None and return_arm is not None
+    design_parent_span = evaluation.design_parent_span
+    assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
     assert adapter is not None and forward is not None and reverse is not None
+    assert design_parent_span is not None
     if basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR basal opening requires an exact bottom-strand basal nick.")
     if basal.basal_nick.boundary.offset != len(prefix):
@@ -95,7 +97,7 @@ def pcr_realization(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
         adapter=adapter,
@@ -103,10 +105,7 @@ def pcr_realization(
         reverse_primer=reverse,
         evaluation=evaluation,
         encoding_features=encoding.features,
-        design_source_span=Span(
-            start=Boundary(offset=0),
-            end=Boundary(offset=len(encoding.sequence)),
-        ),
+        design_endpoint_span=design_parent_span,
     )
     terminal = program.states[-1]
     reference = DuplexFinalProductReference.create(
@@ -137,10 +136,7 @@ def pcr_realization(
         encoding_projection=SequenceProjection(
             sequence=encoding.sequence,
             sequence_digest=encoding.sequence_digest,
-            source_span=Span(
-                start=Boundary(offset=0),
-                end=Boundary(offset=len(encoding.sequence)),
-            ),
+            source_span=design_parent_span,
             orientation=BindingOrientation.SAME_5TO3,
         ),
         pairings=terminal.pairings,
@@ -157,7 +153,7 @@ def pcr_realization(
             embedding=derive_linear_source_embedding(
                 foldback=foldback,
                 prefix=prefix,
-                return_arm=return_arm,
+                source_return_arm=source_return_arm,
             ),
             source_material_id=source.material_id,
         ),

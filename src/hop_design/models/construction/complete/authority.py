@@ -28,7 +28,7 @@ class ConstructionCompositionExecution(HopModel):
 
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     hop_version: str
-    route_implementation_version: Literal["complete-construction/3"] = "complete-construction/3"
+    route_implementation_version: Literal["complete-construction/4"] = "complete-construction/4"
     enumeration: CompositionEnumerationPolicy
     environment: dict[str, str] = Field(default_factory=dict)
 
@@ -42,7 +42,7 @@ class ConstructionCompositionProvenance(HopModel):
     """Exact upstream authorities and implementation identity for composition."""
 
     hop_version: str
-    route_implementation_version: Literal["complete-construction/3"] = "complete-construction/3"
+    route_implementation_version: Literal["complete-construction/4"] = "complete-construction/4"
     foldback_result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     basal_result_id: str | None = Field(
         default=None,
