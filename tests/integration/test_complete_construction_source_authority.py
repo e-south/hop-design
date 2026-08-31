@@ -64,6 +64,7 @@ from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import EndChemistry, LineageStrand
 from hop_design.models.payload import ExactPayload
 from hop_design.models.reactions import ReactionProgram
+from hop_design.serialization import canonical_json_bytes
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
     _request,
@@ -147,6 +148,17 @@ def _reseal_realization(record, **updates: object) -> MaterializedConstructionRe
     }
     content.update(updates)
     return MaterializedConstructionRealization.create(**content)
+
+
+def test_exhaustive_request_omits_absent_selected_pair_from_canonical_bytes(
+    tmp_path: Path,
+) -> None:
+    request, _, _, _ = _case(tmp_path)
+
+    content = canonical_json_bytes(request)
+
+    assert b'"selected_foldback_realization_id"' not in content
+    assert b'"selected_basal_realization_id"' not in content
 
 
 def _reseal_result(record, **updates: object) -> ConstructionSpaceResult:

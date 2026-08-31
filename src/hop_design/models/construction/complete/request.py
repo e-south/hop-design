@@ -13,9 +13,16 @@ from __future__ import annotations
 
 import hashlib
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, cast
 
-from pydantic import Field, TypeAdapter, field_validator, model_validator
+from pydantic import (
+    Field,
+    SerializerFunctionWrapHandler,
+    TypeAdapter,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from hop_design.models.base import HopModel
 from hop_design.models.bundle import HopBundle, validate_bundle_manifest
@@ -248,18 +255,27 @@ class ConstructionDiscoveryRequest(HopModel):
     selected_foldback_realization_id: str | None = Field(
         default=None,
         pattern=r"^hop:foldback-realization/[0-9a-f]{64}@1$",
-        exclude_if=lambda value: value is None,
     )
     selected_basal_realization_id: str | None = Field(
         default=None,
         pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$",
-        exclude_if=lambda value: value is None,
     )
     materialization: LinearSourceMaterializationSpec
     release: TypeIisReleaseRequest | None = None
     design: DesignAuthorityReference
     whole_route_constraints: WholeRouteConstraints
     enumeration: CompositionEnumerationPolicy
+
+    @model_serializer(mode="wrap")
+    def serialize_request(
+        self,
+        handler: SerializerFunctionWrapHandler,
+    ) -> dict[str, object]:
+        content = cast(dict[str, object], handler(self))
+        if not self.selects_local_pair:
+            content.pop("selected_foldback_realization_id", None)
+            content.pop("selected_basal_realization_id", None)
+        return content
 
     @model_validator(mode="after")
     def validate_endpoint_materials(self) -> ConstructionDiscoveryRequest:
