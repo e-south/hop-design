@@ -24,6 +24,9 @@ journey:
 - [Payload-centered construction realignment gap audit](HOP-construction-realignment-gap-audit.md)
   maps the current authorities and dependency-ordered implementation seams for
   advanced construction discovery.
+- [Linear-source product closure audit](HOP-linear-source-product-closure-audit.md)
+  maps source preparation, source partition, auxiliary materials, and endpoint
+  navigation to one portable HOP result.
 - [Public concept documentation contract](documentation-contract.md) defines
   the claim and non-claim template for new product surfaces.
 - [Architecture decisions](../architecture/decisions/) record public contract
