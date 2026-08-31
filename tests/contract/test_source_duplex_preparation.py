@@ -15,8 +15,12 @@ import pytest
 from pydantic import ValidationError
 
 from hop_design.models.construction.complete import (
+    ConstructionStatePhase,
     ExactConstructionMaterial,
-    MaterialOrigin,
+    MaterialResolutionMode,
+    MaterialRouteEntry,
+    MaterialUse,
+    MaterialUseRole,
     PcrPrimer,
     SourceDuplexPreparationAuthority,
     derive_source_duplex_preparation,
@@ -28,19 +32,26 @@ from hop_design.models.sequence import reverse_complement_iupac
 
 
 def _material(
-    material_id: str,
+    _role: str,
     sequence: str,
     *,
     five_prime_end: EndChemistry = EndChemistry.HYDROXYL,
     three_prime_end: EndChemistry = EndChemistry.HYDROXYL,
 ) -> ExactConstructionMaterial:
     return ExactConstructionMaterial(
-        material_id=material_id,
-        origin=MaterialOrigin.SYNTHESIZED,
         sequence_5prime=sequence,
         five_prime_end=five_prime_end,
         three_prime_end=three_prime_end,
     )
+
+
+def _changed_material(
+    material: ExactConstructionMaterial,
+    **changes: object,
+) -> ExactConstructionMaterial:
+    content = material.model_dump(mode="python", exclude={"material_id"})
+    content.update(changes)
+    return ExactConstructionMaterial.model_validate(content)
 
 
 def _inputs() -> tuple[ExactConstructionMaterial, PcrPrimer, PcrPrimer]:
@@ -84,6 +95,21 @@ def test_source_duplex_preparation_replays_products_bindings_and_lineage() -> No
     assert authority.source_ssdna == source
     assert authority.forward_primer == forward
     assert authority.reverse_primer == reverse
+    assert authority.source_ssdna_use.material_id == source.material_id
+    assert authority.source_ssdna_use.role is MaterialUseRole.SOURCE_SSDNA
+    assert authority.source_ssdna_use.route_entry is MaterialRouteEntry.REQUIRED_EXTERNAL
+    assert authority.forward_primer_use.material_id == forward.oligo.material_id
+    assert authority.reverse_primer_use.material_id == reverse.oligo.material_id
+    assert (
+        authority.prepared_top_use.material_id
+        == authority.produced_material_bindings[0].material.material_id
+    )
+    assert (
+        authority.prepared_bottom_use.material_id
+        == authority.produced_material_bindings[1].material.material_id
+    )
+    assert authority.prepared_top_use.route_entry is MaterialRouteEntry.MODELED_PRODUCT
+    assert authority.prepared_bottom_use.route_entry is MaterialRouteEntry.MODELED_PRODUCT
     assert top.sequence == source.sequence_5prime
     assert bottom.sequence == reverse_complement_iupac(source.sequence_5prime)
     assert tuple(strand.strand_id for strand in authority.product_state.molecules) == (
@@ -100,7 +126,6 @@ def test_source_duplex_preparation_replays_products_bindings_and_lineage() -> No
             binding.material.sequence_5prime,
             binding.material.five_prime_end,
             binding.material.three_prime_end,
-            binding.material.origin,
         )
         for binding in authority.produced_material_bindings
     ) == (
@@ -109,35 +134,43 @@ def test_source_duplex_preparation_replays_products_bindings_and_lineage() -> No
             top.sequence,
             top.five_prime_end,
             top.three_prime_end,
-            MaterialOrigin.PCR_DERIVED,
         ),
         (
             bottom.strand_id,
             bottom.sequence,
             bottom.five_prime_end,
             bottom.three_prime_end,
-            MaterialOrigin.PCR_DERIVED,
         ),
     )
-    assert tuple(
-        binding.product_state_id for binding in authority.produced_material_bindings
-    ) == (authority.product_state.state_id, authority.product_state.state_id)
-    assert tuple(item.origin_id for item in top.lineage) == (
-        ("source-forward-primer",) * 4
-        + ("source-ssdna",) * 4
-        + ("source-reverse-primer",) * 4
+    assert tuple(binding.product_state_id for binding in authority.produced_material_bindings) == (
+        authority.product_state.state_id,
+        authority.product_state.state_id,
     )
-    assert tuple(item.origin_id for item in bottom.lineage) == tuple(
-        reversed(tuple(item.origin_id for item in top.lineage))
+    assert tuple(item.origin_id for item in top.lineage) == (
+        authority.prepared_top_use.use_id,
+    ) * len(top.sequence)
+    assert tuple(item.origin_id for item in bottom.lineage) == (
+        authority.prepared_bottom_use.use_id,
+    ) * len(bottom.sequence)
+    assert tuple(
+        item.origin_id for item in authority.produced_material_bindings[0].upstream_lineage
+    ) == (
+        (authority.forward_primer_use.use_id,) * 4
+        + (authority.source_ssdna_use.use_id,) * 4
+        + (authority.reverse_primer_use.use_id,) * 4
     )
     assert len(authority.product_state.pairings) == len(source.sequence_5prime)
+    assert authority.input_state.phase is ConstructionStatePhase.SOURCE_SSDNA
+    assert authority.input_state.molecules == (authority.source_template,)
+    assert authority.pre_state_id == authority.input_state.state_id
+    assert authority.post_state_id == authority.product_state.state_id
     assert tuple(binding.primer_id for binding in authority.bindings) == (
-        forward.oligo.material_id,
-        reverse.oligo.material_id,
+        authority.reverse_primer_use.use_id,
+        authority.forward_primer_use.use_id,
     )
     assert tuple(binding.template_strand_id for binding in authority.bindings) == (
+        authority.source_template.strand_id,
         bottom.strand_id,
-        top.strand_id,
     )
     assert tuple(binding.orientation for binding in authority.bindings) == (
         BindingOrientation.REVERSE_COMPLEMENT_5TO3,
@@ -153,6 +186,77 @@ def test_source_duplex_preparation_replays_products_bindings_and_lineage() -> No
     ) == (8, 12)
 
 
+def test_material_identity_uses_molecular_content_not_contextual_role() -> None:
+    first = ExactConstructionMaterial(
+        sequence_5prime="ACGT",
+        five_prime_end=EndChemistry.HYDROXYL,
+        three_prime_end=EndChemistry.HYDROXYL,
+    )
+    same_content = ExactConstructionMaterial(
+        sequence_5prime="ACGT",
+        five_prime_end=EndChemistry.HYDROXYL,
+        three_prime_end=EndChemistry.HYDROXYL,
+    )
+    different_chemistry = ExactConstructionMaterial(
+        sequence_5prime="ACGT",
+        five_prime_end=EndChemistry.PHOSPHATE,
+        three_prime_end=EndChemistry.HYDROXYL,
+    )
+
+    assert first.material_id == same_content.material_id
+    assert first.material_id != different_chemistry.material_id
+    assert first.material_id.startswith("hop:construction-material/")
+
+
+def test_material_use_separates_contextual_role_from_molecular_identity() -> None:
+    material = _material("shared-primer", "ACGT")
+
+    forward = MaterialUse.create(
+        material_id=material.material_id,
+        role=MaterialUseRole.ENDPOINT_FORWARD_PRIMER,
+        specification_resolution_mode=MaterialResolutionMode.FIXED,
+        route_entry=MaterialRouteEntry.REQUIRED_EXTERNAL,
+    )
+    reverse = MaterialUse.create(
+        material_id=material.material_id,
+        role=MaterialUseRole.ENDPOINT_REVERSE_PRIMER,
+        specification_resolution_mode=MaterialResolutionMode.FIXED,
+        route_entry=MaterialRouteEntry.REQUIRED_EXTERNAL,
+    )
+
+    assert forward.material_id == reverse.material_id
+    assert forward.use_id != reverse.use_id
+    assert forward == MaterialUse.create(
+        material_id=material.material_id,
+        role=MaterialUseRole.ENDPOINT_FORWARD_PRIMER,
+        specification_resolution_mode=MaterialResolutionMode.FIXED,
+        route_entry=MaterialRouteEntry.REQUIRED_EXTERNAL,
+    )
+
+
+def test_material_identity_rejects_a_caller_label_as_molecular_identity() -> None:
+    with pytest.raises(ValidationError, match="content identity"):
+        ExactConstructionMaterial(
+            material_id="forward-primer",
+            sequence_5prime="ACGT",
+            five_prime_end=EndChemistry.HYDROXYL,
+            three_prime_end=EndChemistry.HYDROXYL,
+        )
+
+
+def test_material_specification_excludes_physical_origin_claims() -> None:
+    assert "origin" not in ExactConstructionMaterial.model_fields
+    with pytest.raises(ValidationError, match="origin"):
+        ExactConstructionMaterial.model_validate(
+            {
+                "origin": "synthesized",
+                "sequence_5prime": "ACGT",
+                "five_prime_end": EndChemistry.HYDROXYL,
+                "three_prime_end": EndChemistry.HYDROXYL,
+            }
+        )
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     (
@@ -160,7 +264,7 @@ def test_source_duplex_preparation_replays_products_bindings_and_lineage() -> No
         ("reverse_mismatch", "reverse primer"),
         ("primer_phosphate", "three-prime hydroxyl"),
         ("overlap", "must not overlap"),
-        ("duplicate_id", "distinct material ids"),
+        ("forged_material_id", "content identity"),
         ("five_prime_handle", "five-prime handles"),
         ("payload_overlap", "outside the payload"),
     ),
@@ -172,17 +276,18 @@ def test_source_duplex_preparation_rejects_invalid_inputs(
     source, forward, reverse = _inputs()
     if mutation == "forward_mismatch":
         forward = forward.model_copy(
-            update={"oligo": forward.oligo.model_copy(update={"sequence_5prime": "TCGT"})}
+            update={"oligo": _changed_material(forward.oligo, sequence_5prime="TCGT")}
         )
     elif mutation == "reverse_mismatch":
         reverse = reverse.model_copy(
-            update={"oligo": reverse.oligo.model_copy(update={"sequence_5prime": "TGAA"})}
+            update={"oligo": _changed_material(reverse.oligo, sequence_5prime="TGAA")}
         )
     elif mutation == "primer_phosphate":
         forward = forward.model_copy(
             update={
-                "oligo": forward.oligo.model_copy(
-                    update={"three_prime_end": EndChemistry.PHOSPHATE}
+                "oligo": _changed_material(
+                    forward.oligo,
+                    three_prime_end=EndChemistry.PHOSPHATE,
                 )
             }
         )
@@ -198,7 +303,7 @@ def test_source_duplex_preparation_rejects_invalid_inputs(
             ),
             annealing_length_nt=6,
         )
-    elif mutation == "duplicate_id":
+    elif mutation == "forged_material_id":
         reverse = reverse.model_copy(
             update={"oligo": reverse.oligo.model_copy(update={"material_id": "source-ssdna"})}
         )
@@ -227,12 +332,19 @@ def test_source_duplex_preparation_rejects_invalid_inputs(
     "mutation",
     (
         "authority_id",
+        "input_state",
+        "pre_state",
         "binding",
+        "source_use_role",
+        "source_use_entry",
         "product_sequence",
         "product_lineage",
         "pairings",
         "produced_material",
+        "produced_use_role",
+        "upstream_lineage",
         "produced_state",
+        "post_state",
     ),
 )
 def test_source_duplex_preparation_rejects_forged_authority(mutation: str) -> None:
@@ -240,8 +352,16 @@ def test_source_duplex_preparation_rejects_forged_authority(mutation: str) -> No
     data = authority.model_dump(mode="python")
     if mutation == "authority_id":
         data["authority_id"] = f"hop:source-duplex-preparation/{'0' * 64}@1"
+    elif mutation == "input_state":
+        data["input_state"]["molecules"][0]["sequence"] = "TCGTGGAATTCC"
+    elif mutation == "pre_state":
+        data["pre_state_id"] = f"hop:construction-state/{'0' * 64}@1"
     elif mutation == "binding":
         data["bindings"][0]["orientation"] = BindingOrientation.SAME_5TO3
+    elif mutation == "source_use_role":
+        data["source_ssdna_use"]["role"] = MaterialUseRole.ENDPOINT_FORWARD_PRIMER
+    elif mutation == "source_use_entry":
+        data["source_ssdna_use"]["route_entry"] = MaterialRouteEntry.MODELED_PRODUCT
     elif mutation == "product_sequence":
         data["product_state"]["molecules"][0]["sequence"] = "TCGTGGAATTCC"
     elif mutation == "product_lineage":
@@ -249,13 +369,21 @@ def test_source_duplex_preparation_rejects_forged_authority(mutation: str) -> No
     elif mutation == "pairings":
         data["product_state"]["pairings"] = data["product_state"]["pairings"][:-1]
     elif mutation == "produced_material":
-        data["produced_material_bindings"][0]["material"]["sequence_5prime"] = (
-            "TCGTGGAATTCC"
+        data["produced_material_bindings"][0]["material"]["sequence_5prime"] = "TCGTGGAATTCC"
+    elif mutation == "produced_use_role":
+        data["produced_material_bindings"][0]["material_use"]["role"] = (
+            MaterialUseRole.ENDPOINT_FORWARD_PRIMER
         )
+    elif mutation == "upstream_lineage":
+        data["produced_material_bindings"][0]["upstream_lineage"] = data[
+            "produced_material_bindings"
+        ][0]["upstream_lineage"][:-1]
     elif mutation == "produced_state":
         data["produced_material_bindings"][0]["product_state_id"] = (
             f"hop:construction-state/{'0' * 64}@1"
         )
+    elif mutation == "post_state":
+        data["post_state_id"] = f"hop:construction-state/{'0' * 64}@1"
     else:  # pragma: no cover - parameter table is closed above
         raise AssertionError(mutation)
 
@@ -271,7 +399,10 @@ def test_source_duplex_preparation_identity_changes_with_molecular_inputs() -> N
         reverse_primer=reverse,
         payload_source_span=_payload_span(),
     )
-    changed_source = source.model_copy(update={"five_prime_end": EndChemistry.PHOSPHATE})
+    changed_source = _changed_material(
+        source,
+        five_prime_end=EndChemistry.PHOSPHATE,
+    )
 
     changed = derive_source_duplex_preparation(
         source_ssdna=changed_source,

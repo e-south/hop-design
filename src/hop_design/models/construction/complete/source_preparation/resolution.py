@@ -14,9 +14,8 @@ from __future__ import annotations
 from hop_design.models.coordinates import Span
 from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import reverse_complement_iupac
-from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from ..material import ExactConstructionMaterial, MaterialOrigin, PcrPrimer
+from ..material import ExactConstructionMaterial, MaterialResolutionMode, PcrPrimer
 from .authority import SourceDuplexPreparationAuthority, derive_source_duplex_preparation
 from .policy import (
     ConstrainedPrimerPolicy,
@@ -29,24 +28,18 @@ from .policy import (
 )
 
 
-def _material_id(
-    role: str,
-    *,
-    sequence: str,
-    five_prime_end: EndChemistry,
-    three_prime_end: EndChemistry,
-) -> str:
-    digest = sha256_digest(
-        canonical_json_bytes(
-            {
-                "role": role,
-                "sequence": sequence,
-                "five_prime_end": five_prime_end,
-                "three_prime_end": three_prime_end,
-            }
-        )
-    ).removeprefix("sha256:")
-    return f"{role}-{digest}"
+class SourcePreparationResolutionError(ValueError):
+    """Raised when an explicit source-preparation policy cannot resolve one route."""
+
+
+def _resolution_mode(
+    policy: DerivedSourceSsdnaPolicy | FixedSourceSsdnaPolicy | PrimerResolutionPolicy,
+) -> MaterialResolutionMode:
+    if isinstance(policy, (FixedSourceSsdnaPolicy, FixedPrimerPolicy)):
+        return MaterialResolutionMode.FIXED
+    if isinstance(policy, ConstrainedPrimerPolicy):
+        return MaterialResolutionMode.CONSTRAIN
+    return MaterialResolutionMode.DERIVE
 
 
 def _source_material(
@@ -56,16 +49,11 @@ def _source_material(
 ) -> ExactConstructionMaterial:
     if isinstance(policy, FixedSourceSsdnaPolicy):
         if policy.material.sequence_5prime != source_sequence:
-            raise ValueError("The fixed source ssDNA must equal the selected route source.")
+            raise SourcePreparationResolutionError(
+                "The fixed source ssDNA must equal the selected route source."
+            )
         return policy.material
     return ExactConstructionMaterial(
-        material_id=_material_id(
-            "source-ssdna",
-            sequence=source_sequence,
-            five_prime_end=policy.five_prime_end,
-            three_prime_end=policy.three_prime_end,
-        ),
-        origin=MaterialOrigin.SYNTHESIZED,
         sequence_5prime=source_sequence,
         five_prime_end=policy.five_prime_end,
         three_prime_end=policy.three_prime_end,
@@ -78,39 +66,57 @@ def _primer_length(
     available_length_nt: int,
 ) -> int:
     if isinstance(policy, FixedPrimerPolicy):
-        return policy.primer.annealing_length_nt
+        length = policy.primer.annealing_length_nt
+        if length > available_length_nt:
+            raise SourcePreparationResolutionError(
+                "Source primer annealing must remain outside the payload."
+            )
+        return length
     length = (
         policy.annealing_length_nt
         if isinstance(policy, DerivedPrimerPolicy)
         else policy.min_annealing_length_nt
     )
     if length > available_length_nt:
-        raise ValueError("Source primer annealing must remain outside the payload.")
+        raise SourcePreparationResolutionError(
+            "Source primer annealing must remain outside the payload."
+        )
     if isinstance(policy, ConstrainedPrimerPolicy) and length > policy.max_annealing_length_nt:
-        raise ValueError("No source primer length satisfies the declared bounds.")
+        raise SourcePreparationResolutionError(
+            "No source primer length satisfies the declared bounds."
+        )
     return length
 
 
 def _primer(
     policy: PrimerResolutionPolicy,
     *,
-    role: str,
     sequence: str,
     annealing_length_nt: int,
     required_five_prime_end: EndChemistry,
 ) -> PcrPrimer:
     if isinstance(policy, FixedPrimerPolicy):
+        if policy.primer.oligo.three_prime_end is not EndChemistry.HYDROXYL:
+            raise SourcePreparationResolutionError(
+                "Fixed source primer requires three-prime hydroxyl chemistry."
+            )
+        if policy.primer.five_prime_handle:
+            raise SourcePreparationResolutionError(
+                "Source primer five-prime handles require an explicit product map."
+            )
         if policy.primer.oligo.five_prime_end is not required_five_prime_end:
-            raise ValueError("Fixed source primer lacks the required five-prime chemistry.")
+            raise SourcePreparationResolutionError(
+                "Fixed source primer lacks the required five-prime chemistry."
+            )
+        if (
+            policy.primer.annealing_length_nt != annealing_length_nt
+            or policy.primer.annealing_sequence != sequence
+        ):
+            raise SourcePreparationResolutionError(
+                "Fixed source primer does not match the required terminal binding."
+            )
         return policy.primer
     material = ExactConstructionMaterial(
-        material_id=_material_id(
-            role,
-            sequence=sequence,
-            five_prime_end=required_five_prime_end,
-            three_prime_end=EndChemistry.HYDROXYL,
-        ),
-        origin=MaterialOrigin.SYNTHESIZED,
         sequence_5prime=sequence,
         five_prime_end=required_five_prime_end,
         three_prime_end=EndChemistry.HYDROXYL,
@@ -138,14 +144,12 @@ def resolve_source_duplex_preparation(
     )
     forward = _primer(
         policy.forward_primer,
-        role="source-forward-primer",
         sequence=source_sequence[:forward_length],
         annealing_length_nt=forward_length,
         required_five_prime_end=reference_five_prime_end,
     )
     reverse = _primer(
         policy.reverse_primer,
-        role="source-reverse-primer",
         sequence=reverse_complement_iupac(source_sequence[-reverse_length:]),
         annealing_length_nt=reverse_length,
         required_five_prime_end=complement_five_prime_end,
@@ -155,7 +159,10 @@ def resolve_source_duplex_preparation(
         forward_primer=forward,
         reverse_primer=reverse,
         payload_source_span=payload_source_span,
+        source_resolution_mode=_resolution_mode(policy.source_ssdna),
+        forward_primer_resolution_mode=_resolution_mode(policy.forward_primer),
+        reverse_primer_resolution_mode=_resolution_mode(policy.reverse_primer),
     )
 
 
-__all__ = ["resolve_source_duplex_preparation"]
+__all__ = ["SourcePreparationResolutionError", "resolve_source_duplex_preparation"]

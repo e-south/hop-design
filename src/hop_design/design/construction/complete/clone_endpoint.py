@@ -60,6 +60,7 @@ from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import SequenceProjection
 
+from .material_uses import pcr_material_uses
 from .pcr import materialize_pcr_program
 
 
@@ -82,13 +83,14 @@ def clone_realization(
             evaluation.source_return_arm,
             evaluation.source,
             evaluation.source_complement,
+            evaluation.source_preparation,
             evaluation.pcr_template_sequence,
             evaluation.design_parent_span,
             evaluation.end_generation_program,
             evaluation.end_generation_bindings,
             request.materialization.adapter,
-            request.materialization.forward_primer,
-            request.materialization.reverse_primer,
+            request.materialization.hairpin_pcr_forward_primer,
+            request.materialization.hairpin_pcr_reverse_primer,
         )
     ):
         raise ValueError("Compatible clone composition requires every exact route authority.")
@@ -100,13 +102,19 @@ def clone_realization(
     end_generation_program = evaluation.end_generation_program
     end_generation_bindings = evaluation.end_generation_bindings
     adapter = request.materialization.adapter
-    forward = request.materialization.forward_primer
-    reverse = request.materialization.reverse_primer
+    forward = request.materialization.hairpin_pcr_forward_primer
+    reverse = request.materialization.hairpin_pcr_reverse_primer
     assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
     assert design_parent_span is not None and end_generation_program is not None
     assert end_generation_bindings is not None
     assert adapter is not None and forward is not None and reverse is not None
+    material_uses = pcr_material_uses(
+        source_preparation=evaluation.source_preparation,
+        adapter=adapter,
+        forward_primer=forward,
+        reverse_primer=reverse,
+    )
     if basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("Clone basal opening requires one exact bottom-strand nick.")
     encoding = request.design.plan.hairpin_encoding_insert
@@ -128,6 +136,7 @@ def clone_realization(
         adapter=adapter,
         forward_primer=forward,
         reverse_primer=reverse,
+        material_uses=material_uses,
         evaluation=evaluation,
         encoding_features=encoding.features,
         design_endpoint_span=Span(
@@ -201,7 +210,7 @@ def clone_realization(
         cohesive_ends=digest.cohesive_ends,
     )
     functions = material_function_spans(
-        materials=(source, source_complement, adapter, forward.oligo, reverse.oligo),
+        material_uses=material_uses,
         top=terminal.molecules[0],
         bottom=terminal.molecules[1],
     )
@@ -241,11 +250,13 @@ def clone_realization(
                 prefix=prefix,
                 source_return_arm=source_return_arm,
             ),
-            source_material_id=source.material_id,
+            source_material_id=evaluation.source_preparation.source_ssdna.material_id,
         ),
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=basal.basal_realization_id,
+        source_preparation=evaluation.source_preparation,
         materials=materials,
+        material_uses=material_uses,
         construction_program=program,
         final_product=product,
         design=request.design,
@@ -268,6 +279,7 @@ def clone_realization(
         ),
         route_material_dispositions=derive_route_material_dispositions(
             materials=materials,
+            material_uses=material_uses,
             program=program,
             material_function_spans=functions,
         ),

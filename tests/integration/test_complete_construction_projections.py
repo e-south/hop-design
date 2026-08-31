@@ -44,7 +44,6 @@ from hop_design.models.construction.projections import (
     CompleteConstructionSummaryRow,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.serialization import sha256_digest
 from tests.contract.test_foldback_construction_discovery import _nickase, _request
@@ -106,11 +105,6 @@ def _verified_result(
             adapter=adapter,
             forward_primer=forward,
             reverse_primer=reverse,
-            complement_five_prime_end=(
-                EndChemistry.HYDROXYL
-                if incompatible and endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-                else EndChemistry.PHOSPHATE
-            ),
         )
     if truncated:
         request = request.model_copy(
@@ -154,8 +148,8 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
 
     projection = project_complete_construction_summary(source)
 
-    assert projection.schema_id == "hop.complete-construction-summary/v1"
-    assert projection.renderer_version == "complete-construction-projections/1"
+    assert projection.schema_id == "hop.complete-construction-summary/v2"
+    assert projection.renderer_version == "complete-construction-projections/2"
     assert projection.source_result_id == source.result.result_id
     assert projection.endpoint is endpoint
     assert projection.status is SearchCompletionStatus.COMPLETE
@@ -182,10 +176,10 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
     if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
         assert projection.projection_id == (
             "hop:complete-construction-summary/"
-            "18cd86ccefcb8fed73857b64945c40e1a17ecd225dc1c9e2f1751ff9e65478bb@1"
+            "daae915ce18e3929e2bce8666f8b788a067de233dc74b6890c0c81ace5bbc60b@1"
         )
         assert sha256_digest(render_projection_json(projection)) == (
-            "sha256:aa4e7397d3e27123b7e6586f8b8b104531fb94f8e19f0b11a62586fc05b5c692"
+            "sha256:e1b528c3651a00f66df2bd89b94fdbacc077ae38ea4c2f99191c52e9d45b359e"
         )
 
     json_bytes = render_projection_json(projection)
@@ -236,7 +230,66 @@ def test_complete_summary_preserves_infeasible_and_truncated_evidence(tmp_path: 
     assert "after exhaustive composition" in render_projection_svg(infeasible_projection).decode(
         "utf-8"
     )
-    assert "stopped before" in render_projection_svg(truncated_projection).decode("utf-8")
+    truncated_svg = render_projection_svg(truncated_projection).decode("utf-8")
+    assert "stopped before" in truncated_svg
+    assert "truncated 0" in truncated_svg
+    assert "Composition truncation · max_combinations" in truncated_svg
+    assert 'data-truncation-reasons="max_combinations"' in truncated_svg
+
+    upstream_content = _projection_content(truncated_projection)
+    upstream_content["truncation_reasons"] = ()
+    upstream_content["upstream_truncation_reasons"] = (
+        "foldback:max_search_nodes",
+        "basal:max_hits",
+    )
+    upstream_svg = render_projection_svg(
+        CompleteConstructionSummaryProjection.create(**upstream_content)
+    ).decode("utf-8")
+    assert "Upstream truncation · foldback:max_search_nodes · basal:max_hits" in upstream_svg
+    assert (
+        'data-upstream-truncation-reasons="foldback:max_search_nodes;basal:max_hits"'
+        in upstream_svg
+    )
+
+
+def test_complete_summary_preserves_per_combination_truncation(tmp_path: Path) -> None:
+    request, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    reverse = request.materialization.hairpin_pcr_reverse_primer
+    assert reverse is not None and request.release is not None
+    data = request.model_dump(by_alias=True)
+    data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["sequence_5prime"] = (
+        reverse_complement_iupac("AGAGACCAGAGACC") + reverse.annealing_sequence
+    )
+    del data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["material_id"]
+    data["release"]["max_site_pairs"] = 1
+    bounded = type(request).model_validate(data)
+    source = discover_constructions(
+        bounded,
+        foldback=verify_foldback_neighborhood_result(foldback),
+        basal=verify_basal_neighborhood_result(basal),
+        design=design,
+    )
+
+    projection = project_complete_construction_summary(source)
+
+    assert projection.status is SearchCompletionStatus.TRUNCATED
+    assert all(
+        row.status is CompositionDispositionStatus.TRUNCATED
+        and row.rejection_reason is None
+        and row.truncation_reason == "endpoint:max_site_pairs"
+        for row in projection.rows
+    )
+    csv_rows = _csv_rows(render_projection_csv(projection))
+    assert all(
+        row["disposition"] == "truncated"
+        and row["rejection_reason"] == ""
+        and row["truncation_reason"] == "endpoint:max_site_pairs"
+        for row in csv_rows
+    )
+    svg = render_projection_svg(projection).decode("utf-8")
+    assert f"truncated {projection.accounting.truncated_combinations}" in svg
+    assert "truncated: endpoint:max_site_pairs" in svg
+    assert 'data-truncation-reason="endpoint:max_site_pairs"' in svg
 
 
 def test_complete_projection_verification_rejects_source_bound_drift(tmp_path: Path) -> None:

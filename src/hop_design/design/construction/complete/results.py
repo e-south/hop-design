@@ -37,6 +37,9 @@ from hop_design.models.construction.complete import (
     ConstructionSpaceResult,
     MaterializedConstructionRealization,
 )
+from hop_design.models.construction.complete.material.inventory import (
+    required_external_materials,
+)
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.payload import _content_id
 
@@ -70,14 +73,13 @@ def _material_accounting(
 ) -> CompositionMaterialAccounting:
     return CompositionMaterialAccounting(
         source_material_nt=sum(
-            len(item.sequence_5prime)
+            len(realization.source_preparation.source_ssdna.sequence_5prime)
             for realization in realizations
-            for item in realization.materials[:2]
         ),
         auxiliary_material_nt=sum(
             len(item.sequence_5prime)
             for realization in realizations
-            for item in realization.materials[2:]
+            for item in required_external_materials(realization)[1:]
         ),
         endpoint_product_nt=sum(
             sum(len(strand.sequence) for strand in item.final_product.strands)
@@ -190,8 +192,8 @@ def build_result(
         ),
         projection_inventory=(
             ProjectionInventoryItem(
-                projection_schema="hop.complete-construction-summary/v1",
-                renderer_version="complete-construction-projections/1",
+                projection_schema="hop.complete-construction-summary/v2",
+                renderer_version="complete-construction-projections/2",
                 status=ProjectionInventoryStatus.NOT_GENERATED,
             ),
         ),

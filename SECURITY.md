@@ -7,7 +7,7 @@ audience:
   - security reviewers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-08-31
 doc_type: reference
 ---
 
@@ -46,7 +46,7 @@ resources. Remote/network resolution stays outside the deterministic core.
 Construction source files follow the same bounded regular-file contract. The
 reader accepts only `.json`, `.yaml`, and `.yml`, rejects path replacement while
 opening, rejects documents larger than one megabyte before decoding, requires a
-mapping root, and dispatches only `hop.construction-source/v3`. The source
+mapping root, and dispatches only `hop.construction-source/v4`. The source
 cannot embed or assert a design authority; compilation loads the separately
 supplied design-bundle directory through complete semantic verification.
 

@@ -26,6 +26,7 @@ class ConstructionStatePhase(StrEnum):
     """Closed physical association phases in a complete construction route."""
 
     UNSPECIFIED = "unspecified"
+    SOURCE_SSDNA = "source_ssdna"
     DUPLEX = "duplex"
     CLEAVED_DUPLEX = "cleaved_duplex"
     DENATURED_FRAGMENTS = "denatured_fragments"
@@ -117,6 +118,7 @@ class ConstructionState(HopModel):
             ConstructionStatePhase.CLONE_READY_DUPLEX,
         }
         unpaired_phases = {
+            ConstructionStatePhase.SOURCE_SSDNA,
             ConstructionStatePhase.DENATURED_FRAGMENTS,
             ConstructionStatePhase.SELECTED_FRAGMENTS,
         }

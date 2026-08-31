@@ -26,18 +26,19 @@ from .authority import (
 )
 from .material import (
     ExactConstructionMaterial,
-    LinearSourceMaterializationSpec,
-    MaterialOrigin,
     MaterialResolutionMode,
+    MaterialRouteEntry,
+    MaterialUse,
+    MaterialUseRole,
     PcrPrimer,
     ProducedMaterialBinding,
+    construction_material_id,
 )
 from .material_disposition import (
     EndpointMaterialOccurrence,
     MaterialRetentionDisposition,
     RouteMaterialDispositionSpan,
 )
-from .materials import derived_source_material_id
 from .pcr import (
     AdapterAnnealingAuthority,
     AdapterLigationAuthority,
@@ -62,14 +63,17 @@ from .request import (
     WholeRouteConstraints,
 )
 from .result import ConstructionSpaceResult
+from .source_partition import SourcePartitionBinding
 from .source_preparation import (
     ConstrainedPrimerPolicy,
     DerivedPrimerPolicy,
     DerivedSourceSsdnaPolicy,
     FixedPrimerPolicy,
     FixedSourceSsdnaPolicy,
+    LinearSourceMaterializationSpec,
     SourceDuplexPreparationAuthority,
     SourceDuplexPreparationPolicy,
+    SourcePreparationResolutionError,
     derive_source_duplex_preparation,
     resolve_source_duplex_preparation,
 )
@@ -116,9 +120,11 @@ __all__ = [
     "LinearSourceMaterializationSpec",
     "MaterialFunction",
     "MaterialFunctionSpan",
-    "MaterialOrigin",
     "MaterialResolutionMode",
     "MaterialRetentionDisposition",
+    "MaterialRouteEntry",
+    "MaterialUse",
+    "MaterialUseRole",
     "MaterializedConstructionRealization",
     "MaterializedFinalProduct",
     "PcrPrimer",
@@ -129,9 +135,11 @@ __all__ = [
     "RouteMaterialDispositionSpan",
     "SourceDuplexPreparationAuthority",
     "SourceDuplexPreparationPolicy",
+    "SourcePartitionBinding",
+    "SourcePreparationResolutionError",
     "TypeIisReleaseRequest",
     "WholeRouteConstraints",
+    "construction_material_id",
     "derive_source_duplex_preparation",
-    "derived_source_material_id",
     "resolve_source_duplex_preparation",
 ]

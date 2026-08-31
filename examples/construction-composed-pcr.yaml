@@ -1,4 +1,4 @@
-schema: hop.construction-source/v3
+schema: hop.construction-source/v4
 foldback:
   schema: hop.local-neighborhood-request/v3
   name: null
@@ -170,30 +170,29 @@ basal:
 composition:
   endpoint: hairpin_pcr_duplex
   materialization:
-    source_origin: synthesized
-    source_five_prime_end: hydroxyl
-    source_three_prime_end: hydroxyl
-    source_complement_origin: synthesized
-    source_complement_five_prime_end: phosphate
-    source_complement_three_prime_end: hydroxyl
+    source_preparation:
+      source_ssdna:
+        mode: derive
+        five_prime_end: hydroxyl
+        three_prime_end: hydroxyl
+      forward_primer:
+        mode: derive
+        annealing_length_nt: 1
+      reverse_primer:
+        mode: derive
+        annealing_length_nt: 1
     adapter:
-      material_id: ligation-adapter
-      origin: synthesized
       sequence_5prime: TTTT
       five_prime_end: phosphate
       three_prime_end: hydroxyl
-    forward_primer:
+    hairpin_pcr_forward_primer:
       oligo:
-        material_id: forward-primer
-        origin: synthesized
         sequence_5prime: AAAA
         five_prime_end: phosphate
         three_prime_end: hydroxyl
       annealing_length_nt: 4
-    reverse_primer:
+    hairpin_pcr_reverse_primer:
       oligo:
-        material_id: reverse-primer
-        origin: synthesized
         sequence_5prime: AAAA
         five_prime_end: phosphate
         three_prime_end: hydroxyl

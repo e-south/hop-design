@@ -28,6 +28,8 @@ def pcr_cleaved_strands(
     prefix_length: int,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
+    source_use_id: str,
+    source_complement_use_id: str,
 ) -> tuple[MolecularStrand, ...]:
     """Lift the exact enzyme product into material-coordinate strands."""
     prefix, _, embedding = replay_linear_source_embedding(
@@ -44,6 +46,8 @@ def pcr_cleaved_strands(
         embedding=embedding,
         source=source,
         source_complement=source_complement,
+        source_use_id=source_use_id,
+        source_complement_use_id=source_complement_use_id,
     )
 
 
@@ -51,8 +55,8 @@ def select_pcr_fragments(
     molecules: tuple[MolecularStrand, ...],
     *,
     foldback: FoldbackLocalRealization,
-    source_material_id: str,
-    source_complement_material_id: str,
+    source_material_use_id: str,
+    source_complement_material_use_id: str,
     source_return_arm: str,
 ) -> tuple[MolecularStrand, MolecularStrand]:
     """Select exact source fragments after removing the source-return arm."""
@@ -63,9 +67,9 @@ def select_pcr_fragments(
         else "-pcr-top-source-return-arm-top"
     )
     released_material_id = (
-        source_complement_material_id
+        source_complement_material_use_id
         if orientation is SourceOrientation.FORWARD
-        else source_material_id
+        else source_material_use_id
     )
     released = next((item for item in molecules if item.strand_id.endswith(released_suffix)), None)
     if (

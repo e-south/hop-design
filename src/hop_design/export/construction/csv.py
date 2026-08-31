@@ -67,6 +67,7 @@ def _write_complete(
         "basal_realization_id",
         "disposition",
         "rejection_reason",
+        "truncation_reason",
         "materialized_realization_id",
         "achieved_geometry_group_key",
         "final_product_group_key",
@@ -135,6 +136,7 @@ def _write_complete(
                 "rejection_reason": (
                     "" if row.rejection_reason is None else row.rejection_reason.value
                 ),
+                "truncation_reason": row.truncation_reason or "",
                 "materialized_realization_id": row.materialized_realization_id or "",
                 "achieved_geometry_group_key": row.achieved_geometry_group_key or "",
                 "final_product_group_key": row.final_product_group_key or "",

@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-08-31
 doc_type: how-to
 journey:
   - discover
@@ -76,20 +76,28 @@ it does not select it or reinterpret its deterministic ordinal as a score.
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v3`; and
+   `hop.construction-source/v4`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
-request, the requested endpoint, exact route materials, whole-route
+request, the requested endpoint, how the source ssDNA and its preparation
+primers are resolved, endpoint-dependent auxiliary materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v3
+schema: hop.construction-source/v4
 foldback: <hop.local-neighborhood-request/v3 mapping>
 basal: <hop.local-neighborhood-request/v3 mapping or null>
 composition:
   endpoint: ssdna_hairpin | hairpin_pcr_duplex | clone_ready_duplex
-  materialization: <exact linear-source materials and end chemistry>
+  materialization:
+    source_preparation:
+      source_ssdna: <derive or fixed source-ssDNA policy>
+      forward_primer: <derive, constrain, or fixed source-primer policy>
+      reverse_primer: <derive, constrain, or fixed source-primer policy>
+    adapter: <exact endpoint adapter or null>
+    hairpin_pcr_forward_primer: <exact endpoint primer or null>
+    hairpin_pcr_reverse_primer: <exact endpoint primer or null>
   release: <exact oriented Type IIS endpoint release or null>
   whole_route_constraints: <intrinsic route constraints>
   enumeration:
@@ -104,13 +112,28 @@ the design bundle outside the source document. YAML anchors, aliases, and merge
 keys are rejected. The source cannot author design, result, realization,
 projection, output-path, timestamp, or environment identities.
 
+Source preparation is an explicit modeled relation:
+
+```text
+source ssDNA + two source-preparation primers
+    -> exact copied source duplex
+```
+
+The source ssDNA is the first external route material. The copied duplex is a
+derived route state, not another material for the caller to provide. Source
+primer annealing is resolved outside the payload and its terminal chemistry is
+validated before the copied duplex can seed downstream construction. The
+`hairpin_pcr_forward_primer` and `hairpin_pcr_reverse_primer` fields are
+different materials: they are required only for PCR-bearing endpoints after
+the ssDNA hairpin has formed.
+
 Endpoint obligations fail closed:
 
-| Endpoint | Basal request | Adapter and primers | Type IIS end generation |
-| --- | --- | --- | --- |
-| `ssdna_hairpin` | omitted | omitted | omitted |
-| `hairpin_pcr_duplex` | required | required | omitted |
-| `clone_ready_duplex` | required PCR-intermediate authority | required | required by the endpoint release request |
+| Endpoint | Source preparation | Basal request | Endpoint adapter and primers | Type IIS end generation |
+| --- | --- | --- | --- | --- |
+| `ssdna_hairpin` | required | omitted | omitted | omitted |
+| `hairpin_pcr_duplex` | required | required | required | omitted |
+| `clone_ready_duplex` | required | required PCR-intermediate authority | required | required by the endpoint release request |
 
 The foldback and basal requests, when both are present, must describe the same
 payload space. The exact payload in the verified design must belong to that

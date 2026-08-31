@@ -97,7 +97,7 @@ def validate_clone_realization(realization: MaterializedConstructionRealization)
     if product.encoding_projection != digest.encoding_projection:
         raise ValueError("Clone design authority must equal the exact pre-digest cut union.")
     expected_functions = material_function_spans(
-        materials=item.materials,
+        material_uses=item.material_uses,
         top=digest.strands[0],
         bottom=digest.strands[1],
     )

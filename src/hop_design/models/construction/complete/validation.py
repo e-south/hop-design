@@ -16,12 +16,7 @@ from typing import Any
 from hop_design.models.construction.accounting import SearchCompletionStatus
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
-from hop_design.models.construction.payload import (
-    ConstructionEndpoint,
-    SourceOrientation,
-    validate_linear_source_map,
-)
-from hop_design.models.sequence import reverse_complement_iupac
+from hop_design.models.construction.payload import ConstructionEndpoint
 
 from .authority import (
     CompositionDisposition,
@@ -30,40 +25,10 @@ from .authority import (
     ConstructionCompositionProvenance,
 )
 from .evaluation import CompositionRejectionCode, evaluate_combination
-from .materials import derived_source_material_id
+from .material.inventory import required_external_materials
+from .payload_validation import validate_payload_source_map
 from .request import ConstructionDiscoveryRequest
 from .state import ConstructionStatePhase
-
-
-def validate_payload_source_map(request: ConstructionDiscoveryRequest, realization: Any) -> None:
-    """Require mapped material bytes to replay the exact requested payload."""
-    validate_linear_source_map(
-        request.payload,
-        realization.payload_source_map,
-        allowed_orientations=(
-            SourceOrientation.FORWARD,
-            SourceOrientation.REVERSE_COMPLEMENT,
-        ),
-    )
-    source_materials = {item.material_id: item for item in realization.materials}
-    payload_parts: list[str] = []
-    for segment in sorted(
-        realization.payload_source_map.segments,
-        key=lambda item: item.payload_span.start.offset,
-    ):
-        material = source_materials.get(segment.source_material_id)
-        if material is None or segment.source_span.end.offset > len(material.sequence_5prime):
-            raise ValueError("The payload source map must reference exact route material.")
-        sequence = material.sequence_5prime[
-            segment.source_span.start.offset : segment.source_span.end.offset
-        ]
-        payload_parts.append(
-            sequence
-            if segment.orientation is SourceOrientation.FORWARD
-            else reverse_complement_iupac(sequence)
-        )
-    if "".join(payload_parts) != request.payload.payload.sequence:
-        raise ValueError("The payload source map must replay exact requested payload bytes.")
 
 
 def validate_endpoint_evidence(
@@ -111,23 +76,26 @@ def validate_accepted_realization(
         item
         for item in (
             policy.adapter,
-            None if policy.forward_primer is None else policy.forward_primer.oligo,
-            None if policy.reverse_primer is None else policy.reverse_primer.oligo,
+            (
+                None
+                if policy.hairpin_pcr_forward_primer is None
+                else policy.hairpin_pcr_forward_primer.oligo
+            ),
+            (
+                None
+                if policy.hairpin_pcr_reverse_primer is None
+                else policy.hairpin_pcr_reverse_primer.oligo
+            ),
         )
         if item is not None
     )
     if (
         source.sequence_5prime != realization.realization.precursor_sequence
-        or source.material_id
-        != derived_source_material_id(source.sequence_5prime, complementary=False)
-        or source_complement.material_id
-        != derived_source_material_id(source_complement.sequence_5prime, complementary=True)
-        or source.origin is not policy.source_origin
-        or source.five_prime_end is not policy.source_five_prime_end
-        or source.three_prime_end is not policy.source_three_prime_end
-        or source_complement.origin is not policy.source_complement_origin
-        or source_complement.five_prime_end is not policy.source_complement_five_prime_end
-        or source_complement.three_prime_end is not policy.source_complement_three_prime_end
+        or tuple(
+            binding.material
+            for binding in realization.source_preparation.produced_material_bindings
+        )
+        != (source, source_complement)
         or tuple(auxiliaries) != expected_auxiliaries
     ):
         raise ValueError("Accepted material set must equal the exact result request policy.")
@@ -273,7 +241,8 @@ def validate_combination_evaluations(
                 realization.final_product.reference.sequence == evaluation.final_sequence
             )
         if (
-            tuple(realization.materials[:2]) != (evaluation.source, evaluation.source_complement)
+            realization.source_preparation != evaluation.source_preparation
+            or tuple(realization.materials[:2]) != (evaluation.source, evaluation.source_complement)
             or realization.construction_program.reaction_programs != expected_programs
             or realization.construction_program.stage_assessments != expected_assessments
             or not endpoint_matches
@@ -321,14 +290,13 @@ def expected_material_accounting(realizations: tuple[Any, ...]) -> CompositionMa
     """Derive material totals from exact accepted route materials and products."""
     return CompositionMaterialAccounting(
         source_material_nt=sum(
-            len(item.sequence_5prime)
+            len(realization.source_preparation.source_ssdna.sequence_5prime)
             for realization in realizations
-            for item in realization.materials[:2]
         ),
         auxiliary_material_nt=sum(
             len(item.sequence_5prime)
             for realization in realizations
-            for item in realization.materials[2:]
+            for item in required_external_materials(realization)[1:]
         ),
         endpoint_product_nt=sum(
             sum(len(strand.sequence) for strand in item.final_product.strands)

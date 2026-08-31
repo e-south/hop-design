@@ -44,10 +44,10 @@ part identifiers and study sequences do not enter this public repository.
 | final payload and derived partner | `FinalPayloadReference` | present and connected | preserve |
 | exact foldback alternatives | verified foldback-neighborhood result | present and connected | preserve local authority |
 | exact basal alternatives | verified basal-neighborhood result | present and connected | preserve local authority |
-| source ssDNA sequence | route-derived source reference strand | derivable but unimplemented as a root material | expose as one exact external material |
-| source-PCR primers | named-method material contract | present but separate | resolve as exact route auxiliaries |
-| source-PCR duplex | named-method expected state | present but separate | replace as authority with content-addressed preparation replay |
-| initial complete-route duplex | first `ConstructionProgram` state | present and connected | require equality with source-preparation output |
+| source ssDNA sequence | content-addressed external material and contextual route use | present and connected | preserve exact payload mapping |
+| source-PCR primers | content-addressed external materials and contextual route uses | present and connected | preserve explicit resolution policy |
+| source-PCR duplex | replay-verified source-preparation authority | present and connected | preserve exact producer lineage |
+| initial complete-route duplex | source-preparation product and first `ConstructionProgram` state | present and connected | preserve byte-equivalent state identity |
 | source-wide cleanup nicks and selection | verified source-partition result | present but separate | bind an explicit selected realization into complete composition |
 | foldback and basal enzyme stages | assessed local and complete reaction programs | present and connected | preserve staged, state-aware replay |
 | denaturation and fragment selection | exact construction transitions | present and connected | bind selection to source-partition authority when supplied |
@@ -97,11 +97,8 @@ owning Research Studies record.
 
 ## Product gaps
 
-The two blocking gaps are:
-
-1. no replayable source-ssDNA-to-source-duplex authority is bound to complete
-   construction; and
-2. no selected source-partition authority is consumed by complete-route replay.
+The remaining blocking gap is that no selected source-partition authority is
+consumed by complete-route replay.
 
 Auxiliary resolution and result navigation are subsequent product gaps. They do
 not justify a generic workflow engine, inventory subsystem, dashboard, PCR
@@ -119,4 +116,3 @@ Each behavior change begins with a failing contract test. Closure requires:
 - source and wheel runs to produce canonical-byte-identical results; and
 - one application-neutral fixture plus one caller-owned historical replay to
   close through the installed public package.
-

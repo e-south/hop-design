@@ -80,23 +80,33 @@ def derive_complete_payload_source_map(
     source_material_id: str,
 ) -> PayloadSourceMap:
     """Lift the verified local payload map into complete source coordinates."""
+    source_span = derive_complete_payload_source_span(
+        foldback=foldback,
+        embedding=embedding,
+    )
     segment = foldback.payload_source_map.segments[0]
     return PayloadSourceMap(
         segments=(
             PayloadSourceSegment(
                 payload_span=segment.payload_span,
                 source_material_id=source_material_id,
-                source_span=Span(
-                    start=Boundary(
-                        offset=(embedding.local_reference_offset + segment.source_span.start.offset)
-                    ),
-                    end=Boundary(
-                        offset=(embedding.local_reference_offset + segment.source_span.end.offset)
-                    ),
-                ),
+                source_span=source_span,
                 orientation=segment.orientation,
             ),
         )
+    )
+
+
+def derive_complete_payload_source_span(
+    *,
+    foldback: FoldbackLocalRealization,
+    embedding: LinearSourceEmbedding,
+) -> Span:
+    """Lift the verified local payload occurrence into complete source coordinates."""
+    segment = foldback.payload_source_map.segments[0]
+    return Span(
+        start=Boundary(offset=embedding.local_reference_offset + segment.source_span.start.offset),
+        end=Boundary(offset=embedding.local_reference_offset + segment.source_span.end.offset),
     )
 
 
@@ -199,7 +209,7 @@ def derive_pcr_design_parent_span(
     top_sequence: str,
 ) -> Span | None:
     """Locate the exact HOP design within one route-bearing PCR product."""
-    forward = request.materialization.forward_primer
+    forward = request.materialization.hairpin_pcr_forward_primer
     if forward is None:
         return None
     design_prefix, _, _ = _design_context(request)
@@ -232,6 +242,7 @@ def derive_endpoint_source_return_arm(
 __all__ = [
     "LinearSourceEmbedding",
     "derive_complete_payload_source_map",
+    "derive_complete_payload_source_span",
     "derive_endpoint_source_return_arm",
     "derive_linear_source_embedding",
     "derive_pcr_design_parent_span",

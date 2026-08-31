@@ -51,7 +51,7 @@ class ConstructionCompositionSource(HopModel):
 class ConstructionSource(HopModel):
     """One strict external source for deterministic complete construction."""
 
-    schema_id: Literal["hop.construction-source/v3"] = Field(alias="schema")
+    schema_id: Literal["hop.construction-source/v4"] = Field(alias="schema")
     foldback: LocalNeighborhoodRequest
     basal: LocalNeighborhoodRequest | None = None
     composition: ConstructionCompositionSource
@@ -92,8 +92,8 @@ class ConstructionSource(HopModel):
         endpoint = self.composition.endpoint
         auxiliaries = (
             self.composition.materialization.adapter,
-            self.composition.materialization.forward_primer,
-            self.composition.materialization.reverse_primer,
+            self.composition.materialization.hairpin_pcr_forward_primer,
+            self.composition.materialization.hairpin_pcr_reverse_primer,
         )
         if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             if self.basal is not None:

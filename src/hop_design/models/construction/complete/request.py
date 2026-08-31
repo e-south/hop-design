@@ -40,7 +40,7 @@ from hop_design.models.spec import DesignAuthoritySpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from .accounting import CompositionEnumerationPolicy
-from .material import LinearSourceMaterializationSpec
+from .source_preparation import LinearSourceMaterializationSpec
 
 _DESIGN_SPEC_ADAPTER: TypeAdapter[DesignAuthoritySpec] = TypeAdapter(DesignAuthoritySpec)
 
@@ -162,8 +162,8 @@ class WholeRouteConstraints(HopModel):
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v3"] = Field(
-        default="hop.construction-discovery-request/v3", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v4"] = Field(
+        default="hop.construction-discovery-request/v4", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily
@@ -173,6 +173,14 @@ class ConstructionDiscoveryRequest(HopModel):
     basal_result_id: str | None = Field(
         default=None,
         pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$",
+    )
+    source_partition_result_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-result/[0-9a-f]{64}@1$",
+    )
+    selected_source_partition_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-realization/[0-9a-f]{64}@1$",
     )
     selected_foldback_realization_id: str | None = Field(
         default=None,
@@ -197,6 +205,9 @@ class ConstructionDiscoveryRequest(HopModel):
         if not self.selects_local_pair:
             content.pop("selected_foldback_realization_id", None)
             content.pop("selected_basal_realization_id", None)
+        if not self.selects_source_partition:
+            content.pop("source_partition_result_id", None)
+            content.pop("selected_source_partition_realization_id", None)
         return content
 
     @model_validator(mode="after")
@@ -208,8 +219,8 @@ class ConstructionDiscoveryRequest(HopModel):
             raise ValueError("The foldback intermediate must be an ssDNA hairpin.")
         auxiliaries = (
             self.materialization.adapter,
-            self.materialization.forward_primer,
-            self.materialization.reverse_primer,
+            self.materialization.hairpin_pcr_forward_primer,
+            self.materialization.hairpin_pcr_reverse_primer,
         )
         if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             if any(item is not None for item in auxiliaries) or self.release is not None:
@@ -230,12 +241,23 @@ class ConstructionDiscoveryRequest(HopModel):
             raise ValueError("Selected composition requires both local realization ids.")
         if self.selects_local_pair and self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             raise ValueError("Selected-pair composition requires a PCR-bearing endpoint.")
+        if (self.source_partition_result_id is None) != (
+            self.selected_source_partition_realization_id is None
+        ):
+            raise ValueError(
+                "A selected source partition requires both its result and realization ids."
+            )
         return self
 
     @property
     def selects_local_pair(self) -> bool:
         """Return whether composition is restricted to one explicit local pair."""
         return self.selected_foldback_realization_id is not None
+
+    @property
+    def selects_source_partition(self) -> bool:
+        """Return whether the route binds one explicit source-partition authority."""
+        return self.source_partition_result_id is not None
 
     @property
     def problem_id(self) -> str:
@@ -255,6 +277,11 @@ class ConstructionDiscoveryRequest(HopModel):
         if self.selects_local_pair:
             content["selected_foldback_realization_id"] = self.selected_foldback_realization_id
             content["selected_basal_realization_id"] = self.selected_basal_realization_id
+        if self.selects_source_partition:
+            content["source_partition_result_id"] = self.source_partition_result_id
+            content["selected_source_partition_realization_id"] = (
+                self.selected_source_partition_realization_id
+            )
         return _content_id("construction-problem", 1, content)
 
     @property

@@ -22,10 +22,13 @@ from hop_design.design.construction.source import compile_construction_source
 from hop_design.models.construction import ConstructionEndpoint, SearchCompletionStatus
 from hop_design.models.construction.complete import (
     CompositionEnumerationPolicy,
+    DerivedPrimerPolicy,
+    DerivedSourceSsdnaPolicy,
     LinearSourceMaterializationSpec,
-    MaterialOrigin,
+    MaterialResolutionMode,
     PcrPrimer,
     ReleaseSideRequirement,
+    SourceDuplexPreparationPolicy,
     TypeIisReleaseRequest,
     WholeRouteConstraints,
 )
@@ -64,14 +67,23 @@ def _materialization(
     primer_annealing_length_nt: int | None = None,
 ) -> LinearSourceMaterializationSpec:
     return LinearSourceMaterializationSpec(
-        source_origin=MaterialOrigin.SYNTHESIZED,
-        source_five_prime_end=EndChemistry.HYDROXYL,
-        source_three_prime_end=EndChemistry.HYDROXYL,
-        source_complement_origin=MaterialOrigin.SYNTHESIZED,
-        source_complement_five_prime_end=EndChemistry.PHOSPHATE,
-        source_complement_three_prime_end=EndChemistry.HYDROXYL,
+        source_preparation=SourceDuplexPreparationPolicy(
+            source_ssdna=DerivedSourceSsdnaPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                five_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=EndChemistry.HYDROXYL,
+            ),
+            forward_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
+            reverse_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
+        ),
         adapter=adapter,
-        forward_primer=(
+        hairpin_pcr_forward_primer=(
             None
             if forward_primer is None
             else PcrPrimer(
@@ -83,7 +95,7 @@ def _materialization(
                 ),
             )
         ),
-        reverse_primer=(
+        hairpin_pcr_reverse_primer=(
             None
             if reverse_primer is None
             else PcrPrimer(
@@ -107,7 +119,7 @@ def _source(
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v3",
+        schema="hop.construction-source/v4",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
@@ -262,7 +274,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/d2ee0273bf97/0d22fa3d043085c2"
+    assert pcr.bundle_id == "hop:construction-bundle/7c11ec382a8f/d570e91253a9bf8b"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value

@@ -127,13 +127,13 @@ def test_construction_projection_packet_is_portable_and_create_only(tmp_path: Pa
     )
 
     assert isinstance(summary, construction.ConstructionProjection)
-    assert summary.schema_id == "hop.complete-construction-summary/v1"
+    assert summary.schema_id == "hop.complete-construction-summary/v2"
     assert summary.projection_id.startswith("hop:complete-construction-summary/")
     assert summary.source_result_id == compilation.result_id
     assert summary.json_bytes.endswith(b"\n")
     assert summary.csv_bytes is not None
     assert summary.svg_bytes.startswith(b"<svg")
-    assert trajectory.schema_id == "hop.complete-construction-trajectory/v2"
+    assert trajectory.schema_id == "hop.complete-construction-trajectory/v3"
     assert trajectory.csv_bytes is None
 
     output = summary.write(tmp_path / "summary")

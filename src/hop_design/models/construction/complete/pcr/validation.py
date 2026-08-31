@@ -99,8 +99,8 @@ def evaluate_pcr_compatibility(
         )
     ):
         return CompositionRejectionCode.PCR_PAIRING_PROFILE_MISMATCH
-    forward = request.materialization.forward_primer
-    reverse = request.materialization.reverse_primer
+    forward = request.materialization.hairpin_pcr_forward_primer
+    reverse = request.materialization.hairpin_pcr_reverse_primer
     if (
         forward is None
         or reverse is None
@@ -170,6 +170,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR route requires one exact bottom-strand basal nick authority.")
     source, source_complement = item.materials[:2]
+    source_use, source_complement_use = item.material_uses[:2]
     prefix, source_return_arm, _ = replay_linear_source_embedding(
         foldback=item.foldback_authority,
         source_sequence=source.sequence_5prime,
@@ -198,6 +199,8 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         prefix_length=prefix_length,
         source=source,
         source_complement=source_complement,
+        source_use_id=source_use.use_id,
+        source_complement_use_id=source_complement_use.use_id,
     )
     if program.states[1].molecules != expected_cleaved:
         raise ValueError("PCR cleaved strands must replay exact source-fragment authorities.")
@@ -210,8 +213,8 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     expected_selected = select_pcr_fragments(
         expected_cleaved,
         foldback=item.foldback_authority,
-        source_material_id=source.material_id,
-        source_complement_material_id=source_complement.material_id,
+        source_material_use_id=source_use.use_id,
+        source_complement_material_use_id=source_complement_use.use_id,
         source_return_arm=source_return_arm,
     )
     if program.states[3].molecules != expected_selected:
@@ -281,7 +284,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
             raise ValueError("PCR endpoint encoding projection must equal the verified design.")
     extension = terminal_transition.pcr_authority
     expected_functions = material_function_spans(
-        materials=item.materials,
+        material_uses=item.material_uses,
         top=pcr_state.molecules[0],
         bottom=pcr_state.molecules[1],
     )

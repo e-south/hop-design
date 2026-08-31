@@ -55,16 +55,16 @@ def _route_material_functions(
         material_id for material_id, strand in runs[:2] if strand is LineageStrand.COMPLEMENTARY
     )
     adapter = runs[2][0]
-    material_ids = (
+    material_use_ids = (
         source_reference,
         source_complement,
         adapter,
-        authority.forward_primer.oligo.material_id,
-        authority.reverse_primer.oligo.material_id,
+        authority.forward_primer_use.use_id,
+        authority.reverse_primer_use.use_id,
     )
-    if len(set(material_ids)) != len(MaterialFunction):
-        raise ValueError("PCR route material roles must bind distinct exact materials.")
-    return dict(zip(material_ids, MaterialFunction, strict=True))
+    if len(set(material_use_ids)) != len(MaterialFunction):
+        raise ValueError("PCR route material roles must bind distinct contextual uses.")
+    return dict(zip(material_use_ids, MaterialFunction, strict=True))
 
 
 def _validate_adapter_annealing(
@@ -82,7 +82,7 @@ def _validate_adapter_annealing(
         adapter.sequence != material.sequence_5prime
         or adapter.five_prime_end is not material.five_prime_end
         or adapter.three_prime_end is not material.three_prime_end
-        or any(item.origin_id != material.material_id for item in adapter.lineage)
+        or any(item.origin_id != authority.adapter_use.use_id for item in adapter.lineage)
     ):
         raise ValueError("Adapter strand must replay its exact declared material.")
     target = set(range(authority.hairpin_span.start.offset, authority.hairpin_span.end.offset))
@@ -118,7 +118,7 @@ def _validate_adapter_ligation(
         adapter.sequence != material.sequence_5prime
         or adapter.five_prime_end is not material.five_prime_end
         or adapter.three_prime_end is not material.three_prime_end
-        or any(item.origin_id != material.material_id for item in adapter.lineage)
+        or any(item.origin_id != authority.adapter_use.use_id for item in adapter.lineage)
     ):
         raise ValueError("Adapter ligation must bind the exact pre-state adapter material.")
     expected_lineage = tuple(
@@ -177,7 +177,13 @@ def _validate_primer_extension(
         or reverse.oligo.three_prime_end is not EndChemistry.HYDROXYL
     ):
         raise ValueError("PCR primers require exact three-prime hydroxyl chemistry.")
-    expected_top, expected_bottom = pcr_products(template, forward, reverse)
+    expected_top, expected_bottom = pcr_products(
+        template,
+        forward,
+        reverse,
+        forward_use_id=authority.forward_primer_use.use_id,
+        reverse_use_id=authority.reverse_primer_use.use_id,
+    )
     if top.sequence != expected_top.sequence or bottom.sequence != expected_bottom.sequence:
         raise ValueError("Primer extension products must be exact reverse complements.")
     if post_state.pairings != authority.pairings or len(post_state.pairings) != len(top.sequence):
@@ -202,15 +208,17 @@ def _validate_primer_extension(
     if post_state.formed_bonds:
         raise ValueError("PCR duplex products cannot inherit precursor ligation bonds.")
     function_by_role = {
-        item.function: item.material_id for item in authority.material_function_spans
+        item.function: item.material_use_id for item in authority.material_function_spans
     }
-    if function_by_role[MaterialFunction.FORWARD_PRIMER] != forward.oligo.material_id or (
-        function_by_role[MaterialFunction.REVERSE_PRIMER] != reverse.oligo.material_id
+    if function_by_role[MaterialFunction.FORWARD_PRIMER] != authority.forward_primer_use.use_id or (
+        function_by_role[MaterialFunction.REVERSE_PRIMER]
+        != authority.reverse_primer_use.use_id
     ):
         raise ValueError("PCR material-function spans must bind both exact primers.")
     validate_material_function_spans(
         records=authority.material_function_spans,
-        function_by_material=_route_material_functions(template, authority),
+        material_uses=authority.material_uses,
+        function_by_use=_route_material_functions(template, authority),
         top=top,
         bottom=bottom,
     )
@@ -222,13 +230,13 @@ def _validate_primer_extension(
         raise ValueError("PCR products must preserve both exact primer sequences.")
     expected_bindings = (
         (
-            forward.oligo.material_id,
+            authority.forward_primer_use.use_id,
             f"{template.strand_id}-derived-complement",
             0,
             forward.annealing_length_nt,
         ),
         (
-            reverse.oligo.material_id,
+            authority.reverse_primer_use.use_id,
             template.strand_id,
             len(template.sequence) - reverse.annealing_length_nt,
             len(template.sequence),
@@ -254,7 +262,13 @@ def _validate_primer_extension(
         or forward.annealing_sequence != template.sequence[: forward.annealing_length_nt]
     ):
         raise ValueError("PCR primer sequences must match their exact template sites.")
-    if authority.products != pcr_products(template, forward, reverse):
+    if authority.products != pcr_products(
+        template,
+        forward,
+        reverse,
+        forward_use_id=authority.forward_primer_use.use_id,
+        reverse_use_id=authority.reverse_primer_use.use_id,
+    ):
         raise ValueError("PCR product lineage must replay primer and template origins.")
     if EndpointSequenceFate.PAYLOAD not in {
         item.fate for item in authority.endpoint_sequence_fate_spans

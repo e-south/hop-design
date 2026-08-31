@@ -20,7 +20,6 @@ from hop_design.models.construction.complete import (
     ExactConstructionMaterial,
     FixedPrimerPolicy,
     FixedSourceSsdnaPolicy,
-    MaterialOrigin,
     MaterialResolutionMode,
     PcrPrimer,
     SourceDuplexPreparationPolicy,
@@ -35,14 +34,12 @@ def _span(start: int, end: int) -> Span:
 
 
 def _material(
-    material_id: str,
+    _role: str,
     sequence: str,
     *,
     five_prime_end: EndChemistry = EndChemistry.HYDROXYL,
 ) -> ExactConstructionMaterial:
     return ExactConstructionMaterial(
-        material_id=material_id,
-        origin=MaterialOrigin.SYNTHESIZED,
         sequence_5prime=sequence,
         five_prime_end=five_prime_end,
         three_prime_end=EndChemistry.HYDROXYL,
@@ -81,6 +78,13 @@ def test_derived_source_preparation_materializes_exact_orderable_inputs() -> Non
     assert authority.reverse_primer.oligo.five_prime_end is EndChemistry.PHOSPHATE
     assert authority.forward_primer.annealing_length_nt == 4
     assert authority.reverse_primer.annealing_length_nt == 4
+    assert authority.source_ssdna_use.specification_resolution_mode is MaterialResolutionMode.DERIVE
+    assert (
+        authority.forward_primer_use.specification_resolution_mode is MaterialResolutionMode.DERIVE
+    )
+    assert (
+        authority.reverse_primer_use.specification_resolution_mode is MaterialResolutionMode.DERIVE
+    )
     assert authority == resolve_source_duplex_preparation(
         policy=policy,
         source_sequence="ACGTGGAATTCC",
@@ -121,6 +125,14 @@ def test_constrained_source_primers_choose_the_shortest_valid_lengths() -> None:
     assert authority.reverse_primer.annealing_length_nt == 2
     assert authority.forward_primer.oligo.sequence_5prime == "ACG"
     assert authority.reverse_primer.oligo.sequence_5prime == "GG"
+    assert (
+        authority.forward_primer_use.specification_resolution_mode
+        is MaterialResolutionMode.CONSTRAIN
+    )
+    assert (
+        authority.reverse_primer_use.specification_resolution_mode
+        is MaterialResolutionMode.CONSTRAIN
+    )
 
 
 def test_fixed_source_preparation_replays_caller_materials() -> None:
@@ -163,6 +175,13 @@ def test_fixed_source_preparation_replays_caller_materials() -> None:
     assert authority.source_ssdna == source
     assert authority.forward_primer == forward
     assert authority.reverse_primer == reverse
+    assert authority.source_ssdna_use.specification_resolution_mode is MaterialResolutionMode.FIXED
+    assert (
+        authority.forward_primer_use.specification_resolution_mode is MaterialResolutionMode.FIXED
+    )
+    assert (
+        authority.reverse_primer_use.specification_resolution_mode is MaterialResolutionMode.FIXED
+    )
 
 
 @pytest.mark.parametrize(

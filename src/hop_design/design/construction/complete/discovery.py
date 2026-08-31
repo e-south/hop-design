@@ -284,11 +284,13 @@ def _replay_construction_result(
     ):
         raise TypeError("Construction replay requires verified local construction authorities.")
     verify_hop_bundle_semantics(design)
+    foldback_result = foldback._verified_result()
+    basal_result = None if basal is None else basal._verified_result()
     parsed = ConstructionSpaceResult.model_validate(result.model_dump(mode="python"))
     expected = _discover_constructions_raw(
         parsed.request,
-        foldback=foldback.result,
-        basal=None if basal is None else basal.result,
+        foldback=foldback_result,
+        basal=basal_result,
         design=design,
     )
     if canonical_json_bytes(expected) != canonical_json_bytes(parsed):
@@ -311,10 +313,12 @@ def discover_constructions(
     ):
         raise TypeError("Complete composition requires verified local construction authorities.")
     verify_hop_bundle_semantics(design)
+    foldback_result = foldback._verified_result()
+    basal_result = None if basal is None else basal._verified_result()
     raw = _discover_constructions_raw(
         request,
-        foldback=foldback.result,
-        basal=None if basal is None else basal.result,
+        foldback=foldback_result,
+        basal=basal_result,
         design=design,
     )
     return verify_construction_space_result(

@@ -179,7 +179,7 @@ class PayloadSourceSegment(HopModel):
     """Mapping of one final-payload span into one route-owned source material."""
 
     payload_span: Span
-    source_material_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
+    source_material_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._/@-]*$")
     source_span: Span
     orientation: SourceOrientation
 

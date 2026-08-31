@@ -19,6 +19,7 @@ from hop_design.models.coordinates import Boundary
 from hop_design.models.molecular_state import StrandPairObservation
 from hop_design.models.reactions import ReactionProgram
 
+from .source_preparation_svg import render_source_preparation_rows
 from .svg_common import escape, render_document, short_id
 
 _PAIR_CHUNK_SIZE = 4
@@ -204,6 +205,12 @@ def render_complete_trajectory_svg(
     cursor = 190
     reaction_programs = {item.program_id: item for item in program.reaction_programs}
     aliases = _strand_aliases(program.states)
+    source_rows, source_height = render_source_preparation_rows(
+        realization.source_preparation,
+        y_start=cursor,
+    )
+    rows.append(source_rows)
+    cursor += source_height
     for index, state in enumerate(program.states):
         y = cursor
         phase = state.phase.value.replace("_", " ")

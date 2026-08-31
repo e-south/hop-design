@@ -24,7 +24,7 @@ from hop_design.models.molecular_state import (
 from hop_design.models.plan import FeatureRole, SequenceFeature
 from hop_design.models.sequence import reverse_complement_iupac
 
-from ..material import ExactConstructionMaterial, PcrPrimer
+from ..material import MaterialUse, PcrPrimer
 from .authority import (
     EndpointSequenceFate,
     EndpointSequenceFateSpan,
@@ -67,13 +67,16 @@ def _top_lineage(
     template: MolecularStrand,
     forward: PcrPrimer,
     reverse: PcrPrimer,
+    *,
+    forward_use_id: str,
+    reverse_use_id: str,
 ) -> tuple[MaterialBaseLineage, ...]:
     records: list[MaterialBaseLineage] = []
     for index in range(len(forward.oligo.sequence_5prime)):
         records.append(
             _lineage_record(
                 product_index=len(records),
-                origin_id=forward.oligo.material_id,
+                origin_id=forward_use_id,
                 origin_strand=LineageStrand.PRIMARY,
                 origin_index=index,
             )
@@ -88,7 +91,7 @@ def _top_lineage(
     records.extend(
         _lineage_record(
             product_index=len(records),
-            origin_id=reverse.oligo.material_id,
+            origin_id=reverse_use_id,
             origin_strand=LineageStrand.COMPLEMENTARY,
             origin_index=index,
         )
@@ -104,6 +107,8 @@ def pcr_products(
     forward: PcrPrimer,
     reverse: PcrPrimer,
     *,
+    forward_use_id: str,
+    reverse_use_id: str,
     top_strand_id: str = "complete-hairpin-pcr-top",
     bottom_strand_id: str = "complete-hairpin-pcr-bottom",
 ) -> tuple[MolecularStrand, MolecularStrand]:
@@ -117,7 +122,13 @@ def pcr_products(
         + middle
         + reverse_complement_iupac(reverse.oligo.sequence_5prime)
     )
-    top_lineage = _top_lineage(template, forward, reverse)
+    top_lineage = _top_lineage(
+        template,
+        forward,
+        reverse,
+        forward_use_id=forward_use_id,
+        reverse_use_id=reverse_use_id,
+    )
     top = MolecularStrand(
         strand_id=top_strand_id,
         sequence=top_sequence,
@@ -162,7 +173,8 @@ def _runs(lineage: tuple[MaterialBaseLineage, ...]) -> Iterable[tuple[int, int]]
 
 
 def _material_function_spans(
-    function_by_material: dict[str, MaterialFunction],
+    use_by_id: dict[str, MaterialUse],
+    function_by_use: dict[str, MaterialFunction],
     *,
     top: MolecularStrand,
     bottom: MolecularStrand,
@@ -174,8 +186,9 @@ def _material_function_spans(
     ):
         for start, end in _runs(product.lineage):
             run = product.lineage[start:end]
-            function = function_by_material.get(run[0].origin_id)
-            if function is None:
+            function = function_by_use.get(run[0].origin_id)
+            material_use = use_by_id.get(run[0].origin_id)
+            if function is None or material_use is None:
                 raise ValueError("PCR product lineage must resolve to an exact route material.")
             minimum = min(item.origin_index for item in run)
             maximum = max(item.origin_index for item in run) + 1
@@ -186,7 +199,8 @@ def _material_function_spans(
             )
             records.append(
                 MaterialFunctionSpan(
-                    material_id=run[0].origin_id,
+                    material_use_id=material_use.use_id,
+                    material_id=material_use.material_id,
                     function=function,
                     material_span=_span(minimum, maximum),
                     endpoint_strand=endpoint_strand,
@@ -199,15 +213,16 @@ def _material_function_spans(
 
 def material_function_spans(
     *,
-    materials: tuple[ExactConstructionMaterial, ...],
+    material_uses: tuple[MaterialUse, ...],
     top: MolecularStrand,
     bottom: MolecularStrand,
 ) -> tuple[MaterialFunctionSpan, ...]:
     """Map every retained input-material run to its exact endpoint occurrence."""
     return _material_function_spans(
+        {material_use.use_id: material_use for material_use in material_uses},
         {
-            material.material_id: function
-            for material, function in zip(materials, MaterialFunction, strict=True)
+            material_use.use_id: function
+            for material_use, function in zip(material_uses, MaterialFunction, strict=True)
         },
         top=top,
         bottom=bottom,
@@ -217,17 +232,23 @@ def material_function_spans(
 def validate_material_function_spans(
     *,
     records: tuple[MaterialFunctionSpan, ...],
-    function_by_material: dict[str, MaterialFunction],
+    material_uses: tuple[MaterialUse, ...],
+    function_by_use: dict[str, MaterialFunction],
     top: MolecularStrand,
     bottom: MolecularStrand,
 ) -> None:
     """Require material functions to replay their exact endpoint lineage spans."""
-    if set(function_by_material.values()) != set(MaterialFunction) or any(
-        function_by_material.get(record.material_id) is not record.function for record in records
+    use_by_id = {item.use_id: item for item in material_uses}
+    if set(function_by_use.values()) != set(MaterialFunction) or any(
+        function_by_use.get(record.material_use_id) is not record.function
+        or use_by_id.get(record.material_use_id) is None
+        or use_by_id[record.material_use_id].material_id != record.material_id
+        for record in records
     ):
         raise ValueError("PCR material-function spans must bind exact route material roles.")
     if records != _material_function_spans(
-        function_by_material,
+        use_by_id,
+        function_by_use,
         top=top,
         bottom=bottom,
     ):

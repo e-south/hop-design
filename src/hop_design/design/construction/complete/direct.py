@@ -62,13 +62,13 @@ def _materials(
             request.materialization.adapter,
             (
                 None
-                if request.materialization.forward_primer is None
-                else request.materialization.forward_primer.oligo
+                if request.materialization.hairpin_pcr_forward_primer is None
+                else request.materialization.hairpin_pcr_forward_primer.oligo
             ),
             (
                 None
-                if request.materialization.reverse_primer is None
-                else request.materialization.reverse_primer.oligo
+                if request.materialization.hairpin_pcr_reverse_primer is None
+                else request.materialization.hairpin_pcr_reverse_primer.oligo
             ),
         )
         if item is not None
@@ -102,6 +102,7 @@ def direct_realization(
         or evaluation.source_return_arm is None
         or evaluation.source is None
         or evaluation.source_complement is None
+        or evaluation.source_preparation is None
     ):
         raise ValueError("Compatible combination evaluation lacks exact route materials.")
     prefix = evaluation.prefix
@@ -116,6 +117,8 @@ def direct_realization(
         source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
+        source_use_id=evaluation.source_preparation.prepared_top_use.use_id,
+        source_complement_use_id=evaluation.source_preparation.prepared_bottom_use.use_id,
         evaluation=evaluation,
     )
     if materialized is None:
@@ -162,7 +165,7 @@ def direct_realization(
     source_map = derive_complete_payload_source_map(
         foldback=foldback,
         embedding=embedding,
-        source_material_id=source.material_id,
+        source_material_id=evaluation.source_preparation.source_ssdna.material_id,
     )
     geometry_ids = (
         *(
@@ -193,7 +196,12 @@ def direct_realization(
         payload_source_map=source_map,
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=(None if basal is None else basal.basal_realization_id),
+        source_preparation=evaluation.source_preparation,
         materials=_materials(request, source, source_complement),
+        material_uses=(
+            evaluation.source_preparation.prepared_top_use,
+            evaluation.source_preparation.prepared_bottom_use,
+        ),
         construction_program=program,
         final_product=MaterializedFinalProduct(
             reference=final_reference,

@@ -23,7 +23,9 @@ from .policy import (
     FixedSourceSsdnaPolicy,
     SourceDuplexPreparationPolicy,
 )
-from .resolution import resolve_source_duplex_preparation
+from .resolution import SourcePreparationResolutionError, resolve_source_duplex_preparation
+from .route import LinearSourceMaterializationSpec
+from .route_resolution import resolve_route_source_preparation
 
 __all__ = [
     "ConstrainedPrimerPolicy",
@@ -31,8 +33,11 @@ __all__ = [
     "DerivedSourceSsdnaPolicy",
     "FixedPrimerPolicy",
     "FixedSourceSsdnaPolicy",
+    "LinearSourceMaterializationSpec",
     "SourceDuplexPreparationAuthority",
     "SourceDuplexPreparationPolicy",
+    "SourcePreparationResolutionError",
     "derive_source_duplex_preparation",
+    "resolve_route_source_preparation",
     "resolve_source_duplex_preparation",
 ]

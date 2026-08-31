@@ -11,7 +11,9 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
@@ -19,13 +21,7 @@ from hop_design.models.base import HopModel
 from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import normalize_dna_sequence
 
-
-class MaterialOrigin(StrEnum):
-    """Caller-declared physical origin of one exact route material."""
-
-    SYNTHESIZED = "synthesized"
-    PCR_DERIVED = "pcr_derived"
-    PURIFIED = "purified"
+from .identity import construction_material_id
 
 
 class MaterialResolutionMode(StrEnum):
@@ -37,13 +33,38 @@ class MaterialResolutionMode(StrEnum):
 
 
 class ExactConstructionMaterial(HopModel):
-    """One exact caller-owned material including terminal chemistry."""
+    """One exact molecular material specification including terminal chemistry."""
 
-    material_id: str = Field(pattern=r"^[a-z][a-z0-9_-]*$")
-    origin: MaterialOrigin
+    material_id: str = Field(pattern=r"^hop:construction-material/[0-9a-f]{64}@1$")
+    polymer_type: Literal["DNA"] = "DNA"
+    strandedness: Literal["single_stranded"] = "single_stranded"
+    topology: Literal["linear"] = "linear"
     sequence_5prime: str
     five_prime_end: EndChemistry
     three_prime_end: EndChemistry
+
+    @model_validator(mode="before")
+    @classmethod
+    def seal_content_identity(cls, value: object) -> object:
+        if isinstance(value, cls) or not isinstance(value, Mapping):
+            return value
+        content = dict(value)
+        required = {"sequence_5prime", "five_prime_end", "three_prime_end"}
+        if not required.issubset(content):
+            return value
+        expected = construction_material_id(
+            content["sequence_5prime"],
+            five_prime_end=content["five_prime_end"],
+            three_prime_end=content["three_prime_end"],
+            polymer_type=content.get("polymer_type", "DNA"),
+            strandedness=content.get("strandedness", "single_stranded"),
+            topology=content.get("topology", "linear"),
+        )
+        supplied = content.get("material_id")
+        if supplied is not None and supplied != expected:
+            raise ValueError("Construction material id must equal its molecular content identity.")
+        content["material_id"] = expected
+        return content
 
     @field_validator("sequence_5prime", mode="before")
     @classmethod
@@ -76,40 +97,8 @@ class PcrPrimer(HopModel):
         return self.oligo.sequence_5prime[: -self.annealing_length_nt]
 
 
-class LinearSourceMaterializationSpec(HopModel):
-    """Source origin/chemistry policy plus exact endpoint-dependent auxiliary oligos."""
-
-    source_origin: MaterialOrigin
-    source_five_prime_end: EndChemistry
-    source_three_prime_end: EndChemistry
-    source_complement_origin: MaterialOrigin
-    source_complement_five_prime_end: EndChemistry
-    source_complement_three_prime_end: EndChemistry
-    adapter: ExactConstructionMaterial | None = None
-    forward_primer: PcrPrimer | None = None
-    reverse_primer: PcrPrimer | None = None
-
-    @model_validator(mode="after")
-    def validate_unique_auxiliaries(self) -> LinearSourceMaterializationSpec:
-        materials = tuple(
-            item
-            for item in (
-                self.adapter,
-                None if self.forward_primer is None else self.forward_primer.oligo,
-                None if self.reverse_primer is None else self.reverse_primer.oligo,
-            )
-            if item is not None
-        )
-        ids = tuple(item.material_id for item in materials)
-        if len(ids) != len(set(ids)):
-            raise ValueError("Construction material ids must be unique.")
-        return self
-
-
 __all__ = [
     "ExactConstructionMaterial",
-    "LinearSourceMaterializationSpec",
-    "MaterialOrigin",
     "MaterialResolutionMode",
     "PcrPrimer",
 ]

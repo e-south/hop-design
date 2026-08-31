@@ -19,6 +19,7 @@ from hop_design.models.coordinates import Span
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
 from .material import ExactConstructionMaterial
+from .source_preparation import SourceDuplexPreparationAuthority
 
 
 class CompositionRejectionCode(StrEnum):
@@ -26,6 +27,7 @@ class CompositionRejectionCode(StrEnum):
 
     BASAL_SOURCE_MAP_INCOMPATIBLE = "basal-source-map-incompatible"
     SOURCE_END_CHEMISTRY_MISMATCH = "source-end-chemistry-mismatch"
+    SOURCE_PREPARATION_INCOMPATIBLE = "source-preparation-incompatible"
     GLOBAL_ACTIONABLE_SITE_CONFLICT = "global-actionable-site-conflict"
     DESIGN_ENCODING_MISMATCH = "design-encoding-mismatch"
     PCR_BASAL_OPEN_INCOMPATIBLE = "pcr-basal-open-incompatible"
@@ -50,6 +52,7 @@ class CombinationEvaluation:
     source_return_arm: str | None = None
     source: ExactConstructionMaterial | None = None
     source_complement: ExactConstructionMaterial | None = None
+    source_preparation: SourceDuplexPreparationAuthority | None = None
     reaction_program: ReactionProgram | None = None
     stage_assessments: tuple[ReactionStageAssessment, ...] = ()
     end_generation_program: ReactionProgram | None = None

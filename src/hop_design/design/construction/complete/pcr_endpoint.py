@@ -47,6 +47,7 @@ from hop_design.models.junction import Strand
 from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import SequenceProjection
 
+from .material_uses import pcr_material_uses
 from .pcr import materialize_pcr_program
 
 
@@ -69,9 +70,10 @@ def pcr_realization(
             evaluation.source_return_arm,
             evaluation.source,
             evaluation.source_complement,
+            evaluation.source_preparation,
             request.materialization.adapter,
-            request.materialization.forward_primer,
-            request.materialization.reverse_primer,
+            request.materialization.hairpin_pcr_forward_primer,
+            request.materialization.hairpin_pcr_reverse_primer,
             evaluation.design_parent_span,
         )
     ):
@@ -81,8 +83,8 @@ def pcr_realization(
     source = evaluation.source
     source_complement = evaluation.source_complement
     adapter = request.materialization.adapter
-    forward = request.materialization.forward_primer
-    reverse = request.materialization.reverse_primer
+    forward = request.materialization.hairpin_pcr_forward_primer
+    reverse = request.materialization.hairpin_pcr_reverse_primer
     design_parent_span = evaluation.design_parent_span
     assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
@@ -93,6 +95,12 @@ def pcr_realization(
     if basal.basal_nick.boundary.offset != len(prefix):
         raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
     encoding = request.design.plan.hairpin_encoding_insert
+    material_uses = pcr_material_uses(
+        source_preparation=evaluation.source_preparation,
+        adapter=adapter,
+        forward_primer=forward,
+        reverse_primer=reverse,
+    )
     program, extension = materialize_pcr_program(
         foldback=foldback,
         basal=basal,
@@ -103,6 +111,7 @@ def pcr_realization(
         adapter=adapter,
         forward_primer=forward,
         reverse_primer=reverse,
+        material_uses=material_uses,
         evaluation=evaluation,
         encoding_features=encoding.features,
         design_endpoint_span=design_parent_span,
@@ -155,11 +164,13 @@ def pcr_realization(
                 prefix=prefix,
                 source_return_arm=source_return_arm,
             ),
-            source_material_id=source.material_id,
+            source_material_id=evaluation.source_preparation.source_ssdna.material_id,
         ),
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=basal.basal_realization_id,
+        source_preparation=evaluation.source_preparation,
         materials=materials,
+        material_uses=material_uses,
         construction_program=program,
         final_product=product,
         design=request.design,
@@ -182,6 +193,7 @@ def pcr_realization(
         ),
         route_material_dispositions=derive_route_material_dispositions(
             materials=materials,
+            material_uses=material_uses,
             program=program,
             material_function_spans=extension.material_function_spans,
         ),

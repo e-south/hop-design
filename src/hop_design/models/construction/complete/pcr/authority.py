@@ -28,7 +28,7 @@ from hop_design.models.molecular_state import (
     StrandPairObservation,
 )
 
-from ..material import ExactConstructionMaterial, PcrPrimer
+from ..material import ExactConstructionMaterial, MaterialUse, PcrPrimer
 
 
 class MaterialFunction(StrEnum):
@@ -60,7 +60,8 @@ class EndpointStrand(StrEnum):
 class MaterialFunctionSpan(HopModel):
     """One exact input-material span and the molecular function it supplies."""
 
-    material_id: str = Field(min_length=1)
+    material_use_id: str = Field(pattern=r"^hop:material-use/[0-9a-f]{64}@1$")
+    material_id: str = Field(pattern=r"^hop:construction-material/[0-9a-f]{64}@1$")
     function: MaterialFunction
     material_span: Span
     endpoint_strand: EndpointStrand
@@ -89,6 +90,7 @@ class AdapterAnnealingAuthority(HopModel):
     pre_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
     post_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
     adapter: ExactConstructionMaterial
+    adapter_use: MaterialUse
     hairpin_span: Span
     adapter_span: Span
     pairings: tuple[StrandPairObservation, ...] = Field(min_length=1)
@@ -110,6 +112,8 @@ class AdapterAnnealingAuthority(HopModel):
             self.adapter_span.length.value != len(self.pairings)
         ):
             raise ValueError("Adapter annealing must pair both declared spans completely.")
+        if self.adapter_use.material_id != self.adapter.material_id:
+            raise ValueError("Adapter use must bind its exact molecular material.")
         return self
 
 
@@ -120,6 +124,7 @@ class AdapterLigationAuthority(HopModel):
     pre_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
     post_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
     adapter: ExactConstructionMaterial
+    adapter_use: MaterialUse
     bond: CovalentBond
     product: MolecularStrand
 
@@ -136,6 +141,8 @@ class AdapterLigationAuthority(HopModel):
         content = self.model_dump(mode="json", exclude={"authority_id"})
         if self.authority_id != _content_id("adapter-ligation", 1, content):
             raise ValueError("Adapter-ligation identity must seal its exact product.")
+        if self.adapter_use.material_id != self.adapter.material_id:
+            raise ValueError("Adapter use must bind its exact molecular material.")
         return self
 
 
@@ -147,6 +154,9 @@ class PrimerExtensionAuthority(HopModel):
     post_state_id: str = Field(pattern=r"^hop:construction-state/[0-9a-f]{64}@1$")
     forward_primer: PcrPrimer
     reverse_primer: PcrPrimer
+    forward_primer_use: MaterialUse
+    reverse_primer_use: MaterialUse
+    material_uses: tuple[MaterialUse, MaterialUse, MaterialUse, MaterialUse, MaterialUse]
     bindings: tuple[PrimerBinding, PrimerBinding]
     products: tuple[MolecularStrand, MolecularStrand]
     pairings: tuple[StrandPairObservation, ...] = Field(min_length=1)
@@ -166,12 +176,22 @@ class PrimerExtensionAuthority(HopModel):
         content = self.model_dump(mode="json", exclude={"authority_id"})
         if self.authority_id != _content_id("primer-extension", 1, content):
             raise ValueError("Primer-extension identity must seal exact copied products.")
-        primer_ids = (
-            self.forward_primer.oligo.material_id,
-            self.reverse_primer.oligo.material_id,
+        primer_use_ids = (
+            self.forward_primer_use.use_id,
+            self.reverse_primer_use.use_id,
         )
-        if tuple(item.primer_id for item in self.bindings) != primer_ids:
+        if tuple(item.primer_id for item in self.bindings) != primer_use_ids:
             raise ValueError("Primer bindings must preserve exact declared primer order.")
+        if (
+            self.forward_primer_use.material_id != self.forward_primer.oligo.material_id
+            or self.reverse_primer_use.material_id != self.reverse_primer.oligo.material_id
+        ):
+            raise ValueError("Primer uses must bind their exact molecular materials.")
+        if self.material_uses[-2:] != (
+            self.forward_primer_use,
+            self.reverse_primer_use,
+        ):
+            raise ValueError("Primer extension must preserve the ordered route-use registry.")
         if not {
             MaterialFunction.FORWARD_PRIMER,
             MaterialFunction.REVERSE_PRIMER,

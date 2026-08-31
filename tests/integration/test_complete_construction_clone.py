@@ -42,6 +42,7 @@ from hop_design.models.construction.complete import (
     ConstructionSpaceResult,
     ConstructionStatePhase,
     ConstructionTransitionKind,
+    ExactConstructionMaterial,
     MaterializedConstructionRealization,
     MaterialRetentionDisposition,
     PcrPrimer,
@@ -96,6 +97,15 @@ from tests.integration.test_resolved_compile import _component_spec
 def _substitute_first_base(sequence: str) -> str:
     replacement = next(base for base in "ACGT" if base != sequence[0])
     return replacement + sequence[1:]
+
+
+def _changed_material(
+    material: ExactConstructionMaterial,
+    **changes: object,
+) -> ExactConstructionMaterial:
+    content = material.model_dump(mode="python", exclude={"material_id"})
+    content.update(changes)
+    return ExactConstructionMaterial.model_validate(content)
 
 
 def _clone_basal_result(
@@ -337,8 +347,17 @@ def test_clone_ready_accepts_both_duplex_foldback_orientations(
             ),
         )
     )
+    source_preparation = base.materialization.source_preparation
     materialization = base.materialization.model_copy(
-        update={"source_five_prime_end": EndChemistry.PHOSPHATE}
+        update={
+            "source_preparation": source_preparation.model_copy(
+                update={
+                    "source_ssdna": source_preparation.source_ssdna.model_copy(
+                        update={"five_prime_end": EndChemistry.PHOSPHATE}
+                    )
+                }
+            )
+        }
     )
     request = type(base).model_validate(
         base.model_dump(mode="python")
@@ -370,13 +389,18 @@ def test_clone_ready_accepts_both_duplex_foldback_orientations(
             item.payload_source_map.segments[0].orientation
             is local.payload_source_map.segments[0].orientation
         )
-        material_ids = {material.material_id for material in item.materials}
+        material_use_ids = {
+            item.source_preparation.source_ssdna_use.use_id,
+            item.source_preparation.forward_primer_use.use_id,
+            item.source_preparation.reverse_primer_use.use_id,
+            *(material_use.use_id for material_use in item.material_uses),
+        }
         assert {
             lineage.origin_id
             for state in item.construction_program.states
             for strand in state.molecules
             for lineage in strand.lineage
-        } <= material_ids
+        } <= material_use_ids
         assert item.final_product.encoding_projection.sequence == request.design.encoding_sequence
 
 
@@ -455,20 +479,22 @@ def test_clone_ready_reports_shared_pcr_primer_failures_as_infeasible(
     tmp_path: Path,
 ) -> None:
     base, foldback, basal, design, _, _ = _clone_request(tmp_path)
-    forward = base.materialization.forward_primer
+    forward = base.materialization.hairpin_pcr_forward_primer
     assert forward is not None
     invalid_forward_primers = (
         forward.model_copy(
             update={
-                "oligo": forward.oligo.model_copy(
-                    update={"three_prime_end": EndChemistry.PHOSPHATE}
+                "oligo": _changed_material(
+                    forward.oligo,
+                    three_prime_end=EndChemistry.PHOSPHATE,
                 )
             }
         ),
         forward.model_copy(
             update={
-                "oligo": forward.oligo.model_copy(
-                    update={"sequence_5prime": f"{forward.five_prime_handle}CCCC"}
+                "oligo": _changed_material(
+                    forward.oligo,
+                    sequence_5prime=f"{forward.five_prime_handle}CCCC",
                 )
             }
         ),
@@ -477,7 +503,7 @@ def test_clone_ready_reports_shared_pcr_primer_failures_as_infeasible(
         request = base.model_copy(
             update={
                 "materialization": base.materialization.model_copy(
-                    update={"forward_primer": forward_primer}
+                    update={"hairpin_pcr_forward_primer": forward_primer}
                 )
             }
         )
@@ -505,7 +531,7 @@ def test_clone_ready_rejects_shortened_and_wrong_full_adapter_materials(
         request = base.model_copy(
             update={
                 "materialization": base.materialization.model_copy(
-                    update={"adapter": adapter.model_copy(update={"sequence_5prime": sequence})}
+                    update={"adapter": _changed_material(adapter, sequence_5prime=sequence)}
                 )
             }
         )
@@ -800,13 +826,14 @@ def test_clone_route_rejects_forged_transient_removal_disposition(tmp_path: Path
 
 def test_clone_release_bound_produces_replayable_truncated_result(tmp_path: Path) -> None:
     request, foldback, basal, design, _, _ = _clone_request(tmp_path)
-    reverse = request.materialization.reverse_primer
+    reverse = request.materialization.hairpin_pcr_reverse_primer
     assert reverse is not None and request.release is not None
     second_reverse_site = reverse_complement_iupac("AGAGACCAGAGACC")
     data = request.model_dump(by_alias=True)
-    data["materialization"]["reverse_primer"]["oligo"]["sequence_5prime"] = (
+    data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["sequence_5prime"] = (
         second_reverse_site + reverse.annealing_sequence
     )
+    del data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["material_id"]
     data["release"]["max_site_pairs"] = 1
     bounded = type(request).model_validate(data)
 

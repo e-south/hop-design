@@ -1,4 +1,4 @@
-schema: hop.construction-source/v3
+schema: hop.construction-source/v4
 foldback:
   schema: hop.local-neighborhood-request/v3
   name: null
@@ -96,15 +96,20 @@ basal: null
 composition:
   endpoint: ssdna_hairpin
   materialization:
-    source_origin: synthesized
-    source_five_prime_end: hydroxyl
-    source_three_prime_end: hydroxyl
-    source_complement_origin: synthesized
-    source_complement_five_prime_end: phosphate
-    source_complement_three_prime_end: hydroxyl
+    source_preparation:
+      source_ssdna:
+        mode: derive
+        five_prime_end: hydroxyl
+        three_prime_end: hydroxyl
+      forward_primer:
+        mode: derive
+        annealing_length_nt: 1
+      reverse_primer:
+        mode: derive
+        annealing_length_nt: 1
     adapter: null
-    forward_primer: null
-    reverse_primer: null
+    hairpin_pcr_forward_primer: null
+    hairpin_pcr_reverse_primer: null
   release: null
   whole_route_constraints:
     preserve_payload: true

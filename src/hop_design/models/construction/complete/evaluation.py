@@ -12,15 +12,11 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from hop_design.models.construction.basal import BasalRealizationRecord
-from hop_design.models.construction.foldback import (
-    FoldbackLocalRealization,
-    FoldbackMaterialRequirement,
-)
+from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.payload import (
     ConstructionEndpoint,
 )
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
-from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import reverse_complement_iupac
 
@@ -30,22 +26,26 @@ from .clone import (
     discover_endpoint_release,
 )
 from .evaluation_inputs import (
+    derive_complete_payload_source_span,
     derive_endpoint_source_return_arm,
     derive_linear_source_embedding,
     derive_pcr_design_parent_span,
     derive_route_prefix,
 )
 from .evaluation_result import CombinationEvaluation, CompositionRejectionCode
-from .materials import derive_source_materials
 from .pcr.schedule import derive_pcr_reaction_program
 from .pcr.validation import evaluate_pcr_compatibility
 from .provisioning import merge_provisioning_policies
 from .request import ConstructionDiscoveryRequest
 from .route_schedule import derive_direct_reaction_program
+from .source_preparation import (
+    SourcePreparationResolutionError,
+    resolve_route_source_preparation,
+)
 
 
 def _reverse_handle_sequence(request: ConstructionDiscoveryRequest) -> str:
-    reverse = request.materialization.reverse_primer
+    reverse = request.materialization.hairpin_pcr_reverse_primer
     if reverse is None or not reverse.five_prime_handle:
         return ""
     return reverse_complement_iupac(reverse.five_prime_handle)
@@ -79,10 +79,29 @@ def evaluate_combination(
         prefix=prefix,
         source_return_arm=source_return_arm,
     )
-    source, complement = derive_source_materials(
-        request,
-        embedding.source_sequence,
-        embedding.complement_sequence,
+    payload_source_span = derive_complete_payload_source_span(
+        foldback=foldback,
+        embedding=embedding,
+    )
+    try:
+        source_preparation = resolve_route_source_preparation(
+            policy=request.materialization.source_preparation,
+            source_sequence=embedding.source_sequence,
+            expected_complement_sequence=embedding.complement_sequence,
+            payload_source_span=payload_source_span,
+            material_requirements=foldback.material_requirements,
+        )
+    except SourcePreparationResolutionError:
+        return CombinationEvaluation(
+            rejection_reason=CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE,
+            prefix=prefix,
+            source_return_arm=source_return_arm,
+            candidate_enzyme_programs=candidate_enzyme_programs,
+            recognition_placements_attempted=recognition_placements_attempted,
+            constraint_systems_attempted=constraint_systems_attempted,
+        )
+    source, complement = tuple(
+        binding.material for binding in source_preparation.produced_material_bindings
     )
     pcr_bearing = request.endpoint in {
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
@@ -107,27 +126,11 @@ def evaluate_combination(
                 source_return_arm=source_return_arm,
                 source=source,
                 source_complement=complement,
+                source_preparation=source_preparation,
                 candidate_enzyme_programs=candidate_enzyme_programs,
                 recognition_placements_attempted=recognition_placements_attempted,
                 constraint_systems_attempted=constraint_systems_attempted,
             )
-    if (
-        FoldbackMaterialRequirement.SOURCE_TOP_5PRIME_PHOSPHATE in foldback.material_requirements
-        and source.five_prime_end is not EndChemistry.PHOSPHATE
-    ) or (
-        FoldbackMaterialRequirement.SOURCE_BOTTOM_5PRIME_PHOSPHATE in foldback.material_requirements
-        and complement.five_prime_end is not EndChemistry.PHOSPHATE
-    ):
-        return CombinationEvaluation(
-            rejection_reason=CompositionRejectionCode.SOURCE_END_CHEMISTRY_MISMATCH,
-            prefix=prefix,
-            source_return_arm=source_return_arm,
-            source=source,
-            source_complement=complement,
-            candidate_enzyme_programs=candidate_enzyme_programs,
-            recognition_placements_attempted=recognition_placements_attempted,
-            constraint_systems_attempted=constraint_systems_attempted,
-        )
     policies: tuple[EnzymeProvisioningPolicy, ...] = (foldback_policy,)
     if basal is not None:
         if basal_policy is None:
@@ -164,8 +167,8 @@ def evaluate_combination(
         release_request = request.release
         if basal is None or release_request is None:
             raise ValueError("Clone composition requires basal and endpoint-release authority.")
-        forward = request.materialization.forward_primer
-        reverse = request.materialization.reverse_primer
+        forward = request.materialization.hairpin_pcr_forward_primer
+        reverse = request.materialization.hairpin_pcr_reverse_primer
         assert forward is not None and reverse is not None
         pcr_product = forward.five_prime_handle + pcr_template + _reverse_handle_sequence(request)
         release = discover_endpoint_release(
@@ -187,6 +190,7 @@ def evaluate_combination(
                 source_return_arm=source_return_arm,
                 source=source,
                 source_complement=complement,
+                source_preparation=source_preparation,
                 reaction_program=program,
                 stage_assessments=assessment.stage_assessments,
                 pcr_template_sequence=pcr_template,
@@ -210,6 +214,7 @@ def evaluate_combination(
                 source_return_arm=source_return_arm,
                 source=source,
                 source_complement=complement,
+                source_preparation=source_preparation,
                 reaction_program=program,
                 stage_assessments=assessment.stage_assessments,
                 pcr_template_sequence=pcr_template,
@@ -227,8 +232,8 @@ def evaluate_combination(
         end_generation_bindings = None
     final_sequence = pcr_template
     if pcr_bearing:
-        forward = request.materialization.forward_primer
-        reverse = request.materialization.reverse_primer
+        forward = request.materialization.hairpin_pcr_forward_primer
+        reverse = request.materialization.hairpin_pcr_reverse_primer
         assert forward is not None and reverse is not None
         final_sequence = (
             forward.five_prime_handle + pcr_template + _reverse_handle_sequence(request)
@@ -250,6 +255,7 @@ def evaluate_combination(
             source_return_arm=source_return_arm,
             source=source,
             source_complement=complement,
+            source_preparation=source_preparation,
             reaction_program=program,
             stage_assessments=assessment.stage_assessments,
             end_generation_program=end_program,
@@ -277,6 +283,7 @@ def evaluate_combination(
             source_return_arm=source_return_arm,
             source=source,
             source_complement=complement,
+            source_preparation=source_preparation,
             reaction_program=program,
             stage_assessments=assessment.stage_assessments,
             pcr_template_sequence=pcr_template if pcr_bearing else None,
@@ -292,6 +299,7 @@ def evaluate_combination(
         source_return_arm=source_return_arm,
         source=source,
         source_complement=complement,
+        source_preparation=source_preparation,
         reaction_program=program,
         stage_assessments=assessment.stage_assessments,
         end_generation_program=end_program,

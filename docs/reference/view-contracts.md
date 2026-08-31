@@ -105,14 +105,14 @@ enzyme performance.
 
 ## Complete construction projections
 
-`hop.complete-construction-summary/v1` is the lossless tabular relation over
+`hop.complete-construction-summary/v2` is the lossless tabular relation over
 one verified complete result. Its rows preserve the exact examined Cartesian
 prefix: accepted rows carry materialized route, achieved-geometry, final-
 product, endpoint, and material facts; rejected rows carry one derived
 rejection reason. Counts, failure partitions, material totals, group
 membership, and truncation evidence replay the source result exactly.
 
-`hop.complete-construction-trajectory/v2` embeds the exact chronology of one
+`hop.complete-construction-trajectory/v3` embeds the exact source preparation and chronology of one
 explicitly selected accepted materialized realization. It has no CSV form
 because it is a structured molecular-state sequence rather than a table. The
 public operation requires `materialized_realization_id`; HOP never selects an

@@ -58,8 +58,8 @@ from .validation import (
 class ConstructionSpaceResult(HopModel):
     """Truthful bounded whole-route result with reversible exact grouping."""
 
-    schema_id: Literal["hop.construction-space-result/v3"] = Field(
-        default="hop.construction-space-result/v3", alias="schema"
+    schema_id: Literal["hop.construction-space-result/v4"] = Field(
+        default="hop.construction-space-result/v4", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")

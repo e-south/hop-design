@@ -20,6 +20,7 @@ from hop_design.models.construction.complete import (
     ConstructionState,
     ConstructionStatePhase,
     ExactConstructionMaterial,
+    MaterialUse,
     PcrPrimer,
     PrimerExtensionAuthority,
 )
@@ -36,7 +37,6 @@ from hop_design.models.construction.complete.pcr.route import (
     pcr_cleaved_strands,
     select_pcr_fragments,
 )
-from hop_design.models.construction.complete.route_lineage import material_strand
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
@@ -60,7 +60,9 @@ def _span(start: int, end: int) -> Span:
     return Span(start=Boundary(offset=start), end=Boundary(offset=end))
 
 
-def _lineage_strand(material: ExactConstructionMaterial) -> MolecularStrand:
+def _lineage_strand(
+    material: ExactConstructionMaterial, material_use: MaterialUse
+) -> MolecularStrand:
     return MolecularStrand(
         strand_id="complete-ligation-adapter",
         sequence=material.sequence_5prime,
@@ -69,7 +71,7 @@ def _lineage_strand(material: ExactConstructionMaterial) -> MolecularStrand:
         lineage=tuple(
             MaterialBaseLineage(
                 product_index=index,
-                origin_id=material.material_id,
+                origin_id=material_use.use_id,
                 origin_strand=LineageStrand.PRIMARY,
                 origin_index=index,
             )
@@ -89,6 +91,7 @@ def materialize_pcr_program(
     adapter: ExactConstructionMaterial,
     forward_primer: PcrPrimer,
     reverse_primer: PcrPrimer,
+    material_uses: tuple[MaterialUse, MaterialUse, MaterialUse, MaterialUse, MaterialUse],
     evaluation: CombinationEvaluation,
     encoding_features: tuple[SequenceFeature, ...],
     design_endpoint_span: Span,
@@ -96,47 +99,37 @@ def materialize_pcr_program(
     """Materialize the exact basal-open intermediate through the PCR duplex."""
     if evaluation.reaction_program is None or evaluation.rejection_reason is not None:
         raise ValueError("PCR materialization requires one exact compatible direct spine.")
+    if evaluation.source_preparation is None or tuple(
+        binding.material for binding in evaluation.source_preparation.produced_material_bindings
+    ) != (source, source_complement):
+        raise ValueError("PCR materialization requires the exact prepared source duplex.")
     reaction = evaluation.reaction_program
-    initial_molecules = (
-        material_strand("source-top", source, lineage_strand=LineageStrand.PRIMARY),
-        material_strand(
-            "source-bottom",
-            source_complement,
-            lineage_strand=LineageStrand.COMPLEMENTARY,
-        ),
-    )
-    initial = ConstructionState.create(
-        molecules=initial_molecules,
-        phase=ConstructionStatePhase.DUPLEX,
-        pairings=duplex_pairings(
-            initial_molecules,
-            source_id=source.material_id,
-            complement_id=source_complement.material_id,
-            source_length=len(source.sequence_5prime),
-        ),
-    )
+    source_use, source_complement_use, adapter_use, forward_use, reverse_use = material_uses
+    initial = evaluation.source_preparation.product_state
     product_strands = pcr_cleaved_strands(
         reaction,
         foldback=foldback,
         prefix_length=len(prefix),
         source=source,
         source_complement=source_complement,
+        source_use_id=source_use.use_id,
+        source_complement_use_id=source_complement_use.use_id,
     )
     cleaved = ConstructionState.create(
         molecules=product_strands,
         phase=ConstructionStatePhase.CLEAVED_DUPLEX,
         pairings=duplex_pairings(
             product_strands,
-            source_id=source.material_id,
-            complement_id=source_complement.material_id,
+            source_id=source_use.use_id,
+            complement_id=source_complement_use.use_id,
             source_length=len(source.sequence_5prime),
         ),
     )
     selected_fragments = select_pcr_fragments(
         cleaved.molecules,
         foldback=foldback,
-        source_material_id=source.material_id,
-        source_complement_material_id=source_complement.material_id,
+        source_material_use_id=source_use.use_id,
+        source_complement_material_use_id=source_complement_use.use_id,
         source_return_arm=source_return_arm,
     )
     denatured_molecules = cleaved.molecules
@@ -157,8 +150,8 @@ def materialize_pcr_program(
         selected.molecules,
         foldback=foldback,
         embedding=embedding,
-        source_id=source.material_id,
-        complement_id=source_complement.material_id,
+        source_id=source_use.use_id,
+        complement_id=source_complement_use.use_id,
         source_length=len(source.sequence_5prime),
     )
     annealed = ConstructionState.create(
@@ -195,7 +188,7 @@ def materialize_pcr_program(
             ConstructionBondState(bond=foldback_bond, product_strand_id=closed.strand_id),
         ),
     )
-    adapter_strand = _lineage_strand(adapter)
+    adapter_strand = _lineage_strand(adapter, adapter_use)
     profile = basal.projection.pairing_profile
     if profile is None:
         raise ValueError("PCR adapter requires one exact basal pairing profile.")
@@ -220,6 +213,7 @@ def materialize_pcr_program(
         pre_state_id=closed_state.state_id,
         post_state_id=adapter_annealed.state_id,
         adapter=adapter,
+        adapter_use=adapter_use,
         hairpin_span=profile.source_span,
         adapter_span=profile.adapter_span,
         pairings=adapter_pairs,
@@ -260,10 +254,17 @@ def materialize_pcr_program(
         pre_state_id=adapter_annealed.state_id,
         post_state_id=adapter_ligated.state_id,
         adapter=adapter,
+        adapter_use=adapter_use,
         bond=adapter_bond,
         product=ligated,
     )
-    top, bottom = pcr_products(ligated, forward_primer, reverse_primer)
+    top, bottom = pcr_products(
+        ligated,
+        forward_primer,
+        reverse_primer,
+        forward_use_id=forward_use.use_id,
+        reverse_use_id=reverse_use.use_id,
+    )
     duplex_pairs = tuple(
         observe_pair(
             left_strand_id=top.strand_id,
@@ -283,14 +284,14 @@ def materialize_pcr_program(
     bindings = (
         PrimerBinding(
             binding_id="complete-forward-primer-binding",
-            primer_id=forward_primer.oligo.material_id,
+            primer_id=forward_use.use_id,
             template_strand_id=f"{ligated.strand_id}-derived-complement",
             template_span=_span(0, forward_primer.annealing_length_nt),
             orientation=BindingOrientation.REVERSE_COMPLEMENT_5TO3,
         ),
         PrimerBinding(
             binding_id="complete-reverse-primer-binding",
-            primer_id=reverse_primer.oligo.material_id,
+            primer_id=reverse_use.use_id,
             template_strand_id=ligated.strand_id,
             template_span=_span(
                 len(ligated.sequence) - reverse_primer.annealing_length_nt,
@@ -300,13 +301,7 @@ def materialize_pcr_program(
         ),
     )
     functions = material_function_spans(
-        materials=(
-            source,
-            source_complement,
-            adapter,
-            forward_primer.oligo,
-            reverse_primer.oligo,
-        ),
+        material_uses=material_uses,
         top=top,
         bottom=bottom,
     )
@@ -320,6 +315,9 @@ def materialize_pcr_program(
         post_state_id=pcr_state.state_id,
         forward_primer=forward_primer,
         reverse_primer=reverse_primer,
+        forward_primer_use=forward_use,
+        reverse_primer_use=reverse_use,
+        material_uses=material_uses,
         bindings=bindings,
         products=(top, bottom),
         pairings=duplex_pairs,

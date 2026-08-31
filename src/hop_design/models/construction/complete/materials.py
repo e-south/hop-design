@@ -11,27 +11,16 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 
 from hop_design.models.construction.payload import SourceOrientation
 from hop_design.models.molecular_state import EndChemistry, Fragment, LineageStrand
 from hop_design.models.physical import Strand, classify_literal_pair
 from hop_design.models.reactions import ReactionMolecule
-from hop_design.models.sequence import normalize_dna_sequence
 
 from .evaluation_inputs import LinearSourceEmbedding
 from .material import ExactConstructionMaterial
-from .request import ConstructionDiscoveryRequest
 from .state import ConstructionState, ConstructionStatePhase
-
-
-def derived_source_material_id(sequence: str, *, complementary: bool) -> str:
-    """Return the deterministic identity label for one route-derived source strand."""
-    normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
-    digest = hashlib.sha256(normalized.encode()).hexdigest()[:16]
-    role = "source-complement" if complementary else "source"
-    return f"{role}-{digest}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,31 +243,6 @@ def whole_source_occurrences(
     return occurrences
 
 
-def derive_source_materials(
-    request: ConstructionDiscoveryRequest,
-    sequence: str,
-    complement_sequence: str,
-) -> tuple[ExactConstructionMaterial, ExactConstructionMaterial]:
-    """Derive the exact source pair from one request's materialization policy."""
-    policy = request.materialization
-    return (
-        ExactConstructionMaterial(
-            material_id=derived_source_material_id(sequence, complementary=False),
-            origin=policy.source_origin,
-            sequence_5prime=sequence,
-            five_prime_end=policy.source_five_prime_end,
-            three_prime_end=policy.source_three_prime_end,
-        ),
-        ExactConstructionMaterial(
-            material_id=derived_source_material_id(complement_sequence, complementary=True),
-            origin=policy.source_complement_origin,
-            sequence_5prime=complement_sequence,
-            five_prime_end=policy.source_complement_five_prime_end,
-            three_prime_end=policy.source_complement_three_prime_end,
-        ),
-    )
-
-
 def validate_initial_material_state(
     state: ConstructionState,
     materials: tuple[ExactConstructionMaterial, ...],
@@ -340,7 +304,6 @@ def validate_initial_material_state(
 
 __all__ = [
     "MaterialOccurrence",
-    "derive_source_materials",
     "foldback_occurrences",
     "validate_initial_material_state",
     "whole_source_occurrences",
