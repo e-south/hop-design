@@ -1699,6 +1699,24 @@ def test_pcr_realization_replay_rejects_exact_authority_forgery_matrix(
             validate_pcr_realization(changed)
 
 
+def test_pcr_realization_rejects_source_return_arm_that_is_not_prefix_complement(
+    tmp_path: Path,
+) -> None:
+    result, _, _ = _valid_pcr_result(tmp_path)
+    realization = result.realizations[0]
+    source, source_complement, *remaining = realization.materials
+    changed_last_base = "A" if source_complement.sequence_5prime[-1] != "A" else "C"
+    changed_complement = source_complement.model_copy(
+        update={
+            "sequence_5prime": source_complement.sequence_5prime[:-1] + changed_last_base,
+        }
+    )
+    changed = realization.model_copy(update={"materials": (source, changed_complement, *remaining)})
+
+    with pytest.raises(ValueError, match="reverse complement of the retained prefix"):
+        validate_pcr_realization(changed)
+
+
 def test_primer_extension_rejects_shifted_material_function_endpoint_span(
     tmp_path: Path,
 ) -> None:

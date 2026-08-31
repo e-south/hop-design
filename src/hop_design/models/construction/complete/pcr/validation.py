@@ -175,6 +175,10 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         source_sequence=source.sequence_5prime,
         complement_sequence=source_complement.sequence_5prime,
     )
+    if source_return_arm != reverse_complement_iupac(prefix):
+        raise ValueError(
+            "PCR source-return arm must be the reverse complement of the retained prefix."
+        )
     prefix_length = len(prefix)
     if basal.basal_nick.boundary.offset != prefix_length:
         raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
