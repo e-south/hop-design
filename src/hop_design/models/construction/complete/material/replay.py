@@ -1,7 +1,7 @@
 """
 --------------------------------------------------------------------------------
 HOP Design
-src/hop_design/models/construction/complete/material_replay.py
+src/hop_design/models/construction/complete/material/replay.py
 
 Replays local foldback and source-material facts across complete routes.
 
@@ -14,13 +14,13 @@ from __future__ import annotations
 from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 
-from .evaluation_inputs import replay_linear_source_embedding
-from .pairing_replay import annealed_pairings, duplex_pairings
-from .program import ConstructionProgram
-from .request import ExactConstructionMaterial
-from .route_lineage import derive_post_cleavage_strands
-from .route_schedule import derive_direct_reaction_program
-from .state import ConstructionStatePhase
+from ..evaluation_inputs import replay_linear_source_embedding
+from ..pairing_replay import annealed_pairings, duplex_pairings
+from ..program import ConstructionProgram
+from ..route_lineage import derive_post_cleavage_strands
+from ..route_schedule import derive_direct_reaction_program
+from ..state import ConstructionStatePhase
+from .spec import ExactConstructionMaterial
 
 
 def validate_route_material_lineage(

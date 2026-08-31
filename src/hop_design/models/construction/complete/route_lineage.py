@@ -20,8 +20,8 @@ from hop_design.models.molecular_state import (
 from hop_design.models.reactions import ReactionMolecule
 
 from .evaluation_inputs import LinearSourceEmbedding
+from .material import ExactConstructionMaterial
 from .materials import MaterialOccurrence, foldback_occurrences
-from .request import ExactConstructionMaterial
 
 
 def material_strand(

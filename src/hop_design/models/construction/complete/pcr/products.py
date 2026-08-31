@@ -24,7 +24,7 @@ from hop_design.models.molecular_state import (
 from hop_design.models.plan import FeatureRole, SequenceFeature
 from hop_design.models.sequence import reverse_complement_iupac
 
-from ..request import ExactConstructionMaterial, PcrPrimer
+from ..material import ExactConstructionMaterial, PcrPrimer
 from .authority import (
     EndpointSequenceFate,
     EndpointSequenceFateSpan,

@@ -35,20 +35,21 @@ from .evaluation_inputs import (
     derive_complete_payload_source_map,
     replay_linear_source_embedding,
 )
-from .material_disposition import (
-    RouteMaterialDispositionSpan,
-    derive_route_material_dispositions,
-)
-from .material_replay import (
+from .material import ExactConstructionMaterial
+from .material.replay import (
     validate_foldback_annealing,
     validate_route_derivation,
     validate_route_material_lineage,
+)
+from .material_disposition import (
+    RouteMaterialDispositionSpan,
+    derive_route_material_dispositions,
 )
 from .materials import validate_initial_material_state
 from .pcr.validation import validate_pcr_realization
 from .product import MaterializedFinalProduct
 from .program import ConstructionProgram
-from .request import DesignAuthorityReference, ExactConstructionMaterial
+from .request import DesignAuthorityReference
 from .source_authority import validate_local_authorities
 from .state import ConstructionStatePhase
 

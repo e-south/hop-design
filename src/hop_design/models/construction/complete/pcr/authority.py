@@ -28,7 +28,7 @@ from hop_design.models.molecular_state import (
     StrandPairObservation,
 )
 
-from ..request import ExactConstructionMaterial, PcrPrimer
+from ..material import ExactConstructionMaterial, PcrPrimer
 
 
 class MaterialFunction(StrEnum):

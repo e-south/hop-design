@@ -17,7 +17,7 @@ from hop_design.models.molecular_state import MolecularStrand
 from hop_design.models.reactions import ReactionProgram
 
 from ..evaluation_inputs import replay_linear_source_embedding
-from ..request import ExactConstructionMaterial
+from ..material import ExactConstructionMaterial
 from ..route_lineage import derive_post_cleavage_strands
 
 

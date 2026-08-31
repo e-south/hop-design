@@ -21,10 +21,8 @@ from hop_design.models.reactions import ReactionMolecule
 from hop_design.models.sequence import normalize_dna_sequence
 
 from .evaluation_inputs import LinearSourceEmbedding
-from .request import (
-    ConstructionDiscoveryRequest,
-    ExactConstructionMaterial,
-)
+from .material import ExactConstructionMaterial
+from .request import ConstructionDiscoveryRequest
 from .state import ConstructionState, ConstructionStatePhase
 
 

@@ -17,7 +17,7 @@ from hop_design.models.construction.payload import SourceOrientation, _content_i
 from hop_design.models.reactions import ReactionMolecule, ReactionProgram
 
 from ..evaluation_inputs import derive_linear_source_embedding
-from ..request import ExactConstructionMaterial
+from ..material import ExactConstructionMaterial
 from ..route_schedule import derive_direct_reaction_program
 
 

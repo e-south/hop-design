@@ -21,9 +21,9 @@ from hop_design.models.base import HopModel
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
 
+from .material import ExactConstructionMaterial
 from .pcr import EndpointStrand, MaterialFunction, MaterialFunctionSpan
 from .program import ConstructionProgram
-from .request import ExactConstructionMaterial
 
 
 class MaterialRetentionDisposition(StrEnum):

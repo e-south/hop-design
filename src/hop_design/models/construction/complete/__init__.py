@@ -24,6 +24,12 @@ from .authority import (
     ConstructionCompositionExecution,
     ConstructionCompositionProvenance,
 )
+from .material import (
+    ExactConstructionMaterial,
+    LinearSourceMaterializationSpec,
+    MaterialOrigin,
+    PcrPrimer,
+)
 from .material_disposition import (
     EndpointMaterialOccurrence,
     MaterialRetentionDisposition,
@@ -49,10 +55,6 @@ from .realization import MaterializedConstructionRealization
 from .request import (
     ConstructionDiscoveryRequest,
     DesignAuthorityReference,
-    ExactConstructionMaterial,
-    LinearSourceMaterializationSpec,
-    MaterialOrigin,
-    PcrPrimer,
     ReleaseSideRequirement,
     TypeIisReleaseRequest,
     WholeRouteConstraints,

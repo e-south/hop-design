@@ -18,7 +18,7 @@ from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBind
 from hop_design.models.coordinates import Span
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
-from .request import ExactConstructionMaterial
+from .material import ExactConstructionMaterial
 
 
 class CompositionRejectionCode(StrEnum):
