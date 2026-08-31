@@ -41,6 +41,7 @@ from hop_design.models.basal_policy import BasalEvaluation, BasalPolicyStatus
 from hop_design.models.derivation import (
     CatalogJunctionDerivation,
     EvaluatedComponentDerivation,
+    ExactJunctionComponentDerivation,
     PlanDesignDerivation,
     ResolvedJunctionDerivation,
 )
@@ -50,8 +51,10 @@ from hop_design.models.payload import DegeneratePayload, ExactPayload
 from hop_design.models.sequence import EXACT_DNA_ALPHABET, normalize_dna_sequence
 from hop_design.models.spec import (
     BasalSelection,
+    DesignAuthoritySpec,
     DesignLimits,
     DesignSpec,
+    ExactJunctionDesignSpec,
     FoldbackSelection,
     HopSpec,
     JunctionRequest,
@@ -160,8 +163,33 @@ def check_spec(spec: DesignSpec) -> CheckReport:
     return CheckReport()
 
 
-def compile_spec(spec: DesignSpec) -> Compilation:
+def compile_spec(spec: DesignAuthoritySpec) -> Compilation:
     """Compile one catalog-backed or explicit-component design specification."""
+    if isinstance(spec, ExactJunctionDesignSpec):
+        exact_derivation = ExactJunctionComponentDerivation(
+            derivation_id=spec.design_derivation_ref,
+            description=(
+                "Exact caller-selected foldback and basal components used to derive one "
+                "hairpin encoding without a production-method claim."
+            ),
+            catalog_ref=spec.catalog_ref,
+            foldback_junction=spec.foldback_junction,
+            basal_junction=spec.basal_junction,
+        )
+        return assemble_compilation(
+            spec=spec,
+            report=CheckReport(),
+            derivation=exact_derivation,
+            catalog_ref=spec.catalog_ref,
+            foldback_ref=spec.foldback_junction.junction_id,
+            basal_ref=spec.basal_junction.junction_id,
+            foldback_sequence=spec.foldback_junction.sequence,
+            basal_left_arm=spec.basal_junction.left_arm,
+            basal_right_arm=spec.basal_junction.right_arm,
+            stem_extension=None,
+            derivation_source_sequence=None,
+            additional_artifacts={},
+        )
     if isinstance(spec, ResolvedHopSpec):
         resolved = _evaluate_resolved_spec(spec)
         resolved.report.raise_for_errors()
@@ -265,17 +293,17 @@ def compile_spec(spec: DesignSpec) -> Compilation:
         )
 
     report = check_spec(spec)
-    derivation = _resolve_derivation(spec)
+    catalog_derivation = _resolve_derivation(spec)
     return assemble_compilation(
         spec=spec,
         report=report,
-        derivation=derivation,
+        derivation=catalog_derivation,
         catalog_ref=CATALOG_REF,
-        foldback_ref=derivation.foldback_junction.junction_id,
-        basal_ref=derivation.basal_junction.junction_id,
-        foldback_sequence=derivation.foldback_junction.sequence,
-        basal_left_arm=derivation.basal_junction.left_arm,
-        basal_right_arm=derivation.basal_junction.right_arm,
+        foldback_ref=catalog_derivation.foldback_junction.junction_id,
+        basal_ref=catalog_derivation.basal_junction.junction_id,
+        foldback_sequence=catalog_derivation.foldback_junction.sequence,
+        basal_left_arm=catalog_derivation.basal_junction.left_arm,
+        basal_right_arm=catalog_derivation.basal_junction.right_arm,
         stem_extension=None,
         derivation_source_sequence=None,
         additional_artifacts={},

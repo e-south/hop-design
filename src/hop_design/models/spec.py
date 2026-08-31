@@ -9,7 +9,13 @@ from pydantic import Field, model_validator
 from hop_design.models.basal_policy import BasalDesignRequest
 from hop_design.models.base import HopModel
 from hop_design.models.foldback import FoldbackEvaluationRequest
-from hop_design.models.payload import Payload
+from hop_design.models.junction import (
+    BasalJunction,
+    FoldbackJunction,
+    derive_exact_basal_junction_id,
+    derive_exact_foldback_junction_id,
+)
+from hop_design.models.payload import ExactPayload, Payload
 from hop_design.models.references import ExternalRef, ReferenceId
 from hop_design.models.stem import PairedStemExtensionRequest
 from hop_design.models.strand_state import ReleaseProjectionRequest
@@ -85,4 +91,51 @@ class ResolvedHopSpec(HopModel):
         return self
 
 
+class ExactJunctionDesignSpec(HopModel):
+    """Exact route-neutral junction components used to derive one design authority."""
+
+    schema_id: Literal["hop.exact-junction-design/v1"] = Field(
+        default="hop.exact-junction-design/v1", alias="schema"
+    )
+    design_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")
+    payload: ExactPayload
+    foldback_junction: FoldbackJunction
+    basal_junction: BasalJunction
+    defaults_ref: Literal["hop:defaults/exact-junction-components@1"] = (
+        "hop:defaults/exact-junction-components@1"
+    )
+    catalog_ref: Literal["hop:catalog/exact-junction-components@1"] = (
+        "hop:catalog/exact-junction-components@1"
+    )
+    constraint_profile_ref: Literal["hop:constraints/exact-junction-components@1"] = (
+        "hop:constraints/exact-junction-components@1"
+    )
+    design_derivation_ref: Literal["hop:derivation/exact-junction-components@1"] = (
+        "hop:derivation/exact-junction-components@1"
+    )
+    external_refs: tuple[ExternalRef, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_junction_identities(self) -> ExactJunctionDesignSpec:
+        foldback = self.foldback_junction
+        expected_foldback = derive_exact_foldback_junction_id(
+            sequence=foldback.sequence,
+            retained_nt=foldback.retained_tract_span.length.value,
+            turn_nt=foldback.turn_span.length.value,
+            pairs=foldback.pairs,
+        )
+        if foldback.junction_id != expected_foldback:
+            raise ValueError("Exact foldback junction must use its content-derived identity.")
+        basal = self.basal_junction
+        expected_basal = derive_exact_basal_junction_id(
+            left_arm=basal.left_arm,
+            right_arm=basal.right_arm,
+            pairs=basal.pairs,
+        )
+        if basal.junction_id != expected_basal:
+            raise ValueError("Exact basal junction must use its content-derived identity.")
+        return self
+
+
 DesignSpec = HopSpec | ResolvedHopSpec
+DesignAuthoritySpec = DesignSpec | ExactJunctionDesignSpec

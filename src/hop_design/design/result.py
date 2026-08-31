@@ -9,14 +9,14 @@ from pathlib import Path
 from hop_design.models.bundle import HopBundle
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.plan import HopPlan
-from hop_design.models.spec import DesignSpec
+from hop_design.models.spec import DesignAuthoritySpec
 
 
 @dataclass(frozen=True)
 class Compilation:
     """One checked spec, resolved plan, bundle manifest, and generated artifacts."""
 
-    spec: DesignSpec
+    spec: DesignAuthoritySpec
     report: CheckReport
     plan: HopPlan
     bundle: HopBundle

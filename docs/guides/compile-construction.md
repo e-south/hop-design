@@ -24,6 +24,33 @@ Use `hop_design.construction` when the question is:
 This is a specialist file-oriented workflow. It does not change the shorter
 substrate-space journey and does not select an experimentally preferred route.
 
+## Derive a design from selected local alternatives
+
+When local discovery precedes design compilation, select exact realization ids
+explicitly and derive the matching design before complete composition:
+
+```python
+import hop_design.construction as construction
+
+design = construction.compile_design_from_local_realizations(
+    design_id="selected-route-design",
+    payload_sequence="GACA",
+    endpoint="hairpin_pcr_duplex",
+    foldback=verified_foldback_receipt,
+    foldback_realization_id=selected_foldback_id,
+    basal=verified_basal_receipt,
+    basal_realization_id=selected_basal_id,
+)
+design.write("design-bundle")
+```
+
+The operation verifies both receipts and compiles only the selected exact
+molecular components. It does not rank alternatives. Search-result identity,
+execution bounds, relaxation radius, and enzyme chronology remain construction
+evidence rather than design identity. PCR-bearing endpoints require basal
+selection. Direct single-stranded design compilation is deferred because this
+operation has no independent exact-basal input and does not invent one.
+
 ## Prepare the two authorities
 
 Construction compilation requires two independent inputs:

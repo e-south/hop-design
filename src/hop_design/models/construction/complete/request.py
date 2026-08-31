@@ -30,10 +30,10 @@ from hop_design.models.molecular_state import EndChemistry, StrandEnd
 from hop_design.models.physical import SiteOrientation
 from hop_design.models.plan import HopPlan
 from hop_design.models.sequence import normalize_dna_sequence
-from hop_design.models.spec import DesignSpec
+from hop_design.models.spec import DesignAuthoritySpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-_DESIGN_SPEC_ADAPTER: TypeAdapter[DesignSpec] = TypeAdapter(DesignSpec)
+_DESIGN_SPEC_ADAPTER: TypeAdapter[DesignAuthoritySpec] = TypeAdapter(DesignAuthoritySpec)
 
 
 class MaterialOrigin(StrEnum):
@@ -178,7 +178,7 @@ class DesignAuthorityReference(HopModel):
     """Exact verified-design relation required by whole-route composition."""
 
     bundle: HopBundle
-    spec: DesignSpec
+    spec: DesignAuthoritySpec
     plan: HopPlan
     plan_id: str = Field(min_length=1)
     design_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]{0,63}$")

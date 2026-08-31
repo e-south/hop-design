@@ -31,12 +31,17 @@ from hop_design.models.bundle import (
     manifest_digest_for_bundle,
 )
 from hop_design.models.plan import HopPlan
-from hop_design.models.spec import DesignSpec, HopSpec, ResolvedHopSpec
+from hop_design.models.spec import (
+    DesignAuthoritySpec,
+    ExactJunctionDesignSpec,
+    HopSpec,
+    ResolvedHopSpec,
+)
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from .publication import publish_directory_create_only
 
-_SPEC_ADAPTER: TypeAdapter[DesignSpec] = TypeAdapter(DesignSpec)
+_SPEC_ADAPTER: TypeAdapter[DesignAuthoritySpec] = TypeAdapter(DesignAuthoritySpec)
 
 
 class WritableCompilation(Protocol):
@@ -66,7 +71,7 @@ class VerifiedBundleContents:
     """Integrity-checked bundle content awaiting design-layer semantic replay."""
 
     bundle: HopBundle
-    spec: DesignSpec
+    spec: DesignAuthoritySpec
     plan: HopPlan
     provenance: ProvenanceRecord
     artifacts: Mapping[str, bytes]
@@ -275,6 +280,12 @@ def verify_bundle_contents(bundle_path: str | Path) -> VerifiedBundleContents:
         raise BundleIntegrityError("Bundle plan junction lock does not match its authored spec.")
     if isinstance(spec, ResolvedHopSpec) and plan.lock.catalog_ref != spec.catalog_ref:
         raise BundleIntegrityError("Bundle plan catalog lock does not match its authored spec.")
+    if isinstance(spec, ExactJunctionDesignSpec) and (
+        plan.lock.catalog_ref != spec.catalog_ref
+        or plan.lock.foldback_junction_ref != spec.foldback_junction.junction_id
+        or plan.lock.basal_junction_ref != spec.basal_junction.junction_id
+    ):
+        raise BundleIntegrityError("Bundle plan component lock does not match its authored spec.")
 
     provenance_lock = (
         provenance.compiler_version,

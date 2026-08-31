@@ -41,6 +41,12 @@ All operations and receipts in this section use `hop_design.construction`.
   loads one strict file and a separate verified design authority, discovers
   local neighborhoods, composes the bounded whole route, and returns an opaque
   write-capable receipt.
+- `compile_design_from_local_realizations(...) -> Compilation` replays one
+  explicitly selected foldback realization and, for a PCR-bearing endpoint,
+  one explicitly selected basal realization, then derives their exact
+  route-neutral design authority. The operation accepts no direct endpoint,
+  does not select a realization, and does not carry search ids or bounds into
+  design identity.
 - `discover_local_neighborhood(source_path) -> LocalNeighborhoodDiscovery`
   runs one strict foldback or basal neighborhood request and returns an opaque,
   replay-verified family receipt without claiming a complete route. Large exact

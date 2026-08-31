@@ -110,7 +110,7 @@ chemistry, thermodynamic and enzyme-performance prediction, study history,
 experimental evidence, and manuscript assembly remain deferred or
 consumer-owned.
 
-The construction facade is not a second scientist quickstart. Its ten-name
+The construction facade is not a second scientist quickstart. Its exact
 allowlist accepts strict files and a separately verified design authority. Raw
 construction models remain internal, and no compatibility alias exposes their
 former or current internal paths.
