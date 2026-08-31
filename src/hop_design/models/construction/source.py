@@ -18,8 +18,8 @@ from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
 
+from .complete.accounting import CompositionEnumerationPolicy
 from .complete.request import (
-    CompositionEnumerationPolicy,
     LinearSourceMaterializationSpec,
     TypeIisReleaseRequest,
     WholeRouteConstraints,

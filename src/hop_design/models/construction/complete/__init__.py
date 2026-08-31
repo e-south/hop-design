@@ -11,7 +11,11 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from .accounting import CompositionAccounting
+from .accounting import (
+    CompositionAccounting,
+    CompositionEnumerationPolicy,
+    CompositionPruningMode,
+)
 from .associations import ConstructionBondState
 from .authority import (
     CompositionDisposition,
@@ -25,6 +29,7 @@ from .material_disposition import (
     MaterialRetentionDisposition,
     RouteMaterialDispositionSpan,
 )
+from .materials import derived_source_material_id
 from .pcr import (
     AdapterAnnealingAuthority,
     AdapterLigationAuthority,
@@ -42,8 +47,6 @@ from .program import (
 )
 from .realization import MaterializedConstructionRealization
 from .request import (
-    CompositionEnumerationPolicy,
-    CompositionPruningMode,
     ConstructionDiscoveryRequest,
     DesignAuthorityReference,
     ExactConstructionMaterial,
@@ -53,7 +56,6 @@ from .request import (
     ReleaseSideRequirement,
     TypeIisReleaseRequest,
     WholeRouteConstraints,
-    derived_source_material_id,
 )
 from .result import ConstructionSpaceResult
 from .state import ConstructionState, ConstructionStatePhase

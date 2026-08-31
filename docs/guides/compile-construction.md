@@ -51,6 +51,26 @@ evidence rather than design identity. PCR-bearing endpoints require basal
 selection. Direct single-stranded design compilation is deferred because this
 operation has no independent exact-basal input and does not invent one.
 
+Compile only that foldback-basal pair against the matching design when the
+scientific question concerns the selected route rather than the complete local
+Cartesian product:
+
+```python
+selected = construction.compile_construction_from_local_realizations(
+    "construction.yaml",
+    design_bundle_path="design-bundle",
+    foldback=verified_foldback_receipt,
+    foldback_realization_id=selected_foldback_id,
+    basal=verified_basal_receipt,
+    basal_realization_id=selected_basal_id,
+)
+```
+
+Both receipts must derive from the exact local requests in the construction
+source. The returned receipt uses the ordinary portable construction authority
+and reports one nominal and one examined combination. HOP evaluates the pair;
+it does not select it or reinterpret its deterministic ordinal as a score.
+
 ## Prepare the two authorities
 
 Construction compilation requires two independent inputs:

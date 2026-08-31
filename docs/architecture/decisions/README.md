@@ -39,6 +39,7 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0029: Separate source partition from junction geometry](0029-separate-source-partition-from-junction-geometry.md) — amends 0026
 - [0030: Partition exact local sequence domains without changing molecular identity](0030-partition-exact-local-sequence-domains.md)
 - [0031: Derive exact designs from selected local realizations](0031-derive-designs-from-local-realizations.md)
+- [0032: Compose one explicitly selected local pair](0032-compose-one-selected-local-pair.md)
 
 ## Hairpin language
 

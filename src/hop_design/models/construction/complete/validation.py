@@ -30,7 +30,8 @@ from .authority import (
     ConstructionCompositionProvenance,
 )
 from .evaluation import CompositionRejectionCode, evaluate_combination
-from .request import ConstructionDiscoveryRequest, derived_source_material_id
+from .materials import derived_source_material_id
+from .request import ConstructionDiscoveryRequest
 from .state import ConstructionStatePhase
 
 
@@ -206,8 +207,9 @@ def validate_combination_evaluations(
             raise ValueError("Disposition metrics must equal exact combination evaluation.")
         evaluated.append((disposition, evaluation))
 
-    basal_count = 1 if basal_authority is None else len(basal_by_id)
-    all_examined = len(evaluated) == len(foldback_by_id) * basal_count
+    basal_count = 1 if request.selects_local_pair or basal_authority is None else len(basal_by_id)
+    foldback_count = 1 if request.selects_local_pair else len(foldback_by_id)
+    all_examined = len(evaluated) == foldback_count * basal_count
     has_intrinsic_failure = any(
         evaluation.rejection_reason is not None for _, evaluation in evaluated
     )

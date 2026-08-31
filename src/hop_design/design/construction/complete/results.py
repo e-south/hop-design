@@ -114,6 +114,26 @@ def build_result(
         hop_version=hop_version,
         enumeration=request.enumeration,
     )
+    foldback_realization_ids = (
+        (request.selected_foldback_realization_id,)
+        if request.selected_foldback_realization_id is not None
+        else tuple(
+            item.foldback_realization_id
+            for item in foldback_authority.realizations
+            if item.payload_sequence == request.payload.payload.sequence
+        )
+    )
+    basal_realization_ids = (
+        (request.selected_basal_realization_id,)
+        if request.selected_basal_realization_id is not None
+        else ()
+        if basal_authority is None
+        else tuple(
+            item.basal_realization_id
+            for item in basal_authority.realizations
+            if item.payload_sequence == request.payload.payload.sequence
+        )
+    )
     return ConstructionSpaceResult.create(
         problem_id=problem,
         execution_id=execution.execution_id,
@@ -165,20 +185,8 @@ def build_result(
             foldback_result_id=foldback_authority.result_id,
             basal_result_id=(None if basal_authority is None else basal_authority.result_id),
             design_bundle_id=design_bundle_id,
-            foldback_realization_ids=tuple(
-                item.foldback_realization_id
-                for item in foldback_authority.realizations
-                if item.payload_sequence == request.payload.payload.sequence
-            ),
-            basal_realization_ids=(
-                ()
-                if basal_authority is None
-                else tuple(
-                    item.basal_realization_id
-                    for item in basal_authority.realizations
-                    if item.payload_sequence == request.payload.payload.sequence
-                )
-            ),
+            foldback_realization_ids=foldback_realization_ids,
+            basal_realization_ids=basal_realization_ids,
         ),
         projection_inventory=(
             ProjectionInventoryItem(

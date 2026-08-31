@@ -19,8 +19,8 @@ from pydantic import Field
 from hop_design.models.base import HopModel
 from hop_design.models.construction.payload import _content_id
 
+from .accounting import CompositionEnumerationPolicy
 from .evaluation import CompositionRejectionCode
-from .request import CompositionEnumerationPolicy
 
 
 class ConstructionCompositionExecution(HopModel):

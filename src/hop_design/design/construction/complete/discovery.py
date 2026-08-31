@@ -41,11 +41,15 @@ from hop_design.models.construction.complete.evaluation import (
 from hop_design.models.construction.complete.local_authority import (
     validate_local_authority_compatibility,
 )
+from hop_design.models.construction.complete.source_authority import (
+    expected_upstream_truncation_reasons,
+)
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 
 from .design_authority import assert_design_authority
 from .endpoint import materialize_endpoint
 from .results import build_result
+from .selection import select_basal_records, select_foldback_records
 
 
 @dataclass(frozen=True)
@@ -83,19 +87,25 @@ def _discover_constructions_raw(
         raise ValueError("Foldback detailed result identity does not match the request.")
     if (None if basal is None else basal.result_id) != request.basal_result_id:
         raise ValueError("Basal detailed result identity does not match the request.")
-    foldback_records = tuple(
-        item
-        for item in foldback.realizations
-        if item.payload_sequence == request.payload.payload.sequence
-    )
-    basal_records: tuple[BasalRealizationRecord | None, ...] = (
-        (None,)
-        if basal is None
-        else tuple(
+    foldback_records = select_foldback_records(
+        tuple(
             item
-            for item in basal.realizations
+            for item in foldback.realizations
             if item.payload_sequence == request.payload.payload.sequence
-        )
+        ),
+        request.selected_foldback_realization_id,
+    )
+    basal_records: tuple[BasalRealizationRecord | None, ...] = select_basal_records(
+        (
+            (None,)
+            if basal is None
+            else tuple(
+                item
+                for item in basal.realizations
+                if item.payload_sequence == request.payload.payload.sequence
+            )
+        ),
+        request.selected_basal_realization_id,
     )
     nominal = len(foldback_records) * len(basal_records)
     records: list[MaterializedConstructionRealization] = []
@@ -211,20 +221,10 @@ def _discover_constructions_raw(
             for item in dispositions
         ]
         exact = ()
-    upstream_truncation_reasons = tuple(
-        f"foldback:{reason}"
-        for reason in (
-            foldback.neighborhood.truncation_reasons
-            if foldback.neighborhood.status is SearchCompletionStatus.TRUNCATED
-            else ()
-        )
-    ) + tuple(
-        f"basal:{reason}"
-        for reason in (
-            basal.discovery.truncation_reasons
-            if basal is not None and basal.discovery.status is SearchCompletionStatus.TRUNCATED
-            else ()
-        )
+    upstream_truncation_reasons = expected_upstream_truncation_reasons(
+        request=request,
+        foldback=foldback,
+        basal=basal,
     )
     status = (
         SearchCompletionStatus.TRUNCATED

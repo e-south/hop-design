@@ -38,6 +38,9 @@ not public facades.
 All operations and receipts in this section use `hop_design.construction`.
 
 - `compile_construction(source_path, design_bundle_path=...) -> ConstructionCompilation`
+- `compile_construction_from_local_realizations(source_path, design_bundle_path=...,
+  foldback=..., foldback_realization_id=..., basal=...,
+  basal_realization_id=...) -> ConstructionCompilation`
   loads one strict file and a separate verified design authority, discovers
   local neighborhoods, composes the bounded whole route, and returns an opaque
   write-capable receipt.

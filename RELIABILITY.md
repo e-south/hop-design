@@ -108,6 +108,9 @@ result, so a checksum-consistent subset, reordering, or extra row is rejected.
 Complete construction composition computes the nominal local Cartesian
 cardinality before evaluation, examines only its canonical bounded prefix, and
 records accepted plus rejected dispositions for every examined combination.
+Selected-pair composition instead records the explicit foldback and basal
+selection in the request and evaluates exactly that one replay-verified pair;
+absent selection fields do not alter exhaustive compilation bytes.
 `complete` and `infeasible` require full nominal exhaustion; `truncated`
 requires an exact local or composition reason. Accepted realizations remain
 separately identifiable even when achieved-geometry or final-product groups

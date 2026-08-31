@@ -11,20 +11,29 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 
 from hop_design.models.construction.payload import SourceOrientation
 from hop_design.models.molecular_state import EndChemistry, Fragment, LineageStrand
 from hop_design.models.physical import Strand, classify_literal_pair
 from hop_design.models.reactions import ReactionMolecule
+from hop_design.models.sequence import normalize_dna_sequence
 
 from .evaluation_inputs import LinearSourceEmbedding
 from .request import (
     ConstructionDiscoveryRequest,
     ExactConstructionMaterial,
-    derived_source_material_id,
 )
 from .state import ConstructionState, ConstructionStatePhase
+
+
+def derived_source_material_id(sequence: str, *, complementary: bool) -> str:
+    """Return the deterministic identity label for one route-derived source strand."""
+    normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
+    digest = hashlib.sha256(normalized.encode()).hexdigest()[:16]
+    role = "source-complement" if complementary else "source"
+    return f"{role}-{digest}"
 
 
 @dataclass(frozen=True, slots=True)

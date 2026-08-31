@@ -3,7 +3,7 @@
 HOP Design
 src/hop_design/models/construction/complete/accounting.py
 
-Defines whole-route composition accounting and reversible group replay.
+Defines whole-route enumeration policy, accounting, and reversible group replay.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import Counter
+from enum import StrEnum
 from typing import Any
 
 from pydantic import Field, model_validator
@@ -19,6 +20,21 @@ from pydantic import Field, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.construction.accounting import RealizationGroup, RealizationGrouping
 from hop_design.models.construction.payload import _content_id
+
+
+class CompositionPruningMode(StrEnum):
+    """Closed whole-route composition pruning modes."""
+
+    DISABLED = "disabled"
+    PROOF_SAFE = "proof_safe"
+
+
+class CompositionEnumerationPolicy(HopModel):
+    """Finite complete-route enumeration limits and safe pruning policy."""
+
+    pruning: CompositionPruningMode = CompositionPruningMode.DISABLED
+    max_combinations: int = Field(ge=1)
+    max_realizations: int = Field(ge=1)
 
 
 class CompositionAccounting(HopModel):
@@ -89,4 +105,9 @@ def validate_realization_groups(
         raise ValueError("Construction groups must replay member semantics exactly.")
 
 
-__all__ = ["CompositionAccounting", "validate_realization_groups"]
+__all__ = [
+    "CompositionAccounting",
+    "CompositionEnumerationPolicy",
+    "CompositionPruningMode",
+    "validate_realization_groups",
+]

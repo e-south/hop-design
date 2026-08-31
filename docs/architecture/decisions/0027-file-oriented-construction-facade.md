@@ -56,6 +56,7 @@ The exact public allowlist is:
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
 - `compile_construction`;
+- `compile_construction_from_local_realizations`;
 - `compile_design_from_local_realizations`;
 - `discover_local_neighborhood`;
 - `discover_source_partition`;

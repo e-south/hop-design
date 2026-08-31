@@ -70,6 +70,11 @@ strict construction source + separately verified HopBundle
   -> verified complete construction
   -> opaque receipt
   -> portable ConstructionBundle or neutral projection packet
+
+strict construction source + matching HopBundle + selected local ids
+  -> verify the exact local receipts and source relation
+  -> evaluate and materialize one foldback-basal pair
+  -> the same opaque receipt and portable authority
 ```
 
 The source owns requests, exact materials, constraints, and bounds. The design

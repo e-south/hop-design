@@ -33,6 +33,8 @@ from hop_design.models.sequence import normalize_dna_sequence
 from hop_design.models.spec import DesignAuthoritySpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
+from .accounting import CompositionEnumerationPolicy
+
 _DESIGN_SPEC_ADAPTER: TypeAdapter[DesignAuthoritySpec] = TypeAdapter(DesignAuthoritySpec)
 
 
@@ -136,14 +138,6 @@ class TypeIisReleaseRequest(HopModel):
         return self
 
 
-def derived_source_material_id(sequence: str, *, complementary: bool) -> str:
-    """Return the deterministic identity label for one route-derived source strand."""
-    normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
-    digest = hashlib.sha256(normalized.encode()).hexdigest()[:16]
-    role = "source-complement" if complementary else "source"
-    return f"{role}-{digest}"
-
-
 class LinearSourceMaterializationSpec(HopModel):
     """Source origin/chemistry policy plus exact endpoint-dependent auxiliary oligos."""
 
@@ -236,21 +230,6 @@ class WholeRouteConstraints(HopModel):
     require_all_combinations_valid: bool = False
 
 
-class CompositionPruningMode(StrEnum):
-    """Closed whole-route composition pruning modes."""
-
-    DISABLED = "disabled"
-    PROOF_SAFE = "proof_safe"
-
-
-class CompositionEnumerationPolicy(HopModel):
-    """Finite complete-route enumeration limits and safe pruning policy."""
-
-    pruning: CompositionPruningMode = CompositionPruningMode.DISABLED
-    max_combinations: int = Field(ge=1)
-    max_realizations: int = Field(ge=1)
-
-
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
@@ -265,6 +244,16 @@ class ConstructionDiscoveryRequest(HopModel):
     basal_result_id: str | None = Field(
         default=None,
         pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$",
+    )
+    selected_foldback_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:foldback-realization/[0-9a-f]{64}@1$",
+        exclude_if=lambda value: value is None,
+    )
+    selected_basal_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$",
+        exclude_if=lambda value: value is None,
     )
     materialization: LinearSourceMaterializationSpec
     release: TypeIisReleaseRequest | None = None
@@ -297,7 +286,18 @@ class ConstructionDiscoveryRequest(HopModel):
                 raise ValueError("A hairpin PCR endpoint must omit clone release.")
         elif self.release is None:
             raise ValueError("A clone-ready endpoint requires exact Type IIS release.")
+        if (self.selected_foldback_realization_id is None) != (
+            self.selected_basal_realization_id is None
+        ):
+            raise ValueError("Selected composition requires both local realization ids.")
+        if self.selects_local_pair and self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
+            raise ValueError("Selected-pair composition requires a PCR-bearing endpoint.")
         return self
+
+    @property
+    def selects_local_pair(self) -> bool:
+        """Return whether composition is restricted to one explicit local pair."""
+        return self.selected_foldback_realization_id is not None
 
     @property
     def problem_id(self) -> str:
@@ -314,6 +314,9 @@ class ConstructionDiscoveryRequest(HopModel):
             "design": self.design.model_dump(mode="json"),
             "whole_route_constraints": self.whole_route_constraints.model_dump(mode="json"),
         }
+        if self.selects_local_pair:
+            content["selected_foldback_realization_id"] = self.selected_foldback_realization_id
+            content["selected_basal_realization_id"] = self.selected_basal_realization_id
         return _content_id("construction-problem", 1, content)
 
     @property
@@ -323,8 +326,6 @@ class ConstructionDiscoveryRequest(HopModel):
 
 
 __all__ = [
-    "CompositionEnumerationPolicy",
-    "CompositionPruningMode",
     "ConstructionDiscoveryRequest",
     "DesignAuthorityReference",
     "ExactConstructionMaterial",
@@ -334,5 +335,4 @@ __all__ = [
     "ReleaseSideRequirement",
     "TypeIisReleaseRequest",
     "WholeRouteConstraints",
-    "derived_source_material_id",
 ]

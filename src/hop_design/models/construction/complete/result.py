@@ -42,7 +42,10 @@ from .authority import (
 from .local_authority import validate_local_authority_compatibility
 from .realization import MaterializedConstructionRealization
 from .request import ConstructionDiscoveryRequest
-from .source_authority import validate_result_authorities
+from .source_authority import (
+    expected_upstream_truncation_reasons,
+    validate_result_authorities,
+)
 from .validation import (
     expected_accounting,
     expected_material_accounting,
@@ -143,16 +146,10 @@ class ConstructionSpaceResult(HopModel):
             foldback=self.foldback_authority,
             basal=self.basal_authority,
         )
-        expected_upstream_reasons = tuple(
-            f"foldback:{reason}"
-            for reason in self.foldback_authority.neighborhood.truncation_reasons
-        ) + tuple(
-            f"basal:{reason}"
-            for reason in (
-                ()
-                if self.basal_authority is None
-                else self.basal_authority.discovery.truncation_reasons
-            )
+        expected_upstream_reasons = expected_upstream_truncation_reasons(
+            request=self.request,
+            foldback=self.foldback_authority,
+            basal=self.basal_authority,
         )
         if self.upstream_truncation_reasons != expected_upstream_reasons:
             raise ValueError(
