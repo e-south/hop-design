@@ -43,6 +43,7 @@ from hop_design.models.construction.complete.source_authority import (
 )
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
+from hop_design.serialization import canonical_json_bytes
 
 from .design_authority import assert_design_authority
 from .endpoint import materialize_endpoint
@@ -51,11 +52,12 @@ from .partition_binding import (
     source_partition_enzyme_policies,
     validate_partition_selection,
 )
+from .replay_admission import record_replay_admission
 from .results import build_result
 from .selection import select_local_domains, validate_detailed_authority_ids
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class VerifiedConstructionSpaceResult:
     """Whole construction result admitted after deterministic composition replay."""
 
@@ -74,6 +76,7 @@ class VerifiedConstructionSpaceResult:
         object.__setattr__(self, "result", parsed)
         object.__setattr__(self, "foldback", foldback)
         object.__setattr__(self, "basal", basal)
+        record_replay_admission(self, parsed)
 
 
 def _discover_constructions_raw(
@@ -286,8 +289,6 @@ def _replay_construction_result(
     VerifiedFoldbackNeighborhoodResult,
     VerifiedBasalNeighborhoodResult | None,
 ]:
-    from hop_design.serialization import canonical_json_bytes
-
     if not isinstance(foldback, VerifiedFoldbackNeighborhoodResult) or (
         basal is not None and not isinstance(basal, VerifiedBasalNeighborhoodResult)
     ):

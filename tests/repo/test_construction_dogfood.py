@@ -117,7 +117,12 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
     assert first["bundle_verified"] is True
     projection_hashes = first["projection_sha256"]
     assert isinstance(projection_hashes, dict)
-    assert set(projection_hashes) >= {"foldback_feasibility", "foldback_relaxation", "summary"}
+    assert set(projection_hashes) >= {
+        "foldback_feasibility",
+        "foldback_relaxation",
+        "navigation",
+        "summary",
+    }
     for formats in projection_hashes.values():
         assert isinstance(formats, dict)
         assert set(formats) >= {"json", "svg"}
@@ -143,8 +148,10 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
         assert isinstance(selected, str)
         assert selected in first["materialized_realization_ids"]
         assert "trajectory" in projection_hashes
+        assert len(first["selection_sha256"]) == 64
     else:
         assert selected is None
+        assert first["selection_sha256"] is None
         assert first["materialized_realization_ids"] == []
         assert "trajectory" not in projection_hashes
 
@@ -181,11 +188,20 @@ def test_docs_and_wheel_smoke_share_the_construction_example() -> None:
     assert '"examples/compile_construction.py"' in docs_smoke
     assert '"construction_statuses": construction_statuses' in docs_smoke
     assert '"--trajectory-realization-id"' in docs_smoke
+    assert '"navigation"' in docs_smoke
+    assert 'summary.get("selection_sha256")' in docs_smoke
     assert '"construction": construction.__all__' in wheel_smoke
     for path in (EXAMPLE, DESIGN, *SOURCES.values()):
         assert f"'{path.relative_to(REPO_ROOT)}'" in wheel_smoke
     assert "source_construction" in wheel_smoke
     assert "wheel_construction" in wheel_smoke
+    for command in (
+        "construction summary",
+        "construction list",
+        "construction select",
+        "construction inspect",
+    ):
+        assert command in wheel_smoke
 
 
 def test_local_foldback_partition_defaults_to_both_strands_and_replays(tmp_path: Path) -> None:

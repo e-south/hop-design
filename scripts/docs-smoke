@@ -379,6 +379,11 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
         )
         _require(isinstance(summary, dict), "construction dogfood must emit an object")
         _require(summary.get("bundle_verified") is True, "construction bundle was not replayed")
+        projection_hashes = summary.get("projection_sha256")
+        _require(
+            isinstance(projection_hashes, dict) and "navigation" in projection_hashes,
+            f"{case} construction omitted navigation projection",
+        )
         status = summary.get("status")
         _require(status == expected_status, f"{case} construction status changed")
         selected = summary.get("selected_trajectory_realization_id")
@@ -388,8 +393,17 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
                 isinstance(realization_ids, list) and selected in realization_ids,
                 f"{case} trajectory did not select an accepted realization",
             )
+            selection_sha256 = summary.get("selection_sha256")
+            _require(
+                isinstance(selection_sha256, str) and len(selection_sha256) == 64,
+                f"{case} construction omitted its result-bound selection digest",
+            )
         else:
             _require(selected is None, "infeasible construction invented a trajectory")
+            _require(
+                summary.get("selection_sha256") is None,
+                "infeasible construction invented a selection",
+            )
         statuses[case] = str(status)
     return statuses
 

@@ -145,6 +145,7 @@ source-ssDNA routes.
 At the v5 implementation cutoff, source preparation, selected source-partition
 replay, and endpoint auxiliary resolution are connected inside the portable
 construction result. Reversible projections expose grouping and exact selected
-trajectories. The remaining navigation work is a concise grouped CLI over those
-immutable authorities; it does not require another result schema or ranking
-model.
+trajectories. A concise grouped CLI consumes those immutable projections for
+summary, explicit filtering and sorting, exact inspection, and result-bound
+selection. It adds neither another result schema nor a ranking model; display
+limits never change scientific accounting or membership.

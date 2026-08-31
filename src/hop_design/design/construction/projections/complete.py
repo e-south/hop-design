@@ -12,6 +12,9 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from hop_design.design.construction.complete.discovery import VerifiedConstructionSpaceResult
+from hop_design.design.construction.complete.replay_admission import (
+    has_current_replay_admission,
+)
 from hop_design.models.construction import RealizationGrouping
 from hop_design.models.construction.complete.material.inventory import (
     required_external_materials,
@@ -26,12 +29,11 @@ from hop_design.serialization import canonical_json_bytes
 def _admit_source(source: VerifiedConstructionSpaceResult) -> VerifiedConstructionSpaceResult:
     if not isinstance(source, VerifiedConstructionSpaceResult):
         raise TypeError("Complete construction projections require a verified source result.")
-    return VerifiedConstructionSpaceResult(
-        result=source.result,
-        foldback=source.foldback,
-        basal=source.basal,
-        design=source.design,
-    )
+    if not has_current_replay_admission(source, source.result):
+        raise ValueError(
+            "Construction space result disagrees with deterministic composition replay."
+        )
+    return source
 
 
 def project_complete_construction_summary(

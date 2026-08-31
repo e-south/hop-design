@@ -34,7 +34,7 @@ from hop_design.models.construction.projections import (
 )
 from hop_design.models.junction import Strand
 from hop_design.models.sequence import reverse_complement_iupac
-from hop_design.serialization import canonical_json_bytes
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 from tests.integration.test_complete_construction_bundle import _verified_construction
 from tests.integration.test_complete_construction_clone import _clone_request
 from tests.integration.test_complete_construction_discovery import (
@@ -418,6 +418,11 @@ def test_complete_trajectory_rejects_unverified_sources_and_forged_admission(
     object.__setattr__(forged, "foldback", source.foldback)
     object.__setattr__(forged, "basal", source.basal)
     object.__setattr__(forged, "design", source.design)
+    object.__setattr__(
+        forged,
+        "_result_digest",
+        sha256_digest(canonical_json_bytes(forged.result)),
+    )
     with pytest.raises(ValueError, match="deterministic composition replay"):
         project_complete_construction_trajectory(
             forged,

@@ -156,19 +156,23 @@ CONSTRUCTION_OPERATIONS = {
     "compile_design_from_local_realizations",
     "discover_local_neighborhood",
     "discover_source_partition",
+    "load_construction_selection",
     "load_verified_construction_bundle",
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",
     "project_complete_construction_summary",
+    "project_construction_navigation",
     "project_construction_trajectory",
     "project_foldback_feasibility",
     "project_relaxation_frontier",
+    "select_construction_realization",
 }
 
 CONSTRUCTION_FACADE = {
     "ConstructionCompilation",
     "ConstructionProjection",
+    "ConstructionSelection",
     "LocalNeighborhoodDiscovery",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",

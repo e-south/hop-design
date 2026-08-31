@@ -15,6 +15,7 @@ import ctypes
 import errno
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -81,4 +82,22 @@ def publish_directory_create_only(staging: Path, destination: Path) -> None:
     )
 
 
-__all__ = ["publish_directory_create_only"]
+def publish_file_create_only(content: bytes, destination: Path) -> None:
+    """Atomically publish one sibling-staged file without replacing a destination."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, staging_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.",
+        dir=destination.parent,
+    )
+    staging = Path(staging_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.link(staging, destination, follow_symlinks=False)
+    finally:
+        staging.unlink(missing_ok=True)
+
+
+__all__ = ["publish_directory_create_only", "publish_file_create_only"]

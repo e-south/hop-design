@@ -276,10 +276,27 @@ identity; HOP does not choose an exemplar. Foldback and basal feasibility plus
 their relaxation frontiers are available through the corresponding projection
 operations. A basal projection rejects a construction with no basal authority.
 
-These projections are the current navigation surface. A concise grouped CLI
-for listing, filtering, sorting, inspecting, and selecting exact realization
-identities remains open work; callers must not interpret the absence of that
-ergonomic layer as permission to rank or discard alternatives.
+The same verified authority is navigable without importing Python:
+
+```bash
+hop-design construction summary construction-bundle
+hop-design construction list construction-bundle --group-by geometry
+hop-design construction inspect construction-bundle REALIZATION_ID \
+  --out construction-trajectory
+hop-design construction select construction-bundle REALIZATION_ID \
+  --out selected-route.json
+hop-design construction inspect construction-bundle \
+  --selection selected-route.json
+```
+
+Listing defaults to accepted routes grouped by achieved geometry in canonical
+replay order. Explicit filters and sorts do not change the result authority.
+`--limit` bounds displayed rows only; verified search status, accounting, and
+membership remain intact. Canonical ordinal is not a rank. A selection is a
+create-only reference bound to the verified source result and one accepted
+materialized realization; it neither removes alternatives nor endorses a route.
+See the [CLI reference](../reference/cli.md#construction-navigation) for the
+complete option contract.
 
 Each `ConstructionProjection` contains canonical JSON, deterministic SVG, and
 CSV when the projection defines a table. Projection directories are also

@@ -18,17 +18,26 @@ import json
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     CompleteConstructionSummaryProjection,
+    ConstructionNavigationProjection,
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
     RelaxationFrontierProjection,
 )
 
+from .navigation_csv import render_navigation_projection_csv
+
 
 def render_projection_csv(
-    projection: LocalScientificProjection | CompleteConstructionSummaryProjection,
+    projection: (
+        LocalScientificProjection
+        | CompleteConstructionSummaryProjection
+        | ConstructionNavigationProjection
+    ),
 ) -> bytes:
     """Render one projection with repeated context and lossless exact membership."""
     buffer = io.StringIO(newline="")
+    if isinstance(projection, ConstructionNavigationProjection):
+        return render_navigation_projection_csv(projection)
     if isinstance(projection, CompleteConstructionSummaryProjection):
         _write_complete(buffer, projection)
     elif isinstance(projection, FoldbackFeasibilityProjection):

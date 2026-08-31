@@ -1,4 +1,13 @@
-"""Command-line interface for the public HOP operations."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/cli.py
+
+Defines the public command-line entrypoint for HOP design operations.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -12,6 +21,7 @@ from pydantic import ValidationError
 
 from hop_design.api import compile as compile_design
 from hop_design.api import load_spec, verify_bundle
+from hop_design.commands import construction_app
 from hop_design.spaces import (
     SubstrateSpacePreview,
     SubstrateSpaceSpec,
@@ -31,6 +41,7 @@ space_app = typer.Typer(
     pretty_exceptions_enable=False,
 )
 app.add_typer(space_app, name="space")
+app.add_typer(construction_app, name="construction")
 
 _SPACE_SPEC_MAX_BYTES = 1_000_000
 

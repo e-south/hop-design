@@ -63,6 +63,7 @@ The exact public allowlist is:
 
 - `ConstructionCompilation`;
 - `ConstructionProjection`;
+- `ConstructionSelection`;
 - `LocalNeighborhoodDiscovery`;
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
@@ -72,16 +73,23 @@ The exact public allowlist is:
 - `discover_local_neighborhood`;
 - `discover_source_partition`;
 - `load_verified_construction_bundle`;
+- `load_construction_selection`;
 - `load_verified_local_neighborhood`;
 - `load_verified_source_partition`;
 - `project_basal_feasibility`;
 - `project_complete_construction_summary`;
+- `project_construction_navigation`;
 - `project_construction_trajectory`;
 - `project_foldback_feasibility`; and
-- `project_relaxation_frontier`.
+- `project_relaxation_frontier`; and
+- `select_construction_realization`.
 
 Receipts expose only scalar identity and accounting plus create-only writing.
 Projection packets expose deterministic JSON, optional CSV, and SVG bytes.
+Selection references expose only the source result identity, one accepted
+materialized-realization identity, and canonical JSON. They remain
+non-authoritative: creating or loading one requires a verified construction
+receipt, and loading cross-checks both identities against that receipt.
 Raw Pydantic source, result, projection, molecular-state, and bundle-manifest
 models remain internal. Loading a portable construction bundle performs both
 integrity and semantic replay, so the facade does not add a redundant verify
@@ -95,10 +103,15 @@ requested from an opaque verified receipt; trajectory projection additionally
 requires one exact accepted realization identity and never auto-selects an
 exemplar.
 
-The projection operations remain the navigation surface at this decision's
-current implementation cutoff. A future concise grouped CLI may expose
-filtering, explicit sorting, inspection, and selection without changing result
-authority or introducing a hidden rank.
+The projection operations remain the reversible navigation data surface. The
+`hop-design construction` CLI consumes those projections to summarize, group,
+filter, explicitly sort, inspect, and select exact realizations without changing
+result authority or introducing a hidden rank. Its row limit affects display
+only and does not alter search status, accounting, or membership.
+
+An explicit selection writes one create-only JSON file at the caller-supplied
+path. It does not mutate, subset, reseal, or supersede the complete result, and
+it cannot be reopened without the verified result that establishes membership.
 
 Standalone local-neighborhood discovery returns one replay-verified family
 receipt. It establishes only the declared foldback or basal neighborhood and

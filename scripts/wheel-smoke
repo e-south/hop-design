@@ -189,6 +189,7 @@ if ! cmp -s "$source_local_result" "$wheel_local_result"; then
   exit 1
 fi
 
+composed_construction=''
 for construction_case in composed-pcr exact infeasible relaxed; do
   construction_trajectory_id=''
   if [[ "$construction_case" == "composed-pcr" ]]; then
@@ -223,7 +224,24 @@ for construction_case in composed-pcr exact infeasible relaxed; do
     echo "source/wheel construction mismatch: $construction_case" >&2
     exit 1
   fi
+  if [[ "$construction_case" == "composed-pcr" ]]; then
+    composed_construction="$source_construction"
+  fi
 done
+
+wheel_navigation_bundle="$smoke_root/wheel-construction-composed-pcr/construction"
+wheel_navigation_id="$(
+  printf '%s' "$composed_construction" \
+    | uv run --locked python -c \
+      'import json, sys; print(json.load(sys.stdin)["selected_trajectory_realization_id"])'
+)"
+"$smoke_root/venv/bin/hop-design" construction summary "$wheel_navigation_bundle" >/dev/null
+"$smoke_root/venv/bin/hop-design" construction list "$wheel_navigation_bundle" --limit 1 >/dev/null
+"$smoke_root/venv/bin/hop-design" construction select "$wheel_navigation_bundle" \
+  "$wheel_navigation_id" --out "$smoke_root/wheel-selected-route.json" >/dev/null
+"$smoke_root/venv/bin/hop-design" construction inspect "$wheel_navigation_bundle" \
+  --selection "$smoke_root/wheel-selected-route.json" \
+  --out "$smoke_root/wheel-selected-trajectory" >/dev/null
 
 source_discovery="$(uv run --locked python examples/discover_basal_candidates.py)"
 wheel_discovery="$("$smoke_root/venv/bin/python" examples/discover_basal_candidates.py)"

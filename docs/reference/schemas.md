@@ -64,7 +64,9 @@ shipped with that artifact.
 | `hop.basal-relaxation-frontier/v1` | public construction projection | Exact examined basal shells from one unpartitioned search with complete or partial accounting |
 | `hop.basal-relaxation-frontier/v2` | public construction projection | Exact examined basal shells from one declared sequence-domain part with complete or partial accounting |
 | `hop.complete-construction-summary/v2` | public construction projection | Lossless disposition, grouping, required external material, failure, and truncation relation over one verified complete result |
+| `hop.construction-navigation/v1` | public construction projection | Unchanged summary v2 plus additive accepted-route geometry, relaxation, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
 | `hop.complete-construction-trajectory/v3` | public construction projection | One explicitly selected accepted realization with its source preparation and exact molecular chronology |
+| `hop.construction-selection/v1` | non-authoritative construction reference | One accepted materialized realization bound to its verified source result |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
 | `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
 | `hop.linear-source-multinick-hairpin-pcr-request/v1` | `LinearSourceMultinickHairpinPcrRequest` | Exact method inputs, agents, selection, and projection |

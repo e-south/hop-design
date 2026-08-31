@@ -53,10 +53,9 @@ geometry, route-level source partitioning, and downstream endpoint
 materialization are separate bounded competencies. HOP preserves every valid
 result in canonical order; a study chooses which route to test.
 
-Construction v5 resolves PCR endpoint auxiliaries through explicit `derive`,
-`constrain`, or `fixed` policies and consumes selected replay-verified source
-partitions in complete routes. It adds no thermodynamic rank or hidden handle;
-concise grouped CLI navigation remains open product work.
+Construction v5 resolves endpoint auxiliaries and consumes replay-verified
+source partitions. `hop-design construction` groups, filters, inspects, and
+records result-bound selections without adding a rank or second authority.
 
 ## Claim boundary
 

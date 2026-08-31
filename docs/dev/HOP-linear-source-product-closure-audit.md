@@ -57,7 +57,7 @@ part identifiers and study sequences do not enter this public repository.
 | hairpin-PCR primers | exact construction materials plus endpoint auxiliary policies | present and connected | preserve contextual route use and safe non-payload binding |
 | hairpin-PCR duplex | primer-extension authority and exact state | present and connected | preserve |
 | defined-end duplex | Type IIS release authority | present and connected | keep destination compatibility separate |
-| material grouping and route selection | reversible result projections | present; navigation incomplete | add concise grouped CLI navigation without changing authority |
+| material grouping and route selection | reversible result projections plus result-bound selection | present and connected | preserve grouping, explicit sorting, and non-ranking semantics |
 | physical materials and observations | caller study or laboratory system | out of HOP scope | bind through stable HOP material and realization IDs |
 
 ## Reuse decisions
@@ -107,12 +107,13 @@ adapter and both endpoint primers through explicit `derive`, `constrain`, or
 sequence outside the payload; reusable handles are explicit caller inputs, and
 no thermodynamic rank is inferred.
 
-Concise grouped result navigation remains the product gap. Existing reversible
-projections retain exact alternatives and support explicit trajectory
-selection, but the public CLI does not yet provide the intended list, filter,
-sort, inspect, select, and export flow. That remaining work does not justify a
-generic workflow engine, inventory subsystem, dashboard, PCR thermodynamics
-model, or cleanup-recovery predictor.
+Concise grouped result navigation is connected. The public CLI summarizes exact
+accounting, groups accepted alternatives by geometry or endpoint product,
+applies explicit filters and sorts, inspects one accepted trajectory, writes its
+deterministic projection, and persists a result-bound selection reference.
+Display limits do not change verified accounting, and no ordinal or sort becomes
+a route rank. This closure adds no generic workflow engine, inventory subsystem,
+dashboard, PCR thermodynamics model, or cleanup-recovery predictor.
 
 ## Verification plan
 

@@ -75,9 +75,19 @@ All operations and receipts in this section use `hop_design.construction`.
 - `load_verified_construction_bundle(path) -> VerifiedConstructionBundle`
   checks portable bytes and semantically replays the embedded design, local
   authorities, complete result, and root manifest.
+- `select_construction_realization(receipt, materialized_realization_id=...) -> ConstructionSelection`
+  creates a stable non-authoritative reference to one accepted exact route.
+- `load_construction_selection(path, receipt=...) -> ConstructionSelection`
+  safely loads a selection and cross-checks its result and realization against
+  the supplied verified receipt.
 - `project_foldback_feasibility(receipt) -> ConstructionProjection`
 - `project_basal_feasibility(receipt) -> ConstructionProjection`
 - `project_relaxation_frontier(receipt, family=...) -> ConstructionProjection`
+- `project_construction_navigation(receipt) -> ConstructionProjection` projects
+  the unchanged complete summary plus only the additive accepted-route facts:
+  typed geometry, relaxation, cleavage-program enzyme IDs, retained
+  non-payload sequence, and endpoint topology. It supports browse, filter, and
+  explicit-sort workflows without creating a second accounting relation.
 - `project_complete_construction_summary(receipt) -> ConstructionProjection`
 - `project_construction_trajectory(receipt, materialized_realization_id=...) -> ConstructionProjection`
 
@@ -89,6 +99,9 @@ atomically persists the portable authority. Projection
 packets provide canonical JSON, tidy CSV when defined, and SVG bytes; writing a
 packet is atomic and create-only. A trajectory always requires an explicit
 accepted realization identity.
+`ConstructionSelection.write(path)` writes canonical JSON to exactly one new
+`.json` file path. A selection never changes or narrows the complete
+construction authority.
 
 These operations establish only deterministic digital discovery,
 materialization, composition, verification, and projection. They do not
