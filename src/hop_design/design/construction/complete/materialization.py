@@ -186,6 +186,7 @@ def materialize_direct_program(
     annealed_pairs = annealed_pairings(
         selected.molecules,
         foldback=foldback,
+        embedding=embedding,
         source_id=source.material_id,
         complement_id=source_complement.material_id,
         source_length=len(source.sequence_5prime),

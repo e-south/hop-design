@@ -39,6 +39,7 @@ from hop_design.models.construction.complete import (
     ConstructionTransitionKind,
     DuplexFinalProductReference,
     EndpointSequenceFate,
+    ExactStateRelation,
     MaterialFunction,
     MaterializedConstructionRealization,
     MaterializedFinalProduct,
@@ -68,7 +69,11 @@ from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import RecognitionOrientationSemantics
 from hop_design.models.junction import Strand
 from hop_design.models.method import BindingOrientation
-from hop_design.models.molecular_state import CohesiveEnd, EndChemistry, StrandEnd
+from hop_design.models.molecular_state import (
+    CohesiveEnd,
+    EndChemistry,
+    StrandEnd,
+)
 from hop_design.models.payload import ExactPayload
 from hop_design.models.physical import JunctionPairKind
 from hop_design.models.sequence import reverse_complement_iupac
@@ -291,6 +296,57 @@ def test_pcr_composition_retains_outer_basal_recognition_prefix_as_route_periphe
         ]
         == "TTTTTT"
     )
+
+
+def test_pcr_realization_replays_annealing_against_foldback_authority(tmp_path: Path) -> None:
+    result, _, _ = _valid_pcr_result(tmp_path)
+    realization = result.realizations[0]
+    program = realization.construction_program
+    annealed_index = next(
+        index
+        for index, state in enumerate(program.states)
+        if state.phase is ConstructionStatePhase.ANNEALED_COMPLEX
+    )
+    annealed = program.states[annealed_index]
+    changed_annealed = ConstructionState.create(
+        molecules=annealed.molecules,
+        phase=annealed.phase,
+        pairings=tuple(reversed(annealed.pairings)),
+        formed_bonds=annealed.formed_bonds,
+    )
+    changed_states = (
+        *program.states[:annealed_index],
+        changed_annealed,
+        *program.states[annealed_index + 1 :],
+    )
+    changed_transitions = list(program.transitions)
+    for transition_index in (annealed_index - 1, annealed_index):
+        original = program.transitions[transition_index]
+        pre_state = changed_states[transition_index]
+        post_state = changed_states[transition_index + 1]
+        changed_transitions[transition_index] = ConstructionTransition.create(
+            kind=original.kind,
+            pre_state_id=pre_state.state_id,
+            post_state_id=post_state.state_id,
+            exact_relation=ExactStateRelation.create(
+                pre_state_id=pre_state.state_id,
+                post_state_id=post_state.state_id,
+            ),
+        )
+    changed_program = ConstructionProgram.create(
+        states=changed_states,
+        transitions=tuple(changed_transitions),
+        reaction_programs=program.reaction_programs,
+        stage_assessments=program.stage_assessments,
+    )
+    content = {
+        name: changed_program if name == "construction_program" else getattr(realization, name)
+        for name in type(realization).model_fields
+        if name != "materialized_realization_id"
+    }
+
+    with pytest.raises(ValidationError, match="annealing associations"):
+        type(realization).create(**content)
 
 
 def _verified_distal_mismatch_design(tmp_path: Path):

@@ -24,6 +24,9 @@ from hop_design.models.construction.complete import (
     PrimerExtensionAuthority,
 )
 from hop_design.models.construction.complete.evaluation import CombinationEvaluation
+from hop_design.models.construction.complete.evaluation_inputs import (
+    derive_linear_source_embedding,
+)
 from hop_design.models.construction.complete.pcr.products import (
     endpoint_fate_spans,
     material_function_spans,
@@ -145,9 +148,15 @@ def materialize_pcr_program(
         molecules=selected_fragments,
         phase=ConstructionStatePhase.SELECTED_FRAGMENTS,
     )
+    embedding = derive_linear_source_embedding(
+        foldback=foldback,
+        prefix=prefix,
+        source_return_arm=source_return_arm,
+    )
     foldback_pairs = annealed_pairings(
         selected.molecules,
         foldback=foldback,
+        embedding=embedding,
         source_id=source.material_id,
         complement_id=source_complement.material_id,
         source_length=len(source.sequence_5prime),

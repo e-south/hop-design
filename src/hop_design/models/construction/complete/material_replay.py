@@ -56,9 +56,15 @@ def validate_foldback_annealing(
     annealed = next(
         item for item in program.states if item.phase is ConstructionStatePhase.ANNEALED_COMPLEX
     )
+    _, _, embedding = replay_linear_source_embedding(
+        foldback=foldback,
+        source_sequence=materials[0].sequence_5prime,
+        complement_sequence=materials[1].sequence_5prime,
+    )
     expected = annealed_pairings(
         selected.molecules,
         foldback=foldback,
+        embedding=embedding,
         source_id=materials[0].material_id,
         complement_id=materials[1].material_id,
         source_length=len(materials[0].sequence_5prime),
