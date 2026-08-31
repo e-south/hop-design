@@ -172,8 +172,14 @@ class LocalNeighborhoodDiscovery:
         return output
 
     def _verified_source(self) -> _LocalResult:
-        _, result = _family_result(self._verified)
+        _, result = _family_result(self._verified_authority())
         return result
+
+    def _verified_authority(self) -> _VerifiedLocalResult:
+        _, result = _family_result(self._verified)
+        if _canonical_local_result_bytes(result) != self._json_bytes:
+            raise ValueError("Local-neighborhood receipt content disagrees with its authority.")
+        return self._verified
 
     def __repr__(self) -> str:
         return (

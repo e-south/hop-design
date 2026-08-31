@@ -17,6 +17,7 @@ import pytest
 import yaml
 
 import hop_design.construction as construction
+from hop_design.design.construction import verification
 from hop_design.design.construction.source import compile_construction_source
 from hop_design.models.construction import ConstructionEndpoint, SearchCompletionStatus
 from hop_design.models.construction.complete import (
@@ -287,6 +288,52 @@ def test_file_source_compiles_exactly_one_selected_local_pair(tmp_path: Path) ->
     replayed = construction.load_verified_construction_bundle(output)
     assert replayed.bundle_id == compilation.bundle_id
     assert replayed.nominal_combinations == 1
+
+
+def test_selected_pair_reuses_receipt_verification_without_discovery_replay(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, foldback_result, basal_result, source = _selected_inputs(tmp_path)
+    source_path = _write_source(tmp_path / "receipt-reuse.yaml", source)
+    foldback = _local_receipt(tmp_path / "foldback.json", foldback_result)
+    basal = _local_receipt(tmp_path / "basal.json", basal_result)
+    arguments = {
+        "design_bundle_path": tmp_path / "selected" / "design",
+        "foldback": foldback,
+        "foldback_realization_id": foldback_result.realizations[0].foldback_realization_id,
+        "basal": basal,
+        "basal_realization_id": basal_result.realizations[0].basal_realization_id,
+    }
+    expected = construction.compile_construction_from_local_realizations(
+        source_path,
+        **arguments,
+    )
+
+    def reject_replay(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("verified receipt was replayed during route compilation")
+
+    monkeypatch.setattr(
+        verification,
+        "discover_foldback_neighborhood",
+        reject_replay,
+    )
+    monkeypatch.setattr(
+        verification,
+        "discover_basal_neighborhood",
+        reject_replay,
+    )
+
+    observed = construction.compile_construction_from_local_realizations(
+        source_path,
+        **arguments,
+    )
+
+    assert observed.bundle_id == expected.bundle_id
+    assert observed.result_id == expected.result_id
+    assert canonical_json_bytes(observed._verified_source().result) == canonical_json_bytes(
+        expected._verified_source().result
+    )
 
 
 def test_selected_pair_rejects_an_unknown_realization_id(tmp_path: Path) -> None:

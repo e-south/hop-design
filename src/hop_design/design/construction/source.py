@@ -30,13 +30,11 @@ from hop_design.design.construction.verification import (
     verify_foldback_neighborhood_result,
 )
 from hop_design.design.source_documents import load_source_mapping
-from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.complete import (
     ConstructionDiscoveryRequest,
     DesignAuthorityReference,
 )
 from hop_design.models.construction.complete.local_authority import payload_space_contains
-from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.payload import FinalPayloadReference, RouteFamily
 from hop_design.models.construction.source import ConstructionSource
 from hop_design.models.payload import ExactPayload
@@ -179,14 +177,12 @@ def compile_construction_source_from_local_realizations(
     source = _load_construction_source(source_path)
     if source.basal is None:
         raise ValueError("Selected-pair composition requires a PCR-bearing construction source.")
-    foldback_result = foldback._verified_source()
-    basal_result = basal._verified_source()
-    if not isinstance(foldback_result, FoldbackNeighborhoodDiscoveryResult):
+    verified_foldback = foldback._verified_authority()
+    verified_basal = basal._verified_authority()
+    if not isinstance(verified_foldback, VerifiedFoldbackNeighborhoodResult):
         raise ValueError("The selected foldback receipt has the wrong local family.")
-    if not isinstance(basal_result, BasalNeighborhoodDiscoveryResult):
+    if not isinstance(verified_basal, VerifiedBasalNeighborhoodResult):
         raise ValueError("The selected basal receipt has the wrong local family.")
-    verified_foldback = verify_foldback_neighborhood_result(foldback_result)
-    verified_basal = verify_basal_neighborhood_result(basal_result)
     if canonical_json_bytes(source.foldback) != canonical_json_bytes(
         verified_foldback.result.neighborhood.request
     ):

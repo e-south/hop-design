@@ -19,8 +19,6 @@ from hop_design.design.bundle import VerifiedHopBundle, verify_hop_bundle_semant
 from hop_design.design.construction.verification import (
     VerifiedBasalNeighborhoodResult,
     VerifiedFoldbackNeighborhoodResult,
-    verify_basal_neighborhood_result,
-    verify_foldback_neighborhood_result,
 )
 from hop_design.models.construction import SearchCompletionStatus
 from hop_design.models.construction.basal import (
@@ -281,21 +279,23 @@ def _replay_construction_result(
 ]:
     from hop_design.serialization import canonical_json_bytes
 
-    admitted_foldback = verify_foldback_neighborhood_result(foldback.result)
-    admitted_basal = None if basal is None else verify_basal_neighborhood_result(basal.result)
+    if not isinstance(foldback, VerifiedFoldbackNeighborhoodResult) or (
+        basal is not None and not isinstance(basal, VerifiedBasalNeighborhoodResult)
+    ):
+        raise TypeError("Construction replay requires verified local construction authorities.")
     verify_hop_bundle_semantics(design)
     parsed = ConstructionSpaceResult.model_validate(result.model_dump(mode="python"))
     expected = _discover_constructions_raw(
         parsed.request,
-        foldback=admitted_foldback.result,
-        basal=None if admitted_basal is None else admitted_basal.result,
+        foldback=foldback.result,
+        basal=None if basal is None else basal.result,
         design=design,
     )
     if canonical_json_bytes(expected) != canonical_json_bytes(parsed):
         raise ValueError(
             "Construction space result disagrees with deterministic composition replay."
         )
-    return parsed, admitted_foldback, admitted_basal
+    return parsed, foldback, basal
 
 
 def discover_constructions(
@@ -310,8 +310,6 @@ def discover_constructions(
         basal is not None and not isinstance(basal, VerifiedBasalNeighborhoodResult)
     ):
         raise TypeError("Complete composition requires verified local construction authorities.")
-    foldback = verify_foldback_neighborhood_result(foldback.result)
-    basal = None if basal is None else verify_basal_neighborhood_result(basal.result)
     verify_hop_bundle_semantics(design)
     raw = _discover_constructions_raw(
         request,
