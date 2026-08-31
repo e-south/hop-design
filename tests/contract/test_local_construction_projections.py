@@ -222,6 +222,8 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
     assert "complete route composition and" in svg
     assert "physical construction are not established" in svg
     assert 'data-status="complete"' in svg
+    assert "Exact realizations satisfying declared constraints" in svg
+    assert "Exact compatible realizations" not in svg
     assert "data-sequence-part" not in svg
     assert "data-local-realization-id" not in svg
     assert "data-realization-ids" in svg
@@ -465,9 +467,11 @@ def test_infeasible_and_truncated_projections_do_not_overstate_completion() -> N
 
     infeasible_svg = render_projection_svg(infeasible_projection).decode("utf-8")
     truncated_svg = render_projection_svg(truncated_projection).decode("utf-8")
-    assert "No compatible local foldback route was identified after exhaustive search." in (
-        infeasible_svg
-    )
+    assert (
+        "No local foldback route satisfied the declared molecular constraints after "
+        "exhaustive search."
+    ) in infeasible_svg
+    assert "compatible local" not in infeasible_svg
     assert "Foldback discovery was truncated" in truncated_svg
     assert 'data-status="truncated"' in truncated_svg
     assert "identified after exhaustive search" not in truncated_svg

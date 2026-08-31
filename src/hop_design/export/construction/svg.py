@@ -113,7 +113,7 @@ def _render_foldback(projection: FoldbackFeasibilityProjection) -> bytes:
     body = (
         _status_header(projection, title)
         + f"""
-<text x="72" y="188" class="label">Exact compatible realizations</text>
+<text x="72" y="188" class="label">Exact realizations satisfying declared constraints</text>
 {"".join(rows)}
 <text x="72" y="{max(282, 236 + len(rows) * 38 + 30)}" class="small">
 Rows group identical observed dimensions; exact membership remains in the tidy outputs.</text>
@@ -256,8 +256,11 @@ def _feasibility_title(
         )
     if status is SearchCompletionStatus.INFEASIBLE:
         if partition is not None:
-            return f"No compatible local {lower} route was identified{scope}."
-        return f"No compatible local {lower} route was identified after exhaustive search."
+            return f"No local {lower} route satisfied the declared molecular constraints{scope}."
+        return (
+            f"No local {lower} route satisfied the declared molecular constraints after "
+            "exhaustive search."
+        )
     return (
         f"{family} discovery was truncated with {count} observed exact local route "
         f"realizations{scope}."
