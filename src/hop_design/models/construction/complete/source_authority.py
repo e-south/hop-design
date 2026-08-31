@@ -30,7 +30,7 @@ def expected_upstream_truncation_reasons(
     basal: BasalNeighborhoodDiscoveryResult | None,
 ) -> tuple[str, ...]:
     """Return local-search truncation evidence relevant to complete composition."""
-    if request.selects_local_pair:
+    if request.selects_local_realizations:
         return ()
     return tuple(
         f"foldback:{reason}" for reason in foldback.neighborhood.truncation_reasons

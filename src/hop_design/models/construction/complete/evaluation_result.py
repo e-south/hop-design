@@ -28,6 +28,10 @@ class CompositionRejectionCode(StrEnum):
     BASAL_SOURCE_MAP_INCOMPATIBLE = "basal-source-map-incompatible"
     SOURCE_END_CHEMISTRY_MISMATCH = "source-end-chemistry-mismatch"
     SOURCE_PREPARATION_INCOMPATIBLE = "source-preparation-incompatible"
+    SOURCE_PARTITION_SOURCE_INCOMPATIBLE = "source-partition-source-incompatible"
+    SOURCE_PARTITION_STAGE_INCOMPATIBLE = "source-partition-stage-incompatible"
+    SOURCE_PARTITION_CUT_INCOMPATIBLE = "source-partition-cut-incompatible"
+    SOURCE_PARTITION_SELECTION_INCOMPATIBLE = "source-partition-selection-incompatible"
     GLOBAL_ACTIONABLE_SITE_CONFLICT = "global-actionable-site-conflict"
     DESIGN_ENCODING_MISMATCH = "design-encoding-mismatch"
     PCR_BASAL_OPEN_INCOMPATIBLE = "pcr-basal-open-incompatible"
@@ -37,6 +41,16 @@ class CompositionRejectionCode(StrEnum):
     CLONE_END_GENERATION_INCOMPATIBLE = "clone-end-generation-incompatible"
     CLONE_END_GENERATION_AMBIGUOUS = "clone-end-generation-ambiguous"
     ALL_COMBINATIONS_VALID_REQUIRED = "all-combinations-valid-required"
+
+
+SOURCE_PARTITION_REJECTION_CODES = frozenset(
+    {
+        CompositionRejectionCode.SOURCE_PARTITION_SOURCE_INCOMPATIBLE,
+        CompositionRejectionCode.SOURCE_PARTITION_STAGE_INCOMPATIBLE,
+        CompositionRejectionCode.SOURCE_PARTITION_CUT_INCOMPATIBLE,
+        CompositionRejectionCode.SOURCE_PARTITION_SELECTION_INCOMPATIBLE,
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,4 +79,8 @@ class CombinationEvaluation:
     final_sequence: str | None = None
 
 
-__all__ = ["CombinationEvaluation", "CompositionRejectionCode"]
+__all__ = [
+    "SOURCE_PARTITION_REJECTION_CODES",
+    "CombinationEvaluation",
+    "CompositionRejectionCode",
+]

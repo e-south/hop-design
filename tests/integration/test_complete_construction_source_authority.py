@@ -37,6 +37,7 @@ from hop_design.models.construction.complete import (
     ExactStateRelation,
     MaterializedConstructionRealization,
     ReactionBoundaryMapping,
+    SourcePartitionBinding,
 )
 from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
@@ -137,6 +138,76 @@ def test_complete_route_consumes_the_exact_source_preparation_product(
         preparation.prepared_top_use.use_id,
         preparation.prepared_bottom_use.use_id,
     }
+
+
+def test_unselected_route_omits_source_partition_authority_and_bindings(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+
+    assert result.source_partition_authority is None
+    assert result.source_partition_rejection_candidates == ()
+    assert result.provenance.source_partition_result_id is None
+    assert result.provenance.source_partition_realization_id is None
+    assert all(item.source_partition_binding is None for item in result.realizations)
+    serialized = canonical_json_bytes(result)
+    assert b'"source_partition_authority"' not in serialized
+    assert b'"source_partition_rejection_candidates"' not in serialized
+    assert b'"source_partition_binding"' not in serialized
+    assert b'"source_partition_result_id"' not in serialized
+    assert b'"source_partition_realization_id"' not in serialized
+
+
+def test_unselected_result_rejects_source_partition_provenance(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+    provenance = type(result.provenance).model_validate(
+        result.provenance.model_dump(mode="python")
+        | {
+            "source_partition_result_id": ("hop:source-partition-result/" + "a" * 64 + "@1"),
+            "source_partition_realization_id": (
+                "hop:source-partition-realization/" + "b" * 64 + "@1"
+            ),
+        }
+    )
+
+    with pytest.raises(ValidationError, match="source partition"):
+        _reseal_result(result, provenance=provenance)
+
+
+def test_unselected_realization_rejects_source_partition_binding(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+    realization = result.realizations[0]
+    program = realization.construction_program
+    denatured = next(
+        item for item in program.states if item.phase is ConstructionStatePhase.DENATURED_FRAGMENTS
+    )
+    selected = next(
+        item for item in program.states if item.phase is ConstructionStatePhase.SELECTED_FRAGMENTS
+    )
+    binding = SourcePartitionBinding.create(
+        result_id="hop:source-partition-result/" + "a" * 64 + "@1",
+        realization_id="hop:source-partition-realization/" + "b" * 64 + "@1",
+        source_preparation_product_state_id=realization.source_preparation.product_state.state_id,
+        top_material_use_id=realization.material_uses[0].use_id,
+        bottom_material_use_id=realization.material_uses[1].use_id,
+        reaction_program_id=program.reaction_programs[0].program_id,
+        denatured_state_id=denatured.state_id,
+        selected_state_id=selected.state_id,
+    )
+
+    forged_realization = _reseal_realization(
+        realization,
+        source_partition_binding=binding,
+    )
+    with pytest.raises(ValidationError, match="source partition"):
+        _reseal_result(
+            result,
+            realizations=(forged_realization, *result.realizations[1:]),
+        )
 
 
 def test_exhaustive_request_omits_absent_selected_pair_from_canonical_bytes(

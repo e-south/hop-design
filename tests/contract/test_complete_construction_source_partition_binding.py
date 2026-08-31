@@ -27,9 +27,7 @@ def _partition_bound_request() -> ConstructionDiscoveryRequest:
         mode="python",
         by_alias=True,
     )
-    mapping["source_partition_result_id"] = (
-        "hop:source-partition-result/" + "a" * 64 + "@1"
-    )
+    mapping["source_partition_result_id"] = "hop:source-partition-result/" + "a" * 64 + "@1"
     mapping["selected_source_partition_realization_id"] = (
         "hop:source-partition-realization/" + "b" * 64 + "@1"
     )
@@ -64,9 +62,7 @@ def test_source_partition_binding_seals_exact_route_state_references() -> None:
     content = {
         "result_id": "hop:source-partition-result/" + "a" * 64 + "@1",
         "realization_id": "hop:source-partition-realization/" + "b" * 64 + "@1",
-        "source_preparation_product_state_id": (
-            "hop:construction-state/" + "c" * 64 + "@1"
-        ),
+        "source_preparation_product_state_id": ("hop:construction-state/" + "c" * 64 + "@1"),
         "top_material_use_id": "hop:material-use/" + "d" * 64 + "@1",
         "bottom_material_use_id": "hop:material-use/" + "e" * 64 + "@1",
         "reaction_program_id": "complete-route-example",

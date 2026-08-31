@@ -42,6 +42,7 @@ from hop_design.models.construction.complete.material.inventory import (
 )
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.payload import _content_id
+from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 
 
 def _groups(
@@ -103,6 +104,8 @@ def build_result(
     examined: int,
     foldback_authority: FoldbackNeighborhoodDiscoveryResult,
     basal_authority: BasalNeighborhoodDiscoveryResult | None,
+    source_partition_authority: SourcePartitionDiscoveryResult | None,
+    source_partition_rejection_candidates: tuple[MaterializedConstructionRealization, ...],
     design_bundle_id: str,
     dispositions: tuple[CompositionDisposition, ...],
 ) -> ConstructionSpaceResult:
@@ -144,6 +147,8 @@ def build_result(
         request=request,
         foldback_authority=foldback_authority,
         basal_authority=basal_authority,
+        source_partition_authority=source_partition_authority,
+        source_partition_rejection_candidates=source_partition_rejection_candidates,
         realizations=realizations,
         geometry_groups=geometry_groups,
         final_product_groups=product_groups,
@@ -186,6 +191,8 @@ def build_result(
             hop_version=hop_version,
             foldback_result_id=foldback_authority.result_id,
             basal_result_id=(None if basal_authority is None else basal_authority.result_id),
+            source_partition_result_id=request.source_partition_result_id,
+            source_partition_realization_id=(request.selected_source_partition_realization_id),
             design_bundle_id=design_bundle_id,
             foldback_realization_ids=foldback_realization_ids,
             basal_realization_ids=basal_realization_ids,

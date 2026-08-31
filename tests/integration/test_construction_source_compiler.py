@@ -18,8 +18,13 @@ import yaml
 
 import hop_design.construction as construction
 from hop_design.design.construction import verification
+from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.design.construction.source import compile_construction_source
-from hop_design.models.construction import ConstructionEndpoint, SearchCompletionStatus
+from hop_design.models.construction import (
+    ConstructionEndpoint,
+    FoldbackTarget,
+    SearchCompletionStatus,
+)
 from hop_design.models.construction.complete import (
     CompositionEnumerationPolicy,
     DerivedPrimerPolicy,
@@ -36,11 +41,15 @@ from hop_design.models.construction.source import (
     ConstructionCompositionSource,
     ConstructionSource,
 )
+from hop_design.models.coordinates import Boundary
+from hop_design.models.enzymes import RecognitionOrientationSemantics
 from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import EndChemistry, StrandEnd
+from hop_design.models.payload import ExactPayload
 from hop_design.models.physical import SiteOrientation
 from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes
+from tests.contract.test_complete_source_partition_replay import PAYLOAD
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
     _request,
@@ -57,6 +66,7 @@ from tests.integration.test_complete_construction_discovery import (
     _verified_design,
 )
 from tests.integration.test_complete_construction_pcr import _foldback, _payload
+from tests.support.source_partition import source_partition_for_route
 
 
 def _materialization(
@@ -170,6 +180,54 @@ def _selected_inputs(tmp_path: Path, *, adapter_sequence: str | None = None):
                 adapter.material_id,
                 adapter.sequence_5prime if adapter_sequence is None else adapter_sequence,
             ),
+            forward_primer=_material("forward-primer", encoding[:4]),
+            reverse_primer=_material(
+                "reverse-primer",
+                reverse_complement_iupac(encoding[-4:]),
+            ),
+        ),
+    )
+    return design, foldback, basal, source
+
+
+def _selected_partition_inputs(tmp_path: Path):
+    payload = _payload().model_copy(
+        update={
+            "payload": ExactPayload(sequence=PAYLOAD),
+            "foldback_boundary": Boundary(offset=len(PAYLOAD)),
+        }
+    )
+    design = _verified_design(tmp_path / "selected-partition", payload=PAYLOAD)
+    foldback = discover_foldback_neighborhood(
+        _request(
+            _nickase(
+                motif="TCAGATGCTGA",
+                cut_offset=0,
+                orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
+            ),
+            _terminus_enzyme(),
+            target=FoldbackTarget(
+                nick_offset_within_foldback_nt=0,
+                loop_length_nt=3,
+                annealing_arm_length_bp=4,
+            ),
+        ).model_copy(update={"payload": payload})
+    )
+    basal = _basal_result(
+        payload,
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        nick_strand=Strand.BOTTOM,
+    )
+    encoding = design.plan.hairpin_encoding_insert.sequence
+    adapter = next(
+        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
+    )
+    source = _source(
+        foldback=foldback.neighborhood.request,
+        basal=basal.discovery.request,
+        endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        materialization=_materialization(
+            adapter=_material(adapter.material_id, adapter.sequence_5prime),
             forward_primer=_material("forward-primer", encoding[:4]),
             reverse_primer=_material(
                 "reverse-primer",
@@ -302,6 +360,66 @@ def test_file_source_compiles_exactly_one_selected_local_pair(tmp_path: Path) ->
     assert replayed.nominal_combinations == 1
 
 
+def test_selected_pair_consumes_one_verified_source_partition_receipt(
+    tmp_path: Path,
+) -> None:
+    _, foldback, basal, source = _selected_partition_inputs(tmp_path)
+    source_path = _write_source(tmp_path / "selected-partition.yaml", source)
+    foldback_receipt = _local_receipt(tmp_path / "foldback.json", foldback)
+    basal_receipt = _local_receipt(tmp_path / "basal.json", basal)
+    foldback_realization_id = foldback.realizations[0].foldback_realization_id
+    basal_realization_id = basal.realizations[0].basal_realization_id
+    baseline = construction.compile_construction_from_local_realizations(
+        source_path,
+        design_bundle_path=tmp_path / "selected-partition" / "design",
+        foldback=foldback_receipt,
+        foldback_realization_id=foldback_realization_id,
+        basal=basal_receipt,
+        basal_realization_id=basal_realization_id,
+    )
+    route = baseline._verified_source().result.realizations[0]
+    reaction_enzyme_ids = {
+        operation.enzyme_id
+        for operation in route.construction_program.reaction_programs[0].stages[0].operations
+    }
+    enzymes = tuple(
+        item
+        for request in (source.foldback, source.basal)
+        if request is not None
+        for item in request.enzyme_provisioning.catalog.enzymes
+        if item.enzyme_id in reaction_enzyme_ids
+    )
+    partition_result = source_partition_for_route(
+        payload=source.foldback.payload,
+        realization=route,
+        enzymes=enzymes,
+    )
+    partition_path = tmp_path / "source-partition.json"
+    partition_path.write_bytes(canonical_json_bytes(partition_result))
+    partition = construction.load_verified_source_partition(partition_path)
+
+    compilation = construction.compile_construction_from_local_realizations(
+        source_path,
+        design_bundle_path=tmp_path / "selected-partition" / "design",
+        foldback=foldback_receipt,
+        foldback_realization_id=foldback_realization_id,
+        basal=basal_receipt,
+        basal_realization_id=basal_realization_id,
+        source_partition=partition,
+        source_partition_realization_id=partition.realization_ids[0],
+    )
+
+    result = compilation._verified_source().result
+    assert result.source_partition_authority == partition_result
+    assert result.accounting.nominal_combinations == 1
+    assert result.accounting.valid_realizations == 1
+    assert result.realizations[0].source_partition_binding is not None
+    output = compilation.write(tmp_path / "partition-bound-construction")
+    replayed = construction.load_verified_construction_bundle(output)
+    assert replayed.bundle_id == compilation.bundle_id
+    assert replayed._verified_source().result.source_partition_authority == partition_result
+
+
 def test_selected_pair_reuses_receipt_verification_without_discovery_replay(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -390,7 +508,72 @@ def test_selected_pair_requires_replay_verified_local_receipts(tmp_path: Path) -
         )
 
 
-def test_selected_pair_rejects_a_direct_construction_source(tmp_path: Path) -> None:
+def test_selected_foldback_compiles_a_direct_partition_bound_route(
+    tmp_path: Path,
+) -> None:
+    _, foldback, _, _ = _selected_partition_inputs(tmp_path)
+    source = _source(
+        foldback=foldback.neighborhood.request,
+        endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
+        materialization=_materialization(),
+    )
+    source_path = _write_source(tmp_path / "direct-selected.yaml", source)
+    foldback_receipt = _local_receipt(tmp_path / "foldback.json", foldback)
+    foldback_realization_id = next(
+        item.foldback_realization_id
+        for item in foldback.realizations
+        if len(item.reaction_program.stages) == 1
+    )
+    baseline = construction.compile_construction_from_local_realizations(
+        source_path,
+        design_bundle_path=tmp_path / "selected-partition" / "design",
+        foldback=foldback_receipt,
+        foldback_realization_id=foldback_realization_id,
+    )
+    route = baseline._verified_source().result.realizations[0]
+    reaction_enzyme_ids = {
+        operation.enzyme_id
+        for operation in route.construction_program.reaction_programs[0].stages[0].operations
+    }
+    enzymes = tuple(
+        item
+        for item in source.foldback.enzyme_provisioning.catalog.enzymes
+        if item.enzyme_id in reaction_enzyme_ids
+    )
+    partition_result = source_partition_for_route(
+        payload=source.foldback.payload,
+        realization=route,
+        enzymes=enzymes,
+    )
+    partition_path = tmp_path / "source-partition.json"
+    partition_path.write_bytes(canonical_json_bytes(partition_result))
+    partition = construction.load_verified_source_partition(partition_path)
+
+    compilation = construction.compile_construction_from_local_realizations(
+        source_path,
+        design_bundle_path=tmp_path / "selected-partition" / "design",
+        foldback=foldback_receipt,
+        foldback_realization_id=foldback_realization_id,
+        source_partition=partition,
+        source_partition_realization_id=partition.realization_ids[0],
+    )
+
+    result = compilation._verified_source().result
+    assert compilation.endpoint == ConstructionEndpoint.SSDNA_HAIRPIN.value
+    assert compilation.nominal_combinations == 1
+    assert compilation.examined_combinations == 1
+    assert compilation.valid_realizations == 1
+    assert result.realizations[0].source_partition_binding is not None
+    request_bytes = canonical_json_bytes(result.request)
+    assert b'"selected_foldback_realization_id"' in request_bytes
+    assert b'"selected_basal_realization_id"' not in request_bytes
+    output = compilation.write(tmp_path / "direct-partition-bound-construction")
+    assert construction.load_verified_construction_bundle(output).bundle_id == (
+        compilation.bundle_id
+    )
+
+
+def test_selected_direct_route_rejects_a_basal_receipt(tmp_path: Path) -> None:
     _, foldback, basal, _ = _selected_inputs(tmp_path)
     source = _source(
         foldback=foldback.neighborhood.request,
@@ -398,7 +581,7 @@ def test_selected_pair_rejects_a_direct_construction_source(tmp_path: Path) -> N
         materialization=_materialization(),
     )
 
-    with pytest.raises(ValueError, match="requires a PCR-bearing construction source"):
+    with pytest.raises(ValueError, match="Direct selected construction must omit basal"):
         construction.compile_construction_from_local_realizations(
             _write_source(tmp_path / "direct-selected.yaml", source),
             design_bundle_path=tmp_path / "selected" / "design",
@@ -406,6 +589,18 @@ def test_selected_pair_rejects_a_direct_construction_source(tmp_path: Path) -> N
             foldback_realization_id=foldback.realizations[0].foldback_realization_id,
             basal=_local_receipt(tmp_path / "basal.json", basal),
             basal_realization_id=basal.realizations[0].basal_realization_id,
+        )
+
+
+def test_selected_pcr_route_requires_a_basal_receipt(tmp_path: Path) -> None:
+    _, foldback, _, source = _selected_inputs(tmp_path)
+
+    with pytest.raises(ValueError, match="PCR-bearing selected construction requires basal"):
+        construction.compile_construction_from_local_realizations(
+            _write_source(tmp_path / "pcr-missing-basal.yaml", source),
+            design_bundle_path=tmp_path / "selected" / "design",
+            foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
         )
 
 

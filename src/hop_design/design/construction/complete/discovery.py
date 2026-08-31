@@ -23,7 +23,6 @@ from hop_design.design.construction.verification import (
 from hop_design.models.construction import SearchCompletionStatus
 from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
-    BasalRealizationRecord,
 )
 from hop_design.models.construction.complete import (
     CompositionDisposition,
@@ -43,11 +42,17 @@ from hop_design.models.construction.complete.source_authority import (
     expected_upstream_truncation_reasons,
 )
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
+from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 
 from .design_authority import assert_design_authority
 from .endpoint import materialize_endpoint
+from .partition_binding import (
+    bind_partition_to_realization,
+    source_partition_enzyme_policies,
+    validate_partition_selection,
+)
 from .results import build_result
-from .selection import select_basal_records, select_foldback_records
+from .selection import select_local_domains, validate_detailed_authority_ids
 
 
 @dataclass(frozen=True)
@@ -77,36 +82,22 @@ def _discover_constructions_raw(
     foldback: FoldbackNeighborhoodDiscoveryResult,
     basal: BasalNeighborhoodDiscoveryResult | None,
     design: VerifiedHopBundle,
+    source_partition: SourcePartitionDiscoveryResult | None = None,
 ) -> ConstructionSpaceResult:
     """Compose every exact compatible local combination within declared bounds."""
     assert_design_authority(request, design)
     validate_local_authority_compatibility(request, foldback=foldback, basal=basal)
-    if foldback.result_id != request.foldback_result_id:
-        raise ValueError("Foldback detailed result identity does not match the request.")
-    if (None if basal is None else basal.result_id) != request.basal_result_id:
-        raise ValueError("Basal detailed result identity does not match the request.")
-    foldback_records = select_foldback_records(
-        tuple(
-            item
-            for item in foldback.realizations
-            if item.payload_sequence == request.payload.payload.sequence
-        ),
-        request.selected_foldback_realization_id,
-    )
-    basal_records: tuple[BasalRealizationRecord | None, ...] = select_basal_records(
-        (
-            (None,)
-            if basal is None
-            else tuple(
-                item
-                for item in basal.realizations
-                if item.payload_sequence == request.payload.payload.sequence
-            )
-        ),
-        request.selected_basal_realization_id,
+    validate_detailed_authority_ids(request, foldback=foldback, basal=basal)
+    source_partition = validate_partition_selection(request, source_partition)
+    enzyme_policies = source_partition_enzyme_policies(foldback, basal)
+    foldback_records, basal_records = select_local_domains(
+        request,
+        foldback=foldback,
+        basal=basal,
     )
     nominal = len(foldback_records) * len(basal_records)
     records: list[MaterializedConstructionRealization] = []
+    partition_rejection_candidates: list[MaterializedConstructionRealization] = []
     failures: Counter[str] = Counter()
     examined = 0
     truncation: str | None = None
@@ -152,8 +143,24 @@ def _discover_constructions_raw(
             basal_result=basal,
             evaluation=evaluation,
         )
-        if isinstance(record, CompositionRejectionCode):
-            failures[record] += 1
+        resolved_record: MaterializedConstructionRealization | CompositionRejectionCode = record
+        if not isinstance(record, CompositionRejectionCode):
+            partition_outcome = bind_partition_to_realization(
+                request=request,
+                realization=record,
+                authority=source_partition,
+                enzyme_policies=enzyme_policies,
+            )
+            if partition_outcome.rejection_candidate is not None:
+                partition_rejection_candidates.append(partition_outcome.rejection_candidate)
+            if partition_outcome.rejection_reason is not None:
+                resolved_record = partition_outcome.rejection_reason
+            elif partition_outcome.realization is not None:
+                resolved_record = partition_outcome.realization
+            else:
+                raise AssertionError("Partition binding must return one exact outcome.")
+        if isinstance(resolved_record, CompositionRejectionCode):
+            failures[resolved_record] += 1
             dispositions.append(
                 CompositionDisposition(
                     ordinal=ordinal,
@@ -162,14 +169,14 @@ def _discover_constructions_raw(
                         None if basal_record is None else basal_record.basal_realization_id
                     ),
                     status=CompositionDispositionStatus.REJECTED,
-                    rejection_reason=record,
+                    rejection_reason=resolved_record,
                     candidate_enzyme_programs=evaluation.candidate_enzyme_programs,
                     recognition_placements_attempted=(evaluation.recognition_placements_attempted),
                     constraint_systems_attempted=evaluation.constraint_systems_attempted,
                 )
             )
             continue
-        records.append(record)
+        records.append(resolved_record)
         dispositions.append(
             CompositionDisposition(
                 ordinal=ordinal,
@@ -178,7 +185,7 @@ def _discover_constructions_raw(
                     None if basal_record is None else basal_record.basal_realization_id
                 ),
                 status=CompositionDispositionStatus.ACCEPTED,
-                materialized_realization_id=record.materialized_realization_id,
+                materialized_realization_id=resolved_record.materialized_realization_id,
                 candidate_enzyme_programs=evaluation.candidate_enzyme_programs,
                 recognition_placements_attempted=(evaluation.recognition_placements_attempted),
                 constraint_systems_attempted=evaluation.constraint_systems_attempted,
@@ -245,6 +252,8 @@ def _discover_constructions_raw(
         examined=examined,
         foldback_authority=foldback,
         basal_authority=basal,
+        source_partition_authority=source_partition,
+        source_partition_rejection_candidates=tuple(partition_rejection_candidates),
         design_bundle_id=design.bundle.bundle_id,
         dispositions=tuple(dispositions),
     )
@@ -292,6 +301,7 @@ def _replay_construction_result(
         foldback=foldback_result,
         basal=basal_result,
         design=design,
+        source_partition=parsed.source_partition_authority,
     )
     if canonical_json_bytes(expected) != canonical_json_bytes(parsed):
         raise ValueError(
@@ -306,6 +316,7 @@ def discover_constructions(
     foldback: VerifiedFoldbackNeighborhoodResult,
     basal: VerifiedBasalNeighborhoodResult | None,
     design: VerifiedHopBundle,
+    source_partition: SourcePartitionDiscoveryResult | None = None,
 ) -> VerifiedConstructionSpaceResult:
     """Compose and verify every exact compatible local combination within declared bounds."""
     if not isinstance(foldback, VerifiedFoldbackNeighborhoodResult) or (
@@ -320,6 +331,7 @@ def discover_constructions(
         foldback=foldback_result,
         basal=basal_result,
         design=design,
+        source_partition=source_partition,
     )
     return verify_construction_space_result(
         raw,

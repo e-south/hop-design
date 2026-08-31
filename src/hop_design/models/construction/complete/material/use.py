@@ -55,9 +55,7 @@ class MaterialUse(HopModel):
     def create(cls, **content: object) -> MaterialUse:
         draft = cls.model_construct(use_id="", **cast(Any, content))
         seed = draft.model_dump(mode="json", exclude={"use_id"})
-        return cls.model_validate(
-            {"use_id": _content_id("material-use", 1, seed), **content}
-        )
+        return cls.model_validate({"use_id": _content_id("material-use", 1, seed), **content})
 
     @model_validator(mode="after")
     def validate_identity(self) -> MaterialUse:

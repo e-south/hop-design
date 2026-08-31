@@ -27,7 +27,7 @@ global hairpin optimizer or a complete laboratory method.
 | Which nicking placement or exact precursor satisfies this selected geometry? | discovery placement and precursor searches | [Processing discovery](processing-discovery.md) |
 | Which basal arm pairs, processing geometries, and terminal routes compose? | bounded basal searches | [Processing discovery](processing-discovery.md#basal-searches) |
 | Which nick/release geometry can produce a released foldback, and can it join a basal route? | released-foldback searches | [Released-foldback routes](released-foldback-routes.md) |
-| Which exact complete routes, or which one explicitly selected local pair, follow from strict local requests and a verified design? | `compile_construction`, `compile_construction_from_local_realizations`, and construction projections | [Python API](python-api.md#payload-centered-construction) |
+| Which exact complete routes, or which explicit endpoint-local selection, follow from strict local requests and a verified design? | `compile_construction`, `compile_construction_from_local_realizations`, and construction projections | [Python API](python-api.md#payload-centered-construction) |
 | How does a selected set of components become a verified encoding? | `check` and `compile` | [Compiler integration](component-evaluation.md#compiler-integration) |
 
 ## Public seams

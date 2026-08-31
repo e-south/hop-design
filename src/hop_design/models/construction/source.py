@@ -19,11 +19,8 @@ from pydantic import Field, field_validator, model_validator
 from hop_design.models.base import HopModel
 
 from .complete.accounting import CompositionEnumerationPolicy
-from .complete.request import (
-    LinearSourceMaterializationSpec,
-    TypeIisReleaseRequest,
-    WholeRouteConstraints,
-)
+from .complete.request import TypeIisReleaseRequest, WholeRouteConstraints
+from .complete.source_preparation import LinearSourceMaterializationSpec
 from .payload import ConstructionEndpoint, LocalNeighborhoodFamily, RouteFamily
 from .request import LocalNeighborhoodRequest
 

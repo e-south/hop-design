@@ -24,9 +24,7 @@ class SourcePartitionBinding(HopModel):
 
     binding_id: str = Field(pattern=r"^hop:source-partition-binding/[0-9a-f]{64}@1$")
     result_id: str = Field(pattern=r"^hop:source-partition-result/[0-9a-f]{64}@1$")
-    realization_id: str = Field(
-        pattern=r"^hop:source-partition-realization/[0-9a-f]{64}@1$"
-    )
+    realization_id: str = Field(pattern=r"^hop:source-partition-realization/[0-9a-f]{64}@1$")
     source_preparation_product_state_id: str = Field(
         pattern=r"^hop:construction-state/[0-9a-f]{64}@1$"
     )

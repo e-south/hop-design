@@ -453,7 +453,8 @@ def test_hairpin_pcr_endpoint_materializes_exact_adapter_and_primer_route(
     assert {
         item.material_use_id
         for item in functions
-        if item.function in {
+        if item.function
+        in {
             MaterialFunction.FORWARD_PRIMER,
             MaterialFunction.REVERSE_PRIMER,
         }
@@ -527,9 +528,7 @@ def test_hairpin_pcr_preserves_a_literal_distal_mismatch_through_copying(
     )
     mismatch_lineage = bottom.lineage[mismatch_bottom_index]
     adapter_use = next(
-        item
-        for item in realization.material_uses
-        if item.role.value == "ligation_adapter"
+        item for item in realization.material_uses if item.role.value == "ligation_adapter"
     )
     assert mismatch_lineage.origin_id == adapter_use.use_id
     assert mismatch_lineage.origin_index == 2

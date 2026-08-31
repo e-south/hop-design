@@ -23,6 +23,7 @@ from hop_design.design.construction.complete.bundle import (
 from hop_design.design.construction.complete.discovery import discover_constructions
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.design.construction.local_public import LocalNeighborhoodDiscovery
+from hop_design.design.construction.source_partition import SourcePartitionDiscovery
 from hop_design.design.construction.verification import (
     VerifiedBasalNeighborhoodResult,
     VerifiedFoldbackNeighborhoodResult,
@@ -37,6 +38,7 @@ from hop_design.models.construction.complete import (
 from hop_design.models.construction.complete.local_authority import payload_space_contains
 from hop_design.models.construction.payload import FinalPayloadReference, RouteFamily
 from hop_design.models.construction.source import ConstructionSource
+from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 from hop_design.models.payload import ExactPayload
 from hop_design.serialization import canonical_json_bytes
 
@@ -80,6 +82,8 @@ def _construction_request(
     basal: VerifiedBasalNeighborhoodResult | None,
     selected_foldback_realization_id: str | None = None,
     selected_basal_realization_id: str | None = None,
+    source_partition: SourcePartitionDiscoveryResult | None = None,
+    source_partition_realization_id: str | None = None,
 ) -> ConstructionDiscoveryRequest:
     encoding = design.plan.hairpin_encoding_insert
     return ConstructionDiscoveryRequest(
@@ -90,6 +94,10 @@ def _construction_request(
         basal_result_id=None if basal is None else basal.result.result_id,
         selected_foldback_realization_id=selected_foldback_realization_id,
         selected_basal_realization_id=selected_basal_realization_id,
+        source_partition_result_id=(
+            None if source_partition is None else source_partition.result_id
+        ),
+        selected_source_partition_realization_id=source_partition_realization_id,
         materialization=source.composition.materialization,
         release=source.composition.release,
         design=DesignAuthorityReference(
@@ -116,6 +124,8 @@ def _compile_verified_authorities(
     basal: VerifiedBasalNeighborhoodResult | None,
     selected_foldback_realization_id: str | None = None,
     selected_basal_realization_id: str | None = None,
+    source_partition: SourcePartitionDiscoveryResult | None = None,
+    source_partition_realization_id: str | None = None,
 ) -> ConstructionCompilation:
     request = _construction_request(
         source=source,
@@ -125,12 +135,15 @@ def _compile_verified_authorities(
         basal=basal,
         selected_foldback_realization_id=selected_foldback_realization_id,
         selected_basal_realization_id=selected_basal_realization_id,
+        source_partition=source_partition,
+        source_partition_realization_id=source_partition_realization_id,
     )
     construction = discover_constructions(
         request,
         foldback=foldback,
         basal=basal,
         design=design,
+        source_partition=source_partition,
     )
     return compile_construction_bundle(construction)
 
@@ -166,28 +179,43 @@ def compile_construction_source_from_local_realizations(
     design_bundle_path: str | Path,
     foldback: LocalNeighborhoodDiscovery,
     foldback_realization_id: str,
-    basal: LocalNeighborhoodDiscovery,
-    basal_realization_id: str,
+    basal: LocalNeighborhoodDiscovery | None = None,
+    basal_realization_id: str | None = None,
+    source_partition: SourcePartitionDiscovery | None = None,
+    source_partition_realization_id: str | None = None,
 ) -> ConstructionCompilation:
-    """Compile exactly one selected pair from replay-verified local authorities."""
-    if not isinstance(foldback, LocalNeighborhoodDiscovery) or not isinstance(
-        basal, LocalNeighborhoodDiscovery
-    ):
+    """Compile one endpoint-complete selection from verified local authorities."""
+    if not isinstance(foldback, LocalNeighborhoodDiscovery):
         raise TypeError("Selected composition requires replay-verified local receipts.")
+    if (basal is None) != (basal_realization_id is None):
+        raise ValueError("Selected basal evidence requires both receipt and realization id.")
+    if basal is not None and not isinstance(basal, LocalNeighborhoodDiscovery):
+        raise TypeError("Selected composition requires replay-verified local receipts.")
+    if (source_partition is None) != (source_partition_realization_id is None):
+        raise ValueError("Selected source partition requires both its receipt and realization id.")
+    if source_partition is not None and not isinstance(source_partition, SourcePartitionDiscovery):
+        raise TypeError("Selected source partition requires a replay-verified receipt.")
     source = _load_construction_source(source_path)
-    if source.basal is None:
-        raise ValueError("Selected-pair composition requires a PCR-bearing construction source.")
+    if source.basal is None and basal is not None:
+        raise ValueError("Direct selected construction must omit basal evidence.")
+    if source.basal is not None and basal is None:
+        raise ValueError("PCR-bearing selected construction requires basal evidence.")
     verified_foldback = foldback._verified_authority()
-    verified_basal = basal._verified_authority()
+    verified_basal = None if basal is None else basal._verified_authority()
+    verified_source_partition = (
+        None if source_partition is None else source_partition._verified_source()
+    )
     if not isinstance(verified_foldback, VerifiedFoldbackNeighborhoodResult):
         raise ValueError("The selected foldback receipt has the wrong local family.")
-    if not isinstance(verified_basal, VerifiedBasalNeighborhoodResult):
+    if verified_basal is not None and not isinstance(
+        verified_basal, VerifiedBasalNeighborhoodResult
+    ):
         raise ValueError("The selected basal receipt has the wrong local family.")
     if canonical_json_bytes(source.foldback) != canonical_json_bytes(
         verified_foldback.result.neighborhood.request
     ):
         raise ValueError("The foldback receipt does not derive from the construction source.")
-    if canonical_json_bytes(source.basal) != canonical_json_bytes(
+    if verified_basal is not None and canonical_json_bytes(source.basal) != canonical_json_bytes(
         verified_basal.result.discovery.request
     ):
         raise ValueError("The basal receipt does not derive from the construction source.")
@@ -202,6 +230,8 @@ def compile_construction_source_from_local_realizations(
         design=design,
         selected_foldback_realization_id=foldback_realization_id,
         selected_basal_realization_id=basal_realization_id,
+        source_partition=verified_source_partition,
+        source_partition_realization_id=source_partition_realization_id,
     )
 
 

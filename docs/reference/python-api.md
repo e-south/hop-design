@@ -39,11 +39,15 @@ All operations and receipts in this section use `hop_design.construction`.
 
 - `compile_construction(source_path, design_bundle_path=...) -> ConstructionCompilation`
 - `compile_construction_from_local_realizations(source_path, design_bundle_path=...,
-  foldback=..., foldback_realization_id=..., basal=...,
-  basal_realization_id=...) -> ConstructionCompilation`
+  foldback=..., foldback_realization_id=..., basal=None,
+  basal_realization_id=None, source_partition=None,
+  source_partition_realization_id=None) -> ConstructionCompilation`
   loads one strict file and a separate verified design authority, discovers
   local neighborhoods, composes the bounded whole route, and returns an opaque
-  write-capable receipt.
+  write-capable receipt. Direct endpoints accept one selected foldback;
+  PCR-bearing endpoints require selected foldback and basal realizations. An
+  optional verified source-partition selection is an exact route constraint,
+  not another Cartesian search dimension.
 - `compile_design_from_local_realizations(...) -> Compilation` replays one
   explicitly selected foldback realization and, for a PCR-bearing endpoint,
   one explicitly selected basal realization, then derives their exact

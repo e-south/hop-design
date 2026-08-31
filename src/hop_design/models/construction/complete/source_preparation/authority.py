@@ -131,10 +131,12 @@ def _derived_content(
         for index, base in enumerate(top.sequence)
     )
     produced_materials = tuple(
-        ExactConstructionMaterial(
-            sequence_5prime=strand.sequence,
-            five_prime_end=strand.five_prime_end,
-            three_prime_end=strand.three_prime_end,
+        ExactConstructionMaterial.model_validate(
+            {
+                "sequence_5prime": strand.sequence,
+                "five_prime_end": strand.five_prime_end,
+                "three_prime_end": strand.three_prime_end,
+            }
         )
         for strand in (top, bottom)
     )
@@ -255,12 +257,8 @@ class SourceDuplexPreparationAuthority(HopModel):
             reverse_primer=self.reverse_primer,
             payload_source_span=self.payload_source_span,
             source_resolution_mode=self.source_ssdna_use.specification_resolution_mode,
-            forward_primer_resolution_mode=(
-                self.forward_primer_use.specification_resolution_mode
-            ),
-            reverse_primer_resolution_mode=(
-                self.reverse_primer_use.specification_resolution_mode
-            ),
+            forward_primer_resolution_mode=(self.forward_primer_use.specification_resolution_mode),
+            reverse_primer_resolution_mode=(self.reverse_primer_use.specification_resolution_mode),
         )
         if self.source_template != expected["source_template"]:
             raise ValueError("Source-duplex preparation template must replay exactly.")

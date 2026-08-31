@@ -51,9 +51,9 @@ evidence rather than design identity. PCR-bearing endpoints require basal
 selection. Direct single-stranded design compilation is deferred because this
 operation has no independent exact-basal input and does not invent one.
 
-Compile only that foldback-basal pair against the matching design when the
-scientific question concerns the selected route rather than the complete local
-Cartesian product:
+Compile only the endpoint-required local realizations against the matching
+design when the scientific question concerns an explicit route rather than the
+complete local Cartesian product:
 
 ```python
 selected = construction.compile_construction_from_local_realizations(
@@ -66,10 +66,30 @@ selected = construction.compile_construction_from_local_realizations(
 )
 ```
 
-Both receipts must derive from the exact local requests in the construction
-source. The returned receipt uses the ordinary portable construction authority
-and reports one nominal and one examined combination. HOP evaluates the pair;
-it does not select it or reinterpret its deterministic ordinal as a score.
+For a direct `ssdna_hairpin`, omit `basal` and `basal_realization_id`. For a
+PCR-bearing endpoint, both basal arguments are required. Every receipt must
+derive from the exact local request in the construction source. The returned
+receipt uses the ordinary portable construction authority and reports one
+nominal and one examined combination. HOP evaluates the selection; it does not
+choose it or reinterpret its deterministic ordinal as a score.
+
+One replay-verified source partition may be bound to either endpoint form:
+
+```python
+selected = construction.compile_construction_from_local_realizations(
+    "construction.yaml",
+    design_bundle_path="design-bundle",
+    foldback=verified_foldback_receipt,
+    foldback_realization_id=selected_foldback_id,
+    source_partition=verified_partition_receipt,
+    source_partition_realization_id=selected_partition_id,
+)
+```
+
+The selected partition must describe the same prepared source duplex, use the
+same characterized enzyme definitions, and replay the route's concurrent nicks,
+denatured fragments, inclusive selection, and required survivors. A selected
+member remains exact even when its parent partition search was truncated.
 
 ## Prepare the two authorities
 

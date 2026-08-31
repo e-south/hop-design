@@ -29,7 +29,7 @@ from hop_design.models.construction.accounting import (
 )
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
-from hop_design.models.construction.payload import _content_id
+from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 
 from .accounting import CompositionAccounting, validate_realization_groups
 from .authority import (
@@ -42,17 +42,20 @@ from .authority import (
 from .local_authority import validate_local_authority_compatibility
 from .realization import MaterializedConstructionRealization
 from .request import ConstructionDiscoveryRequest
+from .result_contract import (
+    composition_truncation_reason,
+    construction_space_result_id,
+    expected_accounting,
+    expected_material_accounting,
+    validate_combination_evaluations,
+    validate_endpoint_evidence,
+    validate_materialized_request,
+)
 from .source_authority import (
     expected_upstream_truncation_reasons,
     validate_result_authorities,
 )
-from .validation import (
-    expected_accounting,
-    expected_material_accounting,
-    validate_accepted_realization,
-    validate_combination_evaluations,
-    validate_endpoint_evidence,
-)
+from .source_partition.result_validation import validate_source_partition_result_contract
 
 
 class ConstructionSpaceResult(HopModel):
@@ -69,6 +72,13 @@ class ConstructionSpaceResult(HopModel):
     request: ConstructionDiscoveryRequest
     foldback_authority: FoldbackNeighborhoodDiscoveryResult
     basal_authority: BasalNeighborhoodDiscoveryResult | None = None
+    source_partition_authority: SourcePartitionDiscoveryResult | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    source_partition_rejection_candidates: tuple[MaterializedConstructionRealization, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
     realizations: tuple[MaterializedConstructionRealization, ...]
     geometry_groups: tuple[RealizationGroup, ...]
     final_product_groups: tuple[RealizationGroup, ...]
@@ -88,30 +98,7 @@ class ConstructionSpaceResult(HopModel):
         return cls.model_validate({"result_id": draft._expected_result_id(), **content})
 
     def _expected_result_id(self) -> str:
-        content = {
-            "schema": self.schema_id,
-            "problem_id": self.problem_id,
-            "execution_id": self.execution_id,
-            "status": self.status,
-            "realization_ids": tuple(
-                item.materialized_realization_id for item in self.realizations
-            ),
-            "geometry_groups": tuple(item.model_dump(mode="json") for item in self.geometry_groups),
-            "final_product_groups": tuple(
-                item.model_dump(mode="json") for item in self.final_product_groups
-            ),
-            "accounting": self.accounting.model_dump(mode="json"),
-            "failure_reasons": tuple(item.model_dump(mode="json") for item in self.failure_reasons),
-            "truncation_reasons": self.truncation_reasons,
-            "upstream_truncation_reasons": self.upstream_truncation_reasons,
-            "provenance": self.provenance.model_dump(mode="json"),
-            "material_accounting": self.material_accounting.model_dump(mode="json"),
-            "claim_boundary": self.claim_boundary.model_dump(mode="json"),
-            "combination_dispositions": tuple(
-                item.model_dump(mode="json") for item in self.combination_dispositions
-            ),
-        }
-        return _content_id("construction-space-result", 1, content)
+        return construction_space_result_id(self)
 
     @model_validator(mode="after")
     def validate_result(self) -> ConstructionSpaceResult:
@@ -139,7 +126,20 @@ class ConstructionSpaceResult(HopModel):
             provenance=self.provenance,
             foldback=self.foldback_authority,
             basal=self.basal_authority,
+            realizations=(
+                *self.realizations,
+                *self.source_partition_rejection_candidates,
+            ),
+        )
+        validate_source_partition_result_contract(
+            request=self.request,
+            provenance=self.provenance,
+            authority=self.source_partition_authority,
             realizations=self.realizations,
+            rejection_candidates=self.source_partition_rejection_candidates,
+            dispositions=self.combination_dispositions,
+            foldback_authority=self.foldback_authority,
+            basal_authority=self.basal_authority,
         )
         validate_local_authority_compatibility(
             self.request,
@@ -262,6 +262,7 @@ class ConstructionSpaceResult(HopModel):
             basal_authority=self.basal_authority,
             dispositions=self.combination_dispositions,
             realizations=self.realizations,
+            source_partition_rejection_candidates=(self.source_partition_rejection_candidates),
         )
         if self.request.whole_route_constraints.require_all_combinations_valid:
             if self.status is SearchCompletionStatus.COMPLETE and (
@@ -284,7 +285,7 @@ class ConstructionSpaceResult(HopModel):
         }
         for realization in self.realizations:
             validate_endpoint_evidence(self.request, realization)
-            validate_accepted_realization(
+            validate_materialized_request(
                 request=self.request,
                 provenance=self.provenance,
                 disposition=dispositions_by_id[realization.materialized_realization_id],
@@ -292,7 +293,12 @@ class ConstructionSpaceResult(HopModel):
             )
         if self.material_accounting != expected_material_accounting(self.realizations):
             raise ValueError("Material accounting must derive from exact route materials.")
-        expected_local_reason = self._composition_truncation_reason()
+        expected_local_reason = composition_truncation_reason(
+            examined=len(self.combination_dispositions),
+            nominal=self.accounting.nominal_combinations,
+            execution=self.execution,
+            valid=len(self.realizations),
+        )
         expected_local_reasons = (
             *((expected_local_reason,) if expected_local_reason is not None else ()),
             *truncated_reasons,
@@ -320,21 +326,6 @@ class ConstructionSpaceResult(HopModel):
         if self.result_id != self._expected_result_id():
             raise ValueError("result_id must seal the complete construction-space result.")
         return self
-
-    def _composition_truncation_reason(self) -> str | None:
-        examined = len(self.combination_dispositions)
-        nominal = self.accounting.nominal_combinations
-        if examined == nominal:
-            return None
-        if examined > nominal:
-            raise ValueError("Examined composition prefix cannot exceed the nominal product.")
-        if examined == self.execution.enumeration.max_combinations:
-            return "max_combinations"
-        if len(self.realizations) == self.execution.enumeration.max_realizations:
-            return "max_realizations"
-        raise ValueError(
-            "A partial composition prefix must identify the exact execution bound that fired."
-        )
 
 
 __all__ = [

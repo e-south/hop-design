@@ -55,7 +55,9 @@ from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
     evaluate_combination,
 )
-from hop_design.models.construction.complete.validation import validate_combination_evaluations
+from hop_design.models.construction.complete.result_contract import (
+    validate_combination_evaluations,
+)
 from hop_design.models.coordinates import Boundary
 from hop_design.models.enzymes import (
     CharacterizedEnzyme,

@@ -82,12 +82,14 @@ def pcr_realization(
     source_return_arm = evaluation.source_return_arm
     source = evaluation.source
     source_complement = evaluation.source_complement
+    source_preparation = evaluation.source_preparation
     adapter = request.materialization.adapter
     forward = request.materialization.hairpin_pcr_forward_primer
     reverse = request.materialization.hairpin_pcr_reverse_primer
     design_parent_span = evaluation.design_parent_span
     assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
+    assert source_preparation is not None
     assert adapter is not None and forward is not None and reverse is not None
     assert design_parent_span is not None
     if basal.basal_nick.strand is not Strand.BOTTOM:
@@ -96,7 +98,7 @@ def pcr_realization(
         raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
     encoding = request.design.plan.hairpin_encoding_insert
     material_uses = pcr_material_uses(
-        source_preparation=evaluation.source_preparation,
+        source_preparation=source_preparation,
         adapter=adapter,
         forward_primer=forward,
         reverse_primer=reverse,
@@ -164,11 +166,11 @@ def pcr_realization(
                 prefix=prefix,
                 source_return_arm=source_return_arm,
             ),
-            source_material_id=evaluation.source_preparation.source_ssdna.material_id,
+            source_material_id=source_preparation.source_ssdna.material_id,
         ),
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=basal.basal_realization_id,
-        source_preparation=evaluation.source_preparation,
+        source_preparation=source_preparation,
         materials=materials,
         material_uses=material_uses,
         construction_program=program,

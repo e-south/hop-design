@@ -48,6 +48,16 @@ class ConstructionCompositionProvenance(HopModel):
         default=None,
         pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$",
     )
+    source_partition_result_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-result/[0-9a-f]{64}@1$",
+        exclude_if=lambda value: value is None,
+    )
+    source_partition_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-realization/[0-9a-f]{64}@1$",
+        exclude_if=lambda value: value is None,
+    )
     design_bundle_id: str = Field(min_length=1)
     foldback_realization_ids: tuple[str, ...]
     basal_realization_ids: tuple[str, ...]

@@ -143,6 +143,15 @@ class SourcePartitionDiscovery:
             raise
         return output
 
+    def _verified_source(self) -> SourcePartitionDiscoveryResult:
+        verified = SourcePartitionDiscoveryResult.model_validate_json(self._json_bytes)
+        if (
+            canonical_json_bytes(verified) != self._json_bytes
+            or canonical_json_bytes(self._result) != self._json_bytes
+        ):
+            raise ValueError("Source-partition receipt content disagrees with its authority.")
+        return verified
+
     def __repr__(self) -> str:
         return f"SourcePartitionDiscovery(status={self.status!r}, result_id={self.result_id!r})"
 

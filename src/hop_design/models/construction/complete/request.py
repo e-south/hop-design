@@ -202,8 +202,9 @@ class ConstructionDiscoveryRequest(HopModel):
         handler: SerializerFunctionWrapHandler,
     ) -> dict[str, object]:
         content = cast(dict[str, object], handler(self))
-        if not self.selects_local_pair:
+        if self.selected_foldback_realization_id is None:
             content.pop("selected_foldback_realization_id", None)
+        if self.selected_basal_realization_id is None:
             content.pop("selected_basal_realization_id", None)
         if not self.selects_source_partition:
             content.pop("source_partition_result_id", None)
@@ -235,12 +236,20 @@ class ConstructionDiscoveryRequest(HopModel):
                 raise ValueError("A hairpin PCR endpoint must omit clone release.")
         elif self.release is None:
             raise ValueError("A clone-ready endpoint requires exact Type IIS release.")
-        if (self.selected_foldback_realization_id is None) != (
+        if (
+            self.selected_basal_realization_id is not None
+            and self.selected_foldback_realization_id is None
+        ):
+            raise ValueError("A selected basal realization requires a selected foldback.")
+        if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
+            if self.selected_basal_realization_id is not None:
+                raise ValueError("A direct endpoint must omit a selected basal realization.")
+        elif (self.selected_foldback_realization_id is None) != (
             self.selected_basal_realization_id is None
         ):
-            raise ValueError("Selected composition requires both local realization ids.")
-        if self.selects_local_pair and self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-            raise ValueError("Selected-pair composition requires a PCR-bearing endpoint.")
+            raise ValueError(
+                "PCR-bearing selected composition requires both local realization ids."
+            )
         if (self.source_partition_result_id is None) != (
             self.selected_source_partition_realization_id is None
         ):
@@ -250,8 +259,8 @@ class ConstructionDiscoveryRequest(HopModel):
         return self
 
     @property
-    def selects_local_pair(self) -> bool:
-        """Return whether composition is restricted to one explicit local pair."""
+    def selects_local_realizations(self) -> bool:
+        """Return whether composition is restricted to explicit local realizations."""
         return self.selected_foldback_realization_id is not None
 
     @property
@@ -274,8 +283,9 @@ class ConstructionDiscoveryRequest(HopModel):
             "design": self.design.model_dump(mode="json"),
             "whole_route_constraints": self.whole_route_constraints.model_dump(mode="json"),
         }
-        if self.selects_local_pair:
+        if self.selected_foldback_realization_id is not None:
             content["selected_foldback_realization_id"] = self.selected_foldback_realization_id
+        if self.selected_basal_realization_id is not None:
             content["selected_basal_realization_id"] = self.selected_basal_realization_id
         if self.selects_source_partition:
             content["source_partition_result_id"] = self.source_partition_result_id

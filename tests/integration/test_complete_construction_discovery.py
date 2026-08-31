@@ -576,7 +576,7 @@ def test_direct_composition_preserves_a_bottom_nick_source_orientation(
         (item.origin_id, item.origin_strand, item.origin_index) for item in final.lineage[:4]
     ) == tuple(
         (
-                realization.material_uses[1].use_id,
+            realization.material_uses[1].use_id,
             LineageStrand.COMPLEMENTARY,
             index,
         )

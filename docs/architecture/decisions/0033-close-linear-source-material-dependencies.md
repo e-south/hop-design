@@ -89,8 +89,10 @@ handle generation remains unsupported until its sequence-quality rules exist.
 
 Source partition remains a sibling local authority. A complete route may bind
 one explicit replay-verified source-partition realization. Composition verifies
-that its source duplex, enzyme program, fragment rule, and required survivors
-equal the route states. Cleanup nicks do not become basal geometry.
+that its source duplex, molecular enzyme definitions, concurrent nick program,
+fragment rule, and required survivors equal the route states. Rejected routes
+retain sealed pre-partition candidates so the exact rejection class replays at
+the model boundary. Cleanup nicks do not become basal geometry.
 
 ### Operations and stages
 
@@ -134,4 +136,3 @@ fallback readers, study imports, inventory manager, dashboard, thermodynamic
 model, or physical-success claim. Existing released bundle bytes remain the
 historical authorities they already are and are not reinterpreted as closed
 source-ssDNA routes.
-

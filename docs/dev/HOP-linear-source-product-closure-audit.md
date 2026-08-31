@@ -97,12 +97,13 @@ owning Research Studies record.
 
 ## Product gaps
 
-The remaining blocking gap is that no selected source-partition authority is
-consumed by complete-route replay.
+Source preparation and one selected source-partition realization are consumed
+by complete-route replay. The portable result binds accepted routes and retains
+enough sealed evidence to replay exact partition rejection reasons.
 
-Auxiliary resolution and result navigation are subsequent product gaps. They do
-not justify a generic workflow engine, inventory subsystem, dashboard, PCR
-thermodynamics model, or cleanup-recovery predictor.
+Endpoint auxiliary resolution and grouped result navigation remain product
+gaps. They do not justify a generic workflow engine, inventory subsystem,
+dashboard, PCR thermodynamics model, or cleanup-recovery predictor.
 
 ## Verification plan
 

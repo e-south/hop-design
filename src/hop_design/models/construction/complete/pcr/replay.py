@@ -211,8 +211,7 @@ def _validate_primer_extension(
         item.function: item.material_use_id for item in authority.material_function_spans
     }
     if function_by_role[MaterialFunction.FORWARD_PRIMER] != authority.forward_primer_use.use_id or (
-        function_by_role[MaterialFunction.REVERSE_PRIMER]
-        != authority.reverse_primer_use.use_id
+        function_by_role[MaterialFunction.REVERSE_PRIMER] != authority.reverse_primer_use.use_id
     ):
         raise ValueError("PCR material-function spans must bind both exact primers.")
     validate_material_function_spans(

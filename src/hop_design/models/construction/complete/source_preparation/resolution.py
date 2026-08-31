@@ -53,10 +53,12 @@ def _source_material(
                 "The fixed source ssDNA must equal the selected route source."
             )
         return policy.material
-    return ExactConstructionMaterial(
-        sequence_5prime=source_sequence,
-        five_prime_end=policy.five_prime_end,
-        three_prime_end=policy.three_prime_end,
+    return ExactConstructionMaterial.model_validate(
+        {
+            "sequence_5prime": source_sequence,
+            "five_prime_end": policy.five_prime_end,
+            "three_prime_end": policy.three_prime_end,
+        }
     )
 
 
@@ -116,10 +118,12 @@ def _primer(
                 "Fixed source primer does not match the required terminal binding."
             )
         return policy.primer
-    material = ExactConstructionMaterial(
-        sequence_5prime=sequence,
-        five_prime_end=required_five_prime_end,
-        three_prime_end=EndChemistry.HYDROXYL,
+    material = ExactConstructionMaterial.model_validate(
+        {
+            "sequence_5prime": sequence,
+            "five_prime_end": required_five_prime_end,
+            "three_prime_end": EndChemistry.HYDROXYL,
+        }
     )
     return PcrPrimer(oligo=material, annealing_length_nt=annealing_length_nt)
 

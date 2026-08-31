@@ -232,10 +232,12 @@ def compile_construction_from_local_realizations(
     design_bundle_path: str | Path,
     foldback: LocalNeighborhoodDiscovery,
     foldback_realization_id: str,
-    basal: LocalNeighborhoodDiscovery,
-    basal_realization_id: str,
+    basal: LocalNeighborhoodDiscovery | None = None,
+    basal_realization_id: str | None = None,
+    source_partition: SourcePartitionDiscovery | None = None,
+    source_partition_realization_id: str | None = None,
 ) -> ConstructionCompilation:
-    """Compile exactly one selected pair from replay-verified local receipts."""
+    """Compile one endpoint-complete selection from verified local receipts."""
     from hop_design.design.construction.source import (
         compile_construction_source_from_local_realizations,
     )
@@ -247,6 +249,8 @@ def compile_construction_from_local_realizations(
         foldback_realization_id=foldback_realization_id,
         basal=basal,
         basal_realization_id=basal_realization_id,
+        source_partition=source_partition,
+        source_partition_realization_id=source_partition_realization_id,
     )
 
 

@@ -98,6 +98,7 @@ def clone_realization(
     source_return_arm = evaluation.source_return_arm
     source = evaluation.source
     source_complement = evaluation.source_complement
+    source_preparation = evaluation.source_preparation
     design_parent_span = evaluation.design_parent_span
     end_generation_program = evaluation.end_generation_program
     end_generation_bindings = evaluation.end_generation_bindings
@@ -106,11 +107,12 @@ def clone_realization(
     reverse = request.materialization.hairpin_pcr_reverse_primer
     assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
+    assert source_preparation is not None
     assert design_parent_span is not None and end_generation_program is not None
     assert end_generation_bindings is not None
     assert adapter is not None and forward is not None and reverse is not None
     material_uses = pcr_material_uses(
-        source_preparation=evaluation.source_preparation,
+        source_preparation=source_preparation,
         adapter=adapter,
         forward_primer=forward,
         reverse_primer=reverse,
@@ -250,11 +252,11 @@ def clone_realization(
                 prefix=prefix,
                 source_return_arm=source_return_arm,
             ),
-            source_material_id=evaluation.source_preparation.source_ssdna.material_id,
+            source_material_id=source_preparation.source_ssdna.material_id,
         ),
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=basal.basal_realization_id,
-        source_preparation=evaluation.source_preparation,
+        source_preparation=source_preparation,
         materials=materials,
         material_uses=material_uses,
         construction_program=program,

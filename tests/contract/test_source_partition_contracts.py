@@ -33,6 +33,7 @@ from hop_design.models.construction.source_partition.result import (
     source_partition_realization_id,
 )
 from hop_design.models.enzymes import VendorMetadata
+from hop_design.serialization import canonical_json_bytes
 from tests.integration.test_source_partition_discovery import _request
 
 
@@ -363,3 +364,30 @@ def test_public_result_loader_rejects_schema_symlink_and_resealed_forgery(
     forged.write_text(json.dumps(mapping))
     with pytest.raises(ValidationError, match="result identity must replay exact result content"):
         construction.load_verified_source_partition(forged)
+
+
+def test_opaque_receipt_exposes_only_revalidated_source_authority(tmp_path: Path) -> None:
+    result = discover_source_partitions(_request())
+    result_path = tmp_path / "result.json"
+    result_path.write_bytes(canonical_json_bytes(result))
+
+    receipt = construction.load_verified_source_partition(result_path)
+
+    assert canonical_json_bytes(receipt._verified_source()) == canonical_json_bytes(result)
+
+
+def test_opaque_receipt_rejects_content_that_disagrees_with_canonical_bytes(
+    tmp_path: Path,
+) -> None:
+    result = discover_source_partitions(_request())
+    result_path = tmp_path / "result.json"
+    result_path.write_bytes(canonical_json_bytes(result))
+    receipt = construction.load_verified_source_partition(result_path)
+    object.__setattr__(
+        receipt,
+        "_result",
+        result.model_copy(update={"examined_nodes": result.examined_nodes + 1}),
+    )
+
+    with pytest.raises(ValueError, match="receipt content disagrees with its authority"):
+        receipt._verified_source()

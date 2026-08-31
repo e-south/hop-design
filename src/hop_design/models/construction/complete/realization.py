@@ -51,6 +51,7 @@ from .product import MaterializedFinalProduct
 from .program import ConstructionProgram
 from .request import DesignAuthorityReference
 from .source_authority import validate_local_authorities
+from .source_partition import SourcePartitionBinding
 from .source_preparation import SourceDuplexPreparationAuthority
 from .state import ConstructionStatePhase
 
@@ -71,6 +72,10 @@ class MaterializedConstructionRealization(HopModel):
         pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$",
     )
     source_preparation: SourceDuplexPreparationAuthority
+    source_partition_binding: SourcePartitionBinding | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     materials: tuple[ExactConstructionMaterial, ...] = Field(min_length=1)
     material_uses: tuple[MaterialUse, ...] = Field(min_length=2)
     construction_program: ConstructionProgram
