@@ -100,20 +100,19 @@ def _basal_result(
     cut_offset_reference_strand: int | None = None,
 ):
     endpoint = ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+    motif = recognition_pattern or ("TTTT" if nick_strand is Strand.BOTTOM else "AAAA")
     enzyme = CharacterizedEnzyme(
         enzyme_id="example:enzyme/complete-basal@1",
         canonical_name="complete-basal",
         enzyme_class=EnzymeClass.NICKASE,
         target_molecule=TargetMolecule.DNA,
-        recognition_pattern=(
-            recognition_pattern or ("TTTT" if nick_strand is Strand.BOTTOM else "AAAA")
-        ),
+        recognition_pattern=motif,
         recognition_orientation_semantics=(
             RecognitionOrientationSemantics.BOTH_ORIENTATIONS
             if nick_strand is Strand.BOTTOM
             else RecognitionOrientationSemantics.DECLARED_ONLY
         ),
-        recognition_length=4,
+        recognition_length=len(motif),
         substrate_requirement=SubstrateRequirement.DUPLEX_DNA,
         cut_offset_reference_strand=(
             cut_offset_reference_strand

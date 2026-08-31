@@ -26,23 +26,23 @@ def derive_pcr_reaction_program(
     foldback: FoldbackLocalRealization,
     basal: BasalRealizationRecord,
     prefix: str,
-    return_arm: str,
+    source_return_arm: str,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
 ) -> ReactionProgram:
-    """Derive the exact basal-nicked program with a split return-arm product."""
+    """Derive the exact basal-nicked program with a split source-return product."""
     direct = derive_direct_reaction_program(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
     )
     embedding = derive_linear_source_embedding(
         foldback=foldback,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     final = direct.states[-1]
     molecules: list[ReactionMolecule] = []
@@ -52,12 +52,12 @@ def derive_pcr_reaction_program(
             embedding.source_orientation is SourceOrientation.FORWARD
             and molecule.complement_sequence_5prime is None
             and "bottom-" in molecule.molecule_id
-            and molecule.reference_sequence_5prime.endswith(return_arm)
-            and len(molecule.reference_sequence_5prime) > len(return_arm)
+            and molecule.reference_sequence_5prime.endswith(source_return_arm)
+            and len(molecule.reference_sequence_5prime) > len(source_return_arm)
         ):
             split_count += 1
             sequence = molecule.reference_sequence_5prime
-            split = len(sequence) - len(return_arm)
+            split = len(sequence) - len(source_return_arm)
             molecules.extend(
                 (
                     ReactionMolecule(
@@ -66,7 +66,7 @@ def derive_pcr_reaction_program(
                         complement_sequence_5prime=None,
                     ),
                     ReactionMolecule(
-                        molecule_id=f"{molecule.molecule_id}-pcr-bottom-return-arm",
+                        molecule_id=f"{molecule.molecule_id}-pcr-bottom-source-return-arm",
                         reference_sequence_5prime=sequence[split:],
                         complement_sequence_5prime=None,
                     ),
@@ -77,12 +77,12 @@ def derive_pcr_reaction_program(
             embedding.source_orientation is SourceOrientation.REVERSE_COMPLEMENT
             and molecule.complement_sequence_5prime is None
             and "top-" in molecule.molecule_id
-            and molecule.reference_sequence_5prime.endswith(return_arm)
-            and len(molecule.reference_sequence_5prime) > len(return_arm)
+            and molecule.reference_sequence_5prime.endswith(source_return_arm)
+            and len(molecule.reference_sequence_5prime) > len(source_return_arm)
         ):
             split_count += 1
             sequence = molecule.reference_sequence_5prime
-            split = len(sequence) - len(return_arm)
+            split = len(sequence) - len(source_return_arm)
             molecules.extend(
                 (
                     ReactionMolecule(
@@ -91,7 +91,7 @@ def derive_pcr_reaction_program(
                         complement_sequence_5prime=None,
                     ),
                     ReactionMolecule(
-                        molecule_id=f"{molecule.molecule_id}-pcr-top-return-arm",
+                        molecule_id=f"{molecule.molecule_id}-pcr-top-source-return-arm",
                         reference_sequence_5prime=sequence[split:],
                         complement_sequence_5prime=None,
                     ),
@@ -106,7 +106,7 @@ def derive_pcr_reaction_program(
             continue
         split_count += 1
         complement = molecule.complement_sequence_5prime
-        split = len(complement) - len(return_arm)
+        split = len(complement) - len(source_return_arm)
         molecules.extend(
             (
                 ReactionMolecule(
@@ -120,14 +120,14 @@ def derive_pcr_reaction_program(
                     complement_sequence_5prime=None,
                 ),
                 ReactionMolecule(
-                    molecule_id=f"{molecule.molecule_id}-pcr-bottom-return-arm",
+                    molecule_id=f"{molecule.molecule_id}-pcr-bottom-source-return-arm",
                     reference_sequence_5prime=complement[split:],
                     complement_sequence_5prime=None,
                 ),
             )
         )
     if split_count != 1:
-        raise ValueError("PCR reaction program must split one exact return-arm strand.")
+        raise ValueError("PCR reaction program must split one exact source-return strand.")
     states = (*direct.states[:-1], final.model_copy(update={"molecules": tuple(molecules)}))
     stages = tuple(
         stage.model_copy(update={"post_state_id": states[index + 1].state_id})
@@ -141,7 +141,7 @@ def derive_pcr_reaction_program(
                 "foldback_realization_id": foldback.foldback_realization_id,
                 "basal_realization_id": basal.basal_realization_id,
                 "prefix": prefix,
-                "return_arm": return_arm,
+                "source_return_arm": source_return_arm,
                 "states": tuple(item.model_dump(mode="json") for item in states),
                 "stages": tuple(item.model_dump(mode="json") for item in stages),
             },

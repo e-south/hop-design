@@ -99,13 +99,13 @@ def direct_realization(
         return evaluation.rejection_reason
     if (
         evaluation.prefix is None
-        or evaluation.return_arm is None
+        or evaluation.source_return_arm is None
         or evaluation.source is None
         or evaluation.source_complement is None
     ):
         raise ValueError("Compatible combination evaluation lacks exact route materials.")
     prefix = evaluation.prefix
-    return_arm = evaluation.return_arm
+    source_return_arm = evaluation.source_return_arm
     source = evaluation.source
     source_complement = evaluation.source_complement
     expected_source = source.sequence_5prime
@@ -113,7 +113,7 @@ def direct_realization(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
         evaluation=evaluation,
@@ -157,7 +157,7 @@ def direct_realization(
     embedding = derive_linear_source_embedding(
         foldback=foldback,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     source_map = derive_complete_payload_source_map(
         foldback=foldback,

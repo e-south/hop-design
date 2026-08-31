@@ -79,6 +79,11 @@ doc_type: explanation
   facts. Exact primer sequences may be checked for sequence binding, but no
   thermodynamic feasibility claim exists without a separately declared model
   and conditions.
+- In a PCR-bearing linear-source route, the complete retained source prefix,
+  its derived reverse-complement source-return arm, the local basal pairing
+  span, and the exact ligation adapter are distinct authorities. The adapter
+  must not stand in for outer source periphery, and the design encoding may be
+  a nonzero subspan of the PCR endpoint.
 - Local realization, complete realization, exact final product, and achieved
   geometry have distinct identities. Grouping is a reversible projection and
   cannot discard or merge exact realization authorities.

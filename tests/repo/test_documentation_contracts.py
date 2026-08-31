@@ -213,6 +213,8 @@ def test_public_claim_language_keeps_digital_derivation_narrow() -> None:
     cli = (REPO_ROOT / "src" / "hop_design" / "cli.py").read_text(encoding="utf-8")
 
     assert "constraint-checked hairpin anatomy" in why_hop
+    assert "satisfy declared digital constraints" in why_hop
+    assert "find compatible flanking" not in why_hop
     assert "bundle validated" not in cli.lower()
     assert "design derivation verified; no files written" in cli.lower()
 

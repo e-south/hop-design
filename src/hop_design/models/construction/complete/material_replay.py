@@ -76,7 +76,7 @@ def validate_route_derivation(
 ) -> None:
     """Replay the global enzyme program and fragments from exact local authorities."""
     source, source_complement = materials[:2]
-    prefix, return_arm, embedding = replay_linear_source_embedding(
+    prefix, source_return_arm, embedding = replay_linear_source_embedding(
         foldback=foldback,
         source_sequence=source.sequence_5prime,
         complement_sequence=source_complement.sequence_5prime,
@@ -85,7 +85,7 @@ def validate_route_derivation(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
     )

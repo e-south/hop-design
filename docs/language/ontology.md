@@ -120,7 +120,7 @@ records physical evaluation and composition, not how a component was discovered 
 Historical lineage and application interpretation stay in the caller and can
 be linked through neutral external references.
 
-## Compiled design and physical products
+## Compiled design and modeled molecular products
 
 `HairpinEncodingInsert` is the compiler-owned one-dimensional sequence that
 encodes a hairpin core. It contains a digest of its normalized literal or
@@ -128,10 +128,11 @@ symbolic sequence and nested
 features that partition the sequence. It does not describe strandedness,
 topology, a PCR product, or destination-specific assembly ends.
 
-`HairpinPcrDuplex` is the physical duplex produced by hairpin PCR. It contains
-two explicit complementary strands, exact primer boundaries, terminal
-chemistry, and coordinate lineage. PCR creates the duplex; a later restriction
-event only changes its assembly ends.
+`HairpinPcrDuplex` models the duplex expected from hairpin PCR. It contains two
+explicit complementary strands, exact primer boundaries, terminal chemistry,
+and coordinate lineage. In the modeled route, PCR creates the duplex and a
+later restriction event changes only its assembly ends. Replay does not
+establish physical recovery.
 
 `RestrictionDigestProduct` is a destination-neutral duplex fragment derived
 from two facing restriction sites. It records both strand sequences, both exact

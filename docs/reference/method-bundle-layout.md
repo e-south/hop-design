@@ -13,9 +13,10 @@ doc_type: reference
 
 # Method bundle layout and verification
 
-A method bundle records how one strict request resolves into molecular states
-and physical products. It is not a design bundle and does not claim that a
-restriction product is compatible with a destination.
+A method bundle records how one strict request resolves into modeled molecular
+states and products. It is not a design bundle and does not claim that a
+restriction product is compatible with a destination, physically constructed,
+or recovered. Replay verifies the digital derivation only.
 
 | File | Meaning |
 | --- | --- |

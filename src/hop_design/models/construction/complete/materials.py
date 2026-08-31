@@ -164,11 +164,13 @@ def foldback_occurrences(
                     None,
                 )
                 continue
-            if molecule.molecule_id.endswith(("-pcr-bottom-return-arm", "-pcr-top-return-arm")):
-                if molecule.molecule_id.endswith("-pcr-bottom-return-arm"):
+            if molecule.molecule_id.endswith(
+                ("-pcr-bottom-source-return-arm", "-pcr-top-source-return-arm")
+            ):
+                if molecule.molecule_id.endswith("-pcr-bottom-source-return-arm"):
                     if embedding.source_orientation is not SourceOrientation.FORWARD:
                         raise ValueError(
-                            "PCR bottom return-arm replay requires a forward source embedding."
+                            "PCR bottom source-return replay requires a forward source embedding."
                         )
                     material = source_complement
                     start = embedding.local_complement_offset + embedding.local_source_length
@@ -176,7 +178,7 @@ def foldback_occurrences(
                 else:
                     if embedding.source_orientation is not SourceOrientation.REVERSE_COMPLEMENT:
                         raise ValueError(
-                            "PCR top return-arm replay requires a reverse source embedding."
+                            "PCR top source-return replay requires a reverse source embedding."
                         )
                     material = source
                     start = embedding.local_reference_offset + embedding.local_source_length

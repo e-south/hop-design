@@ -294,7 +294,7 @@ def test_complete_construction_execution_identifies_endpoint_contract_v3() -> No
         ),
     )
 
-    assert execution.route_implementation_version == "complete-construction/3"
+    assert execution.route_implementation_version == "complete-construction/4"
 
 
 def test_basal_target_rejects_endpoint_release_fields() -> None:

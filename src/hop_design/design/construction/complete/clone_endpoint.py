@@ -79,7 +79,7 @@ def clone_realization(
         item is None
         for item in (
             evaluation.prefix,
-            evaluation.return_arm,
+            evaluation.source_return_arm,
             evaluation.source,
             evaluation.source_complement,
             evaluation.pcr_template_sequence,
@@ -93,7 +93,7 @@ def clone_realization(
     ):
         raise ValueError("Compatible clone composition requires every exact route authority.")
     prefix = evaluation.prefix
-    return_arm = evaluation.return_arm
+    source_return_arm = evaluation.source_return_arm
     source = evaluation.source
     source_complement = evaluation.source_complement
     design_parent_span = evaluation.design_parent_span
@@ -102,7 +102,7 @@ def clone_realization(
     adapter = request.materialization.adapter
     forward = request.materialization.forward_primer
     reverse = request.materialization.reverse_primer
-    assert prefix is not None and return_arm is not None
+    assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
     assert design_parent_span is not None and end_generation_program is not None
     assert end_generation_bindings is not None
@@ -122,7 +122,7 @@ def clone_realization(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
         adapter=adapter,
@@ -130,9 +130,13 @@ def clone_realization(
         reverse_primer=reverse,
         evaluation=evaluation,
         encoding_features=encoding.features,
-        design_source_span=Span(
-            start=Boundary(offset=template_design_start),
-            end=Boundary(offset=template_design_start + len(encoding.sequence)),
+        design_endpoint_span=Span(
+            start=Boundary(offset=template_design_start + len(forward.five_prime_handle)),
+            end=Boundary(
+                offset=(
+                    template_design_start + len(forward.five_prime_handle) + len(encoding.sequence)
+                )
+            ),
         ),
     )
     pcr_state = pcr_program.states[-1]
@@ -235,7 +239,7 @@ def clone_realization(
             embedding=derive_linear_source_embedding(
                 foldback=foldback,
                 prefix=prefix,
-                return_arm=return_arm,
+                source_return_arm=source_return_arm,
             ),
             source_material_id=source.material_id,
         ),

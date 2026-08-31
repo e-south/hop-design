@@ -45,7 +45,6 @@ def evaluate_pcr_compatibility(
     *,
     basal: BasalRealizationRecord | None,
     prefix: str,
-    return_arm: str,
     pcr_template: str,
 ) -> CompositionRejectionCode | None:
     """Return the first closed rejection for one exact PCR route context."""
@@ -60,21 +59,26 @@ def evaluate_pcr_compatibility(
         (item for item in basal.materials if item.material_id == "ligation-adapter"),
         None,
     )
+    profile = basal.projection.pairing_profile
     if (
         adapter is None
         or local_adapter is None
-        or adapter.sequence_5prime != return_arm
-        or local_adapter.sequence_5prime != return_arm
+        or profile is None
+        or adapter.sequence_5prime != local_adapter.sequence_5prime
+        or profile.adapter_span.end.offset > len(adapter.sequence_5prime)
+        or adapter.sequence_5prime[
+            profile.adapter_span.start.offset : profile.adapter_span.end.offset
+        ]
+        != local_adapter.sequence_5prime
         or adapter.five_prime_end is not EndChemistry.PHOSPHATE
         or adapter.three_prime_end is not EndChemistry.HYDROXYL
     ):
         return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
-    profile = basal.projection.pairing_profile
     complex_state = basal.adapter_annealed_complex
     if (
         profile is None
         or complex_state is None
-        or profile.adapter_span.end.offset > len(return_arm)
+        or profile.adapter_span.end.offset > len(adapter.sequence_5prime)
         or tuple(
             (
                 pair.left_index - profile.source_span.start.offset,
@@ -166,20 +170,19 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR route requires one exact bottom-strand basal nick authority.")
     source, source_complement = item.materials[:2]
-    prefix, _, _ = replay_linear_source_embedding(
+    prefix, source_return_arm, _ = replay_linear_source_embedding(
         foldback=item.foldback_authority,
         source_sequence=source.sequence_5prime,
         complement_sequence=source_complement.sequence_5prime,
     )
     prefix_length = len(prefix)
-    return_arm = item.materials[2].sequence_5prime
     if basal.basal_nick.boundary.offset != prefix_length:
         raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
     expected_reaction = derive_pcr_reaction_program(
         foldback=item.foldback_authority,
         basal=basal,
         prefix=prefix,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
         source=source,
         source_complement=source_complement,
     )
@@ -205,7 +208,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         foldback=item.foldback_authority,
         source_material_id=source.material_id,
         source_complement_material_id=source_complement.material_id,
-        return_arm=return_arm,
+        source_return_arm=source_return_arm,
     )
     if program.states[3].molecules != expected_selected:
         raise ValueError("PCR selection must retain the exact source and foldback fragments.")
@@ -260,7 +263,6 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         projection = product.encoding_projection
         if (
             projection.orientation is not BindingOrientation.SAME_5TO3
-            or projection.source_span.start.offset != 0
             or projection.source_span.end.offset > len(product.strands[0].sequence)
             or product.strands[0].sequence[
                 projection.source_span.start.offset : projection.source_span.end.offset

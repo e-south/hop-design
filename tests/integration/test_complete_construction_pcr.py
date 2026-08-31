@@ -43,11 +43,15 @@ from hop_design.models.construction.complete import (
     MaterializedConstructionRealization,
     MaterializedFinalProduct,
     MaterialRetentionDisposition,
+    PcrPrimer,
     PrimerExtensionAuthority,
 )
 from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
     evaluate_combination,
+)
+from hop_design.models.construction.complete.evaluation_inputs import (
+    derive_source_return_arm,
 )
 from hop_design.models.construction.complete.pcr.replay import validate_pcr_transition
 from hop_design.models.construction.complete.pcr.route import select_pcr_fragments
@@ -219,6 +223,76 @@ def test_pcr_composition_accepts_both_duplex_foldback_orientations(
         assert item.final_product.encoding_projection.sequence == encoding
 
 
+def test_pcr_composition_retains_outer_basal_recognition_prefix_as_route_periphery(
+    tmp_path: Path,
+) -> None:
+    payload = _payload()
+    foldback = _foldback(payload)
+    basal = _basal_result(
+        payload,
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        nick_strand=Strand.BOTTOM,
+        recognition_pattern="TTTTTT",
+        cut_offset_reference_strand=0,
+    )
+    local = basal.realizations[0]
+    profile = local.projection.pairing_profile
+    assert profile is not None
+    assert profile.source_span == Span(
+        start=Boundary(offset=2),
+        end=Boundary(offset=6),
+    )
+    assert local.source_precursor_sequence[:6] == "AAAAAA"
+
+    design = _verified_design(tmp_path)
+    encoding = design.plan.hairpin_encoding_insert.sequence
+    local_adapter = next(item for item in local.materials if item.material_id == "ligation-adapter")
+    assert local_adapter.sequence_5prime == "TTTT"
+    request = _construction_request(
+        payload=payload,
+        foldback=foldback,
+        basal=basal,
+        design=design,
+        endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        adapter=_material(local_adapter.material_id, local_adapter.sequence_5prime),
+        forward_primer=PcrPrimer(
+            oligo=_material("forward-primer", "GGAAAA"),
+            annealing_length_nt=4,
+        ),
+        reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
+    )
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert result.realizations
+    realization = result.realizations[0]
+    projection = realization.final_product.encoding_projection
+    assert projection.source_span == Span(
+        start=Boundary(offset=4),
+        end=Boundary(offset=4 + len(encoding)),
+    )
+    top = realization.final_product.strands[0].sequence
+    assert top[projection.source_span.start.offset : projection.source_span.end.offset] == encoding
+    assert top[: projection.source_span.start.offset] == "GGAA"
+    source, source_complement, adapter = realization.materials[:3]
+    assert len(source.sequence_5prime) == len(source_complement.sequence_5prime)
+    assert source_complement.sequence_5prime.endswith("TTTTTT")
+    assert adapter.sequence_5prime == "TTTT"
+    transient = next(
+        item
+        for item in realization.route_material_dispositions
+        if item.material_id == source_complement.material_id
+        and item.disposition is MaterialRetentionDisposition.TRANSIENT
+    )
+    assert (
+        source_complement.sequence_5prime[
+            transient.material_span.start.offset : transient.material_span.end.offset
+        ]
+        == "TTTTTT"
+    )
+
+
 def _verified_distal_mismatch_design(tmp_path: Path):
     spec = _component_spec().model_copy(update={"payload": ExactPayload(sequence="GACA")})
     basal = spec.basal.model_copy(
@@ -290,7 +364,7 @@ def test_hairpin_pcr_endpoint_materializes_exact_adapter_and_primer_route(
     assert denatured.molecules == cleaved.molecules
     assert denatured.pairings == ()
     selected = realization.construction_program.states[3]
-    assert all("pcr-bottom-return-arm" not in item.strand_id for item in selected.molecules)
+    assert all("pcr-bottom-source-return-arm" not in item.strand_id for item in selected.molecules)
     terminal = realization.construction_program.states[-1]
     assert terminal.molecules[0].sequence == top_sequence
     assert terminal.molecules[1].sequence == reverse_complement_iupac(top_sequence)
@@ -385,27 +459,29 @@ def test_hairpin_pcr_preserves_a_literal_distal_mismatch_through_copying(
     }
 
 
-def test_pcr_fragment_selection_requires_exact_return_arm_identity(tmp_path: Path) -> None:
-    result, basal, _ = _valid_pcr_result(tmp_path)
+def test_pcr_fragment_selection_requires_exact_source_return_arm_identity(
+    tmp_path: Path,
+) -> None:
+    result, _, _ = _valid_pcr_result(tmp_path)
     realization = result.realizations[0]
     cleaved = realization.construction_program.states[1]
     changed = tuple(
         item.model_copy(update={"strand_id": item.strand_id + "-forged"})
-        if item.strand_id.endswith("-pcr-bottom-return-arm-top")
+        if item.strand_id.endswith("-pcr-bottom-source-return-arm-top")
         else item
         for item in cleaved.molecules
     )
 
-    with pytest.raises(ValueError, match="exact removable return-arm fragment"):
+    with pytest.raises(ValueError, match="exact removable source-return fragment"):
         select_pcr_fragments(
             changed,
             foldback=realization.foldback_authority,
             source_material_id=realization.materials[0].material_id,
             source_complement_material_id=realization.materials[1].material_id,
-            return_arm=next(
-                item.sequence_5prime
-                for item in basal.realizations[0].materials
-                if item.material_id == "ligation-adapter"
+            source_return_arm=derive_source_return_arm(
+                realization.materials[0].sequence_5prime.removesuffix(
+                    realization.foldback_authority.source_reference_sequence
+                )
             ),
         )
 
@@ -736,12 +812,12 @@ def test_pcr_endpoint_addition_preserves_direct_canonical_authority(tmp_path: Pa
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "7f4f77dfede0fc85f20e9b26fd89a16ce4c4a68850e0ce0e2374b2765ec0544f@1"
+        "1ac33aef588c49d358872b306e92db5ac24be7ec6aec29394eb23f6f51117c8f@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "b25d53b1da68b76d82086469acf21ce86d93e2d72bcbbd93465051051b129353"  # pragma: allowlist secret  # noqa: E501
+            "fd2ae84f3dd796a3f1d02988c3ecf0d23653480e0135e76bf8dbb737c973cb7f"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
@@ -776,25 +852,25 @@ def test_clone_endpoint_addition_preserves_pcr_canonical_authority(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "4d6a60b20fd026dffa594a50d34fd736f14bbd9136f139d2b198448f5537b2a1@1"
+        "3dfa3de33f09a1d86a9be11559ae7efc230707b37da1ce1ea49339329dfab2a3@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "399a9a5bc8b6f6653806b42a9b07bdfc8f7cccebf963b2a42815e59e87f5661d"  # pragma: allowlist secret  # noqa: E501
+            "d9e1042912f085b1a2ccb295f09f4d5005a9dd7d5d00b5f5181bcf0c45bc1a54"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "b88be4ad64c5f0ccbf402ac0444f2ae8c71a6126443f6db5881f35678c92acce@1",
+        "423e9d59d31ce8396f69b27832d54fa3edb43836057b3c9c16db131629e1dfd4@1",
         "hop:materialized-construction/"
-        "2087452dd62c7626da15d3e46c3182c838d81b8d4dbe843b02c45c8e138dcee4@1",
+        "3ffd6d8e53656573de2cbcfe933854a55066b9774275a6b52187f5f40d09c80a@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "09b84755dcb9ff407871833f8869c48c305a9f402d0e9ba9acd1cdb2d7b8ed6f@1",
+        "7345d982e90dbf6eb5faf34867dbf97153ac051879521f8b3b1a906d41a4abd8@1",
         "hop:construction-program/"
-        "1d458110f35985fb061a47e0129fb6745a1ade511153dbfabb6bd7a521298183@1",
+        "3fe2729d2702730828e88df1e5909559f8556d5d19dbde8198675525e7762c6f@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/edde3feef815df530c09322173575dbea786e9a8983376112603959575cd0747@1",
@@ -805,8 +881,8 @@ def test_clone_endpoint_addition_preserves_pcr_canonical_authority(tmp_path: Pat
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "5ad323880a7a5c1839185d2efe2cd1c00eed1d47ac56f6a45fce88e26f872f39",  # pragma: allowlist secret  # noqa: E501
-            "ec0196bfbc08e938f6e82ecc09f8ae736d80edb889c6043489f4d2ea26198f02",  # pragma: allowlist secret  # noqa: E501
+            "eda08a9d60d501c37a88a28dc77d322701a2746d5646d0ec13a992d92cfc8306",  # pragma: allowlist secret  # noqa: E501
+            "f7dc80fea53034d763bca87ecb1afb9c55be414a7eecbe8bd3231194e94dcbe4",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -1065,12 +1141,12 @@ def test_pcr_reaction_program_has_content_bound_endpoint_specific_identity(
     prefix = realization.materials[0].sequence_5prime.removesuffix(
         foldback.source_reference_sequence
     )
-    adapter = realization.materials[2].sequence_5prime
+    source_return_arm = derive_source_return_arm(prefix)
     direct = derive_direct_reaction_program(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=adapter,
+        source_return_arm=source_return_arm,
         source=realization.materials[0],
         source_complement=realization.materials[1],
     )
@@ -1078,20 +1154,21 @@ def test_pcr_reaction_program_has_content_bound_endpoint_specific_identity(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=adapter,
+        source_return_arm=source_return_arm,
         source=realization.materials[0],
         source_complement=realization.materials[1],
     )
-    changed_adapter = "A" + adapter[1:]
+    changed_source_return_arm = "A" + source_return_arm[1:]
     changed = derive_pcr_reaction_program(
         foldback=foldback,
         basal=basal,
         prefix=prefix,
-        return_arm=changed_adapter,
+        source_return_arm=changed_source_return_arm,
         source=realization.materials[0],
         source_complement=_material(
             "changed-source-complement",
-            reverse_complement_iupac(foldback.source_reference_sequence) + changed_adapter,
+            reverse_complement_iupac(foldback.source_reference_sequence)
+            + changed_source_return_arm,
         ),
     )
 
@@ -1099,7 +1176,7 @@ def test_pcr_reaction_program_has_content_bound_endpoint_specific_identity(
     assert changed.program_id != pcr.program_id
 
 
-def test_pcr_route_accounts_for_removed_return_arm_as_transient_material(
+def test_pcr_route_accounts_for_removed_source_return_arm_as_transient_material(
     tmp_path: Path,
 ) -> None:
     result, _, _ = _valid_pcr_result(tmp_path)
@@ -1114,11 +1191,16 @@ def test_pcr_route_accounts_for_removed_return_arm_as_transient_material(
 
     assert len(records) == 1
     removed = records[0]
+    expected_source_return_arm = derive_source_return_arm(
+        realization.materials[0].sequence_5prime.removesuffix(
+            realization.foldback_authority.source_reference_sequence
+        )
+    )
     assert (
         complement.sequence_5prime[
             removed.material_span.start.offset : removed.material_span.end.offset
         ]
-        == realization.materials[2].sequence_5prime
+        == expected_source_return_arm
     )
     assert removed.endpoint_occurrences == ()
     transition_by_id = {
