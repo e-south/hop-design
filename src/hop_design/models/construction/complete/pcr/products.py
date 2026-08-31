@@ -103,6 +103,9 @@ def pcr_products(
     template: MolecularStrand,
     forward: PcrPrimer,
     reverse: PcrPrimer,
+    *,
+    top_strand_id: str = "complete-hairpin-pcr-top",
+    bottom_strand_id: str = "complete-hairpin-pcr-bottom",
 ) -> tuple[MolecularStrand, MolecularStrand]:
     """Derive the ordered PCR duplex with exact primer and template lineage."""
     validate_pcr_annealing_spans(len(template.sequence), forward, reverse)
@@ -116,14 +119,14 @@ def pcr_products(
     )
     top_lineage = _top_lineage(template, forward, reverse)
     top = MolecularStrand(
-        strand_id="complete-hairpin-pcr-top",
+        strand_id=top_strand_id,
         sequence=top_sequence,
         five_prime_end=forward.oligo.five_prime_end,
         three_prime_end=EndChemistry.HYDROXYL,
         lineage=top_lineage,
     )
     bottom = MolecularStrand(
-        strand_id="complete-hairpin-pcr-bottom",
+        strand_id=bottom_strand_id,
         sequence=reverse_complement_iupac(top_sequence),
         five_prime_end=reverse.oligo.five_prime_end,
         three_prime_end=EndChemistry.HYDROXYL,

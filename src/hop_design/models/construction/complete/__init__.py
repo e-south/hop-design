@@ -60,6 +60,10 @@ from .request import (
     WholeRouteConstraints,
 )
 from .result import ConstructionSpaceResult
+from .source_preparation import (
+    SourceDuplexPreparationAuthority,
+    derive_source_duplex_preparation,
+)
 from .state import ConstructionState, ConstructionStatePhase
 from .transition import (
     ConstructionTransition,
@@ -107,7 +111,9 @@ __all__ = [
     "ReactionBoundaryMapping",
     "ReleaseSideRequirement",
     "RouteMaterialDispositionSpan",
+    "SourceDuplexPreparationAuthority",
     "TypeIisReleaseRequest",
     "WholeRouteConstraints",
+    "derive_source_duplex_preparation",
     "derived_source_material_id",
 ]
