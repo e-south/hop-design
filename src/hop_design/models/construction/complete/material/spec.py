@@ -28,6 +28,14 @@ class MaterialOrigin(StrEnum):
     PURIFIED = "purified"
 
 
+class MaterialResolutionMode(StrEnum):
+    """How one exact route material specification was resolved."""
+
+    DERIVE = "derive"
+    CONSTRAIN = "constrain"
+    FIXED = "fixed"
+
+
 class ExactConstructionMaterial(HopModel):
     """One exact caller-owned material including terminal chemistry."""
 
@@ -102,5 +110,6 @@ __all__ = [
     "ExactConstructionMaterial",
     "LinearSourceMaterializationSpec",
     "MaterialOrigin",
+    "MaterialResolutionMode",
     "PcrPrimer",
 ]

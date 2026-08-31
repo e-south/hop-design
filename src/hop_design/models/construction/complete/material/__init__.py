@@ -16,6 +16,7 @@ from .spec import (
     ExactConstructionMaterial,
     LinearSourceMaterializationSpec,
     MaterialOrigin,
+    MaterialResolutionMode,
     PcrPrimer,
 )
 
@@ -23,6 +24,7 @@ __all__ = [
     "ExactConstructionMaterial",
     "LinearSourceMaterializationSpec",
     "MaterialOrigin",
+    "MaterialResolutionMode",
     "PcrPrimer",
     "ProducedMaterialBinding",
 ]

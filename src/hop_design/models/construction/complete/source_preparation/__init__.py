@@ -15,8 +15,24 @@ from .authority import (
     SourceDuplexPreparationAuthority,
     derive_source_duplex_preparation,
 )
+from .policy import (
+    ConstrainedPrimerPolicy,
+    DerivedPrimerPolicy,
+    DerivedSourceSsdnaPolicy,
+    FixedPrimerPolicy,
+    FixedSourceSsdnaPolicy,
+    SourceDuplexPreparationPolicy,
+)
+from .resolution import resolve_source_duplex_preparation
 
 __all__ = [
+    "ConstrainedPrimerPolicy",
+    "DerivedPrimerPolicy",
+    "DerivedSourceSsdnaPolicy",
+    "FixedPrimerPolicy",
+    "FixedSourceSsdnaPolicy",
     "SourceDuplexPreparationAuthority",
+    "SourceDuplexPreparationPolicy",
     "derive_source_duplex_preparation",
+    "resolve_source_duplex_preparation",
 ]

@@ -28,6 +28,7 @@ from .material import (
     ExactConstructionMaterial,
     LinearSourceMaterializationSpec,
     MaterialOrigin,
+    MaterialResolutionMode,
     PcrPrimer,
     ProducedMaterialBinding,
 )
@@ -62,8 +63,15 @@ from .request import (
 )
 from .result import ConstructionSpaceResult
 from .source_preparation import (
+    ConstrainedPrimerPolicy,
+    DerivedPrimerPolicy,
+    DerivedSourceSsdnaPolicy,
+    FixedPrimerPolicy,
+    FixedSourceSsdnaPolicy,
     SourceDuplexPreparationAuthority,
+    SourceDuplexPreparationPolicy,
     derive_source_duplex_preparation,
+    resolve_source_duplex_preparation,
 )
 from .state import ConstructionState, ConstructionStatePhase
 from .transition import (
@@ -82,6 +90,7 @@ __all__ = [
     "CompositionEnumerationPolicy",
     "CompositionMaterialAccounting",
     "CompositionPruningMode",
+    "ConstrainedPrimerPolicy",
     "ConstructionBondState",
     "ConstructionCompositionExecution",
     "ConstructionCompositionProvenance",
@@ -92,6 +101,8 @@ __all__ = [
     "ConstructionStatePhase",
     "ConstructionTransition",
     "ConstructionTransitionKind",
+    "DerivedPrimerPolicy",
+    "DerivedSourceSsdnaPolicy",
     "DesignAuthorityReference",
     "DuplexFinalProductReference",
     "EndpointMaterialOccurrence",
@@ -100,10 +111,13 @@ __all__ = [
     "EndpointStrand",
     "ExactConstructionMaterial",
     "ExactStateRelation",
+    "FixedPrimerPolicy",
+    "FixedSourceSsdnaPolicy",
     "LinearSourceMaterializationSpec",
     "MaterialFunction",
     "MaterialFunctionSpan",
     "MaterialOrigin",
+    "MaterialResolutionMode",
     "MaterialRetentionDisposition",
     "MaterializedConstructionRealization",
     "MaterializedFinalProduct",
@@ -114,8 +128,10 @@ __all__ = [
     "ReleaseSideRequirement",
     "RouteMaterialDispositionSpan",
     "SourceDuplexPreparationAuthority",
+    "SourceDuplexPreparationPolicy",
     "TypeIisReleaseRequest",
     "WholeRouteConstraints",
     "derive_source_duplex_preparation",
     "derived_source_material_id",
+    "resolve_source_duplex_preparation",
 ]
