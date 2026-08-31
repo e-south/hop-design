@@ -18,7 +18,12 @@ from .spec import (
     MaterialResolutionMode,
     PcrPrimer,
 )
-from .use import MaterialRouteEntry, MaterialUse, MaterialUseRole
+from .use import (
+    MaterialRouteEntry,
+    MaterialUse,
+    MaterialUseRole,
+    validate_complete_material_uses,
+)
 
 __all__ = [
     "ExactConstructionMaterial",
@@ -29,4 +34,5 @@ __all__ = [
     "PcrPrimer",
     "ProducedMaterialBinding",
     "construction_material_id",
+    "validate_complete_material_uses",
 ]

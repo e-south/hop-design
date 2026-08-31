@@ -80,10 +80,15 @@ Material resolution has three explicit modes:
 - `constrain`: HOP derives one exact material within caller-supplied bounds; and
 - `fixed`: the caller supplies an exact material that HOP validates.
 
-No hidden thermodynamic or empirical ranking is introduced. Source primers bind
-only invariant construction sequence and may not overlap the payload. Handle
-selection begins from fixed or caller-supplied reusable candidates; arbitrary
-handle generation remains unsupported until its sequence-quality rules exist.
+No hidden thermodynamic or empirical ranking is introduced. Source and endpoint
+primers bind only invariant construction sequence and may not overlap the
+payload. Endpoint adapter `derive` preserves the exact basal pairing segment;
+`constrain` appends one explicit caller-supplied 3′ handle; and `fixed` validates
+one exact adapter and its ligation chemistry. Endpoint-primer `derive` uses one
+authored annealing length, `constrain` uses the shortest valid length in one
+explicit range and may prepend an explicit 5′ handle, and `fixed` validates one
+exact primer. Arbitrary handle generation remains unsupported until its
+sequence-quality rules exist.
 
 ### Source partition
 
@@ -136,3 +141,10 @@ fallback readers, study imports, inventory manager, dashboard, thermodynamic
 model, or physical-success claim. Existing released bundle bytes remain the
 historical authorities they already are and are not reinterpreted as closed
 source-ssDNA routes.
+
+At the v5 implementation cutoff, source preparation, selected source-partition
+replay, and endpoint auxiliary resolution are connected inside the portable
+construction result. Reversible projections expose grouping and exact selected
+trajectories. The remaining navigation work is a concise grouped CLI over those
+immutable authorities; it does not require another result schema or ranking
+model.

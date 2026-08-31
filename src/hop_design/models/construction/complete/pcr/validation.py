@@ -24,7 +24,7 @@ from hop_design.models.sequence import reverse_complement_iupac
 
 from ..evaluation_inputs import replay_linear_source_embedding
 from ..evaluation_result import CompositionRejectionCode
-from ..request import ConstructionDiscoveryRequest
+from ..material import ExactConstructionMaterial, PcrPrimer
 from ..state import ConstructionStatePhase
 from ..transition import ConstructionTransitionKind
 from .authority import (
@@ -41,11 +41,13 @@ if TYPE_CHECKING:
 
 
 def evaluate_pcr_compatibility(
-    request: ConstructionDiscoveryRequest,
     *,
     basal: BasalRealizationRecord | None,
     prefix: str,
     pcr_template: str,
+    adapter: ExactConstructionMaterial,
+    forward: PcrPrimer,
+    reverse: PcrPrimer,
 ) -> CompositionRejectionCode | None:
     """Return the first closed rejection for one exact PCR route context."""
     if (
@@ -54,7 +56,6 @@ def evaluate_pcr_compatibility(
         or basal.basal_nick.boundary.offset != len(prefix)
     ):
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
-    adapter = request.materialization.adapter
     local_adapter = next(
         (item for item in basal.materials if item.material_id == "ligation-adapter"),
         None,
@@ -64,7 +65,6 @@ def evaluate_pcr_compatibility(
         adapter is None
         or local_adapter is None
         or profile is None
-        or adapter.sequence_5prime != local_adapter.sequence_5prime
         or profile.adapter_span.end.offset > len(adapter.sequence_5prime)
         or adapter.sequence_5prime[
             profile.adapter_span.start.offset : profile.adapter_span.end.offset
@@ -99,12 +99,8 @@ def evaluate_pcr_compatibility(
         )
     ):
         return CompositionRejectionCode.PCR_PAIRING_PROFILE_MISMATCH
-    forward = request.materialization.hairpin_pcr_forward_primer
-    reverse = request.materialization.hairpin_pcr_reverse_primer
     if (
-        forward is None
-        or reverse is None
-        or forward.oligo.three_prime_end is not EndChemistry.HYDROXYL
+        forward.oligo.three_prime_end is not EndChemistry.HYDROXYL
         or reverse.oligo.three_prime_end is not EndChemistry.HYDROXYL
         or forward.annealing_sequence != pcr_template[: forward.annealing_length_nt]
         or reverse.annealing_sequence

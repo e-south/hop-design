@@ -50,29 +50,10 @@ from .materialization import materialize_direct_program
 
 
 def _materials(
-    request: ConstructionDiscoveryRequest,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
 ) -> tuple[ExactConstructionMaterial, ...]:
-    return tuple(
-        item
-        for item in (
-            source,
-            source_complement,
-            request.materialization.adapter,
-            (
-                None
-                if request.materialization.hairpin_pcr_forward_primer is None
-                else request.materialization.hairpin_pcr_forward_primer.oligo
-            ),
-            (
-                None
-                if request.materialization.hairpin_pcr_reverse_primer is None
-                else request.materialization.hairpin_pcr_reverse_primer.oligo
-            ),
-        )
-        if item is not None
-    )
+    return source, source_complement
 
 
 def direct_realization(
@@ -197,7 +178,7 @@ def direct_realization(
         foldback_realization_id=foldback.foldback_realization_id,
         basal_realization_id=(None if basal is None else basal.basal_realization_id),
         source_preparation=evaluation.source_preparation,
-        materials=_materials(request, source, source_complement),
+        materials=_materials(source, source_complement),
         material_uses=(
             evaluation.source_preparation.prepared_top_use,
             evaluation.source_preparation.prepared_bottom_use,

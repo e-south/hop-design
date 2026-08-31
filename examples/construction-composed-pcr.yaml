@@ -1,4 +1,4 @@
-schema: hop.construction-source/v4
+schema: hop.construction-source/v5
 foldback:
   schema: hop.local-neighborhood-request/v3
   name: null
@@ -181,22 +181,15 @@ composition:
       reverse_primer:
         mode: derive
         annealing_length_nt: 1
-    adapter:
-      sequence_5prime: TTTT
-      five_prime_end: phosphate
-      three_prime_end: hydroxyl
-    hairpin_pcr_forward_primer:
-      oligo:
-        sequence_5prime: AAAA
-        five_prime_end: phosphate
-        three_prime_end: hydroxyl
-      annealing_length_nt: 4
-    hairpin_pcr_reverse_primer:
-      oligo:
-        sequence_5prime: AAAA
-        five_prime_end: phosphate
-        three_prime_end: hydroxyl
-      annealing_length_nt: 4
+    endpoint_auxiliaries:
+      adapter:
+        mode: derive
+      forward_primer:
+        mode: derive
+        annealing_length_nt: 4
+      reverse_primer:
+        mode: derive
+        annealing_length_nt: 4
   release: null
   whole_route_constraints:
     preserve_payload: true

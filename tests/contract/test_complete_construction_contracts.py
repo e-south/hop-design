@@ -48,8 +48,11 @@ from hop_design.models.construction.complete import (
     DerivedPrimerPolicy,
     DerivedSourceSsdnaPolicy,
     DesignAuthorityReference,
+    EndpointAuxiliaryPolicy,
     ExactConstructionMaterial,
     ExactStateRelation,
+    FixedAdapterPolicy,
+    FixedEndpointPrimerPolicy,
     LinearSourceMaterializationSpec,
     MaterialResolutionMode,
     MaterialRouteEntry,
@@ -161,23 +164,28 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
                 annealing_length_nt=1,
             ),
         ),
-        adapter=(
-            None if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN else _material("adapter", "AGTC")
-        ),
-        hairpin_pcr_forward_primer=(
+        endpoint_auxiliaries=(
             None
             if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-            else PcrPrimer(
-                oligo=_material("forward-primer", "GGACA"),
-                annealing_length_nt=5,
-            )
-        ),
-        hairpin_pcr_reverse_primer=(
-            None
-            if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-            else PcrPrimer(
-                oligo=_material("reverse-primer", "GGACA"),
-                annealing_length_nt=5,
+            else EndpointAuxiliaryPolicy(
+                adapter=FixedAdapterPolicy(
+                    mode=MaterialResolutionMode.FIXED,
+                    material=_material("adapter", "AGTC"),
+                ),
+                forward_primer=FixedEndpointPrimerPolicy(
+                    mode=MaterialResolutionMode.FIXED,
+                    primer=PcrPrimer(
+                        oligo=_material("forward-primer", "GGACA"),
+                        annealing_length_nt=5,
+                    ),
+                ),
+                reverse_primer=FixedEndpointPrimerPolicy(
+                    mode=MaterialResolutionMode.FIXED,
+                    primer=PcrPrimer(
+                        oligo=_material("reverse-primer", "GGACA"),
+                        annealing_length_nt=5,
+                    ),
+                ),
             )
         ),
     )
@@ -222,14 +230,16 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
 
 def test_direct_endpoint_forbids_adapter_and_pcr_materials() -> None:
     direct = _request(ConstructionEndpoint.SSDNA_HAIRPIN)
-    assert direct.schema_id == "hop.construction-discovery-request/v4"
+    assert direct.schema_id == "hop.construction-discovery-request/v5"
     assert direct.model_dump(mode="json", by_alias=True)["schema"] == direct.schema_id
     assert direct.basal_result_id is None
-    assert direct.materialization.adapter is None
+    assert direct.materialization.endpoint_auxiliaries is None
 
     data = direct.model_dump(mode="python")
-    data["materialization"]["adapter"] = _material("adapter", "AGTC")
-    with pytest.raises(ValidationError, match="must omit adapter and PCR primers"):
+    data["materialization"]["endpoint_auxiliaries"] = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+    ).materialization.endpoint_auxiliaries
+    with pytest.raises(ValidationError, match="must omit endpoint auxiliaries"):
         ConstructionDiscoveryRequest.model_validate(data)
 
 
@@ -241,7 +251,7 @@ def test_direct_endpoint_may_bind_a_basal_discovery_without_pcr_materials() -> N
     parsed = ConstructionDiscoveryRequest.model_validate(data)
 
     assert parsed.basal_result_id == data["basal_result_id"]
-    assert parsed.materialization.adapter is None
+    assert parsed.materialization.endpoint_auxiliaries is None
 
 
 def test_complete_request_declares_foldback_ssdna_as_an_intermediate_not_final_endpoint() -> None:
@@ -260,21 +270,16 @@ def test_complete_request_declares_foldback_ssdna_as_an_intermediate_not_final_e
     "endpoint",
     (ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, ConstructionEndpoint.CLONE_READY_DUPLEX),
 )
-def test_pcr_bearing_endpoints_require_basal_adapter_and_exact_primers(
+def test_pcr_bearing_endpoints_require_basal_and_auxiliary_policies(
     endpoint: ConstructionEndpoint,
 ) -> None:
     request = _request(endpoint)
     assert request.basal_result_id is not None
 
-    for field in (
-        "adapter",
-        "hairpin_pcr_forward_primer",
-        "hairpin_pcr_reverse_primer",
-    ):
-        data = request.model_dump(mode="python")
-        data["materialization"][field] = None
-        with pytest.raises(ValidationError, match="require an exact adapter and both primers"):
-            ConstructionDiscoveryRequest.model_validate(data)
+    data = request.model_dump(mode="python")
+    data["materialization"]["endpoint_auxiliaries"] = None
+    with pytest.raises(ValidationError, match="require endpoint auxiliary policies"):
+        ConstructionDiscoveryRequest.model_validate(data)
 
 
 def test_material_and_design_authorities_are_sequence_and_digest_exact() -> None:
@@ -365,17 +370,30 @@ def test_material_and_design_authorities_are_sequence_and_digest_exact() -> None
         )
 
     shared_material = _material("shared", "AAAA")
-    shared_auxiliary = request.materialization.model_copy(
-        update={
-            "adapter": shared_material,
-            "hairpin_pcr_forward_primer": PcrPrimer(
-                oligo=shared_material,
-                annealing_length_nt=4,
+    shared_auxiliary = LinearSourceMaterializationSpec(
+        source_preparation=request.materialization.source_preparation,
+        endpoint_auxiliaries=EndpointAuxiliaryPolicy(
+            adapter=FixedAdapterPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                material=shared_material,
             ),
-        }
+            forward_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(oligo=shared_material, annealing_length_nt=4),
+            ),
+            reverse_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(oligo=shared_material, annealing_length_nt=4),
+            ),
+        ),
     ).model_dump(mode="python")
     parsed = LinearSourceMaterializationSpec.model_validate(shared_auxiliary)
-    assert parsed.adapter == parsed.hairpin_pcr_forward_primer.oligo
+    assert parsed.endpoint_auxiliaries is not None
+    adapter_policy = parsed.endpoint_auxiliaries.adapter
+    forward_policy = parsed.endpoint_auxiliaries.forward_primer
+    assert isinstance(adapter_policy, FixedAdapterPolicy)
+    assert isinstance(forward_policy, FixedEndpointPrimerPolicy)
+    assert adapter_policy.material == forward_policy.primer.oligo
 
 
 def test_complete_identity_bearing_groups_require_canonical_key_order() -> None:

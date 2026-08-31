@@ -57,7 +57,10 @@ from hop_design.models.construction.complete import (
     DerivedPrimerPolicy,
     DerivedSourceSsdnaPolicy,
     DesignAuthorityReference,
+    EndpointAuxiliaryPolicy,
     ExactConstructionMaterial,
+    FixedAdapterPolicy,
+    FixedEndpointPrimerPolicy,
     FixedPrimerPolicy,
     LinearSourceMaterializationSpec,
     MaterialResolutionMode,
@@ -232,9 +235,53 @@ def _construction_request(
     forward_primer: ExactConstructionMaterial | PcrPrimer | None = None,
     reverse_primer: ExactConstructionMaterial | PcrPrimer | None = None,
     source_preparation: SourceDuplexPreparationPolicy | None = None,
+    endpoint_auxiliaries: EndpointAuxiliaryPolicy | None = None,
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionDiscoveryRequest:
     encoding = design.plan.hairpin_encoding_insert
+    forward = (
+        forward_primer
+        if isinstance(forward_primer, PcrPrimer)
+        else None
+        if forward_primer is None
+        else PcrPrimer(
+            oligo=forward_primer,
+            annealing_length_nt=len(forward_primer.sequence_5prime),
+        )
+    )
+    reverse = (
+        reverse_primer
+        if isinstance(reverse_primer, PcrPrimer)
+        else None
+        if reverse_primer is None
+        else PcrPrimer(
+            oligo=reverse_primer,
+            annealing_length_nt=len(reverse_primer.sequence_5prime),
+        )
+    )
+    if endpoint_auxiliaries is not None and any(
+        item is not None for item in (adapter, forward, reverse)
+    ):
+        raise ValueError("Test request must use policy or exact auxiliary inputs, not both.")
+    if endpoint_auxiliaries is None and any(
+        item is not None for item in (adapter, forward, reverse)
+    ):
+        if adapter is None or forward is None or reverse is None:
+            raise ValueError("Exact test auxiliary inputs must be complete.")
+        endpoint_auxiliaries = EndpointAuxiliaryPolicy(
+            adapter=FixedAdapterPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                material=adapter,
+            ),
+            forward_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=forward,
+            ),
+            reverse_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=reverse,
+            ),
+        )
     return ConstructionDiscoveryRequest(
         payload=payload,
         route_family=RouteFamily.LINEAR_SOURCE_V1,
@@ -258,27 +305,7 @@ def _construction_request(
                     annealing_length_nt=1,
                 ),
             ),
-            adapter=adapter,
-            hairpin_pcr_forward_primer=(
-                None
-                if forward_primer is None
-                else forward_primer
-                if isinstance(forward_primer, PcrPrimer)
-                else PcrPrimer(
-                    oligo=forward_primer,
-                    annealing_length_nt=len(forward_primer.sequence_5prime),
-                )
-            ),
-            hairpin_pcr_reverse_primer=(
-                None
-                if reverse_primer is None
-                else reverse_primer
-                if isinstance(reverse_primer, PcrPrimer)
-                else PcrPrimer(
-                    oligo=reverse_primer,
-                    annealing_length_nt=len(reverse_primer.sequence_5prime),
-                )
-            ),
+            endpoint_auxiliaries=endpoint_auxiliaries,
         ),
         release=release,
         design=DesignAuthorityReference(
@@ -477,7 +504,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
     assert result.status is SearchCompletionStatus.COMPLETE
-    assert result.schema_id == "hop.construction-space-result/v4"
+    assert result.schema_id == "hop.construction-space-result/v5"
     assert result.provenance.basal_result_id is None
     assert result.accounting.truncated_combinations == 0
     assert result.failure_reasons == ()

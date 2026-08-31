@@ -61,8 +61,8 @@ from .source_partition.result_validation import validate_source_partition_result
 class ConstructionSpaceResult(HopModel):
     """Truthful bounded whole-route result with reversible exact grouping."""
 
-    schema_id: Literal["hop.construction-space-result/v4"] = Field(
-        default="hop.construction-space-result/v4", alias="schema"
+    schema_id: Literal["hop.construction-space-result/v5"] = Field(
+        default="hop.construction-space-result/v5", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")

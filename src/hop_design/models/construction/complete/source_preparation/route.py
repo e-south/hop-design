@@ -13,17 +13,15 @@ from __future__ import annotations
 
 from hop_design.models.base import HopModel
 
-from ..material import ExactConstructionMaterial, PcrPrimer
+from ..auxiliary import EndpointAuxiliaryPolicy
 from .policy import SourceDuplexPreparationPolicy
 
 
 class LinearSourceMaterializationSpec(HopModel):
-    """Source preparation plus exact endpoint-dependent auxiliary oligos."""
+    """Source preparation plus endpoint-dependent auxiliary resolution policy."""
 
     source_preparation: SourceDuplexPreparationPolicy
-    adapter: ExactConstructionMaterial | None = None
-    hairpin_pcr_forward_primer: PcrPrimer | None = None
-    hairpin_pcr_reverse_primer: PcrPrimer | None = None
+    endpoint_auxiliaries: EndpointAuxiliaryPolicy | None = None
 
 
 __all__ = ["LinearSourceMaterializationSpec"]

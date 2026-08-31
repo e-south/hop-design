@@ -48,16 +48,16 @@ part identifiers and study sequences do not enter this public repository.
 | source-PCR primers | content-addressed external materials and contextual route uses | present and connected | preserve explicit resolution policy |
 | source-PCR duplex | replay-verified source-preparation authority | present and connected | preserve exact producer lineage |
 | initial complete-route duplex | source-preparation product and first `ConstructionProgram` state | present and connected | preserve byte-equivalent state identity |
-| source-wide cleanup nicks and selection | verified source-partition result | present but separate | bind an explicit selected realization into complete composition |
+| source-wide cleanup nicks and selection | verified source-partition result | present and connected | preserve explicit selected-realization binding and replay |
 | foldback and basal enzyme stages | assessed local and complete reaction programs | present and connected | preserve staged, state-aware replay |
-| denaturation and fragment selection | exact construction transitions | present and connected | bind selection to source-partition authority when supplied |
+| denaturation and fragment selection | exact construction transitions | present and connected | preserve equality with the selected source-partition authority when supplied |
 | foldback closure | explicit association and covalent bond | present and connected | preserve as a bond separate from adapter ligation |
-| adapter | exact construction material | present and connected but caller-fixed | add derive, constrain, and fixed resolution modes |
+| adapter | exact construction material plus endpoint auxiliary policy | present and connected | preserve derive, constrain, and fixed resolution modes |
 | adapter ligation | explicit adapter authority and bond | present and connected | preserve |
-| hairpin-PCR primers | exact construction materials | present and connected but ambiguously named | identify them by contextual route use |
+| hairpin-PCR primers | exact construction materials plus endpoint auxiliary policies | present and connected | preserve contextual route use and safe non-payload binding |
 | hairpin-PCR duplex | primer-extension authority and exact state | present and connected | preserve |
 | defined-end duplex | Type IIS release authority | present and connected | keep destination compatibility separate |
-| material grouping and route selection | reversible result projections | present and connected | add concise public navigation and export |
+| material grouping and route selection | reversible result projections | present; navigation incomplete | add concise grouped CLI navigation without changing authority |
 | physical materials and observations | caller study or laboratory system | out of HOP scope | bind through stable HOP material and realization IDs |
 
 ## Reuse decisions
@@ -101,9 +101,18 @@ Source preparation and one selected source-partition realization are consumed
 by complete-route replay. The portable result binds accepted routes and retains
 enough sealed evidence to replay exact partition rejection reasons.
 
-Endpoint auxiliary resolution and grouped result navigation remain product
-gaps. They do not justify a generic workflow engine, inventory subsystem,
-dashboard, PCR thermodynamics model, or cleanup-recovery predictor.
+Endpoint auxiliary resolution is connected. PCR-bearing routes now resolve the
+adapter and both endpoint primers through explicit `derive`, `constrain`, or
+`fixed` policies. Derived and constrained primers bind invariant construction
+sequence outside the payload; reusable handles are explicit caller inputs, and
+no thermodynamic rank is inferred.
+
+Concise grouped result navigation remains the product gap. Existing reversible
+projections retain exact alternatives and support explicit trajectory
+selection, but the public CLI does not yet provide the intended list, filter,
+sort, inspect, select, and export flow. That remaining work does not justify a
+generic workflow engine, inventory subsystem, dashboard, PCR thermodynamics
+model, or cleanup-recovery predictor.
 
 ## Verification plan
 

@@ -88,9 +88,7 @@ def clone_realization(
             evaluation.design_parent_span,
             evaluation.end_generation_program,
             evaluation.end_generation_bindings,
-            request.materialization.adapter,
-            request.materialization.hairpin_pcr_forward_primer,
-            request.materialization.hairpin_pcr_reverse_primer,
+            evaluation.endpoint_auxiliaries,
         )
     ):
         raise ValueError("Compatible clone composition requires every exact route authority.")
@@ -99,23 +97,25 @@ def clone_realization(
     source = evaluation.source
     source_complement = evaluation.source_complement
     source_preparation = evaluation.source_preparation
+    endpoint_auxiliaries = evaluation.endpoint_auxiliaries
     design_parent_span = evaluation.design_parent_span
     end_generation_program = evaluation.end_generation_program
     end_generation_bindings = evaluation.end_generation_bindings
-    adapter = request.materialization.adapter
-    forward = request.materialization.hairpin_pcr_forward_primer
-    reverse = request.materialization.hairpin_pcr_reverse_primer
     assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
     assert source_preparation is not None
     assert design_parent_span is not None and end_generation_program is not None
     assert end_generation_bindings is not None
-    assert adapter is not None and forward is not None and reverse is not None
+    assert endpoint_auxiliaries is not None
+    adapter = endpoint_auxiliaries.adapter
+    forward = endpoint_auxiliaries.forward_primer
+    reverse = endpoint_auxiliaries.reverse_primer
     material_uses = pcr_material_uses(
         source_preparation=source_preparation,
         adapter=adapter,
         forward_primer=forward,
         reverse_primer=reverse,
+        resolution_modes=endpoint_auxiliaries.resolution_modes,
     )
     if basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("Clone basal opening requires one exact bottom-strand nick.")

@@ -36,7 +36,7 @@ from .evaluation_inputs import (
     derive_complete_payload_source_map,
     replay_linear_source_embedding,
 )
-from .material import ExactConstructionMaterial, MaterialUse, MaterialUseRole
+from .material import ExactConstructionMaterial, MaterialUse, validate_complete_material_uses
 from .material.replay import (
     validate_foldback_annealing,
     validate_route_derivation,
@@ -155,21 +155,7 @@ class MaterializedConstructionRealization(HopModel):
             )
         endpoint = self.final_product.reference.endpoint
         is_direct = endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-        expected_use_roles = (
-            MaterialUseRole.PREPARED_SOURCE_REFERENCE,
-            MaterialUseRole.PREPARED_SOURCE_COMPLEMENT,
-            *(
-                ()
-                if is_direct
-                else (
-                    MaterialUseRole.LIGATION_ADAPTER,
-                    MaterialUseRole.ENDPOINT_FORWARD_PRIMER,
-                    MaterialUseRole.ENDPOINT_REVERSE_PRIMER,
-                )
-            ),
-        )
-        if tuple(item.role for item in self.material_uses) != expected_use_roles:
-            raise ValueError("Complete route material uses must preserve closed contextual roles.")
+        validate_complete_material_uses(self.material_uses, is_direct=is_direct)
         if is_direct and self.route_material_dispositions:
             raise ValueError("Direct ssDNA endpoint cannot contain PCR-only material dispositions.")
         if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (

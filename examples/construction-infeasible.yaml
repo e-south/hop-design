@@ -1,4 +1,4 @@
-schema: hop.construction-source/v4
+schema: hop.construction-source/v5
 foldback:
   schema: hop.local-neighborhood-request/v3
   name: null
@@ -83,9 +83,6 @@ composition:
       reverse_primer:
         mode: derive
         annealing_length_nt: 1
-    adapter: null
-    hairpin_pcr_forward_primer: null
-    hairpin_pcr_reverse_primer: null
   release: null
   whole_route_constraints:
     preserve_payload: true

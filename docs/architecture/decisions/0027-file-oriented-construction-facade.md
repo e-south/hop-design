@@ -17,7 +17,7 @@ amended_by: hop-adr-0028
 
 > [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md) makes
 > duplex foldback nick orientation explicit. [ADR 0033](0033-close-linear-source-material-dependencies.md)
-> closes the source-ssDNA preparation dependency in the active v4 construction
+> closes the source-ssDNA preparation dependency in the active v5 construction
 > source.
 
 ## Context
@@ -36,20 +36,26 @@ and verified.
 ## Decision
 
 `hop_design.construction` is the file-oriented construction facade. The caller
-provides one strict `hop.construction-source/v4` JSON or YAML file and one
+provides one strict `hop.construction-source/v5` JSON or YAML file and one
 separate verified design-bundle path. HOP loads the design authority, discovers
 and verifies the declared foldback and optional basal neighborhoods, derives
 the source ssDNA and source-preparation primers under their declared policies,
-produces the exact source duplex, composes the route, and returns an opaque
-`ConstructionCompilation` receipt.
+produces the exact source duplex, optionally binds one selected replay-verified
+source partition, resolves PCR endpoint auxiliaries under their declared
+policies, composes the route, and returns an opaque `ConstructionCompilation`
+receipt.
 
 The source document owns local requests, source-preparation policy,
-endpoint-dependent exact auxiliary materials, oriented endpoint release,
+endpoint-dependent auxiliary-resolution policy, oriented endpoint release,
 whole-route constraints, and finite enumeration policy. Source preparation
 uses one source ssDNA and two source-preparation primers to derive the exact
 duplex that enters downstream construction. Endpoint PCR primers remain
-separate auxiliary materials and appear only for PCR-bearing endpoints. The
-source cannot author a design authority, result identifier, realization
+separate auxiliary materials and appear only for PCR-bearing endpoints. Their
+adapter and primer policies are explicitly `derive`, `constrain`, or `fixed`.
+Derived and constrained endpoint primers must bind invariant non-payload
+construction sequence, and caller-authored handles remain explicit rather than
+being selected through an implicit score. The source cannot author a design
+authority, result identifier, realization
 identifier, projection choice, output path, timestamp, or environment record.
 Direct, PCR, and clone-ready endpoints have fail-closed structural requirements.
 
@@ -88,6 +94,11 @@ without copying HOP models or importing private modules. A projection must be
 requested from an opaque verified receipt; trajectory projection additionally
 requires one exact accepted realization identity and never auto-selects an
 exemplar.
+
+The projection operations remain the navigation surface at this decision's
+current implementation cutoff. A future concise grouped CLI may expose
+filtering, explicit sorting, inspection, and selection without changing result
+authority or introducing a hidden rank.
 
 Standalone local-neighborhood discovery returns one replay-verified family
 receipt. It establishes only the declared foldback or basal neighborhood and

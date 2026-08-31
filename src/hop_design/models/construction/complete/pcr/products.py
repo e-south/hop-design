@@ -63,6 +63,23 @@ def validate_pcr_annealing_spans(
         raise ValueError("PCR primer annealing spans must not overlap on the template.")
 
 
+def derive_pcr_product_sequence(
+    template_sequence: str,
+    forward: PcrPrimer,
+    reverse: PcrPrimer,
+) -> str:
+    """Derive the exact top-strand PCR product from terminal primer bindings."""
+    validate_pcr_annealing_spans(len(template_sequence), forward, reverse)
+    middle = template_sequence[
+        forward.annealing_length_nt : len(template_sequence) - reverse.annealing_length_nt
+    ]
+    return (
+        forward.oligo.sequence_5prime
+        + middle
+        + reverse_complement_iupac(reverse.oligo.sequence_5prime)
+    )
+
+
 def _top_lineage(
     template: MolecularStrand,
     forward: PcrPrimer,
@@ -113,15 +130,7 @@ def pcr_products(
     bottom_strand_id: str = "complete-hairpin-pcr-bottom",
 ) -> tuple[MolecularStrand, MolecularStrand]:
     """Derive the ordered PCR duplex with exact primer and template lineage."""
-    validate_pcr_annealing_spans(len(template.sequence), forward, reverse)
-    middle = template.sequence[
-        forward.annealing_length_nt : len(template.sequence) - reverse.annealing_length_nt
-    ]
-    top_sequence = (
-        forward.oligo.sequence_5prime
-        + middle
-        + reverse_complement_iupac(reverse.oligo.sequence_5prime)
-    )
+    top_sequence = derive_pcr_product_sequence(template.sequence, forward, reverse)
     top_lineage = _top_lineage(
         template,
         forward,

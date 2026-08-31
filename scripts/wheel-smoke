@@ -192,7 +192,7 @@ fi
 for construction_case in composed-pcr exact infeasible relaxed; do
   construction_trajectory_id=''
   if [[ "$construction_case" == "composed-pcr" ]]; then
-    construction_trajectory_id='hop:materialized-construction/c30f80ea8a099be4e02910a2b425d965e7a0b4a83000ff010d432e3afe344c43@1'
+    construction_trajectory_id='hop:materialized-construction/ed200f1b66a4b76cd9f6f33ba214798833fe5ec515474d6eed4ef8e9233de283@1'
   elif [[ "$construction_case" == "exact" ]]; then
     construction_trajectory_id='hop:materialized-construction/63982f1d523dac0ad6f4034ce4ff83259fc05353392e783e96831a9096fb2109@1'
   elif [[ "$construction_case" == "relaxed" ]]; then

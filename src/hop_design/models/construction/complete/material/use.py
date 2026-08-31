@@ -65,4 +65,39 @@ class MaterialUse(HopModel):
         return self
 
 
-__all__ = ["MaterialRouteEntry", "MaterialUse", "MaterialUseRole"]
+def validate_complete_material_uses(
+    material_uses: tuple[MaterialUse, ...],
+    *,
+    is_direct: bool,
+) -> None:
+    """Require contextual roles and route entry to match one complete endpoint."""
+    expected_roles = (
+        MaterialUseRole.PREPARED_SOURCE_REFERENCE,
+        MaterialUseRole.PREPARED_SOURCE_COMPLEMENT,
+        *(
+            ()
+            if is_direct
+            else (
+                MaterialUseRole.LIGATION_ADAPTER,
+                MaterialUseRole.ENDPOINT_FORWARD_PRIMER,
+                MaterialUseRole.ENDPOINT_REVERSE_PRIMER,
+            )
+        ),
+    )
+    if tuple(item.role for item in material_uses) != expected_roles:
+        raise ValueError("Complete route material uses must preserve closed contextual roles.")
+    expected_entries = (
+        MaterialRouteEntry.MODELED_PRODUCT,
+        MaterialRouteEntry.MODELED_PRODUCT,
+        *((MaterialRouteEntry.REQUIRED_EXTERNAL,) * (0 if is_direct else 3)),
+    )
+    if tuple(item.route_entry for item in material_uses) != expected_entries:
+        raise ValueError("Complete route material uses must preserve exact route entry semantics.")
+
+
+__all__ = [
+    "MaterialRouteEntry",
+    "MaterialUse",
+    "MaterialUseRole",
+    "validate_complete_material_uses",
+]

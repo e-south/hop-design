@@ -29,6 +29,9 @@ from hop_design.models.construction.complete import (
     CompositionEnumerationPolicy,
     DerivedPrimerPolicy,
     DerivedSourceSsdnaPolicy,
+    EndpointAuxiliaryPolicy,
+    FixedAdapterPolicy,
+    FixedEndpointPrimerPolicy,
     LinearSourceMaterializationSpec,
     MaterialResolutionMode,
     PcrPrimer,
@@ -76,6 +79,39 @@ def _materialization(
     reverse_primer=None,
     primer_annealing_length_nt: int | None = None,
 ) -> LinearSourceMaterializationSpec:
+    endpoint_auxiliaries = None
+    if any(item is not None for item in (adapter, forward_primer, reverse_primer)):
+        if adapter is None or forward_primer is None or reverse_primer is None:
+            raise ValueError("Exact test auxiliary inputs must be complete.")
+        annealing_length = (
+            primer_annealing_length_nt
+            if primer_annealing_length_nt is not None
+            else len(forward_primer.sequence_5prime)
+        )
+        endpoint_auxiliaries = EndpointAuxiliaryPolicy(
+            adapter=FixedAdapterPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                material=adapter,
+            ),
+            forward_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(
+                    oligo=forward_primer,
+                    annealing_length_nt=annealing_length,
+                ),
+            ),
+            reverse_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(
+                    oligo=reverse_primer,
+                    annealing_length_nt=(
+                        primer_annealing_length_nt
+                        if primer_annealing_length_nt is not None
+                        else len(reverse_primer.sequence_5prime)
+                    ),
+                ),
+            ),
+        )
     return LinearSourceMaterializationSpec(
         source_preparation=SourceDuplexPreparationPolicy(
             source_ssdna=DerivedSourceSsdnaPolicy(
@@ -92,31 +128,7 @@ def _materialization(
                 annealing_length_nt=1,
             ),
         ),
-        adapter=adapter,
-        hairpin_pcr_forward_primer=(
-            None
-            if forward_primer is None
-            else PcrPrimer(
-                oligo=forward_primer,
-                annealing_length_nt=(
-                    primer_annealing_length_nt
-                    if primer_annealing_length_nt is not None
-                    else len(forward_primer.sequence_5prime)
-                ),
-            )
-        ),
-        hairpin_pcr_reverse_primer=(
-            None
-            if reverse_primer is None
-            else PcrPrimer(
-                oligo=reverse_primer,
-                annealing_length_nt=(
-                    primer_annealing_length_nt
-                    if primer_annealing_length_nt is not None
-                    else len(reverse_primer.sequence_5prime)
-                ),
-            )
-        ),
+        endpoint_auxiliaries=endpoint_auxiliaries,
     )
 
 
@@ -129,7 +141,7 @@ def _source(
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v4",
+        schema="hop.construction-source/v5",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
@@ -332,7 +344,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/7c11ec382a8f/d570e91253a9bf8b"
+    assert pcr.bundle_id == "hop:construction-bundle/b048e5bd2729/f1822798a89cbbc8"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value

@@ -38,12 +38,19 @@ from hop_design.models.construction import (
 )
 from hop_design.models.construction.complete import (
     CompositionDispositionStatus,
+    ConstrainedEndpointPrimerPolicy,
     ConstructionProgram,
     ConstructionSpaceResult,
     ConstructionStatePhase,
     ConstructionTransitionKind,
+    DerivedAdapterPolicy,
+    DerivedEndpointPrimerPolicy,
+    EndpointAuxiliaryPolicy,
     ExactConstructionMaterial,
+    FixedAdapterPolicy,
+    FixedEndpointPrimerPolicy,
     MaterializedConstructionRealization,
+    MaterialResolutionMode,
     MaterialRetentionDisposition,
     PcrPrimer,
     ReleaseSideRequirement,
@@ -481,8 +488,11 @@ def test_clone_ready_reports_shared_pcr_primer_failures_as_infeasible(
     tmp_path: Path,
 ) -> None:
     base, foldback, basal, design, _, _ = _clone_request(tmp_path)
-    forward = base.materialization.hairpin_pcr_forward_primer
-    assert forward is not None
+    auxiliaries = base.materialization.endpoint_auxiliaries
+    assert auxiliaries is not None
+    forward_policy = auxiliaries.forward_primer
+    assert isinstance(forward_policy, FixedEndpointPrimerPolicy)
+    forward = forward_policy.primer
     invalid_forward_primers = (
         forward.model_copy(
             update={
@@ -505,7 +515,16 @@ def test_clone_ready_reports_shared_pcr_primer_failures_as_infeasible(
         request = base.model_copy(
             update={
                 "materialization": base.materialization.model_copy(
-                    update={"hairpin_pcr_forward_primer": forward_primer}
+                    update={
+                        "endpoint_auxiliaries": auxiliaries.model_copy(
+                            update={
+                                "forward_primer": FixedEndpointPrimerPolicy(
+                                    mode=MaterialResolutionMode.FIXED,
+                                    primer=forward_primer,
+                                )
+                            }
+                        )
+                    }
                 )
             }
         )
@@ -519,12 +538,85 @@ def test_clone_ready_reports_shared_pcr_primer_failures_as_infeasible(
         }
 
 
+def test_clone_ready_requires_explicit_type_iis_primer_handles(tmp_path: Path) -> None:
+    base, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    request = base.model_copy(
+        update={
+            "materialization": base.materialization.model_copy(
+                update={
+                    "endpoint_auxiliaries": EndpointAuxiliaryPolicy(
+                        adapter=DerivedAdapterPolicy(mode=MaterialResolutionMode.DERIVE),
+                        forward_primer=DerivedEndpointPrimerPolicy(
+                            mode=MaterialResolutionMode.DERIVE,
+                            annealing_length_nt=4,
+                        ),
+                        reverse_primer=DerivedEndpointPrimerPolicy(
+                            mode=MaterialResolutionMode.DERIVE,
+                            annealing_length_nt=4,
+                        ),
+                    )
+                }
+            )
+        }
+    )
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert result.realizations == ()
+    assert {item.code for item in result.failure_reasons} == {
+        CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE
+    }
+
+
+def test_clone_ready_resolves_constrained_type_iis_primer_handles(tmp_path: Path) -> None:
+    base, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    request = base.model_copy(
+        update={
+            "materialization": base.materialization.model_copy(
+                update={
+                    "endpoint_auxiliaries": EndpointAuxiliaryPolicy(
+                        adapter=DerivedAdapterPolicy(mode=MaterialResolutionMode.DERIVE),
+                        forward_primer=ConstrainedEndpointPrimerPolicy(
+                            mode=MaterialResolutionMode.CONSTRAIN,
+                            min_annealing_length_nt=4,
+                            max_annealing_length_nt=4,
+                            five_prime_handle_sequence="GGTCTC",
+                        ),
+                        reverse_primer=ConstrainedEndpointPrimerPolicy(
+                            mode=MaterialResolutionMode.CONSTRAIN,
+                            min_annealing_length_nt=4,
+                            max_annealing_length_nt=4,
+                            five_prime_handle_sequence="GGTCTC",
+                        ),
+                    )
+                }
+            )
+        }
+    )
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert result.realizations
+    assert tuple(
+        item.specification_resolution_mode for item in result.realizations[0].material_uses[2:]
+    ) == (
+        MaterialResolutionMode.DERIVE,
+        MaterialResolutionMode.CONSTRAIN,
+        MaterialResolutionMode.CONSTRAIN,
+    )
+
+
 def test_clone_ready_rejects_shortened_and_wrong_full_adapter_materials(
     tmp_path: Path,
 ) -> None:
     base, foldback, basal, design, _, _ = _clone_request(tmp_path)
-    adapter = base.materialization.adapter
-    assert adapter is not None
+    auxiliaries = base.materialization.endpoint_auxiliaries
+    assert auxiliaries is not None
+    adapter_policy = auxiliaries.adapter
+    assert isinstance(adapter_policy, FixedAdapterPolicy)
+    adapter = adapter_policy.material
     invalid_adapters = (
         adapter.sequence_5prime[:-1],
         f"{adapter.sequence_5prime[:-1]}{_substitute_first_base(adapter.sequence_5prime[-1:])}",
@@ -533,7 +625,19 @@ def test_clone_ready_rejects_shortened_and_wrong_full_adapter_materials(
         request = base.model_copy(
             update={
                 "materialization": base.materialization.model_copy(
-                    update={"adapter": _changed_material(adapter, sequence_5prime=sequence)}
+                    update={
+                        "endpoint_auxiliaries": auxiliaries.model_copy(
+                            update={
+                                "adapter": FixedAdapterPolicy(
+                                    mode=MaterialResolutionMode.FIXED,
+                                    material=_changed_material(
+                                        adapter,
+                                        sequence_5prime=sequence,
+                                    ),
+                                )
+                            }
+                        )
+                    }
                 )
             }
         )
@@ -551,8 +655,11 @@ def test_clone_evaluator_rejects_adapter_mismatch_before_endpoint_release(
     tmp_path: Path,
 ) -> None:
     request, foldback, basal, _, _, _ = _clone_request(tmp_path)
-    adapter = request.materialization.adapter
-    assert adapter is not None
+    auxiliaries = request.materialization.endpoint_auxiliaries
+    assert auxiliaries is not None
+    adapter_policy = auxiliaries.adapter
+    assert isinstance(adapter_policy, FixedAdapterPolicy)
+    adapter = adapter_policy.material
     changed_adapter_sequence = (
         f"{adapter.sequence_5prime[:-1]}{_substitute_first_base(adapter.sequence_5prime[-1:])}"
     )
@@ -560,7 +667,16 @@ def test_clone_evaluator_rejects_adapter_mismatch_before_endpoint_release(
     request = request.model_copy(
         update={
             "materialization": request.materialization.model_copy(
-                update={"adapter": changed_material}
+                update={
+                    "endpoint_auxiliaries": auxiliaries.model_copy(
+                        update={
+                            "adapter": FixedAdapterPolicy(
+                                mode=MaterialResolutionMode.FIXED,
+                                material=changed_material,
+                            )
+                        }
+                    )
+                }
             )
         }
     )
@@ -828,14 +944,19 @@ def test_clone_route_rejects_forged_transient_removal_disposition(tmp_path: Path
 
 def test_clone_release_bound_produces_replayable_truncated_result(tmp_path: Path) -> None:
     request, foldback, basal, design, _, _ = _clone_request(tmp_path)
-    reverse = request.materialization.hairpin_pcr_reverse_primer
-    assert reverse is not None and request.release is not None
+    auxiliaries = request.materialization.endpoint_auxiliaries
+    assert auxiliaries is not None and request.release is not None
+    reverse_policy = auxiliaries.reverse_primer
+    assert isinstance(reverse_policy, FixedEndpointPrimerPolicy)
+    reverse = reverse_policy.primer
     second_reverse_site = reverse_complement_iupac("AGAGACCAGAGACC")
     data = request.model_dump(by_alias=True)
-    data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["sequence_5prime"] = (
-        second_reverse_site + reverse.annealing_sequence
-    )
-    del data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["material_id"]
+    data["materialization"]["endpoint_auxiliaries"]["reverse_primer"]["primer"]["oligo"][
+        "sequence_5prime"
+    ] = second_reverse_site + reverse.annealing_sequence
+    del data["materialization"]["endpoint_auxiliaries"]["reverse_primer"]["primer"]["oligo"][
+        "material_id"
+    ]
     data["release"]["max_site_pairs"] = 1
     bounded = type(request).model_validate(data)
 

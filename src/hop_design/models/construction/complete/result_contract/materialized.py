@@ -63,23 +63,6 @@ def validate_materialized_request(
     validate_payload_source_map(request, realization)
     source, source_complement, *auxiliaries = realization.materials
     policy = request.materialization
-    expected_auxiliaries = tuple(
-        item
-        for item in (
-            policy.adapter,
-            (
-                None
-                if policy.hairpin_pcr_forward_primer is None
-                else policy.hairpin_pcr_forward_primer.oligo
-            ),
-            (
-                None
-                if policy.hairpin_pcr_reverse_primer is None
-                else policy.hairpin_pcr_reverse_primer.oligo
-            ),
-        )
-        if item is not None
-    )
     if (
         source.sequence_5prime != realization.realization.precursor_sequence
         or tuple(
@@ -87,9 +70,17 @@ def validate_materialized_request(
             for binding in realization.source_preparation.produced_material_bindings
         )
         != (source, source_complement)
-        or tuple(auxiliaries) != expected_auxiliaries
+        or (policy.endpoint_auxiliaries is None) != (not auxiliaries)
     ):
         raise ValueError("Materialized set must equal the exact result request policy.")
+    if policy.endpoint_auxiliaries is not None and tuple(
+        item.specification_resolution_mode for item in realization.material_uses[2:]
+    ) != (
+        policy.endpoint_auxiliaries.adapter.mode,
+        policy.endpoint_auxiliaries.forward_primer.mode,
+        policy.endpoint_auxiliaries.reverse_primer.mode,
+    ):
+        raise ValueError("Materialized auxiliary modes must equal the exact request policies.")
     if (
         realization.foldback_realization_id != disposition.foldback_realization_id
         or realization.basal_realization_id != disposition.basal_realization_id
@@ -125,6 +116,15 @@ def validate_materialized_evaluation(
         *evaluation.stage_assessments,
         *evaluation.end_generation_stage_assessments,
     )
+    expected_auxiliaries = (
+        ()
+        if evaluation.endpoint_auxiliaries is None
+        else (
+            evaluation.endpoint_auxiliaries.adapter,
+            evaluation.endpoint_auxiliaries.forward_primer.oligo,
+            evaluation.endpoint_auxiliaries.reverse_primer.oligo,
+        )
+    )
     if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
         endpoint_matches = (
             realization.final_product.encoding_projection.sequence == evaluation.final_sequence
@@ -142,6 +142,7 @@ def validate_materialized_evaluation(
     if (
         realization.source_preparation != evaluation.source_preparation
         or tuple(realization.materials[:2]) != (evaluation.source, evaluation.source_complement)
+        or tuple(realization.materials[2:]) != expected_auxiliaries
         or realization.construction_program.reaction_programs != expected_programs
         or realization.construction_program.stage_assessments != expected_assessments
         or not endpoint_matches

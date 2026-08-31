@@ -162,8 +162,8 @@ class WholeRouteConstraints(HopModel):
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v4"] = Field(
-        default="hop.construction-discovery-request/v4", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v5"] = Field(
+        default="hop.construction-discovery-request/v5", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily
@@ -218,18 +218,13 @@ class ConstructionDiscoveryRequest(HopModel):
             raise ValueError("Design authority must bind the exact requested payload.")
         if self.foldback_intermediate_endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
             raise ValueError("The foldback intermediate must be an ssDNA hairpin.")
-        auxiliaries = (
-            self.materialization.adapter,
-            self.materialization.hairpin_pcr_forward_primer,
-            self.materialization.hairpin_pcr_reverse_primer,
-        )
+        auxiliaries = self.materialization.endpoint_auxiliaries
         if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-            if any(item is not None for item in auxiliaries) or self.release is not None:
-                raise ValueError("A direct endpoint must omit adapter and PCR primers.")
-        elif self.basal_result_id is None or any(item is None for item in auxiliaries):
+            if auxiliaries is not None or self.release is not None:
+                raise ValueError("A direct endpoint must omit endpoint auxiliaries.")
+        elif self.basal_result_id is None or auxiliaries is None:
             raise ValueError(
-                "PCR-bearing endpoints require an exact adapter and both primers "
-                "plus basal authority."
+                "PCR-bearing endpoints require endpoint auxiliary policies plus basal authority."
             )
         elif self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
             if self.release is not None:

@@ -89,14 +89,16 @@ selected = construction.compile_construction_from_local_realizations(
 The selected partition must describe the same prepared source duplex, use the
 same characterized enzyme definitions, and replay the route's concurrent nicks,
 denatured fragments, inclusive selection, and required survivors. A selected
-member remains exact even when its parent partition search was truncated.
+member remains exact even when its parent partition search was truncated. Once
+selected, that partition is consumed and sealed by complete-route replay; a
+caller does not need to restate its cuts, fragments, or survivor relation.
 
 ## Prepare the two authorities
 
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v4`; and
+   `hop.construction-source/v5`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
@@ -105,7 +107,7 @@ primers are resolved, endpoint-dependent auxiliary materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v4
+schema: hop.construction-source/v5
 foldback: <hop.local-neighborhood-request/v3 mapping>
 basal: <hop.local-neighborhood-request/v3 mapping or null>
 composition:
@@ -115,9 +117,10 @@ composition:
       source_ssdna: <derive or fixed source-ssDNA policy>
       forward_primer: <derive, constrain, or fixed source-primer policy>
       reverse_primer: <derive, constrain, or fixed source-primer policy>
-    adapter: <exact endpoint adapter or null>
-    hairpin_pcr_forward_primer: <exact endpoint primer or null>
-    hairpin_pcr_reverse_primer: <exact endpoint primer or null>
+    endpoint_auxiliaries:
+      adapter: <derive, constrain, or fixed adapter policy>
+      forward_primer: <derive, constrain, or fixed endpoint-primer policy>
+      reverse_primer: <derive, constrain, or fixed endpoint-primer policy>
   release: <exact oriented Type IIS endpoint release or null>
   whole_route_constraints: <intrinsic route constraints>
   enumeration:
@@ -142,10 +145,50 @@ source ssDNA + two source-preparation primers
 The source ssDNA is the first external route material. The copied duplex is a
 derived route state, not another material for the caller to provide. Source
 primer annealing is resolved outside the payload and its terminal chemistry is
-validated before the copied duplex can seed downstream construction. The
-`hairpin_pcr_forward_primer` and `hairpin_pcr_reverse_primer` fields are
-different materials: they are required only for PCR-bearing endpoints after
-the ssDNA hairpin has formed.
+validated before the copied duplex can seed downstream construction.
+
+`endpoint_auxiliaries` is separate and is required only for PCR-bearing
+endpoints after the ssDNA hairpin has formed. Each nested policy has one exact
+meaning:
+
+- `derive`: HOP derives the adapter from the selected basal pairing segment or
+  a primer from the exact PCR template at one caller-authored annealing length;
+- `constrain`: HOP appends one explicit caller-supplied adapter or primer handle
+  and chooses the shortest valid primer annealing length inside the declared
+  inclusive range; and
+- `fixed`: the caller supplies one exact material and HOP verifies its sequence,
+  annealing relation, and terminal chemistry.
+
+The adapter always preserves the selected basal pairing segment. A derived or
+constrained forward primer binds within the invariant source-side construction
+prefix, and its reverse counterpart binds within the adapter. Neither may
+anneal across the payload. HOP performs no Tm, yield, or empirical ranking, and
+does not generate a reusable handle that the caller did not specify.
+
+Representative policy shapes are:
+
+```yaml
+endpoint_auxiliaries:
+  adapter:
+    mode: constrain
+    three_prime_handle_sequence: <explicit reusable DNA handle>
+  forward_primer:
+    mode: derive
+    annealing_length_nt: <positive integer>
+    five_prime_end: hydroxyl
+  reverse_primer:
+    mode: constrain
+    min_annealing_length_nt: <positive integer>
+    max_annealing_length_nt: <positive integer>
+    five_prime_handle_sequence: <explicit DNA handle or empty string>
+    five_prime_end: hydroxyl
+```
+
+A constrained primer deterministically uses its minimum declared annealing
+length when that length fits the invariant binding region. A fixed adapter uses
+`material`; a fixed endpoint primer uses `primer`. Those mappings use the exact
+construction-material and PCR-primer contracts rather than free-form sequence
+strings. A direct `ssdna_hairpin` omits `endpoint_auxiliaries` entirely.
 
 Endpoint obligations fail closed:
 
@@ -232,6 +275,11 @@ grouping. A trajectory requires an explicitly supplied accepted realization
 identity; HOP does not choose an exemplar. Foldback and basal feasibility plus
 their relaxation frontiers are available through the corresponding projection
 operations. A basal projection rejects a construction with no basal authority.
+
+These projections are the current navigation surface. A concise grouped CLI
+for listing, filtering, sorting, inspecting, and selecting exact realization
+identities remains open work; callers must not interpret the absence of that
+ergonomic layer as permission to rank or discard alternatives.
 
 Each `ConstructionProjection` contains canonical JSON, deterministic SVG, and
 CSV when the projection defines a table. Projection directories are also

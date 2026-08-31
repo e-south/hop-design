@@ -71,9 +71,7 @@ def pcr_realization(
             evaluation.source,
             evaluation.source_complement,
             evaluation.source_preparation,
-            request.materialization.adapter,
-            request.materialization.hairpin_pcr_forward_primer,
-            request.materialization.hairpin_pcr_reverse_primer,
+            evaluation.endpoint_auxiliaries,
             evaluation.design_parent_span,
         )
     ):
@@ -83,15 +81,16 @@ def pcr_realization(
     source = evaluation.source
     source_complement = evaluation.source_complement
     source_preparation = evaluation.source_preparation
-    adapter = request.materialization.adapter
-    forward = request.materialization.hairpin_pcr_forward_primer
-    reverse = request.materialization.hairpin_pcr_reverse_primer
+    endpoint_auxiliaries = evaluation.endpoint_auxiliaries
     design_parent_span = evaluation.design_parent_span
     assert prefix is not None and source_return_arm is not None
     assert source is not None and source_complement is not None
     assert source_preparation is not None
-    assert adapter is not None and forward is not None and reverse is not None
+    assert endpoint_auxiliaries is not None
     assert design_parent_span is not None
+    adapter = endpoint_auxiliaries.adapter
+    forward = endpoint_auxiliaries.forward_primer
+    reverse = endpoint_auxiliaries.reverse_primer
     if basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR basal opening requires an exact bottom-strand basal nick.")
     if basal.basal_nick.boundary.offset != len(prefix):
@@ -102,6 +101,7 @@ def pcr_realization(
         adapter=adapter,
         forward_primer=forward,
         reverse_primer=reverse,
+        resolution_modes=endpoint_auxiliaries.resolution_modes,
     )
     program, extension = materialize_pcr_program(
         foldback=foldback,

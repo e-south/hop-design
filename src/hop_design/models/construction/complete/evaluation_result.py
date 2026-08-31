@@ -18,6 +18,7 @@ from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBind
 from hop_design.models.coordinates import Span
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
+from .auxiliary.resolution import EndpointAuxiliaryResolution
 from .material import ExactConstructionMaterial
 from .source_preparation import SourceDuplexPreparationAuthority
 
@@ -67,6 +68,7 @@ class CombinationEvaluation:
     source: ExactConstructionMaterial | None = None
     source_complement: ExactConstructionMaterial | None = None
     source_preparation: SourceDuplexPreparationAuthority | None = None
+    endpoint_auxiliaries: EndpointAuxiliaryResolution | None = None
     reaction_program: ReactionProgram | None = None
     stage_assessments: tuple[ReactionStageAssessment, ...] = ()
     end_generation_program: ReactionProgram | None = None

@@ -44,7 +44,7 @@ shipped with that artifact.
 | `hop.released-foldback-precursor-search-request/v1` | `ReleasedFoldbackPrecursorSearchRequest` | Selected geometry and caller precursor domain |
 | `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization |
 | `hop.hairpin-junction-route-search-result/v2` | `HairpinJunctionRouteSearchResult` | Bounded continuity join across junction processes |
-| `hop.construction-source/v4` | public file source | Strict foldback, optional PCR-basal, source-ssDNA preparation, endpoint-auxiliary, whole-route-constraint, and finite-enumeration input; the design bundle remains a separate verified path |
+| `hop.construction-source/v5` | public file source | Strict foldback, optional PCR-basal, source-ssDNA preparation, endpoint-auxiliary resolution policies, whole-route constraints, and finite enumeration; the design bundle remains a separate verified path |
 | `hop.source-partition-request/v1` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, length selection, and finite subset-enumeration bounds |
 | `hop.source-partition-result/v1` | public discovery result | Replay-verified nick sites, denatured fragments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
 | `hop.final-payload/v1` | internal construction model | Final-product payload coordinates, authored reference strand, boundaries, and derived pairing authority |
@@ -52,9 +52,9 @@ shipped with that artifact.
 | `hop.neighborhood-discovery-result/v3` | internal construction model | Shared exact-first local accounting, shells, grouping, provenance, and completion status |
 | `hop.foldback-neighborhood-result/v3` | portable local construction result | Replayable exact duplex foldback realizations with nick-strand, source-orientation, and molecular lineage authorities |
 | `hop.basal-neighborhood-result/v3` | portable local construction result | Replayable basal realizations terminating at the hairpin PCR duplex authority |
-| `hop.construction-discovery-request/v4` | internal construction model | Verified design reference, local result references, source-ssDNA preparation policy, endpoint auxiliaries, optional endpoint release, route constraints, and composition bounds |
-| `hop.construction-space-result/v4` | internal construction model | Complete examined composition prefix, source-preparation authorities, exact accepted routes, endpoint products, material accounting, grouping, and claim boundary |
-| `hop.construction-bundle/v4` | portable construction manifest | Content-addressed complete-construction result with source-preparation authorities and embedded verified design authority |
+| `hop.construction-discovery-request/v5` | internal construction model | Verified design reference, local and optional selected source-partition references, source-ssDNA preparation policy, endpoint-auxiliary resolution policies, optional endpoint release, route constraints, and composition bounds |
+| `hop.construction-space-result/v5` | internal construction model | Complete examined composition prefix, source-preparation and selected-partition authorities, resolved exact endpoint auxiliaries, exact accepted routes, endpoint products, material accounting, grouping, and claim boundary |
+| `hop.construction-bundle/v5` | portable construction manifest | Content-addressed complete-construction result with source-preparation, selected-partition, and resolved-auxiliary authorities plus embedded verified design authority |
 | `hop.foldback-feasibility-landscape/v3` | public construction projection | Every exact foldback realization from one unpartitioned search with its physical nick strand, source orientation, and achieved construction dimensions |
 | `hop.foldback-feasibility-landscape/v4` | public construction projection | Every exact foldback realization from one declared sequence-domain part, with its part scope and achieved construction dimensions |
 | `hop.basal-feasibility-landscape/v2` | public construction projection | Every exact basal realization from one unpartitioned search with its PCR-intermediate pairing, nick, and material facts |
@@ -115,3 +115,7 @@ operations.
 
 Breaking-history rationale belongs in the [decision index](../architecture/decisions/README.md),
 not in the active schema contract.
+
+Construction v5 is one fail-closed cut. It accepts no v4 construction source,
+request, result, or bundle. The named-method v1 material schemas remain a
+separate exact-method contract and retain their exact oligo fields.

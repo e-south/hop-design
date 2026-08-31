@@ -18,8 +18,8 @@ from hop_design.models.construction.payload import (
 )
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
 from hop_design.models.reaction_replay import assess_reaction_program
-from hop_design.models.sequence import reverse_complement_iupac
 
+from .auxiliary.evaluation import evaluate_endpoint_auxiliaries
 from .clone import (
     CloneEndGenerationError,
     derive_clone_end_program_for_template,
@@ -33,6 +33,7 @@ from .evaluation_inputs import (
     derive_route_prefix,
 )
 from .evaluation_result import CombinationEvaluation, CompositionRejectionCode
+from .pcr.products import derive_pcr_product_sequence
 from .pcr.schedule import derive_pcr_reaction_program
 from .pcr.validation import evaluate_pcr_compatibility
 from .provisioning import merge_provisioning_policies
@@ -42,13 +43,6 @@ from .source_preparation import (
     SourcePreparationResolutionError,
     resolve_route_source_preparation,
 )
-
-
-def _reverse_handle_sequence(request: ConstructionDiscoveryRequest) -> str:
-    reverse = request.materialization.hairpin_pcr_reverse_primer
-    if reverse is None or not reverse.five_prime_handle:
-        return ""
-    return reverse_complement_iupac(reverse.five_prime_handle)
 
 
 def evaluate_combination(
@@ -107,17 +101,40 @@ def evaluate_combination(
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }
-    adapter = request.materialization.adapter
-    endpoint_return = (
-        source_return_arm if not pcr_bearing else "" if adapter is None else adapter.sequence_5prime
-    )
-    pcr_template = prefix + foldback.retained_sequence + endpoint_return
+    pcr_core = prefix + foldback.retained_sequence
+    endpoint_auxiliaries = None
     if pcr_bearing:
+        auxiliary_policy = request.materialization.endpoint_auxiliaries
+        if basal is None or auxiliary_policy is None:
+            raise ValueError("PCR-bearing composition requires basal and auxiliary policy.")
+        auxiliary_evaluation = evaluate_endpoint_auxiliaries(
+            policy=auxiliary_policy,
+            basal=basal,
+            pcr_core_sequence=pcr_core,
+            source_primer_region_length_nt=len(prefix),
+            prefix=prefix,
+            source_return_arm=source_return_arm,
+            source=source,
+            source_complement=complement,
+            source_preparation=source_preparation,
+            candidate_enzyme_programs=candidate_enzyme_programs,
+            recognition_placements_attempted=recognition_placements_attempted,
+            constraint_systems_attempted=constraint_systems_attempted,
+        )
+        if isinstance(auxiliary_evaluation, CombinationEvaluation):
+            return auxiliary_evaluation
+        endpoint_auxiliaries = auxiliary_evaluation
+        adapter = endpoint_auxiliaries.adapter
+        forward = endpoint_auxiliaries.forward_primer
+        reverse = endpoint_auxiliaries.reverse_primer
+        pcr_template = pcr_core + adapter.sequence_5prime
         pcr_rejection = evaluate_pcr_compatibility(
-            request,
             basal=basal,
             prefix=prefix,
             pcr_template=pcr_template,
+            adapter=adapter,
+            forward=forward,
+            reverse=reverse,
         )
         if pcr_rejection is not None:
             return CombinationEvaluation(
@@ -127,10 +144,13 @@ def evaluate_combination(
                 source=source,
                 source_complement=complement,
                 source_preparation=source_preparation,
+                endpoint_auxiliaries=endpoint_auxiliaries,
                 candidate_enzyme_programs=candidate_enzyme_programs,
                 recognition_placements_attempted=recognition_placements_attempted,
                 constraint_systems_attempted=constraint_systems_attempted,
             )
+    else:
+        pcr_template = pcr_core + source_return_arm
     policies: tuple[EnzymeProvisioningPolicy, ...] = (foldback_policy,)
     if basal is not None:
         if basal_policy is None:
@@ -167,10 +187,10 @@ def evaluate_combination(
         release_request = request.release
         if basal is None or release_request is None:
             raise ValueError("Clone composition requires basal and endpoint-release authority.")
-        forward = request.materialization.hairpin_pcr_forward_primer
-        reverse = request.materialization.hairpin_pcr_reverse_primer
-        assert forward is not None and reverse is not None
-        pcr_product = forward.five_prime_handle + pcr_template + _reverse_handle_sequence(request)
+        assert endpoint_auxiliaries is not None
+        forward = endpoint_auxiliaries.forward_primer
+        reverse = endpoint_auxiliaries.reverse_primer
+        pcr_product = derive_pcr_product_sequence(pcr_template, forward, reverse)
         release = discover_endpoint_release(
             request=release_request,
             pcr_top=pcr_product,
@@ -191,6 +211,7 @@ def evaluate_combination(
                 source=source,
                 source_complement=complement,
                 source_preparation=source_preparation,
+                endpoint_auxiliaries=endpoint_auxiliaries,
                 reaction_program=program,
                 stage_assessments=assessment.stage_assessments,
                 pcr_template_sequence=pcr_template,
@@ -215,6 +236,7 @@ def evaluate_combination(
                 source=source,
                 source_complement=complement,
                 source_preparation=source_preparation,
+                endpoint_auxiliaries=endpoint_auxiliaries,
                 reaction_program=program,
                 stage_assessments=assessment.stage_assessments,
                 pcr_template_sequence=pcr_template,
@@ -232,17 +254,16 @@ def evaluate_combination(
         end_generation_bindings = None
     final_sequence = pcr_template
     if pcr_bearing:
-        forward = request.materialization.hairpin_pcr_forward_primer
-        reverse = request.materialization.hairpin_pcr_reverse_primer
-        assert forward is not None and reverse is not None
-        final_sequence = (
-            forward.five_prime_handle + pcr_template + _reverse_handle_sequence(request)
-        )
+        assert endpoint_auxiliaries is not None
+        forward = endpoint_auxiliaries.forward_primer
+        reverse = endpoint_auxiliaries.reverse_primer
+        final_sequence = derive_pcr_product_sequence(pcr_template, forward, reverse)
         if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
             design_parent_span = derive_pcr_design_parent_span(
                 request,
                 prefix=prefix,
                 top_sequence=final_sequence,
+                forward_primer=forward,
             )
     if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
         final_sequence = request.design.encoding_sequence
@@ -256,6 +277,7 @@ def evaluate_combination(
             source=source,
             source_complement=complement,
             source_preparation=source_preparation,
+            endpoint_auxiliaries=endpoint_auxiliaries,
             reaction_program=program,
             stage_assessments=assessment.stage_assessments,
             end_generation_program=end_program,
@@ -284,6 +306,7 @@ def evaluate_combination(
             source=source,
             source_complement=complement,
             source_preparation=source_preparation,
+            endpoint_auxiliaries=endpoint_auxiliaries,
             reaction_program=program,
             stage_assessments=assessment.stage_assessments,
             pcr_template_sequence=pcr_template if pcr_bearing else None,
@@ -300,6 +323,7 @@ def evaluate_combination(
         source=source,
         source_complement=complement,
         source_preparation=source_preparation,
+        endpoint_auxiliaries=endpoint_auxiliaries,
         reaction_program=program,
         stage_assessments=assessment.stage_assessments,
         end_generation_program=end_program,

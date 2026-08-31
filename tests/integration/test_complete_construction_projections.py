@@ -38,7 +38,10 @@ from hop_design.models.construction import (
     RealizationGrouping,
     SearchCompletionStatus,
 )
-from hop_design.models.construction.complete import CompositionDispositionStatus
+from hop_design.models.construction.complete import (
+    CompositionDispositionStatus,
+    FixedEndpointPrimerPolicy,
+)
 from hop_design.models.construction.projections import (
     CompleteConstructionSummaryProjection,
     CompleteConstructionSummaryRow,
@@ -176,10 +179,10 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
     if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
         assert projection.projection_id == (
             "hop:complete-construction-summary/"
-            "daae915ce18e3929e2bce8666f8b788a067de233dc74b6890c0c81ace5bbc60b@1"
+            "4f580d631528d6f21dae8963347f1d334a3588aaae253ec9db808ed757b41752@1"
         )
         assert sha256_digest(render_projection_json(projection)) == (
-            "sha256:e1b528c3651a00f66df2bd89b94fdbacc077ae38ea4c2f99191c52e9d45b359e"
+            "sha256:ab2a1a02d90d46db87e7c8e119a11ec5244a1982d41ed19d5f655936e12f23c9"
         )
 
     json_bytes = render_projection_json(projection)
@@ -254,13 +257,18 @@ def test_complete_summary_preserves_infeasible_and_truncated_evidence(tmp_path: 
 
 def test_complete_summary_preserves_per_combination_truncation(tmp_path: Path) -> None:
     request, foldback, basal, design, _, _ = _clone_request(tmp_path)
-    reverse = request.materialization.hairpin_pcr_reverse_primer
-    assert reverse is not None and request.release is not None
+    auxiliaries = request.materialization.endpoint_auxiliaries
+    assert auxiliaries is not None and request.release is not None
+    reverse_policy = auxiliaries.reverse_primer
+    assert isinstance(reverse_policy, FixedEndpointPrimerPolicy)
+    reverse = reverse_policy.primer
     data = request.model_dump(by_alias=True)
-    data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["sequence_5prime"] = (
-        reverse_complement_iupac("AGAGACCAGAGACC") + reverse.annealing_sequence
-    )
-    del data["materialization"]["hairpin_pcr_reverse_primer"]["oligo"]["material_id"]
+    data["materialization"]["endpoint_auxiliaries"]["reverse_primer"]["primer"]["oligo"][
+        "sequence_5prime"
+    ] = reverse_complement_iupac("AGAGACCAGAGACC") + reverse.annealing_sequence
+    del data["materialization"]["endpoint_auxiliaries"]["reverse_primer"]["primer"]["oligo"][
+        "material_id"
+    ]
     data["release"]["max_site_pairs"] = 1
     bounded = type(request).model_validate(data)
     source = discover_constructions(

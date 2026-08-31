@@ -21,7 +21,7 @@ No physical construction, QC, or activity record is attached.
 | --- | --- |
 | Maturity | HOP is alpha software; schemas and public APIs may change before 1.0. |
 | Published release | [v0.1.0a7](https://github.com/e-south/hop-design/releases/tag/v0.1.0a7), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7). |
-| Source line | The unreleased v0.1.0a8 candidate contains the construction-contract v4 cutover; use tagged v0.1.0a7 documentation with the published wheel. |
+| Source line | The unreleased v0.1.0a8 candidate contains the construction-contract v5 cutover; use tagged v0.1.0a7 documentation with the published wheel. |
 | Distribution | Release artifacts are published through [GitHub Releases](https://github.com/e-south/hop-design/releases), not PyPI. |
 
 ## Choose a route
@@ -53,6 +53,11 @@ geometry, route-level source partitioning, and downstream endpoint
 materialization are separate bounded competencies. HOP preserves every valid
 result in canonical order; a study chooses which route to test.
 
+Construction v5 resolves PCR endpoint auxiliaries through explicit `derive`,
+`constrain`, or `fixed` policies and consumes selected replay-verified source
+partitions in complete routes. It adds no thermodynamic rank or hidden handle;
+concise grouped CLI navigation remains open product work.
+
 ## Claim boundary
 
 A compiled encoding establishes deterministic design derivation. A verified
@@ -72,5 +77,4 @@ system evaluates a destination.
 - Contributors use [CONTRIBUTING.md](CONTRIBUTING.md) and the maintainer-facing
   [architecture](ARCHITECTURE.md), [design contracts](DESIGN.md), and
   [reliability guarantees](RELIABILITY.md).
-- Report bugs and proposals through [GitHub Issues](https://github.com/e-south/hop-design/issues).
-  Report vulnerabilities through [SECURITY.md](SECURITY.md).
+- Report bugs through [GitHub Issues](https://github.com/e-south/hop-design/issues) and vulnerabilities through [SECURITY.md](SECURITY.md).
