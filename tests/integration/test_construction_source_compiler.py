@@ -303,6 +303,53 @@ def test_selected_pair_rejects_an_unknown_realization_id(tmp_path: Path) -> None
         )
 
 
+def test_selected_pair_rejects_an_unknown_basal_realization_id(tmp_path: Path) -> None:
+    _, foldback, basal, source = _selected_inputs(tmp_path)
+
+    with pytest.raises(ValueError, match="selected basal realization was not found"):
+        construction.compile_construction_from_local_realizations(
+            _write_source(tmp_path / "unknown-basal.yaml", source),
+            design_bundle_path=tmp_path / "selected" / "design",
+            foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+            basal=_local_receipt(tmp_path / "basal.json", basal),
+            basal_realization_id=f"hop:basal-realization/{'a' * 64}@1",
+        )
+
+
+def test_selected_pair_requires_replay_verified_local_receipts(tmp_path: Path) -> None:
+    _, foldback, basal, source = _selected_inputs(tmp_path)
+
+    with pytest.raises(TypeError, match="replay-verified local receipts"):
+        construction.compile_construction_from_local_realizations(
+            _write_source(tmp_path / "raw-receipt.yaml", source),
+            design_bundle_path=tmp_path / "selected" / "design",
+            foldback=foldback,  # type: ignore[arg-type]
+            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+            basal=_local_receipt(tmp_path / "basal.json", basal),
+            basal_realization_id=basal.realizations[0].basal_realization_id,
+        )
+
+
+def test_selected_pair_rejects_a_direct_construction_source(tmp_path: Path) -> None:
+    _, foldback, basal, _ = _selected_inputs(tmp_path)
+    source = _source(
+        foldback=foldback.neighborhood.request,
+        endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
+        materialization=_materialization(),
+    )
+
+    with pytest.raises(ValueError, match="requires a PCR-bearing construction source"):
+        construction.compile_construction_from_local_realizations(
+            _write_source(tmp_path / "direct-selected.yaml", source),
+            design_bundle_path=tmp_path / "selected" / "design",
+            foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+            basal=_local_receipt(tmp_path / "basal.json", basal),
+            basal_realization_id=basal.realizations[0].basal_realization_id,
+        )
+
+
 def test_selected_pair_rejects_local_receipts_with_reversed_families(tmp_path: Path) -> None:
     _, foldback, basal, source = _selected_inputs(tmp_path)
 
@@ -313,6 +360,20 @@ def test_selected_pair_rejects_local_receipts_with_reversed_families(tmp_path: P
             foldback=_local_receipt(tmp_path / "basal.json", basal),
             foldback_realization_id=foldback.realizations[0].foldback_realization_id,
             basal=_local_receipt(tmp_path / "foldback.json", foldback),
+            basal_realization_id=basal.realizations[0].basal_realization_id,
+        )
+
+
+def test_selected_pair_rejects_a_basal_receipt_with_the_wrong_family(tmp_path: Path) -> None:
+    _, foldback, basal, source = _selected_inputs(tmp_path)
+
+    with pytest.raises(ValueError, match="basal receipt has the wrong local family"):
+        construction.compile_construction_from_local_realizations(
+            _write_source(tmp_path / "basal-family.yaml", source),
+            design_bundle_path=tmp_path / "selected" / "design",
+            foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+            basal=_local_receipt(tmp_path / "wrong-basal.json", foldback),
             basal_realization_id=basal.realizations[0].basal_realization_id,
         )
 
@@ -329,6 +390,29 @@ def test_selected_pair_rejects_a_receipt_from_another_source_request(tmp_path: P
     with pytest.raises(ValueError, match="foldback receipt does not derive from the construction"):
         construction.compile_construction_from_local_realizations(
             _write_source(tmp_path / "mismatch.yaml", mismatched),
+            design_bundle_path=tmp_path / "selected" / "design",
+            foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+            basal=_local_receipt(tmp_path / "basal.json", basal),
+            basal_realization_id=basal.realizations[0].basal_realization_id,
+        )
+
+
+def test_selected_pair_rejects_a_basal_receipt_from_another_source_request(
+    tmp_path: Path,
+) -> None:
+    _, foldback, basal, source = _selected_inputs(tmp_path)
+    assert source.basal is not None
+    enumeration = source.basal.enumeration.model_copy(
+        update={"max_search_nodes": source.basal.enumeration.max_search_nodes + 1}
+    )
+    mismatched = source.model_copy(
+        update={"basal": source.basal.model_copy(update={"enumeration": enumeration})}
+    )
+
+    with pytest.raises(ValueError, match="basal receipt does not derive from the construction"):
+        construction.compile_construction_from_local_realizations(
+            _write_source(tmp_path / "basal-mismatch.yaml", mismatched),
             design_bundle_path=tmp_path / "selected" / "design",
             foldback=_local_receipt(tmp_path / "foldback.json", foldback),
             foldback_realization_id=foldback.realizations[0].foldback_realization_id,
