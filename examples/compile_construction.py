@@ -70,6 +70,7 @@ def compile_example(
                 verified,
                 family="foldback",
             ),
+            "navigation": construction.project_construction_navigation(verified),
             "summary": construction.project_complete_construction_summary(verified),
         }
         if verified.endpoint != "ssdna_hairpin":
@@ -83,10 +84,18 @@ def compile_example(
                 }
             )
         if trajectory_realization_id is not None:
+            selection = construction.select_construction_realization(
+                verified,
+                materialized_realization_id=trajectory_realization_id,
+            )
+            selection.write(output / "selected-route.json")
             projections["trajectory"] = construction.project_construction_trajectory(
                 verified,
                 materialized_realization_id=trajectory_realization_id,
             )
+            selection_sha256 = hashlib.sha256(selection.json_bytes).hexdigest()
+        else:
+            selection_sha256 = None
         for name, projection in projections.items():
             projection.write(output / "projections" / name)
 
@@ -117,6 +126,7 @@ def compile_example(
         },
         "result_id": verified.result_id,
         "schema": "hop.construction-dogfood/v1",
+        "selection_sha256": selection_sha256,
         "selected_trajectory_realization_id": trajectory_realization_id,
         "status": verified.status,
     }

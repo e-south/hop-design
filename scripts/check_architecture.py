@@ -37,6 +37,18 @@ FORBIDDEN_BY_LAYER = {
         "serialization",
         "views",
     },
+    "commands": {
+        "catalog",
+        "cli",
+        "design",
+        "discovery",
+        "export",
+        "kernel",
+        "methods",
+        "models",
+        "serialization",
+        "views",
+    },
     "serialization": {
         "api",
         "catalog",

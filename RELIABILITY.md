@@ -7,7 +7,7 @@ audience:
   - bundle consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-08-31
 doc_type: reference
 ---
 
@@ -108,6 +108,9 @@ result, so a checksum-consistent subset, reordering, or extra row is rejected.
 Complete construction composition computes the nominal local Cartesian
 cardinality before evaluation, examines only its canonical bounded prefix, and
 records accepted plus rejected dispositions for every examined combination.
+Selected-pair composition instead records the explicit foldback and basal
+selection in the request and evaluates exactly that one replay-verified pair;
+absent selection fields do not alter exhaustive compilation bytes.
 `complete` and `infeasible` require full nominal exhaustion; `truncated`
 requires an exact local or composition reason. Accepted realizations remain
 separately identifiable even when achieved-geometry or final-product groups
@@ -165,11 +168,20 @@ profile, route, source endpoint, or corrupted bundle. Construction sources are
 bounded regular nonsymlink JSON/YAML mappings read through one checked file
 descriptor. Duplicate keys and YAML aliases, anchors, and merge keys are
 rejected before model validation. Sources dispatch only the exact
-`hop.construction-source/v3` schema; the design authority is loaded from a
-separate verified bundle path. The built-in SVG renderer has no plotting
-dependency and consumes only a typed workflow view. Optional future renderers
-may be absent without blocking the typed plan, but they may not recompute
-molecular state.
+`hop.construction-source/v5` schema; the design authority is loaded from a
+separate verified bundle path. Each accepted route replays its declared source
+ssDNA and two source-preparation primers into the exact duplex that seeds
+downstream construction. For PCR-bearing endpoints, a separate policy resolves
+the adapter and two endpoint primers in `derive`, `constrain`, or `fixed` mode.
+Derived and constrained primers bind invariant construction sequence outside
+the payload; constrained reusable handles are caller-authored, not silently
+generated or ranked. Direct ssDNA-hairpin routes reject endpoint auxiliaries.
+When composition binds a selected replay-verified source partition, route
+verification replays its prepared duplex, enzyme definitions, concurrent nick
+program, inclusive fragment rule, and required survivors. The built-in SVG
+renderer has no plotting dependency and consumes only a typed workflow view.
+Optional future renderers may be absent without blocking the typed plan, but
+they may not recompute molecular state.
 
 Standalone local-neighborhood requests retain the one-megabyte authored-source
 limit and may declare at most 100,000 search nodes and 100,000 realizations.

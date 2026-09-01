@@ -18,17 +18,26 @@ import json
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     CompleteConstructionSummaryProjection,
+    ConstructionNavigationProjection,
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
     RelaxationFrontierProjection,
 )
 
+from .navigation_csv import render_navigation_projection_csv
+
 
 def render_projection_csv(
-    projection: LocalScientificProjection | CompleteConstructionSummaryProjection,
+    projection: (
+        LocalScientificProjection
+        | CompleteConstructionSummaryProjection
+        | ConstructionNavigationProjection
+    ),
 ) -> bytes:
     """Render one projection with repeated context and lossless exact membership."""
     buffer = io.StringIO(newline="")
+    if isinstance(projection, ConstructionNavigationProjection):
+        return render_navigation_projection_csv(projection)
     if isinstance(projection, CompleteConstructionSummaryProjection):
         _write_complete(buffer, projection)
     elif isinstance(projection, FoldbackFeasibilityProjection):
@@ -67,6 +76,7 @@ def _write_complete(
         "basal_realization_id",
         "disposition",
         "rejection_reason",
+        "truncation_reason",
         "materialized_realization_id",
         "achieved_geometry_group_key",
         "final_product_group_key",
@@ -135,6 +145,7 @@ def _write_complete(
                 "rejection_reason": (
                     "" if row.rejection_reason is None else row.rejection_reason.value
                 ),
+                "truncation_reason": row.truncation_reason or "",
                 "materialized_realization_id": row.materialized_realization_id or "",
                 "achieved_geometry_group_key": row.achieved_geometry_group_key or "",
                 "final_product_group_key": row.final_product_group_key or "",

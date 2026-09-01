@@ -12,7 +12,13 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from hop_design.design.construction.complete.discovery import VerifiedConstructionSpaceResult
+from hop_design.design.construction.complete.replay_admission import (
+    has_current_replay_admission,
+)
 from hop_design.models.construction import RealizationGrouping
+from hop_design.models.construction.complete.material.inventory import (
+    required_external_materials,
+)
 from hop_design.models.construction.projections import (
     CompleteConstructionSummaryProjection,
     CompleteConstructionSummaryRow,
@@ -23,12 +29,11 @@ from hop_design.serialization import canonical_json_bytes
 def _admit_source(source: VerifiedConstructionSpaceResult) -> VerifiedConstructionSpaceResult:
     if not isinstance(source, VerifiedConstructionSpaceResult):
         raise TypeError("Complete construction projections require a verified source result.")
-    return VerifiedConstructionSpaceResult(
-        result=source.result,
-        foldback=source.foldback,
-        basal=source.basal,
-        design=source.design,
-    )
+    if not has_current_replay_admission(source, source.result):
+        raise ValueError(
+            "Construction space result disagrees with deterministic composition replay."
+        )
+    return source
 
 
 def project_complete_construction_summary(
@@ -64,6 +69,7 @@ def project_complete_construction_summary(
                 basal_realization_id=disposition.basal_realization_id,
                 status=disposition.status,
                 rejection_reason=disposition.rejection_reason,
+                truncation_reason=disposition.truncation_reason,
                 materialized_realization_id=disposition.materialized_realization_id,
                 achieved_geometry_group_key=(
                     None
@@ -81,7 +87,9 @@ def project_complete_construction_summary(
                 material_ids=(
                     ()
                     if realization is None
-                    else tuple(item.material_id for item in realization.materials)
+                    else tuple(
+                        item.material_id for item in required_external_materials(realization)
+                    )
                 ),
                 route_material_dispositions=(
                     () if realization is None else realization.route_material_dispositions
@@ -89,12 +97,15 @@ def project_complete_construction_summary(
                 source_material_nt=(
                     0
                     if realization is None
-                    else sum(len(item.sequence_5prime) for item in realization.materials[:2])
+                    else len(realization.source_preparation.source_ssdna.sequence_5prime)
                 ),
                 auxiliary_material_nt=(
                     0
                     if realization is None
-                    else sum(len(item.sequence_5prime) for item in realization.materials[2:])
+                    else sum(
+                        len(item.sequence_5prime)
+                        for item in required_external_materials(realization)[1:]
+                    )
                 ),
                 endpoint_product_nt=(
                     0

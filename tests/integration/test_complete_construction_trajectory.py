@@ -33,9 +33,8 @@ from hop_design.models.construction.projections import (
     CompleteConstructionTrajectoryProjection,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import reverse_complement_iupac
-from hop_design.serialization import canonical_json_bytes
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 from tests.integration.test_complete_construction_bundle import _verified_construction
 from tests.integration.test_complete_construction_clone import _clone_request
 from tests.integration.test_complete_construction_discovery import (
@@ -91,7 +90,12 @@ def _verified_clone_source(tmp_path: Path) -> VerifiedConstructionSpaceResult:
 def _source_with_rejection(tmp_path: Path) -> VerifiedConstructionSpaceResult:
     source = _verified_construction(tmp_path)
     request_data = source.result.request.model_dump(mode="python")
-    request_data["materialization"]["source_complement_five_prime_end"] = EndChemistry.HYDROXYL
+    request_data["materialization"]["source_preparation"]["source_ssdna"] = {
+        "mode": "fixed",
+        "material": source.result.realizations[0].source_preparation.source_ssdna.model_dump(
+            mode="python"
+        ),
+    }
     request = ConstructionDiscoveryRequest.model_validate(request_data)
     return discover_constructions(
         request,
@@ -226,8 +230,8 @@ def test_complete_trajectory_embeds_one_selected_route_verbatim(
         materialized_realization_id=selected.materialized_realization_id,
     )
 
-    assert projection.schema_id == "hop.complete-construction-trajectory/v2"
-    assert projection.renderer_version == "complete-construction-trajectory/1"
+    assert projection.schema_id == "hop.complete-construction-trajectory/v3"
+    assert projection.renderer_version == "complete-construction-trajectory/2"
     assert projection.source_result_id == source.result.result_id
     assert projection.composition_ordinal == disposition.ordinal
     assert projection.realization == selected
@@ -286,6 +290,47 @@ def test_complete_trajectory_embeds_one_selected_route_verbatim(
                 assert f'data-complement-cut="{complement_cut}"' in svg
     assert "Digital route only" in svg
     assert "No physical construction, QC, or biological activity is established." in svg
+
+
+def test_complete_trajectory_starts_with_recorded_source_duplex_preparation(
+    tmp_path: Path,
+) -> None:
+    source = _verified_construction(tmp_path)
+    selected = source.result.realizations[0]
+    preparation = selected.source_preparation
+    projection = project_complete_construction_trajectory(
+        source,
+        materialized_realization_id=selected.materialized_realization_id,
+    )
+
+    svg = render_projection_svg(projection).decode()
+
+    assert selected.construction_program.states[0] == preparation.product_state
+    assert f'data-source-preparation-id="{preparation.authority_id}"' in svg
+    assert f'data-source-preparation-pre-state="{preparation.pre_state_id}"' in svg
+    assert f'data-source-preparation-post-state="{preparation.post_state_id}"' in svg
+    expected_materials = (
+        ("source_ssdna", preparation.source_ssdna),
+        ("source_forward_primer", preparation.forward_primer.oligo),
+        ("source_reverse_primer", preparation.reverse_primer.oligo),
+    )
+    for role, material in expected_materials:
+        assert f'data-source-preparation-material-role="{role}"' in svg
+        assert f'data-material-id="{material.material_id}"' in svg
+        assert f'data-material-sequence="{material.sequence_5prime}"' in svg
+        assert f'data-material-five-prime-end="{material.five_prime_end.value}"' in svg
+        assert f'data-material-three-prime-end="{material.three_prime_end.value}"' in svg
+    for binding in preparation.bindings:
+        assert f'data-source-preparation-binding-id="{binding.binding_id}"' in svg
+        assert f'data-primer-id="{binding.primer_id}"' in svg
+        assert f'data-template-strand-id="{binding.template_strand_id}"' in svg
+        assert f'data-template-start="{binding.template_span.start.offset}"' in svg
+        assert f'data-template-end="{binding.template_span.end.offset}"' in svg
+        assert f'data-binding-orientation="{binding.orientation.value}"' in svg
+    assert "Template copy produces the exact source duplex." in svg
+    preparation_index = svg.index(f'data-source-preparation-id="{preparation.authority_id}"')
+    first_program_state_index = svg.index(f'data-state-id="{preparation.product_state.state_id}"')
+    assert preparation_index < first_program_state_index
 
 
 @pytest.mark.parametrize(
@@ -373,6 +418,11 @@ def test_complete_trajectory_rejects_unverified_sources_and_forged_admission(
     object.__setattr__(forged, "foldback", source.foldback)
     object.__setattr__(forged, "basal", source.basal)
     object.__setattr__(forged, "design", source.design)
+    object.__setattr__(
+        forged,
+        "_result_digest",
+        sha256_digest(canonical_json_bytes(forged.result)),
+    )
     with pytest.raises(ValueError, match="deterministic composition replay"):
         project_complete_construction_trajectory(
             forged,

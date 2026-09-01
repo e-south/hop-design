@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-08-31
 doc_type: how-to
 journey:
   - discover
@@ -51,25 +51,76 @@ evidence rather than design identity. PCR-bearing endpoints require basal
 selection. Direct single-stranded design compilation is deferred because this
 operation has no independent exact-basal input and does not invent one.
 
+Compile only the endpoint-required local realizations against the matching
+design when the scientific question concerns an explicit route rather than the
+complete local Cartesian product:
+
+```python
+selected = construction.compile_construction_from_local_realizations(
+    "construction.yaml",
+    design_bundle_path="design-bundle",
+    foldback=verified_foldback_receipt,
+    foldback_realization_id=selected_foldback_id,
+    basal=verified_basal_receipt,
+    basal_realization_id=selected_basal_id,
+)
+```
+
+For a direct `ssdna_hairpin`, omit `basal` and `basal_realization_id`. For a
+PCR-bearing endpoint, both basal arguments are required. Every receipt must
+derive from the exact local request in the construction source. The returned
+receipt uses the ordinary portable construction authority and reports one
+nominal and one examined combination. HOP evaluates the selection; it does not
+choose it or reinterpret its deterministic ordinal as a score.
+
+One replay-verified source partition may be bound to either endpoint form:
+
+```python
+selected = construction.compile_construction_from_local_realizations(
+    "construction.yaml",
+    design_bundle_path="design-bundle",
+    foldback=verified_foldback_receipt,
+    foldback_realization_id=selected_foldback_id,
+    source_partition=verified_partition_receipt,
+    source_partition_realization_id=selected_partition_id,
+)
+```
+
+The selected partition must describe the same prepared source duplex, use the
+same characterized enzyme definitions, and replay the route's concurrent nicks,
+denatured fragments, inclusive selection, and required survivors. A selected
+member remains exact even when its parent partition search was truncated. Once
+selected, that partition is consumed and sealed by complete-route replay; a
+caller does not need to restate its cuts, fragments, or survivor relation.
+
 ## Prepare the two authorities
 
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v3`; and
+   `hop.construction-source/v5`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
-request, the requested endpoint, exact route materials, whole-route
+request, the requested endpoint, how the source ssDNA and its preparation
+primers are resolved, endpoint-dependent auxiliary materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v3
+schema: hop.construction-source/v5
 foldback: <hop.local-neighborhood-request/v3 mapping>
 basal: <hop.local-neighborhood-request/v3 mapping or null>
 composition:
   endpoint: ssdna_hairpin | hairpin_pcr_duplex | clone_ready_duplex
-  materialization: <exact linear-source materials and end chemistry>
+  materialization:
+    source_preparation:
+      source_ssdna: <derive or fixed source-ssDNA policy>
+      forward_primer: <derive, constrain, or fixed source-primer policy>
+      reverse_primer: <derive, constrain, or fixed source-primer policy>
+    endpoint_auxiliaries:
+      adapter: <derive, constrain, or fixed adapter policy>
+      forward_primer: <derive, constrain, or fixed endpoint-primer policy>
+      reverse_primer: <derive, constrain, or fixed endpoint-primer policy>
   release: <exact oriented Type IIS endpoint release or null>
   whole_route_constraints: <intrinsic route constraints>
   enumeration:
@@ -84,13 +135,68 @@ the design bundle outside the source document. YAML anchors, aliases, and merge
 keys are rejected. The source cannot author design, result, realization,
 projection, output-path, timestamp, or environment identities.
 
+Source preparation is an explicit modeled relation:
+
+```text
+source ssDNA + two source-preparation primers
+    -> exact copied source duplex
+```
+
+The source ssDNA is the first external route material. The copied duplex is a
+derived route state, not another material for the caller to provide. Source
+primer annealing is resolved outside the payload and its terminal chemistry is
+validated before the copied duplex can seed downstream construction.
+
+`endpoint_auxiliaries` is separate and is required only for PCR-bearing
+endpoints after the ssDNA hairpin has formed. Each nested policy has one exact
+meaning:
+
+- `derive`: HOP derives the adapter from the selected basal pairing segment or
+  a primer from the exact PCR template at one caller-authored annealing length;
+- `constrain`: HOP appends one explicit caller-supplied adapter or primer handle
+  and chooses the shortest valid primer annealing length inside the declared
+  inclusive range; and
+- `fixed`: the caller supplies one exact material and HOP verifies its sequence,
+  annealing relation, and terminal chemistry.
+
+The adapter always preserves the selected basal pairing segment. A derived or
+constrained forward primer binds within the invariant source-side construction
+prefix, and its reverse counterpart binds within the adapter. Neither may
+anneal across the payload. HOP performs no Tm, yield, or empirical ranking, and
+does not generate a reusable handle that the caller did not specify.
+
+Representative policy shapes are:
+
+```yaml
+endpoint_auxiliaries:
+  adapter:
+    mode: constrain
+    three_prime_handle_sequence: <explicit reusable DNA handle>
+  forward_primer:
+    mode: derive
+    annealing_length_nt: <positive integer>
+    five_prime_end: hydroxyl
+  reverse_primer:
+    mode: constrain
+    min_annealing_length_nt: <positive integer>
+    max_annealing_length_nt: <positive integer>
+    five_prime_handle_sequence: <explicit DNA handle or empty string>
+    five_prime_end: hydroxyl
+```
+
+A constrained primer deterministically uses its minimum declared annealing
+length when that length fits the invariant binding region. A fixed adapter uses
+`material`; a fixed endpoint primer uses `primer`. Those mappings use the exact
+construction-material and PCR-primer contracts rather than free-form sequence
+strings. A direct `ssdna_hairpin` omits `endpoint_auxiliaries` entirely.
+
 Endpoint obligations fail closed:
 
-| Endpoint | Basal request | Adapter and primers | Type IIS end generation |
-| --- | --- | --- | --- |
-| `ssdna_hairpin` | omitted | omitted | omitted |
-| `hairpin_pcr_duplex` | required | required | omitted |
-| `clone_ready_duplex` | required PCR-intermediate authority | required | required by the endpoint release request |
+| Endpoint | Source preparation | Basal request | Endpoint adapter and primers | Type IIS end generation |
+| --- | --- | --- | --- | --- |
+| `ssdna_hairpin` | required | omitted | omitted | omitted |
+| `hairpin_pcr_duplex` | required | required | required | omitted |
+| `clone_ready_duplex` | required | required PCR-intermediate authority | required | required by the endpoint release request |
 
 The foldback and basal requests, when both are present, must describe the same
 payload space. The exact payload in the verified design must belong to that
@@ -169,6 +275,28 @@ grouping. A trajectory requires an explicitly supplied accepted realization
 identity; HOP does not choose an exemplar. Foldback and basal feasibility plus
 their relaxation frontiers are available through the corresponding projection
 operations. A basal projection rejects a construction with no basal authority.
+
+The same verified authority is navigable without importing Python:
+
+```bash
+hop-design construction summary construction-bundle
+hop-design construction list construction-bundle --group-by geometry
+hop-design construction inspect construction-bundle REALIZATION_ID \
+  --out construction-trajectory
+hop-design construction select construction-bundle REALIZATION_ID \
+  --out selected-route.json
+hop-design construction inspect construction-bundle \
+  --selection selected-route.json
+```
+
+Listing defaults to accepted routes grouped by achieved geometry in canonical
+replay order. Explicit filters and sorts do not change the result authority.
+`--limit` bounds displayed rows only; verified search status, accounting, and
+membership remain intact. Canonical ordinal is not a rank. A selection is a
+create-only reference bound to the verified source result and one accepted
+materialized realization; it neither removes alternatives nor endorses a route.
+See the [CLI reference](../reference/cli.md#construction-navigation) for the
+complete option contract.
 
 Each `ConstructionProjection` contains canonical JSON, deterministic SVG, and
 CSV when the projection defines a table. Projection directories are also

@@ -45,14 +45,23 @@ from hop_design.models.construction.complete import (
     ConstructionStatePhase,
     ConstructionTransition,
     ConstructionTransitionKind,
+    DerivedPrimerPolicy,
+    DerivedSourceSsdnaPolicy,
     DesignAuthorityReference,
+    EndpointAuxiliaryPolicy,
     ExactConstructionMaterial,
     ExactStateRelation,
+    FixedAdapterPolicy,
+    FixedEndpointPrimerPolicy,
     LinearSourceMaterializationSpec,
-    MaterialOrigin,
+    MaterialResolutionMode,
+    MaterialRouteEntry,
+    MaterialUse,
+    MaterialUseRole,
     PcrPrimer,
     ReactionBoundaryMapping,
     ReleaseSideRequirement,
+    SourceDuplexPreparationPolicy,
     TypeIisReleaseRequest,
     WholeRouteConstraints,
 )
@@ -92,13 +101,31 @@ def _payload() -> FinalPayloadReference:
     )
 
 
-def _material(material_id: str, sequence: str) -> ExactConstructionMaterial:
+def _material(_role: str, sequence: str) -> ExactConstructionMaterial:
     return ExactConstructionMaterial(
-        material_id=material_id,
-        origin=MaterialOrigin.SYNTHESIZED,
         sequence_5prime=sequence,
         five_prime_end=EndChemistry.PHOSPHATE,
         three_prime_end=EndChemistry.HYDROXYL,
+    )
+
+
+def _prepared_material_uses(
+    source: ExactConstructionMaterial,
+    complement: ExactConstructionMaterial,
+) -> tuple[MaterialUse, MaterialUse]:
+    return (
+        MaterialUse.create(
+            material_id=source.material_id,
+            role=MaterialUseRole.PREPARED_SOURCE_REFERENCE,
+            specification_resolution_mode=MaterialResolutionMode.DERIVE,
+            route_entry=MaterialRouteEntry.MODELED_PRODUCT,
+        ),
+        MaterialUse.create(
+            material_id=complement.material_id,
+            role=MaterialUseRole.PREPARED_SOURCE_COMPLEMENT,
+            specification_resolution_mode=MaterialResolutionMode.DERIVE,
+            route_entry=MaterialRouteEntry.MODELED_PRODUCT,
+        ),
     )
 
 
@@ -122,29 +149,43 @@ def _design() -> DesignAuthorityReference:
 
 def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
     materialization = LinearSourceMaterializationSpec(
-        source_origin=MaterialOrigin.SYNTHESIZED,
-        source_five_prime_end=EndChemistry.HYDROXYL,
-        source_three_prime_end=EndChemistry.HYDROXYL,
-        source_complement_origin=MaterialOrigin.SYNTHESIZED,
-        source_complement_five_prime_end=EndChemistry.PHOSPHATE,
-        source_complement_three_prime_end=EndChemistry.HYDROXYL,
-        adapter=(
-            None if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN else _material("adapter", "AGTC")
+        source_preparation=SourceDuplexPreparationPolicy(
+            source_ssdna=DerivedSourceSsdnaPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                five_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=EndChemistry.HYDROXYL,
+            ),
+            forward_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
+            reverse_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
         ),
-        forward_primer=(
+        endpoint_auxiliaries=(
             None
             if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-            else PcrPrimer(
-                oligo=_material("forward-primer", "GGACA"),
-                annealing_length_nt=5,
-            )
-        ),
-        reverse_primer=(
-            None
-            if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
-            else PcrPrimer(
-                oligo=_material("reverse-primer", "GGACA"),
-                annealing_length_nt=5,
+            else EndpointAuxiliaryPolicy(
+                adapter=FixedAdapterPolicy(
+                    mode=MaterialResolutionMode.FIXED,
+                    material=_material("adapter", "AGTC"),
+                ),
+                forward_primer=FixedEndpointPrimerPolicy(
+                    mode=MaterialResolutionMode.FIXED,
+                    primer=PcrPrimer(
+                        oligo=_material("forward-primer", "GGACA"),
+                        annealing_length_nt=5,
+                    ),
+                ),
+                reverse_primer=FixedEndpointPrimerPolicy(
+                    mode=MaterialResolutionMode.FIXED,
+                    primer=PcrPrimer(
+                        oligo=_material("reverse-primer", "GGACA"),
+                        annealing_length_nt=5,
+                    ),
+                ),
             )
         ),
     )
@@ -189,14 +230,16 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
 
 def test_direct_endpoint_forbids_adapter_and_pcr_materials() -> None:
     direct = _request(ConstructionEndpoint.SSDNA_HAIRPIN)
-    assert direct.schema_id == "hop.construction-discovery-request/v3"
+    assert direct.schema_id == "hop.construction-discovery-request/v5"
     assert direct.model_dump(mode="json", by_alias=True)["schema"] == direct.schema_id
     assert direct.basal_result_id is None
-    assert direct.materialization.adapter is None
+    assert direct.materialization.endpoint_auxiliaries is None
 
     data = direct.model_dump(mode="python")
-    data["materialization"]["adapter"] = _material("adapter", "AGTC")
-    with pytest.raises(ValidationError, match="must omit adapter and PCR primers"):
+    data["materialization"]["endpoint_auxiliaries"] = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+    ).materialization.endpoint_auxiliaries
+    with pytest.raises(ValidationError, match="must omit endpoint auxiliaries"):
         ConstructionDiscoveryRequest.model_validate(data)
 
 
@@ -208,7 +251,7 @@ def test_direct_endpoint_may_bind_a_basal_discovery_without_pcr_materials() -> N
     parsed = ConstructionDiscoveryRequest.model_validate(data)
 
     assert parsed.basal_result_id == data["basal_result_id"]
-    assert parsed.materialization.adapter is None
+    assert parsed.materialization.endpoint_auxiliaries is None
 
 
 def test_complete_request_declares_foldback_ssdna_as_an_intermediate_not_final_endpoint() -> None:
@@ -227,17 +270,16 @@ def test_complete_request_declares_foldback_ssdna_as_an_intermediate_not_final_e
     "endpoint",
     (ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, ConstructionEndpoint.CLONE_READY_DUPLEX),
 )
-def test_pcr_bearing_endpoints_require_basal_adapter_and_exact_primers(
+def test_pcr_bearing_endpoints_require_basal_and_auxiliary_policies(
     endpoint: ConstructionEndpoint,
 ) -> None:
     request = _request(endpoint)
     assert request.basal_result_id is not None
 
-    for field in ("adapter", "forward_primer", "reverse_primer"):
-        data = request.model_dump(mode="python")
-        data["materialization"][field] = None
-        with pytest.raises(ValidationError, match="require an exact adapter and both primers"):
-            ConstructionDiscoveryRequest.model_validate(data)
+    data = request.model_dump(mode="python")
+    data["materialization"]["endpoint_auxiliaries"] = None
+    with pytest.raises(ValidationError, match="require endpoint auxiliary policies"):
+        ConstructionDiscoveryRequest.model_validate(data)
 
 
 def test_material_and_design_authorities_are_sequence_and_digest_exact() -> None:
@@ -319,7 +361,7 @@ def test_material_and_design_authorities_are_sequence_and_digest_exact() -> None
     source["sequence_5prime"] = "NNNN"
     with pytest.raises(ValidationError):
         ExactConstructionMaterial.model_validate(source)
-    with pytest.raises(ValidationError, match="must be a DNA string"):
+    with pytest.raises(ValidationError, match="DNA sequence must be a string"):
         ExactConstructionMaterial.model_validate(source | {"sequence_5prime": 123})
 
     with pytest.raises(ValidationError, match="must be a DNA string"):
@@ -327,17 +369,31 @@ def test_material_and_design_authorities_are_sequence_and_digest_exact() -> None
             request.design.model_dump(mode="python") | {"payload_sequence": 123}
         )
 
-    duplicate_auxiliary = request.materialization.model_copy(
-        update={
-            "adapter": _material("duplicate", "AAAA"),
-            "forward_primer": PcrPrimer(
-                oligo=_material("duplicate", "CCCC"),
-                annealing_length_nt=4,
+    shared_material = _material("shared", "AAAA")
+    shared_auxiliary = LinearSourceMaterializationSpec(
+        source_preparation=request.materialization.source_preparation,
+        endpoint_auxiliaries=EndpointAuxiliaryPolicy(
+            adapter=FixedAdapterPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                material=shared_material,
             ),
-        }
+            forward_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(oligo=shared_material, annealing_length_nt=4),
+            ),
+            reverse_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(oligo=shared_material, annealing_length_nt=4),
+            ),
+        ),
     ).model_dump(mode="python")
-    with pytest.raises(ValidationError, match="ids must be unique"):
-        LinearSourceMaterializationSpec.model_validate(duplicate_auxiliary)
+    parsed = LinearSourceMaterializationSpec.model_validate(shared_auxiliary)
+    assert parsed.endpoint_auxiliaries is not None
+    adapter_policy = parsed.endpoint_auxiliaries.adapter
+    forward_policy = parsed.endpoint_auxiliaries.forward_primer
+    assert isinstance(adapter_policy, FixedAdapterPolicy)
+    assert isinstance(forward_policy, FixedEndpointPrimerPolicy)
+    assert adapter_policy.material == forward_policy.primer.oligo
 
 
 def test_complete_identity_bearing_groups_require_canonical_key_order() -> None:
@@ -364,18 +420,26 @@ def test_complete_identity_bearing_groups_require_canonical_key_order() -> None:
         )
 
 
-def test_linear_source_policy_declares_chemistry_without_preselecting_sequence() -> None:
+def test_linear_source_policy_declares_preparation_without_preselecting_sequence() -> None:
     policy = LinearSourceMaterializationSpec(
-        source_origin=MaterialOrigin.SYNTHESIZED,
-        source_five_prime_end=EndChemistry.PHOSPHATE,
-        source_three_prime_end=EndChemistry.HYDROXYL,
-        source_complement_origin=MaterialOrigin.SYNTHESIZED,
-        source_complement_five_prime_end=EndChemistry.PHOSPHATE,
-        source_complement_three_prime_end=EndChemistry.HYDROXYL,
+        source_preparation=SourceDuplexPreparationPolicy(
+            source_ssdna=DerivedSourceSsdnaPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                five_prime_end=EndChemistry.PHOSPHATE,
+                three_prime_end=EndChemistry.HYDROXYL,
+            ),
+            forward_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=8,
+            ),
+            reverse_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=8,
+            ),
+        ),
     )
 
-    assert not hasattr(policy, "source")
-    assert not hasattr(policy, "source_complement")
+    assert not hasattr(policy.source_preparation.source_ssdna, "material")
 
 
 def test_composition_policy_is_finite_and_pruning_is_closed() -> None:
@@ -407,6 +471,7 @@ def test_v1_whole_route_constraints_reject_unsupported_false_switches(field: str
 def test_reaction_lineage_uses_declared_occurrence_for_repeated_subsequences() -> None:
     source = _material("source", "AAAAAAAA")
     complement = _material("source-complement", "TTTTTTTT")
+    source_use, complement_use = _prepared_material_uses(source, complement)
     strands = reaction_molecule_strands(
         ReactionMolecule(
             molecule_id="top-4-8",
@@ -424,9 +489,36 @@ def test_reaction_lineage_uses_declared_occurrence_for_repeated_subsequences() -
             origin_strand=LineageStrand.PRIMARY,
         ),
         complement_occurrence=None,
+        source_use_id=source_use.use_id,
+        source_complement_use_id=complement_use.use_id,
     )
 
     assert tuple(item.origin_index for item in strands[0].lineage) == (4, 5, 6, 7)
+
+
+def test_reaction_lineage_requires_contextual_material_use_ids() -> None:
+    source = _material("source", "AAAAAAAA")
+    complement = _material("source-complement", "TTTTTTTT")
+
+    with pytest.raises(TypeError):
+        reaction_molecule_strands(
+            ReactionMolecule(
+                molecule_id="top-4-8",
+                reference_sequence_5prime="AAAA",
+                complement_sequence_5prime=None,
+            ),
+            namespace="repeated",
+            source=source,
+            source_complement=complement,
+            reference_occurrence=MaterialOccurrence(
+                start=4,
+                length=4,
+                five_prime_end=EndChemistry.PHOSPHATE,
+                three_prime_end=EndChemistry.HYDROXYL,
+                origin_strand=LineageStrand.PRIMARY,
+            ),
+            complement_occurrence=None,
+        )
 
 
 def _strand(strand_id: str, sequence: str) -> MolecularStrand:
@@ -685,6 +777,7 @@ def test_construction_states_reject_incoherent_associations_and_identity() -> No
 def test_lineage_mapping_rejects_missing_or_inexact_material_occurrences() -> None:
     source = _material("source", "AAAACCCC")
     complement = _material("source-complement", "GGGGTTTT")
+    source_use, complement_use = _prepared_material_uses(source, complement)
     molecule = ReactionMolecule(
         molecule_id="duplex",
         reference_sequence_5prime="AAAA",
@@ -705,6 +798,8 @@ def test_lineage_mapping_rejects_missing_or_inexact_material_occurrences() -> No
             source_complement=complement,
             reference_occurrence=occurrence,
             complement_occurrence=None,
+            source_use_id=source_use.use_id,
+            source_complement_use_id=complement_use.use_id,
         )
     for start, message in ((6, "lie within"), (4, "replay the exact material bytes")):
         with pytest.raises(ValueError, match=message):
@@ -725,6 +820,8 @@ def test_lineage_mapping_rejects_missing_or_inexact_material_occurrences() -> No
                     origin_strand=LineageStrand.PRIMARY,
                 ),
                 complement_occurrence=None,
+                source_use_id=source_use.use_id,
+                source_complement_use_id=complement_use.use_id,
             )
     with pytest.raises(ValueError, match="preserve the complete exact source duplex"):
         whole_source_occurrences(

@@ -29,7 +29,7 @@ from hop_design.models.reactions import (
 )
 
 from .evaluation_inputs import derive_linear_source_embedding
-from .request import ExactConstructionMaterial
+from .material import ExactConstructionMaterial
 from .route_lineage import lift_reaction_molecules
 
 

@@ -105,14 +105,24 @@ enzyme performance.
 
 ## Complete construction projections
 
-`hop.complete-construction-summary/v1` is the lossless tabular relation over
-one verified complete result. Its rows preserve the exact examined Cartesian
-prefix: accepted rows carry materialized route, achieved-geometry, final-
-product, endpoint, and material facts; rejected rows carry one derived
-rejection reason. Counts, failure partitions, material totals, group
-membership, and truncation evidence replay the source result exactly.
+`hop.complete-construction-summary/v2` is the lossless tabular receipt over one
+verified complete result. Its rows preserve the exact examined Cartesian
+prefix: accepted rows carry materialized route, achieved-geometry,
+final-product, endpoint, and material facts; rejected and truncated rows carry
+evidence only. Counts, failure partitions, material totals, group membership,
+and truncation evidence replay the source result exactly.
 
-`hop.complete-construction-trajectory/v2` embeds the exact chronology of one
+`hop.construction-navigation/v1` is a narrow non-authoritative overlay around
+the unchanged summary v2 relation. Its accepted-route records add only typed
+foldback and basal geometry, exact relaxation state, the sorted enzyme IDs from
+the declared cleavage programs, retained non-payload sequence, and endpoint
+topology. Rejected and truncated dispositions, accounting, failures,
+provenance, and claims remain solely in the nested summary. Geometry groups
+describe the shared achieved geometry and retain every exact member identity;
+no representative is selected. Renderer evolution does not alter the
+construction result or bundle authority.
+
+`hop.complete-construction-trajectory/v3` embeds the exact source preparation and chronology of one
 explicitly selected accepted materialized realization. It has no CSV form
 because it is a structured molecular-state sequence rather than a table. The
 public operation requires `materialized_realization_id`; HOP never selects an
@@ -122,7 +132,8 @@ The public `ConstructionProjection` packet provides canonical JSON,
 deterministic SVG, and CSV when the projection defines a table. Packet writing
 is atomic and create-only. The packet carries its projection schema, projection
 identity, source-result identity, and renderer version while keeping the raw
-projection model internal.
+projection model internal. Formats are rendered when requested; a JSON-only
+navigation query does not construct unused CSV or SVG bytes.
 
 Complete projections are reversible views, not authority bundles. They cannot
 establish physical execution, recovery, destination compatibility, QC,

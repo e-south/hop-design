@@ -24,6 +24,11 @@ from .local import (
     RelaxationFrontierProjection,
     RelaxationShellProjection,
 )
+from .navigation import (
+    ConstructionNavigationAcceptedRoute,
+    ConstructionNavigationGeometryGroup,
+    ConstructionNavigationProjection,
+)
 from .trajectory import CompleteConstructionTrajectoryProjection
 
 __all__ = [
@@ -32,6 +37,9 @@ __all__ = [
     "CompleteConstructionSummaryProjection",
     "CompleteConstructionSummaryRow",
     "CompleteConstructionTrajectoryProjection",
+    "ConstructionNavigationAcceptedRoute",
+    "ConstructionNavigationGeometryGroup",
+    "ConstructionNavigationProjection",
     "FoldbackFeasibilityProjection",
     "FoldbackFeasibilityRow",
     "LocalScientificProjection",

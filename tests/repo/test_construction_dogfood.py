@@ -34,15 +34,15 @@ SOURCES = {
 TRAJECTORY_REALIZATION_IDS = {
     "composed-pcr": (
         "hop:materialized-construction/"
-        "423e9d59d31ce8396f69b27832d54fa3edb43836057b3c9c16db131629e1dfd4@1"
+        "ed200f1b66a4b76cd9f6f33ba214798833fe5ec515474d6eed4ef8e9233de283@1"
     ),
     "exact": (
         "hop:materialized-construction/"
-        "debc17979724b69376bab81d62e3d81d4a690120bc76ee0f2a96f70d22f30fc1@1"
+        "63982f1d523dac0ad6f4034ce4ff83259fc05353392e783e96831a9096fb2109@1"
     ),
     "relaxed": (
         "hop:materialized-construction/"
-        "1e627dfb5d709b837ed30efa77941541d0b8fcaecf93978ef4a9a22b669f8459@1"
+        "05558439e5be5e026a4b14ff39bdd1907e45bf588e138bb9ef9a4e1922f1f48a@1"
     ),
 }
 LOCAL_FOLDBACK_PARTITION = REPO_ROOT / "examples" / "foldback-local-partition.yaml"
@@ -117,7 +117,12 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
     assert first["bundle_verified"] is True
     projection_hashes = first["projection_sha256"]
     assert isinstance(projection_hashes, dict)
-    assert set(projection_hashes) >= {"foldback_feasibility", "foldback_relaxation", "summary"}
+    assert set(projection_hashes) >= {
+        "foldback_feasibility",
+        "foldback_relaxation",
+        "navigation",
+        "summary",
+    }
     for formats in projection_hashes.values():
         assert isinstance(formats, dict)
         assert set(formats) >= {"json", "svg"}
@@ -143,8 +148,10 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
         assert isinstance(selected, str)
         assert selected in first["materialized_realization_ids"]
         assert "trajectory" in projection_hashes
+        assert len(first["selection_sha256"]) == 64
     else:
         assert selected is None
+        assert first["selection_sha256"] is None
         assert first["materialized_realization_ids"] == []
         assert "trajectory" not in projection_hashes
 
@@ -181,11 +188,20 @@ def test_docs_and_wheel_smoke_share_the_construction_example() -> None:
     assert '"examples/compile_construction.py"' in docs_smoke
     assert '"construction_statuses": construction_statuses' in docs_smoke
     assert '"--trajectory-realization-id"' in docs_smoke
+    assert '"navigation"' in docs_smoke
+    assert 'summary.get("selection_sha256")' in docs_smoke
     assert '"construction": construction.__all__' in wheel_smoke
     for path in (EXAMPLE, DESIGN, *SOURCES.values()):
         assert f"'{path.relative_to(REPO_ROOT)}'" in wheel_smoke
     assert "source_construction" in wheel_smoke
     assert "wheel_construction" in wheel_smoke
+    for command in (
+        "construction summary",
+        "construction list",
+        "construction select",
+        "construction inspect",
+    ):
+        assert command in wheel_smoke
 
 
 def test_local_foldback_partition_defaults_to_both_strands_and_replays(tmp_path: Path) -> None:

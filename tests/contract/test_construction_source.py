@@ -35,18 +35,27 @@ from tests.integration.test_complete_construction_pcr import _payload
 def _source_document() -> dict[str, object]:
     foldback = _request(_nickase(), _terminus_enzyme())
     return {
-        "schema": "hop.construction-source/v3",
+        "schema": "hop.construction-source/v5",
         "foldback": foldback.model_dump(mode="json", by_alias=True),
         "basal": None,
         "composition": {
             "endpoint": "ssdna_hairpin",
             "materialization": {
-                "source_origin": "synthesized",
-                "source_five_prime_end": "hydroxyl",
-                "source_three_prime_end": "hydroxyl",
-                "source_complement_origin": "synthesized",
-                "source_complement_five_prime_end": "phosphate",
-                "source_complement_three_prime_end": "hydroxyl",
+                "source_preparation": {
+                    "source_ssdna": {
+                        "mode": "derive",
+                        "five_prime_end": "hydroxyl",
+                        "three_prime_end": "hydroxyl",
+                    },
+                    "forward_primer": {
+                        "mode": "derive",
+                        "annealing_length_nt": 1,
+                    },
+                    "reverse_primer": {
+                        "mode": "derive",
+                        "annealing_length_nt": 1,
+                    },
+                },
             },
             "whole_route_constraints": {},
             "enumeration": {
@@ -71,14 +80,25 @@ def _pcr_source_document() -> dict[str, object]:
     materialization = dict(composition["materialization"])  # type: ignore[arg-type]
     materialization.update(
         {
-            "adapter": _material("adapter", "ACGT").model_dump(mode="json"),
-            "forward_primer": {
-                "oligo": _material("forward-primer", "GACA").model_dump(mode="json"),
-                "annealing_length_nt": 4,
-            },
-            "reverse_primer": {
-                "oligo": _material("reverse-primer", "TGTC").model_dump(mode="json"),
-                "annealing_length_nt": 4,
+            "endpoint_auxiliaries": {
+                "adapter": {
+                    "mode": "fixed",
+                    "material": _material("adapter", "ACGT").model_dump(mode="json"),
+                },
+                "forward_primer": {
+                    "mode": "fixed",
+                    "primer": {
+                        "oligo": _material("forward-primer", "GACA").model_dump(mode="json"),
+                        "annealing_length_nt": 4,
+                    },
+                },
+                "reverse_primer": {
+                    "mode": "fixed",
+                    "primer": {
+                        "oligo": _material("reverse-primer", "TGTC").model_dump(mode="json"),
+                        "annealing_length_nt": 4,
+                    },
+                },
             },
         }
     )
@@ -105,18 +125,18 @@ def test_construction_source_loads_strict_json_and_yaml(
         json.dumps(load_source_mapping(source_path), separators=(",", ":"))
     )
 
-    assert loaded.schema_id == "hop.construction-source/v3"
+    assert loaded.schema_id == "hop.construction-source/v5"
     assert loaded.composition.endpoint == "ssdna_hairpin"
-    assert loaded.composition.materialization.source_complement_five_prime_end is (
-        EndChemistry.PHOSPHATE
+    assert loaded.composition.materialization.source_preparation.source_ssdna.five_prime_end is (
+        EndChemistry.HYDROXYL
     )
 
 
-def test_construction_source_rejects_the_superseded_contract() -> None:
+def test_construction_source_rejects_another_schema_version() -> None:
     document = _source_document()
     document["schema"] = "hop.construction-source/v1"
 
-    with pytest.raises(ValidationError, match=r"hop\.construction-source/v3"):
+    with pytest.raises(ValidationError, match=r"hop\.construction-source/v5"):
         ConstructionSource.model_validate_json(json.dumps(document))
 
 
@@ -148,14 +168,22 @@ def test_construction_source_rejects_endpoint_incoherence() -> None:
     direct_with_auxiliary = _source_document()
     composition = dict(direct_with_auxiliary["composition"])  # type: ignore[arg-type]
     materialization = dict(composition["materialization"])  # type: ignore[arg-type]
-    materialization["adapter"] = _material("adapter", "ACGT").model_dump(mode="json")
+    materialization["endpoint_auxiliaries"] = _pcr_source_document()["composition"][
+        "materialization"
+    ]["endpoint_auxiliaries"]  # type: ignore[index]
     composition["materialization"] = materialization
     direct_with_auxiliary["composition"] = composition
-    with pytest.raises(ValidationError, match="direct endpoint must omit adapter"):
+    with pytest.raises(ValidationError, match="direct endpoint must omit endpoint auxiliaries"):
         ConstructionSource.model_validate_json(json.dumps(direct_with_auxiliary))
 
 
-@pytest.mark.parametrize("missing", ["basal", "adapter", "forward_primer", "reverse_primer"])
+@pytest.mark.parametrize(
+    "missing",
+    [
+        "basal",
+        "endpoint_auxiliaries",
+    ],
+)
 def test_construction_source_rejects_incomplete_pcr_inputs(missing: str) -> None:
     document = _pcr_source_document()
     if missing == "basal":

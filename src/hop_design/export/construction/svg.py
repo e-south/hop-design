@@ -19,6 +19,7 @@ from hop_design.models.construction.projections import (
     BasalFeasibilityRow,
     CompleteConstructionSummaryProjection,
     CompleteConstructionTrajectoryProjection,
+    ConstructionNavigationProjection,
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
     RelaxationFrontierProjection,
@@ -26,6 +27,7 @@ from hop_design.models.construction.projections import (
 from hop_design.models.construction.relaxation import SequenceDomainPartition
 
 from .complete_svg import render_complete_projection_svg
+from .navigation_svg import render_navigation_projection_svg
 from .svg_common import ACCENT, WASH
 from .svg_common import escape as _escape
 from .svg_common import render_document as _document
@@ -57,11 +59,14 @@ def render_projection_svg(
         LocalScientificProjection
         | CompleteConstructionSummaryProjection
         | CompleteConstructionTrajectoryProjection
+        | ConstructionNavigationProjection
     ),
 ) -> bytes:
     """Render one scientific relation without molecular recomputation or ranking."""
     if isinstance(projection, CompleteConstructionSummaryProjection):
         return render_complete_projection_svg(projection)
+    if isinstance(projection, ConstructionNavigationProjection):
+        return render_navigation_projection_svg(projection)
     if isinstance(projection, CompleteConstructionTrajectoryProjection):
         return render_complete_trajectory_svg(projection)
     if isinstance(projection, FoldbackFeasibilityProjection):

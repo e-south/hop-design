@@ -19,13 +19,10 @@ from hop_design.design.bundle import VerifiedHopBundle, verify_hop_bundle_semant
 from hop_design.design.construction.verification import (
     VerifiedBasalNeighborhoodResult,
     VerifiedFoldbackNeighborhoodResult,
-    verify_basal_neighborhood_result,
-    verify_foldback_neighborhood_result,
 )
 from hop_design.models.construction import SearchCompletionStatus
 from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
-    BasalRealizationRecord,
 )
 from hop_design.models.construction.complete import (
     CompositionDisposition,
@@ -41,14 +38,26 @@ from hop_design.models.construction.complete.evaluation import (
 from hop_design.models.construction.complete.local_authority import (
     validate_local_authority_compatibility,
 )
+from hop_design.models.construction.complete.source_authority import (
+    expected_upstream_truncation_reasons,
+)
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
+from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
+from hop_design.serialization import canonical_json_bytes
 
 from .design_authority import assert_design_authority
 from .endpoint import materialize_endpoint
+from .partition_binding import (
+    bind_partition_to_realization,
+    source_partition_enzyme_policies,
+    validate_partition_selection,
+)
+from .replay_admission import record_replay_admission
 from .results import build_result
+from .selection import select_local_domains, validate_detailed_authority_ids
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class VerifiedConstructionSpaceResult:
     """Whole construction result admitted after deterministic composition replay."""
 
@@ -67,6 +76,7 @@ class VerifiedConstructionSpaceResult:
         object.__setattr__(self, "result", parsed)
         object.__setattr__(self, "foldback", foldback)
         object.__setattr__(self, "basal", basal)
+        record_replay_admission(self, parsed)
 
 
 def _discover_constructions_raw(
@@ -75,30 +85,22 @@ def _discover_constructions_raw(
     foldback: FoldbackNeighborhoodDiscoveryResult,
     basal: BasalNeighborhoodDiscoveryResult | None,
     design: VerifiedHopBundle,
+    source_partition: SourcePartitionDiscoveryResult | None = None,
 ) -> ConstructionSpaceResult:
     """Compose every exact compatible local combination within declared bounds."""
     assert_design_authority(request, design)
     validate_local_authority_compatibility(request, foldback=foldback, basal=basal)
-    if foldback.result_id != request.foldback_result_id:
-        raise ValueError("Foldback detailed result identity does not match the request.")
-    if (None if basal is None else basal.result_id) != request.basal_result_id:
-        raise ValueError("Basal detailed result identity does not match the request.")
-    foldback_records = tuple(
-        item
-        for item in foldback.realizations
-        if item.payload_sequence == request.payload.payload.sequence
-    )
-    basal_records: tuple[BasalRealizationRecord | None, ...] = (
-        (None,)
-        if basal is None
-        else tuple(
-            item
-            for item in basal.realizations
-            if item.payload_sequence == request.payload.payload.sequence
-        )
+    validate_detailed_authority_ids(request, foldback=foldback, basal=basal)
+    source_partition = validate_partition_selection(request, source_partition)
+    enzyme_policies = source_partition_enzyme_policies(foldback, basal)
+    foldback_records, basal_records = select_local_domains(
+        request,
+        foldback=foldback,
+        basal=basal,
     )
     nominal = len(foldback_records) * len(basal_records)
     records: list[MaterializedConstructionRealization] = []
+    partition_rejection_candidates: list[MaterializedConstructionRealization] = []
     failures: Counter[str] = Counter()
     examined = 0
     truncation: str | None = None
@@ -144,8 +146,24 @@ def _discover_constructions_raw(
             basal_result=basal,
             evaluation=evaluation,
         )
-        if isinstance(record, CompositionRejectionCode):
-            failures[record] += 1
+        resolved_record: MaterializedConstructionRealization | CompositionRejectionCode = record
+        if not isinstance(record, CompositionRejectionCode):
+            partition_outcome = bind_partition_to_realization(
+                request=request,
+                realization=record,
+                authority=source_partition,
+                enzyme_policies=enzyme_policies,
+            )
+            if partition_outcome.rejection_candidate is not None:
+                partition_rejection_candidates.append(partition_outcome.rejection_candidate)
+            if partition_outcome.rejection_reason is not None:
+                resolved_record = partition_outcome.rejection_reason
+            elif partition_outcome.realization is not None:
+                resolved_record = partition_outcome.realization
+            else:
+                raise AssertionError("Partition binding must return one exact outcome.")
+        if isinstance(resolved_record, CompositionRejectionCode):
+            failures[resolved_record] += 1
             dispositions.append(
                 CompositionDisposition(
                     ordinal=ordinal,
@@ -154,14 +172,14 @@ def _discover_constructions_raw(
                         None if basal_record is None else basal_record.basal_realization_id
                     ),
                     status=CompositionDispositionStatus.REJECTED,
-                    rejection_reason=record,
+                    rejection_reason=resolved_record,
                     candidate_enzyme_programs=evaluation.candidate_enzyme_programs,
                     recognition_placements_attempted=(evaluation.recognition_placements_attempted),
                     constraint_systems_attempted=evaluation.constraint_systems_attempted,
                 )
             )
             continue
-        records.append(record)
+        records.append(resolved_record)
         dispositions.append(
             CompositionDisposition(
                 ordinal=ordinal,
@@ -170,7 +188,7 @@ def _discover_constructions_raw(
                     None if basal_record is None else basal_record.basal_realization_id
                 ),
                 status=CompositionDispositionStatus.ACCEPTED,
-                materialized_realization_id=record.materialized_realization_id,
+                materialized_realization_id=resolved_record.materialized_realization_id,
                 candidate_enzyme_programs=evaluation.candidate_enzyme_programs,
                 recognition_placements_attempted=(evaluation.recognition_placements_attempted),
                 constraint_systems_attempted=evaluation.constraint_systems_attempted,
@@ -211,20 +229,10 @@ def _discover_constructions_raw(
             for item in dispositions
         ]
         exact = ()
-    upstream_truncation_reasons = tuple(
-        f"foldback:{reason}"
-        for reason in (
-            foldback.neighborhood.truncation_reasons
-            if foldback.neighborhood.status is SearchCompletionStatus.TRUNCATED
-            else ()
-        )
-    ) + tuple(
-        f"basal:{reason}"
-        for reason in (
-            basal.discovery.truncation_reasons
-            if basal is not None and basal.discovery.status is SearchCompletionStatus.TRUNCATED
-            else ()
-        )
+    upstream_truncation_reasons = expected_upstream_truncation_reasons(
+        request=request,
+        foldback=foldback,
+        basal=basal,
     )
     status = (
         SearchCompletionStatus.TRUNCATED
@@ -247,6 +255,8 @@ def _discover_constructions_raw(
         examined=examined,
         foldback_authority=foldback,
         basal_authority=basal,
+        source_partition_authority=source_partition,
+        source_partition_rejection_candidates=tuple(partition_rejection_candidates),
         design_bundle_id=design.bundle.bundle_id,
         dispositions=tuple(dispositions),
     )
@@ -279,23 +289,26 @@ def _replay_construction_result(
     VerifiedFoldbackNeighborhoodResult,
     VerifiedBasalNeighborhoodResult | None,
 ]:
-    from hop_design.serialization import canonical_json_bytes
-
-    admitted_foldback = verify_foldback_neighborhood_result(foldback.result)
-    admitted_basal = None if basal is None else verify_basal_neighborhood_result(basal.result)
+    if not isinstance(foldback, VerifiedFoldbackNeighborhoodResult) or (
+        basal is not None and not isinstance(basal, VerifiedBasalNeighborhoodResult)
+    ):
+        raise TypeError("Construction replay requires verified local construction authorities.")
     verify_hop_bundle_semantics(design)
+    foldback_result = foldback._verified_result()
+    basal_result = None if basal is None else basal._verified_result()
     parsed = ConstructionSpaceResult.model_validate(result.model_dump(mode="python"))
     expected = _discover_constructions_raw(
         parsed.request,
-        foldback=admitted_foldback.result,
-        basal=None if admitted_basal is None else admitted_basal.result,
+        foldback=foldback_result,
+        basal=basal_result,
         design=design,
+        source_partition=parsed.source_partition_authority,
     )
     if canonical_json_bytes(expected) != canonical_json_bytes(parsed):
         raise ValueError(
             "Construction space result disagrees with deterministic composition replay."
         )
-    return parsed, admitted_foldback, admitted_basal
+    return parsed, foldback, basal
 
 
 def discover_constructions(
@@ -304,20 +317,22 @@ def discover_constructions(
     foldback: VerifiedFoldbackNeighborhoodResult,
     basal: VerifiedBasalNeighborhoodResult | None,
     design: VerifiedHopBundle,
+    source_partition: SourcePartitionDiscoveryResult | None = None,
 ) -> VerifiedConstructionSpaceResult:
     """Compose and verify every exact compatible local combination within declared bounds."""
     if not isinstance(foldback, VerifiedFoldbackNeighborhoodResult) or (
         basal is not None and not isinstance(basal, VerifiedBasalNeighborhoodResult)
     ):
         raise TypeError("Complete composition requires verified local construction authorities.")
-    foldback = verify_foldback_neighborhood_result(foldback.result)
-    basal = None if basal is None else verify_basal_neighborhood_result(basal.result)
     verify_hop_bundle_semantics(design)
+    foldback_result = foldback._verified_result()
+    basal_result = None if basal is None else basal._verified_result()
     raw = _discover_constructions_raw(
         request,
-        foldback=foldback.result,
-        basal=None if basal is None else basal.result,
+        foldback=foldback_result,
+        basal=basal_result,
         design=design,
+        source_partition=source_partition,
     )
     return verify_construction_space_result(
         raw,

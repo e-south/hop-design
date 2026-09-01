@@ -37,8 +37,12 @@ from hop_design.models.construction.complete import (
     ConstructionSpaceResult,
     MaterializedConstructionRealization,
 )
+from hop_design.models.construction.complete.material.inventory import (
+    required_external_materials,
+)
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.payload import _content_id
+from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 
 
 def _groups(
@@ -70,14 +74,13 @@ def _material_accounting(
 ) -> CompositionMaterialAccounting:
     return CompositionMaterialAccounting(
         source_material_nt=sum(
-            len(item.sequence_5prime)
+            len(realization.source_preparation.source_ssdna.sequence_5prime)
             for realization in realizations
-            for item in realization.materials[:2]
         ),
         auxiliary_material_nt=sum(
             len(item.sequence_5prime)
             for realization in realizations
-            for item in realization.materials[2:]
+            for item in required_external_materials(realization)[1:]
         ),
         endpoint_product_nt=sum(
             sum(len(strand.sequence) for strand in item.final_product.strands)
@@ -101,6 +104,8 @@ def build_result(
     examined: int,
     foldback_authority: FoldbackNeighborhoodDiscoveryResult,
     basal_authority: BasalNeighborhoodDiscoveryResult | None,
+    source_partition_authority: SourcePartitionDiscoveryResult | None,
+    source_partition_rejection_candidates: tuple[MaterializedConstructionRealization, ...],
     design_bundle_id: str,
     dispositions: tuple[CompositionDisposition, ...],
 ) -> ConstructionSpaceResult:
@@ -114,6 +119,26 @@ def build_result(
         hop_version=hop_version,
         enumeration=request.enumeration,
     )
+    foldback_realization_ids = (
+        (request.selected_foldback_realization_id,)
+        if request.selected_foldback_realization_id is not None
+        else tuple(
+            item.foldback_realization_id
+            for item in foldback_authority.realizations
+            if item.payload_sequence == request.payload.payload.sequence
+        )
+    )
+    basal_realization_ids = (
+        (request.selected_basal_realization_id,)
+        if request.selected_basal_realization_id is not None
+        else ()
+        if basal_authority is None
+        else tuple(
+            item.basal_realization_id
+            for item in basal_authority.realizations
+            if item.payload_sequence == request.payload.payload.sequence
+        )
+    )
     return ConstructionSpaceResult.create(
         problem_id=problem,
         execution_id=execution.execution_id,
@@ -122,6 +147,8 @@ def build_result(
         request=request,
         foldback_authority=foldback_authority,
         basal_authority=basal_authority,
+        source_partition_authority=source_partition_authority,
+        source_partition_rejection_candidates=source_partition_rejection_candidates,
         realizations=realizations,
         geometry_groups=geometry_groups,
         final_product_groups=product_groups,
@@ -164,26 +191,16 @@ def build_result(
             hop_version=hop_version,
             foldback_result_id=foldback_authority.result_id,
             basal_result_id=(None if basal_authority is None else basal_authority.result_id),
+            source_partition_result_id=request.source_partition_result_id,
+            source_partition_realization_id=(request.selected_source_partition_realization_id),
             design_bundle_id=design_bundle_id,
-            foldback_realization_ids=tuple(
-                item.foldback_realization_id
-                for item in foldback_authority.realizations
-                if item.payload_sequence == request.payload.payload.sequence
-            ),
-            basal_realization_ids=(
-                ()
-                if basal_authority is None
-                else tuple(
-                    item.basal_realization_id
-                    for item in basal_authority.realizations
-                    if item.payload_sequence == request.payload.payload.sequence
-                )
-            ),
+            foldback_realization_ids=foldback_realization_ids,
+            basal_realization_ids=basal_realization_ids,
         ),
         projection_inventory=(
             ProjectionInventoryItem(
-                projection_schema="hop.complete-construction-summary/v1",
-                renderer_version="complete-construction-projections/1",
+                projection_schema="hop.complete-construction-summary/v2",
+                renderer_version="complete-construction-projections/2",
                 status=ProjectionInventoryStatus.NOT_GENERATED,
             ),
         ),

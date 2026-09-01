@@ -139,15 +139,15 @@ def test_construction_bundle_round_trips_verified_authorities_deterministically(
 
     assert first._bundle == second._bundle == loaded._bundle
     assert dict(first._artifacts) == dict(second._artifacts) == dict(loaded._artifacts)
-    assert first.bundle_id == "hop:construction-bundle/680cf007f074/41f5e2543cd1cb23"
+    assert first.bundle_id == "hop:construction-bundle/be9f3ab07a78/d338147cb0897368"
     assert first._bundle.manifest_digest == (
-        "sha256:41f5e2543cd1cb23615c3dd94a73b5b63208795e7f16990ba9bd11939cfe9514"
+        "sha256:d338147cb08973688281e60fa95199e665d780756976fff7c7eddeeb2993d51f"
     )
     assert first._bundle.result_digest == (
-        "sha256:a39ed0fbc19eb9d0f268fa1657f26055dbc4470a2d7e0308afd7b632e8039f31"
+        "sha256:f1949ec510889e434e8411b90190903132788786bf22f18721b2dfd3b8e31e0f"
     )
     assert sha256_digest(canonical_json_bytes(first._bundle)) == (
-        "sha256:cd0d68553b8121673233d31ba0729a5708ad87510c3e02f44924595de41b49d5"
+        "sha256:ec0f2ccac69f52e3f6bde8a2d29337c2a152c48019499df0db655fe0245554e5"
     )
     assert loaded._construction.result == verified.result
     assert loaded._construction.design == verified.design

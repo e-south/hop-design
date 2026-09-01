@@ -70,6 +70,11 @@ strict construction source + separately verified HopBundle
   -> verified complete construction
   -> opaque receipt
   -> portable ConstructionBundle or neutral projection packet
+
+strict construction source + matching HopBundle + selected local ids
+  -> verify the exact local receipts and source relation
+  -> evaluate and materialize one foldback-basal pair
+  -> the same opaque receipt and portable authority
 ```
 
 The source owns requests, exact materials, constraints, and bounds. The design
@@ -96,7 +101,7 @@ models
   <- kernel and catalogs and deterministic encoders
   <- design use cases
   <- public API
-  <- CLI and future agent adapters
+  <- CLI command adapters and future agent adapters
 ```
 
 - `models` contains strict data contracts and imports no higher HOP layer.
@@ -130,7 +135,8 @@ models
   returns existing member authorities rather than redefining their anatomy.
   `construction` accepts strict files plus a separately verified design bundle
   and returns opaque receipts rather than exporting the construction ontology.
-- `cli` adapts user input to the public API and contains no derivations.
+- `cli` registers command families. Modules under `commands` adapt user input
+  to public facades and contain no molecular derivations or authority models.
 
 Construction discovery reuses the specialist discovery, molecular-state,
 method, and view layers. Its shared local-neighborhood contract must not enter
@@ -141,8 +147,8 @@ sibling authority rather than a basal-neighborhood subtype. Its public receipt
 is exposed only through `hop_design.construction`.
 
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
-root `api.py` and `cli.py` modules explicitly, and fails on unknown first-party
-layers. The root facade and serialization module are narrow documented
+root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,
+and fails on unknown first-party layers. The root facade and serialization module are narrow documented
 exceptions. The data-only `_facade.py` manifest keeps the package root readable;
 the same architecture check requires every public root re-export and manifest
 entry to agree. Add an abstraction only when a second real implementation or

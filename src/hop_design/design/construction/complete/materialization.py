@@ -29,10 +29,9 @@ from hop_design.models.construction.complete.evaluation_inputs import (
 )
 from hop_design.models.construction.complete.route_lineage import (
     derive_post_cleavage_strands,
-    material_strand,
 )
 from hop_design.models.construction.foldback import FoldbackLocalRealization
-from hop_design.models.molecular_state import CovalentBond, LineageStrand, MolecularStrand
+from hop_design.models.molecular_state import CovalentBond, MolecularStrand
 from hop_design.models.reactions import (
     ReactionProgram,
 )
@@ -90,6 +89,8 @@ def materialize_direct_program(
     source_return_arm: str,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
+    source_use_id: str,
+    source_complement_use_id: str,
     evaluation: CombinationEvaluation,
 ) -> tuple[ConstructionProgram, MolecularStrand] | None:
     """Materialize one exact source-to-ssDNA-hairpin chronology."""
@@ -98,6 +99,7 @@ def materialize_direct_program(
         or evaluation.reaction_program is None
         or evaluation.source != source
         or evaluation.source_complement != source_complement
+        or evaluation.source_preparation is None
         or evaluation.prefix != prefix
         or evaluation.source_return_arm != source_return_arm
     ):
@@ -105,24 +107,11 @@ def materialize_direct_program(
     reaction = evaluation.reaction_program
     assessments = evaluation.stage_assessments
     released_molecules = reaction.states[-1].molecules
-    initial_molecules = (
-        material_strand("source-top", source, lineage_strand=LineageStrand.PRIMARY),
-        material_strand(
-            "source-bottom",
-            source_complement,
-            lineage_strand=LineageStrand.COMPLEMENTARY,
-        ),
-    )
-    initial = ConstructionState.create(
-        molecules=initial_molecules,
-        phase=ConstructionStatePhase.DUPLEX,
-        pairings=duplex_pairings(
-            initial_molecules,
-            source_id=source.material_id,
-            complement_id=source_complement.material_id,
-            source_length=len(source.sequence_5prime),
-        ),
-    )
+    initial = evaluation.source_preparation.product_state
+    if tuple(
+        binding.material for binding in evaluation.source_preparation.produced_material_bindings
+    ) != (source, source_complement):
+        return None
     states = [initial]
     transitions = []
     embedding = derive_linear_source_embedding(
@@ -137,14 +126,16 @@ def materialize_direct_program(
         embedding=embedding,
         source=source,
         source_complement=source_complement,
+        source_use_id=source_use_id,
+        source_complement_use_id=source_complement_use_id,
     )
     enzyme_product = ConstructionState.create(
         molecules=exact_product_strands,
         phase=ConstructionStatePhase.CLEAVED_DUPLEX,
         pairings=duplex_pairings(
             exact_product_strands,
-            source_id=source.material_id,
-            complement_id=source_complement.material_id,
+            source_id=source_use_id,
+            complement_id=source_complement_use_id,
             source_length=len(source.sequence_5prime),
         ),
     )
@@ -155,6 +146,8 @@ def materialize_direct_program(
         embedding=embedding,
         source=source,
         source_complement=source_complement,
+        source_use_id=source_use_id,
+        source_complement_use_id=source_complement_use_id,
     )
     released = ConstructionState.create(
         molecules=released_strands,
@@ -187,8 +180,8 @@ def materialize_direct_program(
         selected.molecules,
         foldback=foldback,
         embedding=embedding,
-        source_id=source.material_id,
-        complement_id=source_complement.material_id,
+        source_id=source_use_id,
+        complement_id=source_complement_use_id,
         source_length=len(source.sequence_5prime),
     )
     annealed = ConstructionState.create(

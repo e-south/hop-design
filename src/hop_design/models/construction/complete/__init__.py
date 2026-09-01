@@ -11,7 +11,11 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from .accounting import CompositionAccounting
+from .accounting import (
+    CompositionAccounting,
+    CompositionEnumerationPolicy,
+    CompositionPruningMode,
+)
 from .associations import ConstructionBondState
 from .authority import (
     CompositionDisposition,
@@ -19,6 +23,25 @@ from .authority import (
     CompositionMaterialAccounting,
     ConstructionCompositionExecution,
     ConstructionCompositionProvenance,
+)
+from .auxiliary import (
+    ConstrainedAdapterPolicy,
+    ConstrainedEndpointPrimerPolicy,
+    DerivedAdapterPolicy,
+    DerivedEndpointPrimerPolicy,
+    EndpointAuxiliaryPolicy,
+    FixedAdapterPolicy,
+    FixedEndpointPrimerPolicy,
+)
+from .material import (
+    ExactConstructionMaterial,
+    MaterialResolutionMode,
+    MaterialRouteEntry,
+    MaterialUse,
+    MaterialUseRole,
+    PcrPrimer,
+    ProducedMaterialBinding,
+    construction_material_id,
 )
 from .material_disposition import (
     EndpointMaterialOccurrence,
@@ -42,20 +65,27 @@ from .program import (
 )
 from .realization import MaterializedConstructionRealization
 from .request import (
-    CompositionEnumerationPolicy,
-    CompositionPruningMode,
     ConstructionDiscoveryRequest,
     DesignAuthorityReference,
-    ExactConstructionMaterial,
-    LinearSourceMaterializationSpec,
-    MaterialOrigin,
-    PcrPrimer,
     ReleaseSideRequirement,
     TypeIisReleaseRequest,
     WholeRouteConstraints,
-    derived_source_material_id,
 )
 from .result import ConstructionSpaceResult
+from .source_partition import SourcePartitionBinding
+from .source_preparation import (
+    ConstrainedPrimerPolicy,
+    DerivedPrimerPolicy,
+    DerivedSourceSsdnaPolicy,
+    FixedPrimerPolicy,
+    FixedSourceSsdnaPolicy,
+    LinearSourceMaterializationSpec,
+    SourceDuplexPreparationAuthority,
+    SourceDuplexPreparationPolicy,
+    SourcePreparationResolutionError,
+    derive_source_duplex_preparation,
+    resolve_source_duplex_preparation,
+)
 from .state import ConstructionState, ConstructionStatePhase
 from .transition import (
     ConstructionTransition,
@@ -73,6 +103,9 @@ __all__ = [
     "CompositionEnumerationPolicy",
     "CompositionMaterialAccounting",
     "CompositionPruningMode",
+    "ConstrainedAdapterPolicy",
+    "ConstrainedEndpointPrimerPolicy",
+    "ConstrainedPrimerPolicy",
     "ConstructionBondState",
     "ConstructionCompositionExecution",
     "ConstructionCompositionProvenance",
@@ -83,27 +116,46 @@ __all__ = [
     "ConstructionStatePhase",
     "ConstructionTransition",
     "ConstructionTransitionKind",
+    "DerivedAdapterPolicy",
+    "DerivedEndpointPrimerPolicy",
+    "DerivedPrimerPolicy",
+    "DerivedSourceSsdnaPolicy",
     "DesignAuthorityReference",
     "DuplexFinalProductReference",
+    "EndpointAuxiliaryPolicy",
     "EndpointMaterialOccurrence",
     "EndpointSequenceFate",
     "EndpointSequenceFateSpan",
     "EndpointStrand",
     "ExactConstructionMaterial",
     "ExactStateRelation",
+    "FixedAdapterPolicy",
+    "FixedEndpointPrimerPolicy",
+    "FixedPrimerPolicy",
+    "FixedSourceSsdnaPolicy",
     "LinearSourceMaterializationSpec",
     "MaterialFunction",
     "MaterialFunctionSpan",
-    "MaterialOrigin",
+    "MaterialResolutionMode",
     "MaterialRetentionDisposition",
+    "MaterialRouteEntry",
+    "MaterialUse",
+    "MaterialUseRole",
     "MaterializedConstructionRealization",
     "MaterializedFinalProduct",
     "PcrPrimer",
     "PrimerExtensionAuthority",
+    "ProducedMaterialBinding",
     "ReactionBoundaryMapping",
     "ReleaseSideRequirement",
     "RouteMaterialDispositionSpan",
+    "SourceDuplexPreparationAuthority",
+    "SourceDuplexPreparationPolicy",
+    "SourcePartitionBinding",
+    "SourcePreparationResolutionError",
     "TypeIisReleaseRequest",
     "WholeRouteConstraints",
-    "derived_source_material_id",
+    "construction_material_id",
+    "derive_source_duplex_preparation",
+    "resolve_source_duplex_preparation",
 ]

@@ -18,12 +18,9 @@ from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
 
-from .complete.request import (
-    CompositionEnumerationPolicy,
-    LinearSourceMaterializationSpec,
-    TypeIisReleaseRequest,
-    WholeRouteConstraints,
-)
+from .complete.accounting import CompositionEnumerationPolicy
+from .complete.request import TypeIisReleaseRequest, WholeRouteConstraints
+from .complete.source_preparation import LinearSourceMaterializationSpec
 from .payload import ConstructionEndpoint, LocalNeighborhoodFamily, RouteFamily
 from .request import LocalNeighborhoodRequest
 
@@ -51,7 +48,7 @@ class ConstructionCompositionSource(HopModel):
 class ConstructionSource(HopModel):
     """One strict external source for deterministic complete construction."""
 
-    schema_id: Literal["hop.construction-source/v3"] = Field(alias="schema")
+    schema_id: Literal["hop.construction-source/v5"] = Field(alias="schema")
     foldback: LocalNeighborhoodRequest
     basal: LocalNeighborhoodRequest | None = None
     composition: ConstructionCompositionSource
@@ -90,24 +87,20 @@ class ConstructionSource(HopModel):
             )
 
         endpoint = self.composition.endpoint
-        auxiliaries = (
-            self.composition.materialization.adapter,
-            self.composition.materialization.forward_primer,
-            self.composition.materialization.reverse_primer,
-        )
+        auxiliaries = self.composition.materialization.endpoint_auxiliaries
         if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             if self.basal is not None:
                 raise ValueError("A direct endpoint must omit basal discovery.")
-            if any(item is not None for item in auxiliaries):
-                raise ValueError("A direct endpoint must omit adapter and PCR primers.")
+            if auxiliaries is not None:
+                raise ValueError("A direct endpoint must omit endpoint auxiliaries.")
             if self.composition.release is not None:
                 raise ValueError("A direct endpoint must omit clone release.")
             return self
 
         if self.basal is None:
             raise ValueError("PCR-bearing endpoints require basal discovery.")
-        if any(item is None for item in auxiliaries):
-            raise ValueError("PCR-bearing endpoints require an exact adapter and both primers.")
+        if auxiliaries is None:
+            raise ValueError("PCR-bearing endpoints require endpoint auxiliary policies.")
         if (
             self.basal.family is not LocalNeighborhoodFamily.BASAL
             or self.basal.route_family is not RouteFamily.LINEAR_SOURCE_V1

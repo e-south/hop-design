@@ -37,8 +37,8 @@ from hop_design.models.construction.complete.material_disposition import (
 from hop_design.models.construction.payload import ConstructionEndpoint, _content_id
 
 COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION: Literal[
-    "complete-construction-projections/1"
-] = "complete-construction-projections/1"
+    "complete-construction-projections/2"
+] = "complete-construction-projections/2"
 
 
 class CompleteConstructionSummaryRow(HopModel):
@@ -52,6 +52,7 @@ class CompleteConstructionSummaryRow(HopModel):
     )
     status: CompositionDispositionStatus
     rejection_reason: CompositionRejectionCode | None = None
+    truncation_reason: str | None = None
     materialized_realization_id: str | None = Field(
         default=None,
         pattern=r"^hop:materialized-construction/[0-9a-f]{64}@1$",
@@ -83,7 +84,11 @@ class CompleteConstructionSummaryRow(HopModel):
             self.endpoint,
         )
         if self.status is CompositionDispositionStatus.ACCEPTED:
-            if self.rejection_reason is not None or any(item is None for item in accepted_facts):
+            if (
+                self.rejection_reason is not None
+                or self.truncation_reason is not None
+                or any(item is None for item in accepted_facts)
+            ):
                 raise ValueError("Accepted summary rows require exact route and grouping facts.")
             if (
                 not self.material_ids
@@ -91,9 +96,21 @@ class CompleteConstructionSummaryRow(HopModel):
                 or self.endpoint_product_nt == 0
             ):
                 raise ValueError("Accepted summary rows require exact material accounting.")
-        elif self.rejection_reason is None or any(item is not None for item in accepted_facts):
+        elif self.status is CompositionDispositionStatus.REJECTED and (
+            self.rejection_reason is None
+            or self.truncation_reason is not None
+            or any(item is not None for item in accepted_facts)
+        ):
             raise ValueError(
                 "Rejected summary rows require one reason and no accepted-route facts."
+            )
+        elif self.status is CompositionDispositionStatus.TRUNCATED and (
+            self.rejection_reason is not None
+            or self.truncation_reason is None
+            or any(item is not None for item in accepted_facts)
+        ):
+            raise ValueError(
+                "Truncated summary rows require one reason and no accepted-route facts."
             )
         elif (
             self.material_ids
@@ -102,20 +119,22 @@ class CompleteConstructionSummaryRow(HopModel):
             or self.auxiliary_material_nt
             or self.endpoint_product_nt
         ):
-            raise ValueError("Rejected summary rows cannot report materialized route evidence.")
+            raise ValueError(
+                "Rejected and truncated summary rows cannot report materialized route evidence."
+            )
         return self
 
 
 class CompleteConstructionSummaryProjection(HopModel):
     """Lossless presentation relation over one verified construction-space result."""
 
-    schema_id: Literal["hop.complete-construction-summary/v1"] = Field(
-        default="hop.complete-construction-summary/v1",
+    schema_id: Literal["hop.complete-construction-summary/v2"] = Field(
+        default="hop.complete-construction-summary/v2",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:complete-construction-summary/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
-    renderer_version: Literal["complete-construction-projections/1"] = (
+    renderer_version: Literal["complete-construction-projections/2"] = (
         COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION
     )
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
@@ -165,8 +184,15 @@ class CompleteConstructionSummaryProjection(HopModel):
             for row in self.rows
             if row.status is CompositionDispositionStatus.REJECTED
         )
-        if len(accepted) != self.accounting.valid_realizations or sum(rejected.values()) != (
-            self.accounting.rejected_combinations
+        truncated = tuple(
+            row.truncation_reason
+            for row in self.rows
+            if row.status is CompositionDispositionStatus.TRUNCATED
+        )
+        if (
+            len(accepted) != self.accounting.valid_realizations
+            or sum(rejected.values()) != self.accounting.rejected_combinations
+            or len(truncated) != self.accounting.truncated_combinations
         ):
             raise ValueError("Complete summary disposition counts must replay accounting.")
         if rejected != Counter({item.code: item.count for item in self.failure_reasons}):

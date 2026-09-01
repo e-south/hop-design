@@ -348,15 +348,15 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
     trajectories = {
         "composed-pcr": (
             "hop:materialized-construction/"
-            "423e9d59d31ce8396f69b27832d54fa3edb43836057b3c9c16db131629e1dfd4@1"
+            "ed200f1b66a4b76cd9f6f33ba214798833fe5ec515474d6eed4ef8e9233de283@1"
         ),
         "exact": (
             "hop:materialized-construction/"
-            "debc17979724b69376bab81d62e3d81d4a690120bc76ee0f2a96f70d22f30fc1@1"
+            "63982f1d523dac0ad6f4034ce4ff83259fc05353392e783e96831a9096fb2109@1"
         ),
         "relaxed": (
             "hop:materialized-construction/"
-            "1e627dfb5d709b837ed30efa77941541d0b8fcaecf93978ef4a9a22b669f8459@1"
+            "05558439e5be5e026a4b14ff39bdd1907e45bf588e138bb9ef9a4e1922f1f48a@1"
         ),
     }
     statuses: dict[str, str] = {}
@@ -379,6 +379,11 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
         )
         _require(isinstance(summary, dict), "construction dogfood must emit an object")
         _require(summary.get("bundle_verified") is True, "construction bundle was not replayed")
+        projection_hashes = summary.get("projection_sha256")
+        _require(
+            isinstance(projection_hashes, dict) and "navigation" in projection_hashes,
+            f"{case} construction omitted navigation projection",
+        )
         status = summary.get("status")
         _require(status == expected_status, f"{case} construction status changed")
         selected = summary.get("selected_trajectory_realization_id")
@@ -388,8 +393,17 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
                 isinstance(realization_ids, list) and selected in realization_ids,
                 f"{case} trajectory did not select an accepted realization",
             )
+            selection_sha256 = summary.get("selection_sha256")
+            _require(
+                isinstance(selection_sha256, str) and len(selection_sha256) == 64,
+                f"{case} construction omitted its result-bound selection digest",
+            )
         else:
             _require(selected is None, "infeasible construction invented a trajectory")
+            _require(
+                summary.get("selection_sha256") is None,
+                "infeasible construction invented a selection",
+            )
         statuses[case] = str(status)
     return statuses
 

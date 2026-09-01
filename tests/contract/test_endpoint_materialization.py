@@ -21,7 +21,10 @@ from hop_design.models.construction.complete import (
     CompositionEnumerationPolicy,
     ConstructionCompositionExecution,
     ExactConstructionMaterial,
-    MaterialOrigin,
+    MaterialResolutionMode,
+    MaterialRouteEntry,
+    MaterialUse,
+    MaterialUseRole,
     PcrPrimer,
     ReleaseSideRequirement,
     TypeIisReleaseRequest,
@@ -55,11 +58,21 @@ from hop_design.models.sequence import reverse_complement_iupac
 
 def _material(sequence: str) -> ExactConstructionMaterial:
     return ExactConstructionMaterial(
-        material_id="forward-primer",
-        origin=MaterialOrigin.SYNTHESIZED,
         sequence_5prime=sequence,
         five_prime_end=EndChemistry.HYDROXYL,
         three_prime_end=EndChemistry.HYDROXYL,
+    )
+
+
+def _material_use(
+    material: ExactConstructionMaterial,
+    role: MaterialUseRole,
+) -> MaterialUse:
+    return MaterialUse.create(
+        material_id=material.material_id,
+        role=role,
+        specification_resolution_mode=MaterialResolutionMode.FIXED,
+        route_entry=MaterialRouteEntry.REQUIRED_EXTERNAL,
     )
 
 
@@ -178,28 +191,53 @@ def test_pcr_product_retains_both_complete_primers_with_exact_lineage() -> None:
     )
     forward = PcrPrimer(oligo=_material("GGTCTCACGT"), annealing_length_nt=4)
     reverse = PcrPrimer(
-        oligo=_material("GAGACCACGG").model_copy(update={"material_id": "reverse-primer"}),
+        oligo=_material("GAGACCACGG"),
         annealing_length_nt=4,
     )
+    forward_use = _material_use(forward.oligo, MaterialUseRole.ENDPOINT_FORWARD_PRIMER)
+    reverse_use = _material_use(reverse.oligo, MaterialUseRole.ENDPOINT_REVERSE_PRIMER)
 
-    top, bottom = pcr_products(template, forward, reverse)
+    top, bottom = pcr_products(
+        template,
+        forward,
+        reverse,
+        forward_use_id=forward_use.use_id,
+        reverse_use_id=reverse_use.use_id,
+    )
 
     assert top.sequence == "GGTCTCACGTAAAACCGTGGTCTC"
     assert bottom.sequence == reverse_complement_iupac(top.sequence)
     assert len(top.lineage) == len(top.sequence)
-    assert tuple(item.origin_id for item in top.lineage[:10]) == ("forward-primer",) * 10
+    assert tuple(item.origin_id for item in top.lineage[:10]) == (forward_use.use_id,) * 10
     assert tuple(item.origin_index for item in top.lineage[-10:]) == tuple(reversed(range(10)))
-    assert tuple(item.origin_id for item in top.lineage[-10:]) == ("reverse-primer",) * 10
+    assert tuple(item.origin_id for item in top.lineage[-10:]) == (reverse_use.use_id,) * 10
+
+
+def test_pcr_products_require_contextual_primer_use_ids() -> None:
+    template = _template("ACGTCCGT")
+    forward = PcrPrimer(oligo=_material("GGACGT"), annealing_length_nt=4)
+    reverse = PcrPrimer(oligo=_material("TTACGG"), annealing_length_nt=4)
+
+    with pytest.raises(TypeError):
+        pcr_products(template, forward, reverse)
 
 
 def test_pcr_primer_annealing_spans_may_meet_but_must_not_overlap() -> None:
     forward = PcrPrimer(oligo=_material("GGACGT"), annealing_length_nt=4)
     reverse = PcrPrimer(
-        oligo=_material("TTACGG").model_copy(update={"material_id": "reverse-primer"}),
+        oligo=_material("TTACGG"),
         annealing_length_nt=4,
     )
+    forward_use = _material_use(forward.oligo, MaterialUseRole.ENDPOINT_FORWARD_PRIMER)
+    reverse_use = _material_use(reverse.oligo, MaterialUseRole.ENDPOINT_REVERSE_PRIMER)
 
-    top, bottom = pcr_products(_template("ACGTCCGT"), forward, reverse)
+    top, bottom = pcr_products(
+        _template("ACGTCCGT"),
+        forward,
+        reverse,
+        forward_use_id=forward_use.use_id,
+        reverse_use_id=reverse_use.use_id,
+    )
 
     assert top.sequence == "GGACGTCCGTAA"
     assert bottom.sequence == reverse_complement_iupac(top.sequence)
@@ -208,7 +246,13 @@ def test_pcr_primer_annealing_spans_may_meet_but_must_not_overlap() -> None:
         update={"oligo": reverse.oligo.model_copy(update={"sequence_5prime": "TTACGA"})}
     )
     with pytest.raises(ValueError, match="annealing spans must not overlap"):
-        pcr_products(_template("ACGTCGT"), forward, overlapping_reverse)
+        pcr_products(
+            _template("ACGTCGT"),
+            forward,
+            overlapping_reverse,
+            forward_use_id=forward_use.use_id,
+            reverse_use_id=reverse_use.use_id,
+        )
 
 
 def test_release_request_preserves_oriented_left_and_right_requirements() -> None:
@@ -284,7 +328,7 @@ def test_release_request_requires_a_type_iis_cleavage_definition() -> None:
         )
 
 
-def test_complete_construction_execution_identifies_endpoint_contract_v3() -> None:
+def test_complete_construction_execution_identifies_route_contract_v5() -> None:
     execution = ConstructionCompositionExecution(
         problem_id=f"hop:construction-problem/{'a' * 64}@1",
         hop_version="0.1.0a8",
@@ -294,7 +338,7 @@ def test_complete_construction_execution_identifies_endpoint_contract_v3() -> No
         ),
     )
 
-    assert execution.route_implementation_version == "complete-construction/4"
+    assert execution.route_implementation_version == "complete-construction/5"
 
 
 def test_basal_target_rejects_endpoint_release_fields() -> None:

@@ -11,7 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
@@ -30,9 +30,21 @@ class VerifiedFoldbackNeighborhoodResult:
     """Foldback result admitted after exact deterministic discovery replay."""
 
     result: FoldbackNeighborhoodDiscoveryResult
+    _canonical_bytes: bytes = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "result", _replay_foldback_result(self.result))
+        result = _replay_foldback_result(self.result)
+        object.__setattr__(self, "result", result)
+        object.__setattr__(self, "_canonical_bytes", canonical_json_bytes(result))
+
+    def _verified_result(self) -> FoldbackNeighborhoodDiscoveryResult:
+        if not hasattr(self, "_canonical_bytes") or (
+            canonical_json_bytes(self.result) != self._canonical_bytes
+        ):
+            raise ConstructionVerificationError(
+                "Foldback neighborhood result disagrees with deterministic discovery replay."
+            )
+        return self.result
 
 
 @dataclass(frozen=True)
@@ -40,9 +52,21 @@ class VerifiedBasalNeighborhoodResult:
     """Basal result admitted after exact deterministic discovery replay."""
 
     result: BasalNeighborhoodDiscoveryResult
+    _canonical_bytes: bytes = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "result", _replay_basal_result(self.result))
+        result = _replay_basal_result(self.result)
+        object.__setattr__(self, "result", result)
+        object.__setattr__(self, "_canonical_bytes", canonical_json_bytes(result))
+
+    def _verified_result(self) -> BasalNeighborhoodDiscoveryResult:
+        if not hasattr(self, "_canonical_bytes") or (
+            canonical_json_bytes(self.result) != self._canonical_bytes
+        ):
+            raise ConstructionVerificationError(
+                "Basal neighborhood result disagrees with deterministic discovery replay."
+            )
+        return self.result
 
 
 def _replay_foldback_result(

@@ -40,8 +40,8 @@ from hop_design.models.spec import ExactJunctionDesignSpec
 
 from .local_public import LocalNeighborhoodDiscovery
 from .verification import (
-    verify_basal_neighborhood_result,
-    verify_foldback_neighborhood_result,
+    VerifiedBasalNeighborhoodResult,
+    VerifiedFoldbackNeighborhoodResult,
 )
 
 _RouteDesignEndpoint = Literal[
@@ -54,19 +54,19 @@ _RouteDesignEndpoint = Literal[
 def _foldback_result(receipt: LocalNeighborhoodDiscovery) -> FoldbackNeighborhoodDiscoveryResult:
     if not isinstance(receipt, LocalNeighborhoodDiscovery):
         raise TypeError("Foldback selection requires one local-neighborhood receipt.")
-    source = receipt._verified_source()
-    if not isinstance(source, FoldbackNeighborhoodDiscoveryResult):
+    verified = receipt._verified_authority()
+    if not isinstance(verified, VerifiedFoldbackNeighborhoodResult):
         raise ValueError("Foldback selection requires a foldback receipt.")
-    return verify_foldback_neighborhood_result(source).result
+    return verified.result
 
 
 def _basal_result(receipt: LocalNeighborhoodDiscovery) -> BasalNeighborhoodDiscoveryResult:
     if not isinstance(receipt, LocalNeighborhoodDiscovery):
         raise TypeError("Basal selection requires one local-neighborhood receipt.")
-    source = receipt._verified_source()
-    if not isinstance(source, BasalNeighborhoodDiscoveryResult):
+    verified = receipt._verified_authority()
+    if not isinstance(verified, VerifiedBasalNeighborhoodResult):
         raise ValueError("Basal selection requires a basal receipt.")
-    return verify_basal_neighborhood_result(source).result
+    return verified.result
 
 
 def _select_foldback(

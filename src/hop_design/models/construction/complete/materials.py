@@ -19,11 +19,7 @@ from hop_design.models.physical import Strand, classify_literal_pair
 from hop_design.models.reactions import ReactionMolecule
 
 from .evaluation_inputs import LinearSourceEmbedding
-from .request import (
-    ConstructionDiscoveryRequest,
-    ExactConstructionMaterial,
-    derived_source_material_id,
-)
+from .material import ExactConstructionMaterial
 from .state import ConstructionState, ConstructionStatePhase
 
 
@@ -247,31 +243,6 @@ def whole_source_occurrences(
     return occurrences
 
 
-def derive_source_materials(
-    request: ConstructionDiscoveryRequest,
-    sequence: str,
-    complement_sequence: str,
-) -> tuple[ExactConstructionMaterial, ExactConstructionMaterial]:
-    """Derive the exact source pair from one request's materialization policy."""
-    policy = request.materialization
-    return (
-        ExactConstructionMaterial(
-            material_id=derived_source_material_id(sequence, complementary=False),
-            origin=policy.source_origin,
-            sequence_5prime=sequence,
-            five_prime_end=policy.source_five_prime_end,
-            three_prime_end=policy.source_three_prime_end,
-        ),
-        ExactConstructionMaterial(
-            material_id=derived_source_material_id(complement_sequence, complementary=True),
-            origin=policy.source_complement_origin,
-            sequence_5prime=complement_sequence,
-            five_prime_end=policy.source_complement_five_prime_end,
-            three_prime_end=policy.source_complement_three_prime_end,
-        ),
-    )
-
-
 def validate_initial_material_state(
     state: ConstructionState,
     materials: tuple[ExactConstructionMaterial, ...],
@@ -333,7 +304,6 @@ def validate_initial_material_state(
 
 __all__ = [
     "MaterialOccurrence",
-    "derive_source_materials",
     "foldback_occurrences",
     "validate_initial_material_state",
     "whole_source_occurrences",

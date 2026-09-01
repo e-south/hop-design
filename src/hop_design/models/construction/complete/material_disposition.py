@@ -21,9 +21,9 @@ from hop_design.models.base import HopModel
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
 
+from .material import ExactConstructionMaterial, MaterialUse
 from .pcr import EndpointStrand, MaterialFunction, MaterialFunctionSpan
 from .program import ConstructionProgram
-from .request import ExactConstructionMaterial
 
 
 class MaterialRetentionDisposition(StrEnum):
@@ -44,6 +44,7 @@ class EndpointMaterialOccurrence(HopModel):
 class RouteMaterialDispositionSpan(HopModel):
     """One gap-free input-material span and its exact route disposition."""
 
+    material_use_id: str = Field(pattern=r"^hop:material-use/[0-9a-f]{64}@1$")
     material_id: str = Field(min_length=1)
     function: MaterialFunction
     material_span: Span
@@ -107,17 +108,18 @@ def _removal_by_index(
     program: ConstructionProgram,
     *,
     material: ExactConstructionMaterial,
+    material_use: MaterialUse,
     present: tuple[dict[str, set[int]], ...],
 ) -> tuple[str | None, ...]:
     removals: list[str | None] = []
     for index in range(len(material.sequence_5prime)):
         transition_id = None
         for position, transition in enumerate(program.transitions):
-            if index in present[position].get(material.material_id, set()) and index not in present[
+            if index in present[position].get(material_use.use_id, set()) and index not in present[
                 position + 1
-            ].get(material.material_id, set()):
+            ].get(material_use.use_id, set()):
                 if any(
-                    index in later.get(material.material_id, set())
+                    index in later.get(material_use.use_id, set())
                     for later in present[position + 1 :]
                 ):
                     raise ValueError("Removed material bases cannot reappear later in the route.")
@@ -130,22 +132,28 @@ def _removal_by_index(
 def derive_route_material_dispositions(
     *,
     materials: tuple[ExactConstructionMaterial, ...],
+    material_uses: tuple[MaterialUse, ...],
     program: ConstructionProgram,
     material_function_spans: tuple[MaterialFunctionSpan, ...],
 ) -> tuple[RouteMaterialDispositionSpan, ...]:
     """Derive a gap-free material partition from endpoint lineage and route states."""
     functions = {
-        material.material_id: function
-        for material, function in zip(materials, MaterialFunction, strict=True)
+        material_use.use_id: function
+        for material_use, function in zip(material_uses, MaterialFunction, strict=True)
     }
     mappings: dict[str, list[MaterialFunctionSpan]] = defaultdict(list)
     for record in material_function_spans:
-        mappings[record.material_id].append(record)
+        mappings[record.material_use_id].append(record)
     present = _present_indices(program)
     result: list[RouteMaterialDispositionSpan] = []
-    for material in materials:
-        retained = mappings[material.material_id]
-        removals = _removal_by_index(program, material=material, present=present)
+    for material, material_use in zip(materials, material_uses, strict=True):
+        retained = mappings[material_use.use_id]
+        removals = _removal_by_index(
+            program,
+            material=material,
+            material_use=material_use,
+            present=present,
+        )
         boundaries = {0, len(material.sequence_5prime)}
         for record in retained:
             boundaries.update((record.material_span.start.offset, record.material_span.end.offset))
@@ -164,8 +172,9 @@ def derive_route_material_dispositions(
             if occurrences:
                 result.append(
                     RouteMaterialDispositionSpan(
+                        material_use_id=material_use.use_id,
                         material_id=material.material_id,
-                        function=functions[material.material_id],
+                        function=functions[material_use.use_id],
                         material_span=_span(start, end),
                         disposition=MaterialRetentionDisposition.RETAINED,
                         endpoint_occurrences=occurrences,
@@ -177,8 +186,9 @@ def derive_route_material_dispositions(
                 raise ValueError("Every transient material span requires one replayed removal.")
             result.append(
                 RouteMaterialDispositionSpan(
+                    material_use_id=material_use.use_id,
                     material_id=material.material_id,
-                    function=functions[material.material_id],
+                    function=functions[material_use.use_id],
                     material_span=_span(start, end),
                     disposition=MaterialRetentionDisposition.TRANSIENT,
                     removal_transition_id=removal_ids.pop(),

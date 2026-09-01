@@ -18,6 +18,7 @@ import pytest
 import hop_design as hop
 import hop_design.construction as construction
 from hop_design.design.bundle import load_verified_bundle
+from hop_design.design.construction import verification
 from hop_design.design.construction.local_public import LocalNeighborhoodDiscovery
 from hop_design.design.construction.verification import (
     ConstructionVerificationError,
@@ -195,6 +196,45 @@ def test_route_design_supports_non_four_base_basal_arms() -> None:
     assert features[0].sequence == selected.projection.pairing_profile.source_sequence_5prime
     assert features[-1].sequence == selected.projection.pairing_profile.adapter_sequence_5prime
     assert len(features[0].sequence) == 3
+
+
+def test_route_design_reuses_receipt_verification_without_discovery_replay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload, foldback_result, basal_result = _pcr_authorities()
+    foldback = _receipt(foldback_result)
+    basal = _receipt(basal_result)
+    foldback_id = foldback_result.realizations[0].foldback_realization_id
+    basal_id = basal_result.realizations[0].basal_realization_id
+    expected = construction.compile_design_from_local_realizations(
+        design_id="receipt-reuse",
+        payload_sequence=payload.payload.sequence,
+        endpoint="hairpin_pcr_duplex",
+        foldback=foldback,
+        foldback_realization_id=foldback_id,
+        basal=basal,
+        basal_realization_id=basal_id,
+    )
+
+    def reject_replay(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("verified receipt was replayed during design compilation")
+
+    monkeypatch.setattr(verification, "discover_foldback_neighborhood", reject_replay)
+    monkeypatch.setattr(verification, "discover_basal_neighborhood", reject_replay)
+
+    observed = construction.compile_design_from_local_realizations(
+        design_id="receipt-reuse",
+        payload_sequence=payload.payload.sequence,
+        endpoint="hairpin_pcr_duplex",
+        foldback=foldback,
+        foldback_realization_id=foldback_id,
+        basal=basal,
+        basal_realization_id=basal_id,
+    )
+
+    assert canonical_json_bytes(observed.spec) == canonical_json_bytes(expected.spec)
+    assert canonical_json_bytes(observed.plan) == canonical_json_bytes(expected.plan)
+    assert observed.bundle == expected.bundle
 
 
 @pytest.mark.parametrize(

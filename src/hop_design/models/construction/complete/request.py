@@ -12,10 +12,16 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import hashlib
-from enum import StrEnum
-from typing import Literal
+from typing import Literal, cast
 
-from pydantic import Field, TypeAdapter, field_validator, model_validator
+from pydantic import (
+    Field,
+    SerializerFunctionWrapHandler,
+    TypeAdapter,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from hop_design.models.base import HopModel
 from hop_design.models.bundle import HopBundle, validate_bundle_manifest
@@ -26,62 +32,17 @@ from hop_design.models.construction.payload import (
     _content_id,
 )
 from hop_design.models.enzymes import EnzymeClass, EnzymeProvisioningPolicy, EnzymeRole
-from hop_design.models.molecular_state import EndChemistry, StrandEnd
+from hop_design.models.molecular_state import StrandEnd
 from hop_design.models.physical import SiteOrientation
 from hop_design.models.plan import HopPlan
 from hop_design.models.sequence import normalize_dna_sequence
 from hop_design.models.spec import DesignAuthoritySpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
+from .accounting import CompositionEnumerationPolicy
+from .source_preparation import LinearSourceMaterializationSpec
+
 _DESIGN_SPEC_ADAPTER: TypeAdapter[DesignAuthoritySpec] = TypeAdapter(DesignAuthoritySpec)
-
-
-class MaterialOrigin(StrEnum):
-    """Caller-declared physical origin of one exact route material."""
-
-    SYNTHESIZED = "synthesized"
-    PCR_DERIVED = "pcr_derived"
-    PURIFIED = "purified"
-
-
-class ExactConstructionMaterial(HopModel):
-    """One exact caller-owned material including terminal chemistry."""
-
-    material_id: str = Field(pattern=r"^[a-z][a-z0-9_-]*$")
-    origin: MaterialOrigin
-    sequence_5prime: str
-    five_prime_end: EndChemistry
-    three_prime_end: EndChemistry
-
-    @field_validator("sequence_5prime", mode="before")
-    @classmethod
-    def normalize_sequence(cls, value: object) -> str:
-        if not isinstance(value, str):
-            raise ValueError("Construction material sequence must be a DNA string.")
-        return normalize_dna_sequence(value, allow_degenerate=False)
-
-
-class PcrPrimer(HopModel):
-    """One exact oligo with a terminal three-prime annealing segment."""
-
-    oligo: ExactConstructionMaterial
-    annealing_length_nt: int = Field(ge=1)
-
-    @model_validator(mode="after")
-    def validate_annealing_length(self) -> PcrPrimer:
-        if self.annealing_length_nt > len(self.oligo.sequence_5prime):
-            raise ValueError("Primer annealing length cannot exceed the exact oligo length.")
-        return self
-
-    @property
-    def annealing_sequence(self) -> str:
-        """Return the terminal three-prime segment that binds the template."""
-        return self.oligo.sequence_5prime[-self.annealing_length_nt :]
-
-    @property
-    def five_prime_handle(self) -> str:
-        """Return exact primer sequence outside the terminal annealing segment."""
-        return self.oligo.sequence_5prime[: -self.annealing_length_nt]
 
 
 class ReleaseSideRequirement(HopModel):
@@ -133,44 +94,6 @@ class TypeIisReleaseRequest(HopModel):
             or (enzyme.cut_offset_reference_strand <= 0 and complement_offset <= 0)
         ):
             raise ValueError("A Type IIS release enzyme must cleave outside its recognition site.")
-        return self
-
-
-def derived_source_material_id(sequence: str, *, complementary: bool) -> str:
-    """Return the deterministic identity label for one route-derived source strand."""
-    normalized = normalize_dna_sequence(sequence, allow_degenerate=False)
-    digest = hashlib.sha256(normalized.encode()).hexdigest()[:16]
-    role = "source-complement" if complementary else "source"
-    return f"{role}-{digest}"
-
-
-class LinearSourceMaterializationSpec(HopModel):
-    """Source origin/chemistry policy plus exact endpoint-dependent auxiliary oligos."""
-
-    source_origin: MaterialOrigin
-    source_five_prime_end: EndChemistry
-    source_three_prime_end: EndChemistry
-    source_complement_origin: MaterialOrigin
-    source_complement_five_prime_end: EndChemistry
-    source_complement_three_prime_end: EndChemistry
-    adapter: ExactConstructionMaterial | None = None
-    forward_primer: PcrPrimer | None = None
-    reverse_primer: PcrPrimer | None = None
-
-    @model_validator(mode="after")
-    def validate_unique_auxiliaries(self) -> LinearSourceMaterializationSpec:
-        materials = tuple(
-            item
-            for item in (
-                self.adapter,
-                None if self.forward_primer is None else self.forward_primer.oligo,
-                None if self.reverse_primer is None else self.reverse_primer.oligo,
-            )
-            if item is not None
-        )
-        ids = tuple(item.material_id for item in materials)
-        if len(ids) != len(set(ids)):
-            raise ValueError("Construction material ids must be unique.")
         return self
 
 
@@ -236,26 +159,11 @@ class WholeRouteConstraints(HopModel):
     require_all_combinations_valid: bool = False
 
 
-class CompositionPruningMode(StrEnum):
-    """Closed whole-route composition pruning modes."""
-
-    DISABLED = "disabled"
-    PROOF_SAFE = "proof_safe"
-
-
-class CompositionEnumerationPolicy(HopModel):
-    """Finite complete-route enumeration limits and safe pruning policy."""
-
-    pruning: CompositionPruningMode = CompositionPruningMode.DISABLED
-    max_combinations: int = Field(ge=1)
-    max_realizations: int = Field(ge=1)
-
-
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v3"] = Field(
-        default="hop.construction-discovery-request/v3", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v5"] = Field(
+        default="hop.construction-discovery-request/v5", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily
@@ -266,11 +174,42 @@ class ConstructionDiscoveryRequest(HopModel):
         default=None,
         pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$",
     )
+    source_partition_result_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-result/[0-9a-f]{64}@1$",
+    )
+    selected_source_partition_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-realization/[0-9a-f]{64}@1$",
+    )
+    selected_foldback_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:foldback-realization/[0-9a-f]{64}@1$",
+    )
+    selected_basal_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$",
+    )
     materialization: LinearSourceMaterializationSpec
     release: TypeIisReleaseRequest | None = None
     design: DesignAuthorityReference
     whole_route_constraints: WholeRouteConstraints
     enumeration: CompositionEnumerationPolicy
+
+    @model_serializer(mode="wrap")
+    def serialize_request(
+        self,
+        handler: SerializerFunctionWrapHandler,
+    ) -> dict[str, object]:
+        content = cast(dict[str, object], handler(self))
+        if self.selected_foldback_realization_id is None:
+            content.pop("selected_foldback_realization_id", None)
+        if self.selected_basal_realization_id is None:
+            content.pop("selected_basal_realization_id", None)
+        if not self.selects_source_partition:
+            content.pop("source_partition_result_id", None)
+            content.pop("selected_source_partition_realization_id", None)
+        return content
 
     @model_validator(mode="after")
     def validate_endpoint_materials(self) -> ConstructionDiscoveryRequest:
@@ -279,25 +218,50 @@ class ConstructionDiscoveryRequest(HopModel):
             raise ValueError("Design authority must bind the exact requested payload.")
         if self.foldback_intermediate_endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
             raise ValueError("The foldback intermediate must be an ssDNA hairpin.")
-        auxiliaries = (
-            self.materialization.adapter,
-            self.materialization.forward_primer,
-            self.materialization.reverse_primer,
-        )
+        auxiliaries = self.materialization.endpoint_auxiliaries
         if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-            if any(item is not None for item in auxiliaries) or self.release is not None:
-                raise ValueError("A direct endpoint must omit adapter and PCR primers.")
-        elif self.basal_result_id is None or any(item is None for item in auxiliaries):
+            if auxiliaries is not None or self.release is not None:
+                raise ValueError("A direct endpoint must omit endpoint auxiliaries.")
+        elif self.basal_result_id is None or auxiliaries is None:
             raise ValueError(
-                "PCR-bearing endpoints require an exact adapter and both primers "
-                "plus basal authority."
+                "PCR-bearing endpoints require endpoint auxiliary policies plus basal authority."
             )
         elif self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
             if self.release is not None:
                 raise ValueError("A hairpin PCR endpoint must omit clone release.")
         elif self.release is None:
             raise ValueError("A clone-ready endpoint requires exact Type IIS release.")
+        if (
+            self.selected_basal_realization_id is not None
+            and self.selected_foldback_realization_id is None
+        ):
+            raise ValueError("A selected basal realization requires a selected foldback.")
+        if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
+            if self.selected_basal_realization_id is not None:
+                raise ValueError("A direct endpoint must omit a selected basal realization.")
+        elif (self.selected_foldback_realization_id is None) != (
+            self.selected_basal_realization_id is None
+        ):
+            raise ValueError(
+                "PCR-bearing selected composition requires both local realization ids."
+            )
+        if (self.source_partition_result_id is None) != (
+            self.selected_source_partition_realization_id is None
+        ):
+            raise ValueError(
+                "A selected source partition requires both its result and realization ids."
+            )
         return self
+
+    @property
+    def selects_local_realizations(self) -> bool:
+        """Return whether composition is restricted to explicit local realizations."""
+        return self.selected_foldback_realization_id is not None
+
+    @property
+    def selects_source_partition(self) -> bool:
+        """Return whether the route binds one explicit source-partition authority."""
+        return self.source_partition_result_id is not None
 
     @property
     def problem_id(self) -> str:
@@ -314,6 +278,15 @@ class ConstructionDiscoveryRequest(HopModel):
             "design": self.design.model_dump(mode="json"),
             "whole_route_constraints": self.whole_route_constraints.model_dump(mode="json"),
         }
+        if self.selected_foldback_realization_id is not None:
+            content["selected_foldback_realization_id"] = self.selected_foldback_realization_id
+        if self.selected_basal_realization_id is not None:
+            content["selected_basal_realization_id"] = self.selected_basal_realization_id
+        if self.selects_source_partition:
+            content["source_partition_result_id"] = self.source_partition_result_id
+            content["selected_source_partition_realization_id"] = (
+                self.selected_source_partition_realization_id
+            )
         return _content_id("construction-problem", 1, content)
 
     @property
@@ -323,16 +296,9 @@ class ConstructionDiscoveryRequest(HopModel):
 
 
 __all__ = [
-    "CompositionEnumerationPolicy",
-    "CompositionPruningMode",
     "ConstructionDiscoveryRequest",
     "DesignAuthorityReference",
-    "ExactConstructionMaterial",
-    "LinearSourceMaterializationSpec",
-    "MaterialOrigin",
-    "PcrPrimer",
     "ReleaseSideRequirement",
     "TypeIisReleaseRequest",
     "WholeRouteConstraints",
-    "derived_source_material_id",
 ]

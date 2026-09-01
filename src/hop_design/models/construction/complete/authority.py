@@ -19,8 +19,8 @@ from pydantic import Field
 from hop_design.models.base import HopModel
 from hop_design.models.construction.payload import _content_id
 
+from .accounting import CompositionEnumerationPolicy
 from .evaluation import CompositionRejectionCode
-from .request import CompositionEnumerationPolicy
 
 
 class ConstructionCompositionExecution(HopModel):
@@ -28,7 +28,7 @@ class ConstructionCompositionExecution(HopModel):
 
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     hop_version: str
-    route_implementation_version: Literal["complete-construction/4"] = "complete-construction/4"
+    route_implementation_version: Literal["complete-construction/5"] = "complete-construction/5"
     enumeration: CompositionEnumerationPolicy
     environment: dict[str, str] = Field(default_factory=dict)
 
@@ -42,11 +42,21 @@ class ConstructionCompositionProvenance(HopModel):
     """Exact upstream authorities and implementation identity for composition."""
 
     hop_version: str
-    route_implementation_version: Literal["complete-construction/4"] = "complete-construction/4"
+    route_implementation_version: Literal["complete-construction/5"] = "complete-construction/5"
     foldback_result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     basal_result_id: str | None = Field(
         default=None,
         pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$",
+    )
+    source_partition_result_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-result/[0-9a-f]{64}@1$",
+        exclude_if=lambda value: value is None,
+    )
+    source_partition_realization_id: str | None = Field(
+        default=None,
+        pattern=r"^hop:source-partition-realization/[0-9a-f]{64}@1$",
+        exclude_if=lambda value: value is None,
     )
     design_bundle_id: str = Field(min_length=1)
     foldback_realization_ids: tuple[str, ...]

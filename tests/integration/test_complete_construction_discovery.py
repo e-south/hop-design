@@ -54,11 +54,18 @@ from hop_design.models.construction.complete import (
     CompositionEnumerationPolicy,
     CompositionPruningMode,
     ConstructionDiscoveryRequest,
+    DerivedPrimerPolicy,
+    DerivedSourceSsdnaPolicy,
     DesignAuthorityReference,
+    EndpointAuxiliaryPolicy,
     ExactConstructionMaterial,
+    FixedAdapterPolicy,
+    FixedEndpointPrimerPolicy,
+    FixedPrimerPolicy,
     LinearSourceMaterializationSpec,
-    MaterialOrigin,
+    MaterialResolutionMode,
     PcrPrimer,
+    SourceDuplexPreparationPolicy,
     TypeIisReleaseRequest,
     WholeRouteConstraints,
 )
@@ -173,13 +180,17 @@ def _basal_result(
     )
 
 
-def _material(material_id: str, sequence: str) -> ExactConstructionMaterial:
+def _material(
+    _role: str,
+    sequence: str,
+    *,
+    five_prime_end: EndChemistry = EndChemistry.PHOSPHATE,
+    three_prime_end: EndChemistry = EndChemistry.HYDROXYL,
+) -> ExactConstructionMaterial:
     return ExactConstructionMaterial(
-        material_id=material_id,
-        origin=MaterialOrigin.SYNTHESIZED,
         sequence_5prime=sequence,
-        five_prime_end=EndChemistry.PHOSPHATE,
-        three_prime_end=EndChemistry.HYDROXYL,
+        five_prime_end=five_prime_end,
+        three_prime_end=three_prime_end,
     )
 
 
@@ -218,16 +229,59 @@ def _construction_request(
     foldback,
     basal,
     design,
-    source_five_prime_end: EndChemistry = EndChemistry.HYDROXYL,
-    complement_five_prime_end: EndChemistry = EndChemistry.PHOSPHATE,
     require_all: bool = False,
     endpoint: ConstructionEndpoint = ConstructionEndpoint.SSDNA_HAIRPIN,
     adapter: ExactConstructionMaterial | None = None,
     forward_primer: ExactConstructionMaterial | PcrPrimer | None = None,
     reverse_primer: ExactConstructionMaterial | PcrPrimer | None = None,
+    source_preparation: SourceDuplexPreparationPolicy | None = None,
+    endpoint_auxiliaries: EndpointAuxiliaryPolicy | None = None,
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionDiscoveryRequest:
     encoding = design.plan.hairpin_encoding_insert
+    forward = (
+        forward_primer
+        if isinstance(forward_primer, PcrPrimer)
+        else None
+        if forward_primer is None
+        else PcrPrimer(
+            oligo=forward_primer,
+            annealing_length_nt=len(forward_primer.sequence_5prime),
+        )
+    )
+    reverse = (
+        reverse_primer
+        if isinstance(reverse_primer, PcrPrimer)
+        else None
+        if reverse_primer is None
+        else PcrPrimer(
+            oligo=reverse_primer,
+            annealing_length_nt=len(reverse_primer.sequence_5prime),
+        )
+    )
+    if endpoint_auxiliaries is not None and any(
+        item is not None for item in (adapter, forward, reverse)
+    ):
+        raise ValueError("Test request must use policy or exact auxiliary inputs, not both.")
+    if endpoint_auxiliaries is None and any(
+        item is not None for item in (adapter, forward, reverse)
+    ):
+        if adapter is None or forward is None or reverse is None:
+            raise ValueError("Exact test auxiliary inputs must be complete.")
+        endpoint_auxiliaries = EndpointAuxiliaryPolicy(
+            adapter=FixedAdapterPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                material=adapter,
+            ),
+            forward_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=forward,
+            ),
+            reverse_primer=FixedEndpointPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=reverse,
+            ),
+        )
     return ConstructionDiscoveryRequest(
         payload=payload,
         route_family=RouteFamily.LINEAR_SOURCE_V1,
@@ -235,33 +289,23 @@ def _construction_request(
         foldback_result_id=foldback.result_id,
         basal_result_id=None if basal is None else basal.result_id,
         materialization=LinearSourceMaterializationSpec(
-            source_origin=MaterialOrigin.SYNTHESIZED,
-            source_five_prime_end=source_five_prime_end,
-            source_three_prime_end=EndChemistry.HYDROXYL,
-            source_complement_origin=MaterialOrigin.SYNTHESIZED,
-            source_complement_five_prime_end=complement_five_prime_end,
-            source_complement_three_prime_end=EndChemistry.HYDROXYL,
-            adapter=adapter,
-            forward_primer=(
-                None
-                if forward_primer is None
-                else forward_primer
-                if isinstance(forward_primer, PcrPrimer)
-                else PcrPrimer(
-                    oligo=forward_primer,
-                    annealing_length_nt=len(forward_primer.sequence_5prime),
-                )
+            source_preparation=source_preparation
+            or SourceDuplexPreparationPolicy(
+                source_ssdna=DerivedSourceSsdnaPolicy(
+                    mode=MaterialResolutionMode.DERIVE,
+                    five_prime_end=EndChemistry.HYDROXYL,
+                    three_prime_end=EndChemistry.HYDROXYL,
+                ),
+                forward_primer=DerivedPrimerPolicy(
+                    mode=MaterialResolutionMode.DERIVE,
+                    annealing_length_nt=1,
+                ),
+                reverse_primer=DerivedPrimerPolicy(
+                    mode=MaterialResolutionMode.DERIVE,
+                    annealing_length_nt=1,
+                ),
             ),
-            reverse_primer=(
-                None
-                if reverse_primer is None
-                else reverse_primer
-                if isinstance(reverse_primer, PcrPrimer)
-                else PcrPrimer(
-                    oligo=reverse_primer,
-                    annealing_length_nt=len(reverse_primer.sequence_5prime),
-                )
-            ),
+            endpoint_auxiliaries=endpoint_auxiliaries,
         ),
         release=release,
         design=DesignAuthorityReference(
@@ -332,12 +376,21 @@ def test_complete_composition_filters_a_multi_payload_local_authority(
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
         foldback_result_id=foldback.result_id,
         materialization=LinearSourceMaterializationSpec(
-            source_origin=MaterialOrigin.SYNTHESIZED,
-            source_five_prime_end=EndChemistry.HYDROXYL,
-            source_three_prime_end=EndChemistry.HYDROXYL,
-            source_complement_origin=MaterialOrigin.SYNTHESIZED,
-            source_complement_five_prime_end=EndChemistry.PHOSPHATE,
-            source_complement_three_prime_end=EndChemistry.HYDROXYL,
+            source_preparation=SourceDuplexPreparationPolicy(
+                source_ssdna=DerivedSourceSsdnaPolicy(
+                    mode=MaterialResolutionMode.DERIVE,
+                    five_prime_end=EndChemistry.HYDROXYL,
+                    three_prime_end=EndChemistry.HYDROXYL,
+                ),
+                forward_primer=DerivedPrimerPolicy(
+                    mode=MaterialResolutionMode.DERIVE,
+                    annealing_length_nt=1,
+                ),
+                reverse_primer=DerivedPrimerPolicy(
+                    mode=MaterialResolutionMode.DERIVE,
+                    annealing_length_nt=1,
+                ),
+            ),
         ),
         design=DesignAuthorityReference(
             bundle=design.bundle,
@@ -451,11 +504,32 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
     assert result.status is SearchCompletionStatus.COMPLETE
-    assert result.schema_id == "hop.construction-space-result/v3"
+    assert result.schema_id == "hop.construction-space-result/v5"
     assert result.provenance.basal_result_id is None
     assert result.accounting.truncated_combinations == 0
     assert result.failure_reasons == ()
     assert result.realizations
+    realization = result.realizations[0]
+    assert (
+        realization.source_preparation.produced_material_bindings[0].material
+        == (realization.materials[0])
+    )
+    assert (
+        realization.source_preparation.produced_material_bindings[1].material
+        == (realization.materials[1])
+    )
+    assert realization.source_preparation.payload_source_span == (
+        realization.payload_source_map.segments[0].source_span
+    )
+    assert result.material_accounting.source_material_nt == sum(
+        len(item.source_preparation.source_ssdna.sequence_5prime) for item in result.realizations
+    )
+    assert result.material_accounting.auxiliary_material_nt == sum(
+        len(item.source_preparation.forward_primer.oligo.sequence_5prime)
+        + len(item.source_preparation.reverse_primer.oligo.sequence_5prime)
+        + sum(len(material.sequence_5prime) for material in item.materials[2:])
+        for item in result.realizations
+    )
     assert all(
         item.final_product.reference.sequence == request.design.encoding_sequence
         for item in result.realizations
@@ -504,8 +578,6 @@ def test_direct_composition_preserves_a_bottom_nick_source_orientation(
         foldback=foldback,
         basal=None,
         design=design,
-        source_five_prime_end=EndChemistry.PHOSPHATE,
-        complement_five_prime_end=EndChemistry.HYDROXYL,
     )
 
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
@@ -531,7 +603,7 @@ def test_direct_composition_preserves_a_bottom_nick_source_orientation(
         (item.origin_id, item.origin_strand, item.origin_index) for item in final.lineage[:4]
     ) == tuple(
         (
-            realization.materials[1].material_id,
+            realization.material_uses[1].use_id,
             LineageStrand.COMPLEMENTARY,
             index,
         )
@@ -554,8 +626,6 @@ def test_direct_composition_preserves_both_physical_source_trajectories(
         foldback=foldback,
         basal=None,
         design=design,
-        source_five_prime_end=EndChemistry.PHOSPHATE,
-        complement_five_prime_end=EndChemistry.PHOSPHATE,
     )
 
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
@@ -601,8 +671,6 @@ def test_direct_realization_rejects_resealed_source_orientation_forgery(
         foldback=foldback,
         basal=None,
         design=design,
-        source_five_prime_end=EndChemistry.PHOSPHATE,
-        complement_five_prime_end=EndChemistry.HYDROXYL,
     )
     realization = _discover_raw(
         request,
@@ -626,7 +694,7 @@ def test_direct_realization_rejects_resealed_source_orientation_forgery(
         type(realization).create(**(content | {"payload_source_map": forged_map}))
 
 
-def test_bottom_nick_direct_route_requires_source_top_phosphorylation(
+def test_bottom_nick_direct_route_rejects_a_fixed_unphosphorylated_source_primer(
     tmp_path: Path,
 ) -> None:
     payload = FinalPayloadReference(
@@ -651,15 +719,174 @@ def test_bottom_nick_direct_route_requires_source_top_phosphorylation(
         foldback=foldback,
         basal=None,
         design=design,
-        source_five_prime_end=EndChemistry.HYDROXYL,
-        complement_five_prime_end=EndChemistry.PHOSPHATE,
+        source_preparation=SourceDuplexPreparationPolicy(
+            source_ssdna=DerivedSourceSsdnaPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                five_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=EndChemistry.HYDROXYL,
+            ),
+            forward_primer=FixedPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(
+                    oligo=_material(
+                        "fixed-unphosphorylated-forward",
+                        "A",
+                        five_prime_end=EndChemistry.HYDROXYL,
+                    ),
+                    annealing_length_nt=1,
+                ),
+            ),
+            reverse_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
+        ),
     )
 
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
     assert result.status is SearchCompletionStatus.INFEASIBLE
     assert tuple((item.code, item.count) for item in result.failure_reasons) == (
-        (CompositionRejectionCode.SOURCE_END_CHEMISTRY_MISMATCH, 1),
+        (CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE, 1),
+    )
+
+
+def test_complete_composition_rejects_a_fixed_source_primer_crossing_the_payload(
+    tmp_path: Path,
+) -> None:
+    payload = FinalPayloadReference(
+        payload=ExactPayload(sequence="GACA"),
+        basal_boundary=Boundary(offset=0),
+        foldback_boundary=Boundary(offset=4),
+    )
+    foldback = discover_foldback_neighborhood(
+        _request(
+            _nickase(motif="ACATTT"),
+            target=FoldbackTarget(
+                nick_strand=Strand.BOTTOM,
+                nick_offset_within_foldback_nt=0,
+                loop_length_nt=3,
+                annealing_arm_length_bp=3,
+            ),
+        )
+    )
+    design = _verified_asymmetric_foldback_design(tmp_path)
+    baseline = _discover_raw(
+        _construction_request(
+            payload=payload,
+            foldback=foldback,
+            basal=None,
+            design=design,
+        ),
+        foldback=foldback,
+        basal=None,
+        design=design,
+    ).realizations[0]
+    source_preparation = baseline.source_preparation
+    crossing_length = source_preparation.payload_source_span.start.offset + 1
+    source_sequence = source_preparation.source_ssdna.sequence_5prime
+    request = _construction_request(
+        payload=payload,
+        foldback=foldback,
+        basal=None,
+        design=design,
+        source_preparation=SourceDuplexPreparationPolicy(
+            source_ssdna=DerivedSourceSsdnaPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                five_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=EndChemistry.HYDROXYL,
+            ),
+            forward_primer=FixedPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(
+                    oligo=_material(
+                        "fixed-payload-crossing-forward",
+                        source_sequence[:crossing_length],
+                    ),
+                    annealing_length_nt=crossing_length,
+                ),
+            ),
+            reverse_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
+        ),
+    )
+
+    result = _discover_raw(request, foldback=foldback, basal=None, design=design)
+
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert tuple((item.code, item.count) for item in result.failure_reasons) == (
+        (CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE, 1),
+    )
+
+
+def test_complete_composition_rejects_fixed_source_primer_without_three_prime_hydroxyl(
+    tmp_path: Path,
+) -> None:
+    payload = FinalPayloadReference(
+        payload=ExactPayload(sequence="GACA"),
+        basal_boundary=Boundary(offset=0),
+        foldback_boundary=Boundary(offset=4),
+    )
+    foldback = discover_foldback_neighborhood(
+        _request(
+            _nickase(motif="ACATTT"),
+            target=FoldbackTarget(
+                nick_strand=Strand.BOTTOM,
+                nick_offset_within_foldback_nt=0,
+                loop_length_nt=3,
+                annealing_arm_length_bp=3,
+            ),
+        )
+    )
+    design = _verified_asymmetric_foldback_design(tmp_path)
+    baseline = _discover_raw(
+        _construction_request(
+            payload=payload,
+            foldback=foldback,
+            basal=None,
+            design=design,
+        ),
+        foldback=foldback,
+        basal=None,
+        design=design,
+    ).realizations[0]
+    baseline_primer = baseline.source_preparation.forward_primer
+    request = _construction_request(
+        payload=payload,
+        foldback=foldback,
+        basal=None,
+        design=design,
+        source_preparation=SourceDuplexPreparationPolicy(
+            source_ssdna=DerivedSourceSsdnaPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                five_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=EndChemistry.HYDROXYL,
+            ),
+            forward_primer=FixedPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(
+                    oligo=ExactConstructionMaterial(
+                        sequence_5prime=baseline_primer.oligo.sequence_5prime,
+                        five_prime_end=baseline_primer.oligo.five_prime_end,
+                        three_prime_end=EndChemistry.PHOSPHATE,
+                    ),
+                    annealing_length_nt=baseline_primer.annealing_length_nt,
+                ),
+            ),
+            reverse_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
+        ),
+    )
+
+    result = _discover_raw(request, foldback=foldback, basal=None, design=design)
+
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert tuple((item.code, item.count) for item in result.failure_reasons) == (
+        (CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE, 1),
     )
 
 
@@ -691,7 +918,28 @@ def test_require_all_preserves_intrinsic_failures_when_every_combination_rejects
         foldback=foldback,
         basal=None,
         design=design,
-        complement_five_prime_end=EndChemistry.HYDROXYL,
+        source_preparation=SourceDuplexPreparationPolicy(
+            source_ssdna=DerivedSourceSsdnaPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                five_prime_end=EndChemistry.HYDROXYL,
+                three_prime_end=EndChemistry.HYDROXYL,
+            ),
+            forward_primer=DerivedPrimerPolicy(
+                mode=MaterialResolutionMode.DERIVE,
+                annealing_length_nt=1,
+            ),
+            reverse_primer=FixedPrimerPolicy(
+                mode=MaterialResolutionMode.FIXED,
+                primer=PcrPrimer(
+                    oligo=_material(
+                        "fixed-unphosphorylated-reverse",
+                        "A",
+                        five_prime_end=EndChemistry.HYDROXYL,
+                    ),
+                    annealing_length_nt=1,
+                ),
+            ),
+        ),
         require_all=True,
     )
 
@@ -700,11 +948,14 @@ def test_require_all_preserves_intrinsic_failures_when_every_combination_rejects
     assert result.status is SearchCompletionStatus.INFEASIBLE
     assert result.realizations == ()
     assert tuple((item.code, item.count) for item in result.failure_reasons) == (
-        (CompositionRejectionCode.SOURCE_END_CHEMISTRY_MISMATCH, len(foldback.realizations)),
+        (
+            CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE,
+            len(foldback.realizations),
+        ),
     )
 
 
-def test_complete_materialization_preserves_exact_optional_stem_extension(
+def test_source_copy_rejects_a_noncomplementary_optional_stem_extension(
     tmp_path: Path,
 ) -> None:
     payload = FinalPayloadReference(
@@ -746,20 +997,11 @@ def test_complete_materialization_preserves_exact_optional_stem_extension(
 
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
-    assert result.status is SearchCompletionStatus.COMPLETE
-    assert result.realizations
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert result.realizations == ()
     assert all(
-        item.final_product.encoding_projection.sequence == request.design.encoding_sequence
-        for item in result.realizations
-    )
-    assert all(
-        item.materials[0].sequence_5prime.startswith("AAAAGCTA")
-        and item.materials[1].sequence_5prime.endswith("TAACTTTT")
-        for item in result.realizations
-    )
-    assert all(
-        item.payload_source_map.segments[0].source_span.start.offset == 8
-        for item in result.realizations
+        item.rejection_reason is CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE
+        for item in result.combination_dispositions
     )
 
 
@@ -807,7 +1049,6 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
         foldback=foldback,
         basal=None,
         design=design,
-        complement_five_prime_end=EndChemistry.HYDROXYL,
         require_all=True,
     )
 
@@ -816,11 +1057,9 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
     assert result.status is SearchCompletionStatus.TRUNCATED
     assert result.truncation_reasons == ()
     assert result.upstream_truncation_reasons == ("foldback:max_search_nodes",)
-    assert len(result.realizations) == 1
+    assert len(result.realizations) == 2
     assert tuple(item.status for item in result.combination_dispositions) == (
-        CompositionDispositionStatus.REJECTED,
+        CompositionDispositionStatus.ACCEPTED,
         CompositionDispositionStatus.ACCEPTED,
     )
-    assert tuple((item.code, item.count) for item in result.failure_reasons) == (
-        (CompositionRejectionCode.SOURCE_END_CHEMISTRY_MISMATCH, 1),
-    )
+    assert result.failure_reasons == ()

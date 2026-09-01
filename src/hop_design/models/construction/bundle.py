@@ -23,8 +23,8 @@ from hop_design.models.references import ReferenceId
 class ConstructionBundle(HopModel):
     """Content-addressed authority for one verified complete-construction result."""
 
-    schema_id: Literal["hop.construction-bundle/v3"] = Field(
-        default="hop.construction-bundle/v3", alias="schema"
+    schema_id: Literal["hop.construction-bundle/v5"] = Field(
+        default="hop.construction-bundle/v5", alias="schema"
     )
     bundle_id: ReferenceId
     result_id: ReferenceId

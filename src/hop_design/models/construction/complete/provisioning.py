@@ -18,7 +18,9 @@ from hop_design.models.enzymes import (
     EnzymeProvisioningPolicy,
     EnzymeRole,
     EnzymeRoleRestriction,
+    characterized_enzyme_digest,
 )
+from hop_design.models.reactions import ReactionProgram
 
 
 def _catalog_entries(
@@ -81,4 +83,30 @@ def merge_provisioning_policies(
     )
 
 
-__all__ = ["merge_provisioning_policies"]
+def resolve_program_enzyme_definitions(
+    *,
+    program: ReactionProgram,
+    policies: tuple[EnzymeProvisioningPolicy, ...],
+) -> tuple[CharacterizedEnzyme, ...]:
+    """Resolve every program enzyme against compatible molecular definitions."""
+    definitions: dict[str, CharacterizedEnzyme] = {}
+    digests: dict[str, str] = {}
+    for policy in policies:
+        for enzyme in policy.catalog.enzymes:
+            digest = characterized_enzyme_digest(enzyme)
+            previous = digests.setdefault(enzyme.enzyme_id, digest)
+            if previous != digest:
+                raise ValueError("A reaction program cannot use conflicting enzyme definitions.")
+            definitions.setdefault(enzyme.enzyme_id, enzyme)
+    required_ids = {
+        operation.enzyme_id for stage in program.stages for operation in stage.operations
+    }
+    missing = required_ids - definitions.keys()
+    if missing:
+        raise ValueError(
+            f"Reaction program references enzymes without definitions: {sorted(missing)}"
+        )
+    return tuple(definitions[enzyme_id] for enzyme_id in sorted(required_ids))
+
+
+__all__ = ["merge_provisioning_policies", "resolve_program_enzyme_definitions"]

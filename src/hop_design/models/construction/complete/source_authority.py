@@ -23,6 +23,23 @@ from hop_design.models.construction.foldback import (
 )
 
 
+def expected_upstream_truncation_reasons(
+    *,
+    request: Any,
+    foldback: FoldbackNeighborhoodDiscoveryResult,
+    basal: BasalNeighborhoodDiscoveryResult | None,
+) -> tuple[str, ...]:
+    """Return local-search truncation evidence relevant to complete composition."""
+    if request.selects_local_realizations:
+        return ()
+    return tuple(
+        f"foldback:{reason}" for reason in foldback.neighborhood.truncation_reasons
+    ) + tuple(
+        f"basal:{reason}"
+        for reason in (() if basal is None else basal.discovery.truncation_reasons)
+    )
+
+
 def validate_local_authorities(
     *,
     foldback: FoldbackLocalRealization,
@@ -72,8 +89,22 @@ def validate_result_authorities(
         if basal is None
         else tuple(item for item in basal.realizations if item.payload_sequence == payload)
     )
-    foldback_members = tuple(item.foldback_realization_id for item in foldback_records)
-    basal_members = tuple(item.basal_realization_id for item in basal_records)
+    foldback_members = (
+        (request.selected_foldback_realization_id,)
+        if request.selected_foldback_realization_id is not None
+        else tuple(item.foldback_realization_id for item in foldback_records)
+    )
+    basal_members = (
+        (request.selected_basal_realization_id,)
+        if request.selected_basal_realization_id is not None
+        else tuple(item.basal_realization_id for item in basal_records)
+    )
+    foldback_member_set = {record.foldback_realization_id for record in foldback_records}
+    basal_member_set = {record.basal_realization_id for record in basal_records}
+    if any(item not in foldback_member_set for item in foldback_members):
+        raise ValueError("Selected foldback authority must belong to the detailed result.")
+    if any(item not in basal_member_set for item in basal_members):
+        raise ValueError("Selected basal authority must belong to the detailed result.")
     if (
         provenance.foldback_realization_ids != foldback_members
         or provenance.basal_realization_ids != basal_members
@@ -97,4 +128,8 @@ def validate_result_authorities(
             raise ValueError("Accepted basal member must equal its detailed result authority.")
 
 
-__all__ = ["validate_local_authorities", "validate_result_authorities"]
+__all__ = [
+    "expected_upstream_truncation_reasons",
+    "validate_local_authorities",
+    "validate_result_authorities",
+]

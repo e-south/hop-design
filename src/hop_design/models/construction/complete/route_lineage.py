@@ -20,8 +20,8 @@ from hop_design.models.molecular_state import (
 from hop_design.models.reactions import ReactionMolecule
 
 from .evaluation_inputs import LinearSourceEmbedding
+from .material import ExactConstructionMaterial
 from .materials import MaterialOccurrence, foldback_occurrences
-from .request import ExactConstructionMaterial
 
 
 def material_strand(
@@ -29,6 +29,7 @@ def material_strand(
     material: ExactConstructionMaterial,
     *,
     lineage_strand: LineageStrand,
+    material_use_id: str,
 ) -> MolecularStrand:
     """Create one exact strand whose bases map to one declared material."""
     return MolecularStrand(
@@ -39,7 +40,7 @@ def material_strand(
         lineage=tuple(
             MaterialBaseLineage(
                 product_index=index,
-                origin_id=material.material_id,
+                origin_id=material_use_id,
                 origin_strand=lineage_strand,
                 origin_index=index,
             )
@@ -56,6 +57,8 @@ def reaction_molecule_strands(
     source_complement: ExactConstructionMaterial,
     reference_occurrence: MaterialOccurrence,
     complement_occurrence: MaterialOccurrence | None,
+    source_use_id: str,
+    source_complement_use_id: str,
 ) -> tuple[MolecularStrand, ...]:
     """Map one reaction molecule into exact material coordinates."""
     primary_material = (
@@ -69,6 +72,9 @@ def reaction_molecule_strands(
             material=primary_material,
             lineage_strand=primary_lineage,
             occurrence=reference_occurrence,
+            material_use_id=(
+                source_use_id if primary_material == source else source_complement_use_id
+            ),
         )
     ]
     if molecule.complement_sequence_5prime is not None:
@@ -81,6 +87,7 @@ def reaction_molecule_strands(
                 material=source_complement,
                 lineage_strand=LineageStrand.COMPLEMENTARY,
                 occurrence=complement_occurrence,
+                material_use_id=source_complement_use_id,
             )
         )
     return tuple(output)
@@ -141,6 +148,7 @@ def _subsequence_strand(
     material: ExactConstructionMaterial,
     lineage_strand: LineageStrand,
     occurrence: MaterialOccurrence,
+    material_use_id: str,
 ) -> MolecularStrand:
     start = occurrence.start
     end = start + occurrence.length
@@ -161,7 +169,7 @@ def _subsequence_strand(
         lineage=tuple(
             MaterialBaseLineage(
                 product_index=index,
-                origin_id=material.material_id,
+                origin_id=material_use_id,
                 origin_strand=lineage_strand,
                 origin_index=start + index,
             )
@@ -178,6 +186,8 @@ def derive_post_cleavage_strands(
     embedding: LinearSourceEmbedding,
     source: ExactConstructionMaterial,
     source_complement: ExactConstructionMaterial,
+    source_use_id: str,
+    source_complement_use_id: str,
 ) -> tuple[MolecularStrand, ...]:
     """Derive every exact post-cleavage strand from local fragment spans."""
     occurrences = foldback_occurrences(
@@ -197,6 +207,8 @@ def derive_post_cleavage_strands(
             source_complement=source_complement,
             reference_occurrence=occurrences[molecule.molecule_id][0],
             complement_occurrence=occurrences[molecule.molecule_id][1],
+            source_use_id=source_use_id,
+            source_complement_use_id=source_complement_use_id,
         )
     )
     return strands

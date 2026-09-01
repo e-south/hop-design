@@ -29,27 +29,30 @@ from hop_design.models.construction.payload import (
 )
 from hop_design.models.construction.realization import CompleteConstructionRealization
 from hop_design.models.method import BindingOrientation
+from hop_design.models.molecular_state import LineageStrand
 
 from .clone.validation import validate_clone_realization
 from .evaluation_inputs import (
     derive_complete_payload_source_map,
     replay_linear_source_embedding,
 )
-from .material_disposition import (
-    RouteMaterialDispositionSpan,
-    derive_route_material_dispositions,
-)
-from .material_replay import (
+from .material import ExactConstructionMaterial, MaterialUse, validate_complete_material_uses
+from .material.replay import (
     validate_foldback_annealing,
     validate_route_derivation,
     validate_route_material_lineage,
 )
-from .materials import validate_initial_material_state
+from .material_disposition import (
+    RouteMaterialDispositionSpan,
+    derive_route_material_dispositions,
+)
 from .pcr.validation import validate_pcr_realization
 from .product import MaterializedFinalProduct
 from .program import ConstructionProgram
-from .request import DesignAuthorityReference, ExactConstructionMaterial
+from .request import DesignAuthorityReference
 from .source_authority import validate_local_authorities
+from .source_partition import SourcePartitionBinding
+from .source_preparation import SourceDuplexPreparationAuthority
 from .state import ConstructionStatePhase
 
 
@@ -68,7 +71,13 @@ class MaterializedConstructionRealization(HopModel):
         default=None,
         pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$",
     )
+    source_preparation: SourceDuplexPreparationAuthority
+    source_partition_binding: SourcePartitionBinding | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     materials: tuple[ExactConstructionMaterial, ...] = Field(min_length=1)
+    material_uses: tuple[MaterialUse, ...] = Field(min_length=2)
     construction_program: ConstructionProgram
     final_product: MaterializedFinalProduct
     design: DesignAuthorityReference
@@ -95,11 +104,44 @@ class MaterializedConstructionRealization(HopModel):
     def validate_realization(self) -> MaterializedConstructionRealization:
         DesignAuthorityReference.model_validate(self.design.model_dump(mode="python"))
         MaterializedFinalProduct.model_validate(self.final_product.model_dump(mode="python"))
+        SourceDuplexPreparationAuthority.model_validate(
+            self.source_preparation.model_dump(mode="python")
+        )
         content = self.model_dump(mode="json", exclude={"materialized_realization_id"})
         if self.materialized_realization_id != _content_id("materialized-construction", 1, content):
             raise ValueError("Materialized identity must seal every complete-route fact.")
         if self.realization.precursor_sequence != self.materials[0].sequence_5prime:
-            raise ValueError("Complete precursor must equal the caller-owned source material.")
+            raise ValueError("Complete precursor must equal the prepared source strand.")
+        prepared_materials = tuple(
+            binding.material for binding in self.source_preparation.produced_material_bindings
+        )
+        if prepared_materials != self.materials[:2]:
+            raise ValueError(
+                "Complete source materials must equal the exact source-preparation products."
+            )
+        if self.source_preparation.source_ssdna.sequence_5prime != (
+            self.realization.precursor_sequence
+        ):
+            raise ValueError("Complete precursor must map to the exact source ssDNA specification.")
+        external_materials = (
+            self.source_preparation.source_ssdna,
+            self.source_preparation.forward_primer.oligo,
+            self.source_preparation.reverse_primer.oligo,
+            *self.materials[2:],
+        )
+        for material in (*prepared_materials, *external_materials):
+            ExactConstructionMaterial.model_validate(material.model_dump(mode="python"))
+        if len(self.material_uses) != len(self.materials) or tuple(
+            item.material_id for item in self.material_uses
+        ) != tuple(item.material_id for item in self.materials):
+            raise ValueError("Complete material-use registry must bind every ordered material.")
+        if len({item.use_id for item in self.material_uses}) != len(self.material_uses):
+            raise ValueError("Complete material-use registry requires distinct contextual uses.")
+        if self.material_uses[:2] != (
+            self.source_preparation.prepared_top_use,
+            self.source_preparation.prepared_bottom_use,
+        ):
+            raise ValueError("Complete route must begin with prepared source material uses.")
         validate_local_authorities(
             foldback=self.foldback_authority,
             foldback_realization_id=self.foldback_realization_id,
@@ -107,9 +149,13 @@ class MaterializedConstructionRealization(HopModel):
             basal_realization_id=self.basal_realization_id,
             local_realization_ids=self.realization.local_realization_ids,
         )
-        validate_initial_material_state(self.construction_program.states[0], self.materials)
+        if self.construction_program.states[0] != self.source_preparation.product_state:
+            raise ValueError(
+                "Complete route must begin with the exact source-preparation product state."
+            )
         endpoint = self.final_product.reference.endpoint
         is_direct = endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
+        validate_complete_material_uses(self.material_uses, is_direct=is_direct)
         if is_direct and self.route_material_dispositions:
             raise ValueError("Direct ssDNA endpoint cannot contain PCR-only material dispositions.")
         if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
@@ -132,12 +178,23 @@ class MaterializedConstructionRealization(HopModel):
                 foldback=self.foldback_authority,
                 basal=self.basal_authority,
                 materials=self.materials,
+                material_uses=self.material_uses,
             )
-            validate_route_material_lineage(self.construction_program, self.materials)
+        validate_route_material_lineage(
+            self.construction_program,
+            self.materials,
+            material_uses=self.material_uses,
+            material_orientations={
+                self.material_uses[0].use_id: LineageStrand.PRIMARY,
+                self.material_uses[1].use_id: LineageStrand.COMPLEMENTARY,
+                **{item.use_id: LineageStrand.PRIMARY for item in self.material_uses[2:]},
+            },
+        )
         validate_foldback_annealing(
             self.construction_program,
             foldback=self.foldback_authority,
             materials=self.materials,
+            material_uses=self.material_uses,
         )
         _, _, embedding = replay_linear_source_embedding(
             foldback=self.foldback_authority,
@@ -147,11 +204,18 @@ class MaterializedConstructionRealization(HopModel):
         expected_payload_map = derive_complete_payload_source_map(
             foldback=self.foldback_authority,
             embedding=embedding,
-            source_material_id=self.materials[0].material_id,
+            source_material_id=self.source_preparation.source_ssdna.material_id,
         )
         if self.payload_source_map != expected_payload_map:
             raise ValueError(
                 "Payload source occurrence must derive from the exact lifted local authority."
+            )
+        if (
+            self.source_preparation.payload_source_span
+            != self.payload_source_map.segments[0].source_span
+        ):
+            raise ValueError(
+                "Source preparation payload span must equal the exact route payload mapping."
             )
         if self.realization.final_product_id != self.final_product.reference.final_product_id:
             raise ValueError("Complete relation must bind the exact final product.")
@@ -186,6 +250,7 @@ class MaterializedConstructionRealization(HopModel):
             validate_pcr_realization(self)
             expected_dispositions = derive_route_material_dispositions(
                 materials=self.materials,
+                material_uses=self.material_uses,
                 program=self.construction_program,
                 material_function_spans=self.final_product.material_function_spans,
             )
@@ -198,6 +263,7 @@ class MaterializedConstructionRealization(HopModel):
             validate_clone_realization(self)
             expected_dispositions = derive_route_material_dispositions(
                 materials=self.materials,
+                material_uses=self.material_uses,
                 program=self.construction_program,
                 material_function_spans=self.final_product.material_function_spans,
             )

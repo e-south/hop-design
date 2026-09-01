@@ -27,23 +27,17 @@ from hop_design.models.construction import (
     ConstructionEndpoint,
     FinalPayloadReference,
     FoldbackTarget,
-    RouteFamily,
 )
 from hop_design.models.construction.complete import (
-    CompositionEnumerationPolicy,
-    ConstructionDiscoveryRequest,
     ConstructionProgram,
     ConstructionSpaceResult,
     ConstructionState,
     ConstructionStatePhase,
     ConstructionTransition,
-    DesignAuthorityReference,
     ExactStateRelation,
-    LinearSourceMaterializationSpec,
     MaterializedConstructionRealization,
-    MaterialOrigin,
     ReactionBoundaryMapping,
-    WholeRouteConstraints,
+    SourcePartitionBinding,
 )
 from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
@@ -64,6 +58,7 @@ from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import EndChemistry, LineageStrand
 from hop_design.models.payload import ExactPayload
 from hop_design.models.reactions import ReactionProgram
+from hop_design.serialization import canonical_json_bytes
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
     _request,
@@ -71,6 +66,7 @@ from tests.contract.test_foldback_construction_discovery import (
 )
 from tests.integration.test_complete_construction_discovery import (
     _basal_result,
+    _construction_request,
     _discover_raw,
     _verified_design,
 )
@@ -99,36 +95,11 @@ def _case(tmp_path: Path):
     )
     basal = _basal_result(payload)
     design = _verified_design(tmp_path)
-    encoding = design.plan.hairpin_encoding_insert
-    request = ConstructionDiscoveryRequest(
+    request = _construction_request(
         payload=payload,
-        route_family=RouteFamily.LINEAR_SOURCE_V1,
-        endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-        foldback_result_id=foldback.result_id,
-        basal_result_id=basal.result_id,
-        materialization=LinearSourceMaterializationSpec(
-            source_origin=MaterialOrigin.SYNTHESIZED,
-            source_five_prime_end=EndChemistry.HYDROXYL,
-            source_three_prime_end=EndChemistry.HYDROXYL,
-            source_complement_origin=MaterialOrigin.SYNTHESIZED,
-            source_complement_five_prime_end=EndChemistry.PHOSPHATE,
-            source_complement_three_prime_end=EndChemistry.HYDROXYL,
-        ),
-        design=DesignAuthorityReference(
-            bundle=design.bundle,
-            spec=design.spec,
-            plan=design.plan,
-            plan_id=design.plan.plan_id,
-            design_id=design.plan.design_id,
-            payload_sequence="GACA",
-            encoding_sequence=encoding.sequence,
-            encoding_digest=encoding.sequence_digest,
-        ),
-        whole_route_constraints=WholeRouteConstraints(),
-        enumeration=CompositionEnumerationPolicy(
-            max_combinations=10,
-            max_realizations=10,
-        ),
+        foldback=foldback,
+        basal=basal,
+        design=design,
     )
     result = _discover_raw(
         request,
@@ -147,6 +118,107 @@ def _reseal_realization(record, **updates: object) -> MaterializedConstructionRe
     }
     content.update(updates)
     return MaterializedConstructionRealization.create(**content)
+
+
+def test_complete_route_consumes_the_exact_source_preparation_product(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+    realization = result.realizations[0]
+    preparation = realization.source_preparation
+    program = realization.construction_program
+
+    assert program.states[0] == preparation.product_state
+    assert realization.payload_source_map.segments[0].source_material_id == (
+        preparation.source_ssdna.material_id
+    )
+    assert {
+        item.origin_id for strand in program.states[0].molecules for item in strand.lineage
+    } == {
+        preparation.prepared_top_use.use_id,
+        preparation.prepared_bottom_use.use_id,
+    }
+
+
+def test_unselected_route_omits_source_partition_authority_and_bindings(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+
+    assert result.source_partition_authority is None
+    assert result.source_partition_rejection_candidates == ()
+    assert result.provenance.source_partition_result_id is None
+    assert result.provenance.source_partition_realization_id is None
+    assert all(item.source_partition_binding is None for item in result.realizations)
+    serialized = canonical_json_bytes(result)
+    assert b'"source_partition_authority"' not in serialized
+    assert b'"source_partition_rejection_candidates"' not in serialized
+    assert b'"source_partition_binding"' not in serialized
+    assert b'"source_partition_result_id"' not in serialized
+    assert b'"source_partition_realization_id"' not in serialized
+
+
+def test_unselected_result_rejects_source_partition_provenance(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+    provenance = type(result.provenance).model_validate(
+        result.provenance.model_dump(mode="python")
+        | {
+            "source_partition_result_id": ("hop:source-partition-result/" + "a" * 64 + "@1"),
+            "source_partition_realization_id": (
+                "hop:source-partition-realization/" + "b" * 64 + "@1"
+            ),
+        }
+    )
+
+    with pytest.raises(ValidationError, match="source partition"):
+        _reseal_result(result, provenance=provenance)
+
+
+def test_unselected_realization_rejects_source_partition_binding(
+    tmp_path: Path,
+) -> None:
+    _, _, _, result = _case(tmp_path)
+    realization = result.realizations[0]
+    program = realization.construction_program
+    denatured = next(
+        item for item in program.states if item.phase is ConstructionStatePhase.DENATURED_FRAGMENTS
+    )
+    selected = next(
+        item for item in program.states if item.phase is ConstructionStatePhase.SELECTED_FRAGMENTS
+    )
+    binding = SourcePartitionBinding.create(
+        result_id="hop:source-partition-result/" + "a" * 64 + "@1",
+        realization_id="hop:source-partition-realization/" + "b" * 64 + "@1",
+        source_preparation_product_state_id=realization.source_preparation.product_state.state_id,
+        top_material_use_id=realization.material_uses[0].use_id,
+        bottom_material_use_id=realization.material_uses[1].use_id,
+        reaction_program_id=program.reaction_programs[0].program_id,
+        denatured_state_id=denatured.state_id,
+        selected_state_id=selected.state_id,
+    )
+
+    forged_realization = _reseal_realization(
+        realization,
+        source_partition_binding=binding,
+    )
+    with pytest.raises(ValidationError, match="source partition"):
+        _reseal_result(
+            result,
+            realizations=(forged_realization, *result.realizations[1:]),
+        )
+
+
+def test_exhaustive_request_omits_absent_selected_pair_from_canonical_bytes(
+    tmp_path: Path,
+) -> None:
+    request, _, _, _ = _case(tmp_path)
+
+    content = canonical_json_bytes(request)
+
+    assert b'"selected_foldback_realization_id"' not in content
+    assert b'"selected_basal_realization_id"' not in content
 
 
 def _reseal_result(record, **updates: object) -> ConstructionSpaceResult:
@@ -619,7 +691,15 @@ def test_result_rejects_resealed_equal_byte_origin_index(tmp_path: Path) -> None
         item for item in program.states[1].molecules if item.sequence not in selected_sequences
     )
     lineage = discarded.lineage[0]
-    material = next(item for item in realization.materials if item.material_id == lineage.origin_id)
+    material_by_use_id = {
+        use.use_id: material
+        for use, material in zip(
+            realization.material_uses,
+            realization.materials,
+            strict=True,
+        )
+    }
+    material = material_by_use_id[lineage.origin_id]
     replacement_index = next(
         index
         for index, base in enumerate(material.sequence_5prime)
@@ -908,33 +988,11 @@ def test_payload_source_occurrence_is_exact_when_payload_bytes_repeat(tmp_path: 
         ).model_copy(update={"payload": payload})
     )
     design = _verified_design(tmp_path / "repeated-design", payload="A")
-    encoding = design.plan.hairpin_encoding_insert
-    request = ConstructionDiscoveryRequest(
+    request = _construction_request(
         payload=payload,
-        route_family=RouteFamily.LINEAR_SOURCE_V1,
-        endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-        foldback_result_id=foldback.result_id,
-        basal_result_id=None,
-        materialization=LinearSourceMaterializationSpec(
-            source_origin=MaterialOrigin.SYNTHESIZED,
-            source_five_prime_end=EndChemistry.HYDROXYL,
-            source_three_prime_end=EndChemistry.HYDROXYL,
-            source_complement_origin=MaterialOrigin.SYNTHESIZED,
-            source_complement_five_prime_end=EndChemistry.PHOSPHATE,
-            source_complement_three_prime_end=EndChemistry.HYDROXYL,
-        ),
-        design=DesignAuthorityReference(
-            bundle=design.bundle,
-            spec=design.spec,
-            plan=design.plan,
-            plan_id=design.plan.plan_id,
-            design_id=design.plan.design_id,
-            payload_sequence="A",
-            encoding_sequence=encoding.sequence,
-            encoding_digest=encoding.sequence_digest,
-        ),
-        whole_route_constraints=WholeRouteConstraints(),
-        enumeration=CompositionEnumerationPolicy(max_combinations=10, max_realizations=10),
+        foldback=foldback,
+        basal=None,
+        design=design,
     )
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
     realization = result.realizations[0]
