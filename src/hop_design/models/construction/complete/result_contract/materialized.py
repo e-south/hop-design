@@ -16,7 +16,7 @@ from typing import Any
 from hop_design.models.construction.payload import ConstructionEndpoint
 
 from ..authority import CompositionDisposition, ConstructionCompositionProvenance
-from ..evaluation_result import CombinationEvaluation
+from ..evaluation.result import CombinationEvaluation
 from ..payload_validation import validate_payload_source_map
 from ..request import ConstructionDiscoveryRequest
 from ..state import ConstructionStatePhase

@@ -24,7 +24,7 @@ from ..authority import (
     ConstructionCompositionProvenance,
 )
 from ..evaluation import CompositionRejectionCode, evaluate_combination
-from ..evaluation_result import SOURCE_PARTITION_REJECTION_CODES
+from ..evaluation.result import SOURCE_PARTITION_REJECTION_CODES
 from ..material.inventory import required_external_materials
 from ..request import ConstructionDiscoveryRequest
 from .materialized import validate_materialized_evaluation

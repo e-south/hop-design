@@ -22,8 +22,8 @@ from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.physical import JunctionPairKind
 from hop_design.models.sequence import reverse_complement_iupac
 
+from ..evaluation.result import CompositionRejectionCode
 from ..evaluation_inputs import replay_linear_source_embedding
-from ..evaluation_result import CompositionRejectionCode
 from ..material import ExactConstructionMaterial, PcrPrimer
 from ..state import ConstructionStatePhase
 from ..transition import ConstructionTransitionKind

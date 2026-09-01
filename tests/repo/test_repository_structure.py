@@ -85,3 +85,19 @@ def test_source_layout_has_explicit_sprawl_limits() -> None:
         for module in modules:
             line_count = len(module.read_text(encoding="utf-8").splitlines())
             assert line_count <= 350, f"{module.relative_to(REPO_ROOT)} is a monolith"
+
+
+def test_complete_route_evaluation_is_partitioned_by_endpoint_semantics() -> None:
+    complete_root = REPO_ROOT / "src/hop_design/models/construction/complete"
+    evaluation_root = complete_root / "evaluation"
+
+    assert not (complete_root / "evaluation.py").exists()
+    assert not (complete_root / "evaluation_result.py").exists()
+    assert {
+        "__init__.py",
+        "context.py",
+        "direct.py",
+        "pcr.py",
+        "clone.py",
+        "result.py",
+    }.issubset({path.name for path in evaluation_root.glob("*.py")})
