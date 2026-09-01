@@ -21,12 +21,6 @@ journey:
   publication.
 - [Implementation and migration roadmap](plans/roadmap.md) orders package
   readiness, downstream adoption, and predecessor removal.
-- [Historical construction realignment audit](HOP-construction-realignment-gap-audit.md)
-  records the completed pre-v0.1.0a8 gap analysis and routes current status to
-  the roadmap and accepted architecture decisions.
-- [Linear-source product closure audit](HOP-linear-source-product-closure-audit.md)
-  maps source preparation, source partition, auxiliary materials, and endpoint
-  navigation to one portable HOP result.
 - [Public concept documentation contract](documentation-contract.md) defines
   the claim and non-claim template for new product surfaces.
 - [Architecture decisions](../architecture/decisions/) record public contract
