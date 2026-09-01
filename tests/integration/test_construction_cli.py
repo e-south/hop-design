@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from rich.text import Text
 from typer.testing import CliRunner
 
 from hop_design.cli import app
@@ -179,7 +180,7 @@ def test_construction_list_filters_and_sorts_only_on_explicit_dimensions(
     assert relaxed.exit_code == 0, relaxed.output
     assert "Showing 0 of 0 matched routes." in relaxed.output
     assert contradictory.exit_code != 0
-    assert "--exact and --relaxed are mutually" in contradictory.output
+    assert "--exact and --relaxed are mutually" in Text.from_ansi(contradictory.output).plain
     assert unknown_group.exit_code != 0
     assert "Unknown achieved-geometry group" in unknown_group.output
     assert explicit_sort.exit_code == 0, explicit_sort.output
