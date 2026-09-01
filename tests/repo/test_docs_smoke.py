@@ -24,6 +24,24 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_release_routing_names_the_published_a8_contract() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    quickstart = (REPO_ROOT / "docs/guides/quickstart.md").read_text(encoding="utf-8")
+    roadmap = (REPO_ROOT / "docs/dev/plans/roadmap.md").read_text(encoding="utf-8")
+    maintainer_index = (REPO_ROOT / "docs/dev/README.md").read_text(encoding="utf-8")
+    gap_audit = (REPO_ROOT / "docs/dev/HOP-construction-realignment-gap-audit.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Published release | [v0.1.0a8]" in readme
+    assert "unreleased v0.1.0a8" not in readme
+    assert "hop_design-0.1.0a8-py3-none-any.whl" in quickstart
+    assert "published `v0.1.0a8`" in roadmap
+    assert "Historical construction realignment audit" in maintainer_index
+    assert "status: accepted" in gap_audit
+    assert "> Historical record:" in gap_audit
+
+
 def test_docs_smoke_exercises_the_public_documentation_journey() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/docs-smoke"],

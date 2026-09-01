@@ -15,7 +15,7 @@ from typing import Any
 
 from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 
-from ..evaluation_result import SOURCE_PARTITION_REJECTION_CODES
+from ..evaluation.result import SOURCE_PARTITION_REJECTION_CODES
 from ..provisioning import resolve_program_enzyme_definitions
 from ..result_contract import validate_materialized_request
 from .errors import (

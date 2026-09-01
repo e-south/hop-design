@@ -6,7 +6,7 @@ audience:
   - new users
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-08-31
 doc_type: tutorial
 journey:
   - install
@@ -16,10 +16,9 @@ journey:
 
 # Quickstart
 
-This page distinguishes the unreleased v0.1.0a8 source candidate from the
-published v0.1.0a7 wheel. Use the release's
-[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a7)
-when operating the published artifact.
+This page describes the published v0.1.0a8 artifact. Use the release's
+[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8)
+when operating that immutable artifact.
 
 Download a versioned wheel and `SHA256SUMS` from
 [GitHub Releases](https://github.com/e-south/hop-design/releases), verify the
@@ -28,18 +27,18 @@ published on PyPI.
 
 ```bash
 # macOS
-grep 'hop_design-0.1.0a7-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
+grep 'hop_design-0.1.0a8-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
 # Linux
-grep 'hop_design-0.1.0a7-py3-none-any.whl$' SHA256SUMS | sha256sum -c -
+grep 'hop_design-0.1.0a8-py3-none-any.whl$' SHA256SUMS | sha256sum -c -
 uv venv --python 3.12
 source .venv/bin/activate
-uv pip install ./hop_design-0.1.0a7-py3-none-any.whl
+uv pip install ./hop_design-0.1.0a8-py3-none-any.whl
 hop-design compile --sequence ACGT --design-id exact-demo --out build/exact
 ```
 
-The release-wheel command above uses the a7 contract. The published a7 wheel supports the
-single-design command above and the
-scientist-facing substrate-space journey below.
+The release-wheel command above uses the a8 contract. The published a8 wheel
+supports the single-design command above, the scientist-facing substrate-space
+journey below, and the advanced construction facade documented separately.
 
 From a contributor checkout:
 
@@ -84,7 +83,7 @@ A strict JSON or YAML specification uses the same endpoint:
 uv run hop-design compile --spec examples/generic-symbolic.yaml --out build/from-spec
 ```
 
-The release-wheel and contributor-checkout commands use the same a7 contract.
+The release-wheel and contributor-checkout commands use the same a8 contract.
 Use `hop.design/v2` for the named generic demonstration and
 `hop.resolved-design/v2` when foldback and basal components are supplied by the
 caller. A design spec records deterministic design derivation, not an ordered

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from ..evaluation_result import CompositionRejectionCode
+from ..evaluation.result import CompositionRejectionCode
 
 
 class SourcePartitionBindingFailure(StrEnum):

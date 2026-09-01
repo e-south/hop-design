@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-08-31
 doc_type: explanation
 journey:
   - maintain
@@ -23,7 +23,7 @@ private consumer migration.
 
 ## Released foundation
 
-The public `v0.1.0a7` artifact provides:
+The published `v0.1.0a8` artifact provides:
 
 - exact and DNA IUPAC design compilation;
 - strict payload, foldback, basal, paired-stem, coordinate, and feature models;
@@ -37,8 +37,8 @@ The public `v0.1.0a7` artifact provides:
 
 ## Current pre-1.0 semantic line
 
-The unreleased `v0.1.0a8` candidate deliberately breaks the preceding alpha schemas and
-public facade to close seven ontology and usability defects:
+The published `v0.1.0a8` line deliberately breaks the preceding alpha schemas
+and public facade to close seven ontology and usability defects:
 
 1. Pair kind becomes an invariant physical observation; policy cannot relabel
    G:T as a hard mismatch.

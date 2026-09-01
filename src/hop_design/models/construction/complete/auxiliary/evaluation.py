@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from hop_design.models.construction.basal import BasalRealizationRecord
 
-from ..evaluation_result import CombinationEvaluation, CompositionRejectionCode
+from ..evaluation.result import CombinationEvaluation, CompositionRejectionCode
 from ..material import ExactConstructionMaterial
 from ..source_preparation import SourceDuplexPreparationAuthority
 from .policy import EndpointAuxiliaryPolicy

@@ -936,6 +936,16 @@ def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_profile(tmp_path: Path
     assert boundary_result.rejection_reason is (
         CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
     )
+    boundary_before_policy = evaluate_combination(
+        request,
+        foldback=foldback_record,
+        basal=basal_record.model_copy(update={"basal_nick": changed_nick}),
+        foldback_policy=policies["foldback_policy"],
+        basal_policy=None,
+    )
+    assert boundary_before_policy.rejection_reason is (
+        CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
+    )
     complex_state = basal_record.adapter_annealed_complex
     assert complex_state is not None
     changed_pair = complex_state.pairs[0].model_copy(

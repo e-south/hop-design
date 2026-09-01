@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-08-31
 doc_type: index
 journey:
   - maintain
@@ -21,9 +21,9 @@ journey:
   publication.
 - [Implementation and migration roadmap](plans/roadmap.md) orders package
   readiness, downstream adoption, and predecessor removal.
-- [Payload-centered construction realignment gap audit](HOP-construction-realignment-gap-audit.md)
-  maps the current authorities and dependency-ordered implementation seams for
-  advanced construction discovery.
+- [Historical construction realignment audit](HOP-construction-realignment-gap-audit.md)
+  records the completed pre-v0.1.0a8 gap analysis and routes current status to
+  the roadmap and accepted architecture decisions.
 - [Linear-source product closure audit](HOP-linear-source-product-closure-audit.md)
   maps source preparation, source partition, auxiliary materials, and endpoint
   navigation to one portable HOP result.

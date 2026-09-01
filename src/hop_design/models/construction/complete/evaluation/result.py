@@ -1,13 +1,4 @@
-"""
---------------------------------------------------------------------------------
-HOP Design
-src/hop_design/models/construction/complete/evaluation_result.py
-
-Defines closed outcomes and derived facts for one complete-route evaluation.
-
-Module Author(s): Eric J. South
---------------------------------------------------------------------------------
-"""
+"""Closed outcomes and derived facts for complete-route evaluation."""
 
 from __future__ import annotations
 
@@ -18,9 +9,9 @@ from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBind
 from hop_design.models.coordinates import Span
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
-from .auxiliary.resolution import EndpointAuxiliaryResolution
-from .material import ExactConstructionMaterial
-from .source_preparation import SourceDuplexPreparationAuthority
+from ..auxiliary.resolution import EndpointAuxiliaryResolution
+from ..material import ExactConstructionMaterial
+from ..source_preparation import SourceDuplexPreparationAuthority
 
 
 class CompositionRejectionCode(StrEnum):
@@ -79,6 +70,25 @@ class CombinationEvaluation:
     pcr_template_sequence: str | None = None
     design_parent_span: Span | None = None
     final_sequence: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EndpointEvaluation:
+    """Internal endpoint facts after intrinsic route preparation."""
+
+    endpoint_auxiliaries: EndpointAuxiliaryResolution | None
+    reaction_program: ReactionProgram
+    stage_assessments: tuple[ReactionStageAssessment, ...]
+    reaction_report_has_errors: bool
+    pcr_template_sequence: str | None
+    design_parent_span: Span | None
+    final_sequence: str
+    end_generation_program: ReactionProgram | None = None
+    end_generation_stage_assessments: tuple[ReactionStageAssessment, ...] = ()
+    end_generation_report_has_errors: bool = False
+    end_generation_bindings: tuple[ConstructionEnzymeBinding, ConstructionEnzymeBinding] | None = (
+        None
+    )
 
 
 __all__ = [

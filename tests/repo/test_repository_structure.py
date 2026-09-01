@@ -53,7 +53,7 @@ def test_governance_and_release_routes_exist() -> None:
         assert (REPO_ROOT / relative_path).is_file(), relative_path
 
 
-def test_public_documentation_distinguishes_source_candidate_from_published_release() -> None:
+def test_public_documentation_tracks_the_published_source_release() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         version = tomllib.load(handle)["project"]["version"]
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
@@ -64,13 +64,13 @@ def test_public_documentation_distinguishes_source_candidate_from_published_rele
     assert release_match is not None
     release_version = release_match.group(1)
     wheel_name = release_match.group(0)
-    assert release_version != version
+    assert release_version == version
     assert f"[v{release_version}]" in readme
     assert f"tree/v{release_version}" in readme
-    assert f"unreleased v{version} candidate" in readme
+    assert f"unreleased v{version} candidate" not in readme
     assert wheel_name in quickstart
-    assert f"public `v{release_version}` artifact" in roadmap
-    assert f"unreleased `v{version}` candidate" in roadmap
+    assert f"published `v{release_version}` artifact" in roadmap
+    assert f"unreleased `v{version}` candidate" not in roadmap
     assert "Research Studies" not in roadmap
     assert "billing" not in roadmap.lower()
 
@@ -85,3 +85,19 @@ def test_source_layout_has_explicit_sprawl_limits() -> None:
         for module in modules:
             line_count = len(module.read_text(encoding="utf-8").splitlines())
             assert line_count <= 350, f"{module.relative_to(REPO_ROOT)} is a monolith"
+
+
+def test_complete_route_evaluation_is_partitioned_by_endpoint_semantics() -> None:
+    complete_root = REPO_ROOT / "src/hop_design/models/construction/complete"
+    evaluation_root = complete_root / "evaluation"
+
+    assert not (complete_root / "evaluation.py").exists()
+    assert not (complete_root / "evaluation_result.py").exists()
+    assert {
+        "__init__.py",
+        "context.py",
+        "direct.py",
+        "pcr.py",
+        "clone.py",
+        "result.py",
+    }.issubset({path.name for path in evaluation_root.glob("*.py")})
