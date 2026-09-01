@@ -18,9 +18,9 @@ journey:
 
 # Current schema identifiers
 
-This table documents the unreleased `0.1.0a8` source candidate. The published
-`0.1.0a7` release retains construction-contract v1; use the tagged documentation
-shipped with that artifact.
+This table documents the published `0.1.0a8` source and release contract. The
+older `0.1.0a7` release retains construction-contract v1; use its tagged
+documentation when operating that artifact.
 
 | Schema ID | Root model | Purpose |
 | --- | --- | --- |

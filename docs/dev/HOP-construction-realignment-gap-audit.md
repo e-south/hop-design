@@ -1,19 +1,25 @@
 ---
 doc_id: hop-construction-realignment-gap-audit
 title: Payload-centered construction realignment gap audit
-intent: Map the current HOP, Research Studies, and manufold authorities to the payload-centered construction contract before implementation.
+intent: Preserve the historical gap analysis that preceded the v0.1.0a8 payload-centered construction implementation.
 audience:
   - maintainers
   - agent executors
 owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-29
+status: accepted
+last_verified: 2026-08-31
 doc_type: explanation
 journey:
   - maintain
 ---
 
 # Payload-centered construction realignment gap audit
+
+> Historical record: the dependency-ordered H2-H8 implementation described as
+> missing below shipped in v0.1.0a8. Use the
+> [current roadmap](plans/roadmap.md), [architecture](../../ARCHITECTURE.md), and
+> accepted [architecture decisions](../architecture/decisions/) for current
+> product status. The original audit is retained to preserve decision history.
 
 ## Decision
 
