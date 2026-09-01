@@ -737,6 +737,14 @@ def test_result_rejects_resealed_equal_byte_origin_index(tmp_path: Path) -> None
 def test_source_authority_validator_rejects_drifted_domains_and_order(tmp_path: Path) -> None:
     request, foldback, basal, result = _case(tmp_path)
     realization = result.realizations[0]
+    with pytest.raises(ValueError, match="exact foldback authority"):
+        validate_local_authorities(
+            foldback=realization.foldback_authority,
+            foldback_realization_id="hop:foldback-realization/" + "f" * 64 + "@1",
+            basal=realization.basal_authority,
+            basal_realization_id=realization.basal_realization_id,
+            local_realization_ids=realization.realization.local_realization_ids,
+        )
     with pytest.raises(ValueError, match="ordered local authorities"):
         validate_local_authorities(
             foldback=realization.foldback_authority,
@@ -774,6 +782,68 @@ def test_source_authority_validator_rejects_drifted_domains_and_order(tmp_path: 
             foldback=foldback,
             basal=basal,
             realizations=result.realizations,
+        )
+
+
+def test_source_authority_validator_rejects_unlisted_selected_members(tmp_path: Path) -> None:
+    request, foldback, basal, result = _case(tmp_path)
+    realization = result.realizations[0]
+    cases = (
+        (
+            {
+                "selected_foldback_realization_id": ("hop:foldback-realization/" + "f" * 64 + "@1"),
+                "selected_basal_realization_id": realization.basal_realization_id,
+            },
+            "Selected foldback authority",
+        ),
+        (
+            {
+                "selected_foldback_realization_id": realization.foldback_realization_id,
+                "selected_basal_realization_id": "hop:basal-realization/" + "b" * 64 + "@1",
+            },
+            "Selected basal authority",
+        ),
+    )
+    for updates, message in cases:
+        with pytest.raises(ValueError, match=message):
+            validate_result_authorities(
+                request=request.model_copy(update=updates),
+                provenance=result.provenance,
+                foldback=foldback,
+                basal=basal,
+                realizations=result.realizations,
+            )
+
+
+@pytest.mark.parametrize(
+    ("updates", "message"),
+    (
+        ({"foldback_authority": None}, "Accepted foldback member"),
+        (
+            {
+                "basal_realization_id": "hop:basal-realization/" + "b" * 64 + "@1",
+                "basal_authority": None,
+            },
+            "Accepted basal member must belong",
+        ),
+        ({"basal_authority": None}, "Accepted basal member must equal"),
+    ),
+)
+def test_source_authority_validator_rejects_drifted_embedded_members(
+    tmp_path: Path,
+    updates: dict[str, object],
+    message: str,
+) -> None:
+    request, foldback, basal, result = _case(tmp_path)
+    realization = result.realizations[0]
+
+    with pytest.raises(ValueError, match=message):
+        validate_result_authorities(
+            request=request,
+            provenance=result.provenance,
+            foldback=foldback,
+            basal=basal,
+            realizations=(realization.model_copy(update=updates),),
         )
 
 
