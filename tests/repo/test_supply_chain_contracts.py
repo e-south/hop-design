@@ -45,6 +45,13 @@ def test_distribution_metadata_keeps_pypi_brake_but_names_public_home() -> None:
         assert dependency in dev_dependencies
 
 
+def test_distribution_requires_pydantic_with_exclude_if_support() -> None:
+    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
+        dependencies = tomllib.load(handle)["project"]["dependencies"]
+
+    assert "pydantic>=2.12,<3" in dependencies
+
+
 def test_ci_has_one_stable_required_context_and_supported_python_probe() -> None:
     workflow, text = _workflow("ci.yaml")
     jobs = workflow["jobs"]
