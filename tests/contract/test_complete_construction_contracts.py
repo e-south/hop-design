@@ -266,6 +266,49 @@ def test_complete_request_declares_foldback_ssdna_as_an_intermediate_not_final_e
         ConstructionDiscoveryRequest.model_validate(data)
 
 
+def test_complete_request_rejects_payload_drift_from_design_authority() -> None:
+    data = _request(ConstructionEndpoint.SSDNA_HAIRPIN).model_dump(mode="python")
+    data["payload"]["payload"]["sequence"] = "GACT"
+
+    with pytest.raises(ValidationError, match="bind the exact requested payload"):
+        ConstructionDiscoveryRequest.model_validate(data)
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "updates", "message"),
+    (
+        (
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            {"selected_basal_realization_id": "hop:basal-realization/" + "b" * 64 + "@1"},
+            "selected basal realization requires a selected foldback",
+        ),
+        (
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            {"selected_foldback_realization_id": "hop:foldback-realization/" + "a" * 64 + "@1"},
+            "requires both local realization ids",
+        ),
+        (
+            ConstructionEndpoint.SSDNA_HAIRPIN,
+            {
+                "selected_foldback_realization_id": ("hop:foldback-realization/" + "a" * 64 + "@1"),
+                "selected_basal_realization_id": ("hop:basal-realization/" + "b" * 64 + "@1"),
+            },
+            "direct endpoint must omit a selected basal realization",
+        ),
+    ),
+)
+def test_selected_local_realizations_obey_endpoint_pairing(
+    endpoint: ConstructionEndpoint,
+    updates: dict[str, str],
+    message: str,
+) -> None:
+    data = _request(endpoint).model_dump(mode="python")
+    data.update(updates)
+
+    with pytest.raises(ValidationError, match=message):
+        ConstructionDiscoveryRequest.model_validate(data)
+
+
 @pytest.mark.parametrize(
     "endpoint",
     (ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, ConstructionEndpoint.CLONE_READY_DUPLEX),
@@ -280,6 +323,27 @@ def test_pcr_bearing_endpoints_require_basal_and_auxiliary_policies(
     data["materialization"]["endpoint_auxiliaries"] = None
     with pytest.raises(ValidationError, match="require endpoint auxiliary policies"):
         ConstructionDiscoveryRequest.model_validate(data)
+
+
+def test_pcr_and_clone_endpoints_enforce_release_ownership() -> None:
+    pcr = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX).model_dump(mode="python")
+    pcr["release"] = _request(ConstructionEndpoint.CLONE_READY_DUPLEX).release
+    with pytest.raises(ValidationError, match="hairpin PCR endpoint must omit clone release"):
+        ConstructionDiscoveryRequest.model_validate(pcr)
+
+    clone = _request(ConstructionEndpoint.CLONE_READY_DUPLEX).model_dump(mode="python")
+    clone["release"] = None
+    with pytest.raises(ValidationError, match="clone-ready endpoint requires"):
+        ConstructionDiscoveryRequest.model_validate(clone)
+
+
+def test_release_side_requires_a_dna_string() -> None:
+    with pytest.raises(ValidationError, match="Cohesive-end sequence must be a DNA string"):
+        ReleaseSideRequirement(
+            orientation=SiteOrientation.FORWARD,
+            cohesive_end_sequence=123,
+            overhang_end=StrandEnd.FIVE_PRIME,
+        )
 
 
 def test_material_and_design_authorities_are_sequence_and_digest_exact() -> None:
