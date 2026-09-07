@@ -155,6 +155,7 @@ CONSTRUCTION_OPERATIONS = {
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
     "discover_local_neighborhood",
+    "discover_local_neighborhoods",
     "discover_source_partition",
     "load_construction_selection",
     "load_verified_construction_bundle",
@@ -176,6 +177,7 @@ CONSTRUCTION_FACADE = {
     "ConstructionProjection",
     "ConstructionSelection",
     "LocalNeighborhoodDiscovery",
+    "LocalNeighborhoodBatch",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
 } | CONSTRUCTION_OPERATIONS

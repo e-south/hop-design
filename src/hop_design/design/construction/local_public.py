@@ -227,7 +227,11 @@ def _load_request(path: str | Path) -> LocalNeighborhoodRequest:
 
 def discover_local_neighborhood(source_path: str | Path) -> LocalNeighborhoodDiscovery:
     """Load one strict request and discover its bounded local neighborhood."""
-    request = _load_request(source_path)
+    return _discover_request(_load_request(source_path))
+
+
+def _discover_request(request: LocalNeighborhoodRequest) -> LocalNeighborhoodDiscovery:
+    """Execute an already normalized request through the family authority."""
     if request.family is LocalNeighborhoodFamily.FOLDBACK:
         return LocalNeighborhoodDiscovery._create(
             verify_foldback_neighborhood_result(discover_foldback_neighborhood(request))
@@ -246,6 +250,11 @@ def load_verified_local_neighborhood(result_path: str | Path) -> LocalNeighborho
         max_bytes=_LOCAL_RESULT_MAX_BYTES,
         source_label="HOP local-neighborhood result",
     )
+    return _verify_result_mapping(mapping)
+
+
+def _verify_result_mapping(mapping: dict[str, object]) -> LocalNeighborhoodDiscovery:
+    """Replay the captured result mapping without reopening its source."""
     schema = mapping.get("schema")
     payload = json.dumps(mapping, separators=(",", ":"))
     if schema == "hop.foldback-neighborhood-result/v4":

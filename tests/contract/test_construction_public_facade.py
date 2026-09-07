@@ -26,6 +26,7 @@ PUBLIC_NAMES = [
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",
+    "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
@@ -33,6 +34,7 @@ PUBLIC_NAMES = [
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
     "discover_local_neighborhood",
+    "discover_local_neighborhoods",
     "discover_source_partition",
     "load_construction_selection",
     "load_verified_construction_bundle",
@@ -68,6 +70,7 @@ def test_construction_facade_is_an_exact_allowlist() -> None:
         construction.ConstructionProjection,
         construction.ConstructionSelection,
         construction.LocalNeighborhoodDiscovery,
+        construction.LocalNeighborhoodBatch,
         construction.SourcePartitionDiscovery,
         construction.VerifiedConstructionBundle,
     ):

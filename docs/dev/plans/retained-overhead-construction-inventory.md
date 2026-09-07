@@ -51,14 +51,17 @@ translation layer.
 - Foldback and basal traversal yield exact geometry/strand/payload/program work units
   without materializing the payload cross product. Family discovery retains ownership
   of evaluation limits, existence stopping, coverage, and result assembly.
+- Public collection execution checkpoints independent local queries in bounded,
+  immutable batches. Requests, producer bytes, and runtime versions bind resumption;
+  saved results require molecular replay. Batch sizing leaves result identities intact.
 
 ## Remaining product requirements
 
-- Public local discovery still returns an in-memory result. Sequence-domain partitioning
-  is available, but durable bounded result streaming and producer-bound resumption are
-  not implemented in HOP. Internal lazy traversal supplies work-unit boundaries, not
-  persisted coverage or a resume authority. Client-side checkpoints do not satisfy this
-  product contract.
+- Each local query still returns an in-memory result. Public checkpoints persist between
+  independent queries; they do not yet stream realizations or resume within one query.
+  Internal lazy traversal supplies finer work-unit boundaries, but persistence of that
+  partial coverage remains unimplemented. A completed collection does not establish
+  exhaustive coverage for a truncated query.
 - Source-partition discovery evaluates enzyme programs on one supplied exact source
   duplex. Its full-span certificate does not establish bounded scaffold-sequence or
   context-extension solving around local and primer obligations. That completion search
@@ -98,6 +101,28 @@ Run the regression with:
 ```bash
 uv run pytest -q tests/contract/test_foldback_construction_discovery.py
 ```
+
+## Local execution allocation measurement
+
+`scripts/benchmarks/local_discovery.py` compares retained query receipts,
+checkpointed execution, and full resume replay using identical requests and
+canonical bytes. Run it with the public `examples/foldback-local-partition.yaml`
+fixture. On Python 3.12.11, three traced 16-query runs measured:
+
+| Path | Peak traced allocation (bytes) | Elapsed seconds |
+| --- | --- | --- |
+| Retain every receipt | 9,855,302; 10,098,570; 10,052,831 | 4.167; 4.179; 4.210 |
+| Checkpoint in batches of four | 2,473,307; 2,469,329; 2,424,652 | 5.052; 5.129; 5.067 |
+| Replay saved batches | 3,116,576; 3,082,331; 3,113,750 | 3.925; 3.971; 3.978 |
+
+These instrumented measurements establish bounded collection-retention behavior,
+not a speedup or a large-search scaling claim. Profiling still identifies family
+replay and Pydantic reconstruction as major costs. A 64-KiB source read under a
+64-MiB safety ceiling initially allocated 67,115,430; 67,115,358; 67,115,358 bytes.
+Sizing that read from the descriptor-captured file length reduced allocation to
+72,102; 72,030; 72,030 bytes while preserving file identity, size, mutation, and
+maximum-byte checks. The allocation regression and source-loader negative tests
+cover that change. No cache or replay bypass is involved.
 
 ## Connected, separate, and external responsibilities
 

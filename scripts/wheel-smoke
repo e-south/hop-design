@@ -176,6 +176,19 @@ result = receipt.write(output) / "result.json"
 loaded = construction.load_verified_local_neighborhood(result)
 if loaded.result_id != receipt.result_id or loaded.json_bytes != receipt.json_bytes:
     raise SystemExit("local foldback partition failed reload verification")
+batch_path = output.parent / (output.name + "-batch")
+partial = construction.discover_local_neighborhoods(
+    [request, request], batch_path, max_new_requests=1, batch_size=1,
+)
+if partial.finished or partial.completed_requests != 1:
+    raise SystemExit("local collection lost its partial execution status")
+resumed = construction.discover_local_neighborhoods(
+    [request, request], batch_path, resume=True, batch_size=2,
+)
+if not resumed.finished or resumed.completed_requests != 2:
+    raise SystemExit("local collection did not resume")
+if any(item.json_bytes != receipt.json_bytes for item in resumed.iter_results()):
+    raise SystemExit("local collection changed canonical result bytes")
 print(result)
 PY
 }

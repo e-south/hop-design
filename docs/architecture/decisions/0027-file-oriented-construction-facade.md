@@ -65,12 +65,14 @@ The exact public allowlist is:
 - `ConstructionProjection`;
 - `ConstructionSelection`;
 - `LocalNeighborhoodDiscovery`;
+- `LocalNeighborhoodBatch`;
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
 - `compile_construction`;
 - `compile_construction_from_local_realizations`;
 - `compile_design_from_local_realizations`;
 - `discover_local_neighborhood`;
+- `discover_local_neighborhoods`;
 - `discover_source_partition`;
 - `load_verified_construction_bundle`;
 - `load_construction_selection`;
@@ -118,6 +120,13 @@ it cannot be reopened without the verified result that establishes membership.
 Standalone local-neighborhood discovery returns one replay-verified family
 receipt. It establishes only the declared foldback or basal neighborhood and
 cannot be interpreted as a complete-route authority.
+
+An ordered finite collection may use `discover_local_neighborhoods` for
+producer-bound checkpoints. `LocalNeighborhoodBatch` exposes execution counts
+and iteration over replay-verified individual receipts. It is not a merged
+search authority: each query retains its independent scope and status.
+Execution storage belongs to `design.construction.execution`; molecular
+validation remains with the existing family authorities.
 
 For a PCR-bearing endpoint, a caller may explicitly select one realization
 from each verified local receipt and compile their exact molecular junctions

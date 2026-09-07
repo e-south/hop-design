@@ -61,8 +61,17 @@ All operations and receipts in this section use `hop_design.construction`.
   remains complete only for that part, preserves molecular realization ids, and
   does not claim whole-domain payload compatibility.
 - `load_verified_local_neighborhood(result_path) -> LocalNeighborhoodDiscovery`
-  loads only the active v3 foldback or basal family result and repeats exact
+  loads only the active foldback or basal family result schema and repeats exact
   deterministic discovery replay.
+- `discover_local_neighborhoods(source_paths, destination, resume=False,
+  max_new_requests=None, batch_size=8) -> LocalNeighborhoodBatch` executes an
+  explicit ordered collection of independent local requests. It publishes
+  bounded immutable batches and replays saved results before resuming. The
+  receipt exposes `planned_requests`, `completed_requests`, `finished`, and
+  lazy replay through `iter_results()`. Execution completion does not imply
+  exhaustive coverage or feasibility of any individual request. See
+  [checkpointed discovery](../guides/compile-construction.md#checkpoint-independent-local-queries)
+  for limits, persistence, and recovery semantics.
 - `discover_source_partition(source_path) -> SourcePartitionDiscovery`
   enumerates canonical nonempty subsets of provisioned strand-exposure
   nickases, applies every actionable site, derives all denatured fragments,

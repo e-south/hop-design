@@ -9,6 +9,10 @@ Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
 """
 
+from hop_design.design.construction.execution.local import (
+    LocalNeighborhoodBatch,
+    discover_local_neighborhoods,
+)
 from hop_design.design.construction.public import (
     ConstructionCompilation,
     ConstructionProjection,
@@ -40,6 +44,7 @@ __all__ = [
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",
+    "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
@@ -47,6 +52,7 @@ __all__ = [
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
     "discover_local_neighborhood",
+    "discover_local_neighborhoods",
     "discover_source_partition",
     "load_construction_selection",
     "load_verified_construction_bundle",
