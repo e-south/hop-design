@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from .accounting import basal_retained_overhead_ledger
 from .pairing import (
     BasalBoundaryControl,
     BasalEnzymeDefinition,
@@ -34,5 +35,6 @@ __all__ = [
     "BasalPairRecord",
     "BasalPairingState",
     "BasalRealizationRecord",
+    "basal_retained_overhead_ledger",
     "derive_basal_pair_class",
 ]

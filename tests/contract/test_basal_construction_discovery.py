@@ -246,9 +246,7 @@ def _request(
         enzyme_provisioning=_provisioning(*enzymes, max_operations=max_operations),
         search=NeighborhoodSearchPlan(
             max_retained_overhead_nt=(
-                2 * len(constraints)
-                if max_retained_overhead_nt is None
-                else max_retained_overhead_nt
+                len(constraints) if max_retained_overhead_nt is None else max_retained_overhead_nt
             ),
             max_search_nodes=max_nodes,
             max_realizations=max_realizations,
@@ -512,17 +510,47 @@ def test_realization_contains_exact_route_evidence_and_payload_conditioning() ->
     assert record.projection.annealing_obligation.required_annealing_nt == 15
     assert record.projection.annealing_obligation.annealing_completion_nt == 11
     assert record.retained_overhead.neighborhood == "basal"
-    assert record.retained_overhead.retained_overhead_nt == 8
+    assert record.retained_overhead.reference_state_id == "basal-retained-junction"
+    assert record.retained_overhead.retained_overhead_nt == 4
     assert tuple(position.position for position in record.retained_overhead.positions) == (
         0,
         1,
         2,
         3,
-        8,
-        9,
-        10,
-        11,
     )
+    assert {position.material_role for position in record.retained_overhead.positions} == {
+        "adapter"
+    }
+
+
+def test_outboard_nick_cut_extends_transient_context_without_raw_coordinate_failure() -> None:
+    distal_nickase = _enzyme(
+        "example:enzyme/distal-basal-nick@1",
+        enzyme_class=EnzymeClass.NICKASE,
+        pattern="GGATC",
+        reference_cut=9,
+        complement_cut=None,
+    )
+    constraints = _pairing_constraints()
+    request = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        payload="ATCC",
+        pairing_constraints=constraints,
+        max_retained_overhead_nt=5,
+        domain=BasalGeometryDomain(
+            nick_strand=Strand.BOTTOM,
+            nick_offsets_nt=(5,),
+            pairing_constraints=constraints,
+        ),
+    )
+    request = request.model_copy(update={"enzyme_provisioning": _provisioning(distal_nickase)})
+
+    result = discover_basal_neighborhood(request)
+
+    assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert result.discovery.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
+    assert all(record.basal_nick.boundary.offset >= 0 for record in result.realizations)
+    assert {record.retained_overhead.retained_overhead_nt for record in result.realizations} == {5}
 
 
 def test_basal_result_identity_seals_details_and_binds_exact_request_payload() -> None:
@@ -1347,7 +1375,7 @@ def test_overhead_coverage_and_geometry_groups_are_complete_and_lossless() -> No
     assert complete.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     assert tuple(
         level.retained_overhead_nt for level in complete.discovery.overhead_levels
-    ) == tuple(range(9))
+    ) == tuple(range(5))
     ids = {item.local_realization.local_realization_id for item in complete.realizations}
     grouped_ids = {
         realization_id
@@ -1417,7 +1445,7 @@ def test_basal_bounds_at_an_overhead_boundary_do_not_emit_an_unentered_level() -
         )
 
         assert result.discovery.disposition.completion is SearchCompletionStatus.TRUNCATED
-        assert result.discovery.overhead_levels[-1].retained_overhead_nt == 8
+        assert result.discovery.overhead_levels[-1].retained_overhead_nt == 4
         assert result.discovery.overhead_levels[-1].complete is False
 
 

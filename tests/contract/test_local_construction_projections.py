@@ -341,7 +341,7 @@ def test_basal_minimum_overhead_matrix_preserves_proven_and_unknown_cells() -> N
         basal_request(
             ConstructionEndpoint.CLONE_READY_DUPLEX,
             extra_nickase=True,
-            max_retained_overhead_nt=7,
+            max_retained_overhead_nt=3,
         )
     )
 
@@ -357,10 +357,10 @@ def test_basal_minimum_overhead_matrix_preserves_proven_and_unknown_cells() -> N
     assert len(matrix.release_actions) == 1
     assert matrix.release_actions[0].enzyme_id == "example:enzyme/end-a@1"
     assert [cell.status for cell in matrix.cells] == ["proven_minimum", "proven_minimum"]
-    assert [cell.minimum_retained_overhead_nt for cell in matrix.cells] == [8, 8]
+    assert [cell.minimum_retained_overhead_nt for cell in matrix.cells] == [4, 4]
     assert [cell.realization_count for cell in matrix.cells] == [4, 4]
     assert [cell.status for cell in partial.cells] == ["proven_minimum", "unknown"]
-    assert partial.cells[0].minimum_retained_overhead_nt == 8
+    assert partial.cells[0].minimum_retained_overhead_nt == 4
     assert partial.cells[1].minimum_retained_overhead_nt is None
     assert [cell.status for cell in negative.cells] == ["infeasible", "infeasible"]
 
@@ -370,7 +370,7 @@ def test_basal_minimum_overhead_matrix_preserves_proven_and_unknown_cells() -> N
     assert "Basal local accessibility by nickase and future release action" in svg
     assert "Coverage: truncated · feasibility: feasible" in svg
     assert "complete route composition and physical construction" in svg
-    assert "retained overhead, 0-8 nt" in svg
+    assert "retained overhead, 0-4 nt" in svg
     assert "scaffold completion, route validity" in svg
     assert 'data-cell-status="proven_minimum"' in svg
     assert 'data-cell-status="unknown"' in svg

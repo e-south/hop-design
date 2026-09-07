@@ -22,12 +22,10 @@ from hop_design.models.construction import (
     BasalTarget,
     LocalNeighborhoodRequest,
     LocalRealization,
-    OverheadPosition,
     PayloadSourceMap,
     PayloadSourceSegment,
     RealizationGroup,
     RealizationGrouping,
-    RetainedOverheadLedger,
     SourceOrientation,
     geometry_id,
 )
@@ -37,6 +35,7 @@ from hop_design.models.construction.basal import (
     BasalBoundaryProjection,
     BasalEnzymeDefinition,
     BasalRealizationRecord,
+    basal_retained_overhead_ledger,
 )
 from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.coordinates import Span
@@ -144,22 +143,11 @@ def _realization(
         )
         for enzyme in enzymes
     )
-    payload_start = solution.payload_span.start.offset
-    payload_end = solution.payload_span.end.offset
-    retained_overhead = RetainedOverheadLedger(
-        neighborhood="basal",
-        reference_state_id="basal-pcr-local-boundary",
-        positions=tuple(
-            OverheadPosition(
-                coordinate_space="basal-boundary",
-                position=position,
-                base=local_reference[position],
-                material_role=("source" if position < payload_start else "adapter"),
-            )
-            for position in range(len(local_reference))
-            if not payload_start <= position < payload_end
-        ),
-        retained_overhead_nt=len(local_reference) - len(payload_sequence),
+    retained_overhead = basal_retained_overhead_ledger(
+        local_reference_sequence=local_reference,
+        payload_span=solution.payload_span,
+        pairing_state=solution.pairing_state,
+        nick_offset_nt=target.nick_offset_nt,
     )
     return BasalRealizationRecord.create(
         local_realization=local,

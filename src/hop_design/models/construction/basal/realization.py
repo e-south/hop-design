@@ -24,7 +24,6 @@ from hop_design.models.construction import (
     BasalPairConstraint,
     BasalTarget,
     LocalRealization,
-    OverheadPosition,
     PayloadSourceMap,
     RetainedOverheadLedger,
 )
@@ -39,6 +38,7 @@ from hop_design.models.sequence import (
 )
 from hop_design.serialization import canonical_json_bytes
 
+from .accounting import basal_retained_overhead_ledger
 from .identity import basal_realization_id
 from .pairing import BasalBoundaryControl, BasalEnzymeDefinition
 from .states import BasalBoundaryProjection
@@ -124,22 +124,15 @@ class BasalRealizationRecord(HopModel):
         self._validate_enzyme_replay()
         payload_span = self.payload_source_map.segments[0].source_span
         reference = self.projection.local_reference_sequence
-        expected_positions = tuple(
-            OverheadPosition(
-                coordinate_space="basal-boundary",
-                position=position,
-                base=reference[position],
-                material_role=("source" if position < payload_span.start.offset else "adapter"),
-            )
-            for position in range(len(reference))
-            if not payload_span.start.offset <= position < payload_span.end.offset
+        if self.projection.pairing_state is None:
+            raise ValueError("Basal retained overhead requires one exact pairing state.")
+        expected_overhead = basal_retained_overhead_ledger(
+            local_reference_sequence=reference,
+            payload_span=payload_span,
+            pairing_state=self.projection.pairing_state,
+            nick_offset_nt=achieved.nick_offset_nt,
         )
-        if self.retained_overhead != RetainedOverheadLedger(
-            neighborhood="basal",
-            reference_state_id="basal-pcr-local-boundary",
-            positions=expected_positions,
-            retained_overhead_nt=len(expected_positions),
-        ):
+        if self.retained_overhead != expected_overhead:
             raise ValueError("Retained overhead must replay the non-payload basal boundary.")
         self._validate_route_states()
         return self

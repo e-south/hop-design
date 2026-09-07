@@ -35,6 +35,7 @@ from .programs import (
     _adapter_domains,
     _binding,
     _constrain,
+    _oriented_cuts,
     _oriented_pattern,
 )
 
@@ -51,17 +52,9 @@ def basal_retained_overhead_nt(
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }:
         raise ValueError("Basal retained-overhead accounting requires a PCR-bearing endpoint.")
+    _ = program
     arm_nt = len(target.pairing_constraints)
-    nick_cut_offset = (
-        program.nick_enzyme.cut_offset_reference_strand
-        if program.nick_orientation is SiteOrientation.FORWARD
-        else program.nick_enzyme.recognition_length
-        - program.nick_enzyme.cut_offset_reference_strand
-    )
-    nick_boundary = arm_nt - target.nick_offset_nt
-    nick_site_start = nick_boundary - nick_cut_offset
-    recognition_prefix_nt = max(0, -nick_site_start)
-    return recognition_prefix_nt + 2 * arm_nt
+    return max(arm_nt, target.nick_offset_nt)
 
 
 def iter_basal_program_solutions(
@@ -99,10 +92,22 @@ def iter_basal_program_solutions(
     )
     nick_boundary = payload_start - target.nick_offset_nt
     nick_site_start = nick_boundary - nick_cut_offset
+    reference_cut, complement_cut = _oriented_cuts(
+        program.nick_enzyme,
+        orientation=program.nick_orientation,
+        site_start=nick_site_start,
+    )
 
     placements: list[tuple[int, str]] = [(nick_site_start, nick_pattern), (payload_start, payload)]
-    minimum = min(0, *(start for start, _pattern in placements))
-    maximum = max(adapter_end, *(start + len(pattern) for start, pattern in placements))
+    cut_boundaries = tuple(
+        boundary for boundary in (reference_cut, complement_cut) if boundary is not None
+    )
+    minimum = min(0, *(start for start, _pattern in placements), *cut_boundaries)
+    maximum = max(
+        adapter_end,
+        *(start + len(pattern) for start, pattern in placements),
+        *cut_boundaries,
+    )
     shift = -minimum
     source_start += shift
     payload_start += shift
