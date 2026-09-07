@@ -1,3 +1,18 @@
+---
+doc_id: retained-overhead-construction-inventory
+title: Retained-overhead construction implementation inventory
+intent: Record the reusable boundaries, completed semantic cutover, and downstream work.
+audience:
+  - maintainers
+  - agent executors
+owner: HOP Design maintainers
+status: active
+last_verified: 2026-09-07
+doc_type: explanation
+journey:
+  - maintain
+---
+
 # Retained-overhead construction implementation inventory
 
 This is an implementation inventory for the breaking construction refactor. It is not a scientific evidence snapshot.
@@ -19,14 +34,27 @@ This is an implementation inventory for the breaking construction refactor. It i
 - Local execution identity embedded the radius policy and traversal bounds.
 - Local projections and CLI language described that radius-based search model.
 
-The v4 cutover removed these inputs. There is no compatibility reader or translation layer.
+The active strict schemas remove these inputs. There is no compatibility reader or
+translation layer.
 
-## Missing behavior
+## Implemented closure
 
-- Profile-free basal search across nickase and Type IIS action pairs, with state-indexed adapter constraints and an absolute 0--8 envelope.
-- Full-span source-partition tiling over the inclusive maximum-fragment ladder 11--15.
-- Selected-authority composition through exact clone-ready endpoint transitions.
-- Study runs, tables, and figures regenerated from the new authorities.
+- Foldback search is ordered by absolute retained non-payload overhead.
+- Basal search uses primitive pairing and future-release obligations rather than named
+  profiles.
+- Source-partition authorities certify both complete source strands across the inclusive
+  maximum-fragment ladder 11--15.
+- Selected complete routes bind exact source preparation, source partition, molecular
+  chronology, and endpoint evidence.
+- Public projections expose local overhead, basal enzyme-action minima, exact source
+  partitions, route navigation, and selected route trajectories.
+
+## Downstream work
+
+- Research Studies must freeze new finite line inputs and regenerate the affected
+  computational authorities, tables, and figures.
+- manufold may import only explicitly accepted immutable study assets.
+- Physical recovery and sequence-confirmation evidence remain outside HOP.
 
 ## Connected, separate, and external responsibilities
 
@@ -35,12 +63,15 @@ The v4 cutover removed these inputs. There is no compatibility reader or transla
 | Source ssDNA and source-duplex materialization | Present and connected in complete construction | Reuse and verify through the new selected authorities |
 | Local foldback realization | Present and retained-overhead ordered | Reuse and verify in the formal study run |
 | Local basal realization | Present and retained-overhead ordered, with profile-shaped pairing input | Reuse primitive pairing/state logic; replace the profile-shaped contract and paper search |
-| Source partition | Present as a separate exact authority and optional composition input | Extend to full-span tiling; keep it a sibling authority |
-| Complete route chronology | Present and connected | Reuse; strengthen selected v4 authority joins and endpoint accounting |
+| Source partition | Full-span exact authority and optional composition input | Keep it a sibling authority and bind its selected certificate into route inspection |
+| Complete route chronology | Connected from source preparation through the requested endpoint | Preserve exact authority joins and endpoint accounting |
 | Historical linear-source records | Preserved study evidence and regression inputs | Never accepted as runtime defaults or compatibility schemas |
 | Physical materials and observations | Outside HOP | Remain owned by Research Studies |
 | Manuscript claims and panel composition | Outside HOP | Remain owned by manufold |
 
 ## Finite-domain requirement
 
-Retained overhead bounds endpoint sequence positions but does not independently bound transient source context. Each normalized v4 plan must therefore close payload membership, enzyme/action records, geometry allocations, material extents, adapter/primer obligations, and any completion choices before execution identity is computed.
+Retained overhead bounds endpoint sequence positions but does not independently bound
+transient source context. Each normalized plan must therefore close payload membership,
+enzyme/action records, geometry allocations, material extents, adapter/primer obligations,
+and any completion choices before execution identity is computed.
