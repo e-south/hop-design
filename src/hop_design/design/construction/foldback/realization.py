@@ -23,12 +23,14 @@ from hop_design.models.construction import (
     FoldbackTarget,
     LocalNeighborhoodRequest,
     LocalRealization,
+    OverheadPosition,
     PayloadSourceMap,
     PayloadSourceSegment,
     ProjectionInventoryItem,
     ProjectionInventoryStatus,
     RealizationGroup,
     RealizationGrouping,
+    RetainedOverheadLedger,
     SourceOrientation,
     geometry_coordinate_value,
     geometry_id,
@@ -113,7 +115,6 @@ def _realization(
         stage_ids=stage_ids,
         achieved_geometry=target,
     )
-    arm_nt = target.annealing_arm_length_bp
     changed_coordinates = tuple(
         name
         for name in (
@@ -125,6 +126,23 @@ def _realization(
         != geometry_coordinate_value(request.target, name)
     )
     released_ids = set(replay.released_fragment_ids)
+    retained_sequence = replay.ligated_strand.sequence
+    overhead_start = len(payload_sequence)
+    overhead_end = len(retained_sequence) - len(payload_sequence)
+    retained_overhead = RetainedOverheadLedger(
+        neighborhood="foldback",
+        reference_state_id="foldback-local-product",
+        positions=tuple(
+            OverheadPosition(
+                coordinate_space="foldback-path",
+                position=position,
+                base=retained_sequence[position],
+                material_role="source",
+            )
+            for position in range(overhead_start, overhead_end)
+        ),
+        retained_overhead_nt=overhead_end - overhead_start,
+    )
     return FoldbackLocalRealization.create(
         local_realization=local,
         payload_spec_id=request.payload.payload_spec_id,
@@ -174,7 +192,7 @@ def _realization(
         released_state=replay.released_state,
         loop_sequence=replay.loop_sequence,
         foldback_arm_sequence=replay.foldback_arm_sequence,
-        retained_sequence=replay.ligated_strand.sequence,
+        retained_sequence=retained_sequence,
         annealing_pairs=replay.annealing_pairs,
         ligation_bond=replay.ligation_bond,
         ligated_strand=replay.ligated_strand,
@@ -182,7 +200,7 @@ def _realization(
         stage_assessments=assessment.stage_assessments,
         relaxation_radius=relaxation_radius,
         changed_coordinates=changed_coordinates,
-        retained_construction_nt=(target.loop_length_nt + 2 * arm_nt),
+        retained_overhead=retained_overhead,
         transient_construction_nt=(
             sum(
                 fragment.precursor_span.length.value

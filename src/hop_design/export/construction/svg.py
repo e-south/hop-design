@@ -50,7 +50,7 @@ class _FoldbackGroupKey(NamedTuple):
     junction_offset_nt: int
     loop_length_nt: int
     annealing_arm_length_bp: int
-    retained_construction_nt: int
+    retained_overhead_nt: int
     transient_construction_nt: int
 
 
@@ -94,7 +94,7 @@ def _render_foldback(projection: FoldbackFeasibilityProjection) -> bytes:
             junction_offset_nt=item.junction_offset_nt,
             loop_length_nt=item.loop_length_nt,
             annealing_arm_length_bp=item.annealing_arm_length_bp,
-            retained_construction_nt=item.retained_construction_nt,
+            retained_overhead_nt=item.retained_overhead_nt,
             transient_construction_nt=item.transient_construction_nt,
         )
         grouped.setdefault(key, []).append(item.local_realization_id)

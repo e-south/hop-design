@@ -50,7 +50,7 @@ class FoldbackFeasibilityRow(HopModel):
     junction_offset_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
-    retained_construction_nt: int = Field(ge=0)
+    retained_overhead_nt: int = Field(ge=0)
     transient_construction_nt: int = Field(ge=0)
 
 

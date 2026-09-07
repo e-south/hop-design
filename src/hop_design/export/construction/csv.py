@@ -196,7 +196,7 @@ def _write_foldback(buffer: io.StringIO, projection: FoldbackFeasibilityProjecti
         "junction_offset_nt",
         "loop_length_nt",
         "annealing_arm_length_bp",
-        "retained_construction_nt",
+        "retained_overhead_nt",
         "transient_construction_nt",
         "truncation_reasons",
     )

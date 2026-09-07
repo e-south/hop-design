@@ -62,7 +62,7 @@ def project_foldback_feasibility(
             annealing_arm_length_bp=cast(
                 FoldbackTarget, item.local_realization.achieved_geometry
             ).annealing_arm_length_bp,
-            retained_construction_nt=item.retained_construction_nt,
+            retained_overhead_nt=item.retained_overhead.retained_overhead_nt,
             transient_construction_nt=item.transient_construction_nt,
         )
         for item in result.realizations

@@ -21,7 +21,9 @@ from hop_design.models.construction import (
     FoldbackTarget,
     LocalRealization,
     NeighborhoodDiscoveryResult,
+    OverheadPosition,
     PayloadSourceMap,
+    RetainedOverheadLedger,
     SourceOrientation,
     validate_linear_source_map,
 )
@@ -82,7 +84,7 @@ class FoldbackLocalRealization(HopModel):
     stage_assessments: tuple[ReactionStageAssessment, ...]
     relaxation_radius: int = Field(ge=0)
     changed_coordinates: tuple[str, ...]
-    retained_construction_nt: int = Field(ge=0)
+    retained_overhead: RetainedOverheadLedger
     transient_construction_nt: int = Field(ge=0)
 
     @classmethod
@@ -209,9 +211,24 @@ class FoldbackLocalRealization(HopModel):
             raise ValueError("The nick-controlled three-prime end must be hydroxylated.")
         if self.terminus.end_chemistry is not EndChemistry.PHOSPHATE:
             raise ValueError("The foldback-side five-prime end must be phosphorylated.")
-        expected_retained_nt = achieved.loop_length_nt + 2 * achieved.annealing_arm_length_bp
-        if self.retained_construction_nt != expected_retained_nt:
-            raise ValueError("Retained construction count must derive from achieved geometry.")
+        overhead_start = len(self.payload_sequence)
+        overhead_end = len(self.retained_sequence) - len(self.payload_sequence)
+        expected_positions = tuple(
+            OverheadPosition(
+                coordinate_space="foldback-path",
+                position=position,
+                base=self.retained_sequence[position],
+                material_role="source",
+            )
+            for position in range(overhead_start, overhead_end)
+        )
+        if self.retained_overhead != RetainedOverheadLedger(
+            neighborhood="foldback",
+            reference_state_id="foldback-local-product",
+            positions=expected_positions,
+            retained_overhead_nt=len(expected_positions),
+        ):
+            raise ValueError("Retained overhead must replay the non-payload foldback path.")
         expected_transient = sum(
             fragment.precursor_span.length.value
             for fragment in self.molecular_fragments

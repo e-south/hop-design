@@ -235,6 +235,13 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
     } == {Strand.TOP, Strand.BOTTOM}
 
     for realization in result.realizations:
+        assert realization.retained_overhead.neighborhood == "foldback"
+        assert realization.retained_overhead.reference_state_id == "foldback-local-product"
+        assert realization.retained_overhead.retained_overhead_nt == 9
+        assert tuple(
+            (position.position, position.base)
+            for position in realization.retained_overhead.positions
+        ) == tuple(enumerate(realization.retained_sequence[4:13], start=4))
         assert realization.foldback_arm_sequence == "TGT"
         assert [(pair.left_base, pair.right_base) for pair in realization.annealing_pairs] == [
             ("A", "T"),
