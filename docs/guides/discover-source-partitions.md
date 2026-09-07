@@ -1,13 +1,13 @@
 ---
 doc_id: hop-discover-source-partitions-guide
 title: Discover an exact source partition
-intent: Search bounded nickase subsets for a declared fragment-selection outcome.
+intent: Search bounded nickase subsets for a declared full-span fragment partition.
 audience:
   - Python users
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-09-07
 doc_type: how-to
 journey:
   - discover
@@ -17,8 +17,8 @@ journey:
 
 Use source-partition discovery when the question is:
 
-> Which provisioned nickase combinations create these exact surviving strand
-> fragments after denaturation and length selection?
+> Which provisioned nickase combinations preserve these required fragments and
+> keep every sacrificial fragment within the declared removal threshold?
 
 This is a route-level question. It is not a basal-junction subtype and it does
 not select a preferred enzyme program.
@@ -26,18 +26,18 @@ not select a preferred enzyme program.
 ## Author the request
 
 Create a regular, nonsymlink JSON or YAML file with schema
-`hop.source-partition-request/v1`. It declares:
+`hop.source-partition-request/v2`. It declares:
 
 - one exact duplex source through its 5′→3′ top sequence and four terminal
   chemistries;
 - one final-payload authority and its exact source-coordinate mapping;
 - one caller-owned characterized-enzyme catalog and provisioning policy;
-- one inclusive fragment-length rule;
+- preferred and absolute inclusive sacrificial-fragment maxima;
 - the exact top- or bottom-strand spans that must survive;
 - the maximum enzymes per program; and
 - explicit search-node and realization bounds.
 
-Because v1 maps the authored payload onto the source top strand, at least one
+Because this route maps the authored payload onto the source top strand, at least one
 required top-strand survivor must fully contain that mapped payload span.
 
 HOP filters the catalog to nickases provisioned for `strand_exposure`. It
@@ -70,14 +70,20 @@ The output contains:
 
 ```text
 source-partition-result/
+├── data.csv
+├── fragments.csv
 ├── result.json
-└── data.csv
+└── thresholds.csv
 ```
 
 `result.json` is the replay-verified scientific record. It contains every
 examined candidate disposition and, for each accepted realization, the exact
-nick sites, fragments, selection, and nick functions. `data.csv` is a tidy
-candidate table for study-owned analysis and rendering.
+nick sites, full two-strand fragment certificate, threshold ladder, selected
+survivors, and nick functions. `data.csv` is a tidy candidate table,
+`fragments.csv` records every exact fragment and boundary cause, and
+`thresholds.csv` records the complete preferred-to-absolute threshold ladder.
+These tables support study-owned analysis and rendering without replacing the
+JSON authority.
 
 Nick functions have literal route meaning:
 
@@ -96,7 +102,12 @@ Neither value implies biological importance or enzyme preference.
 - `truncated`: a search-node or realization bound stopped enumeration before
   the domain was exhausted.
 
-Changing the length-selection rule changes the scientific problem. Increasing
+The least-permissive successful maximum is selected only after every stricter
+declared threshold has been evaluated. A threshold is feasible only when every
+sacrificial fragment is at or below it and every required fragment remains
+above it. This rule applies equally to internal and terminal fragments.
+
+Changing the fragment policy changes the scientific problem. Increasing
 an execution bound does not. A truncated result is never reported as
 infeasible.
 

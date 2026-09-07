@@ -25,11 +25,13 @@ from hop_design.models.construction.payload import (
 )
 from hop_design.models.construction.source_partition import (
     PartitionNickFunction,
+    SacrificialFragmentPolicy,
     SourceDuplexMaterial,
     SourcePartitionConstraints,
     SourcePartitionDiscoveryRequest,
     SourcePartitionEnumerationPolicy,
     SourcePartitionFailure,
+    SourcePartitionFragmentDisposition,
     SourcePartitionSurvivor,
 )
 from hop_design.models.construction.source_partition.result import (
@@ -49,7 +51,7 @@ from hop_design.models.enzymes import (
     TargetMolecule,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import EndChemistry, FragmentLengthSelection
+from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.payload import ExactPayload
 from hop_design.models.references import ExternalRef
 from tests.support.linear_source_method import SOURCE
@@ -85,7 +87,8 @@ def _nickase(*, enzyme_id: str, motif: str, cut_offset: int) -> CharacterizedEnz
 def _request(
     *,
     sequence: str = SOURCE,
-    min_length_nt: int = 16,
+    preferred_maximum_nt: int = 11,
+    absolute_maximum_nt: int = 15,
     max_search_nodes: int = 3,
 ) -> SourcePartitionDiscoveryRequest:
     bottom_repeat = _nickase(
@@ -112,7 +115,7 @@ def _request(
         pair_state_exceptions=(),
     )
     return SourcePartitionDiscoveryRequest(
-        schema="hop.source-partition-request/v1",
+        schema="hop.source-partition-request/v2",
         payload=payload,
         source=SourceDuplexMaterial(
             material_id="source-duplex",
@@ -146,7 +149,10 @@ def _request(
             ),
         ),
         constraints=SourcePartitionConstraints(
-            selection=FragmentLengthSelection(min_length_nt=min_length_nt),
+            fragment_policy=SacrificialFragmentPolicy(
+                preferred_maximum_nt=preferred_maximum_nt,
+                absolute_maximum_nt=absolute_maximum_nt,
+            ),
             required_survivors=(
                 SourcePartitionSurvivor(
                     survivor_id="retained-top",
@@ -202,19 +208,115 @@ def test_discovers_the_required_multinick_partition_exhaustively() -> None:
     )
 
 
-def test_missing_cleanup_site_and_more_permissive_selection_are_infeasible() -> None:
+def test_realization_certifies_every_fragment_and_the_inclusive_threshold_ladder() -> None:
+    realization = discover_source_partitions(_request()).realizations[0]
+    certificate = realization.fragment_certificate
+
+    assert certificate.source_length_nt == 70
+    assert certificate.selected_maximum_sacrificial_fragment_nt == 12
+    assert [item.maximum_sacrificial_fragment_nt for item in certificate.thresholds] == [
+        11,
+        12,
+        13,
+        14,
+        15,
+    ]
+    assert [item.feasible for item in certificate.thresholds] == [
+        False,
+        True,
+        True,
+        True,
+        True,
+    ]
+    assert tuple(
+        (
+            item.precursor_strand,
+            item.source_span.start.offset,
+            item.source_span.end.offset,
+            item.length_nt,
+            item.disposition,
+            item.left_boundary.kind,
+            item.right_boundary.kind,
+        )
+        for item in certificate.fragments
+    ) == (
+        (
+            Strand.TOP,
+            0,
+            58,
+            58,
+            SourcePartitionFragmentDisposition.REQUIRED,
+            "physical_end",
+            "cleavage",
+        ),
+        (
+            Strand.TOP,
+            58,
+            70,
+            12,
+            SourcePartitionFragmentDisposition.SACRIFICIAL,
+            "cleavage",
+            "physical_end",
+        ),
+        (
+            Strand.BOTTOM,
+            0,
+            11,
+            11,
+            SourcePartitionFragmentDisposition.SACRIFICIAL,
+            "physical_end",
+            "cleavage",
+        ),
+        (
+            Strand.BOTTOM,
+            11,
+            23,
+            12,
+            SourcePartitionFragmentDisposition.SACRIFICIAL,
+            "cleavage",
+            "cleavage",
+        ),
+        (
+            Strand.BOTTOM,
+            23,
+            35,
+            12,
+            SourcePartitionFragmentDisposition.SACRIFICIAL,
+            "cleavage",
+            "cleavage",
+        ),
+        (
+            Strand.BOTTOM,
+            35,
+            70,
+            35,
+            SourcePartitionFragmentDisposition.REQUIRED,
+            "cleavage",
+            "physical_end",
+        ),
+    )
+
+
+def test_missing_cleanup_site_and_unmet_fragment_threshold_are_infeasible() -> None:
     missing_site = SOURCE[:6] + "CATGAG" + SOURCE[12:]
 
     mutated = discover_source_partitions(_request(sequence=missing_site))
-    permissive = discover_source_partitions(_request(min_length_nt=12))
+    too_strict = discover_source_partitions(
+        _request(preferred_maximum_nt=11, absolute_maximum_nt=11)
+    )
 
     assert mutated.status is SearchCompletionStatus.INFEASIBLE
-    assert permissive.status is SearchCompletionStatus.INFEASIBLE
+    assert too_strict.status is SearchCompletionStatus.INFEASIBLE
     assert not mutated.realizations
-    assert not permissive.realizations
+    assert not too_strict.realizations
     assert all(
-        SourcePartitionFailure.RETAINED_FRAGMENT_SET_MISMATCH in item.failure_codes
+        SourcePartitionFailure.FRAGMENT_THRESHOLD_INFEASIBLE in item.failure_codes
         for item in mutated.dispositions
+        if len(item.enzyme_ids) == 2
+    )
+    assert all(
+        SourcePartitionFailure.FRAGMENT_THRESHOLD_INFEASIBLE in item.failure_codes
+        for item in too_strict.dispositions
         if len(item.enzyme_ids) == 2
     )
 
@@ -354,7 +456,7 @@ def _structurally_distinct_request(
         pair_state_exceptions=(),
     )
     return SourcePartitionDiscoveryRequest(
-        schema="hop.source-partition-request/v1",
+        schema="hop.source-partition-request/v2",
         payload=payload,
         source=SourceDuplexMaterial(
             material_id="distinct-source-duplex",
@@ -392,7 +494,10 @@ def _structurally_distinct_request(
             ),
         ),
         constraints=SourcePartitionConstraints(
-            selection=FragmentLengthSelection(min_length_nt=20),
+            fragment_policy=SacrificialFragmentPolicy(
+                preferred_maximum_nt=11,
+                absolute_maximum_nt=15,
+            ),
             required_survivors=(
                 SourcePartitionSurvivor(
                     survivor_id="retained-top",

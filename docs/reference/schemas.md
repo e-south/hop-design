@@ -45,8 +45,8 @@ documentation when operating that artifact.
 | `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization |
 | `hop.hairpin-junction-route-search-result/v2` | `HairpinJunctionRouteSearchResult` | Bounded continuity join across junction processes |
 | `hop.construction-source/v6` | public file source | Strict foldback, optional PCR-basal, source-ssDNA preparation, endpoint-auxiliary resolution policies, whole-route constraints, and finite enumeration; the design bundle remains a separate verified path |
-| `hop.source-partition-request/v1` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, length selection, and finite subset-enumeration bounds |
-| `hop.source-partition-result/v1` | public discovery result | Replay-verified nick sites, denatured fragments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
+| `hop.source-partition-request/v2` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, preferred-to-absolute sacrificial-fragment maximum ladder, and finite subset-enumeration bounds |
+| `hop.source-partition-result/v2` | public discovery result | Replay-verified nick sites, full two-strand fragment certificates, threshold assessments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
 | `hop.final-payload/v1` | internal construction model | Final-product payload coordinates, authored reference strand, boundaries, and derived pairing authority |
 | `hop.local-neighborhood-request/v5` | internal construction model | Finite foldback or PCR-basal geometry domain, route, local endpoint, enzyme policy, retained-overhead ceiling, and search bounds |
 | `hop.neighborhood-discovery-result/v5` | internal construction model | Shared retained-overhead accounting, geometry grouping, provenance, completion, feasibility, and termination semantics |

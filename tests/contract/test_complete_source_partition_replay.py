@@ -29,6 +29,7 @@ from hop_design.models.construction.payload import (
     SourceOrientation,
 )
 from hop_design.models.construction.source_partition import (
+    SacrificialFragmentPolicy,
     SourceDuplexMaterial,
     SourcePartitionConstraints,
     SourcePartitionDiscoveryRequest,
@@ -46,7 +47,6 @@ from hop_design.models.enzymes import (
     VendorMetadata,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import FragmentLengthSelection
 from hop_design.models.payload import ExactPayload
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
@@ -190,7 +190,10 @@ def _partition_result(
             ),
         ),
         constraints=SourcePartitionConstraints(
-            selection=FragmentLengthSelection(min_length_nt=threshold),
+            fragment_policy=SacrificialFragmentPolicy(
+                preferred_maximum_nt=threshold - 1,
+                absolute_maximum_nt=threshold - 1,
+            ),
             required_survivors=tuple(survivors),
             max_enzymes_per_program=1,
         ),

@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -146,6 +147,17 @@ def test_result_rejects_forged_fragment_selection_and_nick_function() -> None:
     forged_realization = realization.model_copy(update={"selected": forged_selection})
     forged = result.model_copy(update={"realizations": (forged_realization,)})
     with pytest.raises(ValidationError, match="realization states must replay exactly"):
+        _revalidate(forged)
+
+    forged_certificate = realization.fragment_certificate.model_copy(
+        update={"selected_maximum_sacrificial_fragment_nt": 13}
+    )
+    forged_realization = realization.model_copy(update={"fragment_certificate": forged_certificate})
+    forged = result.model_copy(update={"realizations": (forged_realization,)})
+    with pytest.raises(
+        ValidationError,
+        match="Selected fragment threshold must be the least permissive success",
+    ):
         _revalidate(forged)
 
     function = realization.nick_functions[0]
@@ -328,7 +340,7 @@ def test_realization_identity_rejects_a_failed_candidate_replay() -> None:
 def test_public_loader_rejects_unsupported_schema_and_symlink(tmp_path: Path) -> None:
     source = tmp_path / "request.json"
     mapping = _request().model_dump(mode="json", by_alias=True)
-    mapping["schema"] = "hop.source-partition-request/v2"
+    mapping["schema"] = "hop.source-partition-request/v1"
     source.write_text(json.dumps(mapping))
     with pytest.raises(ValueError, match="Unsupported HOP source-partition schema"):
         construction.discover_source_partition(source)
@@ -348,7 +360,7 @@ def test_public_result_loader_rejects_schema_symlink_and_resealed_forgery(
     mapping = result.model_dump(mode="json", by_alias=True)
 
     unsupported = tmp_path / "unsupported-result.json"
-    unsupported.write_text(json.dumps({**mapping, "schema": "hop.source-partition-result/v2"}))
+    unsupported.write_text(json.dumps({**mapping, "schema": "hop.source-partition-result/v1"}))
     with pytest.raises(ValueError, match="Unsupported HOP source-partition result schema"):
         construction.load_verified_source_partition(unsupported)
 
@@ -374,6 +386,57 @@ def test_opaque_receipt_exposes_only_revalidated_source_authority(tmp_path: Path
     receipt = construction.load_verified_source_partition(result_path)
 
     assert canonical_json_bytes(receipt._verified_source()) == canonical_json_bytes(result)
+
+
+def test_public_receipt_writes_tidy_fragment_and_threshold_certificates(
+    tmp_path: Path,
+) -> None:
+    request_path = tmp_path / "request.json"
+    request_path.write_text(
+        json.dumps(_request().model_dump(mode="json", by_alias=True)),
+        encoding="utf-8",
+    )
+
+    receipt = construction.discover_source_partition(request_path)
+    output = receipt.write(tmp_path / "partition")
+
+    assert {path.name for path in output.iterdir()} == {
+        "data.csv",
+        "fragments.csv",
+        "result.json",
+        "thresholds.csv",
+    }
+    with (output / "fragments.csv").open(newline="", encoding="utf-8") as handle:
+        fragments = tuple(csv.DictReader(handle))
+    assert len(fragments) == 6
+    assert {
+        (
+            row["strand"],
+            row["source_start"],
+            row["source_end"],
+            row["length_nt"],
+            row["disposition"],
+        )
+        for row in fragments
+    } == {
+        ("top", "0", "58", "58", "required"),
+        ("top", "58", "70", "12", "sacrificial"),
+        ("bottom", "0", "11", "11", "sacrificial"),
+        ("bottom", "11", "23", "12", "sacrificial"),
+        ("bottom", "23", "35", "12", "sacrificial"),
+        ("bottom", "35", "70", "35", "required"),
+    }
+    with (output / "thresholds.csv").open(newline="", encoding="utf-8") as handle:
+        thresholds = tuple(csv.DictReader(handle))
+    assert tuple(
+        (row["maximum_sacrificial_fragment_nt"], row["feasible"]) for row in thresholds
+    ) == (
+        ("11", "false"),
+        ("12", "true"),
+        ("13", "true"),
+        ("14", "true"),
+        ("15", "true"),
+    )
 
 
 def test_opaque_receipt_rejects_content_that_disagrees_with_canonical_bytes(

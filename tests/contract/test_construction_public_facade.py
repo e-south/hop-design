@@ -343,7 +343,12 @@ def test_source_partition_discovery_is_file_oriented_and_portable(tmp_path: Path
     assert repr(discovery).startswith("SourcePartitionDiscovery(status='complete'")
 
     output = discovery.write(tmp_path / "partition")
-    assert {item.name for item in output.iterdir()} == {"data.csv", "result.json"}
+    assert {item.name for item in output.iterdir()} == {
+        "data.csv",
+        "fragments.csv",
+        "result.json",
+        "thresholds.csv",
+    }
     loaded = construction.load_verified_source_partition(output / "result.json")
     assert loaded.result_id == discovery.result_id
     assert loaded.json_bytes == discovery.json_bytes
