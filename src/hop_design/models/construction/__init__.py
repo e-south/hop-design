@@ -32,6 +32,7 @@ from .accounting import (
     SearchFeasibilityStatus,
     SearchTerminationReason,
 )
+from .basal_release import BasalFutureReleaseAction, BasalFutureReleaseRequirement
 from .bundle import ConstructionBundle
 from .payload import (
     ConstructionEndpoint,
@@ -85,6 +86,8 @@ from .targets import (
 )
 
 __all__ = [
+    "BasalFutureReleaseAction",
+    "BasalFutureReleaseRequirement",
     "BasalGeometryDomain",
     "BasalPairAllowance",
     "BasalPairClass",

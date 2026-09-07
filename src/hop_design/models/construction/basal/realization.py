@@ -19,6 +19,7 @@ from pydantic_core import to_jsonable_python
 
 from hop_design.models.base import HopModel
 from hop_design.models.construction import (
+    BasalFutureReleaseAction,
     BasalPairAllowance,
     BasalTarget,
     LocalRealization,
@@ -63,6 +64,10 @@ class BasalRealizationRecord(HopModel):
     enzyme_definitions: tuple[BasalEnzymeDefinition, ...]
     enzyme_bindings: tuple[ConstructionEnzymeBinding, ...]
     basal_nick: BasalBoundaryControl
+    future_release_action: BasalFutureReleaseAction | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     pairing_constraints: tuple[BasalPairAllowance, ...]
     projection: BasalEndpointProjection
     reaction_programs: tuple[ReactionProgram, ...]
@@ -104,6 +109,11 @@ class BasalRealizationRecord(HopModel):
         if self.basal_nick.binding_id not in self.local_realization.enzyme_binding_ids:
             raise ValueError("Basal nick must reference one exact local binding.")
         achieved = cast(BasalTarget, self.local_realization.achieved_geometry)
+        if self.future_release_action is None:
+            if achieved.future_release is not None:
+                raise ValueError("Basal realization is missing its future release action.")
+        elif self.future_release_action.requirement != achieved.future_release:
+            raise ValueError("Future release action must satisfy the achieved basal target.")
         if (
             tuple(item.allowed_class for item in achieved.pairing_constraints)
             != self.pairing_constraints
@@ -154,10 +164,18 @@ class BasalRealizationRecord(HopModel):
 
     def _validate_enzyme_replay(self) -> None:
         definitions = {item.enzyme_id: item.enzyme for item in self.enzyme_definitions}
-        if len(definitions) != len(self.enzyme_definitions) or set(definitions) != {
-            item.enzyme_id for item in self.enzyme_bindings
-        }:
+        expected_definition_ids = {item.enzyme_id for item in self.enzyme_bindings}
+        if self.future_release_action is not None:
+            expected_definition_ids.add(self.future_release_action.enzyme_id)
+        if (
+            len(definitions) != len(self.enzyme_definitions)
+            or set(definitions) != expected_definition_ids
+        ):
             raise ValueError("Embedded enzyme definitions must cover every binding exactly.")
+        if self.future_release_action is not None:
+            self.future_release_action.assert_definition_replay(
+                definitions[self.future_release_action.enzyme_id]
+            )
         for binding in self.enzyme_bindings:
             if binding.role is not EnzymeRole.BASAL_NICK:
                 raise ValueError("Basal local authority may contain only basal-nick bindings.")

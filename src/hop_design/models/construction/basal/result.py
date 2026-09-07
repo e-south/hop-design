@@ -21,6 +21,7 @@ from hop_design.models.construction import (
     PayloadCompatibilityStatus,
     SearchFeasibilityStatus,
 )
+from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import iupac_bases
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -110,6 +111,15 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
                 for program in item.reaction_programs
                 for stage in program.stages
             )
+            if item.future_release_action is not None:
+                operation_count += 1
+                if not request.enzyme_provisioning.permits(
+                    item.future_release_action.enzyme_id,
+                    role=EnzymeRole.END_GENERATION,
+                ):
+                    raise ValueError(
+                        "Basal future release action violates its provisioning policy."
+                    )
             max_operations = request.enzyme_provisioning.max_operations
             if max_operations is not None and operation_count > max_operations:
                 raise ValueError(

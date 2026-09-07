@@ -19,6 +19,7 @@ from pydantic import Field, field_validator, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.junction import Strand
 
+from .basal_release import BasalFutureReleaseRequirement
 from .sequence_domain import SequenceDomainPartition
 from .targets import (
     BasalPairConstraint,
@@ -113,6 +114,10 @@ class BasalGeometryDomain(HopModel):
     pairing_constraints: tuple[BasalPairConstraint, ...] = Field(min_length=1)
     minimum_adapter_annealing_nt: int = Field(default=15, ge=1)
     mismatch_warning_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
+    future_release: BasalFutureReleaseRequirement | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @field_validator("nick_offsets_nt", mode="after")
     @classmethod
@@ -133,6 +138,7 @@ class BasalGeometryDomain(HopModel):
                 nick_offset_nt=offset,
                 pairing_constraints=self.pairing_constraints,
                 ligation_proximal_match_required=True,
+                future_release=self.future_release,
             )
             for offset in self.nick_offsets_nt
         )

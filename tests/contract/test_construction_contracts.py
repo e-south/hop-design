@@ -403,7 +403,7 @@ def test_geometry_domains_are_canonical_and_enforce_structural_floors() -> None:
         FoldbackGeometryDomain(junction_offsets_nt=(0, 0))
 
 
-def test_basal_domains_are_limited_to_the_hairpin_pcr_intermediate() -> None:
+def test_basal_domains_require_endpoint_specific_pcr_obligations() -> None:
     pairing = (
         BasalPairConstraint(
             position_from_ligation=0,
@@ -424,12 +424,10 @@ def test_basal_domains_are_limited_to_the_hairpin_pcr_intermediate() -> None:
         ),
     }
 
-    for endpoint in (
-        ConstructionEndpoint.SSDNA_HAIRPIN,
-        ConstructionEndpoint.CLONE_READY_DUPLEX,
-    ):
-        with pytest.raises(ValidationError, match="hairpin_pcr_duplex"):
-            LocalNeighborhoodRequest(**base, endpoint=endpoint)
+    with pytest.raises(ValidationError, match="PCR-bearing construction endpoint"):
+        LocalNeighborhoodRequest(**base, endpoint=ConstructionEndpoint.SSDNA_HAIRPIN)
+    with pytest.raises(ValidationError, match="requires future end generation"):
+        LocalNeighborhoodRequest(**base, endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX)
 
     request = LocalNeighborhoodRequest(
         **base,

@@ -90,12 +90,23 @@ class LocalNeighborhoodRequest(HopModel):
         return characterized_enzyme_catalog_digest(self.enzyme_provisioning.catalog)
 
     def _validate_basal_endpoint(self, domain: BasalGeometryDomain) -> None:
-        if self.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if self.endpoint not in {
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+        }:
             raise ValueError(
-                "Basal local discovery terminates at the hairpin_pcr_duplex intermediate."
+                "Basal local discovery requires a PCR-bearing construction endpoint."
             )
+        if self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
+            domain.future_release is not None
+        ):
+            raise ValueError("A hairpin PCR basal search must omit future end generation.")
+        if self.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX and (
+            domain.future_release is None
+        ):
+            raise ValueError("A clone-ready basal search requires future end generation.")
         if domain.pairing_constraints[0].allowed_class is not BasalPairAllowance.MATCH:
-            raise ValueError("hairpin_pcr_duplex requires a payload-proximal match.")
+            raise ValueError("A PCR-bearing basal search requires a payload-proximal match.")
 
 
 def geometry_id(target: LocalGeometryTarget) -> str:

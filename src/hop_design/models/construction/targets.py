@@ -20,6 +20,8 @@ from hop_design.models.base import HopModel
 from hop_design.models.junction import Strand
 from hop_design.models.references import ReferenceId
 
+from .basal_release import BasalFutureReleaseRequirement
+
 
 class NickStrandSelection(StrEnum):
     """Whether local discovery should search either exact nick strand."""
@@ -75,6 +77,10 @@ class BasalTarget(HopModel):
     nick_offset_nt: int = Field(ge=0)
     pairing_constraints: tuple[BasalPairConstraint, ...] = ()
     ligation_proximal_match_required: bool = False
+    future_release: BasalFutureReleaseRequirement | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @model_validator(mode="after")
     def validate_pairing_constraints(self) -> BasalTarget:

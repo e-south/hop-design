@@ -67,13 +67,16 @@ def _realization(
     route: BasalProgramCandidate,
     solution: BasalSequenceSolution,
 ) -> BasalRealizationRecord | str:
-    if request.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-        raise ValueError("Basal realization requires the hairpin PCR duplex endpoint.")
+    if request.endpoint not in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    }:
+        raise ValueError("Basal realization requires a PCR-bearing endpoint.")
     if not isinstance(target.nick_strand, Strand):
         raise ValueError("Basal realizations require one exact nick strand.")
     if solution.pairing_state is None:
         raise ValueError("Basal realizations require one exact pairing state.")
-    required_operations = 1
+    required_operations = 1 + int(route.future_release_action is not None)
     if (
         request.enzyme_provisioning.max_operations is not None
         and required_operations > request.enzyme_provisioning.max_operations
@@ -126,7 +129,9 @@ def _realization(
     )
     if operative is None:
         return "basal-nick-cut-unavailable"
-    enzymes = (route.nick_enzyme,)
+    enzymes = (route.nick_enzyme,) + (
+        () if route.future_release_enzyme is None else (route.future_release_enzyme,)
+    )
     definitions = tuple(
         BasalEnzymeDefinition(
             enzyme_id=enzyme.enzyme_id, digest=characterized_enzyme_digest(enzyme), enzyme=enzyme
@@ -192,6 +197,7 @@ def _realization(
             enzyme_id=route.nick_enzyme.enzyme_id,
             binding_id=nick_binding.binding_id,
         ),
+        future_release_action=route.future_release_action,
         pairing_constraints=tuple(item.allowed_class for item in target.pairing_constraints),
         projection=projection,
         reaction_programs=tuple(programs),

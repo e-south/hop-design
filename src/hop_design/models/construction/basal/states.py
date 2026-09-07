@@ -166,7 +166,10 @@ def assert_material_partition(
 class BasalEndpointProjection(HopModel):
     """Exact molecular obligations established for the basal PCR intermediate."""
 
-    endpoint: Literal[ConstructionEndpoint.HAIRPIN_PCR_DUPLEX]
+    endpoint: Literal[
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    ]
     pairing_state: BasalPairingState
     pcr_reference_sequence: str
     pcr_complement_sequence: str

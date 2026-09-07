@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from itertools import product
 
 from hop_design.models.construction import (
+    BasalFutureReleaseAction,
     BasalTarget,
     ConstructionEndpoint,
 )
@@ -24,7 +25,7 @@ from hop_design.models.enzymes import (
 )
 from hop_design.models.junction import Strand
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.sequence import normalize_dna_sequence
+from hop_design.models.sequence import normalize_dna_sequence, reverse_complement_iupac
 
 from .programs import (
     _BASES,
@@ -45,8 +46,11 @@ def basal_retained_overhead_nt(
     program: BasalProgramCandidate,
 ) -> int:
     """Return the non-payload span retained in the local PCR reference state."""
-    if endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-        raise ValueError("Basal retained-overhead accounting requires the PCR endpoint.")
+    if endpoint not in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    }:
+        raise ValueError("Basal retained-overhead accounting requires a PCR-bearing endpoint.")
     arm_nt = len(target.pairing_constraints)
     nick_cut_offset = (
         program.nick_enzyme.cut_offset_reference_strand
@@ -136,6 +140,13 @@ def iter_basal_program_solutions(
             adapter_assignments = product(*per_position)
         for adapter_assignment in adapter_assignments:
             adapter = "".join(adapter_assignment) if adapter_assignment else None
+            release_sequence = _future_top_overhang_sequence(program.future_release_action)
+            if release_sequence is not None and (
+                adapter is None
+                or len(release_sequence) > len(adapter)
+                or adapter[: len(release_sequence)] != release_sequence
+            ):
+                continue
             if adapter is not None and any(
                 base not in domains[index]
                 for index, base in enumerate(adapter, start=adapter_start)
@@ -192,6 +203,7 @@ def iter_basal_program_solutions(
                             end=Boundary(offset=payload_start),
                         ),
                         adapter_span=Span(start=Boundary(offset=0), end=Boundary(offset=arm_nt)),
+                        end_projection_positions=tuple(range(len(release_sequence or ""))),
                     )
                 yield BasalSequenceSolution(
                     source_precursor_sequence=source_precursor,
@@ -202,3 +214,21 @@ def iter_basal_program_solutions(
                     pairing_state=pairing_state,
                     enzyme_bindings=tuple(bindings),
                 )
+
+
+def _future_top_overhang_sequence(action: BasalFutureReleaseAction | None) -> str | None:
+    """Return the future top-strand bases constrained by one cohesive-end requirement."""
+    if action is None:
+        return None
+    requirement = action.requirement
+    reference_before_complement = (
+        action.reference_cut_from_release_boundary < action.complement_cut_from_release_boundary
+    )
+    reverse = (reference_before_complement and requirement.product_end == "right") or (
+        not reference_before_complement and requirement.product_end == "left"
+    )
+    return (
+        reverse_complement_iupac(requirement.cohesive_end_sequence)
+        if reverse
+        else requirement.cohesive_end_sequence
+    )

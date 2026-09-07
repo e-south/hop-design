@@ -35,6 +35,7 @@ from hop_design.kernel.construction.basal import (
     resolve_basal_pairing_state,
 )
 from hop_design.models.construction import (
+    BasalFutureReleaseRequirement,
     BasalGeometryDomain,
     BasalPairAllowance,
     BasalPairClass,
@@ -80,7 +81,9 @@ from hop_design.models.enzymes import (
     characterized_enzyme_digest,
 )
 from hop_design.models.junction import Strand
+from hop_design.models.molecular_state import StrandEnd
 from hop_design.models.payload import DegeneratePayload, ExactPayload
+from hop_design.models.physical import SiteOrientation
 from hop_design.models.references import ExternalRef
 from hop_design.models.sequence import reverse_complement_iupac
 
@@ -210,9 +213,18 @@ def _request(
     extra_nickase: bool = False,
     max_operations: int = 3,
 ) -> LocalNeighborhoodRequest:
-    if endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-        raise ValueError("Basal test requests must terminate at the PCR intermediate.")
     enzymes = [_nickase()]
+    future_release = None
+    if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        enzymes.append(_type_iis())
+        future_release = BasalFutureReleaseRequirement(
+            product_end="right",
+            orientation=SiteOrientation.REVERSE,
+            cohesive_end_sequence="ATAA",
+            overhang_end=StrandEnd.FIVE_PRIME,
+        )
+    elif endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        raise ValueError("Basal test requests must terminate at a PCR-bearing endpoint.")
     if extra_nickase:
         enzymes.append(_nickase("example:enzyme/basal-nick-b@1"))
     constraints = pairing_constraints or _pairing_constraints()
@@ -230,6 +242,7 @@ def _request(
             nick_strand=Strand.TOP,
             nick_offsets_nt=(0,),
             pairing_constraints=constraints,
+            future_release=future_release,
         ),
         hard_constraints=ConstructionConstraints(),
         enzyme_provisioning=_provisioning(*enzymes, max_operations=max_operations),
@@ -239,6 +252,28 @@ def _request(
             max_realizations=max_realizations,
         ),
     )
+
+
+def test_clone_ready_basal_discovery_keeps_future_release_out_of_current_state() -> None:
+    result = discover_basal_neighborhood(_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
+
+    assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert result.discovery.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
+    record = result.realizations[0]
+    action = record.future_release_action
+    assert action is not None
+    assert action.enzyme_id == "example:enzyme/end-a@1"
+    assert action.requirement.cohesive_end_sequence == "ATAA"
+    assert action.requirement.overhang_end is StrandEnd.FIVE_PRIME
+    assert action.requirement.product_end == "right"
+    assert {binding.role for binding in record.enzyme_bindings} == {EnzymeRole.BASAL_NICK}
+    assert all(
+        operation.role is EnzymeRole.BASAL_NICK
+        for program in record.reaction_programs
+        for stage in program.stages
+        for operation in stage.operations
+    )
+    assert "cohesive_end" not in type(record.adapter_annealed_complex).model_fields
 
 
 def _exact_target(request: LocalNeighborhoodRequest) -> BasalTarget:
@@ -295,11 +330,11 @@ def test_authored_pairing_constraints_do_not_accept_realized_literal_bases() -> 
         )
 
 
-def test_basal_local_discovery_accepts_only_the_pcr_intermediate() -> None:
+def test_basal_local_discovery_rejects_non_pcr_endpoints() -> None:
     pcr = discover_basal_neighborhood(_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
     invalid = pcr.discovery.request.model_dump(mode="python")
     invalid["endpoint"] = ConstructionEndpoint.SSDNA_HAIRPIN
-    with pytest.raises(ValidationError, match="hairpin_pcr_duplex intermediate"):
+    with pytest.raises(ValidationError, match="PCR-bearing construction endpoint"):
         LocalNeighborhoodRequest.model_validate(invalid)
 
     projection = pcr.realizations[0].projection
@@ -732,7 +767,7 @@ def test_basal_realization_rejects_non_pcr_endpoint_before_materialization() -> 
     )
     wrong_endpoint = request.model_copy(update={"endpoint": ConstructionEndpoint.SSDNA_HAIRPIN})
 
-    with pytest.raises(ValueError, match="hairpin PCR duplex endpoint"):
+    with pytest.raises(ValueError, match="PCR-bearing endpoint"):
         _realization(
             request=wrong_endpoint,
             payload_sequence="CCCC",
