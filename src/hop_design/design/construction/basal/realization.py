@@ -112,9 +112,7 @@ def _realization(
         enzyme_binding_ids=tuple(binding.binding_id for binding in solution.enzyme_bindings),
         stage_ids=stage_ids,
         boundary_condition_ids=(
-            ()
-            if route.future_release_action is None
-            else (route.future_release_action.action_id,)
+            () if route.future_release_action is None else (route.future_release_action.action_id,)
         ),
         achieved_geometry=target,
     )

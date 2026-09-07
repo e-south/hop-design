@@ -567,17 +567,12 @@ def test_clone_ready_local_identity_preserves_distinct_future_release_actions() 
     result = discover_basal_neighborhood(request)
 
     assert len(result.realizations) == 2
-    assert len(
-        {item.local_realization.local_realization_id for item in result.realizations}
-    ) == 2
+    assert len({item.local_realization.local_realization_id for item in result.realizations}) == 2
     assert {
         item.future_release_action.action_id
         for item in result.realizations
         if item.future_release_action is not None
-    } == {
-        item.local_realization.boundary_condition_ids[0]
-        for item in result.realizations
-    }
+    } == {item.local_realization.boundary_condition_ids[0] for item in result.realizations}
     assert verify_basal_neighborhood_result(result).result == result
 
 
