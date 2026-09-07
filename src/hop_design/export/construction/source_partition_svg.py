@@ -89,7 +89,7 @@ def render_source_partition_projection_svg(
         f"{item.maximum_sacrificial_fragment_nt} nt {'pass' if item.feasible else 'blocked'}"
         for item in certificate.thresholds
     )
-    title = "The selected program accounts for every source fragment"
+    title = "One program accounts for every source fragment"
     summary = (
         f"{projection.examined_nodes} of {projection.candidate_space_size} enzyme programs "
         f"examined · selected maximum {selected} nt"
