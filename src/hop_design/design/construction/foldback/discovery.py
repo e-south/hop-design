@@ -18,7 +18,6 @@ from hop_design.design.construction.overhead import foldback_overhead_levels
 from hop_design.kernel.construction.foldback import (
     FoldbackPlacementFailure,
     iter_foldback_program_solutions,
-    iter_foldback_programs,
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
@@ -32,7 +31,6 @@ from hop_design.models.construction import (
     NeighborhoodClaimBoundary,
     NeighborhoodDiscoveryResult,
     NeighborhoodProvenance,
-    NickStrandSelection,
     OverheadLevelSummary,
     SearchScope,
     SearchStopMode,
@@ -43,11 +41,9 @@ from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
     FoldbackNeighborhoodDiscoveryResult,
 )
-from hop_design.models.physical import Strand
 
 from ..neighborhood_accounting import (
     payload_accounting,
-    payload_assignments,
     payload_cardinality,
     reject_partial_payload_routes,
     search_disposition,
@@ -59,6 +55,7 @@ from .realization import (
     _projection_inventory,
     _realization,
 )
+from .traversal import iter_foldback_work_units
 
 
 def discover_foldback_neighborhood(
@@ -86,80 +83,57 @@ def discover_foldback_neighborhood(
         level_ids: list[str] = []
         level_failures: Counter[str] = Counter()
         level_rejected = 0
-        for geometry in level.geometries:
-            exact_geometries = (
-                tuple(geometry.model_copy(update={"nick_strand": strand}) for strand in Strand)
-                if geometry.nick_strand is NickStrandSelection.ANY
-                else (geometry,)
+        for unit in iter_foldback_work_units(request, level=level):
+            solutions = partition_sequence_domain(
+                iter_foldback_program_solutions(
+                    payload_sequence=unit.payload_sequence,
+                    target=unit.target,
+                    program=unit.program,
+                ),
+                request.search.sequence_partition,
             )
-            for exact_geometry in exact_geometries:
-                routes = iter_foldback_programs(
-                    request.enzyme_provisioning,
-                    target=exact_geometry,
+            for solution in solutions:
+                if examined_nodes >= request.search.max_search_nodes:
+                    termination = SearchTerminationReason.EVALUATION_CAP
+                    break
+                examined_nodes += 1
+                if isinstance(solution, FoldbackPlacementFailure):
+                    failures[solution.code] += 1
+                    level_failures[solution.code] += 1
+                    rejected_count += 1
+                    level_rejected += 1
+                    payload_failures[unit.payload_sequence].add(solution.code)
+                    continue
+                record = _realization(
+                    request=request,
+                    payload_sequence=unit.payload_sequence,
+                    target=unit.target,
+                    route=unit.program,
+                    solution=solution,
                 )
-                for payload_sequence in payload_assignments(request):
-                    for route in routes:
-                        solutions = partition_sequence_domain(
-                            iter_foldback_program_solutions(
-                                payload_sequence=payload_sequence,
-                                target=exact_geometry,
-                                program=route,
-                            ),
-                            request.search.sequence_partition,
-                        )
-                        for solution in solutions:
-                            if examined_nodes >= request.search.max_search_nodes:
-                                termination = SearchTerminationReason.EVALUATION_CAP
-                                break
-                            examined_nodes += 1
-                            if isinstance(solution, FoldbackPlacementFailure):
-                                failures[solution.code] += 1
-                                level_failures[solution.code] += 1
-                                rejected_count += 1
-                                level_rejected += 1
-                                payload_failures[payload_sequence].add(solution.code)
-                                continue
-                            record = _realization(
-                                request=request,
-                                payload_sequence=payload_sequence,
-                                target=exact_geometry,
-                                route=route,
-                                solution=solution,
-                            )
-                            if isinstance(record, str):
-                                failures[record] += 1
-                                level_failures[record] += 1
-                                rejected_count += 1
-                                level_rejected += 1
-                                payload_failures[payload_sequence].add(record)
-                                continue
-                            if len(records) >= request.search.max_realizations:
-                                termination = SearchTerminationReason.EVALUATION_CAP
-                                break
-                            if (
-                                record.retained_overhead.retained_overhead_nt
-                                != level.retained_overhead_nt
-                            ):
-                                raise RuntimeError(
-                                    "Foldback geometry and endpoint overhead ledger disagree."
-                                )
-                            records.append(record)
-                            level_ids.append(record.local_realization.local_realization_id)
-                            compatible_payloads.add(payload_sequence)
-                            if (
-                                request.search.stop is SearchStopMode.RESULT_QUOTA
-                                and request.search.result_quota is not None
-                                and len(records) >= request.search.result_quota
-                            ):
-                                termination = SearchTerminationReason.RESULT_QUOTA
-                                break
-                            if request.search.scope is SearchScope.EXISTENCE:
-                                break
-                        if termination is not None:
-                            break
-                    if termination is not None:
-                        break
-                if termination is not None:
+                if isinstance(record, str):
+                    failures[record] += 1
+                    level_failures[record] += 1
+                    rejected_count += 1
+                    level_rejected += 1
+                    payload_failures[unit.payload_sequence].add(record)
+                    continue
+                if len(records) >= request.search.max_realizations:
+                    termination = SearchTerminationReason.EVALUATION_CAP
+                    break
+                if record.retained_overhead.retained_overhead_nt != level.retained_overhead_nt:
+                    raise RuntimeError("Foldback geometry and endpoint overhead ledger disagree.")
+                records.append(record)
+                level_ids.append(record.local_realization.local_realization_id)
+                compatible_payloads.add(unit.payload_sequence)
+                if (
+                    request.search.stop is SearchStopMode.RESULT_QUOTA
+                    and request.search.result_quota is not None
+                    and len(records) >= request.search.result_quota
+                ):
+                    termination = SearchTerminationReason.RESULT_QUOTA
+                    break
+                if request.search.scope is SearchScope.EXISTENCE:
                     break
             if termination is not None:
                 break

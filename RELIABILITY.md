@@ -96,14 +96,18 @@ non-hit, and distinguishes node truncation from result truncation. Candidate
 identity covers the exact pairing request and complete evaluation; result
 validation rejects domain, accounting, canonical-ordinal, and order drift.
 
-Payload-centered foldback and basal neighborhood discovery examines the exact
-target before each enabled discrete relaxation radius. Every examined shell
-accounts for candidates as accepted plus rejected and partitions rejections by
-observed primary failure category. Only the final examined shell may be
-partial, and only when a named bound makes the result `truncated`; `complete`
-and `infeasible` results contain only complete shells. Projection verification
-rebuilds feasibility rows and relaxation membership from the exact source
-result, so a checksum-consistent subset, reordering, or extra row is rejected.
+Payload-centered foldback and basal neighborhood discovery traverses finite
+geometry, strand, payload, and enzyme-program domains in ascending absolute
+retained-overhead order. Each examined level accounts for candidates as
+accepted plus rejected and partitions rejections by observed primary failure
+category. Only the final recorded level may be partial. Completion is separate
+from feasibility: an exhausted domain is `complete` with either `feasible` or
+`infeasible` existence status; an evaluation cap is `truncated`, and an explicit
+quota is `stopped_by_policy`. An existence query preserves a witness for each
+accessible local work unit without claiming all exact realizations were
+enumerated. Projection verification rebuilds level membership and accounting
+from the exact source result, so a checksum-consistent subset, reordering, or
+extra row is rejected.
 
 Complete construction composition computes the nominal local Cartesian
 cardinality before evaluation, examines only its canonical bounded prefix, and

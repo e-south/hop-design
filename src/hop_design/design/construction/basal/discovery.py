@@ -16,13 +16,10 @@ from importlib.metadata import version
 
 from hop_design.kernel.construction.basal import (
     BasalPlacementFailure,
-    basal_retained_overhead_nt,
     iter_basal_program_solutions,
-    iter_basal_programs,
 )
 from hop_design.models.construction import (
     BasalGeometryDomain,
-    BasalTarget,
     ConstructionExecution,
     DigitalDesignStatus,
     FailureReasonCount,
@@ -32,7 +29,6 @@ from hop_design.models.construction import (
     NeighborhoodClaimBoundary,
     NeighborhoodDiscoveryResult,
     NeighborhoodProvenance,
-    NickStrandSelection,
     OverheadLevelSummary,
     SearchScope,
     SearchStopMode,
@@ -43,11 +39,9 @@ from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
     BasalRealizationRecord,
 )
-from hop_design.models.junction import Strand
 
 from ..neighborhood_accounting import (
     payload_accounting,
-    payload_assignments,
     payload_cardinality,
     reject_partial_payload_routes,
     search_disposition,
@@ -55,12 +49,7 @@ from ..neighborhood_accounting import (
 from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
 from .reactions import _ROUTE_VERSION
 from .realization import _groups, _realization
-
-
-def _exact_strand_targets(target: BasalTarget) -> tuple[BasalTarget, ...]:
-    if target.nick_strand is not NickStrandSelection.ANY:
-        return (target,)
-    return tuple(target.model_copy(update={"nick_strand": strand}) for strand in Strand)
+from .traversal import iter_basal_work_units
 
 
 def discover_basal_neighborhood(
@@ -81,92 +70,63 @@ def discover_basal_neighborhood(
     examined = 0
     rejected = 0
     termination: SearchTerminationReason | None = None
-    exact_targets = request.geometry_domain.exact_targets()
 
     for retained_overhead_nt in range(request.search.max_retained_overhead_nt + 1):
         level_ids: list[str] = []
         level_failures: Counter[str] = Counter()
         level_rejected = 0
-        for target in exact_targets:
-            for exact_target in _exact_strand_targets(target):
-                routes = iter_basal_programs(
-                    request.enzyme_provisioning,
-                    target=exact_target,
+        for unit in iter_basal_work_units(request, retained_overhead_nt=retained_overhead_nt):
+            solutions = partition_sequence_domain(
+                iter_basal_program_solutions(
+                    payload_sequence=unit.payload_sequence,
+                    target=unit.target,
                     endpoint=request.endpoint,
+                    program=unit.program,
+                ),
+                request.search.sequence_partition,
+            )
+            for solution in solutions:
+                if examined >= request.search.max_search_nodes:
+                    termination = SearchTerminationReason.EVALUATION_CAP
+                    break
+                examined += 1
+                if isinstance(solution, BasalPlacementFailure):
+                    failures[solution.code] += 1
+                    level_failures[solution.code] += 1
+                    rejected += 1
+                    level_rejected += 1
+                    payload_failures[unit.payload_sequence].add(solution.code)
+                    continue
+                record = _realization(
+                    request=request,
+                    payload_sequence=unit.payload_sequence,
+                    target=unit.target,
+                    route=unit.program,
+                    solution=solution,
                 )
-                for payload_sequence in payload_assignments(request):
-                    for route in routes:
-                        if (
-                            basal_retained_overhead_nt(
-                                target=exact_target,
-                                endpoint=request.endpoint,
-                                program=route,
-                            )
-                            != retained_overhead_nt
-                        ):
-                            continue
-                        solutions = partition_sequence_domain(
-                            iter_basal_program_solutions(
-                                payload_sequence=payload_sequence,
-                                target=exact_target,
-                                endpoint=request.endpoint,
-                                program=route,
-                            ),
-                            request.search.sequence_partition,
-                        )
-                        for solution in solutions:
-                            if examined >= request.search.max_search_nodes:
-                                termination = SearchTerminationReason.EVALUATION_CAP
-                                break
-                            examined += 1
-                            if isinstance(solution, BasalPlacementFailure):
-                                failures[solution.code] += 1
-                                level_failures[solution.code] += 1
-                                rejected += 1
-                                level_rejected += 1
-                                payload_failures[payload_sequence].add(solution.code)
-                                continue
-                            record = _realization(
-                                request=request,
-                                payload_sequence=payload_sequence,
-                                target=exact_target,
-                                route=route,
-                                solution=solution,
-                            )
-                            if isinstance(record, str):
-                                failures[record] += 1
-                                level_failures[record] += 1
-                                rejected += 1
-                                level_rejected += 1
-                                payload_failures[payload_sequence].add(record)
-                                continue
-                            if len(records) >= request.search.max_realizations:
-                                termination = SearchTerminationReason.EVALUATION_CAP
-                                break
-                            if (
-                                record.retained_overhead.retained_overhead_nt
-                                != retained_overhead_nt
-                            ):
-                                raise RuntimeError(
-                                    "Basal search domain and endpoint overhead ledger disagree."
-                                )
-                            records.append(record)
-                            level_ids.append(record.local_realization.local_realization_id)
-                            compatible_payloads.add(payload_sequence)
-                            if (
-                                request.search.stop is SearchStopMode.RESULT_QUOTA
-                                and request.search.result_quota is not None
-                                and len(records) >= request.search.result_quota
-                            ):
-                                termination = SearchTerminationReason.RESULT_QUOTA
-                                break
-                            if request.search.scope is SearchScope.EXISTENCE:
-                                break
-                        if termination is not None:
-                            break
-                    if termination is not None:
-                        break
-                if termination is not None:
+                if isinstance(record, str):
+                    failures[record] += 1
+                    level_failures[record] += 1
+                    rejected += 1
+                    level_rejected += 1
+                    payload_failures[unit.payload_sequence].add(record)
+                    continue
+                if len(records) >= request.search.max_realizations:
+                    termination = SearchTerminationReason.EVALUATION_CAP
+                    break
+                if record.retained_overhead.retained_overhead_nt != retained_overhead_nt:
+                    raise RuntimeError("Basal search domain and endpoint overhead ledger disagree.")
+                records.append(record)
+                level_ids.append(record.local_realization.local_realization_id)
+                compatible_payloads.add(unit.payload_sequence)
+                if (
+                    request.search.stop is SearchStopMode.RESULT_QUOTA
+                    and request.search.result_quota is not None
+                    and len(records) >= request.search.result_quota
+                ):
+                    termination = SearchTerminationReason.RESULT_QUOTA
+                    break
+                if request.search.scope is SearchScope.EXISTENCE:
                     break
             if termination is not None:
                 break

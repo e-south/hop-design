@@ -48,12 +48,17 @@ translation layer.
   chronology, and endpoint evidence.
 - Public projections expose local overhead, basal enzyme-action minima, exact source
   partitions, route navigation, and selected route trajectories.
+- Foldback and basal traversal yield exact geometry/strand/payload/program work units
+  without materializing the payload cross product. Family discovery retains ownership
+  of evaluation limits, existence stopping, coverage, and result assembly.
 
 ## Remaining product requirements
 
 - Public local discovery still returns an in-memory result. Sequence-domain partitioning
   is available, but durable bounded result streaming and producer-bound resumption are
-  not implemented in HOP. Client-side checkpoints do not satisfy this product contract.
+  not implemented in HOP. Internal lazy traversal supplies work-unit boundaries, not
+  persisted coverage or a resume authority. Client-side checkpoints do not satisfy this
+  product contract.
 - Source-partition discovery evaluates enzyme programs on one supplied exact source
   duplex. Its full-span certificate does not establish bounded scaffold-sequence or
   context-extension solving around local and primer obligations. That completion search

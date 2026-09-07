@@ -12,7 +12,9 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import json
+import tracemalloc
 from dataclasses import replace
+from itertools import islice
 
 import pytest
 from pydantic import ValidationError
@@ -256,6 +258,90 @@ def _request(
             scope=search_scope,
         ),
     )
+
+
+def test_basal_work_units_preserve_offset_strand_payload_and_program_order() -> None:
+    from hop_design.design.construction.basal.traversal import iter_basal_work_units
+
+    request = _request(
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        payload=DegeneratePayload(sequence="CCCR"),
+        extra_nickase=True,
+        domain=BasalGeometryDomain(
+            nick_strand=NickStrandSelection.ANY,
+            nick_offsets_nt=(0, 1),
+            pairing_constraints=_pairing_constraints(),
+        ),
+    )
+    assert list(iter_basal_work_units(request, retained_overhead_nt=3)) == []
+    units = list(iter_basal_work_units(request, retained_overhead_nt=4))
+
+    assert [
+        (
+            unit.target.nick_offset_nt,
+            unit.target.nick_strand,
+            unit.payload_sequence,
+            unit.program.nick_enzyme.enzyme_id,
+        )
+        for unit in units
+    ] == [
+        (offset, strand, payload, enzyme)
+        for offset in (0, 1)
+        for strand in (Strand.TOP, Strand.BOTTOM)
+        for payload in ("CCCA", "CCCG")
+        for enzyme in ("example:enzyme/basal-nick-a@1", "example:enzyme/basal-nick-b@1")
+    ]
+
+
+def test_basal_work_units_preserve_each_future_release_alternative() -> None:
+    from hop_design.design.construction.basal.traversal import iter_basal_work_units
+
+    request = _request(ConstructionEndpoint.CLONE_READY_DUPLEX)
+    request = request.model_copy(
+        update={
+            "enzyme_provisioning": _provisioning(
+                _nickase(), _type_iis(), _type_iis("example:enzyme/end-b@1")
+            )
+        }
+    )
+    units = list(iter_basal_work_units(request, retained_overhead_nt=4))
+
+    assert [unit.program.future_release_enzyme.enzyme_id for unit in units] == [
+        "example:enzyme/end-a@1",
+        "example:enzyme/end-b@1",
+    ]
+    assert all(unit.program.future_release_action is not None for unit in units)
+    assert all(unit.payload_sequence == "CCCC" for unit in units)
+
+
+def test_basal_work_units_do_not_materialize_the_payload_cross_product() -> None:
+    from hop_design.design.construction.basal.traversal import iter_basal_work_units
+
+    request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, extra_nickase=True)
+    request = request.model_copy(
+        update={
+            "payload": FinalPayloadReference(
+                payload=DegeneratePayload(sequence="N" * 10),
+                basal_boundary=Boundary(offset=0),
+                foldback_boundary=Boundary(offset=10),
+            )
+        }
+    )
+    stream = iter_basal_work_units(request, retained_overhead_nt=4)
+    tracemalloc.start()
+    try:
+        prefix = list(islice(stream, 3))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        stream.close()
+        tracemalloc.stop()
+
+    assert [(unit.payload_sequence, unit.program.nick_enzyme.enzyme_id) for unit in prefix] == [
+        ("AAAAAAAAAA", "example:enzyme/basal-nick-a@1"),
+        ("AAAAAAAAAA", "example:enzyme/basal-nick-b@1"),
+        ("AAAAAAAAAC", "example:enzyme/basal-nick-a@1"),
+    ]
+    assert peak < 1_000_000
 
 
 def test_clone_ready_basal_discovery_keeps_future_release_out_of_current_state() -> None:

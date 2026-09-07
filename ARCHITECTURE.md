@@ -146,6 +146,13 @@ semantics while retaining family-specific geometry. Source partitioning is a
 sibling authority rather than a basal-neighborhood subtype. Its public receipt
 is exposed only through `hop_design.construction`.
 
+Within each local family, `traversal.py` yields exact work units in canonical
+geometry, strand, payload, and enzyme-program order. Traversal does not generate
+sequence candidates or assert feasibility. The family kernel solves those
+candidates; `discovery.py` owns evaluation limits, witness stopping, coverage,
+and final result assembly. These internal work units are not serialized
+authorities or additional public request types.
+
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,
 and fails on unknown first-party layers. The root facade and serialization module are narrow documented

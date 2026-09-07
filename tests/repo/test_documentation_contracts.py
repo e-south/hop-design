@@ -190,7 +190,10 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
     ):
         assert schema_id in view_contracts
     assert "verified against its exact source result" in normalized_views
-    assert "Only the final examined shell may be partial" in normalized_reliability
+    assert "Only the final recorded level may be partial" in normalized_reliability
+    assert "Completion is separate from feasibility" in normalized_reliability
+    assert "without claiming all exact realizations were enumerated" in normalized_reliability
+    assert "enabled discrete relaxation radius" not in normalized_reliability
 
 
 @pytest.mark.parametrize(

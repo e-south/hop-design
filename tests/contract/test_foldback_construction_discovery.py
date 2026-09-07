@@ -3,7 +3,7 @@
 HOP Design
 tests/contract/test_foldback_construction_discovery.py
 
-Tests payload-centered foldback discovery, relaxation, identity, and accounting.
+Tests payload-centered foldback discovery, retained overhead, identity, and accounting.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import tracemalloc
+from itertools import islice
 
 import pytest
 from pydantic import ValidationError
@@ -114,6 +115,78 @@ def test_foldback_solution_order_matches_the_complete_small_domain() -> None:
     ]
 
     assert sequences == ["GACTACATTTTTGT", "GACTACATTTGTGT", "GACTACATTTCTGT", "GACTACATTTATGT"]
+
+
+def test_foldback_work_units_preserve_geometry_strand_payload_and_program_order() -> None:
+    from hop_design.design.construction.foldback.traversal import iter_foldback_work_units
+    from hop_design.design.construction.overhead import foldback_overhead_levels
+
+    request = _request(
+        _nickase(enzyme_id="example:enzyme/b@1"),
+        _nickase(enzyme_id="example:enzyme/a@1"),
+        domain=FoldbackGeometryDomain(
+            junction_offsets_nt=(0, 1),
+            loop_lengths_nt=(3,),
+            annealing_arm_lengths_bp=(3,),
+        ),
+    )
+    request = request.model_copy(
+        update={
+            "payload": FinalPayloadReference(
+                payload=DegeneratePayload(sequence="GACR"),
+                basal_boundary=Boundary(offset=0),
+                foldback_boundary=Boundary(offset=4),
+            )
+        }
+    )
+    levels = foldback_overhead_levels(request.geometry_domain, request.search)
+    assert list(iter_foldback_work_units(request, level=levels[0])) == []
+    units = list(iter_foldback_work_units(request, level=levels[9]))
+
+    assert [
+        (
+            unit.target.junction_offset_nt,
+            unit.target.nick_strand,
+            unit.payload_sequence,
+            unit.program.nick_enzyme.enzyme_id,
+        )
+        for unit in units
+    ] == [
+        (offset, strand, payload, enzyme)
+        for offset in (0, 1)
+        for strand in (Strand.TOP, Strand.BOTTOM)
+        for payload in ("GACA", "GACG")
+        for enzyme in ("example:enzyme/a@1", "example:enzyme/b@1")
+    ]
+    assert all(unit.target.loop_length_nt == 3 for unit in units)
+    assert all(unit.target.annealing_arm_length_bp == 3 for unit in units)
+
+
+def test_foldback_work_units_do_not_materialize_the_payload_cross_product() -> None:
+    from hop_design.design.construction.foldback.traversal import iter_foldback_work_units
+    from hop_design.design.construction.overhead import foldback_overhead_levels
+
+    request = _request(_nickase()).model_copy(
+        update={
+            "payload": FinalPayloadReference(
+                payload=DegeneratePayload(sequence="N" * 10),
+                basal_boundary=Boundary(offset=0),
+                foldback_boundary=Boundary(offset=10),
+            )
+        }
+    )
+    level = foldback_overhead_levels(request.geometry_domain, request.search)[9]
+    stream = iter_foldback_work_units(request, level=level)
+    tracemalloc.start()
+    try:
+        prefix = list(islice(stream, 2))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        stream.close()
+        tracemalloc.stop()
+
+    assert [unit.payload_sequence for unit in prefix] == ["AAAAAAAAAA", "AAAAAAAAAC"]
+    assert peak < 1_000_000
 
 
 def _source(enzyme_id: str) -> ExternalRef:
