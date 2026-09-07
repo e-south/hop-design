@@ -11,25 +11,31 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from .complete import (
-    CompleteConstructionSummaryProjection,
-    CompleteConstructionSummaryRow,
-)
-from .local import (
+from .basal import (
     BasalFeasibilityProjection,
     BasalFeasibilityRow,
     BasalMinimumOverheadCell,
     BasalMinimumOverheadMatrixProjection,
+)
+from .complete import (
+    CompleteConstructionSummaryProjection,
+    CompleteConstructionSummaryRow,
+)
+from .foldback import (
     FoldbackFeasibilityProjection,
     FoldbackFeasibilityRow,
+)
+from .local import (
     LocalScientificProjection,
-    RetainedOverheadFrontierProjection,
-    RetainedOverheadLevelProjection,
 )
 from .navigation import (
     ConstructionNavigationAcceptedRoute,
     ConstructionNavigationGeometryGroup,
     ConstructionNavigationProjection,
+)
+from .overhead import (
+    RetainedOverheadFrontierProjection,
+    RetainedOverheadLevelProjection,
 )
 from .source_partition import SourcePartitionCertificateProjection
 from .trajectory import CompleteConstructionTrajectoryProjection

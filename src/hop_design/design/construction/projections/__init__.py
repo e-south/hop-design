@@ -11,20 +11,23 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from .basal import (
+    project_basal_feasibility,
+    project_basal_minimum_overhead_matrix,
+)
 from .complete import (
     project_complete_construction_summary,
     verify_complete_construction_projection,
 )
-from .local import (
-    project_basal_feasibility,
-    project_basal_minimum_overhead_matrix,
+from .foldback import (
     project_foldback_feasibility,
-    project_retained_overhead_frontier,
-    verify_local_projection,
 )
 from .navigation import (
     project_complete_construction_navigation,
     verify_complete_construction_navigation,
+)
+from .overhead import (
+    project_retained_overhead_frontier,
 )
 from .source_partition import (
     project_source_partition_certificate,
@@ -33,6 +36,9 @@ from .source_partition import (
 from .trajectory import (
     project_complete_construction_trajectory,
     verify_complete_construction_trajectory,
+)
+from .verification import (
+    verify_local_projection,
 )
 
 __all__ = [

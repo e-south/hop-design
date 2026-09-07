@@ -167,6 +167,7 @@ CONSTRUCTION_OPERATIONS = {
     "project_construction_trajectory",
     "project_foldback_feasibility",
     "project_retained_overhead_frontier",
+    "project_source_partition_certificate",
     "select_construction_realization",
 }
 
