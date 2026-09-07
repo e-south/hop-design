@@ -81,9 +81,7 @@ class BasalRealizationRecord(HopModel):
         if self.basal_realization_id != basal_realization_id(self):
             raise ValueError("basal_realization_id must seal the exact local realization.")
         if self.local_realization.local_sequence != self.projection.local_reference_sequence:
-            raise ValueError(
-                "Local realization sequence must equal its exact boundary projection."
-            )
+            raise ValueError("Local realization sequence must equal its exact boundary projection.")
         if self.local_realization.enzyme_binding_ids != tuple(
             binding.binding_id for binding in self.enzyme_bindings
         ):

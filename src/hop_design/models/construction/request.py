@@ -94,9 +94,7 @@ class LocalNeighborhoodRequest(HopModel):
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
             ConstructionEndpoint.CLONE_READY_DUPLEX,
         }:
-            raise ValueError(
-                "Basal local discovery requires a PCR-bearing construction endpoint."
-            )
+            raise ValueError("Basal local discovery requires a PCR-bearing construction endpoint.")
         if self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
             domain.future_release is not None
         ):

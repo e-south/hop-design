@@ -238,13 +238,7 @@ def project_basal_minimum_overhead_matrix(
                 BasalMinimumOverheadCell(
                     nick_enzyme_id=nick_enzyme_id,
                     future_release_action_id=action.action_id,
-                    status=(
-                        "proven_minimum"
-                        if rows
-                        else "infeasible"
-                        if complete
-                        else "unknown"
-                    ),
+                    status=("proven_minimum" if rows else "infeasible" if complete else "unknown"),
                     minimum_retained_overhead_nt=(
                         min(row.retained_overhead_nt for row in rows) if rows else None
                     ),

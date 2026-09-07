@@ -82,20 +82,14 @@ def test_clone_basal_projection_exposes_future_release_as_an_obligation() -> Non
 
 
 def test_basal_matrix_replay_rejects_a_resealed_minimum() -> None:
-    result = discover_basal_neighborhood(
-        basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX)
-    )
+    result = discover_basal_neighborhood(basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
     projection = project_basal_minimum_overhead_matrix(result)
     cell = projection.cells[0]
     changed = projection.model_copy(
         update={
             "cells": (
                 cell.model_copy(
-                    update={
-                        "minimum_retained_overhead_nt": (
-                            cell.minimum_retained_overhead_nt - 1
-                        )
-                    }
+                    update={"minimum_retained_overhead_nt": (cell.minimum_retained_overhead_nt - 1)}
                 ),
             )
         }

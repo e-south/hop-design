@@ -348,9 +348,7 @@ def test_annealing_obligation_reports_completion_and_strict_mismatch_warning() -
 
 
 def test_basal_local_result_stops_at_boundary_obligations() -> None:
-    result = discover_basal_neighborhood(
-        _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
-    )
+    result = discover_basal_neighborhood(_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
     record = result.realizations[0]
 
     assert {
@@ -361,8 +359,7 @@ def test_basal_local_result_stops_at_boundary_obligations() -> None:
         "material_accounting",
     }.isdisjoint(type(record).model_fields)
     assert record.projection.local_reference_sequence == (
-        record.source_precursor_sequence
-        + record.projection.pairing_state.adapter_sequence_5prime
+        record.source_precursor_sequence + record.projection.pairing_state.adapter_sequence_5prime
     )
     assert record.projection.annealing_obligation.annealing_completion_nt > 0
 
@@ -509,8 +506,7 @@ def test_realization_contains_exact_route_evidence_and_payload_conditioning() ->
     assert all(not assessment.report.has_errors for assessment in record.stage_assessments)
     assert record.nicked_duplex is not None
     assert record.projection.local_reference_sequence == (
-        record.source_precursor_sequence
-        + record.projection.pairing_state.adapter_sequence_5prime
+        record.source_precursor_sequence + record.projection.pairing_state.adapter_sequence_5prime
     )
     assert record.projection.annealing_obligation.proximal_annealing_nt == 4
     assert record.projection.annealing_obligation.required_annealing_nt == 15
@@ -1301,8 +1297,9 @@ def test_basal_boundary_authority_serializes_exact_local_sequences() -> None:
     assert projection.local_complement_sequence == reverse_complement_iupac(
         projection.local_reference_sequence
     )
-    assert projection.pairing_state.adapter_sequence_5prime == (
-        projection.local_reference_sequence[-len(projection.pairing_state.pairs) :]
+    assert (
+        projection.pairing_state.adapter_sequence_5prime
+        == (projection.local_reference_sequence[-len(projection.pairing_state.pairs) :])
     )
     assert BasalRealizationRecord.model_validate_json(record.model_dump_json()) == record
 

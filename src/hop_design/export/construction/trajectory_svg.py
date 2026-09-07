@@ -52,8 +52,8 @@ def _source_partition_rows(
         f'{certificate.selected_maximum_sacrificial_fragment_nt}">'
         f'<text x="72" y="{y_start}" class="label">Exact source partition</text>'
         f'<text x="390" y="{y_start}" class="small">'
-        f'least-permissive passing maximum · '
-        f'{certificate.selected_maximum_sacrificial_fragment_nt} nt</text>'
+        f"least-permissive passing maximum · "
+        f"{certificate.selected_maximum_sacrificial_fragment_nt} nt</text>"
     ]
     for index, fragment in enumerate(certificate.fragments):
         left = _partition_boundary_label(
@@ -73,10 +73,10 @@ def _source_partition_rows(
             f'data-source-end="{fragment.source_span.end.offset}" '
             f'data-fragment-length-nt="{fragment.length_nt}" '
             f'data-fragment-disposition="{escape(fragment.disposition.value)}">'
-            f'{escape(fragment.precursor_strand.value)} · '
-            f'{fragment.source_span.start.offset}-{fragment.source_span.end.offset} · '
-            f'{fragment.length_nt} nt · {escape(fragment.disposition.value)} · '
-            f'{escape(left)} → {escape(right)}</text>'
+            f"{escape(fragment.precursor_strand.value)} · "
+            f"{fragment.source_span.start.offset}-{fragment.source_span.end.offset} · "
+            f"{fragment.length_nt} nt · {escape(fragment.disposition.value)} · "
+            f"{escape(left)} → {escape(right)}</text>"
         )
     rows.append("</g>")
     return "".join(rows), 58 + len(certificate.fragments) * 20

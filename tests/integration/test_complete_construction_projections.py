@@ -98,11 +98,7 @@ def _verified_result(
         request = _construction_request(
             payload=payload,
             foldback=foldback,
-            basal=(
-                basal
-                if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
-                else None
-            ),
+            basal=(basal if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX else None),
             design=design,
             endpoint=endpoint,
             adapter=adapter,

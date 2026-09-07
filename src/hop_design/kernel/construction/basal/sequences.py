@@ -125,8 +125,7 @@ def iter_basal_program_solutions(
             base
             for base in _BASES
             if base in domains[index]
-            and base
-            in target.pairing_constraints[arm_nt - 1 - source_index].allowed_source_bases
+            and base in target.pairing_constraints[arm_nt - 1 - source_index].allowed_source_bases
         )
         for source_index, index in enumerate(variable_indexes)
     )

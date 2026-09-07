@@ -86,9 +86,8 @@ def _material(
 
 def _local_adapter_sequence(basal: BasalRealizationRecord) -> str:
     pairing_state = basal.projection.pairing_state
-    if (
-        pairing_state.adapter_span.start.offset != 0
-        or pairing_state.adapter_span.end.offset != len(pairing_state.adapter_sequence_5prime)
+    if pairing_state.adapter_span.start.offset != 0 or pairing_state.adapter_span.end.offset != len(
+        pairing_state.adapter_sequence_5prime
     ):
         raise EndpointAuxiliaryResolutionError(
             EndpointAuxiliaryResolutionFailure.ADAPTER,

@@ -129,9 +129,7 @@ class ConstructionSource(HopModel):
                 or future.cohesive_end_sequence != required.cohesive_end_sequence
                 or future.overhang_end is not required.overhang_end
             ):
-                raise ValueError(
-                    "Basal future release must match the complete clone endpoint."
-                )
+                raise ValueError("Basal future release must match the complete clone endpoint.")
         return self
 
 
