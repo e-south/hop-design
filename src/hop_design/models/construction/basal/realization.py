@@ -22,7 +22,9 @@ from hop_design.models.construction import (
     BasalPairAllowance,
     BasalTarget,
     LocalRealization,
+    OverheadPosition,
     PayloadSourceMap,
+    RetainedOverheadLedger,
 )
 from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.enzymes import (
@@ -71,8 +73,7 @@ class BasalRealizationRecord(HopModel):
     hairpin_pcr_duplex: BasalPcrCopyState
     materials: tuple[BasalMaterialRecord, ...]
     material_accounting: BasalMaterialAccounting
-    relaxation_radius: int = Field(ge=0)
-    changed_coordinates: tuple[str, ...]
+    retained_overhead: RetainedOverheadLedger
 
     @classmethod
     def create(cls, **content: object) -> BasalRealizationRecord:
@@ -127,6 +128,25 @@ class BasalRealizationRecord(HopModel):
         )
         if self.material_accounting != expected:
             raise ValueError("Basal material accounting must derive from exact materials.")
+        payload_span = self.payload_source_map.segments[0].source_span
+        reference = self.projection.pcr_reference_sequence
+        expected_positions = tuple(
+            OverheadPosition(
+                coordinate_space="basal-boundary",
+                position=position,
+                base=reference[position],
+                material_role=("source" if position < payload_span.start.offset else "adapter"),
+            )
+            for position in range(len(reference))
+            if not payload_span.start.offset <= position < payload_span.end.offset
+        )
+        if self.retained_overhead != RetainedOverheadLedger(
+            neighborhood="basal",
+            reference_state_id="basal-pcr-local-boundary",
+            positions=expected_positions,
+            retained_overhead_nt=len(expected_positions),
+        ):
+            raise ValueError("Retained overhead must replay the non-payload basal boundary.")
         self._validate_route_states()
         assert_material_partition(
             pcr_duplex=self.hairpin_pcr_duplex,

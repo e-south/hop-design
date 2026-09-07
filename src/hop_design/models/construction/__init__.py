@@ -18,6 +18,7 @@ from .accounting import (
     MethodResolutionStatus,
     NeighborhoodClaimBoundary,
     NeighborhoodProvenance,
+    OverheadLevelSummary,
     OverheadPosition,
     PayloadCompatibilityAccounting,
     PayloadCompatibilityStatus,
@@ -73,8 +74,10 @@ from .request import (
 )
 from .result import NeighborhoodDiscoveryResult
 from .search import (
+    BasalGeometryDomain,
     FoldbackGeometryDomain,
     FoldbackOverheadLevel,
+    LocalGeometryDomain,
     NeighborhoodSearchPlan,
     SearchScope,
     SearchStopMode,
@@ -92,6 +95,7 @@ from .targets import (
 )
 
 __all__ = [
+    "BasalGeometryDomain",
     "BasalPairAllowance",
     "BasalPairClass",
     "BasalPairingConstraint",
@@ -111,6 +115,7 @@ __all__ = [
     "FoldbackGeometryDomain",
     "FoldbackOverheadLevel",
     "FoldbackTarget",
+    "LocalGeometryDomain",
     "LocalGeometryTarget",
     "LocalNeighborhoodFamily",
     "LocalNeighborhoodRequest",
@@ -121,6 +126,7 @@ __all__ = [
     "NeighborhoodProvenance",
     "NeighborhoodSearchPlan",
     "NickStrandSelection",
+    "OverheadLevelSummary",
     "OverheadPosition",
     "PairState",
     "PairStateException",

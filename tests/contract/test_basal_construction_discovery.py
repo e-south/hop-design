@@ -20,7 +20,6 @@ from pydantic import ValidationError
 from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.basal.reactions import _nicked_duplex
 from hop_design.design.construction.basal.realization import (
-    _coordinate_changed,
     _failure_code,
     _realization,
 )
@@ -36,23 +35,23 @@ from hop_design.kernel.construction.basal import (
     resolve_basal_pairing_profile,
 )
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     BasalPairAllowance,
     BasalPairClass,
     BasalPairingConstraint,
     BasalTarget,
     ConstructionConstraints,
     ConstructionEndpoint,
-    EnumerationPolicy,
     FinalPayloadReference,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
     NeighborhoodDiscoveryResult,
+    NeighborhoodSearchPlan,
     NickStrandSelection,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
     RouteFamily,
     SearchCompletionStatus,
+    SearchFeasibilityStatus,
+    SearchTerminationReason,
     problem_id,
 )
 from hop_design.models.construction.basal import (
@@ -207,7 +206,7 @@ def _request(
     pairing_constraints: tuple[BasalPairingConstraint, ...] | None = None,
     max_nodes: int = 10000,
     max_realizations: int = 10000,
-    relaxation: RelaxationPolicy | None = None,
+    domain: BasalGeometryDomain | None = None,
     extra_nickase: bool = False,
     max_operations: int = 3,
 ) -> LocalNeighborhoodRequest:
@@ -216,12 +215,7 @@ def _request(
     enzymes = [_nickase()]
     if extra_nickase:
         enzymes.append(_nickase("example:enzyme/basal-nick-b@1"))
-    target = BasalTarget(
-        nick_strand=Strand.TOP,
-        nick_offset_nt=0,
-        pairing_constraints=(pairing_constraints or _pairing_constraints()),
-        ligation_proximal_match_required=True,
-    )
+    constraints = pairing_constraints or _pairing_constraints()
     return LocalNeighborhoodRequest(
         payload=FinalPayloadReference(
             payload=(ExactPayload(sequence=payload) if isinstance(payload, str) else payload),
@@ -231,15 +225,25 @@ def _request(
         family=LocalNeighborhoodFamily.BASAL,
         route_family=RouteFamily.LINEAR_SOURCE_V1,
         endpoint=endpoint,
-        target=target,
+        geometry_domain=domain
+        or BasalGeometryDomain(
+            nick_strand=Strand.TOP,
+            nick_offsets_nt=(0,),
+            pairing_constraints=constraints,
+        ),
         hard_constraints=ConstructionConstraints(),
         enzyme_provisioning=_provisioning(*enzymes, max_operations=max_operations),
-        relaxation=relaxation or RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=0),
-        enumeration=EnumerationPolicy(
+        search=NeighborhoodSearchPlan(
+            max_retained_overhead_nt=2 * len(constraints),
             max_search_nodes=max_nodes,
             max_realizations=max_realizations,
         ),
     )
+
+
+def _exact_target(request: LocalNeighborhoodRequest) -> BasalTarget:
+    assert isinstance(request.geometry_domain, BasalGeometryDomain)
+    return request.geometry_domain.exact_targets()[0]
 
 
 def test_literal_pairing_is_variable_length_proximal_outward_and_projects_mwx() -> None:
@@ -342,7 +346,8 @@ def test_proximal_mismatch_is_rejected_but_distal_mismatch_is_copied_exactly() -
         )
     )
 
-    assert distal.discovery.status == "complete"
+    assert distal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert distal.discovery.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
     profile = distal.realizations[0].projection.pairing_profile
     assert profile is not None
     assert profile.pairs[2].pair_class is BasalPairClass.MISMATCH
@@ -380,6 +385,18 @@ def test_realization_contains_exact_route_evidence_and_payload_conditioning() ->
     assert record.adapter_annealed_complex is not None
     assert isinstance(record.adapter_ligated_product, BasalAdapterLigatedProduct)
     assert record.hairpin_pcr_duplex is not None
+    assert record.retained_overhead.neighborhood == "basal"
+    assert record.retained_overhead.retained_overhead_nt == 8
+    assert tuple(position.position for position in record.retained_overhead.positions) == (
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11,
+    )
     assert record.material_accounting.retained_nt > 0
     assert record.material_accounting.transient_nt == 0
     assert record.material_accounting.auxiliary_nt > 0
@@ -533,7 +550,7 @@ def test_require_all_infeasible_result_may_suppress_compatible_payload_records()
 
     result = discover_basal_neighborhood(require_all)
 
-    assert result.discovery.status == "infeasible"
+    assert result.discovery.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert result.discovery.payload_compatibility.compatible_assignments == 1
     assert result.realizations == ()
 
@@ -551,9 +568,13 @@ def test_resealed_basal_result_rejects_corrupted_shell_accounting() -> None:
         }
     )
     result = discover_basal_neighborhood(require_all)
-    shell = result.discovery.shells[0]
-    corrupted_shell = shell.model_copy(update={"candidate_count": shell.candidate_count + 1})
-    corrupted_discovery = result.discovery.model_copy(update={"shells": (corrupted_shell,)})
+    level = result.discovery.overhead_levels[-1]
+    corrupted_level = level.model_copy(update={"candidate_count": level.candidate_count + 1})
+    corrupted_discovery = result.discovery.model_copy(
+        update={
+            "overhead_levels": (*result.discovery.overhead_levels[:-1], corrupted_level)
+        }
+    )
 
     with pytest.raises(ValidationError, match="candidate count"):
         BasalNeighborhoodDiscoveryResult.create(
@@ -590,7 +611,7 @@ def test_basal_degenerate_payload_accounting_is_exhaustive_and_require_all_is_en
     )
     result = discover_basal_neighborhood(request)
 
-    assert result.discovery.status == "complete"
+    assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     assert result.discovery.payload_compatibility.total_assignments == 2
     assert result.discovery.payload_compatibility.compatible_assignments == 1
     assert result.discovery.payload_compatibility.excluded_assignments == 1
@@ -604,19 +625,19 @@ def test_basal_degenerate_payload_accounting_is_exhaustive_and_require_all_is_en
         }
     )
     blocked = discover_basal_neighborhood(require_all)
-    assert blocked.discovery.status == "infeasible"
+    assert blocked.discovery.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert blocked.realizations == ()
-    assert all(not shell.realization_ids for shell in blocked.discovery.shells)
-    assert all(shell.complete for shell in blocked.discovery.shells)
+    assert all(not level.realization_ids for level in blocked.discovery.overhead_levels)
+    assert all(level.complete for level in blocked.discovery.overhead_levels)
     assert all(
-        shell.candidate_count == shell.rejected_count
-        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
-        for shell in blocked.discovery.shells
+        level.candidate_count == level.rejected_count
+        and sum(reason.count for reason in level.failure_reasons) == level.rejected_count
+        for level in blocked.discovery.overhead_levels
     )
     assert any(
         reason.code == "all-members-compatibility-required"
-        for shell in blocked.discovery.shells
-        for reason in shell.failure_reasons
+        for level in blocked.discovery.overhead_levels
+        for reason in level.failure_reasons
     )
 
 
@@ -629,7 +650,7 @@ def test_basal_degenerate_payload_over_bound_is_truthfully_uncomputed() -> None:
         )
     )
 
-    assert result.discovery.status == "truncated"
+    assert result.discovery.disposition.completion is SearchCompletionStatus.TRUNCATED
     assert result.discovery.payload_compatibility.status == "not_computed"
     assert result.discovery.payload_compatibility.total_assignments == 256
     assert result.discovery.payload_compatibility.warning
@@ -640,9 +661,12 @@ def test_any_nick_strand_enumerates_both_exact_strands_deterministically() -> No
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         payload=DegeneratePayload(sequence="YTCC"),
     )
+    assert isinstance(request.geometry_domain, BasalGeometryDomain)
     request = request.model_copy(
         update={
-            "target": request.target.model_copy(update={"nick_strand": NickStrandSelection.ANY})
+            "geometry_domain": request.geometry_domain.model_copy(
+                update={"nick_strand": NickStrandSelection.ANY}
+            )
         }
     )
 
@@ -658,8 +682,7 @@ def test_any_nick_strand_enumerates_both_exact_strands_deterministically() -> No
 
 def test_exact_basal_realization_helpers_reject_unexpanded_nick_strand() -> None:
     request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
-    assert isinstance(request.target, BasalTarget)
-    exact_target = request.target
+    exact_target = _exact_target(request)
     any_target = exact_target.model_copy(update={"nick_strand": NickStrandSelection.ANY})
     program = iter_basal_programs(
         request.enzyme_provisioning,
@@ -693,17 +716,17 @@ def test_exact_basal_realization_helpers_reject_unexpanded_nick_strand() -> None
 
 def test_basal_realization_rejects_non_pcr_endpoint_before_materialization() -> None:
     request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
-    assert isinstance(request.target, BasalTarget)
+    target = _exact_target(request)
     route = iter_basal_programs(
         request.enzyme_provisioning,
-        target=request.target,
+        target=target,
         endpoint=request.endpoint,
     )[0]
     solution = next(
         candidate
         for candidate in iter_basal_program_solutions(
             payload_sequence="CCCC",
-            target=request.target,
+            target=target,
             endpoint=request.endpoint,
             program=route,
         )
@@ -715,32 +738,31 @@ def test_basal_realization_rejects_non_pcr_endpoint_before_materialization() -> 
         _realization(
             request=wrong_endpoint,
             payload_sequence="CCCC",
-            target=request.target,
+            target=target,
             route=route,
             solution=solution,
-            relaxation_radius=0,
         )
 
 
 def test_basal_realization_rejects_unresolved_target_and_pairing_profile() -> None:
     request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
-    assert isinstance(request.target, BasalTarget)
+    target = _exact_target(request)
     route = iter_basal_programs(
         request.enzyme_provisioning,
-        target=request.target,
+        target=target,
         endpoint=request.endpoint,
     )[0]
     solution = next(
         candidate
         for candidate in iter_basal_program_solutions(
             payload_sequence="CCCC",
-            target=request.target,
+            target=target,
             endpoint=request.endpoint,
             program=route,
         )
         if not isinstance(candidate, BasalPlacementFailure)
     )
-    any_target = request.target.model_copy(update={"nick_strand": NickStrandSelection.ANY})
+    any_target = target.model_copy(update={"nick_strand": NickStrandSelection.ANY})
 
     with pytest.raises(ValueError, match="exact nick strand"):
         _realization(
@@ -749,16 +771,14 @@ def test_basal_realization_rejects_unresolved_target_and_pairing_profile() -> No
             target=any_target,
             route=route,
             solution=solution,
-            relaxation_radius=0,
         )
     with pytest.raises(ValueError, match="exact pairing profile"):
         _realization(
             request=request,
             payload_sequence="CCCC",
-            target=request.target,
+            target=target,
             route=route,
             solution=replace(solution, pairing_profile=None),
-            relaxation_radius=0,
         )
 
 
@@ -778,30 +798,29 @@ def test_basal_reaction_diagnostics_map_to_stable_local_failure_codes(
     assert _failure_code(diagnostic_codes) == failure_code
 
 
-def test_unknown_relaxation_coordinate_is_not_reported_as_changed() -> None:
-    request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
-    assert isinstance(request.target, BasalTarget)
-
-    assert not _coordinate_changed(request.target, request.target, "not-a-coordinate")
-
-
 def test_nick_offset_and_strand_change_exact_binding_geometry() -> None:
     base = discover_basal_neighborhood(
         _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
     ).realizations[0]
+    offset_domain = BasalGeometryDomain(
+        nick_strand=Strand.TOP,
+        nick_offsets_nt=(1,),
+        pairing_constraints=_pairing_constraints(),
+    )
     offset = discover_basal_neighborhood(
         _request(
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            relaxation=RelaxationPolicy(
-                mode=RelaxationMode.THROUGH_RADIUS,
-                max_radius=1,
-                coordinates=(RelaxationCoordinate(name="nick_offset_nt", minimum=0, maximum=1),),
-            ),
+            domain=offset_domain,
         )
-    ).realizations[-1]
+    ).realizations[0]
     bottom_request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, payload="TTCC")
+    assert isinstance(bottom_request.geometry_domain, BasalGeometryDomain)
     bottom_request = bottom_request.model_copy(
-        update={"target": bottom_request.target.model_copy(update={"nick_strand": Strand.BOTTOM})}
+        update={
+            "geometry_domain": bottom_request.geometry_domain.model_copy(
+                update={"nick_strand": Strand.BOTTOM}
+            )
+        }
     )
     bottom = discover_basal_neighborhood(bottom_request).realizations[0]
 
@@ -817,7 +836,7 @@ def test_basal_operation_accounting_contains_only_the_local_nick() -> None:
         _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, max_operations=2)
     )
 
-    assert result.discovery.status == "complete"
+    assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     assert all(len(record.reaction_programs) == 1 for record in result.realizations)
 
 
@@ -826,7 +845,7 @@ def test_payload_and_boundary_sites_are_scanned_in_the_exact_precursor() -> None
         _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, payload="CAAC")
     )
 
-    assert result.discovery.status == "infeasible"
+    assert result.discovery.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert "unintended-actionable-site" in {
         reason.code for reason in result.discovery.failure_reasons
     }
@@ -948,7 +967,7 @@ def _basal_record_content(record: BasalRealizationRecord) -> dict[str, object]:
         ("undeclared-binding", "cannot retain undeclared bindings"),
         ("assessment-operations", "replay every declared operation"),
         ("material-accounting", "derive from exact materials"),
-        ("payload-map", "preserve the exact payload sequence"),
+        ("payload-map", "Retained overhead"),
         ("precursor-state", "act on the exact source precursor"),
         ("nicked-duplex", "replay the exact basal binding"),
         ("ligated-product", "concatenate the exact source and adapter"),
@@ -1294,30 +1313,32 @@ def test_basal_pcr_material_accounting_rejects_invented_transient_bases() -> Non
         BasalRealizationRecord.create(**content)
 
 
-def test_relaxation_status_and_geometry_groups_are_exact_first_and_lossless() -> None:
-    relaxation = RelaxationPolicy(
-        mode=RelaxationMode.THROUGH_RADIUS,
-        max_radius=1,
-        coordinates=(RelaxationCoordinate(name="nick_offset_nt", minimum=0, maximum=1),),
+def test_overhead_coverage_and_geometry_groups_are_complete_and_lossless() -> None:
+    domain = BasalGeometryDomain(
+        nick_strand=Strand.TOP,
+        nick_offsets_nt=(0, 1),
+        pairing_constraints=_pairing_constraints(),
     )
     complete = discover_basal_neighborhood(
         _request(
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            relaxation=relaxation,
+            domain=domain,
             extra_nickase=True,
         )
     )
     truncated = discover_basal_neighborhood(
         _request(
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            relaxation=relaxation,
+            domain=domain,
             extra_nickase=True,
             max_nodes=1,
         )
     )
 
-    assert complete.discovery.status == "complete"
-    assert [shell.radius for shell in complete.discovery.shells] == [0, 1]
+    assert complete.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert tuple(
+        level.retained_overhead_nt for level in complete.discovery.overhead_levels
+    ) == tuple(range(9))
     ids = {item.local_realization.local_realization_id for item in complete.realizations}
     grouped_ids = {
         realization_id
@@ -1327,14 +1348,16 @@ def test_relaxation_status_and_geometry_groups_are_exact_first_and_lossless() ->
     assert grouped_ids == ids
     assert len(ids) == len(complete.realizations)
     assert len(ids) > 4
-    assert truncated.discovery.status == "truncated"
-    assert truncated.discovery.truncation_reasons == ("max_search_nodes",)
-    assert truncated.discovery.shells[-1].complete is False
-    assert all(shell.candidate_count > 0 for shell in truncated.discovery.shells)
+    assert truncated.discovery.disposition.completion is SearchCompletionStatus.TRUNCATED
+    assert (
+        truncated.discovery.disposition.termination_reason
+        is SearchTerminationReason.EVALUATION_CAP
+    )
+    assert truncated.discovery.overhead_levels[-1].complete is False
     assert all(
-        shell.candidate_count == len(shell.realization_ids) + shell.rejected_count
-        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
-        for shell in truncated.discovery.shells
+        level.candidate_count == len(level.realization_ids) + level.rejected_count
+        and sum(reason.count for reason in level.failure_reasons) == level.rejected_count
+        for level in truncated.discovery.overhead_levels
     )
 
     with pytest.raises(ValidationError, match="canonical key order"):
@@ -1364,30 +1387,30 @@ def test_relaxation_status_and_geometry_groups_are_exact_first_and_lossless() ->
         )
 
 
-def test_basal_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() -> None:
+def test_basal_bounds_at_an_overhead_boundary_do_not_emit_an_unentered_level() -> None:
     exact = discover_basal_neighborhood(_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
-    shell = exact.discovery.shells[0]
-    relaxation = RelaxationPolicy(
-        mode=RelaxationMode.THROUGH_RADIUS,
-        max_radius=1,
-        coordinates=(RelaxationCoordinate(name="nick_offset_nt", minimum=0, maximum=1),),
+    active_level = exact.discovery.overhead_levels[-1]
+    domain = BasalGeometryDomain(
+        nick_strand=Strand.TOP,
+        nick_offsets_nt=(0, 1),
+        pairing_constraints=_pairing_constraints(),
     )
 
     for limits in (
-        {"max_nodes": shell.candidate_count, "max_realizations": 100},
-        {"max_nodes": 100, "max_realizations": len(shell.realization_ids)},
+        {"max_nodes": active_level.candidate_count, "max_realizations": 100},
+        {"max_nodes": 100, "max_realizations": len(active_level.realization_ids)},
     ):
         result = discover_basal_neighborhood(
             _request(
                 ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-                relaxation=relaxation,
+                domain=domain,
                 **limits,
             )
         )
 
-        assert result.discovery.status == "truncated"
-        assert tuple(item.radius for item in result.discovery.shells) == (0,)
-        assert result.discovery.shells[0].complete is True
+        assert result.discovery.disposition.completion is SearchCompletionStatus.TRUNCATED
+        assert result.discovery.overhead_levels[-1].retained_overhead_nt == 8
+        assert result.discovery.overhead_levels[-1].complete is False
 
 
 def test_exact_basal_domain_is_complete_when_a_bound_equals_exhaustive_count() -> None:
@@ -1398,7 +1421,7 @@ def test_exact_basal_domain_is_complete_when_a_bound_equals_exhaustive_count() -
             max_realizations=10_000,
         )
     )
-    examined = sum(shell.candidate_count for shell in exhaustive.discovery.shells)
+    examined = sum(level.candidate_count for level in exhaustive.discovery.overhead_levels)
     realized = len(exhaustive.realizations)
 
     node_bounded = discover_basal_neighborhood(
@@ -1416,8 +1439,8 @@ def test_exact_basal_domain_is_complete_when_a_bound_equals_exhaustive_count() -
         )
     )
 
-    assert node_bounded.discovery.status is SearchCompletionStatus.COMPLETE
-    assert realization_bounded.discovery.status is SearchCompletionStatus.COMPLETE
+    assert node_bounded.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert realization_bounded.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
 
 
 def test_basal_verification_rejects_self_asserted_execution_environment() -> None:
@@ -1437,7 +1460,7 @@ def test_basal_verification_rejects_self_asserted_execution_environment() -> Non
         VerifiedBasalNeighborhoodResult(result=forged)
 
 
-def test_basal_wrapper_rejects_partial_final_shell_resealed_as_complete() -> None:
+def test_basal_wrapper_rejects_partial_final_level_resealed_as_complete() -> None:
     result = discover_basal_neighborhood(
         _request(
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
@@ -1445,33 +1468,17 @@ def test_basal_wrapper_rejects_partial_final_shell_resealed_as_complete() -> Non
             max_realizations=100,
         )
     )
-    shell = result.discovery.shells[-1]
-    assert shell.complete is False
-    corrupted_shell = shell.model_copy(update={"complete": True})
+    level = result.discovery.overhead_levels[-1]
+    assert level.complete is False
+    corrupted_level = level.model_copy(update={"complete": True})
     corrupted_discovery = result.discovery.model_copy(
-        update={"shells": (*result.discovery.shells[:-1], corrupted_shell)}
+        update={
+            "overhead_levels": (*result.discovery.overhead_levels[:-1], corrupted_level)
+        }
     )
 
-    with pytest.raises(ValidationError, match="unentered later shell"):
+    with pytest.raises(ValidationError, match="Truncated coverage"):
         BasalNeighborhoodDiscoveryResult.create(
             discovery=corrupted_discovery,
             realizations=result.realizations,
-        )
-
-
-def test_type_iis_cut_offset_is_rejected_as_a_basal_relaxation_coordinate() -> None:
-    with pytest.raises(ValidationError, match="integer target fields"):
-        _request(
-            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            relaxation=RelaxationPolicy(
-                mode=RelaxationMode.THROUGH_RADIUS,
-                max_radius=1,
-                coordinates=(
-                    RelaxationCoordinate(
-                        name="end_generation.type_iis_cut_offset_nt",
-                        minimum=0,
-                        maximum=1,
-                    ),
-                ),
-            ),
         )

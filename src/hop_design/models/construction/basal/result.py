@@ -19,7 +19,7 @@ from hop_design.models.base import HopModel
 from hop_design.models.construction import (
     NeighborhoodDiscoveryResult,
     PayloadCompatibilityStatus,
-    SearchCompletionStatus,
+    SearchFeasibilityStatus,
 )
 from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import iupac_bases
@@ -31,8 +31,8 @@ from .realization import BasalRealizationRecord
 class BasalNeighborhoodDiscoveryResult(HopModel):
     """Shared discovery authority plus lossless exact basal route records."""
 
-    schema_id: Literal["hop.basal-neighborhood-result/v3"] = Field(
-        default="hop.basal-neighborhood-result/v3", alias="schema"
+    schema_id: Literal["hop.basal-neighborhood-result/v4"] = Field(
+        default="hop.basal-neighborhood-result/v4", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
     discovery: NeighborhoodDiscoveryResult
@@ -72,14 +72,14 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
         if accounting.status is PayloadCompatibilityStatus.COMPLETE:
             detailed_payloads = {item.payload_sequence for item in self.realizations}
             if (
-                self.discovery.status is SearchCompletionStatus.COMPLETE
+                self.discovery.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
                 and len(detailed_payloads) != accounting.compatible_assignments
             ):
                 raise ValueError(
                     "Complete basal accounting must equal the distinct compatible payload records."
                 )
             if (
-                self.discovery.status is SearchCompletionStatus.INFEASIBLE
+                self.discovery.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
                 and not self.discovery.request.hard_constraints.require_all_members_compatible
                 and accounting.compatible_assignments != 0
             ):

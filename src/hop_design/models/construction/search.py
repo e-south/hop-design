@@ -12,12 +12,20 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
+from hop_design.models.junction import Strand
 
-from .targets import FoldbackTarget, NickStrandSelection
+from .relaxation import SequenceDomainPartition
+from .targets import (
+    BasalPairingConstraint,
+    BasalTarget,
+    FoldbackTarget,
+    NickStrandSelection,
+)
 
 
 class SearchStopMode(StrEnum):
@@ -43,6 +51,10 @@ class NeighborhoodSearchPlan(HopModel):
     scope: SearchScope = SearchScope.ALL_REALIZATIONS
     stop: SearchStopMode = SearchStopMode.EXHAUSTIVE
     result_quota: int | None = Field(default=None, ge=1)
+    sequence_partition: SequenceDomainPartition | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @model_validator(mode="after")
     def validate_stop_policy(self) -> NeighborhoodSearchPlan:
@@ -54,7 +66,8 @@ class NeighborhoodSearchPlan(HopModel):
 class FoldbackGeometryDomain(HopModel):
     """Finite structural constraints for overhead-ordered foldback discovery."""
 
-    nick_strand: NickStrandSelection = NickStrandSelection.ANY
+    family: Literal["foldback"] = "foldback"
+    nick_strand: Strand | NickStrandSelection = NickStrandSelection.ANY
     junction_offsets_nt: tuple[int, ...] = (0,)
     minimum_loop_length_nt: int = Field(default=3, ge=3)
     minimum_annealing_arm_length_bp: int = Field(default=3, ge=3)
@@ -91,6 +104,46 @@ class FoldbackGeometryDomain(HopModel):
         return self
 
 
+class BasalGeometryDomain(HopModel):
+    """Finite state-aware constraints for retained-overhead basal discovery."""
+
+    family: Literal["basal"] = "basal"
+    nick_strand: Strand | NickStrandSelection = NickStrandSelection.ANY
+    nick_offsets_nt: tuple[int, ...] = (0,)
+    pairing_constraints: tuple[BasalPairingConstraint, ...] = Field(min_length=1)
+    minimum_adapter_annealing_nt: int = Field(default=15, ge=1)
+    mismatch_warning_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
+
+    @field_validator("nick_offsets_nt", mode="after")
+    @classmethod
+    def canonicalize_offsets(cls, values: tuple[int, ...]) -> tuple[int, ...]:
+        if not values:
+            raise ValueError("Basal discovery requires a finite nick-offset domain.")
+        if any(value < 0 for value in values):
+            raise ValueError("Basal nick offsets must be nonnegative.")
+        if len(values) != len(set(values)):
+            raise ValueError("Basal nick offsets must not repeat values.")
+        return tuple(sorted(values))
+
+    def exact_targets(self) -> tuple[BasalTarget, ...]:
+        """Return exact basal targets in canonical offset order."""
+        return tuple(
+            BasalTarget(
+                nick_strand=self.nick_strand,
+                nick_offset_nt=offset,
+                pairing_constraints=self.pairing_constraints,
+                ligation_proximal_match_required=True,
+            )
+            for offset in self.nick_offsets_nt
+        )
+
+
+LocalGeometryDomain = Annotated[
+    FoldbackGeometryDomain | BasalGeometryDomain,
+    Field(discriminator="family"),
+]
+
+
 class FoldbackOverheadLevel(HopModel):
     """Every admissible foldback geometry at one absolute retained-overhead level."""
 
@@ -99,8 +152,10 @@ class FoldbackOverheadLevel(HopModel):
 
 
 __all__ = [
+    "BasalGeometryDomain",
     "FoldbackGeometryDomain",
     "FoldbackOverheadLevel",
+    "LocalGeometryDomain",
     "NeighborhoodSearchPlan",
     "SearchScope",
     "SearchStopMode",

@@ -82,8 +82,6 @@ class FoldbackLocalRealization(HopModel):
     ligated_strand: MolecularStrand
     reaction_program: ReactionProgram
     stage_assessments: tuple[ReactionStageAssessment, ...]
-    relaxation_radius: int = Field(ge=0)
-    changed_coordinates: tuple[str, ...]
     retained_overhead: RetainedOverheadLedger
     transient_construction_nt: int = Field(ge=0)
 
@@ -249,8 +247,8 @@ class FoldbackLocalRealization(HopModel):
 class FoldbackNeighborhoodDiscoveryResult(HopModel):
     """Shared neighborhood authority plus lossless foldback-family evidence."""
 
-    schema_id: Literal["hop.foldback-neighborhood-result/v3"] = Field(
-        default="hop.foldback-neighborhood-result/v3", alias="schema"
+    schema_id: Literal["hop.foldback-neighborhood-result/v4"] = Field(
+        default="hop.foldback-neighborhood-result/v4", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     neighborhood: NeighborhoodDiscoveryResult

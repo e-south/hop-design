@@ -166,6 +166,39 @@ class RelaxationShellSummary(HopModel):
         return self
 
 
+class OverheadLevelSummary(HopModel):
+    """Candidate accounting at one absolute retained-overhead level."""
+
+    retained_overhead_nt: int = Field(ge=0)
+    examined: bool
+    complete: bool
+    candidate_count: int = Field(ge=0)
+    realization_ids: tuple[str, ...]
+    rejected_count: int = Field(ge=0)
+    failure_reasons: tuple[FailureReasonCount, ...]
+
+    @model_validator(mode="after")
+    def validate_accounting(self) -> OverheadLevelSummary:
+        if not self.examined and (
+            self.complete
+            or self.candidate_count
+            or self.realization_ids
+            or self.rejected_count
+            or self.failure_reasons
+        ):
+            raise ValueError("Unexamined overhead levels must not report candidate facts.")
+        if self.candidate_count != len(self.realization_ids) + self.rejected_count:
+            raise ValueError(
+                "Overhead-level candidate count must equal accepted realizations plus rejections."
+            )
+        codes = tuple(item.code for item in self.failure_reasons)
+        if len(codes) != len(set(codes)) or codes != tuple(sorted(codes)):
+            raise ValueError("Overhead-level failure reasons must use unique canonical order.")
+        if sum(item.count for item in self.failure_reasons) != self.rejected_count:
+            raise ValueError("Overhead-level failure reasons must partition rejected candidates.")
+        return self
+
+
 class PayloadCompatibilityStatus(StrEnum):
     """Whether bounded payload compatibility was exhaustively calculated."""
 

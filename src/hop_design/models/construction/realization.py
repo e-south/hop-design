@@ -19,7 +19,7 @@ from hop_design.models.sequence import (
 )
 
 from .payload import ConstructionEndpoint, _content_id
-from .relaxation import EnumerationPolicy
+from .search import NeighborhoodSearchPlan
 from .targets import LocalGeometryTarget
 
 
@@ -29,7 +29,7 @@ class ConstructionExecution(HopModel):
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     hop_version: str
     route_implementation_version: str
-    enumeration: EnumerationPolicy
+    search: NeighborhoodSearchPlan
     max_operations: int | None = Field(ge=1)
     environment: dict[str, str]
 

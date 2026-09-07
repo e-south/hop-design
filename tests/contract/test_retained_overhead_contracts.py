@@ -18,6 +18,7 @@ from hop_design.design.construction.overhead import foldback_overhead_levels
 from hop_design.models.construction import (
     FoldbackGeometryDomain,
     FoldbackTarget,
+    LocalNeighborhoodRequest,
     NeighborhoodSearchPlan,
     OverheadPosition,
     RetainedOverheadLedger,
@@ -148,6 +149,14 @@ def test_result_quota_is_explicit_and_not_an_exhaustive_search_default() -> None
             max_realizations=100,
             stop="result_quota",
         )
+
+
+def test_local_request_exposes_one_geometry_domain_and_retained_overhead_plan() -> None:
+    assert "geometry_domain" in LocalNeighborhoodRequest.model_fields
+    assert "search" in LocalNeighborhoodRequest.model_fields
+    assert "target" not in LocalNeighborhoodRequest.model_fields
+    assert "relaxation" not in LocalNeighborhoodRequest.model_fields
+    assert "enumeration" not in LocalNeighborhoodRequest.model_fields
 
 
 @pytest.mark.parametrize(

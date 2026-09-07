@@ -32,7 +32,6 @@ from hop_design.models.construction import (
     RealizationGrouping,
     RetainedOverheadLedger,
     SourceOrientation,
-    geometry_coordinate_value,
     geometry_id,
 )
 from hop_design.models.construction.foldback import (
@@ -83,7 +82,6 @@ def _realization(
     target: FoldbackTarget,
     route: FoldbackProgramCandidate,
     solution: FoldbackSequenceSolution,
-    relaxation_radius: int,
 ) -> FoldbackLocalRealization | str:
     replay = replay_foldback_route(
         payload_sequence=payload_sequence,
@@ -114,16 +112,6 @@ def _realization(
         enzyme_binding_ids=tuple(binding.binding_id for binding in bindings),
         stage_ids=stage_ids,
         achieved_geometry=target,
-    )
-    changed_coordinates = tuple(
-        name
-        for name in (
-            "junction_offset_nt",
-            "loop_length_nt",
-            "annealing_arm_length_bp",
-        )
-        if geometry_coordinate_value(target, name)
-        != geometry_coordinate_value(request.target, name)
     )
     released_ids = set(replay.released_fragment_ids)
     retained_sequence = replay.ligated_strand.sequence
@@ -198,8 +186,6 @@ def _realization(
         ligated_strand=replay.ligated_strand,
         reaction_program=replay.reaction_program,
         stage_assessments=assessment.stage_assessments,
-        relaxation_radius=relaxation_radius,
-        changed_coordinates=changed_coordinates,
         retained_overhead=retained_overhead,
         transient_construction_nt=(
             sum(

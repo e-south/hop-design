@@ -73,13 +73,13 @@ def _validate_result_mapping_execution_limits(
     request = container.get("request")
     if not isinstance(request, dict):
         return
-    enumeration = request.get("enumeration")
-    if not isinstance(enumeration, dict):
+    search = request.get("search")
+    if not isinstance(search, dict):
         return
     limits = {
         field: value
         for field in ("max_search_nodes", "max_realizations")
-        if isinstance((value := enumeration.get(field)), int) and not isinstance(value, bool)
+        if isinstance((value := search.get(field)), int) and not isinstance(value, bool)
     }
     if len(limits) == 2:
         _validate_local_execution_limits(
@@ -120,15 +120,37 @@ class LocalNeighborhoodDiscovery:
         return family.value
 
     @property
-    def status(self) -> str:
-        """Return complete, infeasible, or truncated search status."""
+    def completion(self) -> str:
+        """Return complete, policy-stopped, or truncated search coverage."""
         result = self._verified_source()
         neighborhood = (
             result.neighborhood
             if isinstance(result, FoldbackNeighborhoodDiscoveryResult)
             else result.discovery
         )
-        return neighborhood.status.value
+        return neighborhood.disposition.completion.value
+
+    @property
+    def feasibility(self) -> str:
+        """Return feasible, infeasible, or unknown existence status."""
+        result = self._verified_source()
+        neighborhood = (
+            result.neighborhood
+            if isinstance(result, FoldbackNeighborhoodDiscoveryResult)
+            else result.discovery
+        )
+        return neighborhood.disposition.feasibility.value
+
+    @property
+    def termination_reason(self) -> str:
+        """Return the exact reason the bounded search stopped."""
+        result = self._verified_source()
+        neighborhood = (
+            result.neighborhood
+            if isinstance(result, FoldbackNeighborhoodDiscoveryResult)
+            else result.discovery
+        )
+        return neighborhood.disposition.termination_reason.value
 
     @property
     def problem_id(self) -> str:
@@ -183,21 +205,22 @@ class LocalNeighborhoodDiscovery:
 
     def __repr__(self) -> str:
         return (
-            f"LocalNeighborhoodDiscovery(family={self.family!r}, status={self.status!r}, "
+            f"LocalNeighborhoodDiscovery(family={self.family!r}, completion={self.completion!r}, "
+            f"feasibility={self.feasibility!r}, "
             f"result_id={self.result_id!r})"
         )
 
 
 def _load_request(path: str | Path) -> LocalNeighborhoodRequest:
     mapping = load_source_mapping(path, source_label="HOP local-neighborhood")
-    if mapping.get("schema") != "hop.local-neighborhood-request/v3":
+    if mapping.get("schema") != "hop.local-neighborhood-request/v4":
         raise ValueError(f"Unsupported HOP local-neighborhood schema: {mapping.get('schema')!r}.")
     request = LocalNeighborhoodRequest.model_validate_json(
         json.dumps(mapping, separators=(",", ":"))
     )
     _validate_local_execution_limits(
-        max_search_nodes=request.enumeration.max_search_nodes,
-        max_realizations=request.enumeration.max_realizations,
+        max_search_nodes=request.search.max_search_nodes,
+        max_realizations=request.search.max_realizations,
     )
     return request
 
@@ -225,12 +248,12 @@ def load_verified_local_neighborhood(result_path: str | Path) -> LocalNeighborho
     )
     schema = mapping.get("schema")
     payload = json.dumps(mapping, separators=(",", ":"))
-    if schema == "hop.foldback-neighborhood-result/v3":
+    if schema == "hop.foldback-neighborhood-result/v4":
         _validate_result_mapping_execution_limits(mapping, result_container="neighborhood")
         verified: _VerifiedLocalResult = verify_foldback_neighborhood_result(
             FoldbackNeighborhoodDiscoveryResult.model_validate_json(payload)
         )
-    elif schema == "hop.basal-neighborhood-result/v3":
+    elif schema == "hop.basal-neighborhood-result/v4":
         _validate_result_mapping_execution_limits(mapping, result_container="discovery")
         verified = verify_basal_neighborhood_result(
             BasalNeighborhoodDiscoveryResult.model_validate_json(payload)

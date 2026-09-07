@@ -12,7 +12,6 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import cast
 
 from hop_design.kernel.construction.basal import (
     BasalProgramCandidate,
@@ -22,12 +21,13 @@ from hop_design.models.construction import (
     BasalTarget,
     LocalNeighborhoodRequest,
     LocalRealization,
+    OverheadPosition,
     PayloadSourceMap,
     PayloadSourceSegment,
     RealizationGroup,
     RealizationGrouping,
+    RetainedOverheadLedger,
     SourceOrientation,
-    geometry_coordinate_value,
     geometry_id,
 )
 from hop_design.models.construction.basal import (
@@ -66,7 +66,6 @@ def _realization(
     target: BasalTarget,
     route: BasalProgramCandidate,
     solution: BasalSequenceSolution,
-    relaxation_radius: int,
 ) -> BasalRealizationRecord | str:
     if request.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
         raise ValueError("Basal realization requires the hairpin PCR duplex endpoint.")
@@ -163,10 +162,22 @@ def _realization(
         role: sum(len(item.sequence_5prime) for item in materials if item.role is role)
         for role in BasalMaterialRole
     }
-    changed = tuple(
-        name
-        for name in ("nick_offset_nt",)
-        if _coordinate_changed(cast(BasalTarget, request.target), target, name)
+    payload_start = solution.payload_span.start.offset
+    payload_end = solution.payload_span.end.offset
+    retained_overhead = RetainedOverheadLedger(
+        neighborhood="basal",
+        reference_state_id="basal-pcr-local-boundary",
+        positions=tuple(
+            OverheadPosition(
+                coordinate_space="basal-boundary",
+                position=position,
+                base=pcr_reference[position],
+                material_role=("source" if position < payload_start else "adapter"),
+            )
+            for position in range(len(pcr_reference))
+            if not payload_start <= position < payload_end
+        ),
+        retained_overhead_nt=len(pcr_reference) - len(payload_sequence),
     )
     return BasalRealizationRecord.create(
         local_realization=local,
@@ -195,18 +206,8 @@ def _realization(
             transient_nt=totals[BasalMaterialRole.TRANSIENT],
             auxiliary_nt=totals[BasalMaterialRole.AUXILIARY],
         ),
-        relaxation_radius=relaxation_radius,
-        changed_coordinates=changed,
+        retained_overhead=retained_overhead,
     )
-
-
-def _coordinate_changed(original: BasalTarget, achieved: BasalTarget, name: str) -> bool:
-    try:
-        return geometry_coordinate_value(original, name) != geometry_coordinate_value(
-            achieved, name
-        )
-    except ValueError:
-        return False
 
 
 def _groups(records: tuple[BasalRealizationRecord, ...]) -> tuple[RealizationGroup, ...]:
