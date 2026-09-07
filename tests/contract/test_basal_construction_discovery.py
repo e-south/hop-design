@@ -35,6 +35,7 @@ from hop_design.kernel.construction.basal import (
     resolve_basal_pairing_state,
 )
 from hop_design.models.construction import (
+    BasalFutureReleaseAction,
     BasalFutureReleaseRequirement,
     BasalGeometryDomain,
     BasalPairAllowance,
@@ -277,6 +278,75 @@ def test_clone_ready_basal_discovery_keeps_future_release_out_of_current_state()
         for operation in stage.operations
     )
     assert "cohesive_end" not in type(record.projection).model_fields
+
+
+def test_future_release_action_rejects_forged_geometry_and_enzyme_replay() -> None:
+    result = discover_basal_neighborhood(_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
+    action = result.realizations[0].future_release_action
+    assert action is not None
+    content = action.model_dump(mode="python", exclude={"action_id"})
+    content["requirement"] = action.requirement
+
+    with pytest.raises(ValidationError, match="future cohesive end must be a DNA string"):
+        BasalFutureReleaseRequirement.model_validate(
+            {
+                **action.requirement.model_dump(mode="python"),
+                "cohesive_end_sequence": 4,
+            }
+        )
+    with pytest.raises(ValidationError, match="future recognition pattern must be a DNA string"):
+        BasalFutureReleaseAction.model_validate(
+            {
+                **action.model_dump(mode="python"),
+                "recognition_pattern_5prime": 4,
+            }
+        )
+    with pytest.raises(ValidationError, match="identity must seal its exact obligation"):
+        BasalFutureReleaseAction.model_validate(
+            {
+                **action.model_dump(mode="python"),
+                "action_id": f"hop:basal-future-release-action/{'0' * 64}@1",
+            }
+        )
+    with pytest.raises(ValidationError, match="produce the required overhang length"):
+        BasalFutureReleaseAction.create(
+            **{
+                **content,
+                "reference_cut_from_release_boundary": -5,
+            }
+        )
+    with pytest.raises(ValidationError, match="left future release action must begin"):
+        BasalFutureReleaseAction.create(
+            **{
+                **content,
+                "requirement": action.requirement.model_copy(update={"product_end": "left"}),
+            }
+        )
+    with pytest.raises(ValidationError, match="cut polarity must match"):
+        BasalFutureReleaseAction.create(
+            **{
+                **content,
+                "requirement": action.requirement.model_copy(
+                    update={"overhang_end": StrandEnd.THREE_PRIME}
+                ),
+            }
+        )
+
+    action.assert_definition_replay(_type_iis(action.enzyme_id))
+    with pytest.raises(ValueError, match="exact duplex enzyme definition"):
+        action.assert_definition_replay(_nickase(action.enzyme_id))
+    with pytest.raises(ValueError, match="recognition must replay"):
+        action.assert_definition_replay(_type_iis(action.enzyme_id, pattern="GAAGAC"))
+    with pytest.raises(ValueError, match="cuts must replay"):
+        action.assert_definition_replay(
+            _enzyme(
+                action.enzyme_id,
+                enzyme_class=EnzymeClass.DUPLEX_RESTRICTION,
+                pattern="GGTCTC",
+                reference_cut=7,
+                complement_cut=11,
+            )
+        )
 
 
 def _exact_target(request: LocalNeighborhoodRequest) -> BasalTarget:

@@ -38,6 +38,8 @@ from hop_design.models.construction.basal import (
 )
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
+    BasalMinimumOverheadCell,
+    BasalMinimumOverheadMatrixProjection,
     FoldbackFeasibilityProjection,
     RetainedOverheadFrontierProjection,
 )
@@ -97,6 +99,112 @@ def test_basal_matrix_replay_rejects_a_resealed_minimum() -> None:
 
     with pytest.raises(ValueError, match="does not replay"):
         verify_local_projection(changed, result)
+
+
+def test_basal_matrix_cells_reject_forged_membership_and_status() -> None:
+    projection = project_basal_minimum_overhead_matrix(
+        discover_basal_neighborhood(basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
+    )
+    cell = projection.cells[0]
+
+    for update, message in (
+        ({"realization_count": cell.realization_count + 1}, "count must equal exact realization"),
+        (
+            {
+                "realization_count": cell.realization_count + 1,
+                "realization_ids": (*cell.realization_ids, cell.realization_ids[0]),
+            },
+            "must not repeat",
+        ),
+        ({"minimum_retained_overhead_nt": None}, "minimum requires exact realization"),
+        ({"status": "infeasible"}, "without a solution cannot carry"),
+    ):
+        with pytest.raises(ValidationError, match=message):
+            BasalMinimumOverheadCell.model_validate(
+                {
+                    **cell.model_dump(mode="python"),
+                    **update,
+                }
+            )
+
+
+def test_basal_matrix_rejects_forged_axes_scope_and_completion() -> None:
+    complete = project_basal_minimum_overhead_matrix(
+        discover_basal_neighborhood(
+            basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX, extra_nickase=True)
+        )
+    )
+    content = complete.model_dump(mode="python", by_alias=True)
+    cell = complete.cells[0]
+    assert cell.minimum_retained_overhead_nt is not None
+
+    for update, message in (
+        ({"nick_enzyme_ids": tuple(reversed(complete.nick_enzyme_ids))}, "unique canonical order"),
+        (
+            {"release_actions": (*complete.release_actions, complete.release_actions[0])},
+            "unique canonical order",
+        ),
+        (
+            {
+                "cells": (
+                    cell.model_copy(update={"nick_enzyme_id": "example:enzyme/other@1"}),
+                    *complete.cells[1:],
+                )
+            },
+            "canonical axis product",
+        ),
+        ({"realization_ids": ()}, "partition every exact realization"),
+        (
+            {"max_retained_overhead_nt": cell.minimum_retained_overhead_nt - 1},
+            "inside the declared overhead envelope",
+        ),
+    ):
+        with pytest.raises(ValidationError, match=message):
+            BasalMinimumOverheadMatrixProjection.model_validate({**content, **update})
+
+    infeasible = project_basal_minimum_overhead_matrix(
+        discover_basal_neighborhood(
+            basal_request(
+                ConstructionEndpoint.CLONE_READY_DUPLEX,
+                max_retained_overhead_nt=3,
+            )
+        )
+    )
+    with pytest.raises(ValidationError, match="Only complete search coverage"):
+        BasalMinimumOverheadMatrixProjection.model_validate(
+            {
+                **infeasible.model_dump(mode="python", by_alias=True),
+                "disposition": infeasible.disposition.model_copy(
+                    update={
+                        "completion": SearchCompletionStatus.TRUNCATED,
+                        "feasibility": SearchFeasibilityStatus.UNKNOWN,
+                        "termination_reason": SearchTerminationReason.EVALUATION_CAP,
+                    }
+                ),
+            }
+        )
+
+    partial = project_basal_minimum_overhead_matrix(
+        discover_basal_neighborhood(
+            basal_request(
+                ConstructionEndpoint.CLONE_READY_DUPLEX,
+                extra_nickase=True,
+                max_nodes=1,
+            )
+        )
+    )
+    with pytest.raises(ValidationError, match="cannot leave an unknown matrix cell"):
+        BasalMinimumOverheadMatrixProjection.model_validate(
+            {
+                **partial.model_dump(mode="python", by_alias=True),
+                "disposition": partial.disposition.model_copy(
+                    update={
+                        "completion": SearchCompletionStatus.COMPLETE,
+                        "termination_reason": SearchTerminationReason.EXHAUSTED_DOMAIN,
+                    }
+                ),
+            }
+        )
 
 
 def test_projection_authorities_reject_duplicate_membership_and_status_drift() -> None:
