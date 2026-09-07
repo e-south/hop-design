@@ -188,7 +188,7 @@ def test_partition_result_cannot_claim_whole_domain_payload_compatibility() -> N
 def test_partition_can_complete_below_a_bound_that_truncates_the_full_domain() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )

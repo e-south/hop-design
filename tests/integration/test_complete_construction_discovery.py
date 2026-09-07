@@ -349,7 +349,7 @@ def test_complete_composition_filters_a_multi_payload_local_authority(
             max_radius=1,
             coordinates=(
                 RelaxationCoordinate(
-                    name="nick_offset_within_foldback_nt",
+                    name="junction_offset_nt",
                     minimum=0,
                     maximum=1,
                 ),
@@ -487,7 +487,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -566,7 +566,7 @@ def test_direct_composition_preserves_a_bottom_nick_source_orientation(
             _nickase(motif="ACATTT"),
             target=FoldbackTarget(
                 nick_strand=Strand.BOTTOM,
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=3,
             ),
@@ -659,7 +659,7 @@ def test_direct_realization_rejects_resealed_source_orientation_forgery(
             _nickase(motif="ACATTT"),
             target=FoldbackTarget(
                 nick_strand=Strand.BOTTOM,
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=3,
             ),
@@ -707,7 +707,7 @@ def test_bottom_nick_direct_route_rejects_a_fixed_unphosphorylated_source_primer
             _nickase(motif="ACATTT"),
             target=FoldbackTarget(
                 nick_strand=Strand.BOTTOM,
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=3,
             ),
@@ -764,7 +764,7 @@ def test_complete_composition_rejects_a_fixed_source_primer_crossing_the_payload
             _nickase(motif="ACATTT"),
             target=FoldbackTarget(
                 nick_strand=Strand.BOTTOM,
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=3,
             ),
@@ -834,7 +834,7 @@ def test_complete_composition_rejects_fixed_source_primer_without_three_prime_hy
             _nickase(motif="ACATTT"),
             target=FoldbackTarget(
                 nick_strand=Strand.BOTTOM,
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=3,
             ),
@@ -906,7 +906,7 @@ def test_require_all_preserves_intrinsic_failures_when_every_combination_rejects
                 orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
             ),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -972,7 +972,7 @@ def test_source_copy_rejects_a_noncomplementary_optional_stem_extension(
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -1022,7 +1022,7 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -1031,7 +1031,7 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
                 max_radius=1,
                 coordinates=(
                     RelaxationCoordinate(
-                        name="nick_offset_within_foldback_nt",
+                        name="junction_offset_nt",
                         minimum=0,
                         maximum=1,
                     ),

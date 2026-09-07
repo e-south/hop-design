@@ -166,7 +166,7 @@ def _request(
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
         target=target
         or FoldbackTarget(
-            nick_offset_within_foldback_nt=0,
+            junction_offset_nt=0,
             loop_length_nt=3,
             annealing_arm_length_bp=3,
         ),
@@ -189,10 +189,10 @@ def _request(
 
 
 def test_foldback_target_rejects_ambiguous_or_out_of_arm_nick_coordinates() -> None:
-    with pytest.raises(ValidationError, match="nick_offset_within_foldback_nt"):
+    with pytest.raises(ValidationError, match="junction_offset_nt"):
         FoldbackTarget.model_validate(
             {
-                "junction_offset_nt": 0,
+                "nick_offset_within_foldback_nt": 0,
                 "loop_length_nt": 3,
                 "annealing_arm_length_bp": 3,
             }
@@ -200,7 +200,7 @@ def test_foldback_target_rejects_ambiguous_or_out_of_arm_nick_coordinates() -> N
 
     with pytest.raises(ValidationError, match="first annealing arm"):
         FoldbackTarget(
-            nick_offset_within_foldback_nt=4,
+            junction_offset_nt=4,
             loop_length_nt=3,
             annealing_arm_length_bp=3,
         )
@@ -286,7 +286,7 @@ def test_foldback_discovery_searches_both_physical_nick_strands_by_default() -> 
 
 def test_any_strand_discovery_is_the_union_of_exact_strand_searches() -> None:
     target = FoldbackTarget(
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -318,7 +318,7 @@ def test_foldback_discovery_honors_an_exact_physical_nick_strand(
 ) -> None:
     target = FoldbackTarget(
         nick_strand=nick_strand,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -330,7 +330,7 @@ def test_foldback_discovery_honors_an_exact_physical_nick_strand(
 def test_declared_only_nickase_does_not_fabricate_a_bottom_strand_route() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.BOTTOM,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -398,7 +398,7 @@ def test_foldback_relaxation_is_exact_first_and_stops_at_complete_first_shell() 
     realization = result.realizations[0]
     assert realization.local_realization.achieved_geometry == FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=4,
     )
@@ -569,7 +569,7 @@ def test_foldback_discovery_places_the_nick_inside_the_retained_tract() -> None:
         _request(
             _nickase(motif="CCTNAGC", cut_offset=2),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=3,
+                junction_offset_nt=3,
                 loop_length_nt=4,
                 annealing_arm_length_bp=7,
             ),
@@ -674,7 +674,7 @@ def test_foldback_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() ->
         max_radius=1,
         coordinates=(
             RelaxationCoordinate(
-                name="nick_offset_within_foldback_nt",
+                name="junction_offset_nt",
                 minimum=0,
                 maximum=1,
             ),
@@ -756,7 +756,7 @@ def test_single_cleavage_rejects_a_site_extending_beyond_the_physical_source_end
 def test_foldback_target_coordinates_drive_exact_sites_fragments_and_pairing() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=1,
+        junction_offset_nt=1,
         loop_length_nt=4,
         annealing_arm_length_bp=2,
     )
@@ -837,7 +837,7 @@ def test_all_member_first_feasible_search_continues_past_a_partial_shell() -> No
         max_radius=1,
         coordinates=(
             RelaxationCoordinate(
-                name="nick_offset_within_foldback_nt",
+                name="junction_offset_nt",
                 minimum=0,
                 maximum=1,
             ),

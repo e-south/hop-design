@@ -14,7 +14,7 @@ route_family: linear_source/v1
 endpoint: ssdna_hairpin
 target:
   family: foldback
-  nick_offset_within_foldback_nt: 0
+  junction_offset_nt: 0
   loop_length_nt: 3
   annealing_arm_length_bp: 3
 hard_constraints:

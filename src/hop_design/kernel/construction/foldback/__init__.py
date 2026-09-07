@@ -158,9 +158,9 @@ def iter_foldback_program_solutions(
     payload_nt = len(payload_sequence)
     arm_nt = target.annealing_arm_length_bp
     junction = payload_nt
-    nick = junction + target.nick_offset_within_foldback_nt
+    nick = junction + target.junction_offset_nt
     foldback_nt = 2 * arm_nt + target.loop_length_nt
-    terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
+    terminus = junction + foldback_nt - target.junction_offset_nt
 
     nick_binding = _place_binding(
         program.nick_enzyme,
@@ -238,7 +238,7 @@ def iter_foldback_program_solutions(
         return
     arm_domain_sets = [set(_BASES) for _ in range(arm_nt)]
     loop_domain_sets = [set(_BASES) for _ in range(target.loop_length_nt)]
-    for source_offset in range(foldback_nt - target.nick_offset_within_foldback_nt):
+    for source_offset in range(foldback_nt - target.junction_offset_nt):
         final_index = foldback_nt - 1 - source_offset
         source_domain = domains[junction + source_offset]
         if final_index < arm_nt:
@@ -272,7 +272,7 @@ def iter_foldback_program_solutions(
         loop = "".join(loop_assignment)
         foldback = arm + loop + reverse_complement_iupac(arm)
         source_bases[junction:terminus] = reverse_complement_iupac(
-            foldback[target.nick_offset_within_foldback_nt :]
+            foldback[target.junction_offset_nt :]
         )
         if any(base not in domains[coordinate] for coordinate, base in enumerate(source_bases)):
             continue

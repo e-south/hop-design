@@ -53,9 +53,9 @@ def project_foldback_feasibility(
             nick_strand=item.foldback_nick.strand,
             source_orientation=item.payload_source_map.segments[0].orientation,
             relaxation_radius=item.relaxation_radius,
-            nick_offset_within_foldback_nt=cast(
+            junction_offset_nt=cast(
                 FoldbackTarget, item.local_realization.achieved_geometry
-            ).nick_offset_within_foldback_nt,
+            ).junction_offset_nt,
             loop_length_nt=cast(
                 FoldbackTarget, item.local_realization.achieved_geometry
             ).loop_length_nt,

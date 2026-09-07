@@ -72,6 +72,13 @@ from .request import (
     problem_id,
 )
 from .result import NeighborhoodDiscoveryResult
+from .search import (
+    FoldbackGeometryDomain,
+    FoldbackOverheadLevel,
+    NeighborhoodSearchPlan,
+    SearchScope,
+    SearchStopMode,
+)
 from .targets import (
     BasalPairAllowance,
     BasalPairClass,
@@ -101,6 +108,8 @@ __all__ = [
     "FailureReasonCount",
     "FinalPayloadReference",
     "FinalProductReference",
+    "FoldbackGeometryDomain",
+    "FoldbackOverheadLevel",
     "FoldbackTarget",
     "LocalGeometryTarget",
     "LocalNeighborhoodFamily",
@@ -110,6 +119,7 @@ __all__ = [
     "NeighborhoodClaimBoundary",
     "NeighborhoodDiscoveryResult",
     "NeighborhoodProvenance",
+    "NeighborhoodSearchPlan",
     "NickStrandSelection",
     "OverheadPosition",
     "PairState",
@@ -132,6 +142,8 @@ __all__ = [
     "SearchCompletionStatus",
     "SearchDisposition",
     "SearchFeasibilityStatus",
+    "SearchScope",
+    "SearchStopMode",
     "SearchTerminationReason",
     "SequenceDomainPartition",
     "SourceOrientation",

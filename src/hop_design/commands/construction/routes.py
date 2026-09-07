@@ -139,7 +139,7 @@ def _sort_rows(
 
 def _foldback_text(geometry: dict[str, Any]) -> str:
     return (
-        f"nick {geometry['nick_offset_within_foldback_nt']} nt into arm; "
+        f"nick {geometry['junction_offset_nt']} nt into arm; "
         f"loop {geometry['loop_length_nt']} nt; "
         f"annealing arm {geometry['annealing_arm_length_bp']} bp; "
         f"nick strand {geometry['nick_strand']}"

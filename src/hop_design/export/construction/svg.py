@@ -47,7 +47,7 @@ class _FoldbackGroupKey(NamedTuple):
     program_kind: str
     nick_strand: str
     source_orientation: str
-    nick_offset_within_foldback_nt: int
+    junction_offset_nt: int
     loop_length_nt: int
     annealing_arm_length_bp: int
     retained_construction_nt: int
@@ -91,7 +91,7 @@ def _render_foldback(projection: FoldbackFeasibilityProjection) -> bytes:
             program_kind=item.program_kind.value,
             nick_strand=item.nick_strand.value,
             source_orientation=item.source_orientation.value,
-            nick_offset_within_foldback_nt=item.nick_offset_within_foldback_nt,
+            junction_offset_nt=item.junction_offset_nt,
             loop_length_nt=item.loop_length_nt,
             annealing_arm_length_bp=item.annealing_arm_length_bp,
             retained_construction_nt=item.retained_construction_nt,

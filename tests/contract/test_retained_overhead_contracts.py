@@ -14,7 +14,11 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from hop_design.design.construction.overhead import foldback_overhead_levels
 from hop_design.models.construction import (
+    FoldbackGeometryDomain,
+    FoldbackTarget,
+    NeighborhoodSearchPlan,
     OverheadPosition,
     RetainedOverheadLedger,
     SearchCompletionStatus,
@@ -62,6 +66,87 @@ def test_retained_overhead_ledger_rejects_duplicate_positions_or_count_drift() -
             reference_state_id="foldback-product",
             positions=(position,),
             retained_overhead_nt=2,
+        )
+
+
+def test_foldback_geometry_uses_payload_boundary_junction_offset() -> None:
+    geometry = FoldbackTarget(
+        junction_offset_nt=0,
+        loop_length_nt=3,
+        annealing_arm_length_bp=3,
+    )
+
+    assert geometry.junction_offset_nt == 0
+    with pytest.raises(ValidationError):
+        FoldbackTarget.model_validate(
+            {
+                "nick_offset_within_foldback_nt": 0,
+                "loop_length_nt": 3,
+                "annealing_arm_length_bp": 3,
+            }
+        )
+
+
+def test_foldback_search_enumerates_every_geometry_at_each_absolute_overhead() -> None:
+    levels = foldback_overhead_levels(
+        FoldbackGeometryDomain(),
+        NeighborhoodSearchPlan(
+            max_retained_overhead_nt=11,
+            max_search_nodes=100,
+            max_realizations=100,
+        ),
+    )
+
+    assert tuple(level.retained_overhead_nt for level in levels) == tuple(range(12))
+    assert levels[8].geometries == ()
+    assert [
+        (
+            item.junction_offset_nt,
+            item.loop_length_nt,
+            item.annealing_arm_length_bp,
+        )
+        for item in levels[9].geometries
+    ] == [(0, 3, 3)]
+    assert [
+        (item.loop_length_nt, item.annealing_arm_length_bp) for item in levels[11].geometries
+    ] == [(3, 4), (5, 3)]
+
+
+def test_foldback_search_respects_exact_advanced_geometry_restrictions() -> None:
+    levels = foldback_overhead_levels(
+        FoldbackGeometryDomain(
+            junction_offsets_nt=(0,),
+            loop_lengths_nt=(4,),
+            annealing_arm_lengths_bp=(3,),
+        ),
+        NeighborhoodSearchPlan(
+            max_retained_overhead_nt=12,
+            max_search_nodes=100,
+            max_realizations=100,
+        ),
+    )
+
+    assert [
+        (level.retained_overhead_nt, len(level.geometries)) for level in levels if level.geometries
+    ] == [(10, 1)]
+
+
+def test_result_quota_is_explicit_and_not_an_exhaustive_search_default() -> None:
+    assert (
+        NeighborhoodSearchPlan(
+            max_retained_overhead_nt=20,
+            max_search_nodes=100,
+            max_realizations=100,
+        ).result_quota
+        is None
+    )
+
+    with pytest.raises(ValidationError, match="result_quota"):
+        NeighborhoodSearchPlan(
+            max_retained_overhead_nt=20,
+            max_search_nodes=100,
+            max_realizations=100,
+            stop="result_quota",
         )
 
 

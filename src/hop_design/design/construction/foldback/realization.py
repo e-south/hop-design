@@ -117,7 +117,7 @@ def _realization(
     changed_coordinates = tuple(
         name
         for name in (
-            "nick_offset_within_foldback_nt",
+            "junction_offset_nt",
             "loop_length_nt",
             "annealing_arm_length_bp",
         )

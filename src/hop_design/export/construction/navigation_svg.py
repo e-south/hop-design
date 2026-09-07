@@ -37,7 +37,7 @@ def render_navigation_projection_svg(
         foldback = group.foldback_geometry
         foldback_text = (
             f"{foldback.nick_strand.value} strand · offset "
-            f"{foldback.nick_offset_within_foldback_nt} nt · loop "
+            f"{foldback.junction_offset_nt} nt · loop "
             f"{foldback.loop_length_nt} nt · arm {foldback.annealing_arm_length_bp} bp"
         )
         basal = group.basal_geometry
