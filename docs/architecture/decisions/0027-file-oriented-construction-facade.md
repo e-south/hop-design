@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-31
+last_verified: 2026-09-07
 doc_type: decision
 amended_by: hop-adr-0028
 ---
@@ -82,7 +82,8 @@ The exact public allowlist is:
 - `project_construction_navigation`;
 - `project_construction_trajectory`;
 - `project_foldback_feasibility`; and
-- `project_retained_overhead_frontier`; and
+- `project_retained_overhead_frontier`;
+- `project_source_partition_certificate`; and
 - `select_construction_realization`.
 
 Receipts expose only scalar identity and accounting plus create-only writing.

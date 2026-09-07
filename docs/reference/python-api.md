@@ -84,6 +84,7 @@ All operations and receipts in this section use `hop_design.construction`.
 - `project_basal_feasibility(receipt) -> ConstructionProjection`
 - `project_basal_minimum_overhead_matrix(receipt) -> ConstructionProjection`
 - `project_retained_overhead_frontier(receipt, family=...) -> ConstructionProjection`
+- `project_source_partition_certificate(receipt, realization_id=...) -> ConstructionProjection`
 - `project_construction_navigation(receipt) -> ConstructionProjection` projects
   the unchanged complete summary plus only the additive accepted-route facts:
   typed geometry, retained overhead, cleavage-program enzyme IDs, retained

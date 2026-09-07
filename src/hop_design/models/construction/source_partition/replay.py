@@ -14,8 +14,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from hop_design.models.catalog import ResolvedNickSite
-from hop_design.models.construction.source_partition.certificate import (
-    SourcePartitionCertificate,
+from hop_design.models.construction.source_partition.certificate import SourcePartitionCertificate
+from hop_design.models.construction.source_partition.certificate_replay import (
     build_source_partition_certificate,
 )
 from hop_design.models.construction.source_partition.request import (

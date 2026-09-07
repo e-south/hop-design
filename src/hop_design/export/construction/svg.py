@@ -3,7 +3,7 @@
 HOP Design
 src/hop_design/export/construction/svg.py
 
-Renders publication-oriented SVGs from typed local construction projections.
+Renders publication-oriented SVGs from typed construction projections.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -25,14 +25,17 @@ from hop_design.models.construction.projections import (
     CompleteConstructionSummaryProjection,
     CompleteConstructionTrajectoryProjection,
     ConstructionNavigationProjection,
+    ConstructionScientificProjection,
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
     RetainedOverheadFrontierProjection,
+    SourcePartitionCertificateProjection,
 )
 from hop_design.models.construction.sequence_domain import SequenceDomainPartition
 
 from .complete_svg import render_complete_projection_svg
 from .navigation_svg import render_navigation_projection_svg
+from .source_partition_svg import render_source_partition_projection_svg
 from .svg_common import ACCENT, WASH
 from .svg_common import escape as _escape
 from .svg_common import render_document as _document
@@ -62,14 +65,7 @@ class _FoldbackGroupKey(NamedTuple):
     transient_construction_nt: int
 
 
-def render_projection_svg(
-    projection: (
-        LocalScientificProjection
-        | CompleteConstructionSummaryProjection
-        | CompleteConstructionTrajectoryProjection
-        | ConstructionNavigationProjection
-    ),
-) -> bytes:
+def render_projection_svg(projection: ConstructionScientificProjection) -> bytes:
     """Render one scientific relation without molecular recomputation or ranking."""
     if isinstance(projection, CompleteConstructionSummaryProjection):
         return render_complete_projection_svg(projection)
@@ -77,6 +73,8 @@ def render_projection_svg(
         return render_navigation_projection_svg(projection)
     if isinstance(projection, CompleteConstructionTrajectoryProjection):
         return render_complete_trajectory_svg(projection)
+    if isinstance(projection, SourcePartitionCertificateProjection):
+        return render_source_partition_projection_svg(projection)
     if isinstance(projection, FoldbackFeasibilityProjection):
         return _render_foldback(projection)
     if isinstance(projection, BasalFeasibilityProjection):
@@ -230,9 +228,7 @@ def _render_basal_matrix(projection: BasalMinimumOverheadMatrixProjection) -> by
     action_index = {
         action.action_id: index for index, action in enumerate(projection.release_actions)
     }
-    nick_index = {
-        enzyme_id: index for index, enzyme_id in enumerate(projection.nick_enzyme_ids)
-    }
+    nick_index = {enzyme_id: index for index, enzyme_id in enumerate(projection.nick_enzyme_ids)}
     labels = []
     for index, action in enumerate(projection.release_actions):
         x = left + index * cell_width + cell_width / 2

@@ -35,14 +35,15 @@ from hop_design.design.construction.projections import (
 from hop_design.design.construction.projections import (
     project_retained_overhead_frontier as _project_retained_overhead_frontier,
 )
+from hop_design.design.construction.projections import (
+    project_source_partition_certificate as _project_source_partition_certificate,
+)
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.projections import (
-    CompleteConstructionSummaryProjection,
-    CompleteConstructionTrajectoryProjection,
-    ConstructionNavigationProjection,
-    LocalScientificProjection,
+    ConstructionScientificProjection,
 )
+from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 
 from .complete.bundle import ConstructionCompilation, VerifiedConstructionBundle
 from .complete.discovery import VerifiedConstructionSpaceResult
@@ -98,14 +99,15 @@ def _basal_source(
     return basal.result
 
 
-def _packet(
-    projection: (
-        LocalScientificProjection
-        | CompleteConstructionSummaryProjection
-        | CompleteConstructionTrajectoryProjection
-        | ConstructionNavigationProjection
-    ),
-) -> ConstructionProjection:
+def _source_partition_source(
+    receipt: SourcePartitionDiscovery,
+) -> SourcePartitionDiscoveryResult:
+    if not isinstance(receipt, SourcePartitionDiscovery):
+        raise TypeError("Source-partition projections require a verified partition receipt.")
+    return receipt._verified_source()
+
+
+def _packet(projection: ConstructionScientificProjection) -> ConstructionProjection:
     return ConstructionProjection._create(projection)
 
 
@@ -224,6 +226,20 @@ def project_retained_overhead_frontier(
     raise ValueError("Construction projection family must be foldback or basal.")
 
 
+def project_source_partition_certificate(
+    receipt: SourcePartitionDiscovery,
+    *,
+    realization_id: str,
+) -> ConstructionProjection:
+    """Project one selected full-span source-fragment certificate."""
+    return _packet(
+        _project_source_partition_certificate(
+            _source_partition_source(receipt),
+            realization_id=realization_id,
+        )
+    )
+
+
 __all__ = [
     "ConstructionCompilation",
     "ConstructionProjection",
@@ -247,5 +263,6 @@ __all__ = [
     "project_construction_trajectory",
     "project_foldback_feasibility",
     "project_retained_overhead_frontier",
+    "project_source_partition_certificate",
     "select_construction_realization",
 ]

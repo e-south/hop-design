@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-09-07
 doc_type: reference
 ---
 
@@ -108,6 +108,23 @@ These projections establish local feasibility only under the declared
 molecular model. They do not establish a complete construction route,
 physical construction, quality control, biological activity, or empirical
 enzyme performance.
+
+## Source-partition projection
+
+`hop.source-partition-certificate/v1` projects one explicitly selected
+accepted source-partition realization. It preserves every top- and
+bottom-strand fragment, its source-coordinate interval, required or
+sacrificial disposition, physical-end or cleavage boundary, contributing
+enzyme identity, and the complete preferred-to-absolute threshold ladder. The
+selected maximum is the least permissive successful threshold established by
+the canonical source-partition authority.
+
+The SVG aligns both strands in source coordinates, labels their physical
+polarity, and shows exact cleavage bonds rather than recognition-site starts.
+The CSV is a tidy fragment relation with the threshold evidence repeated as
+canonical JSON. This projection establishes a digital partition under declared
+cut geometry; it does not establish physical cleavage, cleanup recovery, or
+experimental yield.
 
 ## Complete construction projections
 

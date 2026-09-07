@@ -13,20 +13,15 @@ from __future__ import annotations
 
 from enum import StrEnum
 from itertools import pairwise
-from typing import TYPE_CHECKING
 
 from pydantic import Field, model_validator
 
 from hop_design.models.base import HopModel
-from hop_design.models.catalog import ResolvedNickSite
 from hop_design.models.coordinates import Span
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import Fragment, StrandEnd
+from hop_design.models.molecular_state import StrandEnd
 
 from .policy import SacrificialFragmentPolicy, SourcePartitionThresholdAssessment
-
-if TYPE_CHECKING:
-    from .request import SourcePartitionDiscoveryRequest
 
 
 class SourcePartitionBoundaryKind(StrEnum):
@@ -194,149 +189,10 @@ class SourcePartitionCertificate(HopModel):
             raise ValueError("Physical fragment boundary must identify the exact strand end.")
 
 
-def _fragment_boundary(
-    *,
-    strand: Strand,
-    offset: int,
-    source_length: int,
-    sites: tuple[ResolvedNickSite, ...],
-) -> SourcePartitionFragmentBoundary:
-    enzyme_ids = tuple(
-        sorted(
-            site.agent_id
-            for site in sites
-            if site.nick.strand is strand and site.nick.boundary.offset == offset
-        )
-    )
-    if enzyme_ids:
-        return SourcePartitionFragmentBoundary(
-            source_offset=offset,
-            kind=SourcePartitionBoundaryKind.CLEAVAGE,
-            enzyme_ids=enzyme_ids,
-        )
-    physical_end = {
-        (Strand.TOP, 0): StrandEnd.FIVE_PRIME,
-        (Strand.TOP, source_length): StrandEnd.THREE_PRIME,
-        (Strand.BOTTOM, 0): StrandEnd.THREE_PRIME,
-        (Strand.BOTTOM, source_length): StrandEnd.FIVE_PRIME,
-    }.get((strand, offset))
-    if physical_end is None:
-        raise ValueError("Every internal fragment boundary requires exact cleavage evidence.")
-    return SourcePartitionFragmentBoundary(
-        source_offset=offset,
-        kind=SourcePartitionBoundaryKind.PHYSICAL_END,
-        physical_end=physical_end,
-    )
-
-
-def build_source_partition_certificate(
-    request: SourcePartitionDiscoveryRequest,
-    *,
-    fragments: tuple[Fragment, ...],
-    sites: tuple[ResolvedNickSite, ...],
-) -> SourcePartitionCertificate | None:
-    """Certify every fragment and return the least-permissive successful threshold."""
-    required = {
-        (
-            survivor.precursor_strand,
-            survivor.source_span.start.offset,
-            survivor.source_span.end.offset,
-        ): survivor.survivor_id
-        for survivor in request.constraints.required_survivors
-    }
-    source_length = len(request.source.top_sequence_5prime)
-    strand_order = {Strand.TOP: 0, Strand.BOTTOM: 1}
-    certified = tuple(
-        sorted(
-            (
-                SourcePartitionFragmentCertificate(
-                    fragment_id=fragment.fragment_id,
-                    precursor_strand=fragment.precursor_strand,
-                    source_span=fragment.precursor_span,
-                    length_nt=len(fragment.sequence),
-                    disposition=(
-                        SourcePartitionFragmentDisposition.REQUIRED
-                        if (
-                            fragment.precursor_strand,
-                            fragment.precursor_span.start.offset,
-                            fragment.precursor_span.end.offset,
-                        )
-                        in required
-                        else SourcePartitionFragmentDisposition.SACRIFICIAL
-                    ),
-                    survivor_id=required.get(
-                        (
-                            fragment.precursor_strand,
-                            fragment.precursor_span.start.offset,
-                            fragment.precursor_span.end.offset,
-                        )
-                    ),
-                    left_boundary=_fragment_boundary(
-                        strand=fragment.precursor_strand,
-                        offset=fragment.precursor_span.start.offset,
-                        source_length=source_length,
-                        sites=sites,
-                    ),
-                    right_boundary=_fragment_boundary(
-                        strand=fragment.precursor_strand,
-                        offset=fragment.precursor_span.end.offset,
-                        source_length=source_length,
-                        sites=sites,
-                    ),
-                )
-                for fragment in fragments
-            ),
-            key=lambda item: (
-                strand_order[item.precursor_strand],
-                item.source_span.start.offset,
-                item.source_span.end.offset,
-            ),
-        )
-    )
-    thresholds = tuple(
-        SourcePartitionThresholdAssessment(
-            maximum_sacrificial_fragment_nt=threshold,
-            feasible=not violations,
-            violating_fragment_ids=violations,
-        )
-        for threshold in request.constraints.fragment_policy.thresholds
-        for violations in (
-            tuple(
-                sorted(
-                    item.fragment_id
-                    for item in certified
-                    if (
-                        item.disposition is SourcePartitionFragmentDisposition.SACRIFICIAL
-                        and item.length_nt > threshold
-                    )
-                    or (
-                        item.disposition is SourcePartitionFragmentDisposition.REQUIRED
-                        and item.length_nt <= threshold
-                    )
-                )
-            ),
-        )
-    )
-    selected = next(
-        (item.maximum_sacrificial_fragment_nt for item in thresholds if item.feasible),
-        None,
-    )
-    if selected is None:
-        return None
-    return SourcePartitionCertificate(
-        source_length_nt=source_length,
-        fragment_policy=request.constraints.fragment_policy,
-        selected_maximum_sacrificial_fragment_nt=selected,
-        thresholds=thresholds,
-        fragments=certified,
-    )
-
-
 __all__ = [
     "SourcePartitionBoundaryKind",
     "SourcePartitionCertificate",
     "SourcePartitionFragmentBoundary",
     "SourcePartitionFragmentCertificate",
     "SourcePartitionFragmentDisposition",
-    "build_source_partition_certificate",
 ]

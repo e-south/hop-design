@@ -15,7 +15,7 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Self
+from typing import Self, cast
 
 from hop_design.export.construction import (
     render_projection_csv,
@@ -24,17 +24,9 @@ from hop_design.export.construction import (
 )
 from hop_design.export.publication import publish_directory_create_only
 from hop_design.models.construction.projections import (
-    CompleteConstructionSummaryProjection,
     CompleteConstructionTrajectoryProjection,
-    ConstructionNavigationProjection,
-    LocalScientificProjection,
-)
-
-type _TypedProjection = (
-    LocalScientificProjection
-    | CompleteConstructionSummaryProjection
-    | CompleteConstructionTrajectoryProjection
-    | ConstructionNavigationProjection
+    ConstructionScientificProjection,
+    TabularConstructionProjection,
 )
 
 
@@ -42,10 +34,10 @@ type _TypedProjection = (
 class ConstructionProjection:
     """Portable deterministic bytes for one non-authoritative scientific projection."""
 
-    _projection: _TypedProjection
+    _projection: ConstructionScientificProjection
 
     @classmethod
-    def _create(cls, projection: _TypedProjection) -> Self:
+    def _create(cls, projection: ConstructionScientificProjection) -> Self:
         instance = object.__new__(cls)
         object.__setattr__(instance, "_projection", projection)
         return instance
@@ -80,7 +72,7 @@ class ConstructionProjection:
         """Return tidy CSV bytes when the projection defines a table."""
         if isinstance(self._projection, CompleteConstructionTrajectoryProjection):
             return None
-        return render_projection_csv(self._projection)
+        return render_projection_csv(cast(TabularConstructionProjection, self._projection))
 
     @property
     def svg_bytes(self) -> bytes:

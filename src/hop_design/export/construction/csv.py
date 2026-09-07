@@ -23,22 +23,21 @@ from hop_design.models.construction.projections import (
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
     RetainedOverheadFrontierProjection,
+    SourcePartitionCertificateProjection,
+    TabularConstructionProjection,
 )
 
 from .navigation_csv import render_navigation_projection_csv
+from .source_partition_csv import render_source_partition_projection_csv
 
 
-def render_projection_csv(
-    projection: (
-        LocalScientificProjection
-        | CompleteConstructionSummaryProjection
-        | ConstructionNavigationProjection
-    ),
-) -> bytes:
+def render_projection_csv(projection: TabularConstructionProjection) -> bytes:
     """Render one projection with repeated context and lossless exact membership."""
     buffer = io.StringIO(newline="")
     if isinstance(projection, ConstructionNavigationProjection):
         return render_navigation_projection_csv(projection)
+    if isinstance(projection, SourcePartitionCertificateProjection):
+        return render_source_partition_projection_csv(projection)
     if isinstance(projection, CompleteConstructionSummaryProjection):
         _write_complete(buffer, projection)
     elif isinstance(projection, FoldbackFeasibilityProjection):
@@ -316,9 +315,7 @@ def _write_basal_matrix(
                 "future_release_orientation": action.requirement.orientation.value,
                 "future_release_product_end": action.requirement.product_end,
                 "future_release_overhang_end": action.requirement.overhang_end.value,
-                "future_release_cohesive_end_sequence": (
-                    action.requirement.cohesive_end_sequence
-                ),
+                "future_release_cohesive_end_sequence": (action.requirement.cohesive_end_sequence),
                 "status": cell.status,
                 "minimum_retained_overhead_nt": (
                     ""

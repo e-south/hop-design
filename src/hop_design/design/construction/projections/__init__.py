@@ -26,6 +26,10 @@ from .navigation import (
     project_complete_construction_navigation,
     verify_complete_construction_navigation,
 )
+from .source_partition import (
+    project_source_partition_certificate,
+    verify_source_partition_projection,
+)
 from .trajectory import (
     project_complete_construction_trajectory,
     verify_complete_construction_trajectory,
@@ -39,8 +43,10 @@ __all__ = [
     "project_complete_construction_trajectory",
     "project_foldback_feasibility",
     "project_retained_overhead_frontier",
+    "project_source_partition_certificate",
     "verify_complete_construction_navigation",
     "verify_complete_construction_projection",
     "verify_complete_construction_trajectory",
     "verify_local_projection",
+    "verify_source_partition_projection",
 ]

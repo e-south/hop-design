@@ -32,6 +32,7 @@ from hop_design.design.construction.public import (
     project_construction_trajectory,
     project_foldback_feasibility,
     project_retained_overhead_frontier,
+    project_source_partition_certificate,
     select_construction_realization,
 )
 
@@ -58,5 +59,6 @@ __all__ = [
     "project_construction_trajectory",
     "project_foldback_feasibility",
     "project_retained_overhead_frontier",
+    "project_source_partition_certificate",
     "select_construction_realization",
 ]

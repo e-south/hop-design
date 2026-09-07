@@ -62,6 +62,12 @@ print(discovery.accepted_realizations)
 
 output = discovery.write(Path("source-partition-result"))
 
+certificate = construction.project_source_partition_certificate(
+    discovery,
+    realization_id=discovery.realization_ids[0],
+)
+certificate.write(Path("source-partition-figure"))
+
 verified = construction.load_verified_source_partition(output / "result.json")
 assert verified.result_id == discovery.result_id
 ```
@@ -84,6 +90,10 @@ survivors, and nick functions. `data.csv` is a tidy candidate table,
 `thresholds.csv` records the complete preferred-to-absolute threshold ladder.
 These tables support study-owned analysis and rendering without replacing the
 JSON authority.
+
+The certificate projection requires an explicit accepted realization ID and
+returns canonical JSON, tidy fragment CSV, and a publication-oriented SVG. It
+does not auto-select a program or change the source-partition authority.
 
 Nick functions have literal route meaning:
 

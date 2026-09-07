@@ -378,11 +378,27 @@ def test_basal_minimum_overhead_matrix_preserves_proven_and_unknown_cells() -> N
     assert "physical construction" in svg.lower()
     assert "does not establish" in svg.lower()
 
-    pcr = discover_basal_neighborhood(
-        basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
-    )
+    pcr = discover_basal_neighborhood(basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
     with pytest.raises(ValueError, match="requires clone-ready"):
         project_basal_minimum_overhead_matrix(pcr)
+
+
+def test_partitioned_basal_matrix_uses_the_partitioned_schema() -> None:
+    result = discover_basal_neighborhood(
+        _partitioned(
+            basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX),
+            part_count=2,
+            part_index=0,
+        )
+    )
+
+    matrix = project_basal_minimum_overhead_matrix(result)
+
+    assert matrix.schema_id == "hop.basal-minimum-overhead-matrix/v2"
+    assert matrix.sequence_partition == SequenceDomainPartition(
+        part_count=2,
+        part_index=0,
+    )
 
 
 def test_overhead_frontier_preserves_empty_levels_and_exact_membership() -> None:
