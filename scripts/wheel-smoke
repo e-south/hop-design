@@ -164,7 +164,11 @@ payload = json.loads(receipt.json_bytes)
 strands = {
     realization["foldback_nick"]["strand"] for realization in payload["realizations"]
 }
-if receipt.family != "foldback" or receipt.status != "complete":
+if (
+    receipt.family != "foldback"
+    or receipt.completion != "complete"
+    or receipt.feasibility != "feasible"
+):
     raise SystemExit("local foldback partition did not complete")
 if strands != {"top", "bottom"}:
     raise SystemExit(f"local foldback partition omitted physical strands: {sorted(strands)}")
