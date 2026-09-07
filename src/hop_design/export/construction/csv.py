@@ -17,6 +17,7 @@ import json
 
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
+    BasalMinimumOverheadMatrixProjection,
     CompleteConstructionSummaryProjection,
     ConstructionNavigationProjection,
     FoldbackFeasibilityProjection,
@@ -44,6 +45,8 @@ def render_projection_csv(
         _write_foldback(buffer, projection)
     elif isinstance(projection, BasalFeasibilityProjection):
         _write_basal(buffer, projection)
+    elif isinstance(projection, BasalMinimumOverheadMatrixProjection):
+        _write_basal_matrix(buffer, projection)
     elif isinstance(projection, RetainedOverheadFrontierProjection):
         _write_retained_overhead(buffer, projection)
     else:  # pragma: no cover - strict union protects public callers
@@ -262,6 +265,70 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
                 separators=(",", ":"),
             )
         writer.writerow({**base, **values})
+
+
+def _write_basal_matrix(
+    buffer: io.StringIO,
+    projection: BasalMinimumOverheadMatrixProjection,
+) -> None:
+    fields = (
+        "schema",
+        "projection_id",
+        "source_result_id",
+        "renderer_version",
+        "hop_version",
+        "route_implementation_version",
+        "endpoint",
+        "completion",
+        "feasibility",
+        "termination_reason",
+        *_partition_fields(projection),
+        "digital_design",
+        "method",
+        "physical_construction",
+        "quality_control",
+        "biological_activity",
+        "max_retained_overhead_nt",
+        "nick_enzyme_id",
+        "future_release_action_id",
+        "future_release_enzyme_id",
+        "future_release_orientation",
+        "future_release_product_end",
+        "future_release_overhang_end",
+        "future_release_cohesive_end_sequence",
+        "status",
+        "minimum_retained_overhead_nt",
+        "realization_count",
+        "realization_ids",
+    )
+    writer = _writer(buffer, fields)
+    base = _base(projection)
+    action_by_id = {action.action_id: action for action in projection.release_actions}
+    for cell in projection.cells:
+        action = action_by_id[cell.future_release_action_id]
+        writer.writerow(
+            {
+                **base,
+                "max_retained_overhead_nt": projection.max_retained_overhead_nt,
+                "nick_enzyme_id": cell.nick_enzyme_id,
+                "future_release_action_id": action.action_id,
+                "future_release_enzyme_id": action.enzyme_id,
+                "future_release_orientation": action.requirement.orientation.value,
+                "future_release_product_end": action.requirement.product_end,
+                "future_release_overhang_end": action.requirement.overhang_end.value,
+                "future_release_cohesive_end_sequence": (
+                    action.requirement.cohesive_end_sequence
+                ),
+                "status": cell.status,
+                "minimum_retained_overhead_nt": (
+                    ""
+                    if cell.minimum_retained_overhead_nt is None
+                    else cell.minimum_retained_overhead_nt
+                ),
+                "realization_count": cell.realization_count,
+                "realization_ids": ";".join(cell.realization_ids),
+            }
+        )
 
 
 def _write_retained_overhead(

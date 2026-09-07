@@ -21,6 +21,7 @@ from hop_design.models.construction import (
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     BasalFeasibilityRow,
+    BasalMinimumOverheadMatrixProjection,
     CompleteConstructionSummaryProjection,
     CompleteConstructionTrajectoryProjection,
     ConstructionNavigationProjection,
@@ -80,6 +81,8 @@ def render_projection_svg(
         return _render_foldback(projection)
     if isinstance(projection, BasalFeasibilityProjection):
         return _render_basal(projection)
+    if isinstance(projection, BasalMinimumOverheadMatrixProjection):
+        return _render_basal_matrix(projection)
     if isinstance(projection, RetainedOverheadFrontierProjection):
         return _render_retained_overhead(projection)
     raise TypeError(f"Unsupported scientific projection: {type(projection).__name__}")
@@ -206,6 +209,110 @@ Rows group identical observed dimensions; no preference is inferred.</text>
     return _document(title=title, body=body, height=max(380, 350 + len(rows) * 38))
 
 
+def _render_basal_matrix(projection: BasalMinimumOverheadMatrixProjection) -> bytes:
+    title = "Basal local accessibility by nickase and future release action"
+    left = 300
+    top = 252
+    matrix_width = 820
+    cell_width = matrix_width / len(projection.release_actions)
+    cell_height = 44
+    palette = (
+        "#0d3b2e",
+        "#14513f",
+        "#176b54",
+        "#26846a",
+        "#3c9b7d",
+        "#62ae92",
+        "#8cc2aa",
+        "#bad8c9",
+        "#e2efe8",
+    )
+    action_index = {
+        action.action_id: index for index, action in enumerate(projection.release_actions)
+    }
+    nick_index = {
+        enzyme_id: index for index, enzyme_id in enumerate(projection.nick_enzyme_ids)
+    }
+    labels = []
+    for index, action in enumerate(projection.release_actions):
+        x = left + index * cell_width + cell_width / 2
+        label = f"{_enzyme_label(action.enzyme_id)} · {action.requirement.orientation.value}"
+        labels.append(
+            f'<text x="{x:.1f}" y="{top - 22}" text-anchor="middle" class="small">'
+            f"{_escape(label)}</text>"
+        )
+    for index, enzyme_id in enumerate(projection.nick_enzyme_ids):
+        y = top + index * cell_height + cell_height / 2 + 5
+        labels.append(
+            f'<text x="{left - 18}" y="{y:.1f}" text-anchor="end" class="body">'
+            f"{_escape(_enzyme_label(enzyme_id))}</text>"
+        )
+    cells = []
+    for cell in projection.cells:
+        row = nick_index[cell.nick_enzyme_id]
+        column = action_index[cell.future_release_action_id]
+        x = left + column * cell_width
+        y = top + row * cell_height
+        if cell.status == "proven_minimum":
+            overhead = cell.minimum_retained_overhead_nt
+            if overhead is None:  # pragma: no cover - typed cell rejects this state
+                raise ValueError("A proven matrix cell requires a retained-overhead value.")
+            color_index = round(
+                overhead * (len(palette) - 1) / max(1, projection.max_retained_overhead_nt)
+            )
+            fill = palette[color_index]
+            value = str(overhead)
+        elif cell.status == "infeasible":
+            fill = "#e4e7e5"
+            value = "—"
+        else:
+            fill = "url(#unknown-hatch)"
+            value = "?"
+        cells.append(
+            f'<g data-cell-status="{cell.status}" '
+            f'data-nick-enzyme-id="{_escape(cell.nick_enzyme_id)}" '
+            f'data-release-action-id="{_escape(cell.future_release_action_id)}" '
+            f'data-realization-ids="{_escape(" ".join(cell.realization_ids))}">'
+            f'<rect x="{x:.1f}" y="{y:.1f}" width="{cell_width:.1f}" '
+            f'height="{cell_height}" fill="{fill}" stroke="#ffffff" stroke-width="2"/>'
+            f'<text x="{x + cell_width / 2:.1f}" y="{y + 28:.1f}" text-anchor="middle" '
+            f'class="body">{value}</text></g>'
+        )
+    height = max(430, top + len(projection.nick_enzyme_ids) * cell_height + 140)
+    scale_label = (
+        "Cell value: smallest proven local retained overhead, "
+        f"0-{projection.max_retained_overhead_nt} nt"
+    )
+    status_key = (
+        "Gray: no local solution after complete coverage · Unknown: declared search ended "
+        "before the cell was resolved."
+    )
+    boundary = (
+        "Local accessibility does not establish scaffold completion, route validity, or "
+        "physical construction."
+    )
+    body = (
+        _status_header(projection, title)
+        + f"""
+<defs><pattern id="unknown-hatch" width="8" height="8" patternUnits="userSpaceOnUse"
+patternTransform="rotate(45)"><rect width="8" height="8" fill="#ffffff"/>
+<line x1="0" y1="0" x2="0" y2="8" stroke="#9aa49f" stroke-width="2"/></pattern></defs>
+<text x="72" y="178" class="subtitle">{_escape(scale_label)}</text>
+<text x="{left}" y="{top - 50}" class="label">Future Type IIS action</text>
+<text x="72" y="{top - 4}" class="label">Basal nickase</text>
+{"".join(labels)}
+{"".join(cells)}
+<text x="72" y="{height - 58}" class="small">{_escape(status_key)}</text>
+<text x="72" y="{height - 30}" class="small">{_escape(boundary)}</text>
+"""
+    )
+    return _document(title=title, body=body, height=height)
+
+
+def _enzyme_label(enzyme_id: str) -> str:
+    return enzyme_id.removesuffix("@1").rsplit("/", 1)[-1]
+
+
 def _render_retained_overhead(projection: RetainedOverheadFrontierProjection) -> bytes:
     first_hit = next(
         (level.retained_overhead_nt for level in projection.levels if level.realization_count),
@@ -300,6 +407,14 @@ def _status_header(
 ) -> str:
     claims = projection.claim_boundary
     partition_attributes = _partition_attributes(projection.sequence_partition)
+    coverage = (
+        f"Coverage: {projection.disposition.completion.value} · "
+        f"feasibility: {projection.disposition.feasibility.value}"
+    )
+    boundary = (
+        "Local feasibility only; complete route composition and physical construction are not "
+        "established."
+    )
     return f"""
 <g data-completion="{projection.disposition.completion.value}"
 data-feasibility="{projection.disposition.feasibility.value}"
@@ -315,10 +430,8 @@ data-physical-construction="{claims.physical_construction.value}"
 data-quality-control="{claims.quality_control.value}"
 data-biological-activity="{claims.biological_activity.value}">
 <text x="72" y="60" class="title">{_escape(title)}</text>
-<text x="72" y="98" class="subtitle">Coverage: {_escape(projection.disposition.completion.value)} ·
-feasibility: {_escape(projection.disposition.feasibility.value)}</text>
-<text x="72" y="128" class="small">Local feasibility only; complete route composition and
-physical construction are not established.</text>
+<text x="72" y="98" class="subtitle">{_escape(coverage)}</text>
+<text x="72" y="128" class="small">{_escape(boundary)}</text>
 </g>
 <line x1="72" y1="150" x2="1128" y2="150" class="rule"/>
 """

@@ -17,6 +17,7 @@ from .complete import (
 )
 from .local import (
     project_basal_feasibility,
+    project_basal_minimum_overhead_matrix,
     project_foldback_feasibility,
     project_retained_overhead_frontier,
     verify_local_projection,
@@ -32,6 +33,7 @@ from .trajectory import (
 
 __all__ = [
     "project_basal_feasibility",
+    "project_basal_minimum_overhead_matrix",
     "project_complete_construction_navigation",
     "project_complete_construction_summary",
     "project_complete_construction_trajectory",

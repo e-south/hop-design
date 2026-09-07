@@ -82,6 +82,7 @@ All operations and receipts in this section use `hop_design.construction`.
   the supplied verified receipt.
 - `project_foldback_feasibility(receipt) -> ConstructionProjection`
 - `project_basal_feasibility(receipt) -> ConstructionProjection`
+- `project_basal_minimum_overhead_matrix(receipt) -> ConstructionProjection`
 - `project_retained_overhead_frontier(receipt, family=...) -> ConstructionProjection`
 - `project_construction_navigation(receipt) -> ConstructionProjection` projects
   the unchanged complete summary plus only the additive accepted-route facts:

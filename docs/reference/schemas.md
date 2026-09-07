@@ -59,6 +59,8 @@ documentation when operating that artifact.
 | `hop.foldback-feasibility-landscape/v4` | public construction projection | Every exact foldback realization from one declared sequence-domain part, with its part scope and achieved construction dimensions |
 | `hop.basal-feasibility-landscape/v4` | public construction projection | Every exact basal realization from one unpartitioned search with its local nick, proximal pairing, annealing-completion, retained-overhead, warning, and optional future-release facts |
 | `hop.basal-feasibility-landscape/v5` | public construction projection | Every exact basal realization from one declared sequence-domain part, with its part scope and local boundary obligations |
+| `hop.basal-minimum-overhead-matrix/v1` | public construction projection | Proven local retained-overhead minima, complete infeasibility, or unresolved status for every declared basal nickase by future-release action cell |
+| `hop.basal-minimum-overhead-matrix/v2` | public construction projection | The same basal cell relation for one declared sequence-domain part, with its exact part scope |
 | `hop.foldback-overhead-frontier/v1` | public construction projection | Examined foldback retained-overhead levels from one unpartitioned search with complete or partial accounting |
 | `hop.foldback-overhead-frontier/v2` | public construction projection | Examined foldback retained-overhead levels from one declared sequence-domain part with complete or partial accounting |
 | `hop.basal-overhead-frontier/v1` | public construction projection | Examined basal retained-overhead levels from one unpartitioned search with complete or partial accounting |
@@ -118,6 +120,7 @@ operations.
 Breaking-history rationale belongs in the [decision index](../architecture/decisions/README.md),
 not in the active schema contract.
 
-Construction v5 is one fail-closed cut. It accepts no v4 construction source,
-request, result, or bundle. The named-method v1 material schemas remain a
-separate exact-method contract and retain their exact oligo fields.
+The listed construction schemas form one fail-closed cut and accept no retired
+source, request, result, or bundle version. The named-method v1 material
+schemas remain a separate exact-method contract and retain their exact oligo
+fields.

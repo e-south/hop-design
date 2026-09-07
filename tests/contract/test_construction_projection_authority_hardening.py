@@ -18,8 +18,10 @@ from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.design.construction.projections import (
     project_basal_feasibility,
+    project_basal_minimum_overhead_matrix,
     project_foldback_feasibility,
     project_retained_overhead_frontier,
+    verify_local_projection,
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
@@ -77,6 +79,30 @@ def test_clone_basal_projection_exposes_future_release_as_an_obligation() -> Non
     assert all(row.future_release_action_id for row in projection.realizations)
     assert all(row.future_release_enzyme_id for row in projection.realizations)
     assert all(row.required_annealing_nt == 15 for row in projection.realizations)
+
+
+def test_basal_matrix_replay_rejects_a_resealed_minimum() -> None:
+    result = discover_basal_neighborhood(
+        basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX)
+    )
+    projection = project_basal_minimum_overhead_matrix(result)
+    cell = projection.cells[0]
+    changed = projection.model_copy(
+        update={
+            "cells": (
+                cell.model_copy(
+                    update={
+                        "minimum_retained_overhead_nt": (
+                            cell.minimum_retained_overhead_nt - 1
+                        )
+                    }
+                ),
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="does not replay"):
+        verify_local_projection(changed, result)
 
 
 def test_projection_authorities_reject_duplicate_membership_and_status_drift() -> None:

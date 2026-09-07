@@ -116,6 +116,23 @@ def test_local_discovery_dispatches_basal_and_rejects_projection_family_mismatch
         construction.project_retained_overhead_frontier(receipt, family="foldback")
 
 
+def test_local_clone_discovery_exposes_the_basal_minimum_overhead_matrix(
+    tmp_path: Path,
+) -> None:
+    source = _write_request(
+        tmp_path / "basal-clone.json",
+        basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX, extra_nickase=True),
+    )
+    receipt = construction.discover_local_neighborhood(source)
+
+    projection = construction.project_basal_minimum_overhead_matrix(receipt)
+
+    assert projection.schema_id == "hop.basal-minimum-overhead-matrix/v1"
+    assert projection.source_result_id == receipt.result_id
+    assert projection.csv_bytes is not None
+    assert projection.svg_bytes.startswith(b"<svg")
+
+
 def test_foldback_local_receipt_rejects_basal_projection(tmp_path: Path) -> None:
     source = _write_request(
         tmp_path / "foldback.json",

@@ -23,6 +23,7 @@ from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.design.construction.projections import (
     project_basal_feasibility,
+    project_basal_minimum_overhead_matrix,
     project_foldback_feasibility,
     project_retained_overhead_frontier,
     verify_local_projection,
@@ -320,6 +321,68 @@ def test_basal_projection_keeps_local_pairing_and_completion_obligations() -> No
     assert "data-local-realization-id" not in svg
     assert "data-realization-ids" in svg
     assert "performance" not in svg.lower()
+
+
+def test_basal_minimum_overhead_matrix_preserves_proven_and_unknown_cells() -> None:
+    complete = discover_basal_neighborhood(
+        basal_request(
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+            extra_nickase=True,
+        )
+    )
+    truncated = discover_basal_neighborhood(
+        basal_request(
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+            extra_nickase=True,
+            max_nodes=1,
+        )
+    )
+    infeasible = discover_basal_neighborhood(
+        basal_request(
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+            extra_nickase=True,
+            max_retained_overhead_nt=7,
+        )
+    )
+
+    matrix = project_basal_minimum_overhead_matrix(complete)
+    partial = project_basal_minimum_overhead_matrix(truncated)
+    negative = project_basal_minimum_overhead_matrix(infeasible)
+
+    assert matrix.schema_id == "hop.basal-minimum-overhead-matrix/v1"
+    assert matrix.nick_enzyme_ids == (
+        "example:enzyme/basal-nick-a@1",
+        "example:enzyme/basal-nick-b@1",
+    )
+    assert len(matrix.release_actions) == 1
+    assert matrix.release_actions[0].enzyme_id == "example:enzyme/end-a@1"
+    assert [cell.status for cell in matrix.cells] == ["proven_minimum", "proven_minimum"]
+    assert [cell.minimum_retained_overhead_nt for cell in matrix.cells] == [8, 8]
+    assert [cell.realization_count for cell in matrix.cells] == [4, 4]
+    assert [cell.status for cell in partial.cells] == ["proven_minimum", "unknown"]
+    assert partial.cells[0].minimum_retained_overhead_nt == 8
+    assert partial.cells[1].minimum_retained_overhead_nt is None
+    assert [cell.status for cell in negative.cells] == ["infeasible", "infeasible"]
+
+    rows = _csv_rows(render_projection_csv(partial))
+    assert [row["status"] for row in rows] == ["proven_minimum", "unknown"]
+    svg = render_projection_svg(partial).decode("utf-8")
+    assert "Basal local accessibility by nickase and future release action" in svg
+    assert "Coverage: truncated · feasibility: feasible" in svg
+    assert "complete route composition and physical construction" in svg
+    assert "retained overhead, 0-8 nt" in svg
+    assert "scaffold completion, route validity" in svg
+    assert 'data-cell-status="proven_minimum"' in svg
+    assert 'data-cell-status="unknown"' in svg
+    assert "Unknown" in svg
+    assert "physical construction" in svg.lower()
+    assert "does not establish" in svg.lower()
+
+    pcr = discover_basal_neighborhood(
+        basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
+    )
+    with pytest.raises(ValueError, match="requires clone-ready"):
+        project_basal_minimum_overhead_matrix(pcr)
 
 
 def test_overhead_frontier_preserves_empty_levels_and_exact_membership() -> None:

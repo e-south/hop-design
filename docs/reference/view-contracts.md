@@ -80,6 +80,11 @@ of local scientific projections:
   completion obligation;
   `hop.basal-feasibility-landscape/v5` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
+- `hop.basal-minimum-overhead-matrix/v1` records the smallest proven local
+  retained overhead for every declared basal nickase by future Type IIS action
+  cell, while distinguishing complete infeasibility from unresolved cells;
+  `hop.basal-minimum-overhead-matrix/v2` carries the same relation for one
+  declared sequence-domain part;
 - `hop.foldback-overhead-frontier/v1` and
   `hop.basal-overhead-frontier/v1` record unpartitioned absolute
   retained-overhead levels; `hop.foldback-overhead-frontier/v2` and

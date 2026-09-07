@@ -77,6 +77,7 @@ The exact public allowlist is:
 - `load_verified_local_neighborhood`;
 - `load_verified_source_partition`;
 - `project_basal_feasibility`;
+- `project_basal_minimum_overhead_matrix`;
 - `project_complete_construction_summary`;
 - `project_construction_navigation`;
 - `project_construction_trajectory`;

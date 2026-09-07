@@ -18,6 +18,9 @@ from hop_design.design.construction.projections import (
     project_basal_feasibility as _project_basal_feasibility,
 )
 from hop_design.design.construction.projections import (
+    project_basal_minimum_overhead_matrix as _project_basal_minimum_overhead_matrix,
+)
+from hop_design.design.construction.projections import (
     project_complete_construction_navigation as _project_complete_construction_navigation,
 )
 from hop_design.design.construction.projections import (
@@ -173,6 +176,13 @@ def project_basal_feasibility(
     return _packet(_project_basal_feasibility(_basal_source(receipt)))
 
 
+def project_basal_minimum_overhead_matrix(
+    receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
+) -> ConstructionProjection:
+    """Project local nickase by future-release minimum overhead."""
+    return _packet(_project_basal_minimum_overhead_matrix(_basal_source(receipt)))
+
+
 def project_complete_construction_summary(
     receipt: ConstructionCompilation | VerifiedConstructionBundle,
 ) -> ConstructionProjection:
@@ -231,6 +241,7 @@ __all__ = [
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",
+    "project_basal_minimum_overhead_matrix",
     "project_complete_construction_summary",
     "project_construction_navigation",
     "project_construction_trajectory",

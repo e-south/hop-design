@@ -13,8 +13,11 @@ from __future__ import annotations
 
 from typing import Literal, cast, overload
 
+from hop_design.kernel.construction.basal import iter_basal_programs
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     BasalTarget,
+    ConstructionEndpoint,
     FoldbackTarget,
     grouped_realization_projection,
 )
@@ -23,6 +26,8 @@ from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscover
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     BasalFeasibilityRow,
+    BasalMinimumOverheadCell,
+    BasalMinimumOverheadMatrixProjection,
     FoldbackFeasibilityProjection,
     FoldbackFeasibilityRow,
     LocalScientificProjection,
@@ -30,6 +35,8 @@ from hop_design.models.construction.projections import (
     RetainedOverheadLevelProjection,
 )
 from hop_design.models.construction.projections.local import (
+    BASAL_MATRIX_RENDERER_VERSION,
+    BASAL_PART_MATRIX_RENDERER_VERSION,
     BASAL_PART_PROJECTION_RENDERER_VERSION,
     BASAL_PROJECTION_RENDERER_VERSION,
     FOLDBACK_FEASIBILITY_RENDERER_VERSION,
@@ -183,6 +190,112 @@ def project_basal_feasibility(
     )
 
 
+def project_basal_minimum_overhead_matrix(
+    result: BasalNeighborhoodDiscoveryResult,
+) -> BasalMinimumOverheadMatrixProjection:
+    """Project proven local minima over the declared nickase and release-action domain."""
+    discovery = result.discovery
+    request = discovery.request
+    domain = request.geometry_domain
+    if (
+        request.endpoint is not ConstructionEndpoint.CLONE_READY_DUPLEX
+        or not isinstance(domain, BasalGeometryDomain)
+        or domain.future_release is None
+    ):
+        raise ValueError("A basal minimum-overhead matrix requires clone-ready local discovery.")
+    programs = tuple(
+        program
+        for target in domain.exact_targets()
+        for program in iter_basal_programs(
+            request.enzyme_provisioning,
+            target=target,
+            endpoint=request.endpoint,
+        )
+    )
+    nick_enzyme_ids = tuple(sorted({program.nick_enzyme.enzyme_id for program in programs}))
+    actions = {
+        program.future_release_action.action_id: program.future_release_action
+        for program in programs
+        if program.future_release_action is not None
+    }
+    if not nick_enzyme_ids or not actions:
+        raise ValueError("The declared basal domain has no nickase by release-action matrix.")
+    release_actions = tuple(actions[action_id] for action_id in sorted(actions))
+    grouped: dict[tuple[str, str], list[BasalFeasibilityRow]] = {}
+    feasibility = project_basal_feasibility(result)
+    for row in feasibility.realizations:
+        action_id = row.future_release_action_id
+        if action_id is None:
+            raise ValueError("Clone-ready basal realizations require future release actions.")
+        grouped.setdefault((row.nick_enzyme_id, action_id), []).append(row)
+    complete = discovery.disposition.completion.value == "complete"
+    cells = []
+    for nick_enzyme_id in nick_enzyme_ids:
+        for action in release_actions:
+            rows = grouped.get((nick_enzyme_id, action.action_id), [])
+            realization_ids = tuple(row.local_realization_id for row in rows)
+            cells.append(
+                BasalMinimumOverheadCell(
+                    nick_enzyme_id=nick_enzyme_id,
+                    future_release_action_id=action.action_id,
+                    status=(
+                        "proven_minimum"
+                        if rows
+                        else "infeasible"
+                        if complete
+                        else "unknown"
+                    ),
+                    minimum_retained_overhead_nt=(
+                        min(row.retained_overhead_nt for row in rows) if rows else None
+                    ),
+                    realization_count=len(rows),
+                    realization_ids=realization_ids,
+                )
+            )
+    partition = request.search.sequence_partition
+    schema: Literal[
+        "hop.basal-minimum-overhead-matrix/v1",
+        "hop.basal-minimum-overhead-matrix/v2",
+    ] = (
+        "hop.basal-minimum-overhead-matrix/v2"
+        if partition is not None
+        else "hop.basal-minimum-overhead-matrix/v1"
+    )
+    renderer_version = (
+        BASAL_PART_MATRIX_RENDERER_VERSION
+        if partition is not None
+        else BASAL_MATRIX_RENDERER_VERSION
+    )
+    realization_ids = tuple(
+        item.local_realization.local_realization_id for item in result.realizations
+    )
+    reference = grouped_realization_projection(
+        result_id=result.result_id,
+        projection_schema=schema,
+        renderer_version=renderer_version,
+        realization_ids=realization_ids,
+        groups=discovery.achieved_geometry_groups,
+    )
+    return BasalMinimumOverheadMatrixProjection(
+        schema=schema,
+        projection_reference=reference,
+        projection_id=reference.projection_id,
+        source_result_id=reference.result_id,
+        renderer_version=reference.renderer_version,
+        provenance=discovery.provenance,
+        claim_boundary=discovery.claim_boundary,
+        problem_id=discovery.problem_id,
+        endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+        disposition=discovery.disposition,
+        sequence_partition=partition,
+        max_retained_overhead_nt=request.search.max_retained_overhead_nt,
+        nick_enzyme_ids=nick_enzyme_ids,
+        release_actions=release_actions,
+        realization_ids=realization_ids,
+        cells=tuple(cells),
+    )
+
+
 @overload
 def project_retained_overhead_frontier(
     result: FoldbackNeighborhoodDiscoveryResult,
@@ -284,6 +397,10 @@ def verify_local_projection(
         source, BasalNeighborhoodDiscoveryResult
     ):
         expected = project_basal_feasibility(source)
+    elif isinstance(projection, BasalMinimumOverheadMatrixProjection) and isinstance(
+        source, BasalNeighborhoodDiscoveryResult
+    ):
+        expected = project_basal_minimum_overhead_matrix(source)
     elif isinstance(projection, RetainedOverheadFrontierProjection):
         expected = project_retained_overhead_frontier(source)
     else:

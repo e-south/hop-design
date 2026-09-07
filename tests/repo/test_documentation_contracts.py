@@ -182,6 +182,8 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
     for schema_id in (
         "hop.foldback-feasibility-landscape/v4",
         "hop.basal-feasibility-landscape/v5",
+        "hop.basal-minimum-overhead-matrix/v1",
+        "hop.basal-minimum-overhead-matrix/v2",
         "hop.foldback-overhead-frontier/v2",
         "hop.basal-overhead-frontier/v2",
     ):

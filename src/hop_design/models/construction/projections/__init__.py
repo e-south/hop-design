@@ -18,6 +18,8 @@ from .complete import (
 from .local import (
     BasalFeasibilityProjection,
     BasalFeasibilityRow,
+    BasalMinimumOverheadCell,
+    BasalMinimumOverheadMatrixProjection,
     FoldbackFeasibilityProjection,
     FoldbackFeasibilityRow,
     LocalScientificProjection,
@@ -34,6 +36,8 @@ from .trajectory import CompleteConstructionTrajectoryProjection
 __all__ = [
     "BasalFeasibilityProjection",
     "BasalFeasibilityRow",
+    "BasalMinimumOverheadCell",
+    "BasalMinimumOverheadMatrixProjection",
     "CompleteConstructionSummaryProjection",
     "CompleteConstructionSummaryRow",
     "CompleteConstructionTrajectoryProjection",
