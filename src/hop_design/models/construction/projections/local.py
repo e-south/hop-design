@@ -26,7 +26,7 @@ from hop_design.models.construction.basal.pairing import BasalPairRecord
 from hop_design.models.construction.foldback.binding import FoldbackCleavageProgramKind
 from hop_design.models.construction.payload import ConstructionEndpoint, SourceOrientation
 from hop_design.models.construction.projection import ProjectionReference
-from hop_design.models.construction.relaxation import SequenceDomainPartition
+from hop_design.models.construction.sequence_domain import SequenceDomainPartition
 from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.junction import Strand
 
@@ -275,9 +275,7 @@ class RetainedOverheadFrontierProjection(HopModel):
 
 
 LocalScientificProjection = Annotated[
-    FoldbackFeasibilityProjection
-    | BasalFeasibilityProjection
-    | RetainedOverheadFrontierProjection,
+    FoldbackFeasibilityProjection | BasalFeasibilityProjection | RetainedOverheadFrontierProjection,
     Field(discriminator="schema_id"),
 ]
 

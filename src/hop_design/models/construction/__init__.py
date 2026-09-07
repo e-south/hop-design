@@ -26,7 +26,6 @@ from .accounting import (
     ProjectionInventoryStatus,
     RealizationGroup,
     RealizationGrouping,
-    RelaxationShellSummary,
     RetainedOverheadLedger,
     SearchCompletionStatus,
     SearchDisposition,
@@ -57,16 +56,6 @@ from .realization import (
     FinalProductReference,
     LocalRealization,
 )
-from .relaxation import (
-    EnumerationPolicy,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
-    SequenceDomainPartition,
-    geometry_coordinate_value,
-    geometry_fixed_projection,
-    geometry_with_coordinate_value,
-)
 from .request import (
     LocalNeighborhoodRequest,
     geometry_id,
@@ -82,6 +71,7 @@ from .search import (
     SearchScope,
     SearchStopMode,
 )
+from .sequence_domain import SequenceDomainPartition
 from .targets import (
     BasalPairAllowance,
     BasalPairClass,
@@ -107,7 +97,6 @@ __all__ = [
     "ConstructionExecution",
     "ConstructionPreferences",
     "DigitalDesignStatus",
-    "EnumerationPolicy",
     "ExperimentalEvidenceStatus",
     "FailureReasonCount",
     "FinalPayloadReference",
@@ -139,10 +128,6 @@ __all__ = [
     "ProjectionReference",
     "RealizationGroup",
     "RealizationGrouping",
-    "RelaxationCoordinate",
-    "RelaxationMode",
-    "RelaxationPolicy",
-    "RelaxationShellSummary",
     "RetainedOverheadLedger",
     "RouteFamily",
     "SearchCompletionStatus",
@@ -153,10 +138,7 @@ __all__ = [
     "SearchTerminationReason",
     "SequenceDomainPartition",
     "SourceOrientation",
-    "geometry_coordinate_value",
-    "geometry_fixed_projection",
     "geometry_id",
-    "geometry_with_coordinate_value",
     "grouped_realization_projection",
     "problem_id",
     "validate_linear_source_map",

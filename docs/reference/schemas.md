@@ -92,8 +92,8 @@ replayable local authority over a deterministic, disjoint portion of the exact
 sequence domain; realization and construction-problem identities remain
 unchanged. A part may be complete for its declared domain but reports
 whole-domain payload compatibility as `not_computed`. Partitioning is
-incompatible with `first_feasible_shell` stopping and all-member compatibility
-constraints. An owning study must verify every ordered part, reject truncation,
+incompatible with all-member compatibility constraints. An owning study must
+verify every ordered part, reject truncation,
 and prove pairwise-disjoint realization membership before describing the family
 as an exhaustive aggregate. HOP never silently narrows or publishes an
 undeclared partial local authority.

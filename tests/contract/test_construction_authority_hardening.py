@@ -29,10 +29,6 @@ from hop_design.models.construction import (
     ProjectionInventoryStatus,
     RealizationGroup,
     RealizationGrouping,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
-    RelaxationShellSummary,
     SourceOrientation,
     geometry_id,
     validate_linear_source_map,
@@ -175,58 +171,6 @@ def test_source_mapping_rejects_length_overlap_coverage_and_orientation_drift() 
     [
         (
             {
-                "radius": 0,
-                "examined": False,
-                "complete": True,
-                "candidate_count": 0,
-                "realization_ids": (),
-                "rejected_count": 0,
-                "failure_reasons": (),
-            },
-            "Unexamined shells",
-        ),
-        (
-            {
-                "radius": 0,
-                "examined": True,
-                "complete": False,
-                "candidate_count": 0,
-                "realization_ids": (),
-                "rejected_count": 0,
-                "failure_reasons": (),
-            },
-            "at least one candidate",
-        ),
-        (
-            {
-                "radius": 0,
-                "examined": True,
-                "complete": True,
-                "candidate_count": 2,
-                "realization_ids": (),
-                "rejected_count": 2,
-                "failure_reasons": (
-                    FailureReasonCount(code="conflict", count=1),
-                    FailureReasonCount(code="conflict", count=1),
-                ),
-            },
-            "codes must be unique",
-        ),
-    ],
-)
-def test_relaxation_shell_accounting_rejects_non_evidence(
-    content: dict[str, object],
-    message: str,
-) -> None:
-    with pytest.raises(ValidationError, match=message):
-        RelaxationShellSummary.model_validate(content)
-
-
-@pytest.mark.parametrize(
-    ("content", "message"),
-    [
-        (
-            {
                 "status": PayloadCompatibilityStatus.COMPLETE,
                 "total_assignments": 2,
                 "compatible_assignments": 1,
@@ -310,22 +254,6 @@ def test_projection_inventory_and_groups_fail_closed_on_resealed_metadata() -> N
             ),
             multiplicity=2,
         )
-
-
-def test_relaxation_policy_rejects_ambiguous_bounds_and_execution_semantics() -> None:
-    with pytest.raises(ValidationError, match="maximum must not precede"):
-        RelaxationCoordinate(name="loop_length_nt", minimum=4, maximum=3)
-    duplicate = RelaxationCoordinate(name="loop_length_nt", minimum=2, maximum=4)
-    with pytest.raises(ValidationError, match="names must be unique"):
-        RelaxationPolicy(
-            mode=RelaxationMode.THROUGH_RADIUS,
-            max_radius=1,
-            coordinates=(duplicate, duplicate),
-        )
-    with pytest.raises(ValidationError, match="exact_only relaxation requires"):
-        RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=1)
-    with pytest.raises(ValidationError, match="requires enabled coordinates"):
-        RelaxationPolicy(mode=RelaxationMode.THROUGH_RADIUS, max_radius=1)
 
 
 def test_neighborhood_result_rejects_resealed_claim_group_and_inventory_drift() -> None:

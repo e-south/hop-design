@@ -19,7 +19,7 @@ from pydantic import Field, field_validator, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.junction import Strand
 
-from .relaxation import SequenceDomainPartition
+from .sequence_domain import SequenceDomainPartition
 from .targets import (
     BasalPairingConstraint,
     BasalTarget,

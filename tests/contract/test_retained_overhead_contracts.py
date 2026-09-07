@@ -14,6 +14,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+import hop_design.models.construction as construction_models
 from hop_design.design.construction.overhead import foldback_overhead_levels
 from hop_design.models.construction import (
     FoldbackGeometryDomain,
@@ -26,6 +27,7 @@ from hop_design.models.construction import (
     SearchDisposition,
     SearchFeasibilityStatus,
     SearchTerminationReason,
+    SequenceDomainPartition,
 )
 from hop_design.models.construction.complete import MaterializedConstructionRealization
 from hop_design.models.construction.projections import ConstructionNavigationAcceptedRoute
@@ -159,6 +161,22 @@ def test_local_request_exposes_one_geometry_domain_and_retained_overhead_plan() 
     assert "target" not in LocalNeighborhoodRequest.model_fields
     assert "relaxation" not in LocalNeighborhoodRequest.model_fields
     assert "enumeration" not in LocalNeighborhoodRequest.model_fields
+
+
+def test_public_construction_models_exclude_radius_relaxation_contracts() -> None:
+    obsolete = {
+        "EnumerationPolicy",
+        "RelaxationCoordinate",
+        "RelaxationMode",
+        "RelaxationPolicy",
+        "RelaxationShellSummary",
+        "geometry_coordinate_value",
+        "geometry_fixed_projection",
+        "geometry_with_coordinate_value",
+    }
+
+    assert obsolete.isdisjoint(construction_models.__all__)
+    assert SequenceDomainPartition.__module__.endswith("sequence_domain")
 
 
 def test_complete_route_and_navigation_do_not_reintroduce_relaxation_radius() -> None:

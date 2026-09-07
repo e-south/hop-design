@@ -39,9 +39,7 @@ def expected_upstream_truncation_reasons(
         *((("basal", basal.discovery),) if basal is not None else ()),
     ):
         if discovery.disposition.completion is not SearchCompletionStatus.COMPLETE:
-            reasons.append(
-                f"{family}:{discovery.disposition.termination_reason.value}"
-            )
+            reasons.append(f"{family}:{discovery.disposition.termination_reason.value}")
     return tuple(reasons)
 
 

@@ -46,7 +46,7 @@ design.write("design-bundle")
 
 The operation verifies both receipts and compiles only the selected exact
 molecular components. It does not rank alternatives. Search-result identity,
-execution bounds, relaxation radius, and enzyme chronology remain construction
+execution bounds, retained-overhead coverage, and enzyme chronology remain construction
 evidence rather than design identity. PCR-bearing endpoints require basal
 selection. Direct single-stranded design compilation is deferred because this
 operation has no independent exact-basal input and does not invent one.

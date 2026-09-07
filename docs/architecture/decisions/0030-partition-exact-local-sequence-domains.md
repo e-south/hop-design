@@ -30,7 +30,7 @@ request must continue to examine both physically valid nick orientations.
 
 ## Decision
 
-`EnumerationPolicy.sequence_partition` may select one of 2 through 256
+`NeighborhoodSearchPlan.sequence_partition` may select one of 2 through 256
 deterministic parts using `part_count` and zero-based `part_index`. For each
 canonical exact solution stream, solution ordinal `n` belongs to the part for
 which:
@@ -44,13 +44,13 @@ realization replay. The partition therefore changes execution and result
 identity, but not construction-problem identity or any accepted realization
 identity.
 
-Each result is complete, infeasible, or truncated for its declared part. A
-single part cannot establish whole-domain payload compatibility, so its payload
-compatibility is `not_computed`. Partitioning is rejected with
-`first_feasible_shell` stopping and with all-member compatibility constraints,
-because those conclusions require coordination across the complete domain.
+Each result reports completion and feasibility separately for its declared
+part. A single part cannot establish whole-domain payload compatibility, so its
+payload compatibility is `not_computed`. Partitioning is rejected with
+all-member compatibility constraints because that conclusion requires
+coordination across the complete domain.
 
-Local feasibility and relaxation projections preserve the exact
+Local feasibility and retained-overhead projections preserve the exact
 `sequence_partition`. Their JSON and CSV forms expose its part count and
 zero-based part index. Their SVG form describes only that part and cannot use
 whole-domain exhaustive language, including when the part is complete but

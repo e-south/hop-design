@@ -28,7 +28,7 @@ from hop_design.models.construction.projections import (
     LocalScientificProjection,
     RetainedOverheadFrontierProjection,
 )
-from hop_design.models.construction.relaxation import SequenceDomainPartition
+from hop_design.models.construction.sequence_domain import SequenceDomainPartition
 
 from .complete_svg import render_complete_projection_svg
 from .navigation_svg import render_navigation_projection_svg
@@ -196,11 +196,7 @@ Rows group identical observed dimensions; no preference is inferred.</text>
 
 def _render_retained_overhead(projection: RetainedOverheadFrontierProjection) -> bytes:
     first_hit = next(
-        (
-            level.retained_overhead_nt
-            for level in projection.levels
-            if level.realization_count
-        ),
+        (level.retained_overhead_nt for level in projection.levels if level.realization_count),
         None,
     )
     partition = projection.sequence_partition
@@ -215,9 +211,7 @@ def _render_retained_overhead(projection: RetainedOverheadFrontierProjection) ->
         if partition is None:
             title = "No feasible realization was found across the complete overhead envelope."
         else:
-            title = (
-                f"No feasible realization was found{scope} across its overhead envelope."
-            )
+            title = f"No feasible realization was found{scope} across its overhead envelope."
     else:
         title = "The overhead search ended before feasibility was established."
     scale_width = 920
