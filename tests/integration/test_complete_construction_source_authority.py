@@ -53,10 +53,12 @@ from hop_design.models.construction.complete.transition_replay import (
 from hop_design.models.construction.realization import FinalProductReference
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import EnzymeRole, RecognitionOrientationSemantics
+from hop_design.models.junction import Strand
 from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import EndChemistry, LineageStrand
 from hop_design.models.payload import ExactPayload
 from hop_design.models.reactions import ReactionProgram
+from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
@@ -67,11 +69,12 @@ from tests.integration.test_complete_construction_discovery import (
     _basal_result,
     _construction_request,
     _discover_raw,
+    _material,
     _verified_design,
 )
 
 
-def _case(tmp_path: Path):
+def _route_inputs(tmp_path: Path):
     payload = FinalPayloadReference(
         payload=ExactPayload(sequence="GACA"),
         basal_boundary=Boundary(offset=0),
@@ -92,13 +95,47 @@ def _case(tmp_path: Path):
             ),
         )
     )
-    basal = _basal_result(payload)
     design = _verified_design(tmp_path)
+    return payload, foldback, design
+
+
+def _case(tmp_path: Path):
+    payload, foldback, design = _route_inputs(tmp_path)
+    request = _construction_request(
+        payload=payload,
+        foldback=foldback,
+        basal=None,
+        design=design,
+    )
+    result = _discover_raw(
+        request,
+        foldback=foldback,
+        basal=None,
+        design=design,
+    )
+    return request, foldback, None, result
+
+
+def _pcr_case(tmp_path: Path):
+    payload, foldback, design = _route_inputs(tmp_path)
+    basal = _basal_result(
+        payload,
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        nick_strand=Strand.BOTTOM,
+    )
+    encoding = design.plan.hairpin_encoding_insert.sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
+        endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        adapter=_material("ligation-adapter", basal.realizations[0].proximal_adapter_sequence),
+        forward_primer=_material("forward-primer", encoding[:4]),
+        reverse_primer=_material(
+            "reverse-primer",
+            reverse_complement_iupac(encoding[-4:]),
+        ),
     )
     result = _discover_raw(
         request,
@@ -241,7 +278,16 @@ def _reseal_program(
     for index, transition in enumerate(program.transitions):
         pre_state = states[index]
         post_state = states[index + 1]
-        if transition.reaction_program_id is None:
+        if transition.pcr_authority is not None:
+            transitions.append(
+                ConstructionTransition.create(
+                    kind=transition.kind,
+                    pre_state_id=pre_state.state_id,
+                    post_state_id=post_state.state_id,
+                    pcr_authority=transition.pcr_authority,
+                )
+            )
+        elif transition.reaction_program_id is None:
             transitions.append(
                 ConstructionTransition.create(
                     kind=transition.kind,
@@ -349,10 +395,7 @@ def test_result_rejects_resealed_nonmember_foldback_authority(tmp_path: Path) ->
     replacement_local = alternate
     complete = CompleteConstructionRealization.create(
         precursor_sequence=realization.realization.precursor_sequence,
-        local_realization_ids=(
-            realization.basal_realization_id,
-            replacement_local.foldback_realization_id,
-        ),
+        local_realization_ids=(replacement_local.foldback_realization_id,),
         stage_ids=realization.realization.stage_ids,
         final_product_id=realization.realization.final_product_id,
     )
@@ -609,7 +652,7 @@ def test_result_rejects_resealed_discarded_fragment_end_chemistry(tmp_path: Path
 
 
 def test_result_rejects_missing_required_basal_nick(tmp_path: Path) -> None:
-    _, _, _, result = _case(tmp_path)
+    _, _, _, result = _pcr_case(tmp_path)
     realization = result.realizations[0]
     program = realization.construction_program
     reaction = program.reaction_programs[0]
@@ -667,7 +710,7 @@ def test_result_rejects_endpoint_and_topology_forgery(tmp_path: Path) -> None:
 
 
 def test_result_rejects_resealed_nonmember_basal_id(tmp_path: Path) -> None:
-    _, _, _, result = _case(tmp_path)
+    _, _, _, result = _pcr_case(tmp_path)
     realization = result.realizations[0]
     fake_basal_id = "hop:basal-realization/" + "e" * 64 + "@1"
     complete = CompleteConstructionRealization.create(
@@ -737,7 +780,7 @@ def test_result_rejects_resealed_equal_byte_origin_index(tmp_path: Path) -> None
 
 
 def test_source_authority_validator_rejects_drifted_domains_and_order(tmp_path: Path) -> None:
-    request, foldback, basal, result = _case(tmp_path)
+    request, foldback, basal, result = _pcr_case(tmp_path)
     realization = result.realizations[0]
     with pytest.raises(ValueError, match="exact foldback authority"):
         validate_local_authorities(
@@ -788,7 +831,7 @@ def test_source_authority_validator_rejects_drifted_domains_and_order(tmp_path: 
 
 
 def test_source_authority_validator_rejects_unlisted_selected_members(tmp_path: Path) -> None:
-    request, foldback, basal, result = _case(tmp_path)
+    request, foldback, basal, result = _pcr_case(tmp_path)
     realization = result.realizations[0]
     cases = (
         (
@@ -836,7 +879,7 @@ def test_source_authority_validator_rejects_drifted_embedded_members(
     updates: dict[str, object],
     message: str,
 ) -> None:
-    request, foldback, basal, result = _case(tmp_path)
+    request, foldback, basal, result = _pcr_case(tmp_path)
     realization = result.realizations[0]
 
     with pytest.raises(ValueError, match=message):
@@ -943,7 +986,7 @@ def test_realization_rejects_reduced_cleaved_duplex_pairings(tmp_path: Path) -> 
 
 
 def test_upstream_truncation_is_distinct_from_composition_suffix(tmp_path: Path) -> None:
-    request, foldback, basal, _ = _case(tmp_path)
+    request, foldback, basal, _ = _pcr_case(tmp_path)
     neighborhood = foldback.neighborhood
     local_request = neighborhood.request.model_copy(
         update={"search": neighborhood.request.search.model_copy(update={"max_search_nodes": 1})}
@@ -968,7 +1011,7 @@ def test_composition_does_not_materialize_or_consume_the_unexamined_suffix(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    request, foldback, basal, _ = _case(tmp_path)
+    request, foldback, basal, _ = _pcr_case(tmp_path)
     design = _verified_design(tmp_path / "bounded-design")
     request = request.model_copy(
         update={"enumeration": request.enumeration.model_copy(update={"max_combinations": 1})}
@@ -995,7 +1038,7 @@ def test_composition_does_not_materialize_or_consume_the_unexamined_suffix(
 def test_complete_route_detects_an_actionable_site_created_across_local_boundaries(
     tmp_path: Path,
 ) -> None:
-    request, _, basal, _ = _case(tmp_path)
+    request, _, basal, _ = _pcr_case(tmp_path)
     foldback = discover_foldback_neighborhood(
         _request(
             _nickase(
