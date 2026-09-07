@@ -35,6 +35,7 @@ class SourcePartitionFailure(StrEnum):
     CONFLICTING_CUT_BOUNDARIES = "conflicting_cut_boundaries"
     OPERATION_LIMIT_EXCEEDED = "operation_limit_exceeded"
     RETAINED_FRAGMENT_SET_MISMATCH = "retained_fragment_set_mismatch"
+    FRAGMENT_THRESHOLD_INFEASIBLE = "fragment_threshold_infeasible"
 
 
 class SourcePartitionDispositionKind(StrEnum):

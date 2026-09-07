@@ -141,7 +141,7 @@ def _source(
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v5",
+        schema="hop.construction-source/v6",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
@@ -180,8 +180,10 @@ def _selected_inputs(tmp_path: Path, *, adapter_sequence: str | None = None):
         nick_strand=Strand.BOTTOM,
     )
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
+    resolved_adapter_sequence = (
+        basal.realizations[0].proximal_adapter_sequence
+        if adapter_sequence is None
+        else adapter_sequence
     )
     source = _source(
         foldback=foldback.neighborhood.request,
@@ -189,8 +191,8 @@ def _selected_inputs(tmp_path: Path, *, adapter_sequence: str | None = None):
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
             adapter=_material(
-                adapter.material_id,
-                adapter.sequence_5prime if adapter_sequence is None else adapter_sequence,
+                "ligation-adapter",
+                resolved_adapter_sequence,
             ),
             forward_primer=_material("forward-primer", encoding[:4]),
             reverse_primer=_material(
@@ -219,7 +221,7 @@ def _selected_partition_inputs(tmp_path: Path):
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -231,15 +233,13 @@ def _selected_partition_inputs(tmp_path: Path):
         nick_strand=Strand.BOTTOM,
     )
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     source = _source(
         foldback=foldback.neighborhood.request,
         basal=basal.discovery.request,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
-            adapter=_material(adapter.material_id, adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", adapter_sequence),
             forward_primer=_material("forward-primer", encoding[:4]),
             reverse_primer=_material(
                 "reverse-primer",
@@ -280,17 +280,13 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
         nick_strand=Strand.BOTTOM,
     )
     pcr_encoding = pcr_design.plan.hairpin_encoding_insert.sequence
-    pcr_adapter = next(
-        item
-        for item in pcr_basal.realizations[0].materials
-        if item.material_id == "ligation-adapter"
-    )
+    pcr_adapter_sequence = pcr_basal.realizations[0].proximal_adapter_sequence
     pcr_source = _source(
         foldback=pcr_foldback.neighborhood.request,
         basal=pcr_basal.discovery.request,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
-            adapter=_material(pcr_adapter.material_id, pcr_adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", pcr_adapter_sequence),
             forward_primer=_material("forward-primer", pcr_encoding[:4]),
             reverse_primer=_material("reverse-primer", reverse_complement_iupac(pcr_encoding[-4:])),
         ),
@@ -314,7 +310,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
         basal=clone_basal.discovery.request,
         endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
         materialization=_materialization(
-            adapter=_material(clone_adapter.material_id, clone_adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", clone_adapter),
             forward_primer=_material("forward-primer", f"GGTCTC{complete_pcr_top[:4]}"),
             reverse_primer=_material(
                 "reverse-primer",
@@ -344,7 +340,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/b048e5bd2729/f1822798a89cbbc8"
+    assert pcr.bundle_id == "hop:construction-bundle/00d386e878bf/1b4198420b479e66"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value
@@ -646,11 +642,11 @@ def test_selected_pair_rejects_a_basal_receipt_with_the_wrong_family(tmp_path: P
 
 def test_selected_pair_rejects_a_receipt_from_another_source_request(tmp_path: Path) -> None:
     _, foldback, basal, source = _selected_inputs(tmp_path)
-    enumeration = source.foldback.enumeration.model_copy(
-        update={"max_search_nodes": source.foldback.enumeration.max_search_nodes + 1}
+    search = source.foldback.search.model_copy(
+        update={"max_search_nodes": source.foldback.search.max_search_nodes + 1}
     )
     mismatched = source.model_copy(
-        update={"foldback": source.foldback.model_copy(update={"enumeration": enumeration})}
+        update={"foldback": source.foldback.model_copy(update={"search": search})}
     )
 
     with pytest.raises(ValueError, match="foldback receipt does not derive from the construction"):
@@ -669,11 +665,11 @@ def test_selected_pair_rejects_a_basal_receipt_from_another_source_request(
 ) -> None:
     _, foldback, basal, source = _selected_inputs(tmp_path)
     assert source.basal is not None
-    enumeration = source.basal.enumeration.model_copy(
-        update={"max_search_nodes": source.basal.enumeration.max_search_nodes + 1}
+    search = source.basal.search.model_copy(
+        update={"max_search_nodes": source.basal.search.max_search_nodes + 1}
     )
     mismatched = source.model_copy(
-        update={"basal": source.basal.model_copy(update={"enumeration": enumeration})}
+        update={"basal": source.basal.model_copy(update={"search": search})}
     )
 
     with pytest.raises(ValueError, match="basal receipt does not derive from the construction"):

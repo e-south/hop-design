@@ -1,4 +1,13 @@
-"""Closed outcomes and derived facts for complete-route evaluation."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/models/construction/complete/evaluation/result.py
+
+Defines closed outcomes and derived facts for complete-route evaluation.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -28,8 +37,9 @@ class CompositionRejectionCode(StrEnum):
     DESIGN_ENCODING_MISMATCH = "design-encoding-mismatch"
     PCR_BASAL_OPEN_INCOMPATIBLE = "pcr-basal-open-incompatible"
     PCR_ADAPTER_MISMATCH = "pcr-adapter-mismatch"
-    PCR_PAIRING_PROFILE_MISMATCH = "pcr-pairing-profile-mismatch"
+    PCR_PAIRING_STATE_MISMATCH = "pcr-pairing-state-mismatch"
     PCR_PRIMER_MISMATCH = "pcr-primer-mismatch"
+    CLONE_LOCAL_RELEASE_INCOMPATIBLE = "clone-local-release-incompatible"
     CLONE_END_GENERATION_INCOMPATIBLE = "clone-end-generation-incompatible"
     CLONE_END_GENERATION_AMBIGUOUS = "clone-end-generation-ambiguous"
     ALL_COMBINATIONS_VALID_REQUIRED = "all-combinations-valid-required"

@@ -3,7 +3,7 @@
 HOP Design
 src/hop_design/design/construction/foldback/discovery.py
 
-Discovers exact foldback construction neighborhoods.
+Discovers exact foldback constructions in retained-overhead order.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -14,302 +14,218 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from importlib.metadata import version
 
-from hop_design.design.relaxation import relaxation_shells
+from hop_design.design.construction.overhead import foldback_overhead_levels
 from hop_design.kernel.construction.foldback import (
     FoldbackPlacementFailure,
     iter_foldback_program_solutions,
-    iter_foldback_programs,
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
     ConstructionExecution,
     DigitalDesignStatus,
     FailureReasonCount,
-    FoldbackTarget,
+    FoldbackGeometryDomain,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
     MethodResolutionStatus,
     NeighborhoodClaimBoundary,
     NeighborhoodDiscoveryResult,
     NeighborhoodProvenance,
-    NickStrandSelection,
-    PayloadCompatibilityAccounting,
-    PayloadCompatibilityStatus,
-    RelaxationMode,
-    RelaxationShellSummary,
-    SearchCompletionStatus,
+    OverheadLevelSummary,
+    SearchScope,
+    SearchStopMode,
+    SearchTerminationReason,
     problem_id,
 )
 from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
     FoldbackNeighborhoodDiscoveryResult,
 )
-from hop_design.models.physical import Strand
 
+from ..neighborhood_accounting import (
+    payload_accounting,
+    payload_cardinality,
+    reject_partial_payload_routes,
+    search_disposition,
+)
 from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
 from .realization import (
     _ROUTE_VERSION,
     _geometry_groups,
-    _payload_assignments,
-    _payload_cardinality,
     _projection_inventory,
     _realization,
 )
+from .traversal import iter_foldback_work_units
 
 
 def discover_foldback_neighborhood(
     request: LocalNeighborhoodRequest,
 ) -> FoldbackNeighborhoodDiscoveryResult:
-    """Return every state-valid foldback realization within the declared finite search."""
+    """Return exact foldback realizations across the finite overhead domain."""
     if request.family is not LocalNeighborhoodFamily.FOLDBACK or not isinstance(
-        request.target, FoldbackTarget
+        request.geometry_domain, FoldbackGeometryDomain
     ):
-        raise ValueError("Foldback discovery requires a foldback-neighborhood request.")
+        raise ValueError("Foldback discovery requires a foldback geometry domain.")
     if request.endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
-        raise ValueError("Foldback-local discovery currently resolves the ssDNA hairpin endpoint.")
+        raise ValueError("Foldback-local discovery resolves the ssDNA hairpin endpoint.")
 
-    payload_total = _payload_cardinality(request)
+    payload_total = payload_cardinality(request)
     records: list[FoldbackLocalRealization] = []
-    shell_summaries: list[RelaxationShellSummary] = []
+    level_summaries: list[OverheadLevelSummary] = []
     failures: Counter[str] = Counter()
     examined_nodes = 0
     rejected_count = 0
-    truncation_reason: str | None = None
+    termination: SearchTerminationReason | None = None
     compatible_payloads: set[str] = set()
     payload_failures: dict[str, set[str]] = defaultdict(set)
 
-    for shell in relaxation_shells(request.target, request.relaxation):
-        if examined_nodes >= request.enumeration.max_search_nodes:
-            truncation_reason = "max_search_nodes"
-            break
-        shell_ids: list[str] = []
-        shell_failures: Counter[str] = Counter()
-        shell_rejected = 0
-        for geometry in shell.geometries:
-            if not isinstance(geometry, FoldbackTarget):
-                raise ValueError("Foldback relaxation produced a non-foldback geometry.")
-            exact_geometries = (
-                tuple(geometry.model_copy(update={"nick_strand": strand}) for strand in Strand)
-                if geometry.nick_strand is NickStrandSelection.ANY
-                else (geometry,)
+    for level in foldback_overhead_levels(request.geometry_domain, request.search):
+        level_ids: list[str] = []
+        level_failures: Counter[str] = Counter()
+        level_rejected = 0
+        for unit in iter_foldback_work_units(request, level=level):
+            solutions = partition_sequence_domain(
+                iter_foldback_program_solutions(
+                    payload_sequence=unit.payload_sequence,
+                    target=unit.target,
+                    program=unit.program,
+                ),
+                request.search.sequence_partition,
             )
-            for exact_geometry in exact_geometries:
-                routes = iter_foldback_programs(
-                    request.enzyme_provisioning,
-                    target=exact_geometry,
-                )
-                for payload_sequence in _payload_assignments(request):
-                    for route in routes:
-                        for solution in partition_sequence_domain(
-                            iter_foldback_program_solutions(
-                                payload_sequence=payload_sequence,
-                                target=exact_geometry,
-                                program=route,
-                            ),
-                            request.enumeration.sequence_partition,
-                        ):
-                            if examined_nodes >= request.enumeration.max_search_nodes:
-                                truncation_reason = "max_search_nodes"
-                                break
-                            examined_nodes += 1
-                            if isinstance(solution, FoldbackPlacementFailure):
-                                failures[solution.code] += 1
-                                shell_failures[solution.code] += 1
-                                rejected_count += 1
-                                shell_rejected += 1
-                                payload_failures[payload_sequence].add(solution.code)
-                                continue
-                            record = _realization(
-                                request=request,
-                                payload_sequence=payload_sequence,
-                                target=exact_geometry,
-                                route=route,
-                                solution=solution,
-                                relaxation_radius=shell.radius,
-                            )
-                            if isinstance(record, str):
-                                failures[record] += 1
-                                shell_failures[record] += 1
-                                rejected_count += 1
-                                shell_rejected += 1
-                                payload_failures[payload_sequence].add(record)
-                                continue
-                            if len(records) >= request.enumeration.max_realizations:
-                                truncation_reason = "max_realizations"
-                                break
-                            records.append(record)
-                            shell_ids.append(record.local_realization.local_realization_id)
-                            compatible_payloads.add(payload_sequence)
-                        if truncation_reason is not None:
-                            break
-                    if truncation_reason is not None:
-                        break
-                if truncation_reason is not None:
+            for solution in solutions:
+                if examined_nodes >= request.search.max_search_nodes:
+                    termination = SearchTerminationReason.EVALUATION_CAP
                     break
-            if truncation_reason is not None:
+                examined_nodes += 1
+                if isinstance(solution, FoldbackPlacementFailure):
+                    failures[solution.code] += 1
+                    level_failures[solution.code] += 1
+                    rejected_count += 1
+                    level_rejected += 1
+                    payload_failures[unit.payload_sequence].add(solution.code)
+                    continue
+                record = _realization(
+                    request=request,
+                    payload_sequence=unit.payload_sequence,
+                    target=unit.target,
+                    route=unit.program,
+                    solution=solution,
+                )
+                if isinstance(record, str):
+                    failures[record] += 1
+                    level_failures[record] += 1
+                    rejected_count += 1
+                    level_rejected += 1
+                    payload_failures[unit.payload_sequence].add(record)
+                    continue
+                if len(records) >= request.search.max_realizations:
+                    termination = SearchTerminationReason.EVALUATION_CAP
+                    break
+                if record.retained_overhead.retained_overhead_nt != level.retained_overhead_nt:
+                    raise RuntimeError("Foldback geometry and endpoint overhead ledger disagree.")
+                records.append(record)
+                level_ids.append(record.local_realization.local_realization_id)
+                compatible_payloads.add(unit.payload_sequence)
+                if (
+                    request.search.stop is SearchStopMode.RESULT_QUOTA
+                    and request.search.result_quota is not None
+                    and len(records) >= request.search.result_quota
+                ):
+                    termination = SearchTerminationReason.RESULT_QUOTA
+                    break
+                if request.search.scope is SearchScope.EXISTENCE:
+                    break
+            if termination is not None:
                 break
-        shell_summaries.append(
-            RelaxationShellSummary(
-                radius=shell.radius,
+        level_summaries.append(
+            OverheadLevelSummary(
+                retained_overhead_nt=level.retained_overhead_nt,
                 examined=True,
-                complete=truncation_reason is None,
-                candidate_count=len(shell_ids) + shell_rejected,
-                realization_ids=tuple(shell_ids),
-                rejected_count=shell_rejected,
+                complete=termination is None,
+                candidate_count=len(level_ids) + level_rejected,
+                realization_ids=tuple(level_ids),
+                rejected_count=level_rejected,
                 failure_reasons=tuple(
                     FailureReasonCount(code=code, count=count)
-                    for code, count in sorted(shell_failures.items())
+                    for code, count in sorted(level_failures.items())
                 ),
             )
         )
-        if truncation_reason is not None:
-            break
-        if (
-            request.relaxation.mode is RelaxationMode.FIRST_FEASIBLE_SHELL
-            and shell_ids
-            and (
-                not request.hard_constraints.require_all_members_compatible
-                or len(compatible_payloads) == payload_total
-            )
-        ):
+        if termination is not None:
             break
 
     exact_records = tuple(records)
     partition_accounting = partition_payload_accounting(
-        request.enumeration.sequence_partition,
+        request.search.sequence_partition,
         total_assignments=payload_total,
     )
-    if truncation_reason is not None:
-        status = SearchCompletionStatus.TRUNCATED
-        payload_accounting = PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.NOT_COMPUTED,
-            total_assignments=payload_total,
-            exhaustive=False,
-            warning="Bounded foldback discovery did not exhaust route compatibility.",
-        )
-    elif exact_records:
-        status = SearchCompletionStatus.COMPLETE
-        if partition_accounting is not None:
-            payload_accounting = partition_accounting
-        else:
-            excluded = payload_total - len(compatible_payloads)
-            payload_accounting = PayloadCompatibilityAccounting(
-                status=PayloadCompatibilityStatus.COMPLETE,
-                total_assignments=payload_total,
-                compatible_assignments=len(compatible_payloads),
-                excluded_assignments=excluded,
-                conflict_counts=tuple(
-                    FailureReasonCount(code=code, count=count)
-                    for code, count in sorted(
-                        Counter(
-                            code
-                            for payload, codes in payload_failures.items()
-                            if payload not in compatible_payloads
-                            for code in codes
-                        ).items()
-                    )
-                    if count <= excluded
-                ),
-                exhaustive=True,
-            )
-    else:
-        status = SearchCompletionStatus.INFEASIBLE
-        if partition_accounting is not None:
-            payload_accounting = partition_accounting
-        else:
-            payload_conflicts = Counter(
-                (
-                    "payload-recognition-conflict"
-                    if "payload-recognition-conflict" in payload_failures[payload]
-                    else "payload-no-foldback-realization"
-                )
-                for payload in _payload_assignments(request)
-            )
-            payload_accounting = PayloadCompatibilityAccounting(
-                status=PayloadCompatibilityStatus.COMPLETE,
-                total_assignments=payload_total,
-                compatible_assignments=0,
-                excluded_assignments=payload_total,
-                conflict_counts=tuple(
-                    FailureReasonCount(code=code, count=count)
-                    for code, count in sorted(payload_conflicts.items())
-                ),
-                exhaustive=True,
-            )
-
+    payload_accounting_result = payload_accounting(
+        request=request,
+        has_records=bool(exact_records),
+        compatible_payloads=compatible_payloads,
+        payload_failures=payload_failures,
+        payload_total=payload_total,
+        partition_accounting=partition_accounting,
+        incomplete=termination is not None,
+        incomplete_warning="Bounded foldback discovery did not exhaust route compatibility.",
+        recognition_failure_code="payload-recognition-conflict",
+        recognition_conflict_code="payload-recognition-conflict",
+        no_realization_code="payload-no-foldback-realization",
+    )
     if (
-        truncation_reason is None
+        termination is None
         and exact_records
         and request.hard_constraints.require_all_members_compatible
-        and payload_accounting.excluded_assignments
+        and payload_accounting_result.excluded_assignments
     ):
-        failures["all-members-compatibility-required"] += len(exact_records)
-        rejected_count += len(exact_records)
-        exact_records = ()
-        updated_shells: list[RelaxationShellSummary] = []
-        for shell_summary in shell_summaries:
-            shell_failures = Counter(
-                {reason.code: reason.count for reason in shell_summary.failure_reasons}
-            )
-            shell_failures["all-members-compatibility-required"] += len(
-                shell_summary.realization_ids
-            )
-            updated_shells.append(
-                RelaxationShellSummary(
-                    radius=shell_summary.radius,
-                    examined=shell_summary.examined,
-                    complete=shell_summary.complete,
-                    candidate_count=shell_summary.candidate_count,
-                    realization_ids=(),
-                    rejected_count=shell_summary.rejected_count
-                    + len(shell_summary.realization_ids),
-                    failure_reasons=tuple(
-                        FailureReasonCount(code=code, count=count)
-                        for code, count in sorted(shell_failures.items())
-                    ),
-                )
-            )
-        shell_summaries = updated_shells
-        status = SearchCompletionStatus.INFEASIBLE
+        exact_records, level_summaries, rejected_count, failures = reject_partial_payload_routes(
+            records=exact_records,
+            levels=level_summaries,
+            rejected_count=rejected_count,
+            failures=failures,
+        )
 
+    disposition = search_disposition(termination=termination, has_results=bool(exact_records))
     hop_version = version("hop-design")
     execution = ConstructionExecution(
         problem_id=problem_id(request),
         hop_version=hop_version,
         route_implementation_version=_ROUTE_VERSION,
-        enumeration=request.enumeration,
+        search=request.search,
         max_operations=request.enzyme_provisioning.max_operations,
         environment={},
     )
     neighborhood = NeighborhoodDiscoveryResult(
-        status=status,
+        disposition=disposition,
         request=request,
         problem_id=problem_id(request),
         execution_id=execution.execution_id,
         execution=execution,
-        shells=tuple(shell_summaries),
+        overhead_levels=tuple(level_summaries),
         realizations=tuple(record.local_realization for record in exact_records),
         achieved_geometry_groups=_geometry_groups(exact_records),
         rejected_count=rejected_count,
         failure_reasons=tuple(
             FailureReasonCount(code=code, count=count) for code, count in sorted(failures.items())
         ),
-        payload_compatibility=payload_accounting,
+        payload_compatibility=payload_accounting_result,
         provenance=NeighborhoodProvenance(
             hop_version=hop_version,
             route_implementation_version=_ROUTE_VERSION,
             enzyme_catalog_digest=request.enzyme_catalog_digest,
         ),
         projection_inventory=_projection_inventory(
-            partitioned=request.enumeration.sequence_partition is not None
+            partitioned=request.search.sequence_partition is not None
         ),
         claim_boundary=NeighborhoodClaimBoundary(
             digital_design=DigitalDesignStatus.VERIFIED,
             method=MethodResolutionStatus.NOT_RESOLVED,
         ),
-        truncation_reasons=((truncation_reason,) if truncation_reason else ()),
     )
     return FoldbackNeighborhoodDiscoveryResult.create(
         neighborhood=neighborhood,
         realizations=exact_records,
     )
+
+
+__all__ = ["discover_foldback_neighborhood"]

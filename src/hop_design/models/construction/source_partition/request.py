@@ -33,13 +33,15 @@ from hop_design.models.enzymes import (
     characterized_enzyme_catalog_digest,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import EndChemistry, FragmentLengthSelection
+from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import (
     SequenceValidationError,
     iupac_bases,
     normalize_dna_sequence,
 )
 from hop_design.serialization import canonical_json_bytes, sha256_digest
+
+from .policy import SacrificialFragmentPolicy
 
 
 def _content_id(kind: str, value: object) -> str:
@@ -105,7 +107,7 @@ class SourcePartitionSurvivor(HopModel):
 class SourcePartitionConstraints(HopModel):
     """Exact size-selection outcome and finite enzyme-program width."""
 
-    selection: FragmentLengthSelection
+    fragment_policy: SacrificialFragmentPolicy
     required_survivors: tuple[SourcePartitionSurvivor, ...] = Field(min_length=1)
     max_enzymes_per_program: int = Field(ge=1)
 
@@ -153,8 +155,8 @@ class SourcePartitionEnumerationPolicy(HopModel):
 class SourcePartitionDiscoveryRequest(HopModel):
     """One exact source, payload relation, enzyme domain, and required partition."""
 
-    schema_id: Literal["hop.source-partition-request/v1"] = Field(
-        default="hop.source-partition-request/v1", alias="schema"
+    schema_id: Literal["hop.source-partition-request/v2"] = Field(
+        default="hop.source-partition-request/v2", alias="schema"
     )
     payload: FinalPayloadReference
     source: SourceDuplexMaterial

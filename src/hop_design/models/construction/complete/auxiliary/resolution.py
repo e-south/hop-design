@@ -85,22 +85,15 @@ def _material(
 
 
 def _local_adapter_sequence(basal: BasalRealizationRecord) -> str:
-    local = next(
-        (item for item in basal.materials if item.material_id == "ligation-adapter"),
-        None,
-    )
-    profile = basal.projection.pairing_profile
-    if (
-        local is None
-        or profile is None
-        or profile.adapter_span.start.offset != 0
-        or profile.adapter_span.end.offset != len(local.sequence_5prime)
+    pairing_state = basal.projection.pairing_state
+    if pairing_state.adapter_span.start.offset != 0 or pairing_state.adapter_span.end.offset != len(
+        pairing_state.adapter_sequence_5prime
     ):
         raise EndpointAuxiliaryResolutionError(
             EndpointAuxiliaryResolutionFailure.ADAPTER,
             "Basal authority must define one terminal adapter-pairing segment.",
         )
-    return local.sequence_5prime
+    return basal.proximal_adapter_sequence
 
 
 def _resolve_adapter(

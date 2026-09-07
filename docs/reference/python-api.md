@@ -61,8 +61,17 @@ All operations and receipts in this section use `hop_design.construction`.
   remains complete only for that part, preserves molecular realization ids, and
   does not claim whole-domain payload compatibility.
 - `load_verified_local_neighborhood(result_path) -> LocalNeighborhoodDiscovery`
-  loads only the active v3 foldback or basal family result and repeats exact
+  loads only the active foldback or basal family result schema and repeats exact
   deterministic discovery replay.
+- `discover_local_neighborhoods(source_paths, destination, resume=False,
+  max_new_requests=None, batch_size=8) -> LocalNeighborhoodBatch` executes an
+  explicit ordered collection of independent local requests. It publishes
+  bounded immutable batches and replays saved results before resuming. The
+  receipt exposes `planned_requests`, `completed_requests`, `finished`, and
+  lazy replay through `iter_results()`. Execution completion does not imply
+  exhaustive coverage or feasibility of any individual request. See
+  [checkpointed discovery](../guides/compile-construction.md#checkpoint-independent-local-queries)
+  for limits, persistence, and recovery semantics.
 - `discover_source_partition(source_path) -> SourcePartitionDiscovery`
   enumerates canonical nonempty subsets of provisioned strand-exposure
   nickases, applies every actionable site, derives all denatured fragments,
@@ -82,10 +91,12 @@ All operations and receipts in this section use `hop_design.construction`.
   the supplied verified receipt.
 - `project_foldback_feasibility(receipt) -> ConstructionProjection`
 - `project_basal_feasibility(receipt) -> ConstructionProjection`
-- `project_relaxation_frontier(receipt, family=...) -> ConstructionProjection`
+- `project_basal_minimum_overhead_matrix(receipt) -> ConstructionProjection`
+- `project_retained_overhead_frontier(receipt, family=...) -> ConstructionProjection`
+- `project_source_partition_certificate(receipt, realization_id=...) -> ConstructionProjection`
 - `project_construction_navigation(receipt) -> ConstructionProjection` projects
   the unchanged complete summary plus only the additive accepted-route facts:
-  typed geometry, relaxation, cleavage-program enzyme IDs, retained
+  typed geometry, retained overhead, cleavage-program enzyme IDs, retained
   non-payload sequence, and endpoint topology. It supports browse, filter, and
   explicit-sort workflows without creating a second accounting relation.
 - `project_complete_construction_summary(receipt) -> ConstructionProjection`

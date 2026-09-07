@@ -220,6 +220,8 @@ class ConstructionDiscoveryRequest(HopModel):
             raise ValueError("The foldback intermediate must be an ssDNA hairpin.")
         auxiliaries = self.materialization.endpoint_auxiliaries
         if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
+            if self.basal_result_id is not None:
+                raise ValueError("A direct endpoint must omit basal authority.")
             if auxiliaries is not None or self.release is not None:
                 raise ValueError("A direct endpoint must omit endpoint auxiliaries.")
         elif self.basal_result_id is None or auxiliaries is None:

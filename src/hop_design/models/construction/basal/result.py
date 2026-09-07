@@ -19,8 +19,9 @@ from hop_design.models.base import HopModel
 from hop_design.models.construction import (
     NeighborhoodDiscoveryResult,
     PayloadCompatibilityStatus,
-    SearchCompletionStatus,
+    SearchFeasibilityStatus,
 )
+from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.reaction_replay import assess_reaction_program
 from hop_design.models.sequence import iupac_bases
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -31,8 +32,8 @@ from .realization import BasalRealizationRecord
 class BasalNeighborhoodDiscoveryResult(HopModel):
     """Shared discovery authority plus lossless exact basal route records."""
 
-    schema_id: Literal["hop.basal-neighborhood-result/v3"] = Field(
-        default="hop.basal-neighborhood-result/v3", alias="schema"
+    schema_id: Literal["hop.basal-neighborhood-result/v5"] = Field(
+        default="hop.basal-neighborhood-result/v5", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
     discovery: NeighborhoodDiscoveryResult
@@ -72,14 +73,14 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
         if accounting.status is PayloadCompatibilityStatus.COMPLETE:
             detailed_payloads = {item.payload_sequence for item in self.realizations}
             if (
-                self.discovery.status is SearchCompletionStatus.COMPLETE
+                self.discovery.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
                 and len(detailed_payloads) != accounting.compatible_assignments
             ):
                 raise ValueError(
                     "Complete basal accounting must equal the distinct compatible payload records."
                 )
             if (
-                self.discovery.status is SearchCompletionStatus.INFEASIBLE
+                self.discovery.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
                 and not self.discovery.request.hard_constraints.require_all_members_compatible
                 and accounting.compatible_assignments != 0
             ):
@@ -110,6 +111,15 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
                 for program in item.reaction_programs
                 for stage in program.stages
             )
+            if item.future_release_action is not None:
+                operation_count += 1
+                if not request.enzyme_provisioning.permits(
+                    item.future_release_action.enzyme_id,
+                    role=EnzymeRole.END_GENERATION,
+                ):
+                    raise ValueError(
+                        "Basal future release action violates its provisioning policy."
+                    )
             max_operations = request.enzyme_provisioning.max_operations
             if max_operations is not None and operation_count > max_operations:
                 raise ValueError(

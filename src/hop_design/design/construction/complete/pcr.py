@@ -189,19 +189,19 @@ def materialize_pcr_program(
         ),
     )
     adapter_strand = _lineage_strand(adapter, adapter_use)
-    profile = basal.projection.pairing_profile
-    if profile is None:
-        raise ValueError("PCR adapter requires one exact basal pairing profile.")
+    pairing_state = basal.projection.pairing_state
+    if pairing_state is None:
+        raise ValueError("PCR adapter requires one exact basal pairing state.")
     adapter_pairs = tuple(
         observe_pair(
             left_strand_id=closed.strand_id,
             right_strand_id=adapter_strand.strand_id,
-            left_index=pair.source_index + profile.source_span.start.offset,
+            left_index=pair.source_index + pairing_state.source_span.start.offset,
             right_index=pair.adapter_index,
             left_base=pair.source_base,
             right_base=pair.adapter_base,
         )
-        for pair in profile.pairs
+        for pair in pairing_state.pairs
     )
     adapter_annealed = ConstructionState.create(
         molecules=(closed, adapter_strand),
@@ -214,8 +214,8 @@ def materialize_pcr_program(
         post_state_id=adapter_annealed.state_id,
         adapter=adapter,
         adapter_use=adapter_use,
-        hairpin_span=profile.source_span,
-        adapter_span=profile.adapter_span,
+        hairpin_span=pairing_state.source_span,
+        adapter_span=pairing_state.adapter_span,
         pairings=adapter_pairs,
     )
     adapter_bond = CovalentBond(

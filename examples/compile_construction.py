@@ -66,7 +66,7 @@ def compile_example(
 
         projections = {
             "foldback_feasibility": construction.project_foldback_feasibility(verified),
-            "foldback_relaxation": construction.project_relaxation_frontier(
+            "foldback_retained_overhead": construction.project_retained_overhead_frontier(
                 verified,
                 family="foldback",
             ),
@@ -77,7 +77,7 @@ def compile_example(
             projections.update(
                 {
                     "basal_feasibility": construction.project_basal_feasibility(verified),
-                    "basal_relaxation": construction.project_relaxation_frontier(
+                    "basal_retained_overhead": construction.project_retained_overhead_frontier(
                         verified,
                         family="basal",
                     ),
@@ -99,13 +99,13 @@ def compile_example(
         for name, projection in projections.items():
             projection.write(output / "projections" / name)
 
-        relaxation = json.loads(projections["foldback_relaxation"].json_bytes)
-        foldback_shells = [
+        frontier = json.loads(projections["foldback_retained_overhead"].json_bytes)
+        foldback_overhead_levels = [
             {
-                "radius": shell["radius"],
-                "realization_count": shell["realization_count"],
+                "retained_overhead_nt": level["retained_overhead_nt"],
+                "realization_count": level["realization_count"],
             }
-            for shell in relaxation["shells"]
+            for level in frontier["levels"]
         ]
     except BaseException:
         shutil.rmtree(output, ignore_errors=True)
@@ -118,14 +118,14 @@ def compile_example(
         "case": case,
         "design_bundle_id": verified.design_bundle_id,
         "endpoint": verified.endpoint,
-        "foldback_shells": foldback_shells,
+        "foldback_overhead_levels": foldback_overhead_levels,
         "materialized_realization_ids": list(verified.materialized_realization_ids),
         "projection_sha256": {
             name: _projection_digests(projection)
             for name, projection in sorted(projections.items())
         },
         "result_id": verified.result_id,
-        "schema": "hop.construction-dogfood/v1",
+        "schema": "hop.construction-dogfood/v2",
         "selection_sha256": selection_sha256,
         "selected_trajectory_realization_id": trajectory_realization_id,
         "status": verified.status,

@@ -31,7 +31,7 @@ payload-centered construction. They do not enlarge the
 | endpoint | One route family and one of `ssdna_hairpin`, `hairpin_pcr_duplex`, or `clone_ready_duplex` | Required neighborhoods, materials, stages, and products follow from the endpoint; later-endpoint requirements do not leak into earlier endpoints |
 | local-neighborhood discovery | Final payload, family, route, endpoint, explicit target, constraints, preferences, enzyme catalog, relaxation, finite enumeration, and optional exact sequence-domain part | Exact-first foldback or basal realizations; requested and achieved geometry; rejection accounting; `complete`, `infeasible`, or truthful `truncated` status; unchanged realization identity across execution parts |
 | foldback target | Explicit nick offset within the first foldback arm, loop length, and annealing-arm length | Exact achieved retained geometry, exposed strand, fragments, complementary arm, and closure bond; no mnemonic schema aliases |
-| basal target | Endpoint-dependent nick target and exact proximal-outward pairing profile; optional end-generation request | Literal pairs and classes; canonical proximal match when adapter ligation requires it; Type IIS cuts and cohesive ends only for a requesting endpoint |
+| basal target | Endpoint-dependent nick target and exact proximal-outward pair constraints; optional end-generation request | Literal pairing state and classes; canonical proximal match when adapter ligation requires it; Type IIS cuts and cohesive ends only for a requesting endpoint |
 | reaction stage | One accepted pre-stage molecular state and one or more declared concurrent operations | Every intended and unintended actionable binding resolves against the same pre-stage state; one atomic non-conflicting post-stage state or route failure |
 | source preparation | One exact or derived source ssDNA, two resolved source-preparation primers, a payload-to-source span, and exact terminal chemistry | Primer bindings lie outside the payload; the exact copied duplex, pairings, chemistry, identity, and per-base lineage replay from the three external materials |
 | complete route composition | Exact local realizations, one payload, one route family, one endpoint, and explicit bounds | Payload preservation, stage order, site availability, lineage, strand continuity, closure, endpoint processing, and final encoding are validated globally |
@@ -46,9 +46,9 @@ Compactness is achieved endpoint geometry plus retained non-payload sequence.
 Transient recognition sites, source handles, auxiliary oligos, and destination
 sequence remain visible but do not change that measurement.
 
-HOP owns these molecular contracts and neutral projections. Research Studies
-owns frozen runs, observations, interpretation, and asset promotion. manufold
-owns accepted imports, claims, evidence cutoff, and final composition.
+HOP owns these molecular contracts and neutral projections. Client studies
+own frozen runs, observations, interpretation, and asset promotion. Manuscript
+systems own accepted imports, claims, evidence cutoff, and final composition.
 
 ## Implemented contracts
 

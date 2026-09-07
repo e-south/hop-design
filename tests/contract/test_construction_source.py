@@ -23,6 +23,7 @@ from hop_design.models.construction import ConstructionEndpoint
 from hop_design.models.construction.source import ConstructionSource
 from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import EndChemistry
+from tests.contract.test_basal_construction_discovery import _request as _basal_request
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
     _request,
@@ -35,7 +36,7 @@ from tests.integration.test_complete_construction_pcr import _payload
 def _source_document() -> dict[str, object]:
     foldback = _request(_nickase(), _terminus_enzyme())
     return {
-        "schema": "hop.construction-source/v5",
+        "schema": "hop.construction-source/v6",
         "foldback": foldback.model_dump(mode="json", by_alias=True),
         "basal": None,
         "composition": {
@@ -107,6 +108,44 @@ def _pcr_source_document() -> dict[str, object]:
     return document
 
 
+def _clone_source_document() -> dict[str, object]:
+    document = _pcr_source_document()
+    basal = _basal_request(
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+        payload="GACA",
+    )
+    document["basal"] = basal.model_dump(mode="json", by_alias=True)
+    composition = dict(document["composition"])  # type: ignore[arg-type]
+    composition["endpoint"] = "clone_ready_duplex"
+    composition["release"] = {
+        "enzyme_provisioning": basal.enzyme_provisioning.model_dump(
+            mode="json",
+            by_alias=True,
+        ),
+        "left": {
+            "orientation": "forward",
+            "cohesive_end_sequence": "CCCC",
+            "overhang_end": "five_prime",
+        },
+        "right": {
+            "orientation": "reverse",
+            "cohesive_end_sequence": "ATAA",
+            "overhang_end": "five_prime",
+        },
+        "max_site_pairs": 16,
+    }
+    document["composition"] = composition
+    return document
+
+
+def test_clone_source_preserves_clone_ready_basal_search_semantics() -> None:
+    source = ConstructionSource.model_validate_json(json.dumps(_clone_source_document()))
+
+    assert source.composition.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+    assert source.basal is not None
+    assert source.basal.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+
+
 @pytest.mark.parametrize("suffix", [".json", ".yaml"])
 def test_construction_source_loads_strict_json_and_yaml(
     tmp_path: Path,
@@ -125,7 +164,7 @@ def test_construction_source_loads_strict_json_and_yaml(
         json.dumps(load_source_mapping(source_path), separators=(",", ":"))
     )
 
-    assert loaded.schema_id == "hop.construction-source/v5"
+    assert loaded.schema_id == "hop.construction-source/v6"
     assert loaded.composition.endpoint == "ssdna_hairpin"
     assert loaded.composition.materialization.source_preparation.source_ssdna.five_prime_end is (
         EndChemistry.HYDROXYL
@@ -136,7 +175,7 @@ def test_construction_source_rejects_another_schema_version() -> None:
     document = _source_document()
     document["schema"] = "hop.construction-source/v1"
 
-    with pytest.raises(ValidationError, match=r"hop\.construction-source/v5"):
+    with pytest.raises(ValidationError, match=r"hop\.construction-source/v6"):
         ConstructionSource.model_validate_json(json.dumps(document))
 
 
@@ -211,7 +250,7 @@ def test_construction_source_rejects_local_endpoint_and_payload_drift() -> None:
     basal = dict(wrong_basal_endpoint["basal"])  # type: ignore[arg-type]
     basal["endpoint"] = "ssdna_hairpin"
     wrong_basal_endpoint["basal"] = basal
-    with pytest.raises(ValidationError, match="hairpin_pcr_duplex"):
+    with pytest.raises(ValidationError, match="PCR-bearing construction endpoint"):
         ConstructionSource.model_validate_json(json.dumps(wrong_basal_endpoint))
 
     wrong_payload = _pcr_source_document()

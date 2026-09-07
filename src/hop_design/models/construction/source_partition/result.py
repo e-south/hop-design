@@ -19,6 +19,9 @@ from pydantic import Field, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.construction.accounting import SearchCompletionStatus
+from hop_design.models.construction.source_partition.certificate import (
+    SourcePartitionCertificate,
+)
 from hop_design.models.construction.source_partition.replay import (
     SourcePartitionCandidateReplay,
     replay_source_partition_candidate,
@@ -85,6 +88,7 @@ def source_partition_realization_id(
         or replay.nicked_duplex is None
         or replay.denatured is None
         or replay.selected is None
+        or replay.fragment_certificate is None
     ):
         raise ValueError("Only an accepted source partition has a realization identity.")
     return _content_id(
@@ -96,6 +100,7 @@ def source_partition_realization_id(
             "denatured": replay.denatured.model_dump(mode="json"),
             "selected": replay.selected.model_dump(mode="json"),
             "nick_functions": tuple(item.model_dump(mode="json") for item in replay.nick_functions),
+            "fragment_certificate": replay.fragment_certificate.model_dump(mode="json"),
         },
     )
 
@@ -139,13 +144,14 @@ class SourcePartitionRealization(HopModel):
     denatured: DenaturedFragmentSet
     selected: LengthSelectedFragmentSet
     nick_functions: tuple[SourcePartitionNickFunction, ...] = Field(min_length=1)
+    fragment_certificate: SourcePartitionCertificate
 
 
 class SourcePartitionDiscoveryResult(HopModel):
     """Replay-verified bounded search over canonical nickase subsets."""
 
-    schema_id: Literal["hop.source-partition-result/v1"] = Field(
-        default="hop.source-partition-result/v1", alias="schema"
+    schema_id: Literal["hop.source-partition-result/v2"] = Field(
+        default="hop.source-partition-result/v2", alias="schema"
     )
     request: SourcePartitionDiscoveryRequest
     problem_id: str = Field(pattern=r"^hop:source-partition-problem/[0-9a-f]{64}@1$")
@@ -217,6 +223,7 @@ class SourcePartitionDiscoveryResult(HopModel):
                 or realization.denatured != replay.denatured
                 or realization.selected != replay.selected
                 or realization.nick_functions != replay.nick_functions
+                or realization.fragment_certificate != replay.fragment_certificate
                 or realization.realization_id != expected_id
             ):
                 raise ValueError("Source-partition realization states must replay exactly.")

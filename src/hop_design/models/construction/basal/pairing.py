@@ -43,7 +43,7 @@ def derive_basal_pair_class(source_base: str, adapter_base: str) -> BasalPairCla
 class BasalPairRecord(HopModel):
     """One literal pair in payload-proximal-to-outward physical order."""
 
-    profile_position: int = Field(ge=0)
+    position_from_ligation: int = Field(ge=0)
     source_index: int = Field(ge=0)
     adapter_index: int = Field(ge=0)
     source_base: str
@@ -77,7 +77,7 @@ class BasalPairRecord(HopModel):
         return self
 
 
-class BasalPairingProfile(HopModel):
+class BasalPairingState(HopModel):
     """Exact antiparallel arms and their literal M/W/X evidence."""
 
     source_sequence_5prime: str
@@ -85,7 +85,7 @@ class BasalPairingProfile(HopModel):
     source_span: Span
     adapter_span: Span
     pairs: tuple[BasalPairRecord, ...] = Field(min_length=1)
-    compact_profile: str = Field(pattern=r"^[MWX]+$")
+    pairing_pattern: str = Field(pattern=r"^[MWX]+$")
 
     @field_validator("source_sequence_5prime", "adapter_sequence_5prime", mode="before")
     @classmethod
@@ -95,7 +95,7 @@ class BasalPairingProfile(HopModel):
         return normalize_dna_sequence(value, allow_degenerate=False)
 
     @model_validator(mode="after")
-    def validate_pairing(self) -> BasalPairingProfile:
+    def validate_pairing(self) -> BasalPairingState:
         length = len(self.source_sequence_5prime)
         if not length or len(self.adapter_sequence_5prime) != length:
             raise ValueError("Basal pairing arms must have equal nonzero length.")
@@ -105,7 +105,7 @@ class BasalPairingProfile(HopModel):
             raise ValueError("Basal pair records must cover both pairing arms exactly.")
         for position, pair in enumerate(self.pairs):
             source_index = length - 1 - position
-            if (pair.profile_position, pair.source_index, pair.adapter_index) != (
+            if (pair.position_from_ligation, pair.source_index, pair.adapter_index) != (
                 position,
                 source_index,
                 position,
@@ -116,8 +116,8 @@ class BasalPairingProfile(HopModel):
                 or pair.adapter_base != self.adapter_sequence_5prime[position]
             ):
                 raise ValueError("Basal pair records must replay the exact pairing arms.")
-        if self.compact_profile != "".join(pair.compact_symbol for pair in self.pairs):
-            raise ValueError("The M/W/X profile must replay every literal basal pair.")
+        if self.pairing_pattern != "".join(pair.compact_symbol for pair in self.pairs):
+            raise ValueError("The M/W/X pattern must replay every literal basal pair.")
         return self
 
 

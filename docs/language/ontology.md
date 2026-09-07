@@ -63,17 +63,21 @@ projections. Large exact sequence domains may be divided into deterministic,
 disjoint execution parts without changing the molecular problem or realization
 identities. One part does not establish whole-domain payload compatibility.
 
-A foldback target is described by `nick_offset_within_foldback_nt`, `loop_length_nt`, and
+A foldback target is described by `junction_offset_nt`, `loop_length_nt`, and
 `annealing_arm_length_bp`. A basal target describes endpoint-dependent nick
-geometry, an exact payload-proximal-outward pairing profile, and optional
+geometry, an exact payload-proximal-outward pairing state, and optional
 end-generation geometry. Type IIS processing is absent unless the endpoint
 requests clone-ready ends.
 
 A local realization is one exact local precursor, enzyme binding, operation
-program, and state trajectory. A complete realization composes exact local
-realizations around one payload and validates the staged route. Final-product
-and achieved-geometry groups are reversible projections over realization
-identities; neither may erase alternatives.
+program, and state trajectory within its declared neighborhood. A basal local
+realization ends at the nicked boundary plus proximal adapter-pairing and
+upstream completion obligations; it does not assert a finalized adapter,
+hairpin-PCR duplex, or present cohesive end. A complete realization composes
+exact local realizations around one payload, resolves complete materials, and
+validates the staged route. Final-product and achieved-geometry groups are
+reversible projections over realization identities; neither may erase
+alternatives.
 
 Construction sequence is classified as retained, transient, auxiliary, or
 destination-associated. Compactness uses achieved endpoint geometry and

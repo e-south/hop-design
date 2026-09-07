@@ -70,13 +70,12 @@ def navigation_content(
                 **summary_row,
                 "foldback_geometry": None if route is None else route["foldback_geometry"],
                 "basal_geometry": None if route is None else route["basal_geometry"],
-                "foldback_relaxation_radius": (
-                    None if route is None else route["foldback_relaxation_radius"]
+                "foldback_retained_overhead_nt": (
+                    None if route is None else route["foldback_retained_overhead_nt"]
                 ),
-                "basal_relaxation_radius": (
-                    None if route is None else route["basal_relaxation_radius"]
+                "basal_retained_overhead_nt": (
+                    None if route is None else route["basal_retained_overhead_nt"]
                 ),
-                "exact_geometry": None if route is None else route["exact_geometry"],
                 "enzyme_ids": () if route is None else route["cleavage_enzyme_ids"],
                 "enzyme_count": 0 if route is None else len(route["cleavage_enzyme_ids"]),
                 "retained_non_payload_nt": (

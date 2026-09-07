@@ -90,12 +90,12 @@ def replay_foldback_route(
         raise ValueError("Foldback replay requires one exact nick strand.")
     if target.nick_strand is Strand.TOP:
         junction = payload_nt
-        nick = junction + target.nick_offset_within_foldback_nt
-        terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
+        nick = junction + target.junction_offset_nt
+        terminus = junction + foldback_nt - target.junction_offset_nt
     else:
         junction = len(source) - payload_nt
-        nick = junction - target.nick_offset_within_foldback_nt
-        terminus = junction - foldback_nt + target.nick_offset_within_foldback_nt
+        nick = junction - target.junction_offset_nt
+        terminus = junction - foldback_nt + target.junction_offset_nt
     nick_binding = next(
         binding for binding in enzyme_bindings if binding.role is EnzymeRole.FOLDBACK_NICK
     )
@@ -268,16 +268,16 @@ def replay_foldback_route(
         StrandPairObservation(
             left_strand_id=(
                 upstream.fragment_id
-                if index < target.nick_offset_within_foldback_nt
+                if index < target.junction_offset_nt
                 else downstream.fragment_id
             ),
             right_strand_id=downstream.fragment_id,
             left_index=(
                 payload_nt + index
-                if index < target.nick_offset_within_foldback_nt
-                else index - target.nick_offset_within_foldback_nt
+                if index < target.junction_offset_nt
+                else index - target.junction_offset_nt
             ),
-            right_index=(arm_end - 1 - index - target.nick_offset_within_foldback_nt),
+            right_index=(arm_end - 1 - index - target.junction_offset_nt),
             left_base=retained_arm[index],
             right_base=arm[arm_nt - 1 - index],
             kind=classify_literal_pair(

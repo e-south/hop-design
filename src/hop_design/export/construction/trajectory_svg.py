@@ -21,6 +21,7 @@ from hop_design.models.reactions import ReactionProgram
 
 from .source_preparation_svg import render_source_preparation_rows
 from .svg_common import escape, render_document, short_id
+from .trajectory_partition_svg import render_trajectory_partition_rows
 
 _PAIR_CHUNK_SIZE = 4
 _SEQUENCE_CHUNK_SIZE = 48
@@ -211,6 +212,13 @@ def render_complete_trajectory_svg(
     )
     rows.append(source_rows)
     cursor += source_height
+    partition_rows, partition_height = render_trajectory_partition_rows(
+        projection,
+        y_start=cursor,
+    )
+    if partition_rows:
+        rows.append(partition_rows)
+        cursor += partition_height
     for index, state in enumerate(program.states):
         y = cursor
         phase = state.phase.value.replace("_", " ")
@@ -282,6 +290,7 @@ def render_complete_trajectory_svg(
         )
         cursor += 50 + len(realization.final_product.cohesive_ends) * 22
     title = f"The selected digital route records {len(program.states)} exact molecular states."
+    subtitle = f"Digital route only · selected composition ordinal {projection.composition_ordinal}"
     boundary = "No physical construction, QC, or biological activity is established."
     body = f"""
 <g data-projection-id="{escape(projection.projection_id)}"
@@ -297,8 +306,7 @@ data-physical-construction="{escape(claims.physical_construction.value)}"
 data-quality-control="{escape(claims.quality_control.value)}"
 data-biological-activity="{escape(claims.biological_activity.value)}">
 <text x="72" y="58" class="title">{escape(title)}</text>
-<text x="72" y="96" class="subtitle">Digital route only · selected composition ordinal
-{projection.composition_ordinal}</text>
+<text x="72" y="96" class="subtitle">{escape(subtitle)}</text>
 <text x="72" y="128" class="small">{escape(boundary)}</text>
 </g>
 <line x1="72" y1="150" x2="1128" y2="150" class="rule"/>

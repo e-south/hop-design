@@ -15,6 +15,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 import pytest
+from pydantic import ValidationError
 
 from hop_design.design.construction.complete import discover_constructions
 from hop_design.design.construction.complete.discovery import VerifiedConstructionSpaceResult
@@ -44,6 +45,7 @@ from tests.integration.test_complete_construction_discovery import (
     _verified_design,
 )
 from tests.integration.test_complete_construction_pcr import _foldback, _payload
+from tests.integration.test_complete_construction_source_partition import _case
 
 
 def _verified_pcr_source(tmp_path: Path) -> VerifiedConstructionSpaceResult:
@@ -56,16 +58,14 @@ def _verified_pcr_source(tmp_path: Path) -> VerifiedConstructionSpaceResult:
     )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=_material("forward-primer", encoding[:4]),
         reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
     )
@@ -230,8 +230,8 @@ def test_complete_trajectory_embeds_one_selected_route_verbatim(
         materialized_realization_id=selected.materialized_realization_id,
     )
 
-    assert projection.schema_id == "hop.complete-construction-trajectory/v3"
-    assert projection.renderer_version == "complete-construction-trajectory/2"
+    assert projection.schema_id == "hop.complete-construction-trajectory/v4"
+    assert projection.renderer_version == "complete-construction-trajectory/3"
     assert projection.source_result_id == source.result.result_id
     assert projection.composition_ordinal == disposition.ordinal
     assert projection.realization == selected
@@ -248,6 +248,7 @@ def test_complete_trajectory_embeds_one_selected_route_verbatim(
     assert f'data-result-id="{source.result.result_id}"' in svg
     assert f'data-realization-id="{selected.materialized_realization_id}"' in svg
     assert 'data-composition-ordinal="0"' in svg
+    assert "selected composition ordinal 0" in svg
     for state in selected.construction_program.states:
         assert f'data-state-id="{state.state_id}"' in svg
         assert state.phase.value.replace("_", " ") in svg
@@ -331,6 +332,51 @@ def test_complete_trajectory_starts_with_recorded_source_duplex_preparation(
     preparation_index = svg.index(f'data-source-preparation-id="{preparation.authority_id}"')
     first_program_state_index = svg.index(f'data-state-id="{preparation.product_state.state_id}"')
     assert preparation_index < first_program_state_index
+
+
+def test_complete_trajectory_embeds_the_selected_source_partition_certificate(
+    tmp_path: Path,
+) -> None:
+    request, foldback, design, partition, _ = _case(tmp_path)
+    source = discover_constructions(
+        request,
+        foldback=verify_foldback_neighborhood_result(foldback),
+        basal=None,
+        design=design,
+        source_partition=partition,
+    )
+    selected = source.result.realizations[0]
+    binding = selected.source_partition_binding
+    assert binding is not None
+    certificate = partition.realizations[0].fragment_certificate
+
+    projection = project_complete_construction_trajectory(
+        source,
+        materialized_realization_id=selected.materialized_realization_id,
+    )
+    svg = render_projection_svg(projection).decode()
+
+    assert projection.source_partition_certificate == certificate
+    assert f'data-source-partition-binding-id="{binding.binding_id}"' in svg
+    assert f'data-source-partition-result-id="{binding.result_id}"' in svg
+    assert f'data-source-partition-realization-id="{binding.realization_id}"' in svg
+    assert (
+        'data-selected-maximum-sacrificial-fragment-nt="'
+        f'{certificate.selected_maximum_sacrificial_fragment_nt}"' in svg
+    )
+    for fragment in certificate.fragments:
+        assert f'data-partition-fragment-id="{fragment.fragment_id}"' in svg
+        assert f'data-source-start="{fragment.source_span.start.offset}"' in svg
+        assert f'data-source-end="{fragment.source_span.end.offset}"' in svg
+        assert f'data-fragment-disposition="{fragment.disposition.value}"' in svg
+
+    with pytest.raises(ValidationError, match="binding and fragment certificate"):
+        CompleteConstructionTrajectoryProjection.model_validate(
+            {
+                **projection.model_dump(mode="python", by_alias=True),
+                "source_partition_certificate": None,
+            }
+        )
 
 
 @pytest.mark.parametrize(

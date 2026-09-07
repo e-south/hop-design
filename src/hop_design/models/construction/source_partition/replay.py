@@ -14,6 +14,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from hop_design.models.catalog import ResolvedNickSite
+from hop_design.models.construction.source_partition.certificate import SourcePartitionCertificate
+from hop_design.models.construction.source_partition.certificate_replay import (
+    build_source_partition_certificate,
+)
 from hop_design.models.construction.source_partition.request import (
     SourcePartitionDiscoveryRequest,
 )
@@ -33,7 +37,10 @@ from hop_design.models.molecular_replay import (
     build_denatured_fragments,
     strand_from_sequence,
 )
-from hop_design.models.molecular_state import LineageStrand
+from hop_design.models.molecular_state import (
+    FragmentLengthSelection,
+    LineageStrand,
+)
 from hop_design.models.reaction_replay import scan_actionable_sites
 from hop_design.models.reactions import ReactionMolecule, ReactionState
 from hop_design.models.sequence import reverse_complement_iupac
@@ -50,6 +57,7 @@ class SourcePartitionCandidateReplay:
     denatured: DenaturedFragmentSet | None = None
     selected: LengthSelectedFragmentSet | None = None
     nick_functions: tuple[SourcePartitionNickFunction, ...] = ()
+    fragment_certificate: SourcePartitionCertificate | None = None
 
 
 def _resolved_sites(
@@ -197,7 +205,40 @@ def replay_source_partition_candidate(
         precursor_top_sequence=sequence,
         fragments=fragments,
     )
-    selection = request.constraints.selection
+    required_keys = {
+        (
+            survivor.precursor_strand,
+            survivor.source_span.start.offset,
+            survivor.source_span.end.offset,
+        )
+        for survivor in request.constraints.required_survivors
+    }
+    fragment_keys = {
+        (
+            fragment.precursor_strand,
+            fragment.precursor_span.start.offset,
+            fragment.precursor_span.end.offset,
+        )
+        for fragment in fragments
+    }
+    if not required_keys.issubset(fragment_keys):
+        return SourcePartitionCandidateReplay(
+            enzyme_ids=enzyme_ids,
+            failure_codes=(SourcePartitionFailure.RETAINED_FRAGMENT_SET_MISMATCH,),
+        )
+    certificate = build_source_partition_certificate(
+        request,
+        fragments=fragments,
+        sites=sites,
+    )
+    if certificate is None:
+        return SourcePartitionCandidateReplay(
+            enzyme_ids=enzyme_ids,
+            failure_codes=(SourcePartitionFailure.FRAGMENT_THRESHOLD_INFEASIBLE,),
+        )
+    selection = FragmentLengthSelection(
+        min_length_nt=certificate.selected_maximum_sacrificial_fragment_nt + 1
+    )
     retained = tuple(
         fragment
         for fragment in fragments
@@ -255,6 +296,7 @@ def replay_source_partition_candidate(
         denatured=denatured,
         selected=selected,
         nick_functions=functions,
+        fragment_certificate=certificate,
     )
 
 

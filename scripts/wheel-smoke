@@ -74,7 +74,7 @@ for required in \
   'examples/construction-exact-design.yaml' \
   'examples/construction-exact.yaml' \
   'examples/construction-infeasible.yaml' \
-  'examples/construction-relaxed.yaml' \
+  'examples/construction-expanded-domain.yaml' \
   'examples/discover_basal_candidates.py' \
   'examples/fixed-site-three-base-context.yaml' \
   'examples/foldback-local-partition.yaml' \
@@ -164,7 +164,11 @@ payload = json.loads(receipt.json_bytes)
 strands = {
     realization["foldback_nick"]["strand"] for realization in payload["realizations"]
 }
-if receipt.family != "foldback" or receipt.status != "complete":
+if (
+    receipt.family != "foldback"
+    or receipt.completion != "complete"
+    or receipt.feasibility != "feasible"
+):
     raise SystemExit("local foldback partition did not complete")
 if strands != {"top", "bottom"}:
     raise SystemExit(f"local foldback partition omitted physical strands: {sorted(strands)}")
@@ -172,6 +176,19 @@ result = receipt.write(output) / "result.json"
 loaded = construction.load_verified_local_neighborhood(result)
 if loaded.result_id != receipt.result_id or loaded.json_bytes != receipt.json_bytes:
     raise SystemExit("local foldback partition failed reload verification")
+batch_path = output.parent / (output.name + "-batch")
+partial = construction.discover_local_neighborhoods(
+    [request, request], batch_path, max_new_requests=1, batch_size=1,
+)
+if partial.finished or partial.completed_requests != 1:
+    raise SystemExit("local collection lost its partial execution status")
+resumed = construction.discover_local_neighborhoods(
+    [request, request], batch_path, resume=True, batch_size=2,
+)
+if not resumed.finished or resumed.completed_requests != 2:
+    raise SystemExit("local collection did not resume")
+if any(item.json_bytes != receipt.json_bytes for item in resumed.iter_results()):
+    raise SystemExit("local collection changed canonical result bytes")
 print(result)
 PY
 }
@@ -190,14 +207,14 @@ if ! cmp -s "$source_local_result" "$wheel_local_result"; then
 fi
 
 composed_construction=''
-for construction_case in composed-pcr exact infeasible relaxed; do
+for construction_case in composed-pcr exact infeasible expanded-domain; do
   construction_trajectory_id=''
   if [[ "$construction_case" == "composed-pcr" ]]; then
-    construction_trajectory_id='hop:materialized-construction/ed200f1b66a4b76cd9f6f33ba214798833fe5ec515474d6eed4ef8e9233de283@1'
+    construction_trajectory_id='hop:materialized-construction/2d2dd90b7dbaf4524dfac3500ad7c88b6ade7feaec83f854136d8990aef70059@1'
   elif [[ "$construction_case" == "exact" ]]; then
-    construction_trajectory_id='hop:materialized-construction/63982f1d523dac0ad6f4034ce4ff83259fc05353392e783e96831a9096fb2109@1'
-  elif [[ "$construction_case" == "relaxed" ]]; then
-    construction_trajectory_id='hop:materialized-construction/05558439e5be5e026a4b14ff39bdd1907e45bf588e138bb9ef9a4e1922f1f48a@1'
+    construction_trajectory_id='hop:materialized-construction/18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1'
+  elif [[ "$construction_case" == "expanded-domain" ]]; then
+    construction_trajectory_id='hop:materialized-construction/18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1'
   fi
   if [[ -n "$construction_trajectory_id" ]]; then
     source_construction="$(uv run --locked python examples/compile_construction.py \

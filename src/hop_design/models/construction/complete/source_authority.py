@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from hop_design.models.construction.accounting import SearchCompletionStatus
 from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
     BasalRealizationRecord,
@@ -32,12 +33,14 @@ def expected_upstream_truncation_reasons(
     """Return local-search truncation evidence relevant to complete composition."""
     if request.selects_local_realizations:
         return ()
-    return tuple(
-        f"foldback:{reason}" for reason in foldback.neighborhood.truncation_reasons
-    ) + tuple(
-        f"basal:{reason}"
-        for reason in (() if basal is None else basal.discovery.truncation_reasons)
-    )
+    reasons = []
+    for family, discovery in (
+        ("foldback", foldback.neighborhood),
+        *((("basal", basal.discovery),) if basal is not None else ()),
+    ):
+        if discovery.disposition.completion is not SearchCompletionStatus.COMPLETE:
+            reasons.append(f"{family}:{discovery.disposition.termination_reason.value}")
+    return tuple(reasons)
 
 
 def validate_local_authorities(

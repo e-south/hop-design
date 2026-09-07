@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-31
+last_verified: 2026-09-07
 doc_type: decision
 amended_by: hop-adr-0028
 ---
@@ -36,7 +36,7 @@ and verified.
 ## Decision
 
 `hop_design.construction` is the file-oriented construction facade. The caller
-provides one strict `hop.construction-source/v5` JSON or YAML file and one
+provides one strict `hop.construction-source/v6` JSON or YAML file and one
 separate verified design-bundle path. HOP loads the design authority, discovers
 and verifies the declared foldback and optional basal neighborhoods, derives
 the source ssDNA and source-preparation primers under their declared policies,
@@ -65,23 +65,27 @@ The exact public allowlist is:
 - `ConstructionProjection`;
 - `ConstructionSelection`;
 - `LocalNeighborhoodDiscovery`;
+- `LocalNeighborhoodBatch`;
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
 - `compile_construction`;
 - `compile_construction_from_local_realizations`;
 - `compile_design_from_local_realizations`;
 - `discover_local_neighborhood`;
+- `discover_local_neighborhoods`;
 - `discover_source_partition`;
 - `load_verified_construction_bundle`;
 - `load_construction_selection`;
 - `load_verified_local_neighborhood`;
 - `load_verified_source_partition`;
 - `project_basal_feasibility`;
+- `project_basal_minimum_overhead_matrix`;
 - `project_complete_construction_summary`;
 - `project_construction_navigation`;
 - `project_construction_trajectory`;
 - `project_foldback_feasibility`; and
-- `project_relaxation_frontier`; and
+- `project_retained_overhead_frontier`;
+- `project_source_partition_certificate`; and
 - `select_construction_realization`.
 
 Receipts expose only scalar identity and accounting plus create-only writing.
@@ -97,7 +101,7 @@ verb.
 
 ## Consequences
 
-Research Studies and other callers can use the same installed public interface
+All callers can use the same installed public interface
 without copying HOP models or importing private modules. A projection must be
 requested from an opaque verified receipt; trajectory projection additionally
 requires one exact accepted realization identity and never auto-selects an
@@ -116,6 +120,13 @@ it cannot be reopened without the verified result that establishes membership.
 Standalone local-neighborhood discovery returns one replay-verified family
 receipt. It establishes only the declared foldback or basal neighborhood and
 cannot be interpreted as a complete-route authority.
+
+An ordered finite collection may use `discover_local_neighborhoods` for
+producer-bound checkpoints. `LocalNeighborhoodBatch` exposes execution counts
+and iteration over replay-verified individual receipts. It is not a merged
+search authority: each query retains its independent scope and status.
+Execution storage belongs to `design.construction.execution`; molecular
+validation remains with the existing family authorities.
 
 For a PCR-bearing endpoint, a caller may explicitly select one realization
 from each verified local receipt and compile their exact molecular junctions

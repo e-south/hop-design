@@ -3,7 +3,7 @@
 HOP Design
 tests/contract/test_construction_contracts.py
 
-Tests payload-centered construction contracts and discrete relaxation semantics.
+Tests payload-centered construction and retained-overhead search contracts.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -14,21 +14,20 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from hop_design.design.relaxation import relaxation_shells
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     BasalPairAllowance,
-    BasalPairingConstraint,
-    BasalTarget,
+    BasalPairConstraint,
     CompleteConstructionRealization,
     ConstructionConstraints,
     ConstructionEndpoint,
     ConstructionExecution,
     ConstructionPreferences,
     DigitalDesignStatus,
-    EnumerationPolicy,
     FailureReasonCount,
     FinalPayloadReference,
     FinalProductReference,
+    FoldbackGeometryDomain,
     FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
@@ -37,23 +36,22 @@ from hop_design.models.construction import (
     NeighborhoodClaimBoundary,
     NeighborhoodDiscoveryResult,
     NeighborhoodProvenance,
+    NeighborhoodSearchPlan,
+    OverheadLevelSummary,
     PairState,
     PairStateException,
     PayloadCompatibilityAccounting,
     PayloadCompatibilityStatus,
     PayloadSourceMap,
     PayloadSourceSegment,
-    ProjectionInventoryItem,
-    ProjectionInventoryStatus,
     ProjectionReference,
     RealizationGroup,
     RealizationGrouping,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
-    RelaxationShellSummary,
     RouteFamily,
     SearchCompletionStatus,
+    SearchDisposition,
+    SearchFeasibilityStatus,
+    SearchTerminationReason,
     SourceOrientation,
     geometry_id,
     grouped_realization_projection,
@@ -73,7 +71,6 @@ from hop_design.models.enzymes import (
     TargetMolecule,
     VendorMetadata,
 )
-from hop_design.models.junction import Strand
 from hop_design.models.payload import DegeneratePayload, ExactPayload
 from hop_design.models.references import ExternalRef
 
@@ -136,10 +133,18 @@ def _enzyme_provisioning(
     )
 
 
+def _foldback_target() -> FoldbackTarget:
+    return FoldbackTarget(
+        junction_offset_nt=0,
+        loop_length_nt=3,
+        annealing_arm_length_bp=3,
+    )
+
+
 def _foldback_request(
     *,
-    target: FoldbackTarget | None = None,
     max_search_nodes: int = 100,
+    max_retained_overhead_nt: int = 9,
 ) -> LocalNeighborhoodRequest:
     return LocalNeighborhoodRequest(
         name="compact foldback",
@@ -147,36 +152,31 @@ def _foldback_request(
         family=LocalNeighborhoodFamily.FOLDBACK,
         route_family=RouteFamily.LINEAR_SOURCE_V1,
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-        target=target
-        or FoldbackTarget(
-            nick_offset_within_foldback_nt=0,
-            loop_length_nt=3,
-            annealing_arm_length_bp=3,
+        geometry_domain=FoldbackGeometryDomain(
+            junction_offsets_nt=(0,),
+            loop_lengths_nt=(3,),
+            annealing_arm_lengths_bp=(3,),
         ),
         hard_constraints=ConstructionConstraints(),
         enzyme_provisioning=_enzyme_provisioning(),
-        relaxation=RelaxationPolicy(
-            mode=RelaxationMode.FIRST_FEASIBLE_SHELL,
-            max_radius=2,
-            coordinates=(
-                RelaxationCoordinate(name="loop_length_nt", minimum=2, maximum=4),
-                RelaxationCoordinate(name="annealing_arm_length_bp", minimum=2, maximum=4),
-            ),
+        search=NeighborhoodSearchPlan(
+            max_retained_overhead_nt=max_retained_overhead_nt,
+            max_search_nodes=max_search_nodes,
+            max_realizations=20,
         ),
-        enumeration=EnumerationPolicy(max_search_nodes=max_search_nodes, max_realizations=20),
     )
 
 
-def _shell(
-    radius: int,
+def _level(
+    retained_overhead_nt: int,
     realization_ids: tuple[str, ...] = (),
     failure_reasons: tuple[FailureReasonCount, ...] = (),
     *,
     complete: bool = True,
-) -> RelaxationShellSummary:
+) -> OverheadLevelSummary:
     rejected_count = sum(reason.count for reason in failure_reasons)
-    return RelaxationShellSummary(
-        radius=radius,
+    return OverheadLevelSummary(
+        retained_overhead_nt=retained_overhead_nt,
         examined=True,
         complete=complete,
         candidate_count=len(realization_ids) + rejected_count,
@@ -186,25 +186,42 @@ def _shell(
     )
 
 
+def _execution(request: LocalNeighborhoodRequest) -> ConstructionExecution:
+    return ConstructionExecution(
+        problem_id=problem_id(request),
+        hop_version="0.1.0a7",
+        route_implementation_version="linear-source/1",
+        search=request.search,
+        max_operations=request.enzyme_provisioning.max_operations,
+        environment={},
+    )
+
+
 def _infeasible_result(request: LocalNeighborhoodRequest) -> NeighborhoodDiscoveryResult:
     execution = _execution(request)
+    levels = tuple(
+        _level(
+            overhead,
+            failure_reasons=(FailureReasonCount(code="no-compatible-site", count=1),),
+        )
+        for overhead in range(request.search.max_retained_overhead_nt + 1)
+    )
+    rejected_count = len(levels)
     return NeighborhoodDiscoveryResult(
-        status=SearchCompletionStatus.INFEASIBLE,
+        disposition=SearchDisposition(
+            completion=SearchCompletionStatus.COMPLETE,
+            feasibility=SearchFeasibilityStatus.INFEASIBLE,
+            termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
+        ),
         request=request,
         problem_id=problem_id(request),
         execution_id=execution.execution_id,
         execution=execution,
-        shells=tuple(
-            _shell(
-                radius,
-                failure_reasons=(FailureReasonCount(code="no-compatible-site", count=1),),
-            )
-            for radius in range(3)
-        ),
+        overhead_levels=levels,
         realizations=(),
         achieved_geometry_groups=(),
-        rejected_count=3,
-        failure_reasons=(FailureReasonCount(code="no-compatible-site", count=3),),
+        rejected_count=rejected_count,
+        failure_reasons=(FailureReasonCount(code="no-compatible-site", count=rejected_count),),
         payload_compatibility=PayloadCompatibilityAccounting(
             status=PayloadCompatibilityStatus.COMPLETE,
             total_assignments=1,
@@ -214,8 +231,8 @@ def _infeasible_result(request: LocalNeighborhoodRequest) -> NeighborhoodDiscove
             exhaustive=True,
         ),
         provenance=NeighborhoodProvenance(
-            hop_version="0.1.0a7",
-            route_implementation_version="linear-source/1",
+            hop_version=execution.hop_version,
+            route_implementation_version=execution.route_implementation_version,
             enzyme_catalog_digest=request.enzyme_catalog_digest,
         ),
         projection_inventory=(),
@@ -226,25 +243,14 @@ def _infeasible_result(request: LocalNeighborhoodRequest) -> NeighborhoodDiscove
     )
 
 
-def _execution(request: LocalNeighborhoodRequest) -> ConstructionExecution:
-    return ConstructionExecution(
-        problem_id=problem_id(request),
-        hop_version="0.1.0a7",
-        route_implementation_version="linear-source/1",
-        enumeration=request.enumeration,
-        max_operations=request.enzyme_provisioning.max_operations,
-        environment={},
-    )
-
-
 def test_local_identity_bearing_failure_reasons_require_canonical_order() -> None:
     reasons = (
         FailureReasonCount(code="z-conflict", count=1),
         FailureReasonCount(code="a-conflict", count=1),
     )
 
-    with pytest.raises(ValidationError, match="canonical code order"):
-        _shell(0, failure_reasons=reasons)
+    with pytest.raises(ValidationError, match="canonical order"):
+        _level(0, failure_reasons=reasons)
 
 
 def test_local_result_replays_embedded_execution_and_provenance() -> None:
@@ -266,7 +272,6 @@ def test_payload_identity_ignores_presentation_and_linear_mapping_is_route_owned
         _payload(display_name="first").payload_spec_id
         == _payload(display_name="second").payload_spec_id
     )
-
     assert _payload().paired_sequence == "CAGT"
 
     segmented = PayloadSourceMap(
@@ -285,7 +290,6 @@ def test_payload_identity_ignores_presentation_and_linear_mapping_is_route_owned
             ),
         )
     )
-    assert len(segmented.segments) == 2
     with pytest.raises(ValueError, match="one contiguous source segment"):
         validate_linear_source_map(_payload(), segmented)
 
@@ -383,32 +387,26 @@ def test_payload_pair_state_identity_is_canonical_and_respects_authored_domains(
     )
 
 
-def test_relaxation_coordinates_have_canonical_ordering() -> None:
-    first_policy = RelaxationPolicy(
-        mode=RelaxationMode.THROUGH_RADIUS,
-        max_radius=1,
-        coordinates=(
-            RelaxationCoordinate(name="loop_length_nt", minimum=2, maximum=4),
-            RelaxationCoordinate(name="annealing_arm_length_bp", minimum=2, maximum=4),
-        ),
+def test_geometry_domains_are_canonical_and_enforce_structural_floors() -> None:
+    domain = FoldbackGeometryDomain(
+        junction_offsets_nt=(2, 0, 1),
+        loop_lengths_nt=(4, 3),
+        annealing_arm_lengths_bp=(4, 3),
     )
-    second_policy = RelaxationPolicy(
-        mode=RelaxationMode.THROUGH_RADIUS,
-        max_radius=1,
-        coordinates=tuple(reversed(first_policy.coordinates)),
-    )
-    first_request = _foldback_request().model_copy(update={"relaxation": first_policy})
-    second_request = _foldback_request().model_copy(update={"relaxation": second_policy})
-    assert problem_id(first_request) == problem_id(second_request)
-    assert relaxation_shells(first_request.target, first_policy) == relaxation_shells(
-        second_request.target, second_policy
-    )
+    assert domain.junction_offsets_nt == (0, 1, 2)
+    assert domain.loop_lengths_nt == (3, 4)
+    assert domain.annealing_arm_lengths_bp == (3, 4)
+
+    with pytest.raises(ValidationError, match="structural floor"):
+        FoldbackGeometryDomain(loop_lengths_nt=(2,))
+    with pytest.raises(ValidationError, match="must not repeat"):
+        FoldbackGeometryDomain(junction_offsets_nt=(0, 0))
 
 
-def test_basal_targets_are_limited_to_the_hairpin_pcr_intermediate() -> None:
+def test_basal_domains_require_endpoint_specific_pcr_obligations() -> None:
     pairing = (
-        BasalPairingConstraint(
-            profile_position=0,
+        BasalPairConstraint(
+            position_from_ligation=0,
             allowed_class=BasalPairAllowance.MATCH,
         ),
     )
@@ -416,314 +414,123 @@ def test_basal_targets_are_limited_to_the_hairpin_pcr_intermediate() -> None:
         "payload": _payload(),
         "family": LocalNeighborhoodFamily.BASAL,
         "route_family": RouteFamily.LINEAR_SOURCE_V1,
+        "geometry_domain": BasalGeometryDomain(pairing_constraints=pairing),
         "hard_constraints": ConstructionConstraints(),
         "enzyme_provisioning": _enzyme_provisioning(),
-        "relaxation": RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=0),
-        "enumeration": EnumerationPolicy(max_search_nodes=10, max_realizations=10),
+        "search": NeighborhoodSearchPlan(
+            max_retained_overhead_nt=2,
+            max_search_nodes=10,
+            max_realizations=10,
+        ),
     }
 
-    with pytest.raises(ValidationError, match="hairpin_pcr_duplex"):
-        LocalNeighborhoodRequest(
-            **base,
-            endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-            target=BasalTarget(nick_strand=Strand.TOP, nick_offset_nt=0),
-        )
-    with pytest.raises(ValidationError, match="requires pairing constraints"):
-        LocalNeighborhoodRequest(
-            **base,
-            endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            target=BasalTarget(nick_strand=Strand.TOP, nick_offset_nt=0),
-        )
+    with pytest.raises(ValidationError, match="PCR-bearing construction endpoint"):
+        LocalNeighborhoodRequest(**base, endpoint=ConstructionEndpoint.SSDNA_HAIRPIN)
+    with pytest.raises(ValidationError, match="requires future end generation"):
+        LocalNeighborhoodRequest(**base, endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX)
 
-    pcr_request = LocalNeighborhoodRequest(
+    request = LocalNeighborhoodRequest(
         **base,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        target=BasalTarget(
-            nick_strand=Strand.TOP,
-            nick_offset_nt=0,
-            pairing_constraints=pairing,
-            ligation_proximal_match_required=True,
-        ),
     )
-    assert pcr_request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
-    with pytest.raises(ValidationError, match="hairpin_pcr_duplex"):
-        LocalNeighborhoodRequest(
-            **base,
-            endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
-            target=pcr_request.target,
-        )
+    assert request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
 
 
-def test_local_request_family_must_match_target() -> None:
+def test_local_request_family_must_match_geometry_domain() -> None:
     with pytest.raises(ValidationError, match="family must match"):
         LocalNeighborhoodRequest(
-            name="wrong family",
             payload=_payload(),
             family=LocalNeighborhoodFamily.BASAL,
             route_family=RouteFamily.LINEAR_SOURCE_V1,
-            endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-            target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
-                loop_length_nt=3,
-                annealing_arm_length_bp=3,
-            ),
+            endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            geometry_domain=FoldbackGeometryDomain(),
             hard_constraints=ConstructionConstraints(),
             enzyme_provisioning=_enzyme_provisioning(),
-            relaxation=RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=0),
-            enumeration=EnumerationPolicy(max_search_nodes=10, max_realizations=10),
-        )
-
-
-def test_relaxation_shells_are_exact_first_bounded_and_directionally_unbiased() -> None:
-    request = _foldback_request()
-    shells = relaxation_shells(request.target, request.relaxation)
-
-    assert [shell.radius for shell in shells] == [0, 1, 2]
-    assert shells[0].geometries == (request.target,)
-    assert {
-        (geometry.loop_length_nt, geometry.annealing_arm_length_bp)
-        for geometry in shells[1].geometries
-    } == {(2, 3), (3, 2), (3, 4), (4, 3)}
-    assert all(
-        geometry.nick_offset_within_foldback_nt == 0
-        for shell in shells
-        for geometry in shell.geometries
-    )
-
-    exact = relaxation_shells(
-        request.target,
-        RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=0),
-    )
-    assert len(exact) == 1
-    assert exact[0].radius == 0
-
-    with pytest.raises(ValidationError, match=r"exact target.*relaxation bounds"):
-        _foldback_request(
-            target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
-                loop_length_nt=5,
-                annealing_arm_length_bp=3,
-            )
-        )
-
-
-def test_relaxation_supports_basal_local_geometry_coordinates() -> None:
-    pairing = (
-        BasalPairingConstraint(
-            profile_position=0,
-            allowed_class=BasalPairAllowance.MATCH,
-        ),
-    )
-    target = BasalTarget(
-        nick_strand=Strand.TOP,
-        nick_offset_nt=0,
-        pairing_constraints=pairing,
-        ligation_proximal_match_required=True,
-    )
-    policy = RelaxationPolicy(
-        mode=RelaxationMode.THROUGH_RADIUS,
-        max_radius=1,
-        coordinates=(
-            RelaxationCoordinate(
-                name="nick_offset_nt",
-                minimum=-1,
-                maximum=1,
+            search=NeighborhoodSearchPlan(
+                max_retained_overhead_nt=9,
+                max_search_nodes=10,
+                max_realizations=10,
             ),
-        ),
-    )
-    request = LocalNeighborhoodRequest(
-        payload=_payload(),
-        family=LocalNeighborhoodFamily.BASAL,
-        route_family=RouteFamily.LINEAR_SOURCE_V1,
-        endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        target=target,
-        hard_constraints=ConstructionConstraints(),
-        enzyme_provisioning=_enzyme_provisioning(),
-        relaxation=policy,
-        enumeration=EnumerationPolicy(max_search_nodes=10, max_realizations=10),
-    )
-
-    shells = relaxation_shells(request.target, request.relaxation)
-    assert [shell.radius for shell in shells] == [0, 1]
-    assert {
-        geometry.nick_offset_nt
-        for geometry in shells[1].geometries
-        if isinstance(geometry, BasalTarget)
-    } == {-1, 1}
+        )
 
 
-def test_relaxation_shell_accounting_partitions_every_examined_candidate() -> None:
-    shell = RelaxationShellSummary(
-        radius=0,
-        examined=True,
-        complete=True,
-        candidate_count=3,
+def test_overhead_level_accounting_partitions_every_examined_candidate() -> None:
+    level = _level(
+        0,
         realization_ids=("realization-a", "realization-b"),
-        rejected_count=1,
         failure_reasons=(FailureReasonCount(code="site-conflict", count=1),),
     )
+    assert level.candidate_count == len(level.realization_ids) + level.rejected_count
 
-    assert shell.candidate_count == len(shell.realization_ids) + shell.rejected_count
-    changed = shell.model_dump(mode="python")
+    changed = level.model_dump(mode="python")
     changed["candidate_count"] = 4
     with pytest.raises(ValidationError, match="candidate count"):
-        RelaxationShellSummary.model_validate(changed)
-    changed = shell.model_dump(mode="python")
+        OverheadLevelSummary.model_validate(changed)
+
+    changed = level.model_dump(mode="python")
     changed["failure_reasons"] = (FailureReasonCount(code="site-conflict", count=2),)
-    with pytest.raises(ValidationError, match="failure-reason counts"):
-        RelaxationShellSummary.model_validate(changed)
-    with pytest.raises(ValidationError, match="Unexamined shells"):
-        RelaxationShellSummary(
-            radius=0,
-            examined=False,
-            complete=False,
-            candidate_count=1,
-            realization_ids=("realization-a",),
-            rejected_count=0,
-            failure_reasons=(),
-        )
-    with pytest.raises(ValidationError, match="Partial examined shells"):
-        RelaxationShellSummary(
-            radius=0,
-            examined=True,
-            complete=False,
-            candidate_count=0,
-            realization_ids=(),
-            rejected_count=0,
-            failure_reasons=(),
-        )
-    with pytest.raises(ValidationError, match="Unexamined shells"):
-        RelaxationShellSummary(
-            radius=0,
-            examined=False,
-            complete=True,
-            candidate_count=0,
-            realization_ids=(),
-            rejected_count=0,
-            failure_reasons=(),
-        )
+    with pytest.raises(ValidationError, match="partition rejected"):
+        OverheadLevelSummary.model_validate(changed)
 
 
-def test_result_allows_only_a_final_partial_shell_in_truncated_searches() -> None:
+def test_result_allows_only_a_final_partial_overhead_level() -> None:
     result = _infeasible_result(_foldback_request())
     changed = result.model_dump(mode="python")
-    changed["status"] = SearchCompletionStatus.TRUNCATED
-    changed["truncation_reasons"] = ("max_search_nodes",)
-    changed["shells"][0]["complete"] = False
-    with pytest.raises(ValidationError, match="Only the final recorded shell"):
+    changed["disposition"] = SearchDisposition(
+        completion=SearchCompletionStatus.TRUNCATED,
+        feasibility=SearchFeasibilityStatus.UNKNOWN,
+        termination_reason=SearchTerminationReason.EVALUATION_CAP,
+    )
+    changed["overhead_levels"][0]["complete"] = False
+    with pytest.raises(ValidationError, match="Only the final recorded overhead level"):
         NeighborhoodDiscoveryResult.model_validate(changed)
 
-    changed["shells"][0]["complete"] = True
-    changed["shells"][-1]["complete"] = False
-    changed["status"] = SearchCompletionStatus.INFEASIBLE
-    changed["truncation_reasons"] = ()
-    with pytest.raises(ValidationError, match="Complete and infeasible results"):
+    changed["overhead_levels"][0]["complete"] = True
+    changed["overhead_levels"][-1]["complete"] = False
+    changed["disposition"] = result.disposition
+    with pytest.raises(ValidationError, match="Complete coverage"):
         NeighborhoodDiscoveryResult.model_validate(changed)
 
 
-def test_all_complete_truncation_requires_an_unentered_later_shell() -> None:
+def test_truncated_result_requires_unresolved_declared_work() -> None:
     result = _infeasible_result(_foldback_request())
     changed = result.model_dump(mode="python")
-    changed["status"] = SearchCompletionStatus.TRUNCATED
-    changed["truncation_reasons"] = ("max_search_nodes",)
+    changed["disposition"] = SearchDisposition(
+        completion=SearchCompletionStatus.TRUNCATED,
+        feasibility=SearchFeasibilityStatus.UNKNOWN,
+        termination_reason=SearchTerminationReason.EVALUATION_CAP,
+    )
 
-    with pytest.raises(ValidationError, match="unentered later shell"):
+    with pytest.raises(ValidationError, match="unresolved work"):
         NeighborhoodDiscoveryResult.model_validate(changed)
 
 
-def test_local_result_status_and_truncation_reason_replay_execution_bounds() -> None:
-    request = _foldback_request(max_search_nodes=1)
-    execution = _execution(request)
-    realization = LocalRealization.create(
-        local_sequence="AAACCC",
-        enzyme_binding_ids=("enzyme-a",),
-        stage_ids=("stage-a",),
-        achieved_geometry=request.target,
+def test_search_disposition_separates_completion_from_feasibility() -> None:
+    feasible = SearchDisposition(
+        completion=SearchCompletionStatus.COMPLETE,
+        feasibility=SearchFeasibilityStatus.FEASIBLE,
+        termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
     )
-    result = NeighborhoodDiscoveryResult(
-        status=SearchCompletionStatus.TRUNCATED,
-        request=request,
-        problem_id=problem_id(request),
-        execution_id=execution.execution_id,
-        execution=execution,
-        shells=(_shell(0, (realization.local_realization_id,), complete=False),),
-        realizations=(realization,),
-        achieved_geometry_groups=(
-            RealizationGroup(
-                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                group_key=geometry_id(request.target),
-                realization_ids=(realization.local_realization_id,),
-                multiplicity=1,
-            ),
-        ),
-        rejected_count=0,
-        failure_reasons=(),
-        payload_compatibility=PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.NOT_COMPUTED,
-            total_assignments=1,
-            exhaustive=False,
-            warning="Bounded discovery did not exhaust compatibility.",
-        ),
-        provenance=NeighborhoodProvenance(
-            hop_version=execution.hop_version,
-            route_implementation_version=execution.route_implementation_version,
-            enzyme_catalog_digest=request.enzyme_catalog_digest,
-        ),
-        projection_inventory=(),
-        claim_boundary=NeighborhoodClaimBoundary(
-            digital_design=DigitalDesignStatus.VERIFIED,
-            method=MethodResolutionStatus.NOT_RESOLVED,
-        ),
-        truncation_reasons=("max_search_nodes",),
-    )
+    assert feasible.completion is SearchCompletionStatus.COMPLETE
 
-    changed = result.model_dump(mode="python")
-    changed["status"] = SearchCompletionStatus.COMPLETE
-    changed["shells"][-1]["complete"] = True
-    changed["truncation_reasons"] = ()
-    changed["payload_compatibility"] = PayloadCompatibilityAccounting(
-        status=PayloadCompatibilityStatus.COMPLETE,
-        total_assignments=1,
-        compatible_assignments=1,
-        excluded_assignments=0,
-        exhaustive=True,
-    )
-    parsed_structural_record = NeighborhoodDiscoveryResult.model_validate(changed)
-    assert parsed_structural_record.status is SearchCompletionStatus.COMPLETE
-
-    complete_request = _foldback_request()
-    complete_execution = _execution(complete_request)
-    complete = result.model_dump(mode="python")
-    complete.update(
-        {
-            "request": complete_request,
-            "problem_id": problem_id(complete_request),
-            "execution": complete_execution,
-            "execution_id": complete_execution.execution_id,
-            "status": SearchCompletionStatus.COMPLETE,
-            "shells": (_shell(0, (realization.local_realization_id,)),),
-            "payload_compatibility": PayloadCompatibilityAccounting(
-                status=PayloadCompatibilityStatus.COMPLETE,
-                total_assignments=1,
-                compatible_assignments=1,
-                excluded_assignments=0,
-                exhaustive=True,
-            ),
-            "truncation_reasons": (),
-        }
-    )
-    valid_complete = NeighborhoodDiscoveryResult.model_validate(complete)
-    invented = valid_complete.model_dump(mode="python")
-    invented["status"] = SearchCompletionStatus.TRUNCATED
-    invented["truncation_reasons"] = ("max_realizations", "max_realizations")
-    with pytest.raises(ValidationError, match="canonical truncation reason"):
-        NeighborhoodDiscoveryResult.model_validate(invented)
+    with pytest.raises(ValidationError, match="not a completion state"):
+        SearchDisposition(
+            completion=SearchCompletionStatus.INFEASIBLE,
+            feasibility=SearchFeasibilityStatus.INFEASIBLE,
+            termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
+        )
+    with pytest.raises(ValidationError, match="cannot establish infeasibility"):
+        SearchDisposition(
+            completion=SearchCompletionStatus.TRUNCATED,
+            feasibility=SearchFeasibilityStatus.INFEASIBLE,
+            termination_reason=SearchTerminationReason.EVALUATION_CAP,
+        )
 
 
-def test_neighborhood_result_rejects_shell_and_global_accounting_drift() -> None:
+def test_neighborhood_result_rejects_level_and_global_accounting_drift() -> None:
     result = _infeasible_result(_foldback_request())
     changed = result.model_dump(mode="python")
-    changed["shells"][0]["failure_reasons"] = (
+    changed["overhead_levels"][0]["failure_reasons"] = (
         FailureReasonCount(code="different-primary-reason", count=1),
     )
 
@@ -736,6 +543,7 @@ def test_problem_and_execution_identity_separate_science_from_runtime() -> None:
     second = _foldback_request(max_search_nodes=200)
     assert problem_id(first) == problem_id(second)
     assert problem_id(first) == problem_id(first.model_copy(update={"name": "renamed"}))
+
     changed_provisioning = first.model_copy(
         update={"enzyme_provisioning": _enzyme_provisioning(reserve_second=True)}
     )
@@ -745,33 +553,24 @@ def test_problem_and_execution_identity_separate_science_from_runtime() -> None:
     )
     assert problem_id(first) == problem_id(changed_vendor)
     assert _infeasible_result(first).result_id == _infeasible_result(changed_vendor).result_id
+
     changed_ceiling = first.model_copy(
         update={"enzyme_provisioning": _enzyme_provisioning(max_operations=8)}
     )
     assert problem_id(first) == problem_id(changed_ceiling)
 
-    execution_a = ConstructionExecution(
-        problem_id=problem_id(first),
-        hop_version="0.1.0a7",
-        route_implementation_version="linear-source/1",
-        enumeration=first.enumeration,
-        max_operations=first.enzyme_provisioning.max_operations,
-        environment={"python": "3.12"},
-    )
+    execution_a = _execution(first).model_copy(update={"environment": {"python": "3.12"}})
     execution_b = execution_a.model_copy(
-        update={"max_operations": changed_ceiling.enzyme_provisioning.max_operations},
+        update={"max_operations": changed_ceiling.enzyme_provisioning.max_operations}
     )
+    execution_c = execution_a.model_copy(update={"search": second.search})
     assert execution_a.execution_id != execution_b.execution_id
-    execution_c = execution_a.model_copy(update={"enumeration": second.enumeration})
     assert execution_a.execution_id != execution_c.execution_id
-    assert geometry_id(first.target) == geometry_id(
-        first.target.model_copy(update={"loop_length_nt": 3})
-    )
+    assert geometry_id(_foldback_target()) == geometry_id(_foldback_target())
 
 
 def test_declared_preferences_do_not_change_feasibility_identity() -> None:
     request = _foldback_request()
-    assert request.preferences == ConstructionPreferences()
     preferred = request.model_copy(
         update={
             "preferences": ConstructionPreferences(
@@ -782,99 +581,6 @@ def test_declared_preferences_do_not_change_feasibility_identity() -> None:
     assert problem_id(request) == problem_id(preferred)
 
 
-def test_result_status_is_truthful_and_invalid_is_not_a_search_disposition() -> None:
-    request = _foldback_request()
-    execution = _execution(request)
-    result_metadata = {
-        "execution": execution,
-        "failure_reasons": (FailureReasonCount(code="no-compatible-site", count=3),),
-        "payload_compatibility": PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=1,
-            compatible_assignments=0,
-            excluded_assignments=1,
-            conflict_counts=(FailureReasonCount(code="payload-site-conflict", count=1),),
-            exhaustive=True,
-        ),
-        "provenance": NeighborhoodProvenance(
-            hop_version="0.1.0a7",
-            route_implementation_version="linear-source/1",
-            enzyme_catalog_digest=request.enzyme_catalog_digest,
-        ),
-        "projection_inventory": (
-            ProjectionInventoryItem(
-                projection_schema="hop.geometry-groups/v1",
-                renderer_version="1",
-                status=ProjectionInventoryStatus.NOT_GENERATED,
-            ),
-        ),
-        "claim_boundary": NeighborhoodClaimBoundary(
-            digital_design=DigitalDesignStatus.VERIFIED,
-            method=MethodResolutionStatus.NOT_RESOLVED,
-        ),
-        "achieved_geometry_groups": (),
-    }
-    with pytest.raises(ValidationError):
-        NeighborhoodDiscoveryResult(
-            status="invalid",
-            request=request,
-            problem_id=problem_id(request),
-            execution_id=execution.execution_id,
-            shells=(),
-            realizations=(),
-            rejected_count=0,
-            **result_metadata,
-        )
-    with pytest.raises(ValidationError, match="truncation reasons"):
-        NeighborhoodDiscoveryResult(
-            status=SearchCompletionStatus.TRUNCATED,
-            request=request,
-            problem_id=problem_id(request),
-            execution_id=execution.execution_id,
-            shells=(_shell(0),),
-            realizations=(),
-            rejected_count=0,
-            **result_metadata,
-        )
-    with pytest.raises(ValidationError, match="all declared relaxation shells"):
-        NeighborhoodDiscoveryResult(
-            status=SearchCompletionStatus.INFEASIBLE,
-            request=request,
-            problem_id=problem_id(request),
-            execution_id=execution.execution_id,
-            shells=(
-                _shell(
-                    0,
-                    failure_reasons=(FailureReasonCount(code="no-compatible-site", count=3),),
-                ),
-            ),
-            realizations=(),
-            rejected_count=3,
-            **result_metadata,
-        )
-    infeasible = NeighborhoodDiscoveryResult(
-        status=SearchCompletionStatus.INFEASIBLE,
-        request=request,
-        problem_id=problem_id(request),
-        execution_id=execution.execution_id,
-        shells=tuple(
-            _shell(
-                radius,
-                failure_reasons=(FailureReasonCount(code="no-compatible-site", count=1),),
-            )
-            for radius in range(3)
-        ),
-        realizations=(),
-        rejected_count=3,
-        **result_metadata,
-    )
-    assert infeasible.result_id.startswith("hop:neighborhood-result/")
-    assert infeasible.schema_id == "hop.neighborhood-discovery-result/v3"
-    assert infeasible.provenance.enzyme_catalog_digest == request.enzyme_catalog_digest
-    assert infeasible.payload_compatibility.exhaustive is True
-    assert infeasible.claim_boundary.physical_construction == "not_recorded"
-
-
 def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
     request = _foldback_request()
     execution = _execution(request)
@@ -882,15 +588,23 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         local_sequence="AAACCC",
         enzyme_binding_ids=("enzyme-a",),
         stage_ids=("stage-a",),
-        achieved_geometry=request.target,
+        achieved_geometry=_foldback_target(),
     )
-    result_fields = {
-        "status": SearchCompletionStatus.COMPLETE,
+    levels = tuple(
+        _level(overhead, (realization.local_realization_id,) if overhead == 9 else ())
+        for overhead in range(10)
+    )
+    fields = {
+        "disposition": SearchDisposition(
+            completion=SearchCompletionStatus.COMPLETE,
+            feasibility=SearchFeasibilityStatus.FEASIBLE,
+            termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
+        ),
         "request": request,
         "problem_id": problem_id(request),
         "execution_id": execution.execution_id,
         "execution": execution,
-        "shells": (_shell(0, (realization.local_realization_id,)),),
+        "overhead_levels": levels,
         "realizations": (realization,),
         "rejected_count": 0,
         "failure_reasons": (),
@@ -902,8 +616,8 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
             exhaustive=True,
         ),
         "provenance": NeighborhoodProvenance(
-            hop_version="0.1.0a7",
-            route_implementation_version="linear-source/1",
+            hop_version=execution.hop_version,
+            route_implementation_version=execution.route_implementation_version,
             enzyme_catalog_digest=request.enzyme_catalog_digest,
         ),
         "projection_inventory": (),
@@ -913,244 +627,22 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
         ),
     }
     with pytest.raises(ValidationError, match="cover every realization exactly once"):
-        NeighborhoodDiscoveryResult(**result_fields, achieved_geometry_groups=())
-    with pytest.raises(ValidationError, match="group key must match"):
-        NeighborhoodDiscoveryResult(
-            **result_fields,
-            achieved_geometry_groups=(
-                RealizationGroup(
-                    grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                    group_key="hop:geometry/" + "e" * 64 + "@1",
-                    realization_ids=(realization.local_realization_id,),
-                    multiplicity=1,
-                ),
-            ),
-        )
+        NeighborhoodDiscoveryResult(**fields, achieved_geometry_groups=())
 
-    result = NeighborhoodDiscoveryResult(
-        **result_fields,
-        achieved_geometry_groups=(
-            RealizationGroup(
-                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                group_key=geometry_id(request.target),
-                realization_ids=(realization.local_realization_id,),
-                multiplicity=1,
-            ),
-        ),
+    group = RealizationGroup(
+        grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
+        group_key=geometry_id(realization.achieved_geometry),
+        realization_ids=(realization.local_realization_id,),
+        multiplicity=1,
     )
+    result = NeighborhoodDiscoveryResult(**fields, achieved_geometry_groups=(group,))
     assert result.claim_boundary.method is MethodResolutionStatus.NOT_RESOLVED
-
-    relaxed_geometry = request.target.model_copy(update={"loop_length_nt": 4})
-    wrong_shell_realization = LocalRealization.create(
-        local_sequence="AAAGGG",
-        enzyme_binding_ids=("enzyme-a",),
-        stage_ids=("stage-a",),
-        achieved_geometry=relaxed_geometry,
-    )
-    with pytest.raises(ValidationError, match="declared relaxation shell"):
-        NeighborhoodDiscoveryResult(
-            **{
-                **result_fields,
-                "shells": (_shell(0, (wrong_shell_realization.local_realization_id,)),),
-                "realizations": (wrong_shell_realization,),
-            },
-            achieved_geometry_groups=(
-                RealizationGroup(
-                    grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                    group_key=geometry_id(relaxed_geometry),
-                    realization_ids=(wrong_shell_realization.local_realization_id,),
-                    multiplicity=1,
-                ),
-            ),
-        )
-
-    non_relaxed_geometry = request.target.model_copy(update={"nick_offset_within_foldback_nt": 1})
-    non_relaxed_realization = LocalRealization.create(
-        local_sequence="CCCGGG",
-        enzyme_binding_ids=("enzyme-a",),
-        stage_ids=("stage-a",),
-        achieved_geometry=non_relaxed_geometry,
-    )
-    with pytest.raises(ValidationError, match="non-enabled geometry field"):
-        NeighborhoodDiscoveryResult(
-            **{
-                **result_fields,
-                "shells": (_shell(0, (non_relaxed_realization.local_realization_id,)),),
-                "realizations": (non_relaxed_realization,),
-            },
-            achieved_geometry_groups=(
-                RealizationGroup(
-                    grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                    group_key=geometry_id(non_relaxed_geometry),
-                    realization_ids=(non_relaxed_realization.local_realization_id,),
-                    multiplicity=1,
-                ),
-            ),
-        )
-
-    wrong_family_geometry = BasalTarget(nick_strand=Strand.TOP, nick_offset_nt=0)
-    wrong_family_realization = LocalRealization.create(
-        local_sequence="TTTGGG",
-        enzyme_binding_ids=("enzyme-a",),
-        stage_ids=("stage-a",),
-        achieved_geometry=wrong_family_geometry,
-    )
-    with pytest.raises(ValidationError, match="requested neighborhood family"):
-        NeighborhoodDiscoveryResult(
-            **{
-                **result_fields,
-                "shells": (_shell(0, (wrong_family_realization.local_realization_id,)),),
-                "realizations": (wrong_family_realization,),
-            },
-            achieved_geometry_groups=(
-                RealizationGroup(
-                    grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                    group_key=geometry_id(wrong_family_geometry),
-                    realization_ids=(wrong_family_realization.local_realization_id,),
-                    multiplicity=1,
-                ),
-            ),
-        )
+    assert result.schema_id == "hop.neighborhood-discovery-result/v5"
+    assert result.claim_boundary.physical_construction == "not_recorded"
 
 
-def _first_feasible_two_shell_fields(
-    *, require_all_members_compatible: bool
-) -> tuple[dict[str, object], LocalRealization, LocalRealization]:
-    request = _foldback_request().model_copy(
-        update={
-            "payload": FinalPayloadReference(
-                display_name="two-member payload",
-                payload=DegeneratePayload(sequence="ACTW"),
-                basal_boundary=Boundary(offset=0),
-                foldback_boundary=Boundary(offset=4),
-            ),
-            "hard_constraints": ConstructionConstraints(
-                require_all_members_compatible=require_all_members_compatible
-            ),
-        }
-    )
-    exact = LocalRealization.create(
-        local_sequence="AAACCC",
-        enzyme_binding_ids=("enzyme-a",),
-        stage_ids=("stage-a",),
-        achieved_geometry=request.target,
-    )
-    relaxed_geometry = request.target.model_copy(update={"loop_length_nt": 4})
-    relaxed = LocalRealization.create(
-        local_sequence="AAAGCCC",
-        enzyme_binding_ids=("enzyme-a",),
-        stage_ids=("stage-a",),
-        achieved_geometry=relaxed_geometry,
-    )
-    execution = _execution(request)
-    fields: dict[str, object] = {
-        "status": SearchCompletionStatus.COMPLETE,
-        "request": request,
-        "problem_id": problem_id(request),
-        "execution_id": execution.execution_id,
-        "execution": execution,
-        "shells": (
-            _shell(0, (exact.local_realization_id,)),
-            _shell(1, (relaxed.local_realization_id,)),
-        ),
-        "realizations": (exact, relaxed),
-        "achieved_geometry_groups": tuple(
-            sorted(
-                (
-                    RealizationGroup(
-                        grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                        group_key=geometry_id(exact.achieved_geometry),
-                        realization_ids=(exact.local_realization_id,),
-                        multiplicity=1,
-                    ),
-                    RealizationGroup(
-                        grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                        group_key=geometry_id(relaxed.achieved_geometry),
-                        realization_ids=(relaxed.local_realization_id,),
-                        multiplicity=1,
-                    ),
-                ),
-                key=lambda group: group.group_key,
-            )
-        ),
-        "rejected_count": 0,
-        "failure_reasons": (),
-        "payload_compatibility": PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=2,
-            compatible_assignments=2,
-            excluded_assignments=0,
-            exhaustive=True,
-        ),
-        "provenance": NeighborhoodProvenance(
-            hop_version="0.1.0a7",
-            route_implementation_version="linear-source/1",
-            enzyme_catalog_digest=request.enzyme_catalog_digest,
-        ),
-        "projection_inventory": (),
-        "claim_boundary": NeighborhoodClaimBoundary(
-            digital_design=DigitalDesignStatus.VERIFIED,
-            method=MethodResolutionStatus.NOT_RESOLVED,
-        ),
-    }
-    return fields, exact, relaxed
-
-
-def test_first_feasible_shell_stops_at_the_first_hit_for_ordinary_requests() -> None:
-    fields, _, _ = _first_feasible_two_shell_fields(require_all_members_compatible=False)
-
-    with pytest.raises(ValidationError, match="must stop at the first shell"):
-        NeighborhoodDiscoveryResult(**fields)
-
-
-def test_all_member_first_feasible_allows_partial_hits_until_compatibility_completes() -> None:
-    fields, exact, _ = _first_feasible_two_shell_fields(require_all_members_compatible=True)
-
-    result = NeighborhoodDiscoveryResult(**fields)
-    assert tuple(shell.radius for shell in result.shells) == (0, 1)
-
-    incomplete_accounting = {
-        **fields,
-        "payload_compatibility": PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.NOT_COMPUTED,
-            total_assignments=2,
-            exhaustive=False,
-            warning="Compatibility enumeration did not complete.",
-        ),
-    }
-    with pytest.raises(ValidationError, match="completes payload compatibility"):
-        NeighborhoodDiscoveryResult(**incomplete_accounting)
-
-    missing_final_shell_hit = {
-        **fields,
-        "shells": (
-            _shell(0, (exact.local_realization_id,)),
-            _shell(1),
-        ),
-        "realizations": (exact,),
-        "achieved_geometry_groups": (
-            RealizationGroup(
-                grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-                group_key=geometry_id(exact.achieved_geometry),
-                realization_ids=(exact.local_realization_id,),
-                multiplicity=1,
-            ),
-        ),
-    }
-    with pytest.raises(ValidationError, match="completes payload compatibility"):
-        NeighborhoodDiscoveryResult(**missing_final_shell_hit)
-
-
-def test_local_shell_members_preserve_the_ordered_realization_relation() -> None:
-    fields, exact, relaxed = _first_feasible_two_shell_fields(require_all_members_compatible=True)
-
-    with pytest.raises(ValidationError, match="ordered local realization relation"):
-        NeighborhoodDiscoveryResult(**{**fields, "realizations": (relaxed, exact)})
-
-
-def test_grouping_is_reversible_and_preserves_every_realization() -> None:
-    target = _foldback_request().target
-    target_geometry_id = geometry_id(target)
+def test_grouping_projection_preserves_every_realization() -> None:
+    target = _foldback_target()
     local_a = LocalRealization.create(
         local_sequence="AAACCC",
         enzyme_binding_ids=("enzyme-a",),
@@ -1180,7 +672,7 @@ def test_grouping_is_reversible_and_preserves_every_realization() -> None:
     groups = (
         RealizationGroup(
             grouping=RealizationGrouping.ACHIEVED_GEOMETRY,
-            group_key=target_geometry_id,
+            group_key=geometry_id(target),
             realization_ids=(local_a.local_realization_id, local_b.local_realization_id),
             multiplicity=2,
         ),
@@ -1210,19 +702,4 @@ def test_grouping_is_reversible_and_preserves_every_realization() -> None:
             renderer_version=projection.renderer_version,
             realization_ids=(local_a.local_realization_id,),
             groups=projection.groups,
-        )
-    with pytest.raises(ValueError, match="exactly once"):
-        grouped_realization_projection(
-            result_id="hop:neighborhood-result/" + "b" * 64 + "@1",
-            projection_schema="hop.geometry-groups/v1",
-            renderer_version="1",
-            realization_ids=(local_a.local_realization_id, local_b.local_realization_id),
-            groups=(
-                groups[0].model_copy(
-                    update={
-                        "realization_ids": (local_a.local_realization_id,),
-                        "multiplicity": 1,
-                    }
-                ),
-            ),
         )

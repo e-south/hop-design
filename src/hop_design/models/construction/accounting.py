@@ -12,10 +12,12 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
+from hop_design.models.sequence import normalize_dna_sequence
 
 
 class SearchCompletionStatus(StrEnum):
@@ -23,7 +25,101 @@ class SearchCompletionStatus(StrEnum):
 
     COMPLETE = "complete"
     INFEASIBLE = "infeasible"
+    STOPPED_BY_POLICY = "stopped_by_policy"
     TRUNCATED = "truncated"
+
+
+class SearchFeasibilityStatus(StrEnum):
+    """Existence claim supported by the work completed for one search."""
+
+    FEASIBLE = "feasible"
+    INFEASIBLE = "infeasible"
+    UNKNOWN = "unknown"
+
+
+class SearchTerminationReason(StrEnum):
+    """Concrete reason one bounded search stopped."""
+
+    EXHAUSTED_DOMAIN = "exhausted_domain"
+    RESULT_QUOTA = "result_quota"
+    REQUESTED_QUOTA = "requested_quota"
+    EVALUATION_CAP = "evaluation_cap"
+    TIME_CAP = "time_cap"
+    MEMORY_GUARD = "memory_guard"
+    INTERRUPTION = "interruption"
+
+
+class SearchDisposition(HopModel):
+    """Separate search coverage from the existence claim it can support."""
+
+    completion: SearchCompletionStatus
+    feasibility: SearchFeasibilityStatus
+    termination_reason: SearchTerminationReason
+
+    @model_validator(mode="after")
+    def validate_claim_scope(self) -> SearchDisposition:
+        if self.completion is SearchCompletionStatus.COMPLETE:
+            if self.feasibility is SearchFeasibilityStatus.UNKNOWN:
+                raise ValueError("Complete search coverage must resolve feasibility.")
+            if self.termination_reason is not SearchTerminationReason.EXHAUSTED_DOMAIN:
+                raise ValueError("Complete search coverage requires exhausted_domain.")
+        elif self.completion is SearchCompletionStatus.STOPPED_BY_POLICY:
+            if self.feasibility is SearchFeasibilityStatus.INFEASIBLE:
+                raise ValueError("A policy-stopped search cannot establish infeasibility.")
+            if self.termination_reason not in {
+                SearchTerminationReason.RESULT_QUOTA,
+                SearchTerminationReason.REQUESTED_QUOTA,
+            }:
+                raise ValueError("Policy-stopped search requires an explicit quota reason.")
+        elif self.completion is SearchCompletionStatus.TRUNCATED:
+            if self.feasibility is SearchFeasibilityStatus.INFEASIBLE:
+                raise ValueError("A truncated search cannot establish infeasibility.")
+            if self.termination_reason in {
+                SearchTerminationReason.EXHAUSTED_DOMAIN,
+                SearchTerminationReason.RESULT_QUOTA,
+                SearchTerminationReason.REQUESTED_QUOTA,
+            }:
+                raise ValueError("Truncated search requires a resource or interruption reason.")
+        else:
+            raise ValueError("Infeasible is a feasibility state, not a completion state.")
+        return self
+
+
+class OverheadPosition(HopModel):
+    """One retained non-payload nucleotide in an explicit local coordinate view."""
+
+    coordinate_space: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
+    position: int = Field(ge=0)
+    base: str
+    material_role: Literal["source", "adapter", "derived"]
+
+    @field_validator("base", mode="before")
+    @classmethod
+    def normalize_base(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise ValueError("A retained-overhead base must be a DNA string.")
+        base = normalize_dna_sequence(value, allow_degenerate=False)
+        if len(base) != 1:
+            raise ValueError("A retained-overhead position must contain one nucleotide.")
+        return base
+
+
+class RetainedOverheadLedger(HopModel):
+    """Auditable non-payload positions retained in one local endpoint view."""
+
+    neighborhood: Literal["foldback", "basal"]
+    reference_state_id: str = Field(pattern=r"^[a-z][a-z0-9._-]{0,95}$")
+    positions: tuple[OverheadPosition, ...]
+    retained_overhead_nt: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_positions(self) -> RetainedOverheadLedger:
+        keys = tuple((item.coordinate_space, item.position) for item in self.positions)
+        if len(keys) != len(set(keys)):
+            raise ValueError("Retained-overhead positions must be unique in their coordinate view.")
+        if self.retained_overhead_nt != len(self.positions):
+            raise ValueError("Retained-overhead count must equal the explicit position count.")
+        return self
 
 
 class FailureReasonCount(HopModel):
@@ -33,10 +129,10 @@ class FailureReasonCount(HopModel):
     count: int = Field(ge=1)
 
 
-class RelaxationShellSummary(HopModel):
-    """Candidate accounting and exact realization membership for one examined shell."""
+class OverheadLevelSummary(HopModel):
+    """Candidate accounting at one absolute retained-overhead level."""
 
-    radius: int = Field(ge=0)
+    retained_overhead_nt: int = Field(ge=0)
     examined: bool
     complete: bool
     candidate_count: int = Field(ge=0)
@@ -45,7 +141,7 @@ class RelaxationShellSummary(HopModel):
     failure_reasons: tuple[FailureReasonCount, ...]
 
     @model_validator(mode="after")
-    def validate_accounting(self) -> RelaxationShellSummary:
+    def validate_accounting(self) -> OverheadLevelSummary:
         if not self.examined and (
             self.complete
             or self.candidate_count
@@ -53,20 +149,16 @@ class RelaxationShellSummary(HopModel):
             or self.rejected_count
             or self.failure_reasons
         ):
-            raise ValueError("Unexamined shells must not report candidate facts.")
-        if self.examined and not self.complete and self.candidate_count == 0:
-            raise ValueError("Partial examined shells must report at least one candidate.")
+            raise ValueError("Unexamined overhead levels must not report candidate facts.")
         if self.candidate_count != len(self.realization_ids) + self.rejected_count:
             raise ValueError(
-                "Shell candidate count must equal accepted realizations plus rejected candidates."
+                "Overhead-level candidate count must equal accepted realizations plus rejections."
             )
         codes = tuple(item.code for item in self.failure_reasons)
-        if len(codes) != len(set(codes)):
-            raise ValueError("Shell failure-reason codes must be unique.")
-        if codes != tuple(sorted(codes)):
-            raise ValueError("Shell failure reasons must use canonical code order.")
+        if len(codes) != len(set(codes)) or codes != tuple(sorted(codes)):
+            raise ValueError("Overhead-level failure reasons must use unique canonical order.")
         if sum(item.count for item in self.failure_reasons) != self.rejected_count:
-            raise ValueError("Shell failure-reason counts must partition rejected candidates.")
+            raise ValueError("Overhead-level failure reasons must partition rejected candidates.")
         return self
 
 

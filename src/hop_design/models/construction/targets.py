@@ -19,6 +19,9 @@ from pydantic import Field, field_validator, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.junction import Strand
 from hop_design.models.references import ReferenceId
+from hop_design.models.sequence import normalize_dna_sequence
+
+from .basal_release import BasalFutureReleaseRequirement
 
 
 class NickStrandSelection(StrEnum):
@@ -32,13 +35,13 @@ class FoldbackTarget(HopModel):
 
     family: Literal["foldback"] = "foldback"
     nick_strand: Strand | NickStrandSelection = NickStrandSelection.ANY
-    nick_offset_within_foldback_nt: int = Field(ge=0)
+    junction_offset_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
 
     @model_validator(mode="after")
     def validate_nick_offset(self) -> FoldbackTarget:
-        if self.nick_offset_within_foldback_nt > self.annealing_arm_length_bp:
+        if self.junction_offset_nt > self.annealing_arm_length_bp:
             raise ValueError("The foldback nick must lie within the first annealing arm.")
         return self
 
@@ -60,11 +63,33 @@ class BasalPairAllowance(StrEnum):
     ANY = "any"
 
 
-class BasalPairingConstraint(HopModel):
+class BasalPairConstraint(HopModel):
     """One authored class constraint ordered from the payload outward."""
 
-    profile_position: int = Field(ge=0)
+    position_from_ligation: int = Field(ge=0)
     allowed_class: BasalPairAllowance
+    allowed_source_bases: tuple[str, ...] = Field(
+        default=("A", "C", "G", "T"),
+        min_length=1,
+        max_length=4,
+    )
+    allowed_adapter_bases: tuple[str, ...] = Field(
+        default=("A", "C", "G", "T"),
+        min_length=1,
+        max_length=4,
+    )
+
+    @field_validator("allowed_source_bases", "allowed_adapter_bases", mode="after")
+    @classmethod
+    def canonicalize_base_domain(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = tuple(
+            normalize_dna_sequence(value, allow_degenerate=False) for value in values
+        )
+        if any(len(value) != 1 for value in normalized):
+            raise ValueError("Basal base domains must contain individual nucleotides.")
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("Basal base domains must not repeat nucleotides.")
+        return tuple(base for base in ("A", "C", "G", "T") if base in normalized)
 
 
 class BasalTarget(HopModel):
@@ -73,12 +98,16 @@ class BasalTarget(HopModel):
     family: Literal["basal"] = "basal"
     nick_strand: Strand | NickStrandSelection
     nick_offset_nt: int = Field(ge=0)
-    pairing_constraints: tuple[BasalPairingConstraint, ...] = ()
+    pairing_constraints: tuple[BasalPairConstraint, ...] = ()
     ligation_proximal_match_required: bool = False
+    future_release: BasalFutureReleaseRequirement | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @model_validator(mode="after")
     def validate_pairing_constraints(self) -> BasalTarget:
-        positions = tuple(item.profile_position for item in self.pairing_constraints)
+        positions = tuple(item.position_from_ligation for item in self.pairing_constraints)
         if positions != tuple(range(len(positions))):
             raise ValueError("Basal pairing positions must be contiguous from the payload outward.")
         if (

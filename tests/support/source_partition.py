@@ -17,6 +17,7 @@ from hop_design.design.construction.source_partition import discover_source_part
 from hop_design.models.construction.complete import ConstructionStatePhase
 from hop_design.models.construction.payload import PayloadSourceMap, PayloadSourceSegment
 from hop_design.models.construction.source_partition import (
+    SacrificialFragmentPolicy,
     SourceDuplexMaterial,
     SourcePartitionConstraints,
     SourcePartitionDiscoveryRequest,
@@ -32,7 +33,7 @@ from hop_design.models.enzymes import (
     EnzymeRoleRestriction,
 )
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import FragmentLengthSelection, LineageStrand
+from hop_design.models.molecular_state import LineageStrand
 
 
 def _span(start: int, end: int) -> Span:
@@ -132,7 +133,10 @@ def source_partition_for_route(
             ),
         ),
         constraints=SourcePartitionConstraints(
-            selection=FragmentLengthSelection(min_length_nt=threshold),
+            fragment_policy=SacrificialFragmentPolicy(
+                preferred_maximum_nt=threshold - 1,
+                absolute_maximum_nt=threshold - 1,
+            ),
             required_survivors=tuple(
                 SourcePartitionSurvivor(
                     survivor_id=(f"required-{strand.value}-{span.start.offset}-{span.end.offset}"),

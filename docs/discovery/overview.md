@@ -28,48 +28,43 @@ Discovery does not silently perform selection.
 ## Payload-centered local construction discovery
 
 A local construction request fixes the final payload, route family, requested
-endpoint, and one foldback or basal target. Exact targets are examined before
-enabled relaxation shells. Each realization preserves both the requested
-geometry and achieved geometry, so a nearby compatible result cannot be
-mistaken for an exact match.
+endpoint, one finite foldback or basal geometry domain, and a maximum retained
+non-payload overhead. HOP examines every admissible geometry in increasing
+absolute overhead order. Each realization preserves both the declared domain
+and its achieved geometry.
 
-Relaxation is a declared bounded neighborhood, not an optimization. HOP does
-not score a shell, infer a preferred geometry, or claim that the first returned
-realization is best. Its status reports what the bounded search established:
+Retained overhead is an inspectable molecular quantity, not a score. HOP does
+not infer a preferred geometry or claim that the first returned realization is
+best. Completion and feasibility are reported separately:
 
-- `complete`: the declared stopping rule was satisfied without firing a bound,
-  every entered shell is complete, and at least one compatible local
-  realization was found. `through_radius` exhausts every declared radius;
-  `first_feasible_shell` may stop after the first complete feasible shell;
-- `infeasible`: the stopping rule exhausted every shell it requires without a
-  compatible realization; or
-- `truncated`: a named bound fired before the stopping rule was satisfied. Its
-  final entered shell may be partial, or a later required shell may remain
-  unentered.
+- `complete` means the declared finite task was exhausted;
+- `stopped_by_policy` means an explicit result quota ended an otherwise valid
+  search;
+- `truncated` means a resource or execution bound prevented the requested
+  coverage; and
+- feasibility is `feasible`, `infeasible`, or `unknown` according to what that
+  coverage establishes.
 
-Shell accounting records examined candidates, accepted realizations,
-rejections, and observed failure categories. A partial shell may appear only
-in a truncated result. A local construction projection renders the same typed
+Overhead-level accounting records examined candidates, accepted realizations,
+rejections, and observed failure categories. A partial level appears only when
+coverage is incomplete. A local construction projection renders the same typed
 result as neutral JSON, CSV, or SVG without selecting a realization or
 recomputing molecular state. Local feasibility does not establish physical
 construction, a complete route, quality control, or biological activity.
 
 ## Foldback geometry
 
-A nick-placement target declares the desired nick boundary and strand, the
-paired-tract length, and the turn nucleotides available to hold a recognition
-site. HOP can search exact and nearby boundaries, then materialize precursor
-sequences within caller-authored IUPAC templates.
+A foldback domain declares finite nick-boundary, strand, annealing-arm, and loop
+possibilities. HOP orders those possibilities by retained endpoint overhead,
+then materializes exact precursor sequences within caller-authored constraints.
 
 Recognition-motif length is not automatically an added-nucleotide cost. Motif
 positions may overlap the paired tract or the declared turn. The relevant
 measure is how far a placed footprint extends beyond sequence already available
 to the design, reported through required precursor and turn lengths.
 
-Current released-foldback discovery evaluates one caller-declared paired-tract
-length and turn length at a time. It does not prove that the returned geometry
-is globally shortest across all possible lengths. A caller can compare a
-bounded set of target geometries using the reported physical measurements.
+Discovery proves only the declared finite domain. A minimum-overhead statement
+requires every lower applicable level to be complete at the same scope.
 
 ## Symbolic domains
 

@@ -105,7 +105,7 @@ def _read_source_bytes(
         if opened.st_size > max_bytes:
             raise SourceDocumentLimitError(actual=opened.st_size, max_bytes=max_bytes)
         with os.fdopen(descriptor, "rb", closefd=False) as handle:
-            content = handle.read(max_bytes + 1)
+            content = handle.read(opened.st_size + 1)
         if len(content) > max_bytes:
             raise SourceDocumentLimitError(actual=len(content), max_bytes=max_bytes)
         after_read = os.fstat(descriptor)

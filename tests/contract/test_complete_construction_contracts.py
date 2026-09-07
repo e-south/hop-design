@@ -243,15 +243,13 @@ def test_direct_endpoint_forbids_adapter_and_pcr_materials() -> None:
         ConstructionDiscoveryRequest.model_validate(data)
 
 
-def test_direct_endpoint_may_bind_a_basal_discovery_without_pcr_materials() -> None:
+def test_direct_endpoint_rejects_a_basal_discovery() -> None:
     direct = _request(ConstructionEndpoint.SSDNA_HAIRPIN)
     data = direct.model_dump(mode="python")
     data["basal_result_id"] = "hop:basal-neighborhood-result/" + "b" * 64 + "@1"
 
-    parsed = ConstructionDiscoveryRequest.model_validate(data)
-
-    assert parsed.basal_result_id == data["basal_result_id"]
-    assert parsed.materialization.endpoint_auxiliaries is None
+    with pytest.raises(ValidationError, match="direct endpoint must omit basal authority"):
+        ConstructionDiscoveryRequest.model_validate(data)
 
 
 def test_complete_request_declares_foldback_ssdna_as_an_intermediate_not_final_endpoint() -> None:

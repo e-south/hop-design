@@ -158,9 +158,9 @@ def iter_foldback_program_solutions(
     payload_nt = len(payload_sequence)
     arm_nt = target.annealing_arm_length_bp
     junction = payload_nt
-    nick = junction + target.nick_offset_within_foldback_nt
+    nick = junction + target.junction_offset_nt
     foldback_nt = 2 * arm_nt + target.loop_length_nt
-    terminus = junction + foldback_nt - target.nick_offset_within_foldback_nt
+    terminus = junction + foldback_nt - target.junction_offset_nt
 
     nick_binding = _place_binding(
         program.nick_enzyme,
@@ -238,7 +238,7 @@ def iter_foldback_program_solutions(
         return
     arm_domain_sets = [set(_BASES) for _ in range(arm_nt)]
     loop_domain_sets = [set(_BASES) for _ in range(target.loop_length_nt)]
-    for source_offset in range(foldback_nt - target.nick_offset_within_foldback_nt):
+    for source_offset in range(foldback_nt - target.junction_offset_nt):
         final_index = foldback_nt - 1 - source_offset
         source_domain = domains[junction + source_offset]
         if final_index < arm_nt:
@@ -263,16 +263,13 @@ def iter_foldback_program_solutions(
         yield FoldbackPlacementFailure(code="foldback-pairing-conflict")
         return
     canonical_source = [next(base for base in _BASES if base in domain) for domain in domains]
-    for arm_assignment, loop_assignment in product(
-        product(*arm_domains),
-        product(*loop_domains),
-    ):
+    for assignment in product(*arm_domains, *loop_domains):
         source_bases = canonical_source.copy()
-        arm = "".join(arm_assignment)
-        loop = "".join(loop_assignment)
+        arm = "".join(assignment[:arm_nt])
+        loop = "".join(assignment[arm_nt:])
         foldback = arm + loop + reverse_complement_iupac(arm)
         source_bases[junction:terminus] = reverse_complement_iupac(
-            foldback[target.nick_offset_within_foldback_nt :]
+            foldback[target.junction_offset_nt :]
         )
         if any(base not in domains[coordinate] for coordinate, base in enumerate(source_bases)):
             continue

@@ -146,6 +146,13 @@ semantics while retaining family-specific geometry. Source partitioning is a
 sibling authority rather than a basal-neighborhood subtype. Its public receipt
 is exposed only through `hop_design.construction`.
 
+Within each local family, `traversal.py` yields exact work units in canonical
+geometry, strand, payload, and enzyme-program order. Traversal does not generate
+sequence candidates or assert feasibility. The family kernel solves those
+candidates; `discovery.py` owns evaluation limits, witness stopping, coverage,
+and final result assembly. These internal work units are not serialized
+authorities or additional public request types.
+
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,
 and fails on unknown first-party layers. The root facade and serialization module are narrow documented
@@ -178,10 +185,10 @@ workflow:
    authority for construction replay; and an explicit design-method encoding-
    digest handoff.
 
-Design derivation is non-temporal. Only a named method plan owns production
-chronology. A successful design does not imply that a method is available or
-feasible, and a method product remains destination-neutral until a caller
-checks it against a destination.
+Design derivation is non-temporal. Construction routes and named method plans
+own their respective molecular chronology. A successful design does not imply
+that a method is available or feasible, and a method product remains
+destination-neutral until a caller checks it against a destination.
 
 Discovery operations answer separate competency questions rather than one
 global optimization problem. Canonical order is reproducible interoperability
@@ -210,8 +217,8 @@ the PCR product, with outer source periphery and primer handles remaining
 explicit.
 
 HOP may emit neutral tidy data and diagram-ready molecular projections.
-Research Studies owns scientific runs, observations, interpretation, and asset
-promotion. manufold owns accepted evidence snapshots, manuscript claims, and
+Client studies own scientific runs, observations, interpretation, and asset
+promotion. Manuscript systems own accepted evidence snapshots, claims, and
 figure composition. Neither consumer may drive HOP's molecular semantics.
 
 The [documentation index](docs/index.md) mirrors these sibling surfaces.

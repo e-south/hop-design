@@ -29,9 +29,7 @@ from hop_design.design.construction.verification import (
 from hop_design.models.construction import (
     BasalPairAllowance,
     ConstructionEndpoint,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
+    FoldbackGeometryDomain,
 )
 from hop_design.models.junction import Strand
 from hop_design.models.sequence import reverse_complement_iupac
@@ -94,15 +92,13 @@ def test_route_selected_design_compiles_through_the_public_construction_path(
     compilation = _compile_selected()
     design_path = compilation.write(tmp_path / "design")
     encoding = compilation.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     source = _source(
         foldback=foldback.neighborhood.request,
         basal=basal.discovery.request,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
-            adapter=_material(adapter.material_id, adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", adapter_sequence),
             forward_primer=_material("forward-primer", encoding[:4]),
             reverse_primer=_material(
                 "reverse-primer",
@@ -131,17 +127,12 @@ def test_each_selected_foldback_alternative_gets_its_own_exact_design() -> None:
             foldback_request(
                 _nickase(),
                 _terminus_enzyme(),
-                relaxation=RelaxationPolicy(
-                    mode=RelaxationMode.THROUGH_RADIUS,
-                    max_radius=1,
-                    coordinates=(
-                        RelaxationCoordinate(
-                            name="loop_length_nt",
-                            minimum=2,
-                            maximum=4,
-                        ),
-                    ),
+                domain=FoldbackGeometryDomain(
+                    junction_offsets_nt=(0,),
+                    loop_lengths_nt=(3, 4),
+                    annealing_arm_lengths_bp=(3,),
                 ),
+                max_retained_overhead_nt=10,
                 max_search_nodes=10_000,
                 max_realizations=10_000,
             )
@@ -193,8 +184,8 @@ def test_route_design_supports_non_four_base_basal_arms() -> None:
     )
 
     features = compilation.plan.hairpin_encoding_insert.features
-    assert features[0].sequence == selected.projection.pairing_profile.source_sequence_5prime
-    assert features[-1].sequence == selected.projection.pairing_profile.adapter_sequence_5prime
+    assert features[0].sequence == selected.projection.pairing_state.source_sequence_5prime
+    assert features[-1].sequence == selected.projection.pairing_state.adapter_sequence_5prime
     assert len(features[0].sequence) == 3
 
 
@@ -349,7 +340,7 @@ def test_route_design_identity_excludes_local_search_execution_and_round_trips(
     ).discover_foldback_neighborhood(
         first.neighborhood.request.model_copy(
             update={
-                "enumeration": first.neighborhood.request.enumeration.model_copy(
+                "search": first.neighborhood.request.search.model_copy(
                     update={"max_search_nodes": 10_000, "max_realizations": 10_000}
                 )
             }

@@ -26,6 +26,7 @@ PUBLIC_NAMES = [
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",
+    "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
@@ -33,17 +34,20 @@ PUBLIC_NAMES = [
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
     "discover_local_neighborhood",
+    "discover_local_neighborhoods",
     "discover_source_partition",
     "load_construction_selection",
     "load_verified_construction_bundle",
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",
+    "project_basal_minimum_overhead_matrix",
     "project_complete_construction_summary",
     "project_construction_navigation",
     "project_construction_trajectory",
     "project_foldback_feasibility",
-    "project_relaxation_frontier",
+    "project_retained_overhead_frontier",
+    "project_source_partition_certificate",
     "select_construction_realization",
 ]
 
@@ -66,6 +70,7 @@ def test_construction_facade_is_an_exact_allowlist() -> None:
         construction.ConstructionProjection,
         construction.ConstructionSelection,
         construction.LocalNeighborhoodDiscovery,
+        construction.LocalNeighborhoodBatch,
         construction.SourcePartitionDiscovery,
         construction.VerifiedConstructionBundle,
     ):
@@ -268,7 +273,7 @@ def test_construction_projection_packet_is_portable_and_create_only(tmp_path: Pa
     assert summary.json_bytes.endswith(b"\n")
     assert summary.csv_bytes is not None
     assert summary.svg_bytes.startswith(b"<svg")
-    assert trajectory.schema_id == "hop.complete-construction-trajectory/v3"
+    assert trajectory.schema_id == "hop.complete-construction-trajectory/v4"
     assert trajectory.csv_bytes is None
 
     output = summary.write(tmp_path / "summary")
@@ -288,21 +293,21 @@ def test_construction_local_projections_require_explicit_family_selection(
 
     foldback = construction.project_foldback_feasibility(compilation)
     basal = construction.project_basal_feasibility(compilation)
-    foldback_frontier = construction.project_relaxation_frontier(
+    foldback_frontier = construction.project_retained_overhead_frontier(
         compilation,
         family="foldback",
     )
-    basal_frontier = construction.project_relaxation_frontier(
+    basal_frontier = construction.project_retained_overhead_frontier(
         compilation,
         family="basal",
     )
 
     assert foldback.schema_id == "hop.foldback-feasibility-landscape/v3"
-    assert basal.schema_id == "hop.basal-feasibility-landscape/v2"
-    assert foldback_frontier.schema_id == "hop.foldback-relaxation-frontier/v2"
-    assert basal_frontier.schema_id == "hop.basal-relaxation-frontier/v1"
+    assert basal.schema_id == "hop.basal-feasibility-landscape/v4"
+    assert foldback_frontier.schema_id == "hop.foldback-overhead-frontier/v1"
+    assert basal_frontier.schema_id == "hop.basal-overhead-frontier/v1"
     with pytest.raises(ValueError, match="family must be foldback or basal"):
-        construction.project_relaxation_frontier(
+        construction.project_retained_overhead_frontier(
             compilation,
             family="unknown",  # type: ignore[arg-type]
         )
@@ -342,7 +347,12 @@ def test_source_partition_discovery_is_file_oriented_and_portable(tmp_path: Path
     assert repr(discovery).startswith("SourcePartitionDiscovery(status='complete'")
 
     output = discovery.write(tmp_path / "partition")
-    assert {item.name for item in output.iterdir()} == {"data.csv", "result.json"}
+    assert {item.name for item in output.iterdir()} == {
+        "data.csv",
+        "fragments.csv",
+        "result.json",
+        "thresholds.csv",
+    }
     loaded = construction.load_verified_source_partition(output / "result.json")
     assert loaded.result_id == discovery.result_id
     assert loaded.json_bytes == discovery.json_bytes

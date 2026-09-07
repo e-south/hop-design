@@ -47,6 +47,7 @@ from hop_design.models.construction import (
 from hop_design.models.coordinates import Boundary
 from hop_design.models.enzymes import RecognitionOrientationSemantics
 from hop_design.models.payload import ExactPayload
+from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 from tests.contract.test_foldback_construction_discovery import (
     _nickase,
@@ -56,6 +57,7 @@ from tests.contract.test_foldback_construction_discovery import (
 from tests.integration.test_complete_construction_discovery import (
     _basal_result,
     _construction_request,
+    _material,
     _verified_design,
 )
 
@@ -75,7 +77,7 @@ def _verified_construction(tmp_path: Path, *, include_basal: bool = False):
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -83,13 +85,29 @@ def _verified_construction(tmp_path: Path, *, include_basal: bool = False):
     )
     design = _verified_design(tmp_path)
     basal = _basal_result(payload) if include_basal else None
-    request = _construction_request(
-        payload=payload,
-        foldback=foldback,
-        basal=basal,
-        design=design,
-        endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-    )
+    if basal is None:
+        request = _construction_request(
+            payload=payload,
+            foldback=foldback,
+            basal=None,
+            design=design,
+            endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
+        )
+    else:
+        encoding = design.plan.hairpin_encoding_insert.sequence
+        request = _construction_request(
+            payload=payload,
+            foldback=foldback,
+            basal=basal,
+            design=design,
+            endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            adapter=_material("ligation-adapter", basal.realizations[0].proximal_adapter_sequence),
+            forward_primer=_material("forward-primer", encoding[:4]),
+            reverse_primer=_material(
+                "reverse-primer",
+                reverse_complement_iupac(encoding[-4:]),
+            ),
+        )
     return discover_constructions(
         request,
         foldback=verify_foldback_neighborhood_result(foldback),
@@ -139,15 +157,15 @@ def test_construction_bundle_round_trips_verified_authorities_deterministically(
 
     assert first._bundle == second._bundle == loaded._bundle
     assert dict(first._artifacts) == dict(second._artifacts) == dict(loaded._artifacts)
-    assert first.bundle_id == "hop:construction-bundle/be9f3ab07a78/d338147cb0897368"
+    assert first.bundle_id == "hop:construction-bundle/0333f55f00e0/da0a96f4a145c466"
     assert first._bundle.manifest_digest == (
-        "sha256:d338147cb08973688281e60fa95199e665d780756976fff7c7eddeeb2993d51f"
+        "sha256:da0a96f4a145c46602fc0ded91172737a1b13c24a99a08556b7eddb0b1afd466"
     )
     assert first._bundle.result_digest == (
-        "sha256:f1949ec510889e434e8411b90190903132788786bf22f18721b2dfd3b8e31e0f"
+        "sha256:bdc8d1d9e67d4e97ba9a6fa7962d4ffd5399a9552bfc7a66e561dc1dd16f3ab8"
     )
     assert sha256_digest(canonical_json_bytes(first._bundle)) == (
-        "sha256:ec0f2ccac69f52e3f6bde8a2d29337c2a152c48019499df0db655fe0245554e5"
+        "sha256:4449555499fdf693c7a0d3df01bcfd4549a662c3c65464e3eaad1cb52172f5a1"
     )
     assert loaded._construction.result == verified.result
     assert loaded._construction.design == verified.design

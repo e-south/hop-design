@@ -56,49 +56,18 @@ def evaluate_pcr_compatibility(
         or basal.basal_nick.boundary.offset != len(prefix)
     ):
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
-    local_adapter = next(
-        (item for item in basal.materials if item.material_id == "ligation-adapter"),
-        None,
-    )
-    profile = basal.projection.pairing_profile
+    pairing_state = basal.projection.pairing_state
     if (
         adapter is None
-        or local_adapter is None
-        or profile is None
-        or profile.adapter_span.end.offset > len(adapter.sequence_5prime)
+        or pairing_state.adapter_span.end.offset > len(adapter.sequence_5prime)
         or adapter.sequence_5prime[
-            profile.adapter_span.start.offset : profile.adapter_span.end.offset
+            pairing_state.adapter_span.start.offset : pairing_state.adapter_span.end.offset
         ]
-        != local_adapter.sequence_5prime
+        != pairing_state.adapter_sequence_5prime
         or adapter.five_prime_end is not EndChemistry.PHOSPHATE
         or adapter.three_prime_end is not EndChemistry.HYDROXYL
     ):
         return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
-    complex_state = basal.adapter_annealed_complex
-    if (
-        profile is None
-        or complex_state is None
-        or profile.adapter_span.end.offset > len(adapter.sequence_5prime)
-        or tuple(
-            (
-                pair.left_index - profile.source_span.start.offset,
-                pair.right_index,
-                pair.left_base,
-                pair.right_base,
-            )
-            for pair in complex_state.pairs
-        )
-        != tuple(
-            (
-                pair.source_index,
-                pair.adapter_index,
-                pair.source_base,
-                pair.adapter_base,
-            )
-            for pair in profile.pairs
-        )
-    ):
-        return CompositionRejectionCode.PCR_PAIRING_PROFILE_MISMATCH
     if (
         forward.oligo.three_prime_end is not EndChemistry.HYDROXYL
         or reverse.oligo.three_prime_end is not EndChemistry.HYDROXYL
@@ -110,16 +79,16 @@ def evaluate_pcr_compatibility(
     return None
 
 
-def validate_adapter_pairing_profile(
+def validate_adapter_pairing_state(
     authority: AdapterAnnealingAuthority,
     *,
     basal: BasalRealizationRecord,
     closed_strand_id: str,
     adapter_strand_id: str,
 ) -> None:
-    """Replay literal H5 pair coordinates, bases, and classes into PCR authority."""
-    profile = basal.projection.pairing_profile
-    if profile is None:
+    """Replay literal basal pair coordinates, bases, and classes into PCR authority."""
+    pairing_state = basal.projection.pairing_state
+    if pairing_state is None:
         raise ValueError("PCR route requires the exact basal adapter-pairing authority.")
     kind_by_class = {
         BasalPairClass.MATCH: JunctionPairKind.WATSON_CRICK,
@@ -130,13 +99,13 @@ def validate_adapter_pairing_profile(
         (
             closed_strand_id,
             adapter_strand_id,
-            pair.source_index + profile.source_span.start.offset,
+            pair.source_index + pairing_state.source_span.start.offset,
             pair.adapter_index,
             pair.source_base,
             pair.adapter_base,
             kind_by_class[pair.pair_class],
         )
-        for pair in profile.pairs
+        for pair in pairing_state.pairs
     )
     observed = tuple(
         (
@@ -151,11 +120,11 @@ def validate_adapter_pairing_profile(
         for pair in authority.pairings
     )
     if (
-        authority.hairpin_span != profile.source_span
-        or authority.adapter_span != profile.adapter_span
+        authority.hairpin_span != pairing_state.source_span
+        or authority.adapter_span != pairing_state.adapter_span
         or observed != expected
     ):
-        raise ValueError("PCR adapter annealing must replay the exact H5 pairing profile.")
+        raise ValueError("PCR adapter annealing must replay the exact basal pairing state.")
 
 
 def validate_pcr_realization(realization: MaterializedConstructionRealization) -> None:
@@ -242,7 +211,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     if not isinstance(adapter_authority, AdapterAnnealingAuthority):
         raise ValueError("PCR route requires the exact basal adapter-pairing authority.")
     closed, adapter_strand = program.states[pcr_index - 2].molecules
-    validate_adapter_pairing_profile(
+    validate_adapter_pairing_state(
         adapter_authority,
         basal=basal,
         closed_strand_id=closed.strand_id,
@@ -302,6 +271,6 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
 
 __all__ = [
     "evaluate_pcr_compatibility",
-    "validate_adapter_pairing_profile",
+    "validate_adapter_pairing_state",
     "validate_pcr_realization",
 ]

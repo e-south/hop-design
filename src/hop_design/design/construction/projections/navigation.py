@@ -69,11 +69,14 @@ def _project_accepted_route(
             if basal_authority is None
             else cast(BasalTarget, basal_authority.local_realization.achieved_geometry)
         ),
-        foldback_relaxation_radius=realization.foldback_authority.relaxation_radius,
-        basal_relaxation_radius=(
-            None if basal_authority is None else basal_authority.relaxation_radius
+        foldback_retained_overhead_nt=(
+            realization.foldback_authority.retained_overhead.retained_overhead_nt
         ),
-        exact_geometry=all(radius == 0 for radius in realization.relaxation_radii),
+        basal_retained_overhead_nt=(
+            None
+            if basal_authority is None
+            else basal_authority.retained_overhead.retained_overhead_nt
+        ),
         cleavage_enzyme_ids=_route_cleavage_enzyme_ids(realization),
         retained_non_payload_nt=(
             len(realization.design.encoding_sequence) - 2 * len(realization.design.payload_sequence)

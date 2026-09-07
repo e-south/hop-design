@@ -23,12 +23,11 @@ from hop_design.design.construction.foldback import discover_foldback_neighborho
 from hop_design.models.construction import (
     ConstructionConstraints,
     ConstructionEndpoint,
-    EnumerationPolicy,
     FoldbackTarget,
     NeighborhoodDiscoveryResult,
+    NeighborhoodSearchPlan,
     PayloadCompatibilityAccounting,
     PayloadCompatibilityStatus,
-    RelaxationMode,
     SequenceDomainPartition,
     problem_id,
 )
@@ -40,9 +39,13 @@ from tests.contract.test_foldback_construction_discovery import _nickase, _reque
 def _with_partition(request, *, part_count: int, part_index: int):
     return request.model_copy(
         update={
-            "enumeration": EnumerationPolicy(
-                max_search_nodes=request.enumeration.max_search_nodes,
-                max_realizations=request.enumeration.max_realizations,
+            "search": NeighborhoodSearchPlan(
+                max_retained_overhead_nt=request.search.max_retained_overhead_nt,
+                max_search_nodes=request.search.max_search_nodes,
+                max_realizations=request.search.max_realizations,
+                scope=request.search.scope,
+                stop=request.search.stop,
+                result_quota=request.search.result_quota,
                 sequence_partition=SequenceDomainPartition(
                     part_count=part_count,
                     part_index=part_index,
@@ -95,7 +98,7 @@ def test_partition_parts_are_complete_disjoint_and_reconstruct_the_exact_search(
     expected_ids = _realization_ids(unpartitioned)
     part_ids = tuple(_realization_ids(part) for part in parts)
 
-    assert all(part.neighborhood.status == "complete" for part in parts)
+    assert all(part.neighborhood.disposition.completion == "complete" for part in parts)
     assert all(part.neighborhood.payload_compatibility.status == "not_computed" for part in parts)
     assert all(part.neighborhood.problem_id == problem_id(unpartitioned_request) for part in parts)
     assert len({part.neighborhood.execution_id for part in parts}) == 4
@@ -115,9 +118,9 @@ def test_partition_parts_are_complete_disjoint_and_reconstruct_the_exact_search(
         for part in parts
         for record in part.realizations
     )
-    assert sum(part.neighborhood.shells[0].candidate_count for part in parts) == (
-        unpartitioned.neighborhood.shells[0].candidate_count
-    )
+    assert sum(
+        level.candidate_count for part in parts for level in part.neighborhood.overhead_levels
+    ) == sum(level.candidate_count for level in unpartitioned.neighborhood.overhead_levels)
     assert sum(part.neighborhood.rejected_count for part in parts) == (
         unpartitioned.neighborhood.rejected_count
     )
@@ -140,21 +143,6 @@ def test_partition_preserves_both_duplex_nick_orientations() -> None:
     assert {member for part in parts for member in _realization_ids(part)} == set(
         _realization_ids(unpartitioned)
     )
-
-
-def test_partition_is_not_allowed_with_first_feasible_shell_stopping() -> None:
-    request = _partitioned_request(part_count=2, part_index=0)
-    with pytest.raises(ValidationError, match="first_feasible_shell"):
-        type(request).model_validate(
-            {
-                **request.model_dump(mode="python"),
-                "relaxation": {
-                    "mode": RelaxationMode.FIRST_FEASIBLE_SHELL,
-                    "max_radius": 0,
-                    "coordinates": (),
-                },
-            }
-        )
 
 
 def test_partition_is_not_allowed_with_all_member_compatibility() -> None:
@@ -188,7 +176,7 @@ def test_partition_result_cannot_claim_whole_domain_payload_compatibility() -> N
 def test_partition_can_complete_below_a_bound_that_truncates_the_full_domain() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -204,8 +192,8 @@ def test_partition_can_complete_below_a_bound_that_truncates_the_full_domain() -
         for index in range(2)
     )
 
-    assert unpartitioned.neighborhood.status == "truncated"
-    assert all(part.neighborhood.status == "complete" for part in parts)
+    assert unpartitioned.neighborhood.disposition.completion == "truncated"
+    assert all(part.neighborhood.disposition.completion == "complete" for part in parts)
     assert sum(len(part.realizations) for part in parts) == 4
 
 
@@ -237,7 +225,7 @@ def test_public_receipt_persists_and_replays_one_declared_partition(tmp_path: Pa
     receipt = construction.discover_local_neighborhood(source)
     payload = json.loads(receipt.json_bytes)
 
-    assert payload["neighborhood"]["request"]["enumeration"]["sequence_partition"] == {
+    assert payload["neighborhood"]["request"]["search"]["sequence_partition"] == {
         "part_count": 4,
         "part_index": 3,
     }

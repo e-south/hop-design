@@ -64,7 +64,12 @@ def discover_source_partitions(
                 realization_id=realization_id,
             )
         )
-        if replay.nicked_duplex is None or replay.denatured is None or replay.selected is None:
+        if (
+            replay.nicked_duplex is None
+            or replay.denatured is None
+            or replay.selected is None
+            or replay.fragment_certificate is None
+        ):
             raise AssertionError("Accepted source-partition replay omitted molecular states.")
         realizations.append(
             SourcePartitionRealization(
@@ -74,6 +79,7 @@ def discover_source_partitions(
                 denatured=replay.denatured,
                 selected=replay.selected,
                 nick_functions=replay.nick_functions,
+                fragment_certificate=replay.fragment_certificate,
             )
         )
         if (
@@ -105,7 +111,7 @@ def discover_source_partitions(
         "truncation_reasons": canonical_reasons,
     }
     return SourcePartitionDiscoveryResult(
-        schema="hop.source-partition-result/v1",
+        schema="hop.source-partition-result/v2",
         request=request,
         problem_id=request.problem_id,
         request_id=request.request_id,

@@ -68,6 +68,88 @@ def _result_csv(result: SourcePartitionDiscoveryResult) -> bytes:
     return output.getvalue().encode("utf-8")
 
 
+def _fragment_csv(result: SourcePartitionDiscoveryResult) -> bytes:
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(
+        (
+            "realization_id",
+            "fragment_id",
+            "strand",
+            "source_start",
+            "source_end",
+            "length_nt",
+            "disposition",
+            "survivor_id",
+            "left_boundary_kind",
+            "left_physical_end",
+            "left_enzyme_ids",
+            "right_boundary_kind",
+            "right_physical_end",
+            "right_enzyme_ids",
+        )
+    )
+    for realization in result.realizations:
+        for fragment in realization.fragment_certificate.fragments:
+            writer.writerow(
+                (
+                    realization.realization_id,
+                    fragment.fragment_id,
+                    fragment.precursor_strand.value,
+                    fragment.source_span.start.offset,
+                    fragment.source_span.end.offset,
+                    fragment.length_nt,
+                    fragment.disposition.value,
+                    fragment.survivor_id or "",
+                    fragment.left_boundary.kind.value,
+                    (
+                        ""
+                        if fragment.left_boundary.physical_end is None
+                        else fragment.left_boundary.physical_end.value
+                    ),
+                    ";".join(fragment.left_boundary.enzyme_ids),
+                    fragment.right_boundary.kind.value,
+                    (
+                        ""
+                        if fragment.right_boundary.physical_end is None
+                        else fragment.right_boundary.physical_end.value
+                    ),
+                    ";".join(fragment.right_boundary.enzyme_ids),
+                )
+            )
+    return output.getvalue().encode("utf-8")
+
+
+def _threshold_csv(result: SourcePartitionDiscoveryResult) -> bytes:
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(
+        (
+            "realization_id",
+            "maximum_sacrificial_fragment_nt",
+            "feasible",
+            "selected",
+            "violating_fragment_ids",
+        )
+    )
+    for realization in result.realizations:
+        certificate = realization.fragment_certificate
+        for threshold in certificate.thresholds:
+            writer.writerow(
+                (
+                    realization.realization_id,
+                    threshold.maximum_sacrificial_fragment_nt,
+                    str(threshold.feasible).lower(),
+                    str(
+                        threshold.maximum_sacrificial_fragment_nt
+                        == certificate.selected_maximum_sacrificial_fragment_nt
+                    ).lower(),
+                    ";".join(threshold.violating_fragment_ids),
+                )
+            )
+    return output.getvalue().encode("utf-8")
+
+
 @dataclass(frozen=True, init=False, repr=False)
 class SourcePartitionDiscovery:
     """Opaque, portable receipt for one replay-verified source-partition search."""
@@ -75,6 +157,8 @@ class SourcePartitionDiscovery:
     _result: SourcePartitionDiscoveryResult
     _json_bytes: bytes
     _csv_bytes: bytes
+    _fragment_csv_bytes: bytes
+    _threshold_csv_bytes: bytes
 
     @classmethod
     def _create(cls, result: SourcePartitionDiscoveryResult) -> Self:
@@ -85,6 +169,8 @@ class SourcePartitionDiscovery:
         object.__setattr__(instance, "_result", verified)
         object.__setattr__(instance, "_json_bytes", canonical_json_bytes(verified))
         object.__setattr__(instance, "_csv_bytes", _result_csv(verified))
+        object.__setattr__(instance, "_fragment_csv_bytes", _fragment_csv(verified))
+        object.__setattr__(instance, "_threshold_csv_bytes", _threshold_csv(verified))
         return instance
 
     @property
@@ -137,6 +223,8 @@ class SourcePartitionDiscovery:
         try:
             (staging / "result.json").write_bytes(self._json_bytes)
             (staging / "data.csv").write_bytes(self._csv_bytes)
+            (staging / "fragments.csv").write_bytes(self._fragment_csv_bytes)
+            (staging / "thresholds.csv").write_bytes(self._threshold_csv_bytes)
             publish_directory_create_only(staging, output)
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)
@@ -158,7 +246,7 @@ class SourcePartitionDiscovery:
 
 def _load_request(path: str | Path) -> SourcePartitionDiscoveryRequest:
     mapping = load_source_mapping(path, source_label="HOP source-partition")
-    if mapping.get("schema") != "hop.source-partition-request/v1":
+    if mapping.get("schema") != "hop.source-partition-request/v2":
         raise ValueError(f"Unsupported HOP source-partition schema: {mapping.get('schema')!r}.")
     return SourcePartitionDiscoveryRequest.model_validate_json(
         json.dumps(mapping, separators=(",", ":"))
@@ -173,7 +261,7 @@ def discover_source_partition(source_path: str | Path) -> SourcePartitionDiscove
 def load_verified_source_partition(result_path: str | Path) -> SourcePartitionDiscovery:
     """Load one source-partition result after exact molecular and search replay."""
     mapping = load_source_mapping(result_path, source_label="HOP source-partition result")
-    if mapping.get("schema") != "hop.source-partition-result/v1":
+    if mapping.get("schema") != "hop.source-partition-result/v2":
         raise ValueError(
             f"Unsupported HOP source-partition result schema: {mapping.get('schema')!r}."
         )

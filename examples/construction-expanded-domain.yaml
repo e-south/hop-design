@@ -1,6 +1,6 @@
-schema: hop.construction-source/v5
+schema: hop.construction-source/v6
 foldback:
-  schema: hop.local-neighborhood-request/v3
+  schema: hop.local-neighborhood-request/v5
   name: null
   payload:
     schema: hop.final-payload/v1
@@ -16,11 +16,14 @@ foldback:
   family: foldback
   route_family: linear_source/v1
   endpoint: ssdna_hairpin
-  target:
+  geometry_domain:
     family: foldback
-    nick_offset_within_foldback_nt: 0
-    loop_length_nt: 3
-    annealing_arm_length_bp: 3
+    nick_strand: any
+    junction_offsets_nt: [0]
+    minimum_loop_length_nt: 3
+    minimum_annealing_arm_length_bp: 3
+    loop_lengths_nt: [3]
+    annealing_arm_lengths_bp: [3, 4]
   hard_constraints:
     preserve_payload: true
     forbid_unintended_actionable_sites: true
@@ -82,16 +85,12 @@ foldback:
     - role: terminus_definition
       allowed_enzyme_ids:
       - example:enzyme/foldback-terminus@1
-  relaxation:
-    mode: first_feasible_shell
-    max_radius: 1
-    coordinates:
-    - name: annealing_arm_length_bp
-      minimum: 3
-      maximum: 4
-  enumeration:
+  search:
+    max_retained_overhead_nt: 11
     max_search_nodes: 100
     max_realizations: 100
+    scope: all_realizations
+    stop: exhaustive
 basal: null
 composition:
   endpoint: ssdna_hairpin

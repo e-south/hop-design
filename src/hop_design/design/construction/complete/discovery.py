@@ -53,7 +53,7 @@ from .partition_binding import (
     validate_partition_selection,
 )
 from .replay_admission import record_replay_admission
-from .results import build_result
+from .results import build_result, composition_status, reject_accepted_dispositions
 from .selection import select_local_domains, validate_detailed_authority_ids
 
 
@@ -207,39 +207,28 @@ def _discover_constructions_raw(
         and failures
         and exact
         and not truncation
-        and foldback.neighborhood.status is not SearchCompletionStatus.TRUNCATED
-        and (basal is None or basal.discovery.status is not SearchCompletionStatus.TRUNCATED)
+        and foldback.neighborhood.disposition.completion is not SearchCompletionStatus.TRUNCATED
+        and (
+            basal is None
+            or basal.discovery.disposition.completion is not SearchCompletionStatus.TRUNCATED
+        )
     ):
         failures[CompositionRejectionCode.ALL_COMBINATIONS_VALID_REQUIRED] += len(exact)
-        dispositions = [
-            CompositionDisposition(
-                ordinal=item.ordinal,
-                foldback_realization_id=item.foldback_realization_id,
-                basal_realization_id=item.basal_realization_id,
-                status=CompositionDispositionStatus.REJECTED,
-                rejection_reason=(
-                    CompositionRejectionCode.ALL_COMBINATIONS_VALID_REQUIRED
-                    if item.status is CompositionDispositionStatus.ACCEPTED
-                    else item.rejection_reason
-                ),
-                candidate_enzyme_programs=item.candidate_enzyme_programs,
-                recognition_placements_attempted=item.recognition_placements_attempted,
-                constraint_systems_attempted=item.constraint_systems_attempted,
-            )
-            for item in dispositions
-        ]
+        dispositions = reject_accepted_dispositions(
+            dispositions,
+            rejection_code=CompositionRejectionCode.ALL_COMBINATIONS_VALID_REQUIRED,
+        )
         exact = ()
     upstream_truncation_reasons = expected_upstream_truncation_reasons(
         request=request,
         foldback=foldback,
         basal=basal,
     )
-    status = (
-        SearchCompletionStatus.TRUNCATED
-        if truncation or endpoint_truncation_reasons or upstream_truncation_reasons
-        else SearchCompletionStatus.COMPLETE
-        if exact
-        else SearchCompletionStatus.INFEASIBLE
+    status = composition_status(
+        realizations=exact,
+        truncation=truncation,
+        endpoint_truncation_reasons=endpoint_truncation_reasons,
+        upstream_truncation_reasons=upstream_truncation_reasons,
     )
     return build_result(
         request=request,

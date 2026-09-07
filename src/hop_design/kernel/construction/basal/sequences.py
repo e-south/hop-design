@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from itertools import product
 
 from hop_design.models.construction import (
+    BasalFutureReleaseAction,
     BasalTarget,
     ConstructionEndpoint,
 )
@@ -24,7 +25,7 @@ from hop_design.models.enzymes import (
 )
 from hop_design.models.junction import Strand
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.sequence import normalize_dna_sequence
+from hop_design.models.sequence import normalize_dna_sequence, reverse_complement_iupac
 
 from .programs import (
     _BASES,
@@ -34,8 +35,26 @@ from .programs import (
     _adapter_domains,
     _binding,
     _constrain,
+    _oriented_cuts,
     _oriented_pattern,
 )
+
+
+def basal_retained_overhead_nt(
+    *,
+    target: BasalTarget,
+    endpoint: ConstructionEndpoint,
+    program: BasalProgramCandidate,
+) -> int:
+    """Return the non-payload span retained in the local PCR reference state."""
+    if endpoint not in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    }:
+        raise ValueError("Basal retained-overhead accounting requires a PCR-bearing endpoint.")
+    _ = program
+    arm_nt = len(target.pairing_constraints)
+    return max(arm_nt, target.nick_offset_nt)
 
 
 def iter_basal_program_solutions(
@@ -46,7 +65,7 @@ def iter_basal_program_solutions(
     program: BasalProgramCandidate,
 ) -> Iterator[BasalSequenceSolution | BasalPlacementFailure]:
     """Solve exact source and adapter sequences from geometry and recognition constraints."""
-    from .pairing import resolve_basal_pairing_profile
+    from .pairing import resolve_basal_pairing_state
 
     if not isinstance(target.nick_strand, Strand):
         raise ValueError("Basal sequence realization requires one exact nick strand.")
@@ -73,10 +92,22 @@ def iter_basal_program_solutions(
     )
     nick_boundary = payload_start - target.nick_offset_nt
     nick_site_start = nick_boundary - nick_cut_offset
+    reference_cut, complement_cut = _oriented_cuts(
+        program.nick_enzyme,
+        orientation=program.nick_orientation,
+        site_start=nick_site_start,
+    )
 
     placements: list[tuple[int, str]] = [(nick_site_start, nick_pattern), (payload_start, payload)]
-    minimum = min(0, *(start for start, _pattern in placements))
-    maximum = max(adapter_end, *(start + len(pattern) for start, pattern in placements))
+    cut_boundaries = tuple(
+        boundary for boundary in (reference_cut, complement_cut) if boundary is not None
+    )
+    minimum = min(0, *(start for start, _pattern in placements), *cut_boundaries)
+    maximum = max(
+        adapter_end,
+        *(start + len(pattern) for start, pattern in placements),
+        *cut_boundaries,
+    )
     shift = -minimum
     source_start += shift
     payload_start += shift
@@ -95,7 +126,13 @@ def iter_basal_program_solutions(
 
     variable_indexes = tuple(range(source_start, payload_start))
     source_domains = tuple(
-        tuple(base for base in _BASES if base in domains[index]) for index in variable_indexes
+        tuple(
+            base
+            for base in _BASES
+            if base in domains[index]
+            and base in target.pairing_constraints[arm_nt - 1 - source_index].allowed_source_bases
+        )
+        for source_index, index in enumerate(variable_indexes)
     )
     if any(not domain for domain in source_domains):
         yield BasalPlacementFailure("basal-source-conflict")
@@ -106,7 +143,10 @@ def iter_basal_program_solutions(
             adapter_assignments: Iterator[tuple[str, ...]] = iter(((),))
         else:
             per_position = tuple(
-                _adapter_domains(source_arm[arm_nt - 1 - position], constraint.allowed_class)
+                _adapter_domains(
+                    source_arm[arm_nt - 1 - position],
+                    constraint=constraint,
+                )
                 for position, constraint in enumerate(target.pairing_constraints)
             )
             if any(not allowed for allowed in per_position):
@@ -114,6 +154,13 @@ def iter_basal_program_solutions(
             adapter_assignments = product(*per_position)
         for adapter_assignment in adapter_assignments:
             adapter = "".join(adapter_assignment) if adapter_assignment else None
+            release_sequence = _future_top_overhang_sequence(program.future_release_action)
+            if release_sequence is not None and (
+                adapter is None
+                or len(release_sequence) > len(adapter)
+                or adapter[: len(release_sequence)] != release_sequence
+            ):
+                continue
             if adapter is not None and any(
                 base not in domains[index]
                 for index, base in enumerate(adapter, start=adapter_start)
@@ -160,9 +207,9 @@ def iter_basal_program_solutions(
                         start=nick_site_start,
                     )
                 ]
-                profile = None
+                pairing_state = None
                 if adapter is not None:
-                    profile = resolve_basal_pairing_profile(
+                    pairing_state = resolve_basal_pairing_state(
                         source_sequence_5prime=source_arm,
                         adapter_sequence_5prime=adapter,
                         source_span=Span(
@@ -170,6 +217,7 @@ def iter_basal_program_solutions(
                             end=Boundary(offset=payload_start),
                         ),
                         adapter_span=Span(start=Boundary(offset=0), end=Boundary(offset=arm_nt)),
+                        end_projection_positions=tuple(range(len(release_sequence or ""))),
                     )
                 yield BasalSequenceSolution(
                     source_precursor_sequence=source_precursor,
@@ -177,6 +225,24 @@ def iter_basal_program_solutions(
                     payload_span=Span(
                         start=Boundary(offset=payload_start), end=Boundary(offset=payload_end)
                     ),
-                    pairing_profile=profile,
+                    pairing_state=pairing_state,
                     enzyme_bindings=tuple(bindings),
                 )
+
+
+def _future_top_overhang_sequence(action: BasalFutureReleaseAction | None) -> str | None:
+    """Return the future top-strand bases constrained by one cohesive-end requirement."""
+    if action is None:
+        return None
+    requirement = action.requirement
+    reference_before_complement = (
+        action.reference_cut_from_release_boundary < action.complement_cut_from_release_boundary
+    )
+    reverse = (reference_before_complement and requirement.product_end == "right") or (
+        not reference_before_complement and requirement.product_end == "left"
+    )
+    return (
+        reverse_complement_iupac(requirement.cohesive_end_sequence)
+        if reverse
+        else requirement.cohesive_end_sequence
+    )

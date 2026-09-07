@@ -41,7 +41,7 @@ def test_constrained_adapter_and_derived_primers_resolve_exact_materials() -> No
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         nick_strand=Strand.BOTTOM,
     ).realizations[0]
-    local_adapter = next(item for item in basal.materials if item.material_id == "ligation-adapter")
+    proximal_adapter = basal.proximal_adapter_sequence
     pcr_core = "AACCGGTTAACCGGTT"
     handle = "GATCTG"
     policy = EndpointAuxiliaryPolicy(
@@ -66,8 +66,8 @@ def test_constrained_adapter_and_derived_primers_resolve_exact_materials() -> No
         source_primer_region_length_nt=5,
     )
 
-    template = pcr_core + local_adapter.sequence_5prime + handle
-    assert resolved.adapter.sequence_5prime == local_adapter.sequence_5prime + handle
+    template = pcr_core + proximal_adapter + handle
+    assert resolved.adapter.sequence_5prime == proximal_adapter + handle
     assert resolved.adapter.five_prime_end is EndChemistry.PHOSPHATE
     assert resolved.adapter.three_prime_end is EndChemistry.HYDROXYL
     assert resolved.forward_primer.annealing_sequence == template[:5]
@@ -162,13 +162,13 @@ def test_fixed_adapter_rejects_incompatible_three_prime_chemistry() -> None:
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         nick_strand=Strand.BOTTOM,
     ).realizations[0]
-    local_adapter = next(item for item in basal.materials if item.material_id == "ligation-adapter")
+    proximal_adapter = basal.proximal_adapter_sequence
     policy = EndpointAuxiliaryPolicy(
         adapter=FixedAdapterPolicy(
             mode=MaterialResolutionMode.FIXED,
             material=ExactConstructionMaterial.model_validate(
                 {
-                    "sequence_5prime": local_adapter.sequence_5prime,
+                    "sequence_5prime": proximal_adapter,
                     "five_prime_end": EndChemistry.PHOSPHATE,
                     "three_prime_end": EndChemistry.PHOSPHATE,
                 }

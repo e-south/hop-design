@@ -14,7 +14,11 @@ from hop_design.kernel.construction.foldback import (
     iter_foldback_program_solutions,
     iter_foldback_programs,
 )
-from hop_design.models.construction import FoldbackTarget, SearchCompletionStatus
+from hop_design.models.construction import (
+    FoldbackTarget,
+    SearchCompletionStatus,
+    SearchTerminationReason,
+)
 from hop_design.models.physical import Strand
 from tests.contract.test_foldback_construction_discovery import _nickase, _request
 
@@ -22,7 +26,7 @@ from tests.contract.test_foldback_construction_discovery import _nickase, _reque
 def test_unconstrained_loop_bases_are_enumerated_without_a_sequence_preference() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -32,7 +36,7 @@ def test_unconstrained_loop_bases_are_enumerated_without_a_sequence_preference()
     solutions = tuple(
         iter_foldback_program_solutions(
             payload_sequence="GACA",
-            target=request.target,
+            target=target,
             program=route,
         )
     )
@@ -50,9 +54,9 @@ def test_unconstrained_loop_bases_are_enumerated_without_a_sequence_preference()
 def test_internal_nick_enumerates_the_foldback_base_retained_on_the_top_strand() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=1,
+        junction_offset_nt=1,
         loop_length_nt=4,
-        annealing_arm_length_bp=2,
+        annealing_arm_length_bp=3,
     )
     request = _request(_nickase(motif="ATTTTT"), target=target)
     route = iter_foldback_programs(request.enzyme_provisioning, target=target)[0]
@@ -66,10 +70,10 @@ def test_internal_nick_enumerates_the_foldback_base_retained_on_the_top_strand()
     )
 
     assert tuple(solution.source_reference_sequence for solution in solutions) == tuple(
-        "GACA" + retained_base + "ATTTTT" for retained_base in "ACGT"
+        "GACA" + retained_base + "ATTTTTAT" for retained_base in "ACGT"
     )
     assert tuple(solution.retained_sequence for solution in solutions) == tuple(
-        "GACA" + retained_base + "AAAAA" + "T" + complement + "TGTC"
+        "GACA" + retained_base + "ATAAAAAT" + complement + "TGTC"
         for retained_base, complement in zip("ACGT", "TGCA", strict=True)
     )
 
@@ -77,13 +81,13 @@ def test_internal_nick_enumerates_the_foldback_base_retained_on_the_top_strand()
 def test_discovery_preserves_all_exact_loop_realizations_beneath_one_geometry() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
     result = discover_foldback_neighborhood(_request(_nickase(motif="ACANTT"), target=target))
 
-    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
     assert tuple(item.loop_sequence for item in result.realizations) == (
         "AAA",
         "AAC",
@@ -96,7 +100,7 @@ def test_discovery_preserves_all_exact_loop_realizations_beneath_one_geometry() 
 def test_loop_sequence_enumeration_reports_truncation_instead_of_a_partial_complete_set() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -104,6 +108,8 @@ def test_loop_sequence_enumeration_reports_truncation_instead_of_a_partial_compl
         _request(_nickase(motif="ACANTT"), target=target, max_search_nodes=2)
     )
 
-    assert result.neighborhood.status is SearchCompletionStatus.TRUNCATED
-    assert result.neighborhood.truncation_reasons == ("max_search_nodes",)
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.TRUNCATED
+    assert (
+        result.neighborhood.disposition.termination_reason is SearchTerminationReason.EVALUATION_CAP
+    )
     assert tuple(item.loop_sequence for item in result.realizations) == ("AAA", "AAC")

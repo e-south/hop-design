@@ -97,7 +97,8 @@ def test_unintended_actionable_site_rejects_the_exact_program() -> None:
         )
     )
 
-    assert result.neighborhood.status == "infeasible"
+    assert result.neighborhood.disposition.completion.value == "complete"
+    assert result.neighborhood.disposition.feasibility.value == "infeasible"
     assert {reason.code for reason in result.neighborhood.failure_reasons} == {
         "unintended-actionable-site"
     }
@@ -174,7 +175,7 @@ def test_foldback_realization_identity_rejects_mutated_molecular_content(
         ("controlled_strand", "different strands"),
         ("program_kind", "stage count"),
         ("material_requirements", "material requirements"),
-        ("retained_count", "Retained construction count"),
+        ("retained_count", "Retained-overhead count"),
         ("transient_count", "Transient construction count"),
     ),
 )
@@ -220,7 +221,9 @@ def test_resealed_foldback_realization_rejects_internally_inconsistent_authoriti
     elif case == "material_requirements":
         content["material_requirements"] = ()
     elif case == "retained_count":
-        content["retained_construction_nt"] = realization.retained_construction_nt + 1
+        content["retained_overhead"] = realization.retained_overhead.model_copy(
+            update={"retained_overhead_nt": realization.retained_overhead.retained_overhead_nt + 1}
+        )
     else:
         content["transient_construction_nt"] = realization.transient_construction_nt + 1
 

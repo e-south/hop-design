@@ -49,10 +49,29 @@ def project_complete_construction_trajectory(
         for item in result.combination_dispositions
         if item.materialized_realization_id == materialized_realization_id
     )
+    source_partition_certificate = None
+    if realization.source_partition_binding is not None:
+        authority = result.source_partition_authority
+        if authority is None:
+            raise ValueError("A selected source-partition binding requires its source authority.")
+        selected_partition = next(
+            (
+                item
+                for item in authority.realizations
+                if item.realization_id == realization.source_partition_binding.realization_id
+            ),
+            None,
+        )
+        if selected_partition is None:
+            raise ValueError(
+                "A selected source-partition binding must resolve inside its source authority."
+            )
+        source_partition_certificate = selected_partition.fragment_certificate
     return CompleteConstructionTrajectoryProjection.create(
         source_result_id=result.result_id,
         composition_ordinal=disposition.ordinal,
         realization=realization,
+        source_partition_certificate=source_partition_certificate,
     )
 
 

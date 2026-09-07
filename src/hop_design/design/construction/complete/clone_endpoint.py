@@ -274,7 +274,6 @@ def clone_realization(
                 foldback.local_realization.achieved_geometry.model_dump(mode="json"),
             ),
         ),
-        relaxation_radii=(basal.relaxation_radius, foldback.relaxation_radius),
         claim_boundary=NeighborhoodClaimBoundary(
             digital_design=DigitalDesignStatus.VERIFIED,
             method=MethodResolutionStatus.RESOLVED,

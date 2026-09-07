@@ -21,17 +21,16 @@ from hop_design.design.bundle import load_verified_bundle
 from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.models.construction import (
+    BasalFutureReleaseRequirement,
+    BasalGeometryDomain,
     BasalPairAllowance,
-    BasalTarget,
     ConstructionConstraints,
     ConstructionEndpoint,
-    EnumerationPolicy,
     FinalPayloadReference,
     FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
-    RelaxationMode,
-    RelaxationPolicy,
+    NeighborhoodSearchPlan,
     RouteFamily,
     SearchCompletionStatus,
     SourceOrientation,
@@ -123,7 +122,7 @@ def _clone_basal_result(
     pairing_allowances: tuple[BasalPairAllowance, ...] = (BasalPairAllowance.MATCH,) * 4,
     nickase_pattern: str = "TTTT",
     nickase_cut_offset_reference: int = 0,
-    requested_overhangs: tuple[str, ...] = (),
+    requested_overhang: str,
 ):
     nickase = CharacterizedEnzyme(
         enzyme_id="example:enzyme/clone-bottom-nick@1",
@@ -148,20 +147,22 @@ def _clone_basal_result(
             payload=payload,
             family=LocalNeighborhoodFamily.BASAL,
             route_family=RouteFamily.LINEAR_SOURCE_V1,
-            endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            target=BasalTarget(
+            endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+            geometry_domain=BasalGeometryDomain(
                 nick_strand=Strand.BOTTOM,
-                nick_offset_nt=0,
+                nick_offsets_nt=(0,),
                 pairing_constraints=_pairing_constraints(pairing_allowances),
-                ligation_proximal_match_required=True,
+                future_release=BasalFutureReleaseRequirement(
+                    product_end="right",
+                    orientation=SiteOrientation.REVERSE,
+                    cohesive_end_sequence=requested_overhang,
+                    overhang_end=StrandEnd.FIVE_PRIME,
+                ),
             ),
             hard_constraints=ConstructionConstraints(),
-            enzyme_provisioning=_provisioning(nickase, max_operations=1),
-            relaxation=RelaxationPolicy(
-                mode=RelaxationMode.EXACT_ONLY,
-                max_radius=0,
-            ),
-            enumeration=EnumerationPolicy(
+            enzyme_provisioning=_provisioning(nickase, _type_iis(), max_operations=2),
+            search=NeighborhoodSearchPlan(
+                max_retained_overhead_nt=2 * len(pairing_allowances) + len(nickase_pattern),
                 max_search_nodes=10_000,
                 max_realizations=10_000,
             ),
@@ -172,29 +173,31 @@ def _clone_basal_result(
 def _clone_fixture(tmp_path: Path):
     payload = _payload()
     foldback = _foldback(payload)
-    basal = _clone_basal_result(payload)
-    assert basal.discovery.status is SearchCompletionStatus.COMPLETE
-    assert len(basal.realizations) == 1
-    basal_realization = basal.realizations[0]
-    assert basal_realization.hairpin_pcr_duplex is not None
-    adapter = next(
-        item for item in basal_realization.materials if item.material_id == "ligation-adapter"
-    )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
+    basal = _clone_basal_result(
+        payload,
+        requested_overhang=reverse_complement_iupac(encoding[-4:]),
+    )
+    assert basal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert len(basal.realizations) == 1
+    basal_realization = basal.realizations[0]
+    adapter_sequence = basal_realization.proximal_adapter_sequence
     complete_pcr_top = encoding
-    return payload, foldback, basal, design, adapter, complete_pcr_top, encoding
+    return payload, foldback, basal, design, adapter_sequence, complete_pcr_top, encoding
 
 
 def _clone_request(tmp_path: Path):
-    payload, foldback, basal, design, adapter, complete_pcr_top, encoding = _clone_fixture(tmp_path)
+    payload, foldback, basal, design, adapter_sequence, complete_pcr_top, encoding = _clone_fixture(
+        tmp_path
+    )
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=PcrPrimer(
             oligo=_material("forward-primer", f"GGTCTC{complete_pcr_top[:4]}"),
             annealing_length_nt=4,
@@ -337,6 +340,30 @@ def test_clone_ready_endpoint_extends_exact_pcr_route_through_end_generation(
     assert projection.orientation is BindingOrientation.SAME_5TO3
 
 
+def test_clone_ready_requires_the_selected_basal_release_enzyme(tmp_path: Path) -> None:
+    request, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    release = request.release
+    assert release is not None
+    alternate = _type_iis("example:enzyme/end-b@1")
+    changed = request.model_copy(
+        update={
+            "release": release.model_copy(
+                update={
+                    "enzyme_provisioning": _provisioning(alternate, max_operations=2),
+                }
+            )
+        }
+    )
+
+    result = _discover_raw(changed, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert result.realizations == ()
+    assert tuple(item.code for item in result.failure_reasons) == (
+        CompositionRejectionCode.CLONE_LOCAL_RELEASE_INCOMPATIBLE,
+    )
+
+
 def test_clone_ready_accepts_both_duplex_foldback_orientations(
     tmp_path: Path,
 ) -> None:
@@ -350,7 +377,7 @@ def test_clone_ready_accepts_both_duplex_foldback_orientations(
             ),
             _terminus_enzyme(),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
@@ -418,6 +445,12 @@ def test_clone_endpoint_does_not_infer_release_ends_from_basal_pairing_mismatch(
 ) -> None:
     payload = _payload()
     foldback = _foldback(payload)
+    design = _verified_distal_mismatch_design(
+        tmp_path,
+        left_arm="ATAA",
+        right_arm="TTCT",
+    )
+    encoding = design.plan.hairpin_encoding_insert.sequence
     basal = _clone_basal_result(
         payload,
         pairing_allowances=(
@@ -428,26 +461,18 @@ def test_clone_endpoint_does_not_infer_release_ends_from_basal_pairing_mismatch(
         ),
         nickase_pattern="TTTT",
         nickase_cut_offset_reference=0,
+        requested_overhang=reverse_complement_iupac(encoding[-4:]),
     )
-    assert basal.discovery.status is SearchCompletionStatus.COMPLETE
+    assert basal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     basal_realization = basal.realizations[0]
-    assert basal_realization.hairpin_pcr_duplex is not None
-    adapter = next(
-        item for item in basal_realization.materials if item.material_id == "ligation-adapter"
-    )
-    design = _verified_distal_mismatch_design(
-        tmp_path,
-        left_arm="ATAA",
-        right_arm="TTCT",
-    )
-    encoding = design.plan.hairpin_encoding_insert.sequence
+    adapter_sequence = basal_realization.proximal_adapter_sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=PcrPrimer(
             oligo=_material("forward-primer", f"GGTCTC{encoding[:4]}"),
             annealing_length_nt=4,

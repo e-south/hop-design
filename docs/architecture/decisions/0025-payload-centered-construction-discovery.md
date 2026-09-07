@@ -108,9 +108,9 @@ closure bond, and achieved retained geometry.
 
 ### 5. Basal pairing is explicit and Type IIS processing is endpoint-dependent
 
-The basal pairing profile is ordered from the payload-proximal ligation
+The basal pairing state is ordered from the payload-proximal ligation
 position outward. Every position retains its literal source and adapter bases,
-pair classification, profile position, and any later end-projection role.
+pair classification, position from ligation, and any later end-projection role.
 `match`, configured `wobble`, and declared `mismatch` are construction
 bookkeeping, not thermodynamic or biological scores.
 
@@ -183,9 +183,9 @@ explicit states and transitions, identities, verification, and neutral tidy or
 diagram-ready projections. It does not own experiment registries, wet-lab
 records, evidence interpretation, manuscript claims, or publication figures.
 
-Research Studies owns scientific questions, frozen HOP inputs and outputs,
+Client studies own scientific questions, frozen HOP inputs and outputs,
 experimental observations, interpretation, and promotion of candidate assets.
-manufold owns the manuscript premise, claim ceiling, evidence cutoff, accepted
+Manuscript systems own the premise, claim ceiling, evidence cutoff, accepted
 snapshot imports, captions, and final composition. Downstream applications
 consume HOP without defining this generic construction contract.
 

@@ -102,10 +102,12 @@ def validate_combination_evaluations(
         request.whole_route_constraints.require_all_combinations_valid
         and all_examined
         and has_intrinsic_failure
-        and foldback_authority.neighborhood.status is not SearchCompletionStatus.TRUNCATED
+        and foldback_authority.neighborhood.disposition.completion
+        is not SearchCompletionStatus.TRUNCATED
         and (
             basal_authority is None
-            or basal_authority.discovery.status is not SearchCompletionStatus.TRUNCATED
+            or basal_authority.discovery.disposition.completion
+            is not SearchCompletionStatus.TRUNCATED
         )
     )
     realizations_by_id = {item.materialized_realization_id: item for item in realizations}

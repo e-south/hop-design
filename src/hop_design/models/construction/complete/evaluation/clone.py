@@ -1,9 +1,19 @@
-"""Clone-ready endpoint release and end-generation evaluation."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/models/construction/complete/evaluation/clone.py
+
+Evaluates clone-ready endpoint release and end-generation requirements.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
 from dataclasses import replace
 
+from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.reaction_replay import assess_reaction_program
 
 from ..clone import (
@@ -28,6 +38,32 @@ def evaluate_clone_endpoint(
     release_request = request.release
     if basal is None or release_request is None:
         raise ValueError("Clone composition requires basal and endpoint-release authority.")
+    local_release = basal.future_release_action
+    release_enzyme_ids = tuple(
+        enzyme.enzyme_id
+        for enzyme in release_request.enzyme_provisioning.catalog.enzymes
+        if release_request.enzyme_provisioning.permits(
+            enzyme.enzyme_id,
+            role=EnzymeRole.END_GENERATION,
+        )
+    )
+    if local_release is None or release_enzyme_ids != (local_release.enzyme_id,):
+        return CombinationEvaluation(
+            rejection_reason=CompositionRejectionCode.CLONE_LOCAL_RELEASE_INCOMPATIBLE,
+            prefix=context.prefix,
+            source_return_arm=context.source_return_arm,
+            source=context.source,
+            source_complement=context.source_complement,
+            source_preparation=context.source_preparation,
+            endpoint_auxiliaries=endpoint.endpoint_auxiliaries,
+            reaction_program=endpoint.reaction_program,
+            stage_assessments=endpoint.stage_assessments,
+            pcr_template_sequence=endpoint.pcr_template_sequence,
+            final_sequence=request.design.encoding_sequence,
+            candidate_enzyme_programs=combination.candidate_enzyme_programs,
+            recognition_placements_attempted=combination.recognition_placements_attempted,
+            constraint_systems_attempted=combination.constraint_systems_attempted,
+        )
     auxiliaries = endpoint.endpoint_auxiliaries
     if auxiliaries is None or endpoint.pcr_template_sequence is None:
         raise ValueError("Clone composition requires resolved PCR endpoint auxiliaries.")

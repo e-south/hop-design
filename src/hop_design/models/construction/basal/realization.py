@@ -19,39 +19,33 @@ from pydantic_core import to_jsonable_python
 
 from hop_design.models.base import HopModel
 from hop_design.models.construction import (
+    BasalFutureReleaseAction,
     BasalPairAllowance,
+    BasalPairConstraint,
     BasalTarget,
     LocalRealization,
     PayloadSourceMap,
+    RetainedOverheadLedger,
 )
 from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.enzymes import (
     EnzymeRole,
 )
 from hop_design.models.method_states import MultiSiteNickedDuplex
-from hop_design.models.molecular_state import LineageStrand
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 from hop_design.models.sequence import (
     reverse_complement_iupac,
 )
 from hop_design.serialization import canonical_json_bytes
 
+from .accounting import basal_retained_overhead_ledger
 from .identity import basal_realization_id
 from .pairing import BasalBoundaryControl, BasalEnzymeDefinition
-from .states import (
-    BasalAdapterAnnealedComplex,
-    BasalAdapterLigatedProduct,
-    BasalEndpointProjection,
-    BasalMaterialAccounting,
-    BasalMaterialRecord,
-    BasalMaterialRole,
-    BasalPcrCopyState,
-    assert_material_partition,
-)
+from .states import BasalBoundaryProjection
 
 
 class BasalRealizationRecord(HopModel):
-    """Complete exact basal route evidence for one discovered realization."""
+    """Exact local basal-boundary evidence for one discovered realization."""
 
     basal_realization_id: str = Field(pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$")
     local_realization: LocalRealization
@@ -61,18 +55,21 @@ class BasalRealizationRecord(HopModel):
     enzyme_definitions: tuple[BasalEnzymeDefinition, ...]
     enzyme_bindings: tuple[ConstructionEnzymeBinding, ...]
     basal_nick: BasalBoundaryControl
-    pairing_constraints: tuple[BasalPairAllowance, ...]
-    projection: BasalEndpointProjection
+    future_release_action: BasalFutureReleaseAction | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    pairing_constraints: tuple[BasalPairConstraint, ...]
+    projection: BasalBoundaryProjection
     reaction_programs: tuple[ReactionProgram, ...]
     stage_assessments: tuple[ReactionStageAssessment, ...]
     nicked_duplex: MultiSiteNickedDuplex
-    adapter_annealed_complex: BasalAdapterAnnealedComplex
-    adapter_ligated_product: BasalAdapterLigatedProduct
-    hairpin_pcr_duplex: BasalPcrCopyState
-    materials: tuple[BasalMaterialRecord, ...]
-    material_accounting: BasalMaterialAccounting
-    relaxation_radius: int = Field(ge=0)
-    changed_coordinates: tuple[str, ...]
+    retained_overhead: RetainedOverheadLedger
+
+    @property
+    def proximal_adapter_sequence(self) -> str:
+        """Return the exact adapter segment constrained by local basal discovery."""
+        return self.projection.pairing_state.adapter_sequence_5prime
 
     @classmethod
     def create(cls, **content: object) -> BasalRealizationRecord:
@@ -82,11 +79,9 @@ class BasalRealizationRecord(HopModel):
     @model_validator(mode="after")
     def validate_realization(self) -> BasalRealizationRecord:
         if self.basal_realization_id != basal_realization_id(self):
-            raise ValueError("basal_realization_id must seal the complete exact route evidence.")
-        if self.local_realization.local_sequence != self.projection.pcr_reference_sequence:
-            raise ValueError(
-                "Local realization sequence must equal its exact endpoint-bearing state."
-            )
+            raise ValueError("basal_realization_id must seal the exact local realization.")
+        if self.local_realization.local_sequence != self.projection.local_reference_sequence:
+            raise ValueError("Local realization sequence must equal its exact boundary projection.")
         if self.local_realization.enzyme_binding_ids != tuple(
             binding.binding_id for binding in self.enzyme_bindings
         ):
@@ -103,43 +98,64 @@ class BasalRealizationRecord(HopModel):
         if self.basal_nick.binding_id not in self.local_realization.enzyme_binding_ids:
             raise ValueError("Basal nick must reference one exact local binding.")
         achieved = cast(BasalTarget, self.local_realization.achieved_geometry)
-        if (
-            tuple(item.allowed_class for item in achieved.pairing_constraints)
-            != self.pairing_constraints
-        ):
+        expected_boundary_condition_ids = (
+            () if self.future_release_action is None else (self.future_release_action.action_id,)
+        )
+        if self.local_realization.boundary_condition_ids != expected_boundary_condition_ids:
+            raise ValueError("Local realization must preserve every exact boundary condition.")
+        if self.future_release_action is None:
+            if achieved.future_release is not None:
+                raise ValueError("Basal realization is missing its future release action.")
+        elif self.future_release_action.requirement != achieved.future_release:
+            raise ValueError("Future release action must satisfy the achieved basal target.")
+        if achieved.pairing_constraints != self.pairing_constraints:
             raise ValueError("Realization must retain the authored pairing constraints.")
-        if self.projection.pairing_profile is not None:
-            realized = tuple(
-                pair.pair_class.value for pair in self.projection.pairing_profile.pairs
-            )
-            for allowed, observed in zip(self.pairing_constraints, realized, strict=True):
-                if allowed is not BasalPairAllowance.ANY and allowed.value != observed:
+        if self.projection.pairing_state is not None:
+            for constraint, pair in zip(
+                self.pairing_constraints,
+                self.projection.pairing_state.pairs,
+                strict=True,
+            ):
+                if (
+                    constraint.allowed_class is not BasalPairAllowance.ANY
+                    and constraint.allowed_class.value != pair.pair_class.value
+                ):
                     raise ValueError("Literal basal pairs must satisfy authored class constraints.")
+                if (
+                    pair.source_base not in constraint.allowed_source_bases
+                    or pair.adapter_base not in constraint.allowed_adapter_bases
+                ):
+                    raise ValueError("Literal basal pairs must satisfy authored base domains.")
         self._validate_enzyme_replay()
-        totals = {
-            role: sum(len(item.sequence_5prime) for item in self.materials if item.role is role)
-            for role in BasalMaterialRole
-        }
-        expected = BasalMaterialAccounting(
-            retained_nt=totals[BasalMaterialRole.RETAINED],
-            transient_nt=totals[BasalMaterialRole.TRANSIENT],
-            auxiliary_nt=totals[BasalMaterialRole.AUXILIARY],
+        payload_span = self.payload_source_map.segments[0].source_span
+        reference = self.projection.local_reference_sequence
+        if self.projection.pairing_state is None:
+            raise ValueError("Basal retained overhead requires one exact pairing state.")
+        expected_overhead = basal_retained_overhead_ledger(
+            local_reference_sequence=reference,
+            payload_span=payload_span,
+            pairing_state=self.projection.pairing_state,
+            nick_offset_nt=achieved.nick_offset_nt,
         )
-        if self.material_accounting != expected:
-            raise ValueError("Basal material accounting must derive from exact materials.")
+        if self.retained_overhead != expected_overhead:
+            raise ValueError("Retained overhead must replay the non-payload basal boundary.")
         self._validate_route_states()
-        assert_material_partition(
-            pcr_duplex=self.hairpin_pcr_duplex,
-            materials=self.materials,
-        )
         return self
 
     def _validate_enzyme_replay(self) -> None:
         definitions = {item.enzyme_id: item.enzyme for item in self.enzyme_definitions}
-        if len(definitions) != len(self.enzyme_definitions) or set(definitions) != {
-            item.enzyme_id for item in self.enzyme_bindings
-        }:
+        expected_definition_ids = {item.enzyme_id for item in self.enzyme_bindings}
+        if self.future_release_action is not None:
+            expected_definition_ids.add(self.future_release_action.enzyme_id)
+        if (
+            len(definitions) != len(self.enzyme_definitions)
+            or set(definitions) != expected_definition_ids
+        ):
             raise ValueError("Embedded enzyme definitions must cover every binding exactly.")
+        if self.future_release_action is not None:
+            self.future_release_action.assert_definition_replay(
+                definitions[self.future_release_action.enzyme_id]
+            )
         for binding in self.enzyme_bindings:
             if binding.role is not EnzymeRole.BASAL_NICK:
                 raise ValueError("Basal local authority may contain only basal-nick bindings.")
@@ -251,34 +267,10 @@ class BasalRealizationRecord(HopModel):
             or nick_site.nick.strand is not self.basal_nick.strand
         ):
             raise ValueError("Nicked-duplex evidence must replay the exact basal binding.")
-        adapter = next(
-            item.sequence_5prime
-            for item in self.materials
-            if item.material_id == "ligation-adapter"
-        )
-        expected_ligated = self.source_precursor_sequence + adapter
-        if self.adapter_ligated_product.strand.sequence != expected_ligated:
+        pairing = self.projection.pairing_state
+        expected_local = self.source_precursor_sequence + pairing.adapter_sequence_5prime
+        if self.projection.local_reference_sequence != expected_local:
             raise ValueError(
-                "Adapter-ligated product must concatenate the exact source and adapter."
+                "Basal boundary reference must contain only source and constrained "
+                "adapter sequence."
             )
-        if (
-            self.hairpin_pcr_duplex.top_strand.sequence != expected_ligated
-            or self.hairpin_pcr_duplex.bottom_strand.sequence
-            != reverse_complement_iupac(expected_ligated)
-        ):
-            raise ValueError("PCR strands must copy the complete adapter-ligated duplex exactly.")
-        top = self.hairpin_pcr_duplex.top_strand
-        bottom = self.hairpin_pcr_duplex.bottom_strand
-        ligated = self.adapter_ligated_product.strand
-        if (
-            top.lineage != ligated.lineage
-            or top.five_prime_end is not ligated.five_prime_end
-            or top.three_prime_end is not ligated.three_prime_end
-            or tuple(item.origin_id for item in bottom.lineage)
-            != (ligated.strand_id,) * len(bottom.sequence)
-            or tuple(item.origin_strand for item in bottom.lineage)
-            != (LineageStrand.COMPLEMENTARY,) * len(bottom.sequence)
-            or tuple(item.origin_index for item in bottom.lineage)
-            != tuple(reversed(range(len(bottom.sequence))))
-        ):
-            raise ValueError("PCR strands must replay exact adapter-ligated lineage and ends.")

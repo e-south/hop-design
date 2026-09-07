@@ -37,6 +37,7 @@ from hop_design.models.construction.complete import (
     ConstructionSpaceResult,
     MaterializedConstructionRealization,
 )
+from hop_design.models.construction.complete.evaluation import CompositionRejectionCode
 from hop_design.models.construction.complete.material.inventory import (
     required_external_materials,
 )
@@ -87,6 +88,46 @@ def _material_accounting(
             for item in realizations
         ),
     )
+
+
+def composition_status(
+    *,
+    realizations: tuple[MaterializedConstructionRealization, ...],
+    truncation: str | None,
+    endpoint_truncation_reasons: tuple[str, ...],
+    upstream_truncation_reasons: tuple[str, ...],
+) -> SearchCompletionStatus:
+    """Classify whole-route coverage without treating no result as truncation."""
+    if truncation or endpoint_truncation_reasons or upstream_truncation_reasons:
+        return SearchCompletionStatus.TRUNCATED
+    if realizations:
+        return SearchCompletionStatus.COMPLETE
+    return SearchCompletionStatus.INFEASIBLE
+
+
+def reject_accepted_dispositions(
+    dispositions: list[CompositionDisposition],
+    *,
+    rejection_code: CompositionRejectionCode,
+) -> list[CompositionDisposition]:
+    """Reclassify accepted combinations while preserving every attempted route."""
+    return [
+        CompositionDisposition(
+            ordinal=item.ordinal,
+            foldback_realization_id=item.foldback_realization_id,
+            basal_realization_id=item.basal_realization_id,
+            status=CompositionDispositionStatus.REJECTED,
+            rejection_reason=(
+                rejection_code
+                if item.status is CompositionDispositionStatus.ACCEPTED
+                else item.rejection_reason
+            ),
+            candidate_enzyme_programs=item.candidate_enzyme_programs,
+            recognition_placements_attempted=item.recognition_placements_attempted,
+            constraint_systems_attempted=item.constraint_systems_attempted,
+        )
+        for item in dispositions
+    ]
 
 
 def build_result(
@@ -217,4 +258,4 @@ def build_result(
     )
 
 
-__all__ = ["build_result"]
+__all__ = ["build_result", "composition_status", "reject_accepted_dispositions"]

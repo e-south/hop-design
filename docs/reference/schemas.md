@@ -44,28 +44,31 @@ documentation when operating that artifact.
 | `hop.released-foldback-precursor-search-request/v1` | `ReleasedFoldbackPrecursorSearchRequest` | Selected geometry and caller precursor domain |
 | `hop.released-foldback-precursor-search-result/v1` | `ReleasedFoldbackPrecursorSearchResult` | Bounded exact precursor materialization |
 | `hop.hairpin-junction-route-search-result/v2` | `HairpinJunctionRouteSearchResult` | Bounded continuity join across junction processes |
-| `hop.construction-source/v5` | public file source | Strict foldback, optional PCR-basal, source-ssDNA preparation, endpoint-auxiliary resolution policies, whole-route constraints, and finite enumeration; the design bundle remains a separate verified path |
-| `hop.source-partition-request/v1` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, length selection, and finite subset-enumeration bounds |
-| `hop.source-partition-result/v1` | public discovery result | Replay-verified nick sites, denatured fragments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
+| `hop.construction-source/v6` | public file source | Strict foldback, optional PCR-basal, source-ssDNA preparation, endpoint-auxiliary resolution policies, whole-route constraints, and finite enumeration; the design bundle remains a separate verified path |
+| `hop.source-partition-request/v2` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, preferred-to-absolute sacrificial-fragment maximum ladder, and finite subset-enumeration bounds |
+| `hop.source-partition-result/v2` | public discovery result | Replay-verified nick sites, full two-strand fragment certificates, threshold assessments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
+| `hop.source-partition-certificate/v1` | public construction projection | One explicitly selected, full-span two-strand fragment certificate with exact cleavage-boundary causes and the complete preferred-to-absolute threshold ladder |
 | `hop.final-payload/v1` | internal construction model | Final-product payload coordinates, authored reference strand, boundaries, and derived pairing authority |
-| `hop.local-neighborhood-request/v3` | internal construction model | Exact foldback or PCR-basal target, route, local endpoint, enzyme policy, relaxation, and finite bounds |
-| `hop.neighborhood-discovery-result/v3` | internal construction model | Shared exact-first local accounting, shells, grouping, provenance, and completion status |
-| `hop.foldback-neighborhood-result/v3` | portable local construction result | Replayable exact duplex foldback realizations with nick-strand, source-orientation, and molecular lineage authorities |
-| `hop.basal-neighborhood-result/v3` | portable local construction result | Replayable basal realizations terminating at the hairpin PCR duplex authority |
+| `hop.local-neighborhood-request/v5` | internal construction model | Finite foldback or PCR-basal geometry domain, route, local endpoint, enzyme policy, retained-overhead ceiling, and search bounds |
+| `hop.neighborhood-discovery-result/v5` | internal construction model | Shared retained-overhead accounting, geometry grouping, provenance, completion, feasibility, and termination semantics |
+| `hop.foldback-neighborhood-result/v4` | portable local construction result | Replayable exact duplex foldback realizations with nick-strand, source-orientation, molecular lineage, and retained-overhead authorities |
+| `hop.basal-neighborhood-result/v5` | portable local construction result | Replayable basal nick and proximal adapter-pairing realizations with retained-overhead, annealing-completion, and optional future-release obligations; full adapter materialization and PCR chronology remain whole-route concerns |
 | `hop.construction-discovery-request/v5` | internal construction model | Verified design reference, local and optional selected source-partition references, source-ssDNA preparation policy, endpoint-auxiliary resolution policies, optional endpoint release, route constraints, and composition bounds |
 | `hop.construction-space-result/v5` | internal construction model | Complete examined composition prefix, source-preparation and selected-partition authorities, resolved exact endpoint auxiliaries, exact accepted routes, endpoint products, material accounting, grouping, and claim boundary |
 | `hop.construction-bundle/v5` | portable construction manifest | Content-addressed complete-construction result with source-preparation, selected-partition, and resolved-auxiliary authorities plus embedded verified design authority |
 | `hop.foldback-feasibility-landscape/v3` | public construction projection | Every exact foldback realization from one unpartitioned search with its physical nick strand, source orientation, and achieved construction dimensions |
 | `hop.foldback-feasibility-landscape/v4` | public construction projection | Every exact foldback realization from one declared sequence-domain part, with its part scope and achieved construction dimensions |
-| `hop.basal-feasibility-landscape/v2` | public construction projection | Every exact basal realization from one unpartitioned search with its PCR-intermediate pairing, nick, and material facts |
-| `hop.basal-feasibility-landscape/v3` | public construction projection | Every exact basal realization from one declared sequence-domain part, with its part scope and PCR-intermediate facts |
-| `hop.foldback-relaxation-frontier/v2` | public construction projection | Exact examined foldback shells from one unpartitioned search with complete or partial accounting |
-| `hop.foldback-relaxation-frontier/v3` | public construction projection | Exact examined foldback shells from one declared sequence-domain part with complete or partial accounting |
-| `hop.basal-relaxation-frontier/v1` | public construction projection | Exact examined basal shells from one unpartitioned search with complete or partial accounting |
-| `hop.basal-relaxation-frontier/v2` | public construction projection | Exact examined basal shells from one declared sequence-domain part with complete or partial accounting |
+| `hop.basal-feasibility-landscape/v4` | public construction projection | Every exact basal realization from one unpartitioned search with its local nick, proximal pairing, annealing-completion, retained-overhead, warning, and optional future-release facts |
+| `hop.basal-feasibility-landscape/v5` | public construction projection | Every exact basal realization from one declared sequence-domain part, with its part scope and local boundary obligations |
+| `hop.basal-minimum-overhead-matrix/v1` | public construction projection | Proven local retained-overhead minima, complete infeasibility, or unresolved status for every declared basal nickase by future-release action cell |
+| `hop.basal-minimum-overhead-matrix/v2` | public construction projection | The same basal cell relation for one declared sequence-domain part, with its exact part scope |
+| `hop.foldback-overhead-frontier/v1` | public construction projection | Examined foldback retained-overhead levels from one unpartitioned search with complete or partial accounting |
+| `hop.foldback-overhead-frontier/v2` | public construction projection | Examined foldback retained-overhead levels from one declared sequence-domain part with complete or partial accounting |
+| `hop.basal-overhead-frontier/v1` | public construction projection | Examined basal retained-overhead levels from one unpartitioned search with complete or partial accounting |
+| `hop.basal-overhead-frontier/v2` | public construction projection | Examined basal retained-overhead levels from one declared sequence-domain part with complete or partial accounting |
 | `hop.complete-construction-summary/v2` | public construction projection | Lossless disposition, grouping, required external material, failure, and truncation relation over one verified complete result |
-| `hop.construction-navigation/v1` | public construction projection | Unchanged summary v2 plus additive accepted-route geometry, relaxation, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
-| `hop.complete-construction-trajectory/v3` | public construction projection | One explicitly selected accepted realization with its source preparation and exact molecular chronology |
+| `hop.construction-navigation/v1` | public construction projection | Summary v2 plus accepted-route geometry, retained-overhead accounting, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
+| `hop.complete-construction-trajectory/v4` | public construction projection | One explicitly selected accepted realization with its source preparation, selected source-partition certificate when present, and exact molecular chronology |
 | `hop.construction-selection/v1` | non-authoritative construction reference | One accepted materialized realization bound to its verified source result |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |
 | `hop.linear-source-hairpin-pcr-materials-plan/v1` | `LinearSourceHairpinPcrMaterialsPlan` | Derived terminal bindings and material handoff |
@@ -92,8 +95,8 @@ replayable local authority over a deterministic, disjoint portion of the exact
 sequence domain; realization and construction-problem identities remain
 unchanged. A part may be complete for its declared domain but reports
 whole-domain payload compatibility as `not_computed`. Partitioning is
-incompatible with `first_feasible_shell` stopping and all-member compatibility
-constraints. An owning study must verify every ordered part, reject truncation,
+incompatible with all-member compatibility constraints. An owning study must
+verify every ordered part, reject truncation,
 and prove pairwise-disjoint realization membership before describing the family
 as an exhaustive aggregate. HOP never silently narrows or publishes an
 undeclared partial local authority.
@@ -118,6 +121,7 @@ operations.
 Breaking-history rationale belongs in the [decision index](../architecture/decisions/README.md),
 not in the active schema contract.
 
-Construction v5 is one fail-closed cut. It accepts no v4 construction source,
-request, result, or bundle. The named-method v1 material schemas remain a
-separate exact-method contract and retain their exact oligo fields.
+The listed construction schemas form one fail-closed cut and accept no retired
+source, request, result, or bundle version. The named-method v1 material
+schemas remain a separate exact-method contract and retain their exact oligo
+fields.

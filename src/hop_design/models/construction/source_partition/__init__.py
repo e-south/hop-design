@@ -9,6 +9,14 @@ Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
 """
 
+from .certificate import (
+    SourcePartitionBoundaryKind,
+    SourcePartitionCertificate,
+    SourcePartitionFragmentBoundary,
+    SourcePartitionFragmentCertificate,
+    SourcePartitionFragmentDisposition,
+)
+from .policy import SacrificialFragmentPolicy, SourcePartitionThresholdAssessment
 from .request import (
     SourceDuplexMaterial,
     SourcePartitionConstraints,
@@ -31,16 +39,23 @@ from .types import (
 
 __all__ = [
     "PartitionNickFunction",
+    "SacrificialFragmentPolicy",
     "SourceDuplexMaterial",
+    "SourcePartitionBoundaryKind",
     "SourcePartitionCandidateDisposition",
+    "SourcePartitionCertificate",
     "SourcePartitionConstraints",
     "SourcePartitionDiscoveryRequest",
     "SourcePartitionDiscoveryResult",
     "SourcePartitionDispositionKind",
     "SourcePartitionEnumerationPolicy",
     "SourcePartitionFailure",
+    "SourcePartitionFragmentBoundary",
+    "SourcePartitionFragmentCertificate",
+    "SourcePartitionFragmentDisposition",
     "SourcePartitionNickFunction",
     "SourcePartitionRealization",
     "SourcePartitionSurvivor",
+    "SourcePartitionThresholdAssessment",
     "SourcePartitionTruncationReason",
 ]

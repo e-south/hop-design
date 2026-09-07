@@ -73,7 +73,7 @@ def _case(
             nickase,
             _terminus_enzyme(),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=0,
+                junction_offset_nt=0,
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),

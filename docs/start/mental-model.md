@@ -114,8 +114,8 @@ campaign or human intent
 ```
 
 HOP owns the molecular computation through the verified endpoint projection.
-Research Studies owns experimental observations and scientific asset
-promotion. manufold owns manuscript claims, evidence cutoff, and accepted
+Client studies own experimental observations and scientific asset
+promotion. Manuscript systems own claims, evidence cutoff, and accepted
 composition.
 
 Continue with the [design language](../language/overview.md),

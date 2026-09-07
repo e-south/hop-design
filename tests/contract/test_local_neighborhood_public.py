@@ -44,10 +44,14 @@ def _write_request(path: Path, request: object) -> Path:
 
 
 @pytest.mark.parametrize(
-    ("request_value", "expected_status"),
+    ("request_value", "expected_completion", "expected_feasibility"),
     (
-        (foldback_request(_nickase(), _terminus_enzyme()), "complete"),
-        (foldback_request(_nickase(motif="GACA", cut_offset=4)), "infeasible"),
+        (foldback_request(_nickase(), _terminus_enzyme()), "complete", "feasible"),
+        (
+            foldback_request(_nickase(motif="GACA", cut_offset=4)),
+            "complete",
+            "infeasible",
+        ),
         (
             foldback_request(
                 _nickase(),
@@ -56,31 +60,35 @@ def _write_request(path: Path, request: object) -> Path:
                 max_realizations=100,
             ),
             "truncated",
+            "feasible",
         ),
     ),
 )
 def test_local_discovery_persists_truthful_completion_status(
     tmp_path: Path,
     request_value: object,
-    expected_status: str,
+    expected_completion: str,
+    expected_feasibility: str,
 ) -> None:
-    source = _write_request(tmp_path / f"{expected_status}.json", request_value)
+    source = _write_request(tmp_path / f"{expected_feasibility}.json", request_value)
 
     receipt = construction.discover_local_neighborhood(source)
 
     assert isinstance(receipt, construction.LocalNeighborhoodDiscovery)
     assert receipt.family == "foldback"
-    assert receipt.status == expected_status
+    assert receipt.completion == expected_completion
+    assert receipt.feasibility == expected_feasibility
     assert receipt.result_id.startswith("hop:foldback-neighborhood-result/")
     assert receipt.json_bytes.endswith(b"\n")
     assert not hasattr(receipt, "request")
     assert not hasattr(receipt, "result")
 
-    output = receipt.write(tmp_path / f"{expected_status}-result")
+    output = receipt.write(tmp_path / f"{expected_feasibility}-result")
     assert {item.name for item in output.iterdir()} == {"result.json"}
     loaded = construction.load_verified_local_neighborhood(output / "result.json")
     assert loaded.result_id == receipt.result_id
-    assert loaded.status == expected_status
+    assert loaded.completion == expected_completion
+    assert loaded.feasibility == expected_feasibility
     assert loaded.json_bytes == receipt.json_bytes
     with pytest.raises(FileExistsError, match="Refusing to replace existing"):
         receipt.write(output)
@@ -99,13 +107,30 @@ def test_local_discovery_dispatches_basal_and_rejects_projection_family_mismatch
     assert receipt.family == "basal"
     assert construction.project_basal_feasibility(receipt).source_result_id == receipt.result_id
     assert (
-        construction.project_relaxation_frontier(receipt, family="basal").source_result_id
+        construction.project_retained_overhead_frontier(receipt, family="basal").source_result_id
         == receipt.result_id
     )
     with pytest.raises(ValueError, match=r"contains basal.*not foldback"):
         construction.project_foldback_feasibility(receipt)
     with pytest.raises(ValueError, match=r"contains basal.*not foldback"):
-        construction.project_relaxation_frontier(receipt, family="foldback")
+        construction.project_retained_overhead_frontier(receipt, family="foldback")
+
+
+def test_local_clone_discovery_exposes_the_basal_minimum_overhead_matrix(
+    tmp_path: Path,
+) -> None:
+    source = _write_request(
+        tmp_path / "basal-clone.json",
+        basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX, extra_nickase=True),
+    )
+    receipt = construction.discover_local_neighborhood(source)
+
+    projection = construction.project_basal_minimum_overhead_matrix(receipt)
+
+    assert projection.schema_id == "hop.basal-minimum-overhead-matrix/v1"
+    assert projection.source_result_id == receipt.result_id
+    assert projection.csv_bytes is not None
+    assert projection.svg_bytes.startswith(b"<svg")
 
 
 def test_foldback_local_receipt_rejects_basal_projection(tmp_path: Path) -> None:
@@ -131,7 +156,7 @@ def test_local_source_rejects_unknown_schema_and_fields(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unsupported HOP local-neighborhood schema"):
         construction.discover_local_neighborhood(source)
 
-    request["schema"] = "hop.local-neighborhood-request/v3"
+    request["schema"] = "hop.local-neighborhood-request/v5"
     request["unexpected"] = True
     source.write_text(json.dumps(request))
     with pytest.raises(ValueError, match="unexpected"):
@@ -146,12 +171,16 @@ def test_local_source_rejects_execution_bounds_above_the_public_envelope(
     request = foldback_request(_nickase(), _terminus_enzyme()).model_dump(
         mode="json", by_alias=True
     )
-    request["enumeration"][field] = 100_001
+    request["search"][field] = 100_001
     source = tmp_path / "oversized-execution.json"
     source.write_text(json.dumps(request))
 
-    with pytest.raises(ValueError, match=rf"{field} must not exceed 100000"):
+    with pytest.raises(ValueError) as exc_info:
         construction.discover_local_neighborhood(source)
+
+    message = str(exc_info.value)
+    assert field in message
+    assert "100000" in message
 
 
 def test_local_result_loader_rejects_resealed_replay_forgery(tmp_path: Path) -> None:
@@ -194,12 +223,16 @@ def test_local_result_loader_rejects_execution_bounds_before_replay(
         foldback_request(_nickase(), _terminus_enzyme()),
     )
     result = json.loads(construction.discover_local_neighborhood(source).json_bytes)
-    result["neighborhood"]["request"]["enumeration"][field] = 10**12
+    result["neighborhood"]["request"]["search"][field] = 10**12
     result_path = tmp_path / "oversized-result.json"
     result_path.write_text(json.dumps(result))
 
-    with pytest.raises(ValueError, match=rf"{field} must not exceed 100000"):
+    with pytest.raises(ValueError) as exc_info:
         construction.load_verified_local_neighborhood(result_path)
+
+    message = str(exc_info.value)
+    assert field in message
+    assert "100000" in message
 
 
 @pytest.mark.parametrize(
@@ -207,8 +240,8 @@ def test_local_result_loader_rejects_execution_bounds_before_replay(
     (
         (("neighborhood",), None),
         (("neighborhood", "request"), None),
-        (("neighborhood", "request", "enumeration"), None),
-        (("neighborhood", "request", "enumeration", "max_search_nodes"), True),
+        (("neighborhood", "request", "search"), None),
+        (("neighborhood", "request", "search", "max_search_nodes"), True),
     ),
 )
 def test_local_result_loader_fails_closed_on_malformed_execution_envelopes(
@@ -240,7 +273,7 @@ def test_local_result_loader_rejects_unknown_result_schema(tmp_path: Path) -> No
         construction.load_verified_local_neighborhood(result_path)
 
 
-def test_basal_local_result_uses_v3_and_rejects_v2_receipts(tmp_path: Path) -> None:
+def test_basal_local_result_uses_v4_and_rejects_v3_receipts(tmp_path: Path) -> None:
     source = _write_request(
         tmp_path / "basal.json",
         basal_request(
@@ -252,22 +285,22 @@ def test_basal_local_result_uses_v3_and_rejects_v2_receipts(tmp_path: Path) -> N
     receipt = construction.discover_local_neighborhood(source)
     result = json.loads(receipt.json_bytes)
 
-    assert result["schema"] == "hop.basal-neighborhood-result/v3"
-    result_path = tmp_path / "basal-v3.json"
+    assert result["schema"] == "hop.basal-neighborhood-result/v5"
+    result_path = tmp_path / "basal-v4.json"
     result_path.write_bytes(receipt.json_bytes)
     loaded = construction.load_verified_local_neighborhood(result_path)
     assert loaded.family == "basal"
     assert loaded.problem_id == receipt.problem_id
     assert loaded.realization_count == receipt.realization_count
 
-    result["schema"] = "hop.basal-neighborhood-result/v2"
-    result_path = tmp_path / "basal-v2.json"
+    result["schema"] = "hop.basal-neighborhood-result/v3"
+    result_path = tmp_path / "basal-v3.json"
     result_path.write_text(json.dumps(result))
     with pytest.raises(ValueError, match="Unsupported HOP local-neighborhood result schema"):
         construction.load_verified_local_neighborhood(result_path)
 
 
-def test_foldback_local_result_uses_v3_and_rejects_v2_receipts(tmp_path: Path) -> None:
+def test_foldback_local_result_uses_v4_and_rejects_v3_receipts(tmp_path: Path) -> None:
     source = _write_request(
         tmp_path / "foldback.json",
         foldback_request(_nickase(), _terminus_enzyme()),
@@ -275,10 +308,10 @@ def test_foldback_local_result_uses_v3_and_rejects_v2_receipts(tmp_path: Path) -
     receipt = construction.discover_local_neighborhood(source)
     result = json.loads(receipt.json_bytes)
 
-    assert result["schema"] == "hop.foldback-neighborhood-result/v3"
+    assert result["schema"] == "hop.foldback-neighborhood-result/v4"
 
-    result["schema"] = "hop.foldback-neighborhood-result/v2"
-    result_path = tmp_path / "foldback-v2.json"
+    result["schema"] = "hop.foldback-neighborhood-result/v3"
+    result_path = tmp_path / "foldback-v3.json"
     result_path.write_text(json.dumps(result))
     with pytest.raises(ValueError, match="Unsupported HOP local-neighborhood result schema"):
         construction.load_verified_local_neighborhood(result_path)

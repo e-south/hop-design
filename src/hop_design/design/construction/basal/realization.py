@@ -12,13 +12,13 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import cast
 
 from hop_design.kernel.construction.basal import (
     BasalProgramCandidate,
     BasalSequenceSolution,
 )
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     BasalTarget,
     LocalNeighborhoodRequest,
     LocalRealization,
@@ -27,26 +27,24 @@ from hop_design.models.construction import (
     RealizationGroup,
     RealizationGrouping,
     SourceOrientation,
-    geometry_coordinate_value,
     geometry_id,
 )
 from hop_design.models.construction.basal import (
+    BasalAnnealingObligation,
     BasalBoundaryControl,
-    BasalEndpointProjection,
+    BasalBoundaryProjection,
     BasalEnzymeDefinition,
-    BasalMaterialAccounting,
-    BasalMaterialRecord,
-    BasalMaterialRole,
     BasalRealizationRecord,
+    basal_retained_overhead_ledger,
 )
 from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.coordinates import Span
 from hop_design.models.enzymes import characterized_enzyme_digest
 from hop_design.models.junction import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
+from hop_design.models.sequence import reverse_complement_iupac
 
 from .reactions import _nick_program, _nicked_duplex
-from .states import _pcr_states
 
 
 def _failure_code(codes: tuple[str, ...]) -> str:
@@ -66,15 +64,19 @@ def _realization(
     target: BasalTarget,
     route: BasalProgramCandidate,
     solution: BasalSequenceSolution,
-    relaxation_radius: int,
 ) -> BasalRealizationRecord | str:
-    if request.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-        raise ValueError("Basal realization requires the hairpin PCR duplex endpoint.")
+    if request.endpoint not in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    }:
+        raise ValueError("Basal realization requires a PCR-bearing endpoint.")
     if not isinstance(target.nick_strand, Strand):
         raise ValueError("Basal realizations require one exact nick strand.")
-    if solution.pairing_profile is None:
-        raise ValueError("Basal realizations require one exact pairing profile.")
-    required_operations = 1
+    if solution.pairing_state is None:
+        raise ValueError("Basal realizations require one exact pairing state.")
+    if not isinstance(request.geometry_domain, BasalGeometryDomain):
+        raise ValueError("Basal realization requires one basal geometry domain.")
+    required_operations = 1 + int(route.future_release_action is not None)
     if (
         request.enzyme_provisioning.max_operations is not None
         and required_operations > request.enzyme_provisioning.max_operations
@@ -87,23 +89,31 @@ def _realization(
     if nick_assessment.report.has_errors:
         return _failure_code(tuple(item.code for item in nick_assessment.report.diagnostics))
     nicked = _nicked_duplex(solution, target)
-    annealed, adapter_ligated, duplex = _pcr_states(solution)
-    if annealed is None or adapter_ligated is None or duplex is None:
-        raise RuntimeError("Basal discovery must materialize its exact PCR intermediate.")
     programs = [nick_program]
     assessments = list(nick_assessment.stage_assessments)
-    pcr_reference = duplex.top_strand.sequence
-    projection = BasalEndpointProjection(
+    adapter_sequence = solution.adapter_sequence
+    if adapter_sequence is None:
+        raise RuntimeError("Basal discovery must resolve one proximal adapter segment.")
+    local_reference = solution.source_precursor_sequence + adapter_sequence
+    projection = BasalBoundaryProjection(
         endpoint=request.endpoint,
-        pairing_profile=solution.pairing_profile,
-        pcr_reference_sequence=pcr_reference,
-        pcr_complement_sequence=duplex.bottom_strand.sequence,
+        pairing_state=solution.pairing_state,
+        annealing_obligation=BasalAnnealingObligation.create(
+            pairing_state=solution.pairing_state,
+            minimum_annealing_nt=request.geometry_domain.minimum_adapter_annealing_nt,
+            mismatch_warning_fraction=request.geometry_domain.mismatch_warning_fraction,
+        ),
+        local_reference_sequence=local_reference,
+        local_complement_sequence=reverse_complement_iupac(local_reference),
     )
     stage_ids = tuple(stage.stage_id for program in programs for stage in program.stages)
     local = LocalRealization.create(
-        local_sequence=pcr_reference or solution.source_precursor_sequence,
+        local_sequence=local_reference,
         enzyme_binding_ids=tuple(binding.binding_id for binding in solution.enzyme_bindings),
         stage_ids=stage_ids,
+        boundary_condition_ids=(
+            () if route.future_release_action is None else (route.future_release_action.action_id,)
+        ),
         achieved_geometry=target,
     )
     payload = payload_sequence
@@ -127,46 +137,20 @@ def _realization(
     )
     if operative is None:
         return "basal-nick-cut-unavailable"
-    enzymes = (route.nick_enzyme,)
+    enzymes = (route.nick_enzyme,) + (
+        () if route.future_release_enzyme is None else (route.future_release_enzyme,)
+    )
     definitions = tuple(
         BasalEnzymeDefinition(
             enzyme_id=enzyme.enzyme_id, digest=characterized_enzyme_digest(enzyme), enzyme=enzyme
         )
         for enzyme in enzymes
     )
-    retained_sequence = pcr_reference
-    transient_sequence = ""
-    materials = [
-        BasalMaterialRecord(
-            material_id="retained-product",
-            role=BasalMaterialRole.RETAINED,
-            sequence_5prime=retained_sequence,
-        )
-    ]
-    if transient_sequence:
-        materials.append(
-            BasalMaterialRecord(
-                material_id="transient-periphery",
-                role=BasalMaterialRole.TRANSIENT,
-                sequence_5prime=transient_sequence,
-            )
-        )
-    if solution.adapter_sequence:
-        materials.append(
-            BasalMaterialRecord(
-                material_id="ligation-adapter",
-                role=BasalMaterialRole.AUXILIARY,
-                sequence_5prime=solution.adapter_sequence,
-            )
-        )
-    totals = {
-        role: sum(len(item.sequence_5prime) for item in materials if item.role is role)
-        for role in BasalMaterialRole
-    }
-    changed = tuple(
-        name
-        for name in ("nick_offset_nt",)
-        if _coordinate_changed(cast(BasalTarget, request.target), target, name)
+    retained_overhead = basal_retained_overhead_ledger(
+        local_reference_sequence=local_reference,
+        payload_span=solution.payload_span,
+        pairing_state=solution.pairing_state,
+        nick_offset_nt=target.nick_offset_nt,
     )
     return BasalRealizationRecord.create(
         local_realization=local,
@@ -181,32 +165,14 @@ def _realization(
             enzyme_id=route.nick_enzyme.enzyme_id,
             binding_id=nick_binding.binding_id,
         ),
-        pairing_constraints=tuple(item.allowed_class for item in target.pairing_constraints),
+        future_release_action=route.future_release_action,
+        pairing_constraints=target.pairing_constraints,
         projection=projection,
         reaction_programs=tuple(programs),
         stage_assessments=tuple(assessments),
         nicked_duplex=nicked,
-        adapter_annealed_complex=annealed,
-        adapter_ligated_product=adapter_ligated,
-        hairpin_pcr_duplex=duplex,
-        materials=tuple(materials),
-        material_accounting=BasalMaterialAccounting(
-            retained_nt=totals[BasalMaterialRole.RETAINED],
-            transient_nt=totals[BasalMaterialRole.TRANSIENT],
-            auxiliary_nt=totals[BasalMaterialRole.AUXILIARY],
-        ),
-        relaxation_radius=relaxation_radius,
-        changed_coordinates=changed,
+        retained_overhead=retained_overhead,
     )
-
-
-def _coordinate_changed(original: BasalTarget, achieved: BasalTarget, name: str) -> bool:
-    try:
-        return geometry_coordinate_value(original, name) != geometry_coordinate_value(
-            achieved, name
-        )
-    except ValueError:
-        return False
 
 
 def _groups(records: tuple[BasalRealizationRecord, ...]) -> tuple[RealizationGroup, ...]:

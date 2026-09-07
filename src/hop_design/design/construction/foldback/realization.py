@@ -12,8 +12,6 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Iterator
-from itertools import product
 
 from hop_design.kernel.construction.foldback import (
     FoldbackProgramCandidate,
@@ -23,14 +21,15 @@ from hop_design.models.construction import (
     FoldbackTarget,
     LocalNeighborhoodRequest,
     LocalRealization,
+    OverheadPosition,
     PayloadSourceMap,
     PayloadSourceSegment,
     ProjectionInventoryItem,
     ProjectionInventoryStatus,
     RealizationGroup,
     RealizationGrouping,
+    RetainedOverheadLedger,
     SourceOrientation,
-    geometry_coordinate_value,
     geometry_id,
 )
 from hop_design.models.construction.foldback import (
@@ -42,26 +41,8 @@ from hop_design.models.construction.foldback_replay import replay_foldback_route
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.physical import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
-from hop_design.models.sequence import iupac_bases
 
-_BASES = ("A", "C", "G", "T")
 _ROUTE_VERSION = "linear-source-foldback/3"
-
-
-def _payload_assignments(request: LocalNeighborhoodRequest) -> Iterator[str]:
-    domains = tuple(
-        tuple(base for base in _BASES if base in iupac_bases(symbol))
-        for symbol in request.payload.payload.sequence
-    )
-    for assignment in product(*domains):
-        yield "".join(assignment)
-
-
-def _payload_cardinality(request: LocalNeighborhoodRequest) -> int:
-    cardinality = 1
-    for symbol in request.payload.payload.sequence:
-        cardinality *= len(iupac_bases(symbol))
-    return cardinality
 
 
 def _failure_code(diagnostic_codes: tuple[str, ...]) -> str:
@@ -81,7 +62,6 @@ def _realization(
     target: FoldbackTarget,
     route: FoldbackProgramCandidate,
     solution: FoldbackSequenceSolution,
-    relaxation_radius: int,
 ) -> FoldbackLocalRealization | str:
     replay = replay_foldback_route(
         payload_sequence=payload_sequence,
@@ -113,18 +93,24 @@ def _realization(
         stage_ids=stage_ids,
         achieved_geometry=target,
     )
-    arm_nt = target.annealing_arm_length_bp
-    changed_coordinates = tuple(
-        name
-        for name in (
-            "nick_offset_within_foldback_nt",
-            "loop_length_nt",
-            "annealing_arm_length_bp",
-        )
-        if geometry_coordinate_value(target, name)
-        != geometry_coordinate_value(request.target, name)
-    )
     released_ids = set(replay.released_fragment_ids)
+    retained_sequence = replay.ligated_strand.sequence
+    overhead_start = len(payload_sequence)
+    overhead_end = len(retained_sequence) - len(payload_sequence)
+    retained_overhead = RetainedOverheadLedger(
+        neighborhood="foldback",
+        reference_state_id="foldback-local-product",
+        positions=tuple(
+            OverheadPosition(
+                coordinate_space="foldback-path",
+                position=position,
+                base=retained_sequence[position],
+                material_role="source",
+            )
+            for position in range(overhead_start, overhead_end)
+        ),
+        retained_overhead_nt=overhead_end - overhead_start,
+    )
     return FoldbackLocalRealization.create(
         local_realization=local,
         payload_spec_id=request.payload.payload_spec_id,
@@ -174,15 +160,13 @@ def _realization(
         released_state=replay.released_state,
         loop_sequence=replay.loop_sequence,
         foldback_arm_sequence=replay.foldback_arm_sequence,
-        retained_sequence=replay.ligated_strand.sequence,
+        retained_sequence=retained_sequence,
         annealing_pairs=replay.annealing_pairs,
         ligation_bond=replay.ligation_bond,
         ligated_strand=replay.ligated_strand,
         reaction_program=replay.reaction_program,
         stage_assessments=assessment.stage_assessments,
-        relaxation_radius=relaxation_radius,
-        changed_coordinates=changed_coordinates,
-        retained_construction_nt=(target.loop_length_nt + 2 * arm_nt),
+        retained_overhead=retained_overhead,
         transient_construction_nt=(
             sum(
                 fragment.precursor_span.length.value
@@ -223,12 +207,12 @@ def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem
         if partitioned
         else "foldback-feasibility-projections/3"
     )
-    relaxation_schema = (
-        "hop.foldback-relaxation-frontier/v3"
-        if partitioned
-        else "hop.foldback-relaxation-frontier/v2"
+    overhead_schema = (
+        "hop.foldback-overhead-frontier/v2" if partitioned else "hop.foldback-overhead-frontier/v1"
     )
-    relaxation_renderer = "foldback-projections/3" if partitioned else "foldback-projections/2"
+    overhead_renderer = (
+        "foldback-overhead-projections/2" if partitioned else "foldback-overhead-projections/1"
+    )
     return (
         ProjectionInventoryItem(
             projection_schema="hop.foldback-nucleotide-exemplar/v1",
@@ -246,8 +230,8 @@ def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem
             status=ProjectionInventoryStatus.NOT_GENERATED,
         ),
         ProjectionInventoryItem(
-            projection_schema=relaxation_schema,
-            renderer_version=relaxation_renderer,
+            projection_schema=overhead_schema,
+            renderer_version=overhead_renderer,
             status=ProjectionInventoryStatus.NOT_GENERATED,
         ),
     )

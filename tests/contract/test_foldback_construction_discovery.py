@@ -3,13 +3,16 @@
 HOP Design
 tests/contract/test_foldback_construction_discovery.py
 
-Tests payload-centered foldback discovery, relaxation, identity, and accounting.
+Tests payload-centered foldback discovery, retained overhead, identity, and accounting.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
 """
 
 from __future__ import annotations
+
+import tracemalloc
+from itertools import islice
 
 import pytest
 from pydantic import ValidationError
@@ -20,23 +23,29 @@ from hop_design.design.construction.verification import (
     VerifiedFoldbackNeighborhoodResult,
     verify_foldback_neighborhood_result,
 )
+from hop_design.kernel.construction.foldback import (
+    iter_foldback_program_solutions,
+    iter_foldback_programs,
+)
 from hop_design.models.construction import (
     ConstructionConstraints,
     ConstructionEndpoint,
     ConstructionPreferences,
-    EnumerationPolicy,
     FinalPayloadReference,
+    FoldbackGeometryDomain,
     FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
     NeighborhoodDiscoveryResult,
+    NeighborhoodSearchPlan,
     PayloadCompatibilityAccounting,
     PayloadCompatibilityStatus,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
     RouteFamily,
     SearchCompletionStatus,
+    SearchDisposition,
+    SearchFeasibilityStatus,
+    SearchScope,
+    SearchTerminationReason,
     SourceOrientation,
     problem_id,
 )
@@ -61,6 +70,123 @@ from hop_design.models.enzymes import (
 from hop_design.models.payload import DegeneratePayload, ExactPayload
 from hop_design.models.physical import Strand
 from hop_design.models.references import ExternalRef
+
+
+def test_first_foldback_solution_does_not_allocate_the_unvisited_loop_domain() -> None:
+    request = _request(_nickase())
+    target = FoldbackTarget(
+        nick_strand=Strand.TOP,
+        junction_offset_nt=0,
+        loop_length_nt=12,
+        annealing_arm_length_bp=3,
+    )
+    program = iter_foldback_programs(request.enzyme_provisioning, target=target)[0]
+    stream = iter_foldback_program_solutions(
+        payload_sequence="GACT", target=target, program=program
+    )
+
+    tracemalloc.start()
+    try:
+        first = next(stream)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        stream.close()
+        tracemalloc.stop()
+
+    assert first.source_reference_sequence == "GACTACATTTTTTTTTTTTTGT"
+    assert peak < 2_000_000
+
+
+def test_foldback_solution_order_matches_the_complete_small_domain() -> None:
+    request = _request(_nickase())
+    target = FoldbackTarget(
+        nick_strand=Strand.TOP,
+        junction_offset_nt=0,
+        loop_length_nt=4,
+        annealing_arm_length_bp=3,
+    )
+    program = iter_foldback_programs(request.enzyme_provisioning, target=target)[0]
+
+    sequences = [
+        item.source_reference_sequence
+        for item in iter_foldback_program_solutions(
+            payload_sequence="GACT", target=target, program=program
+        )
+    ]
+
+    assert sequences == ["GACTACATTTTTGT", "GACTACATTTGTGT", "GACTACATTTCTGT", "GACTACATTTATGT"]
+
+
+def test_foldback_work_units_preserve_geometry_strand_payload_and_program_order() -> None:
+    from hop_design.design.construction.foldback.traversal import iter_foldback_work_units
+    from hop_design.design.construction.overhead import foldback_overhead_levels
+
+    request = _request(
+        _nickase(enzyme_id="example:enzyme/b@1"),
+        _nickase(enzyme_id="example:enzyme/a@1"),
+        domain=FoldbackGeometryDomain(
+            junction_offsets_nt=(0, 1),
+            loop_lengths_nt=(3,),
+            annealing_arm_lengths_bp=(3,),
+        ),
+    )
+    request = request.model_copy(
+        update={
+            "payload": FinalPayloadReference(
+                payload=DegeneratePayload(sequence="GACR"),
+                basal_boundary=Boundary(offset=0),
+                foldback_boundary=Boundary(offset=4),
+            )
+        }
+    )
+    levels = foldback_overhead_levels(request.geometry_domain, request.search)
+    assert list(iter_foldback_work_units(request, level=levels[0])) == []
+    units = list(iter_foldback_work_units(request, level=levels[9]))
+
+    assert [
+        (
+            unit.target.junction_offset_nt,
+            unit.target.nick_strand,
+            unit.payload_sequence,
+            unit.program.nick_enzyme.enzyme_id,
+        )
+        for unit in units
+    ] == [
+        (offset, strand, payload, enzyme)
+        for offset in (0, 1)
+        for strand in (Strand.TOP, Strand.BOTTOM)
+        for payload in ("GACA", "GACG")
+        for enzyme in ("example:enzyme/a@1", "example:enzyme/b@1")
+    ]
+    assert all(unit.target.loop_length_nt == 3 for unit in units)
+    assert all(unit.target.annealing_arm_length_bp == 3 for unit in units)
+
+
+def test_foldback_work_units_do_not_materialize_the_payload_cross_product() -> None:
+    from hop_design.design.construction.foldback.traversal import iter_foldback_work_units
+    from hop_design.design.construction.overhead import foldback_overhead_levels
+
+    request = _request(_nickase()).model_copy(
+        update={
+            "payload": FinalPayloadReference(
+                payload=DegeneratePayload(sequence="N" * 10),
+                basal_boundary=Boundary(offset=0),
+                foldback_boundary=Boundary(offset=10),
+            )
+        }
+    )
+    level = foldback_overhead_levels(request.geometry_domain, request.search)[9]
+    stream = iter_foldback_work_units(request, level=level)
+    tracemalloc.start()
+    try:
+        prefix = list(islice(stream, 2))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        stream.close()
+        tracemalloc.stop()
+
+    assert [unit.payload_sequence for unit in prefix] == ["AAAAAAAAAA", "AAAAAAAAAC"]
+    assert peak < 1_000_000
 
 
 def _source(enzyme_id: str) -> ExternalRef:
@@ -124,9 +250,11 @@ def _terminus_enzyme(
 def _request(
     *enzymes: CharacterizedEnzyme,
     target: FoldbackTarget | None = None,
-    relaxation: RelaxationPolicy | None = None,
+    domain: FoldbackGeometryDomain | None = None,
+    max_retained_overhead_nt: int | None = None,
     max_search_nodes: int = 100,
     max_realizations: int = 100,
+    search_scope: SearchScope = SearchScope.ALL_REALIZATIONS,
 ) -> LocalNeighborhoodRequest:
     catalog = CharacterizedEnzymeCatalog(
         catalog_id="example:enzyme-catalog/foldback-construction@1",
@@ -155,6 +283,11 @@ def _request(
                 allowed_enzyme_ids=terminus_ids,
             )
         )
+    exact_target = target or FoldbackTarget(
+        junction_offset_nt=0,
+        loop_length_nt=3,
+        annealing_arm_length_bp=3,
+    )
     return LocalNeighborhoodRequest(
         payload=FinalPayloadReference(
             payload=ExactPayload(sequence="GACA"),
@@ -164,11 +297,12 @@ def _request(
         family=LocalNeighborhoodFamily.FOLDBACK,
         route_family=RouteFamily.LINEAR_SOURCE_V1,
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
-        target=target
-        or FoldbackTarget(
-            nick_offset_within_foldback_nt=0,
-            loop_length_nt=3,
-            annealing_arm_length_bp=3,
+        geometry_domain=domain
+        or FoldbackGeometryDomain(
+            nick_strand=exact_target.nick_strand,
+            junction_offsets_nt=(exact_target.junction_offset_nt,),
+            loop_lengths_nt=(exact_target.loop_length_nt,),
+            annealing_arm_lengths_bp=(exact_target.annealing_arm_length_bp,),
         ),
         hard_constraints=ConstructionConstraints(),
         preferences=ConstructionPreferences(),
@@ -180,19 +314,22 @@ def _request(
             max_operations=4,
             role_restrictions=tuple(roles),
         ),
-        relaxation=relaxation or RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=0),
-        enumeration=EnumerationPolicy(
+        search=NeighborhoodSearchPlan(
+            max_retained_overhead_nt=max_retained_overhead_nt
+            if max_retained_overhead_nt is not None
+            else exact_target.loop_length_nt + 2 * exact_target.annealing_arm_length_bp,
             max_search_nodes=max_search_nodes,
             max_realizations=max_realizations,
+            scope=search_scope,
         ),
     )
 
 
 def test_foldback_target_rejects_ambiguous_or_out_of_arm_nick_coordinates() -> None:
-    with pytest.raises(ValidationError, match="nick_offset_within_foldback_nt"):
+    with pytest.raises(ValidationError, match="junction_offset_nt"):
         FoldbackTarget.model_validate(
             {
-                "junction_offset_nt": 0,
+                "nick_offset_within_foldback_nt": 0,
                 "loop_length_nt": 3,
                 "annealing_arm_length_bp": 3,
             }
@@ -200,7 +337,7 @@ def test_foldback_target_rejects_ambiguous_or_out_of_arm_nick_coordinates() -> N
 
     with pytest.raises(ValidationError, match="first annealing arm"):
         FoldbackTarget(
-            nick_offset_within_foldback_nt=4,
+            junction_offset_nt=4,
             loop_length_nt=3,
             annealing_arm_length_bp=3,
         )
@@ -209,8 +346,8 @@ def test_foldback_target_rejects_ambiguous_or_out_of_arm_nick_coordinates() -> N
 def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_groups() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
 
-    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
-    assert result.neighborhood.shells[0].radius == 0
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert result.neighborhood.overhead_levels[-1].retained_overhead_nt == 9
     assert result.neighborhood.claim_boundary.physical_construction == "not_recorded"
     assert result.neighborhood.claim_boundary.biological_activity == "not_recorded"
     assert result.neighborhood.claim_boundary.method == "not_resolved"
@@ -223,7 +360,7 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
         "hop.foldback-nucleotide-exemplar/v1",
         "hop.foldback-geometry-count-table/v1",
         "hop.foldback-feasibility-landscape/v3",
-        "hop.foldback-relaxation-frontier/v2",
+        "hop.foldback-overhead-frontier/v1",
     }
     assert all(item.status == "not_generated" for item in result.neighborhood.projection_inventory)
     assert sum(group.multiplicity for group in result.neighborhood.achieved_geometry_groups) == len(
@@ -235,6 +372,13 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
     } == {Strand.TOP, Strand.BOTTOM}
 
     for realization in result.realizations:
+        assert realization.retained_overhead.neighborhood == "foldback"
+        assert realization.retained_overhead.reference_state_id == "foldback-local-product"
+        assert realization.retained_overhead.retained_overhead_nt == 9
+        assert tuple(
+            (position.position, position.base)
+            for position in realization.retained_overhead.positions
+        ) == tuple(enumerate(realization.retained_sequence[4:13], start=4))
         assert realization.foldback_arm_sequence == "TGT"
         assert [(pair.left_base, pair.right_base) for pair in realization.annealing_pairs] == [
             ("A", "T"),
@@ -257,7 +401,7 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
 def test_foldback_discovery_searches_both_physical_nick_strands_by_default() -> None:
     result = discover_foldback_neighborhood(_request(_nickase()))
 
-    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
     assert len(result.realizations) == 2
     assert {item.foldback_nick.strand.value for item in result.realizations} == {
         "top",
@@ -286,7 +430,7 @@ def test_foldback_discovery_searches_both_physical_nick_strands_by_default() -> 
 
 def test_any_strand_discovery_is_the_union_of_exact_strand_searches() -> None:
     target = FoldbackTarget(
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -318,7 +462,7 @@ def test_foldback_discovery_honors_an_exact_physical_nick_strand(
 ) -> None:
     target = FoldbackTarget(
         nick_strand=nick_strand,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -330,7 +474,7 @@ def test_foldback_discovery_honors_an_exact_physical_nick_strand(
 def test_declared_only_nickase_does_not_fabricate_a_bottom_strand_route() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.BOTTOM,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=3,
     )
@@ -343,7 +487,7 @@ def test_declared_only_nickase_does_not_fabricate_a_bottom_strand_route() -> Non
         )
     )
 
-    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+    assert result.neighborhood.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert result.realizations == ()
 
 
@@ -374,36 +518,30 @@ def test_bottom_strand_sequential_route_replays_its_mirrored_source_lineage() ->
     assert realization.released_state.route.value == "top_active_after_bottom_nick"
 
 
-def test_foldback_relaxation_is_exact_first_and_stops_at_complete_first_shell() -> None:
-    relaxation = RelaxationPolicy(
-        mode=RelaxationMode.FIRST_FEASIBLE_SHELL,
-        max_radius=1,
-        coordinates=(
-            RelaxationCoordinate(
-                name="annealing_arm_length_bp",
-                minimum=3,
-                maximum=4,
-            ),
-        ),
-    )
+def test_foldback_search_resolves_empty_lower_overheads_before_a_larger_hit() -> None:
     result = discover_foldback_neighborhood(
-        _request(_nickase(motif="GACATTT"), relaxation=relaxation)
+        _request(
+            _nickase(motif="GACATTT"),
+            domain=FoldbackGeometryDomain(
+                junction_offsets_nt=(0,),
+                loop_lengths_nt=(3,),
+                annealing_arm_lengths_bp=(3, 4),
+            ),
+            max_retained_overhead_nt=11,
+        )
     )
 
-    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
-    assert [(shell.radius, len(shell.realization_ids)) for shell in result.neighborhood.shells] == [
-        (0, 0),
-        (1, 2),
-    ]
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert result.neighborhood.overhead_levels[9].realization_ids == ()
+    assert len(result.neighborhood.overhead_levels[11].realization_ids) == 2
     realization = result.realizations[0]
     assert realization.local_realization.achieved_geometry == FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=0,
+        junction_offset_nt=0,
         loop_length_nt=3,
         annealing_arm_length_bp=4,
     )
-    assert realization.relaxation_radius == 1
-    assert realization.changed_coordinates == ("annealing_arm_length_bp",)
+    assert realization.retained_overhead.retained_overhead_nt == 11
 
 
 def test_foldback_search_is_truthfully_truncated_when_a_bound_fires() -> None:
@@ -416,15 +554,18 @@ def test_foldback_search_is_truthfully_truncated_when_a_bound_fires() -> None:
         )
     )
 
-    assert result.neighborhood.status is SearchCompletionStatus.TRUNCATED
-    assert result.neighborhood.truncation_reasons == ("max_search_nodes",)
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.TRUNCATED
+    assert result.neighborhood.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
+    assert (
+        result.neighborhood.disposition.termination_reason is SearchTerminationReason.EVALUATION_CAP
+    )
     assert len(result.realizations) == 1
-    assert result.neighborhood.shells[-1].complete is False
-    assert all(shell.candidate_count > 0 for shell in result.neighborhood.shells)
+    assert result.neighborhood.overhead_levels[-1].complete is False
+    assert result.neighborhood.overhead_levels[-1].candidate_count > 0
     assert all(
-        shell.candidate_count == len(shell.realization_ids) + shell.rejected_count
-        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
-        for shell in result.neighborhood.shells
+        level.candidate_count == len(level.realization_ids) + level.rejected_count
+        and sum(reason.count for reason in level.failure_reasons) == level.rejected_count
+        for level in result.neighborhood.overhead_levels
     )
 
 
@@ -439,22 +580,27 @@ def test_foldback_verification_rejects_self_consistent_completion_promotion() ->
     )
     request = raw.neighborhood.request.model_copy(
         update={
-            "enumeration": raw.neighborhood.request.enumeration.model_copy(
-                update={"max_search_nodes": 100}
-            )
+            "search": raw.neighborhood.request.search.model_copy(update={"max_search_nodes": 100})
         }
     )
-    execution = raw.neighborhood.execution.model_copy(update={"enumeration": request.enumeration})
-    shell = raw.neighborhood.shells[0].model_copy(update={"complete": True})
+    execution = raw.neighborhood.execution.model_copy(update={"search": request.search})
+    levels = (
+        *raw.neighborhood.overhead_levels[:-1],
+        raw.neighborhood.overhead_levels[-1].model_copy(update={"complete": True}),
+    )
     neighborhood = NeighborhoodDiscoveryResult.model_validate(
         {
             **raw.neighborhood.model_dump(mode="python"),
-            "status": SearchCompletionStatus.COMPLETE,
+            "disposition": SearchDisposition(
+                completion=SearchCompletionStatus.COMPLETE,
+                feasibility=SearchFeasibilityStatus.FEASIBLE,
+                termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
+            ),
             "request": request,
             "problem_id": problem_id(request),
             "execution": execution,
             "execution_id": execution.execution_id,
-            "shells": (shell,),
+            "overhead_levels": levels,
             "payload_compatibility": PayloadCompatibilityAccounting(
                 status=PayloadCompatibilityStatus.COMPLETE,
                 total_assignments=1,
@@ -462,7 +608,6 @@ def test_foldback_verification_rejects_self_consistent_completion_promotion() ->
                 excluded_assignments=0,
                 exhaustive=True,
             ),
-            "truncation_reasons": (),
         }
     )
     promoted = FoldbackNeighborhoodDiscoveryResult.create(
@@ -481,7 +626,7 @@ def test_exact_foldback_domain_is_complete_when_a_bound_equals_exhaustive_count(
     exhaustive = discover_foldback_neighborhood(
         _request(*enzymes, max_search_nodes=10_000, max_realizations=10_000)
     )
-    examined = sum(shell.candidate_count for shell in exhaustive.neighborhood.shells)
+    examined = sum(level.candidate_count for level in exhaustive.neighborhood.overhead_levels)
     realized = len(exhaustive.realizations)
 
     node_bounded = discover_foldback_neighborhood(
@@ -491,8 +636,10 @@ def test_exact_foldback_domain_is_complete_when_a_bound_equals_exhaustive_count(
         _request(*enzymes, max_search_nodes=10_000, max_realizations=realized)
     )
 
-    assert node_bounded.neighborhood.status is SearchCompletionStatus.COMPLETE
-    assert realization_bounded.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert node_bounded.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert (
+        realization_bounded.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
+    )
 
 
 def test_foldback_result_enforces_its_own_program_operation_limit() -> None:
@@ -536,25 +683,25 @@ def test_foldback_shell_accounting_partitions_rejections_and_policy_suppression(
 
     result = discover_foldback_neighborhood(LocalNeighborhoodRequest.model_validate(request_data))
 
-    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
-    assert all(not shell.realization_ids for shell in result.neighborhood.shells)
-    assert all(shell.complete for shell in result.neighborhood.shells)
+    assert result.neighborhood.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
+    assert all(not level.realization_ids for level in result.neighborhood.overhead_levels)
+    assert all(level.complete for level in result.neighborhood.overhead_levels)
     assert all(
-        shell.candidate_count == shell.rejected_count
-        and sum(reason.count for reason in shell.failure_reasons) == shell.rejected_count
-        for shell in result.neighborhood.shells
+        level.candidate_count == level.rejected_count
+        and sum(reason.count for reason in level.failure_reasons) == level.rejected_count
+        for level in result.neighborhood.overhead_levels
     )
     assert any(
         reason.code == "all-members-compatibility-required"
-        for shell in result.neighborhood.shells
-        for reason in shell.failure_reasons
+        for level in result.neighborhood.overhead_levels
+        for reason in level.failure_reasons
     )
 
 
 def test_foldback_payload_recognition_conflict_is_accounted_without_repair() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(motif="GACA", cut_offset=4)))
 
-    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+    assert result.neighborhood.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert result.neighborhood.realizations == ()
     assert result.neighborhood.payload_compatibility.compatible_assignments == 0
     assert result.neighborhood.payload_compatibility.excluded_assignments == 1
@@ -569,7 +716,7 @@ def test_foldback_discovery_places_the_nick_inside_the_retained_tract() -> None:
         _request(
             _nickase(motif="CCTNAGC", cut_offset=2),
             target=FoldbackTarget(
-                nick_offset_within_foldback_nt=3,
+                junction_offset_nt=3,
                 loop_length_nt=4,
                 annealing_arm_length_bp=7,
             ),
@@ -578,7 +725,7 @@ def test_foldback_discovery_places_the_nick_inside_the_retained_tract() -> None:
         )
     )
 
-    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
     assert result.neighborhood.request.payload.payload.sequence == "GACA"
     assert any(
         realization.retained_sequence == "GACATCCTCAGCCCGCTGAGGATGTC"
@@ -587,6 +734,31 @@ def test_foldback_discovery_places_the_nick_inside_the_retained_tract() -> None:
         and realization.enzyme_bindings[0].reference_cut == Boundary(offset=7)
         for realization in result.realizations
     )
+
+
+def test_foldback_existence_scope_retains_one_witness_per_exact_route_unit() -> None:
+    request = _request(
+        _nickase(motif="CCTNAGC", cut_offset=2),
+        target=FoldbackTarget(
+            junction_offset_nt=3,
+            loop_length_nt=4,
+            annealing_arm_length_bp=7,
+        ),
+        max_search_nodes=100_000,
+        max_realizations=100_000,
+        search_scope=SearchScope.EXISTENCE,
+    )
+
+    result = discover_foldback_neighborhood(request)
+
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == 2
+    assert {item.foldback_nick.strand for item in result.realizations} == {
+        Strand.TOP,
+        Strand.BOTTOM,
+    }
+    assert sum(level.candidate_count for level in result.neighborhood.overhead_levels) == 2
+    assert verify_foldback_neighborhood_result(result).result == result
 
 
 def test_foldback_result_rejects_lossy_family_detail_membership() -> None:
@@ -609,7 +781,7 @@ def test_foldback_result_rejects_reordered_family_detail_membership() -> None:
 
 def test_foldback_family_identity_binds_all_detailed_evidence() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
-    assert result.schema_id == "hop.foldback-neighborhood-result/v3"
+    assert result.schema_id == "hop.foldback-neighborhood-result/v4"
     assert result.model_dump(mode="json", by_alias=True)["schema"] == result.schema_id
     assert result.model_dump(mode="json")["result_id"] == result.result_id
     first = result.realizations[0]
@@ -630,25 +802,34 @@ def test_foldback_family_identity_binds_all_detailed_evidence() -> None:
     "corruption",
     ("candidate", "rejected", "failure", "examined", "global"),
 )
-def test_foldback_wrapper_revalidates_resealed_shell_accounting(corruption: str) -> None:
+def test_foldback_wrapper_revalidates_resealed_overhead_accounting(corruption: str) -> None:
     result = discover_foldback_neighborhood(
         _request(_nickase(), _terminus_enzyme(reference_cut_offset=2))
     )
-    shell = result.neighborhood.shells[0]
-    assert shell.rejected_count > 0
+    level_index = next(
+        index
+        for index, item in enumerate(result.neighborhood.overhead_levels)
+        if item.rejected_count
+    )
+    level = result.neighborhood.overhead_levels[level_index]
+    assert level.rejected_count > 0
     if corruption == "candidate":
-        corrupted_shell = shell.model_copy(update={"candidate_count": shell.candidate_count + 1})
+        corrupted_level = level.model_copy(update={"candidate_count": level.candidate_count + 1})
     elif corruption == "rejected":
-        corrupted_shell = shell.model_copy(update={"rejected_count": shell.rejected_count + 1})
+        corrupted_level = level.model_copy(update={"rejected_count": level.rejected_count + 1})
     elif corruption == "failure":
-        corrupted_shell = shell.model_copy(update={"failure_reasons": ()})
+        corrupted_level = level.model_copy(update={"failure_reasons": ()})
     elif corruption == "examined":
-        corrupted_shell = shell.model_copy(update={"examined": False})
+        corrupted_level = level.model_copy(update={"examined": False})
     else:
-        corrupted_shell = shell
+        corrupted_level = level
     corrupted_neighborhood = result.neighborhood.model_copy(
         update={
-            "shells": (corrupted_shell,),
+            "overhead_levels": (
+                *result.neighborhood.overhead_levels[:level_index],
+                corrupted_level,
+                *result.neighborhood.overhead_levels[level_index + 1 :],
+            ),
             "rejected_count": (
                 result.neighborhood.rejected_count + 1
                 if corruption == "global"
@@ -666,46 +847,46 @@ def test_foldback_wrapper_revalidates_resealed_shell_accounting(corruption: str)
         )
 
 
-def test_foldback_bounds_at_a_shell_boundary_do_not_emit_an_unentered_shell() -> None:
+def test_foldback_bounds_preserve_the_entered_overhead_level() -> None:
     exact = discover_foldback_neighborhood(_request(_nickase()))
-    shell = exact.neighborhood.shells[0]
-    relaxation = RelaxationPolicy(
-        mode=RelaxationMode.THROUGH_RADIUS,
-        max_radius=1,
-        coordinates=(
-            RelaxationCoordinate(
-                name="nick_offset_within_foldback_nt",
-                minimum=0,
-                maximum=1,
-            ),
-        ),
+    active_level = exact.neighborhood.overhead_levels[-1]
+    domain = FoldbackGeometryDomain(
+        junction_offsets_nt=(0,),
+        loop_lengths_nt=(3,),
+        annealing_arm_lengths_bp=(3, 4),
     )
 
     node_bounded = discover_foldback_neighborhood(
         _request(
             _nickase(),
-            relaxation=relaxation,
-            max_search_nodes=shell.candidate_count,
+            domain=domain,
+            max_retained_overhead_nt=11,
+            max_search_nodes=active_level.candidate_count,
             max_realizations=100,
         )
     )
     realization_bounded = discover_foldback_neighborhood(
         _request(
             _nickase(),
-            relaxation=relaxation,
+            domain=domain,
+            max_retained_overhead_nt=11,
             max_search_nodes=100,
-            max_realizations=len(shell.realization_ids),
+            max_realizations=len(active_level.realization_ids),
         )
     )
 
-    assert node_bounded.neighborhood.status is SearchCompletionStatus.TRUNCATED
-    assert tuple(item.radius for item in node_bounded.neighborhood.shells) == (0,)
-    assert node_bounded.neighborhood.shells[0].complete is True
-    assert realization_bounded.neighborhood.status is SearchCompletionStatus.COMPLETE
-    assert tuple(item.radius for item in realization_bounded.neighborhood.shells) == (0, 1)
+    assert node_bounded.neighborhood.disposition.completion is SearchCompletionStatus.TRUNCATED
+    assert tuple(
+        item.retained_overhead_nt for item in node_bounded.neighborhood.overhead_levels
+    ) == tuple(range(12))
+    assert node_bounded.neighborhood.overhead_levels[-1].complete is False
+    assert (
+        realization_bounded.neighborhood.disposition.completion is SearchCompletionStatus.TRUNCATED
+    )
+    assert realization_bounded.neighborhood.overhead_levels[-1].complete is False
 
 
-def test_foldback_wrapper_rejects_partial_final_shell_resealed_as_complete() -> None:
+def test_foldback_wrapper_rejects_partial_final_level_resealed_as_complete() -> None:
     result = discover_foldback_neighborhood(
         _request(
             _nickase(),
@@ -714,14 +895,19 @@ def test_foldback_wrapper_rejects_partial_final_shell_resealed_as_complete() -> 
             max_realizations=100,
         )
     )
-    shell = result.neighborhood.shells[-1]
-    assert shell.complete is False
-    corrupted_shell = shell.model_copy(update={"complete": True})
+    level = result.neighborhood.overhead_levels[-1]
+    assert level.complete is False
+    corrupted_level = level.model_copy(update={"complete": True})
     corrupted_neighborhood = result.neighborhood.model_copy(
-        update={"shells": (*result.neighborhood.shells[:-1], corrupted_shell)}
+        update={
+            "overhead_levels": (
+                *result.neighborhood.overhead_levels[:-1],
+                corrupted_level,
+            )
+        }
     )
 
-    with pytest.raises(ValidationError, match="unentered later shell"):
+    with pytest.raises(ValidationError, match="Truncated coverage"):
         type(result).model_validate(
             {
                 "neighborhood": corrupted_neighborhood,
@@ -746,7 +932,7 @@ def test_staggered_terminus_is_rejected_when_the_route_cannot_represent_its_inte
 def test_single_cleavage_rejects_a_site_extending_beyond_the_physical_source_end() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(motif="ACATTTTGTG")))
 
-    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+    assert result.neighborhood.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert result.realizations == ()
     assert {reason.code for reason in result.neighborhood.failure_reasons} == {
         "single-cleavage-site-exceeds-source-terminus"
@@ -756,9 +942,9 @@ def test_single_cleavage_rejects_a_site_extending_beyond_the_physical_source_end
 def test_foldback_target_coordinates_drive_exact_sites_fragments_and_pairing() -> None:
     target = FoldbackTarget(
         nick_strand=Strand.TOP,
-        nick_offset_within_foldback_nt=1,
+        junction_offset_nt=1,
         loop_length_nt=4,
-        annealing_arm_length_bp=2,
+        annealing_arm_length_bp=3,
     )
     result = discover_foldback_neighborhood(_request(_nickase(motif="ATTTTT"), target=target))
     realization = result.realizations[0]
@@ -766,10 +952,10 @@ def test_foldback_target_coordinates_drive_exact_sites_fragments_and_pairing() -
 
     assert realization.local_realization.achieved_geometry == target
     assert realization.foldback_nick.boundary.offset == 5
-    assert realization.terminus.boundary.offset == 11
+    assert realization.terminus.boundary.offset == 13
     assert (binding.recognition_span.start.offset, binding.recognition_span.end.offset) == (5, 11)
     assert binding.reference_cut.offset == 5
-    assert realization.retained_sequence == "GACA" + "AA" + "AAAA" + "TT" + "TGTC"
+    assert realization.retained_sequence == "GACA" + "AAT" + "AAAA" + "ATT" + "TGTC"
     assert {
         fragment.fragment_id: fragment.sequence
         for fragment in realization.molecular_fragments
@@ -780,11 +966,12 @@ def test_foldback_target_coordinates_drive_exact_sites_fragments_and_pairing() -
         }
     } == {
         "top-0-5": "GACAA",
-        "bottom-0-11": "AAAAATTTGTC",
+        "bottom-0-13": "ATAAAAATTTGTC",
     }
     assert [(pair.left_index, pair.right_index) for pair in realization.annealing_pairs] == [
-        (4, 6),
-        (0, 5),
+        (4, 8),
+        (0, 7),
+        (1, 6),
     ]
 
 
@@ -822,7 +1009,7 @@ def test_all_member_compatibility_rejects_a_partially_compatible_payload_space()
 
     result = discover_foldback_neighborhood(LocalNeighborhoodRequest.model_validate(request_data))
 
-    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+    assert result.neighborhood.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert result.realizations == ()
     assert result.neighborhood.payload_compatibility.compatible_assignments == 1
     assert result.neighborhood.payload_compatibility.excluded_assignments == 1
@@ -831,24 +1018,17 @@ def test_all_member_compatibility_rejects_a_partially_compatible_payload_space()
     }
 
 
-def test_all_member_first_feasible_search_continues_past_a_partial_shell() -> None:
-    relaxation = RelaxationPolicy(
-        mode=RelaxationMode.FIRST_FEASIBLE_SHELL,
-        max_radius=1,
-        coordinates=(
-            RelaxationCoordinate(
-                name="nick_offset_within_foldback_nt",
-                minimum=0,
-                maximum=1,
-            ),
-        ),
-    )
+def test_all_member_search_preserves_hits_across_the_complete_geometry_domain() -> None:
     request = _request(
         _nickase(
             motif="AAA",
             orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
         ),
-        relaxation=relaxation,
+        domain=FoldbackGeometryDomain(
+            junction_offsets_nt=(0, 1),
+            loop_lengths_nt=(3,),
+            annealing_arm_lengths_bp=(3,),
+        ),
         max_search_nodes=1000,
         max_realizations=1000,
     )
@@ -858,8 +1038,7 @@ def test_all_member_first_feasible_search_continues_past_a_partial_shell() -> No
 
     result = discover_foldback_neighborhood(LocalNeighborhoodRequest.model_validate(request_data))
 
-    assert result.neighborhood.status is SearchCompletionStatus.COMPLETE
-    assert tuple(shell.radius for shell in result.neighborhood.shells) == (0, 1)
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
     assert result.neighborhood.payload_compatibility.compatible_assignments == 2
     assert {item.payload_sequence for item in result.realizations} == {"GACA", "GACT"}
 

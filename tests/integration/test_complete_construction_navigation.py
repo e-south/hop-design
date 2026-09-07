@@ -124,11 +124,12 @@ def test_navigation_adds_route_facts_without_resealing_or_repeating_summary(
         basal_geometry = basal_authority.local_realization.achieved_geometry
         assert route["foldback_geometry"] == foldback_geometry.model_dump(mode="json")
         assert route["basal_geometry"] == basal_geometry.model_dump(mode="json")
-        assert (
-            route["foldback_relaxation_radius"] == realization.foldback_authority.relaxation_radius
+        assert route["foldback_retained_overhead_nt"] == (
+            realization.foldback_authority.retained_overhead.retained_overhead_nt
         )
-        assert route["basal_relaxation_radius"] == basal_authority.relaxation_radius
-        assert route["exact_geometry"] is True
+        assert route["basal_retained_overhead_nt"] == (
+            basal_authority.retained_overhead.retained_overhead_nt
+        )
         expected_enzymes = sorted(
             {
                 operation.enzyme_id
@@ -156,14 +157,16 @@ def test_navigation_adds_route_facts_without_resealing_or_repeating_summary(
     csv_rows = _csv_rows(packet.csv_bytes)
     assert [int(row["ordinal"]) for row in csv_rows] == list(range(len(csv_rows)))
     assert all(row["source_result_id"] == result_id for row in csv_rows)
-    assert all(row["exact_geometry"] == "True" for row in csv_rows)
+    assert all(int(row["foldback_retained_overhead_nt"]) >= 0 for row in csv_rows)
+    assert all(int(row["basal_retained_overhead_nt"]) >= 0 for row in csv_rows)
     assert all(row["cleavage_enzyme_ids"] for row in csv_rows)
     assert all(int(row["required_external_material_count"]) >= 3 for row in csv_rows)
     svg = packet.svg_bytes.decode("utf-8")
     assert f'data-result-id="{result_id}"' in svg
     assert "Foldback geometry" in svg
     assert "loop 3 nt" in svg
-    assert 'data-exact-geometry="true"' in svg
+    assert "data-foldback-retained-overhead-nt" in svg
+    assert "data-basal-retained-overhead-nt" in svg
     assert "physical construction was not recorded" in svg
     assert "dashboard" not in svg.lower()
     assert "rank" not in svg.lower()

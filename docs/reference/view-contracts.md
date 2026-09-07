@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-09-07
 doc_type: reference
 ---
 
@@ -75,15 +75,21 @@ of local scientific projections:
   realization from one unpartitioned search;
   `hop.foldback-feasibility-landscape/v4` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
-- `hop.basal-feasibility-landscape/v2` records every exact basal local
-  realization from one unpartitioned search;
-  `hop.basal-feasibility-landscape/v3` carries the same relation for one
+- `hop.basal-feasibility-landscape/v4` records every exact basal local
+  realization from one unpartitioned search as a local pairing and upstream
+  completion obligation;
+  `hop.basal-feasibility-landscape/v5` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
-- `hop.foldback-relaxation-frontier/v2` and
-  `hop.basal-relaxation-frontier/v1` record unpartitioned exact-first shell
-  membership; `hop.foldback-relaxation-frontier/v3` and
-  `hop.basal-relaxation-frontier/v2` carry one declared part, complete or
-  partial shell accounting, and observed rejection categories.
+- `hop.basal-minimum-overhead-matrix/v1` records the smallest proven local
+  retained overhead for every declared basal nickase by future Type IIS action
+  cell, while distinguishing complete infeasibility from unresolved cells;
+  `hop.basal-minimum-overhead-matrix/v2` carries the same relation for one
+  declared sequence-domain part;
+- `hop.foldback-overhead-frontier/v1` and
+  `hop.basal-overhead-frontier/v1` record unpartitioned absolute
+  retained-overhead levels; `hop.foldback-overhead-frontier/v2` and
+  `hop.basal-overhead-frontier/v2` carry one declared part, complete or
+  partial level accounting, and observed rejection categories.
 
 Each projection carries its source-result identity, renderer version,
 provenance, and claim boundary. A projection is verified against its exact
@@ -102,6 +108,23 @@ These projections establish local feasibility only under the declared
 molecular model. They do not establish a complete construction route,
 physical construction, quality control, biological activity, or empirical
 enzyme performance.
+
+## Source-partition projection
+
+`hop.source-partition-certificate/v1` projects one explicitly selected
+accepted source-partition realization. It preserves every top- and
+bottom-strand fragment, its source-coordinate interval, required or
+sacrificial disposition, physical-end or cleavage boundary, contributing
+enzyme identity, and the complete preferred-to-absolute threshold ladder. The
+selected maximum is the least permissive successful threshold established by
+the canonical source-partition authority.
+
+The SVG aligns both strands in source coordinates, labels their physical
+polarity, and shows exact cleavage bonds rather than recognition-site starts.
+The CSV is a tidy fragment relation with the threshold evidence repeated as
+canonical JSON. This projection establishes a digital partition under declared
+cut geometry; it does not establish physical cleavage, cleanup recovery, or
+experimental yield.
 
 ## Complete construction projections
 
@@ -122,8 +145,9 @@ describe the shared achieved geometry and retain every exact member identity;
 no representative is selected. Renderer evolution does not alter the
 construction result or bundle authority.
 
-`hop.complete-construction-trajectory/v3` embeds the exact source preparation and chronology of one
-explicitly selected accepted materialized realization. It has no CSV form
+`hop.complete-construction-trajectory/v4` embeds the exact source preparation,
+selected source-partition certificate when present, and chronology of one explicitly
+selected accepted materialized realization. It has no CSV form
 because it is a structured molecular-state sequence rather than a table. The
 public operation requires `materialized_realization_id`; HOP never selects an
 exemplar from canonical order.

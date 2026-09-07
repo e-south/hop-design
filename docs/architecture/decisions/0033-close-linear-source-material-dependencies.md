@@ -131,10 +131,9 @@ scientific meaning.
 
 ## Consequences
 
-An external user can inspect every molecular dependency without a Research
-Studies checkout. Research Studies becomes a caller that freezes HOP requests
-and results, selects routes, records physical parts and observations, and builds
-study-specific plots.
+An external user can inspect every molecular dependency using HOP alone.
+Client studies freeze HOP requests and results, select routes, record physical
+parts and observations, and build study-specific plots.
 
 This is one intentional pre-1.0 schema change. It adds no compatibility aliases,
 fallback readers, study imports, inventory manager, dashboard, thermodynamic
@@ -142,10 +141,12 @@ model, or physical-success claim. Existing released bundle bytes remain the
 historical authorities they already are and are not reinterpreted as closed
 source-ssDNA routes.
 
-At the v5 implementation cutoff, source preparation, selected source-partition
-replay, and endpoint auxiliary resolution are connected inside the portable
-construction result. Reversible projections expose grouping and exact selected
-trajectories. A concise grouped CLI consumes those immutable projections for
-summary, explicit filtering and sorting, exact inspection, and result-bound
-selection. It adds neither another result schema nor a ranking model; display
-limits never change scientific accounting or membership.
+Source preparation, selected source-partition replay, and endpoint auxiliary
+resolution are connected inside the portable construction result. Local basal
+discovery contributes only the proximal pairing and upstream completion
+obligations; complete composition owns the finalized adapter and PCR states.
+Reversible projections expose grouping and exact selected trajectories. A
+concise grouped CLI consumes those immutable projections for summary, explicit
+filtering and sorting, exact inspection, and result-bound selection. It adds
+neither another result schema nor a ranking model; display limits never change
+scientific accounting or membership.

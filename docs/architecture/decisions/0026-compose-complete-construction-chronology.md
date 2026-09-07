@@ -101,7 +101,7 @@ and end chemistry. Content-addressing remains evidence of immutable content;
 membership in an upstream discovery result remains a separate validated fact.
 
 For PCR-bearing routes, the retained source prefix may extend beyond the local
-basal pairing arm. The local pairing profile identifies that arm as a terminal
+basal pairing arm. The local pairing state identifies that arm as a terminal
 subspan of the prefix. The source-return arm is the reverse complement of the
 complete prefix, while the ligation adapter remains a separate exact material.
 The design encoding is validated as an exact, possibly nonzero subspan of the

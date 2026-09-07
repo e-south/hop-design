@@ -11,7 +11,6 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
@@ -20,166 +19,108 @@ from hop_design.models.base import HopModel
 from hop_design.models.construction import (
     ConstructionEndpoint,
 )
-from hop_design.models.molecular_state import (
-    CovalentBond,
-    MolecularStrand,
-    StrandPairObservation,
-)
 from hop_design.models.sequence import (
     normalize_dna_sequence,
     reverse_complement_iupac,
 )
 
-from .pairing import BasalPairingProfile
+from .pairing import BasalPairingState
 
 
-class BasalMaterialRole(StrEnum):
-    """Route-local accounting class for exact construction material."""
+class BasalAnnealingObligation(HopModel):
+    """Required full adapter annealing extent derived from one proximal pairing state."""
 
-    RETAINED = "retained"
-    TRANSIENT = "transient"
-    AUXILIARY = "auxiliary"
+    proximal_annealing_nt: int = Field(ge=1)
+    minimum_annealing_nt: int = Field(ge=1)
+    required_annealing_nt: int = Field(ge=1)
+    annealing_completion_nt: int = Field(ge=0)
+    mismatch_count: int = Field(ge=0)
+    mismatch_fraction: float = Field(ge=0.0, le=1.0)
+    mismatch_warning_fraction: float = Field(ge=0.0, le=1.0)
+    warnings: tuple[Literal["mismatch-fraction-above-threshold"], ...] = ()
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        pairing_state: BasalPairingState,
+        minimum_annealing_nt: int,
+        mismatch_warning_fraction: float,
+    ) -> BasalAnnealingObligation:
+        """Derive one annealing obligation without inventing completion bases."""
+        proximal = len(pairing_state.pairs)
+        required = max(proximal, minimum_annealing_nt)
+        mismatches = sum(pair.pair_class.value == "mismatch" for pair in pairing_state.pairs)
+        mismatch_fraction = mismatches / required
+        warnings: tuple[Literal["mismatch-fraction-above-threshold"], ...] = (
+            ("mismatch-fraction-above-threshold",)
+            if mismatch_fraction > mismatch_warning_fraction
+            else ()
+        )
+        return cls(
+            proximal_annealing_nt=proximal,
+            minimum_annealing_nt=minimum_annealing_nt,
+            required_annealing_nt=required,
+            annealing_completion_nt=required - proximal,
+            mismatch_count=mismatches,
+            mismatch_fraction=mismatch_fraction,
+            mismatch_warning_fraction=mismatch_warning_fraction,
+            warnings=warnings,
+        )
+
+    @model_validator(mode="after")
+    def validate_obligation(self) -> BasalAnnealingObligation:
+        required = max(self.proximal_annealing_nt, self.minimum_annealing_nt)
+        fraction = self.mismatch_count / required
+        warnings = (
+            ("mismatch-fraction-above-threshold",)
+            if fraction > self.mismatch_warning_fraction
+            else ()
+        )
+        if (
+            self.required_annealing_nt != required
+            or self.annealing_completion_nt != required - self.proximal_annealing_nt
+            or self.mismatch_count > self.proximal_annealing_nt
+            or self.mismatch_fraction != fraction
+            or self.warnings != warnings
+        ):
+            raise ValueError("Basal annealing obligation must derive from its exact counts.")
+        return self
 
 
-class BasalMaterialRecord(HopModel):
-    """One exact route material with an explicit accounting role."""
+class BasalBoundaryProjection(HopModel):
+    """Exact local sequence and upstream obligations at one basal boundary."""
 
-    material_id: str = Field(pattern=r"^[a-z][a-z0-9_-]*$")
-    role: BasalMaterialRole
-    sequence_5prime: str
+    endpoint: Literal[
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    ]
+    pairing_state: BasalPairingState
+    annealing_obligation: BasalAnnealingObligation
+    local_reference_sequence: str
+    local_complement_sequence: str
 
-    @field_validator("sequence_5prime", mode="before")
+    @field_validator("local_reference_sequence", "local_complement_sequence", mode="before")
     @classmethod
     def normalize_sequence(cls, value: object) -> str:
         if not isinstance(value, str):
-            raise ValueError("Basal material sequence must be a DNA string.")
+            raise ValueError("Basal boundary sequences must be DNA strings.")
         return normalize_dna_sequence(value, allow_degenerate=False)
 
-
-class BasalMaterialAccounting(HopModel):
-    """Exact nucleotide totals by retained, transient, and auxiliary roles."""
-
-    retained_nt: int = Field(ge=0)
-    transient_nt: int = Field(ge=0)
-    auxiliary_nt: int = Field(ge=0)
-
-
-class BasalAdapterAnnealedComplex(HopModel):
-    """Exact two-strand source-adapter pairing before ligation."""
-
-    source_strand: MolecularStrand
-    adapter_strand: MolecularStrand
-    pairs: tuple[StrandPairObservation, ...] = Field(min_length=1)
-
-    @property
-    def strand_ids(self) -> tuple[str, str]:
-        """Return the two physically present strand identities."""
-        return (self.source_strand.strand_id, self.adapter_strand.strand_id)
-
     @model_validator(mode="after")
-    def validate_pairs(self) -> BasalAdapterAnnealedComplex:
-        if any(
-            pair.left_strand_id != self.source_strand.strand_id
-            or pair.right_strand_id != self.adapter_strand.strand_id
-            for pair in self.pairs
-        ):
-            raise ValueError("Basal annealing pairs must reference the two present strands.")
-        return self
-
-
-class BasalAdapterLigatedProduct(HopModel):
-    """Exact source-adapter ligation product before PCR copying."""
-
-    source_strand: MolecularStrand
-    adapter_strand: MolecularStrand
-    bond: CovalentBond
-    strand: MolecularStrand
-
-    @property
-    def source_strand_id(self) -> str:
-        """Return the exact source component identity."""
-        return self.source_strand.strand_id
-
-    @property
-    def adapter_strand_id(self) -> str:
-        """Return the exact adapter component identity."""
-        return self.adapter_strand.strand_id
-
-    @model_validator(mode="after")
-    def validate_ligation(self) -> BasalAdapterLigatedProduct:
+    def validate_boundary(self) -> BasalBoundaryProjection:
         if (
-            self.bond.upstream_strand_id != self.source_strand_id
-            or self.bond.downstream_strand_id != self.adapter_strand_id
+            reverse_complement_iupac(self.local_reference_sequence)
+            != self.local_complement_sequence
         ):
-            raise ValueError("Basal ligation bond must join source to adapter.")
-        if self.strand.sequence != self.source_strand.sequence + self.adapter_strand.sequence:
-            raise ValueError(
-                "Basal adapter-ligated product must concatenate the exact component strands."
-            )
-        expected_lineage = tuple(
-            item.model_copy(update={"product_index": index})
-            for index, item in enumerate(
-                (*self.source_strand.lineage, *self.adapter_strand.lineage)
-            )
+            raise ValueError("The local complement must derive from the local reference.")
+        if not self.local_reference_sequence.endswith(self.pairing_state.adapter_sequence_5prime):
+            raise ValueError("The local reference must end with the constrained adapter segment.")
+        expected = BasalAnnealingObligation.create(
+            pairing_state=self.pairing_state,
+            minimum_annealing_nt=self.annealing_obligation.minimum_annealing_nt,
+            mismatch_warning_fraction=self.annealing_obligation.mismatch_warning_fraction,
         )
-        if self.strand.lineage != expected_lineage:
-            raise ValueError(
-                "Basal adapter ligation must preserve source and adapter lineage exactly."
-            )
-        return self
-
-
-class BasalPcrCopyState(HopModel):
-    """Exact duplex copy projection without asserting primer materials."""
-
-    top_strand: MolecularStrand
-    bottom_strand: MolecularStrand
-    primer_bindings: tuple[()] = ()
-
-    @model_validator(mode="after")
-    def validate_copy(self) -> BasalPcrCopyState:
-        if self.bottom_strand.sequence != reverse_complement_iupac(self.top_strand.sequence):
-            raise ValueError("Basal PCR projection must preserve exact duplex complementarity.")
-        return self
-
-
-def assert_material_partition(
-    *,
-    pcr_duplex: BasalPcrCopyState,
-    materials: tuple[BasalMaterialRecord, ...],
-) -> None:
-    """Validate retained and transient accounting for the basal PCR intermediate."""
-    retained = tuple(
-        item.sequence_5prime for item in materials if item.role is BasalMaterialRole.RETAINED
-    )
-    transient = tuple(
-        item.sequence_5prime for item in materials if item.role is BasalMaterialRole.TRANSIENT
-    )
-    if len(retained) != 1 or len(transient) > 1:
-        raise ValueError("Endpoint retained and transient partition must be singular.")
-    if retained != (pcr_duplex.top_strand.sequence,) or transient:
-        raise ValueError(
-            "Endpoint retained and transient partition must replay nonoverlapping sequence."
-        )
-
-
-class BasalEndpointProjection(HopModel):
-    """Exact molecular obligations established for the basal PCR intermediate."""
-
-    endpoint: Literal[ConstructionEndpoint.HAIRPIN_PCR_DUPLEX]
-    pairing_profile: BasalPairingProfile
-    pcr_reference_sequence: str
-    pcr_complement_sequence: str
-
-    @field_validator("pcr_reference_sequence", "pcr_complement_sequence", mode="before")
-    @classmethod
-    def normalize_optional_sequence(cls, value: object) -> str:
-        if not isinstance(value, str):
-            raise ValueError("Basal endpoint sequences must be DNA strings.")
-        return normalize_dna_sequence(value, allow_degenerate=False)
-
-    @model_validator(mode="after")
-    def validate_endpoint(self) -> BasalEndpointProjection:
-        if reverse_complement_iupac(self.pcr_reference_sequence) != self.pcr_complement_sequence:
-            raise ValueError("The PCR complement must derive from the complete reference.")
+        if self.annealing_obligation != expected:
+            raise ValueError("Basal annealing obligation must replay its proximal pairing state.")
         return self

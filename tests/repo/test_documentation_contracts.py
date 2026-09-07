@@ -150,7 +150,7 @@ def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces()
     assert "small public vocabulary" not in language.lower()
 
 
-def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
+def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None:
     discovery = (REPO_ROOT / "docs" / "discovery" / "overview.md").read_text(encoding="utf-8")
     mental_model = (REPO_ROOT / "docs" / "start" / "mental-model.md").read_text(encoding="utf-8")
     view_contracts = (REPO_ROOT / "docs" / "reference" / "view-contracts.md").read_text(
@@ -162,13 +162,13 @@ def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
     normalized_views = " ".join(view_contracts.split())
     normalized_reliability = " ".join(reliability.split())
 
-    assert "Exact targets are examined before enabled relaxation shells" in normalized
-    assert "requested geometry" in normalized
+    assert "in increasing absolute overhead order" in normalized
     assert "achieved geometry" in normalized
-    assert "not an optimization" in normalized
-    assert "declared stopping rule" in normalized
-    assert "through_radius" in discovery
-    assert "first_feasible_shell" in discovery
+    assert "not a score" in normalized
+    assert "Completion and feasibility are reported separately" in normalized
+    assert "stopped_by_policy" in discovery
+    assert "through_radius" not in discovery
+    assert "first_feasible_shell" not in discovery
     assert "every candidate in the declared neighborhood was examined" not in normalized
     assert "infeasible" in discovery
     assert "truncated" in discovery
@@ -181,13 +181,19 @@ def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
     assert "local construction projection" in normalized
     for schema_id in (
         "hop.foldback-feasibility-landscape/v4",
-        "hop.basal-feasibility-landscape/v3",
-        "hop.foldback-relaxation-frontier/v3",
-        "hop.basal-relaxation-frontier/v2",
+        "hop.basal-feasibility-landscape/v5",
+        "hop.basal-minimum-overhead-matrix/v1",
+        "hop.basal-minimum-overhead-matrix/v2",
+        "hop.source-partition-certificate/v1",
+        "hop.foldback-overhead-frontier/v2",
+        "hop.basal-overhead-frontier/v2",
     ):
         assert schema_id in view_contracts
     assert "verified against its exact source result" in normalized_views
-    assert "Only the final examined shell may be partial" in normalized_reliability
+    assert "Only the final recorded level may be partial" in normalized_reliability
+    assert "Completion is separate from feasibility" in normalized_reliability
+    assert "without claiming all exact realizations were enumerated" in normalized_reliability
+    assert "enabled discrete relaxation radius" not in normalized_reliability
 
 
 @pytest.mark.parametrize(

@@ -29,14 +29,9 @@ from .payload import (
     _content_id,
     validate_linear_source_payload,
 )
-from .relaxation import (
-    EnumerationPolicy,
-    RelaxationMode,
-    RelaxationPolicy,
-    geometry_coordinate_value,
-)
+from .search import BasalGeometryDomain, LocalGeometryDomain, NeighborhoodSearchPlan
 from .targets import (
-    BasalTarget,
+    BasalPairAllowance,
     ConstructionConstraints,
     ConstructionPreferences,
     LocalGeometryTarget,
@@ -46,54 +41,35 @@ from .targets import (
 class LocalNeighborhoodRequest(HopModel):
     """Shared payload-centered request envelope for foldback or basal discovery."""
 
-    schema_id: Literal["hop.local-neighborhood-request/v3"] = Field(
-        default="hop.local-neighborhood-request/v3", alias="schema"
+    schema_id: Literal["hop.local-neighborhood-request/v5"] = Field(
+        default="hop.local-neighborhood-request/v5", alias="schema"
     )
     name: str | None = None
     payload: FinalPayloadReference
     family: LocalNeighborhoodFamily
     route_family: RouteFamily
     endpoint: ConstructionEndpoint
-    target: LocalGeometryTarget
+    geometry_domain: LocalGeometryDomain
     hard_constraints: ConstructionConstraints
     preferences: ConstructionPreferences = ConstructionPreferences()
     enzyme_provisioning: EnzymeProvisioningPolicy
-    relaxation: RelaxationPolicy
-    enumeration: EnumerationPolicy
+    search: NeighborhoodSearchPlan
 
     @model_validator(mode="after")
     def validate_request(self) -> LocalNeighborhoodRequest:
-        if self.target.family != self.family.value:
-            raise ValueError("Local neighborhood family must match the target family.")
+        if self.geometry_domain.family != self.family.value:
+            raise ValueError("Local neighborhood family must match the geometry domain.")
         if self.route_family is RouteFamily.LINEAR_SOURCE_V1:
             validate_linear_source_payload(self.payload)
         if (
-            self.enumeration.sequence_partition is not None
-            and self.relaxation.mode is RelaxationMode.FIRST_FEASIBLE_SHELL
-        ):
-            raise ValueError(
-                "Sequence-domain partitioning does not support first_feasible_shell stopping."
-            )
-        if (
-            self.enumeration.sequence_partition is not None
+            self.search.sequence_partition is not None
             and self.hard_constraints.require_all_members_compatible
         ):
             raise ValueError(
                 "Sequence-domain partitioning cannot establish all-member compatibility."
             )
-        for coordinate in self.relaxation.coordinates:
-            try:
-                exact_value = geometry_coordinate_value(self.target, coordinate.name)
-            except ValueError as error:
-                raise ValueError(
-                    "Relaxation coordinates must name integer target fields: " + coordinate.name
-                ) from error
-            if not coordinate.minimum <= exact_value <= coordinate.maximum:
-                raise ValueError(
-                    f"The exact target for {coordinate.name} lies outside its relaxation bounds."
-                )
-        if isinstance(self.target, BasalTarget):
-            self._validate_basal_endpoint(self.target)
+        if isinstance(self.geometry_domain, BasalGeometryDomain):
+            self._validate_basal_endpoint(self.geometry_domain)
         catalog_ids = {enzyme.enzyme_id for enzyme in self.enzyme_provisioning.catalog.enzymes}
         unknown_preferred = set(self.preferences.preferred_enzyme_ids) - catalog_ids
         if unknown_preferred:
@@ -113,15 +89,22 @@ class LocalNeighborhoodRequest(HopModel):
         """Return molecular catalog identity independent of procurement metadata."""
         return characterized_enzyme_catalog_digest(self.enzyme_provisioning.catalog)
 
-    def _validate_basal_endpoint(self, target: BasalTarget) -> None:
-        if self.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-            raise ValueError(
-                "Basal local discovery terminates at the hairpin_pcr_duplex intermediate."
-            )
-        if not target.pairing_constraints:
-            raise ValueError("hairpin_pcr_duplex requires pairing constraints.")
-        if not target.ligation_proximal_match_required:
-            raise ValueError("hairpin_pcr_duplex requires a payload-proximal match.")
+    def _validate_basal_endpoint(self, domain: BasalGeometryDomain) -> None:
+        if self.endpoint not in {
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+        }:
+            raise ValueError("Basal local discovery requires a PCR-bearing construction endpoint.")
+        if self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
+            domain.future_release is not None
+        ):
+            raise ValueError("A hairpin PCR basal search must omit future end generation.")
+        if self.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX and (
+            domain.future_release is None
+        ):
+            raise ValueError("A clone-ready basal search requires future end generation.")
+        if domain.pairing_constraints[0].allowed_class is not BasalPairAllowance.MATCH:
+            raise ValueError("A PCR-bearing basal search requires a payload-proximal match.")
 
 
 def geometry_id(target: LocalGeometryTarget) -> str:
@@ -140,7 +123,7 @@ def problem_id(request: LocalNeighborhoodRequest) -> str:
             "family": request.family,
             "route_family": request.route_family,
             "endpoint": request.endpoint,
-            "target": request.target.model_dump(mode="json"),
+            "geometry_domain": request.geometry_domain.model_dump(mode="json"),
             "hard_constraints": request.hard_constraints.model_dump(mode="json"),
             "enzyme_catalog_id": request.enzyme_catalog_id,
             "enzyme_catalog_digest": request.enzyme_catalog_digest,
@@ -159,15 +142,9 @@ def problem_id(request: LocalNeighborhoodRequest) -> str:
                     key=lambda item: str(item["role"]),
                 ),
             },
-            "relaxation": {
-                **request.relaxation.model_dump(mode="json", exclude={"coordinates"}),
-                "coordinates": sorted(
-                    (
-                        coordinate.model_dump(mode="json")
-                        for coordinate in request.relaxation.coordinates
-                    ),
-                    key=lambda item: item["name"],
-                ),
+            "search": {
+                "max_retained_overhead_nt": request.search.max_retained_overhead_nt,
+                "scope": request.search.scope,
             },
         },
     )

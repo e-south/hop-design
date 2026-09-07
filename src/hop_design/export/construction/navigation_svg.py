@@ -37,7 +37,7 @@ def render_navigation_projection_svg(
         foldback = group.foldback_geometry
         foldback_text = (
             f"{foldback.nick_strand.value} strand · offset "
-            f"{foldback.nick_offset_within_foldback_nt} nt · loop "
+            f"{foldback.junction_offset_nt} nt · loop "
             f"{foldback.loop_length_nt} nt · arm {foldback.annealing_arm_length_bp} bp"
         )
         basal = group.basal_geometry
@@ -108,7 +108,7 @@ data-biological-activity="{claims.biological_activity.value}">
 <text x="72" y="{header_y}" class="label">Ordinal</text>
 <text x="150" y="{header_y}" class="label">Foldback</text>
 <text x="340" y="{header_y}" class="label">Basal</text>
-<text x="520" y="{header_y}" class="label">Geometry</text>
+<text x="520" y="{header_y}" class="label">Retained overhead</text>
 <text x="730" y="{header_y}" class="label">Cleavage enzymes</text>
 <text x="980" y="{header_y}" class="label">Product</text>
 {"".join(route_rows)}
@@ -164,7 +164,12 @@ def _render_route(
     basal_id = (
         short_id(summary_row.basal_realization_id) if summary_row.basal_realization_id else "none"
     )
-    geometry = short_id(summary_row.achieved_geometry_group_key) or "—"
+    overhead = f"foldback {route.foldback_retained_overhead_nt} nt"
+    if route.basal_retained_overhead_nt is not None:
+        overhead += f" · basal {route.basal_retained_overhead_nt} nt"
+    basal_overhead = (
+        "" if route.basal_retained_overhead_nt is None else str(route.basal_retained_overhead_nt)
+    )
     product = short_id(summary_row.final_product_group_key) or "—"
     enzymes = ", ".join(route.cleavage_enzyme_ids) or "none"
     return (
@@ -174,7 +179,8 @@ def _render_route(
         f'data-materialized-realization-id="{escape(route.materialized_realization_id)}" '
         f'data-geometry-group-key="{escape(summary_row.achieved_geometry_group_key or "")}" '
         f'data-final-product-group-key="{escape(summary_row.final_product_group_key or "")}" '
-        f'data-exact-geometry="{str(route.exact_geometry).lower()}" '
+        f'data-foldback-retained-overhead-nt="{route.foldback_retained_overhead_nt}" '
+        f'data-basal-retained-overhead-nt="{basal_overhead}" '
         f'data-cleavage-enzyme-ids="{escape(" ".join(route.cleavage_enzyme_ids))}" '
         f'data-retained-non-payload-nt="{route.retained_non_payload_nt}" '
         f'data-final-product-topology="{escape(route.final_product_topology)}">'
@@ -182,7 +188,7 @@ def _render_route(
         f'<text x="150" y="{y}" class="body">'
         f"{escape(short_id(summary_row.foldback_realization_id))}</text>"
         f'<text x="340" y="{y}" class="body">{escape(basal_id)}</text>'
-        f'<text x="520" y="{y}" class="body">{escape(geometry)}</text>'
+        f'<text x="520" y="{y}" class="body">{escape(overhead)}</text>'
         f'<text x="730" y="{y}" class="body">{escape(enzymes)}</text>'
         f'<text x="980" y="{y}" class="body">{escape(product)}</text></g>'
     )

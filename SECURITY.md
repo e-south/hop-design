@@ -20,6 +20,18 @@ private study names, identifiers, selected cohorts, sequences, catalogs,
 machine-local paths, credentials, tokens, execution records, or proprietary
 constraint profiles. Use short synthetic DNA IUPAC examples only.
 
+Public user guides, API references, architecture decisions, contributor
+instructions, and product capability limits belong here. Study plans, manuscript
+outlines, investigator decisions, raw observations, and cross-project status
+reports belong in the caller's private workspace, not under `docs/dev/`.
+
+The wheel contains the Python package and distribution metadata. The source
+distribution also includes public docs, assets, and examples. Excluding a file
+from either archive does not make a tracked file private: the repository and
+its Git history are public. Content removal from the current tree is not
+history erasure. The public-safety and secret checks supplement manual content
+review; they cannot determine whether an arbitrary DNA sequence is private.
+
 The distribution carries `Private :: Do Not Upload` as an accidental PyPI
 publication brake. A public GitHub repository and a PyPI package are separate
 distribution channels. Removing the brake or adding a publishing identity

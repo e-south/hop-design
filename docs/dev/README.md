@@ -1,7 +1,7 @@
 ---
 doc_id: hop-dev-index
 title: HOP Design maintainer map
-intent: Route maintainers to governance, release, and migration work.
+intent: Route maintainers to product contracts, capabilities, verification, and releases.
 audience:
   - maintainers
   - agent executors
@@ -19,8 +19,10 @@ journey:
   required checks, and the evidence unavailable when hosted CI cannot run.
 - [Release process](releasing.md) separates GitHub artifacts from PyPI
   publication.
-- [Implementation and migration roadmap](plans/roadmap.md) orders package
-  readiness, downstream adoption, and predecessor removal.
+- [Product roadmap](plans/roadmap.md) separates released capabilities, source
+  capabilities, and remaining work.
+- [Construction implementation inventory](plans/retained-overhead-construction-inventory.md)
+  locates molecular responsibilities and reproducible allocation measurements.
 - [Public concept documentation contract](documentation-contract.md) defines
   the claim and non-claim template for new product surfaces.
 - [Architecture decisions](../architecture/decisions/) record public contract

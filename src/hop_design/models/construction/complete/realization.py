@@ -82,7 +82,6 @@ class MaterializedConstructionRealization(HopModel):
     final_product: MaterializedFinalProduct
     design: DesignAuthorityReference
     geometry_ids: tuple[str, ...] = Field(min_length=1)
-    relaxation_radii: tuple[int, ...] = Field(min_length=1)
     claim_boundary: NeighborhoodClaimBoundary
     route_material_dispositions: tuple[RouteMaterialDispositionSpan, ...] = Field(
         default=(),
@@ -309,16 +308,8 @@ class MaterializedConstructionRealization(HopModel):
                 self.foldback_authority.local_realization.achieved_geometry.model_dump(mode="json"),
             ),
         )
-        expected_radii = (
-            *(
-                (self.basal_authority.relaxation_radius,)
-                if self.basal_authority is not None
-                else ()
-            ),
-            self.foldback_authority.relaxation_radius,
-        )
-        if self.geometry_ids != expected_geometry_ids or self.relaxation_radii != expected_radii:
-            raise ValueError("geometry identities and radii must derive from local authorities.")
+        if self.geometry_ids != expected_geometry_ids:
+            raise ValueError("Geometry identities must derive from local authorities.")
         return self
 
 

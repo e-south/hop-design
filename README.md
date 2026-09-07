@@ -21,7 +21,7 @@ No physical construction, QC, or activity record is attached.
 | --- | --- |
 | Maturity | HOP is alpha software; schemas and public APIs may change before 1.0. |
 | Published release | [v0.1.0a8](https://github.com/e-south/hop-design/releases/tag/v0.1.0a8), with its [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8). |
-| Source line | `main` and the published v0.1.0a8 artifact contain the construction-contract v5 cutover. |
+| Source checkout | Contains post-release retained-overhead search and query checkpointing. These changes are not in the published artifact; see [capabilities and limits](docs/dev/plans/roadmap.md). |
 | Distribution | Release artifacts are published through [GitHub Releases](https://github.com/e-south/hop-design/releases), not PyPI. |
 
 ## Choose a route
@@ -50,8 +50,9 @@ for the first substrate-space journey.
 
 Construction questions are not one global optimizer. Foldback geometry, basal
 geometry, route-level source partitioning, and downstream endpoint
-materialization are separate bounded competencies. HOP preserves every valid
-result in canonical order; a study chooses which route to test.
+materialization are separate bounded competencies. Existence searches preserve
+witnesses; all-realizations searches preserve every exact alternative within
+their reported coverage. Canonical order is not a recommendation.
 
 Construction v5 resolves endpoint auxiliaries and consumes replay-verified
 source partitions. `hop-design construction` groups, filters, inspects, and

@@ -166,10 +166,6 @@ def direct_realization(
             foldback.local_realization.achieved_geometry.model_dump(mode="json"),
         ),
     )
-    radii = (
-        *((basal.relaxation_radius,) if basal is not None else ()),
-        foldback.relaxation_radius,
-    )
     return MaterializedConstructionRealization.create(
         realization=complete,
         foldback_authority=foldback,
@@ -191,7 +187,6 @@ def direct_realization(
         ),
         design=request.design,
         geometry_ids=geometry_ids,
-        relaxation_radii=radii,
         claim_boundary=NeighborhoodClaimBoundary(
             digital_design=DigitalDesignStatus.VERIFIED,
             method=MethodResolutionStatus.RESOLVED,
