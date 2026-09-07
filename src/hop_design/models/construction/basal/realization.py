@@ -98,6 +98,15 @@ class BasalRealizationRecord(HopModel):
         if self.basal_nick.binding_id not in self.local_realization.enzyme_binding_ids:
             raise ValueError("Basal nick must reference one exact local binding.")
         achieved = cast(BasalTarget, self.local_realization.achieved_geometry)
+        expected_boundary_condition_ids = (
+            ()
+            if self.future_release_action is None
+            else (self.future_release_action.action_id,)
+        )
+        if self.local_realization.boundary_condition_ids != expected_boundary_condition_ids:
+            raise ValueError(
+                "Local realization must preserve every exact boundary condition."
+            )
         if self.future_release_action is None:
             if achieved.future_release is not None:
                 raise ValueError("Basal realization is missing its future release action.")

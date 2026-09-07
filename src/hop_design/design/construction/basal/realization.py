@@ -111,6 +111,11 @@ def _realization(
         local_sequence=local_reference,
         enzyme_binding_ids=tuple(binding.binding_id for binding in solution.enzyme_bindings),
         stage_ids=stage_ids,
+        boundary_condition_ids=(
+            ()
+            if route.future_release_action is None
+            else (route.future_release_action.action_id,)
+        ),
         achieved_geometry=target,
     )
     payload = payload_sequence

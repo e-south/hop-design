@@ -547,6 +547,40 @@ def test_basal_existence_scope_retains_one_witness_per_exact_route_unit() -> Non
     assert verify_basal_neighborhood_result(result).result == result
 
 
+def test_clone_ready_local_identity_preserves_distinct_future_release_actions() -> None:
+    request = _request(
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+        max_nodes=100_000,
+        max_realizations=100_000,
+        search_scope=SearchScope.EXISTENCE,
+    )
+    request = request.model_copy(
+        update={
+            "enzyme_provisioning": _provisioning(
+                _nickase(),
+                _type_iis(),
+                _type_iis("example:enzyme/end-b@1", pattern="CGTCTC"),
+            )
+        }
+    )
+
+    result = discover_basal_neighborhood(request)
+
+    assert len(result.realizations) == 2
+    assert len(
+        {item.local_realization.local_realization_id for item in result.realizations}
+    ) == 2
+    assert {
+        item.future_release_action.action_id
+        for item in result.realizations
+        if item.future_release_action is not None
+    } == {
+        item.local_realization.boundary_condition_ids[0]
+        for item in result.realizations
+    }
+    assert verify_basal_neighborhood_result(result).result == result
+
+
 def test_outboard_nick_cut_extends_transient_context_without_raw_coordinate_failure() -> None:
     distal_nickase = _enzyme(
         "example:enzyme/distal-basal-nick@1",

@@ -46,6 +46,10 @@ class LocalRealization(HopModel):
     local_sequence: str
     enzyme_binding_ids: tuple[str, ...]
     stage_ids: tuple[str, ...]
+    boundary_condition_ids: tuple[str, ...] = Field(
+        default=(),
+        exclude_if=lambda value: not value,
+    )
     achieved_geometry: LocalGeometryTarget
 
     @field_validator("local_sequence", mode="before")
@@ -62,6 +66,7 @@ class LocalRealization(HopModel):
         local_sequence: str,
         enzyme_binding_ids: tuple[str, ...],
         stage_ids: tuple[str, ...],
+        boundary_condition_ids: tuple[str, ...] = (),
         achieved_geometry: LocalGeometryTarget,
     ) -> LocalRealization:
         """Create a content-addressed exact local realization."""
@@ -71,26 +76,28 @@ class LocalRealization(HopModel):
             "stage_ids": stage_ids,
             "achieved_geometry": achieved_geometry.model_dump(mode="json"),
         }
+        if boundary_condition_ids:
+            content["boundary_condition_ids"] = boundary_condition_ids
         return cls(
             local_realization_id=_content_id("local-realization", 1, content),
             local_sequence=local_sequence,
             enzyme_binding_ids=enzyme_binding_ids,
             stage_ids=stage_ids,
+            boundary_condition_ids=boundary_condition_ids,
             achieved_geometry=achieved_geometry,
         )
 
     @model_validator(mode="after")
     def validate_identity(self) -> LocalRealization:
-        expected = _content_id(
-            "local-realization",
-            1,
-            {
-                "local_sequence": self.local_sequence,
-                "enzyme_binding_ids": self.enzyme_binding_ids,
-                "stage_ids": self.stage_ids,
-                "achieved_geometry": self.achieved_geometry.model_dump(mode="json"),
-            },
-        )
+        content = {
+            "local_sequence": self.local_sequence,
+            "enzyme_binding_ids": self.enzyme_binding_ids,
+            "stage_ids": self.stage_ids,
+            "achieved_geometry": self.achieved_geometry.model_dump(mode="json"),
+        }
+        if self.boundary_condition_ids:
+            content["boundary_condition_ids"] = self.boundary_condition_ids
+        expected = _content_id("local-realization", 1, content)
         if self.local_realization_id != expected:
             raise ValueError("local_realization_id must match the complete local realization.")
         return self
