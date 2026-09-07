@@ -58,7 +58,7 @@ def test_source_partition_projection_preserves_exact_certificate_and_boundaries(
     assert {row["selected_maximum_sacrificial_fragment_nt"] for row in rows} == {"12"}
 
     svg = projection.svg_bytes.decode("utf-8")
-    assert "Every source fragment is accounted for" in svg
+    assert "The selected program accounts for every source fragment" in svg
     assert "Required fragment" in svg
     assert "Sacrificial fragment" in svg
     assert "5&#x2032;" in svg and "3&#x2032;" in svg
