@@ -263,13 +263,10 @@ def iter_foldback_program_solutions(
         yield FoldbackPlacementFailure(code="foldback-pairing-conflict")
         return
     canonical_source = [next(base for base in _BASES if base in domain) for domain in domains]
-    for arm_assignment, loop_assignment in product(
-        product(*arm_domains),
-        product(*loop_domains),
-    ):
+    for assignment in product(*arm_domains, *loop_domains):
         source_bases = canonical_source.copy()
-        arm = "".join(arm_assignment)
-        loop = "".join(loop_assignment)
+        arm = "".join(assignment[:arm_nt])
+        loop = "".join(assignment[arm_nt:])
         foldback = arm + loop + reverse_complement_iupac(arm)
         source_bases[junction:terminus] = reverse_complement_iupac(
             foldback[target.junction_offset_nt :]

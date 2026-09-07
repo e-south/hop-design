@@ -69,6 +69,31 @@ translation layer.
 - manufold may import only explicitly accepted immutable study assets.
 - Physical recovery and sequence-confirmation evidence remain outside HOP.
 
+## Foldback allocation measurement
+
+The first-solution memory regression uses a 12-nt loop, a 3-bp arm, zero junction
+offset, exact payload `GACT`, and the synthetic `ACATTT` nick-action fixture in
+`tests/contract/test_foldback_construction_discovery.py`. On Python 3.12.11,
+three `tracemalloc` measurements of the first solution were:
+
+| Enumeration | Peak traced allocation (bytes) | Elapsed time (seconds) |
+| --- | --- | --- |
+| Buffered nested Cartesian product | 37,933,278; 37,661,870; 37,661,070 | 0.8034; 0.7657; 0.7769 |
+| Positional Cartesian product | 15,514; 15,442; 14,642 | 0.00126; 0.00113; 0.00145 |
+
+The allocation hotspot was materialization of all loop assignments before the
+first candidate was requested. Positional enumeration preserves arm-major,
+loop-minor order while holding only the per-position domains and current
+assignment. These measurements concern first-solution allocation, not total
+search throughput or saved-authority verification. Both the first sequence
+digest and a complete small-domain sequence-order oracle are unchanged.
+
+Run the regression with:
+
+```bash
+uv run pytest -q tests/contract/test_foldback_construction_discovery.py
+```
+
 ## Connected, separate, and external responsibilities
 
 | Concern | Current state | Refactor treatment |

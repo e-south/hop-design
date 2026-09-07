@@ -11,6 +11,8 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import tracemalloc
+
 import pytest
 from pydantic import ValidationError
 
@@ -19,6 +21,10 @@ from hop_design.design.construction.verification import (
     ConstructionVerificationError,
     VerifiedFoldbackNeighborhoodResult,
     verify_foldback_neighborhood_result,
+)
+from hop_design.kernel.construction.foldback import (
+    iter_foldback_program_solutions,
+    iter_foldback_programs,
 )
 from hop_design.models.construction import (
     ConstructionConstraints,
@@ -63,6 +69,51 @@ from hop_design.models.enzymes import (
 from hop_design.models.payload import DegeneratePayload, ExactPayload
 from hop_design.models.physical import Strand
 from hop_design.models.references import ExternalRef
+
+
+def test_first_foldback_solution_does_not_allocate_the_unvisited_loop_domain() -> None:
+    request = _request(_nickase())
+    target = FoldbackTarget(
+        nick_strand=Strand.TOP,
+        junction_offset_nt=0,
+        loop_length_nt=12,
+        annealing_arm_length_bp=3,
+    )
+    program = iter_foldback_programs(request.enzyme_provisioning, target=target)[0]
+    stream = iter_foldback_program_solutions(
+        payload_sequence="GACT", target=target, program=program
+    )
+
+    tracemalloc.start()
+    try:
+        first = next(stream)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        stream.close()
+        tracemalloc.stop()
+
+    assert first.source_reference_sequence == "GACTACATTTTTTTTTTTTTGT"
+    assert peak < 2_000_000
+
+
+def test_foldback_solution_order_matches_the_complete_small_domain() -> None:
+    request = _request(_nickase())
+    target = FoldbackTarget(
+        nick_strand=Strand.TOP,
+        junction_offset_nt=0,
+        loop_length_nt=4,
+        annealing_arm_length_bp=3,
+    )
+    program = iter_foldback_programs(request.enzyme_provisioning, target=target)[0]
+
+    sequences = [
+        item.source_reference_sequence
+        for item in iter_foldback_program_solutions(
+            payload_sequence="GACT", target=target, program=program
+        )
+    ]
+
+    assert sequences == ["GACTACATTTTTGT", "GACTACATTTGTGT", "GACTACATTTCTGT", "GACTACATTTATGT"]
 
 
 def _source(enzyme_id: str) -> ExternalRef:
