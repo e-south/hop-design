@@ -115,11 +115,20 @@ def project_basal_feasibility(
     for item in result.realizations:
         achieved = cast(BasalTarget, item.local_realization.achieved_geometry)
         pairing = item.projection.pairing_state
+        obligation = item.projection.annealing_obligation
+        future_release = item.future_release_action
         rows.append(
             BasalFeasibilityRow(
                 local_realization_id=item.local_realization.local_realization_id,
                 basal_realization_id=item.basal_realization_id,
                 retained_overhead_nt=item.retained_overhead.retained_overhead_nt,
+                nick_enzyme_id=item.basal_nick.enzyme_id,
+                future_release_action_id=(
+                    None if future_release is None else future_release.action_id
+                ),
+                future_release_enzyme_id=(
+                    None if future_release is None else future_release.enzyme_id
+                ),
                 nick_strand=cast(Strand, achieved.nick_strand),
                 nick_offset_nt=achieved.nick_offset_nt,
                 pairing_pattern=pairing.pairing_pattern if pairing is not None else None,
@@ -127,20 +136,22 @@ def project_basal_feasibility(
                     tuple(pair.pair_class for pair in pairing.pairs) if pairing is not None else ()
                 ),
                 literal_pairs=pairing.pairs if pairing is not None else (),
-                retained_nt=item.material_accounting.retained_nt,
-                transient_nt=item.material_accounting.transient_nt,
-                auxiliary_nt=item.material_accounting.auxiliary_nt,
+                proximal_annealing_nt=obligation.proximal_annealing_nt,
+                required_annealing_nt=obligation.required_annealing_nt,
+                annealing_completion_nt=obligation.annealing_completion_nt,
+                mismatch_fraction=obligation.mismatch_fraction,
+                warnings=obligation.warnings,
             )
         )
     exact_rows = tuple(rows)
     partition = discovery.request.search.sequence_partition
     schema: Literal[
-        "hop.basal-feasibility-landscape/v2",
-        "hop.basal-feasibility-landscape/v3",
+        "hop.basal-feasibility-landscape/v4",
+        "hop.basal-feasibility-landscape/v5",
     ] = (
-        "hop.basal-feasibility-landscape/v3"
+        "hop.basal-feasibility-landscape/v5"
         if partition is not None
-        else "hop.basal-feasibility-landscape/v2"
+        else "hop.basal-feasibility-landscape/v4"
     )
     renderer_version = (
         BASAL_PART_PROJECTION_RENDERER_VERSION

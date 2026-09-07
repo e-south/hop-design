@@ -121,7 +121,14 @@ def iter_basal_program_solutions(
 
     variable_indexes = tuple(range(source_start, payload_start))
     source_domains = tuple(
-        tuple(base for base in _BASES if base in domains[index]) for index in variable_indexes
+        tuple(
+            base
+            for base in _BASES
+            if base in domains[index]
+            and base
+            in target.pairing_constraints[arm_nt - 1 - source_index].allowed_source_bases
+        )
+        for source_index, index in enumerate(variable_indexes)
     )
     if any(not domain for domain in source_domains):
         yield BasalPlacementFailure("basal-source-conflict")
@@ -132,7 +139,10 @@ def iter_basal_program_solutions(
             adapter_assignments: Iterator[tuple[str, ...]] = iter(((),))
         else:
             per_position = tuple(
-                _adapter_domains(source_arm[arm_nt - 1 - position], constraint.allowed_class)
+                _adapter_domains(
+                    source_arm[arm_nt - 1 - position],
+                    constraint=constraint,
+                )
                 for position, constraint in enumerate(target.pairing_constraints)
             )
             if any(not allowed for allowed in per_position):

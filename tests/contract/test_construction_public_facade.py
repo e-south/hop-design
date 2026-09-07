@@ -298,7 +298,7 @@ def test_construction_local_projections_require_explicit_family_selection(
     )
 
     assert foldback.schema_id == "hop.foldback-feasibility-landscape/v3"
-    assert basal.schema_id == "hop.basal-feasibility-landscape/v2"
+    assert basal.schema_id == "hop.basal-feasibility-landscape/v4"
     assert foldback_frontier.schema_id == "hop.foldback-overhead-frontier/v1"
     assert basal_frontier.schema_id == "hop.basal-overhead-frontier/v1"
     with pytest.raises(ValueError, match="family must be foldback or basal"):

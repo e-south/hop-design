@@ -142,10 +142,12 @@ model, or physical-success claim. Existing released bundle bytes remain the
 historical authorities they already are and are not reinterpreted as closed
 source-ssDNA routes.
 
-At the v5 implementation cutoff, source preparation, selected source-partition
-replay, and endpoint auxiliary resolution are connected inside the portable
-construction result. Reversible projections expose grouping and exact selected
-trajectories. A concise grouped CLI consumes those immutable projections for
-summary, explicit filtering and sorting, exact inspection, and result-bound
-selection. It adds neither another result schema nor a ranking model; display
-limits never change scientific accounting or membership.
+Source preparation, selected source-partition replay, and endpoint auxiliary
+resolution are connected inside the portable construction result. Local basal
+discovery contributes only the proximal pairing and upstream completion
+obligations; complete composition owns the finalized adapter and PCR states.
+Reversible projections expose grouping and exact selected trajectories. A
+concise grouped CLI consumes those immutable projections for summary, explicit
+filtering and sorting, exact inspection, and result-bound selection. It adds
+neither another result schema nor a ranking model; display limits never change
+scientific accounting or membership.

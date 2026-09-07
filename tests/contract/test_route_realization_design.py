@@ -92,15 +92,13 @@ def test_route_selected_design_compiles_through_the_public_construction_path(
     compilation = _compile_selected()
     design_path = compilation.write(tmp_path / "design")
     encoding = compilation.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     source = _source(
         foldback=foldback.neighborhood.request,
         basal=basal.discovery.request,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
-            adapter=_material(adapter.material_id, adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", adapter_sequence),
             forward_primer=_material("forward-primer", encoding[:4]),
             reverse_primer=_material(
                 "reverse-primer",

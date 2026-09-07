@@ -39,6 +39,7 @@ class CompositionRejectionCode(StrEnum):
     PCR_ADAPTER_MISMATCH = "pcr-adapter-mismatch"
     PCR_PAIRING_STATE_MISMATCH = "pcr-pairing-state-mismatch"
     PCR_PRIMER_MISMATCH = "pcr-primer-mismatch"
+    CLONE_LOCAL_RELEASE_INCOMPATIBLE = "clone-local-release-incompatible"
     CLONE_END_GENERATION_INCOMPATIBLE = "clone-end-generation-incompatible"
     CLONE_END_GENERATION_AMBIGUOUS = "clone-end-generation-ambiguous"
     ALL_COMBINATIONS_VALID_REQUIRED = "all-combinations-valid-required"

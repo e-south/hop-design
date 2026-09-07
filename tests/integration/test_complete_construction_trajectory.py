@@ -56,16 +56,14 @@ def _verified_pcr_source(tmp_path: Path) -> VerifiedConstructionSpaceResult:
     )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=_material("forward-primer", encoding[:4]),
         reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
     )

@@ -56,49 +56,18 @@ def evaluate_pcr_compatibility(
         or basal.basal_nick.boundary.offset != len(prefix)
     ):
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
-    local_adapter = next(
-        (item for item in basal.materials if item.material_id == "ligation-adapter"),
-        None,
-    )
     pairing_state = basal.projection.pairing_state
     if (
         adapter is None
-        or local_adapter is None
-        or pairing_state is None
         or pairing_state.adapter_span.end.offset > len(adapter.sequence_5prime)
         or adapter.sequence_5prime[
             pairing_state.adapter_span.start.offset : pairing_state.adapter_span.end.offset
         ]
-        != local_adapter.sequence_5prime
+        != pairing_state.adapter_sequence_5prime
         or adapter.five_prime_end is not EndChemistry.PHOSPHATE
         or adapter.three_prime_end is not EndChemistry.HYDROXYL
     ):
         return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
-    complex_state = basal.adapter_annealed_complex
-    if (
-        pairing_state is None
-        or complex_state is None
-        or pairing_state.adapter_span.end.offset > len(adapter.sequence_5prime)
-        or tuple(
-            (
-                pair.left_index - pairing_state.source_span.start.offset,
-                pair.right_index,
-                pair.left_base,
-                pair.right_base,
-            )
-            for pair in complex_state.pairs
-        )
-        != tuple(
-            (
-                pair.source_index,
-                pair.adapter_index,
-                pair.source_base,
-                pair.adapter_base,
-            )
-            for pair in pairing_state.pairs
-        )
-    ):
-        return CompositionRejectionCode.PCR_PAIRING_STATE_MISMATCH
     if (
         forward.oligo.three_prime_end is not EndChemistry.HYDROXYL
         or reverse.oligo.three_prime_end is not EndChemistry.HYDROXYL

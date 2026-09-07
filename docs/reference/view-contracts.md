@@ -75,9 +75,10 @@ of local scientific projections:
   realization from one unpartitioned search;
   `hop.foldback-feasibility-landscape/v4` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
-- `hop.basal-feasibility-landscape/v2` records every exact basal local
-  realization from one unpartitioned search;
-  `hop.basal-feasibility-landscape/v3` carries the same relation for one
+- `hop.basal-feasibility-landscape/v4` records every exact basal local
+  realization from one unpartitioned search as a local pairing and upstream
+  completion obligation;
+  `hop.basal-feasibility-landscape/v5` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
 - `hop.foldback-overhead-frontier/v1` and
   `hop.basal-overhead-frontier/v1` record unpartitioned absolute

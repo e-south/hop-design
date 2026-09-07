@@ -85,14 +85,10 @@ def _verified_result(
         forward = None
         reverse = None
         if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-            local_adapter = next(
-                item
-                for item in basal.realizations[0].materials
-                if item.material_id == "ligation-adapter"
-            )
+            adapter_sequence = basal.realizations[0].proximal_adapter_sequence
             adapter = _material(
-                local_adapter.material_id,
-                "CCCC" if incompatible else local_adapter.sequence_5prime,
+                "ligation-adapter",
+                "CCCC" if incompatible else adapter_sequence,
             )
             forward = _material("forward-primer", encoding[:4])
             reverse = _material(
@@ -102,7 +98,11 @@ def _verified_result(
         request = _construction_request(
             payload=payload,
             foldback=foldback,
-            basal=basal,
+            basal=(
+                basal
+                if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+                else None
+            ),
             design=design,
             endpoint=endpoint,
             adapter=adapter,
@@ -116,7 +116,11 @@ def _verified_result(
     return discover_constructions(
         request,
         foldback=verify_foldback_neighborhood_result(foldback),
-        basal=verify_basal_neighborhood_result(basal),
+        basal=(
+            verify_basal_neighborhood_result(basal)
+            if endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN
+            else None
+        ),
         design=design,
     )
 
@@ -179,10 +183,10 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
     if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
         assert projection.projection_id == (
             "hop:complete-construction-summary/"
-            "c15fe8055f909893ac096811b58aa1b48d67ac543d0721f1297daa40b8489819@1"
+            "7cab2aea5d6a4eec5421a1c2a5a755c1cf22d42b3147beded9d07a53c806dc15@1"
         )
         assert sha256_digest(render_projection_json(projection)) == (
-            "sha256:3678a69d80ea857b0c7bcce3584358f49d7502ba9e07ff5c774c6713cf01e477"
+            "sha256:da8cffb783e6a19e6d34f6a74f8e9ac47af8be52db0dcae88551b3220cc15dfc"
         )
 
     json_bytes = render_projection_json(projection)
@@ -458,19 +462,18 @@ def test_complete_summary_rejects_status_and_identity_drift(tmp_path: Path) -> N
 def test_complete_summary_csv_preserves_zero_combination_context(tmp_path: Path) -> None:
     payload = _payload()
     foldback = discover_foldback_neighborhood(_request(_nickase(motif="GACA", cut_offset=4)))
-    basal = _basal_result(payload)
     design = _verified_design(tmp_path)
     request = _construction_request(
         payload=payload,
         foldback=foldback,
-        basal=basal,
+        basal=None,
         design=design,
         endpoint=ConstructionEndpoint.SSDNA_HAIRPIN,
     )
     source = discover_constructions(
         request,
         foldback=verify_foldback_neighborhood_result(foldback),
-        basal=verify_basal_neighborhood_result(basal),
+        basal=None,
         design=design,
     )
     projection = project_complete_construction_summary(source)

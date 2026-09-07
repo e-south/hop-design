@@ -139,7 +139,7 @@ def test_local_source_rejects_unknown_schema_and_fields(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unsupported HOP local-neighborhood schema"):
         construction.discover_local_neighborhood(source)
 
-    request["schema"] = "hop.local-neighborhood-request/v4"
+    request["schema"] = "hop.local-neighborhood-request/v5"
     request["unexpected"] = True
     source.write_text(json.dumps(request))
     with pytest.raises(ValueError, match="unexpected"):
@@ -268,7 +268,7 @@ def test_basal_local_result_uses_v4_and_rejects_v3_receipts(tmp_path: Path) -> N
     receipt = construction.discover_local_neighborhood(source)
     result = json.loads(receipt.json_bytes)
 
-    assert result["schema"] == "hop.basal-neighborhood-result/v4"
+    assert result["schema"] == "hop.basal-neighborhood-result/v5"
     result_path = tmp_path / "basal-v4.json"
     result_path.write_bytes(receipt.json_bytes)
     loaded = construction.load_verified_local_neighborhood(result_path)

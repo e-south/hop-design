@@ -141,7 +141,7 @@ def _source(
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v5",
+        schema="hop.construction-source/v6",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
@@ -180,8 +180,10 @@ def _selected_inputs(tmp_path: Path, *, adapter_sequence: str | None = None):
         nick_strand=Strand.BOTTOM,
     )
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
+    resolved_adapter_sequence = (
+        basal.realizations[0].proximal_adapter_sequence
+        if adapter_sequence is None
+        else adapter_sequence
     )
     source = _source(
         foldback=foldback.neighborhood.request,
@@ -189,8 +191,8 @@ def _selected_inputs(tmp_path: Path, *, adapter_sequence: str | None = None):
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
             adapter=_material(
-                adapter.material_id,
-                adapter.sequence_5prime if adapter_sequence is None else adapter_sequence,
+                "ligation-adapter",
+                resolved_adapter_sequence,
             ),
             forward_primer=_material("forward-primer", encoding[:4]),
             reverse_primer=_material(
@@ -231,15 +233,13 @@ def _selected_partition_inputs(tmp_path: Path):
         nick_strand=Strand.BOTTOM,
     )
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     source = _source(
         foldback=foldback.neighborhood.request,
         basal=basal.discovery.request,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
-            adapter=_material(adapter.material_id, adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", adapter_sequence),
             forward_primer=_material("forward-primer", encoding[:4]),
             reverse_primer=_material(
                 "reverse-primer",
@@ -280,17 +280,13 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
         nick_strand=Strand.BOTTOM,
     )
     pcr_encoding = pcr_design.plan.hairpin_encoding_insert.sequence
-    pcr_adapter = next(
-        item
-        for item in pcr_basal.realizations[0].materials
-        if item.material_id == "ligation-adapter"
-    )
+    pcr_adapter_sequence = pcr_basal.realizations[0].proximal_adapter_sequence
     pcr_source = _source(
         foldback=pcr_foldback.neighborhood.request,
         basal=pcr_basal.discovery.request,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         materialization=_materialization(
-            adapter=_material(pcr_adapter.material_id, pcr_adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", pcr_adapter_sequence),
             forward_primer=_material("forward-primer", pcr_encoding[:4]),
             reverse_primer=_material("reverse-primer", reverse_complement_iupac(pcr_encoding[-4:])),
         ),
@@ -314,7 +310,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
         basal=clone_basal.discovery.request,
         endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
         materialization=_materialization(
-            adapter=_material(clone_adapter.material_id, clone_adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", clone_adapter),
             forward_primer=_material("forward-primer", f"GGTCTC{complete_pcr_top[:4]}"),
             reverse_primer=_material(
                 "reverse-primer",
@@ -344,7 +340,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/a887d0d7cf2a/87ad6d2afdb9b1ed"
+    assert pcr.bundle_id == "hop:construction-bundle/f76ea1ef972c/efa7f38e3bb31ed5"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value

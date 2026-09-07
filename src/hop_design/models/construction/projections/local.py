@@ -34,8 +34,8 @@ FOLDBACK_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/3"
 FOLDBACK_PART_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/4"
 FOLDBACK_OVERHEAD_RENDERER_VERSION = "foldback-overhead-projections/1"
 FOLDBACK_PART_OVERHEAD_RENDERER_VERSION = "foldback-overhead-projections/2"
-BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/2"
-BASAL_PART_PROJECTION_RENDERER_VERSION = "basal-projections/3"
+BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/4"
+BASAL_PART_PROJECTION_RENDERER_VERSION = "basal-projections/5"
 
 
 class FoldbackFeasibilityRow(HopModel):
@@ -54,24 +54,31 @@ class FoldbackFeasibilityRow(HopModel):
 
 
 class BasalFeasibilityRow(HopModel):
-    """One exact basal realization and its PCR-intermediate material dimensions."""
+    """One exact local basal realization and its upstream obligations."""
 
     local_realization_id: str = Field(pattern=r"^hop:local-realization/[0-9a-f]{64}@1$")
     basal_realization_id: str = Field(pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$")
     retained_overhead_nt: int = Field(ge=0)
+    nick_enzyme_id: str
+    future_release_action_id: str | None = None
+    future_release_enzyme_id: str | None = None
     nick_strand: Strand
     nick_offset_nt: int = Field(ge=0)
     pairing_pattern: str | None
     pairing_classes: tuple[BasalPairClass, ...]
     literal_pairs: tuple[BasalPairRecord, ...]
-    retained_nt: int = Field(ge=0)
-    transient_nt: int = Field(ge=0)
-    auxiliary_nt: int = Field(ge=0)
+    proximal_annealing_nt: int = Field(ge=1)
+    required_annealing_nt: int = Field(ge=1)
+    annealing_completion_nt: int = Field(ge=0)
+    mismatch_fraction: float = Field(ge=0.0, le=1.0)
+    warnings: tuple[Literal["mismatch-fraction-above-threshold"], ...] = ()
 
     @model_validator(mode="after")
     def validate_exact_details(self) -> BasalFeasibilityRow:
         if self.pairing_classes != tuple(item.pair_class for item in self.literal_pairs):
             raise ValueError("Basal pairing classes must replay every literal pair.")
+        if (self.future_release_action_id is None) != (self.future_release_enzyme_id is None):
+            raise ValueError("A future release action and enzyme must be present together.")
         return self
 
 
@@ -128,9 +135,9 @@ class BasalFeasibilityProjection(HopModel):
     """Neutral basal feasibility relation with explicit requested endpoint."""
 
     schema_id: Literal[
-        "hop.basal-feasibility-landscape/v2",
-        "hop.basal-feasibility-landscape/v3",
-    ] = Field(default="hop.basal-feasibility-landscape/v2", alias="schema")
+        "hop.basal-feasibility-landscape/v4",
+        "hop.basal-feasibility-landscape/v5",
+    ] = Field(default="hop.basal-feasibility-landscape/v4", alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
@@ -153,8 +160,8 @@ class BasalFeasibilityProjection(HopModel):
         _validate_partition_schema(
             schema_id=self.schema_id,
             sequence_partition=self.sequence_partition,
-            unpartitioned_schema="hop.basal-feasibility-landscape/v2",
-            partitioned_schema="hop.basal-feasibility-landscape/v3",
+            unpartitioned_schema="hop.basal-feasibility-landscape/v4",
+            partitioned_schema="hop.basal-feasibility-landscape/v5",
         )
         _validate_feasibility_disposition(
             disposition=self.disposition,
@@ -162,10 +169,17 @@ class BasalFeasibilityProjection(HopModel):
             row_count=len(self.realizations),
             ids=tuple(row.local_realization_id for row in self.realizations),
         )
-        if self.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX or any(
-            row.pairing_pattern is None or not row.literal_pairs for row in self.realizations
+        if self.endpoint not in {
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.CLONE_READY_DUPLEX,
+        } or any(row.pairing_pattern is None or not row.literal_pairs for row in self.realizations):
+            raise ValueError("Basal projections require a PCR-bearing local boundary.")
+        has_release = self.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+        if any(
+            (row.future_release_action_id is not None) is not has_release
+            for row in self.realizations
         ):
-            raise ValueError("Basal projections require the exact hairpin PCR intermediate.")
+            raise ValueError("Basal future release obligations must follow the requested endpoint.")
         _validate_projection_reference(
             schema_id=self.schema_id,
             reference=self.projection_reference,

@@ -637,7 +637,7 @@ def test_result_embeds_reversible_geometry_groups_and_claim_boundary() -> None:
     )
     result = NeighborhoodDiscoveryResult(**fields, achieved_geometry_groups=(group,))
     assert result.claim_boundary.method is MethodResolutionStatus.NOT_RESOLVED
-    assert result.schema_id == "hop.neighborhood-discovery-result/v4"
+    assert result.schema_id == "hop.neighborhood-discovery-result/v5"
     assert result.claim_boundary.physical_construction == "not_recorded"
 
 

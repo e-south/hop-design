@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from hop_design.models.construction import BasalGeometryDomain
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.payload import ConstructionEndpoint
@@ -44,6 +45,8 @@ def validate_local_authority_compatibility(
         or foldback_request.endpoint is not request.foldback_intermediate_endpoint
     ):
         raise ValueError("Foldback payload authority does not match the complete request.")
+    if (request.basal_result_id is None) != (basal is None):
+        raise ValueError("Basal authority presence must match the complete request.")
     if basal is None:
         return
     basal_request = basal.discovery.request
@@ -53,9 +56,24 @@ def validate_local_authority_compatibility(
             exact=payload,
         )
         or basal_request.route_family is not request.route_family
-        or basal_request.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+        or basal_request.endpoint is not request.endpoint
     ):
         raise ValueError("Basal payload authority does not match the complete request.")
+    if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        release = request.release
+        domain = basal_request.geometry_domain
+        if not isinstance(domain, BasalGeometryDomain):
+            raise ValueError("Basal authority requires a basal geometry domain.")
+        future = domain.future_release
+        if release is None or future is None:
+            raise ValueError("Clone composition requires a future basal release obligation.")
+        required = release.left if future.product_end == "left" else release.right
+        if (
+            future.orientation is not required.orientation
+            or future.cohesive_end_sequence != required.cohesive_end_sequence
+            or future.overhang_end is not required.overhang_end
+        ):
+            raise ValueError("Basal future release does not match the complete clone request.")
 
 
 __all__ = ["payload_space_contains", "validate_local_authority_compatibility"]

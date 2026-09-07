@@ -98,7 +98,7 @@ caller does not need to restate its cuts, fragments, or survivor relation.
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v5`; and
+   `hop.construction-source/v6`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
@@ -107,9 +107,9 @@ primers are resolved, endpoint-dependent auxiliary materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v5
-foldback: <hop.local-neighborhood-request/v3 mapping>
-basal: <hop.local-neighborhood-request/v3 mapping or null>
+schema: hop.construction-source/v6
+foldback: <hop.local-neighborhood-request/v5 mapping>
+basal: <hop.local-neighborhood-request/v5 mapping or null>
 composition:
   endpoint: ssdna_hairpin | hairpin_pcr_duplex | clone_ready_duplex
   materialization:
@@ -165,6 +165,16 @@ prefix, and its reverse counterpart binds within the adapter. Neither may
 anneal across the payload. HOP performs no Tm, yield, or empirical ranking, and
 does not generate a reusable handle that the caller did not specify.
 
+Basal discovery is deliberately local. It establishes the payload-proximal
+nick, the exact proximal adapter pairs, any position-level source and adapter
+base domains, the minimum full annealing extent, mismatch warnings, retained
+overhead, and—for a clone-ready endpoint—the Type IIS action required later.
+The future release is an obligation, not a sticky end asserted in the current
+adapter state. Basal discovery does not invent the remaining annealing bases,
+finalize the complete adapter, or claim a PCR product. Complete composition
+must satisfy those obligations against the realized source scaffold and exact
+endpoint materials.
+
 Representative policy shapes are:
 
 ```yaml
@@ -196,7 +206,7 @@ Endpoint obligations fail closed:
 | --- | --- | --- | --- | --- |
 | `ssdna_hairpin` | required | omitted | omitted | omitted |
 | `hairpin_pcr_duplex` | required | required | required | omitted |
-| `clone_ready_duplex` | required | required PCR-intermediate authority | required | required by the endpoint release request |
+| `clone_ready_duplex` | required | required local boundary authority | required | required by the endpoint release request |
 
 The foldback and basal requests, when both are present, must describe the same
 payload space. The exact payload in the verified design must belong to that

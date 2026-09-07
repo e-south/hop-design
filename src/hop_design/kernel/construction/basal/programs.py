@@ -17,6 +17,7 @@ from hop_design.models.construction import (
     BasalFutureReleaseAction,
     BasalFutureReleaseRequirement,
     BasalPairAllowance,
+    BasalPairConstraint,
     BasalTarget,
     ConstructionEndpoint,
     NickStrandSelection,
@@ -219,12 +220,16 @@ def _constrain(domains: list[set[str]], *, start: int, pattern: str) -> bool:
     return True
 
 
-def _adapter_domains(source_base: str, allowance: BasalPairAllowance) -> tuple[str, ...]:
+def _adapter_domains(
+    source_base: str,
+    *,
+    constraint: BasalPairConstraint,
+) -> tuple[str, ...]:
     return tuple(
         base
-        for base in _BASES
-        if allowance is BasalPairAllowance.ANY
-        or derive_basal_pair_class(source_base, base).value == allowance.value
+        for base in constraint.allowed_adapter_bases
+        if constraint.allowed_class is BasalPairAllowance.ANY
+        or derive_basal_pair_class(source_base, base).value == constraint.allowed_class.value
     )
 
 

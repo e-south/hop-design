@@ -39,12 +39,15 @@ from .trajectory_svg import render_complete_trajectory_svg
 
 
 class _BasalGroupKey(NamedTuple):
+    nick_enzyme_id: str
+    future_release_enzyme_id: str | None
     nick_strand: str
     nick_offset_nt: int
     pairing_pattern: str | None
-    retained_nt: int
-    transient_nt: int
-    auxiliary_nt: int
+    retained_overhead_nt: int
+    required_annealing_nt: int
+    annealing_completion_nt: int
+    warning_count: int
 
 
 class _FoldbackGroupKey(NamedTuple):
@@ -144,12 +147,15 @@ def _render_basal(projection: BasalFeasibilityProjection) -> bytes:
     grouped: dict[_BasalGroupKey, list[BasalFeasibilityRow]] = {}
     for item in projection.realizations:
         key = _BasalGroupKey(
+            nick_enzyme_id=item.nick_enzyme_id,
+            future_release_enzyme_id=item.future_release_enzyme_id,
             nick_strand=item.nick_strand.value,
             nick_offset_nt=item.nick_offset_nt,
             pairing_pattern=item.pairing_pattern,
-            retained_nt=item.retained_nt,
-            transient_nt=item.transient_nt,
-            auxiliary_nt=item.auxiliary_nt,
+            retained_overhead_nt=item.retained_overhead_nt,
+            required_annealing_nt=item.required_annealing_nt,
+            annealing_completion_nt=item.annealing_completion_nt,
+            warning_count=len(item.warnings),
         )
         grouped.setdefault(key, []).append(item)
     rows = []
@@ -166,26 +172,32 @@ def _render_basal(projection: BasalFeasibilityProjection) -> bytes:
         }
         if literal_pair_patterns:
             pairing += f" · {len(literal_pair_patterns)} literal pair patterns"
-        route = f"{group_key.nick_strand} strand · offset {group_key.nick_offset_nt} nt"
-        material = (
-            f"retained {group_key.retained_nt} nt · "
-            f"transient {group_key.transient_nt} nt · "
-            f"auxiliary {group_key.auxiliary_nt} nt"
+        release = group_key.future_release_enzyme_id or "not required"
+        route = (
+            f"{group_key.nick_enzyme_id} · {group_key.nick_strand} strand · "
+            f"offset {group_key.nick_offset_nt} nt"
         )
+        obligation = (
+            f"release {release} · retained overhead {group_key.retained_overhead_nt} nt · "
+            f"annealing {group_key.required_annealing_nt} nt "
+            f"({group_key.annealing_completion_nt} nt completion)"
+        )
+        if group_key.warning_count:
+            obligation += " · mismatch warning"
         realization_ids = [item.local_realization_id for item in group_rows]
         rows.append(
             f'<g data-realization-count="{len(realization_ids)}" '
             f'data-realization-ids="{_escape(" ".join(realization_ids))}">'
             f'<text x="72" y="{y}" class="body">{_escape(route)}</text>'
             f'<text x="360" y="{y}" class="body">{_escape(pairing)}</text>'
-            f'<text x="720" y="{y}" class="body">{_escape(material)}</text>'
+            f'<text x="720" y="{y}" class="body">{_escape(obligation)}</text>'
             f'<text x="1080" y="{y}" class="body">n={len(realization_ids)}</text></g>'
         )
     body = (
         _status_header(projection, title)
         + f"""
 <text x="72" y="168" class="subtitle">Requested endpoint: {_escape(endpoint)}</text>
-<text x="72" y="206" class="label">Pairing and exact material accounting</text>
+<text x="72" y="206" class="label">Local pairing and upstream completion obligations</text>
 {"".join(rows)}
 <text x="72" y="{max(296, 250 + len(rows) * 38 + 30)}" class="small">
 Rows group identical observed dimensions; no preference is inferred.</text>

@@ -118,7 +118,7 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
             "hop.foldback-overhead-frontier/v2",
         ),
         "basal": (
-            "hop.basal-feasibility-landscape/v3",
+            "hop.basal-feasibility-landscape/v5",
             "hop.basal-overhead-frontier/v2",
         ),
     }
@@ -126,7 +126,7 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
     mismatched = feasibility.model_dump(mode="python", by_alias=True)
     mismatched["schema"] = {
         "foldback": "hop.foldback-feasibility-landscape/v3",
-        "basal": "hop.basal-feasibility-landscape/v2",
+        "basal": "hop.basal-feasibility-landscape/v4",
     }[family]
     with pytest.raises(ValidationError, match="sequence-domain scope"):
         type(feasibility).model_validate(mismatched)
@@ -241,26 +241,27 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
         type(projection).model_validate(legacy)
 
 
-def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
+def test_basal_projection_keeps_local_pairing_and_completion_obligations() -> None:
     result = discover_basal_neighborhood(basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
 
     projection = project_basal_feasibility(result)
 
     assert projection.disposition.completion is SearchCompletionStatus.COMPLETE
     assert projection.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
-    assert projection.schema_id == "hop.basal-feasibility-landscape/v2"
+    assert projection.schema_id == "hop.basal-feasibility-landscape/v4"
     assert projection.source_result_id == result.result_id
     assert projection.projection_reference.result_id == result.result_id
-    assert projection.projection_reference.renderer_version == "basal-projections/2"
+    assert projection.projection_reference.renderer_version == "basal-projections/4"
     assert projection.provenance == result.discovery.provenance
     assert projection.claim_boundary == result.discovery.claim_boundary
     assert tuple(row.basal_realization_id for row in projection.realizations) == tuple(
         item.basal_realization_id for item in result.realizations
     )
     assert all(row.pairing_pattern is not None for row in projection.realizations)
-    assert all(row.retained_nt >= 0 for row in projection.realizations)
-    assert all(row.transient_nt >= 0 for row in projection.realizations)
-    assert all(row.auxiliary_nt >= 0 for row in projection.realizations)
+    assert all(row.proximal_annealing_nt == 4 for row in projection.realizations)
+    assert all(row.required_annealing_nt == 15 for row in projection.realizations)
+    assert all(row.annealing_completion_nt == 11 for row in projection.realizations)
+    assert all(row.future_release_action_id is None for row in projection.realizations)
     for row, source in zip(projection.realizations, result.realizations, strict=True):
         achieved = source.local_realization.achieved_geometry
         assert row.nick_strand == achieved.nick_strand
@@ -273,6 +274,7 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
         item.model_dump(mode="json") for item in projection.realizations[0].literal_pairs
     ]
     assert csv_row["physical_construction"] == "not_recorded"
+    assert csv_row["required_annealing_nt"] == "15"
     assert "sequence_part_count" not in csv_row
     assert "sequence_part_index" not in csv_row
 
@@ -308,11 +310,12 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
     assert "hairpin PCR duplex endpoint" in svg
     assert 'data-endpoint="hairpin_pcr_duplex"' in svg
     assert f'data-result-id="{result.result_id}"' in svg
-    assert 'data-renderer-version="basal-projections/2"' in svg
+    assert 'data-renderer-version="basal-projections/4"' in svg
     assert 'data-physical-construction="not_recorded"' in svg
     assert "data-sequence-part" not in svg
     assert "top strand · offset" in svg
-    assert "Pairing and exact material accounting" in svg
+    assert "Local pairing and upstream completion obligations" in svg
+    assert "11 nt completion" in svg
     assert "literal pair patterns" in svg
     assert "data-local-realization-id" not in svg
     assert "data-realization-ids" in svg

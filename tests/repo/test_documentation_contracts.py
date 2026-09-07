@@ -181,7 +181,7 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
     assert "local construction projection" in normalized
     for schema_id in (
         "hop.foldback-feasibility-landscape/v4",
-        "hop.basal-feasibility-landscape/v3",
+        "hop.basal-feasibility-landscape/v5",
         "hop.foldback-overhead-frontier/v2",
         "hop.basal-overhead-frontier/v2",
     ):

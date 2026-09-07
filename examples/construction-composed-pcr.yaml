@@ -1,6 +1,6 @@
-schema: hop.construction-source/v5
+schema: hop.construction-source/v6
 foldback:
-  schema: hop.local-neighborhood-request/v4
+  schema: hop.local-neighborhood-request/v5
   name: null
   payload:
     schema: hop.final-payload/v1
@@ -92,7 +92,7 @@ foldback:
     scope: all_realizations
     stop: exhaustive
 basal:
-  schema: hop.local-neighborhood-request/v4
+  schema: hop.local-neighborhood-request/v5
   name: null
   payload:
     schema: hop.final-payload/v1

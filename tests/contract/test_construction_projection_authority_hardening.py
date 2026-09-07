@@ -32,11 +32,8 @@ from hop_design.models.construction import (
     SearchTerminationReason,
 )
 from hop_design.models.construction.basal import (
-    BasalEndpointProjection,
-    BasalMaterialRecord,
-    BasalMaterialRole,
+    BasalBoundaryProjection,
 )
-from hop_design.models.construction.basal.states import assert_material_partition
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     FoldbackFeasibilityProjection,
@@ -55,7 +52,6 @@ from tests.contract.test_foldback_construction_discovery import (
     "changed_endpoint",
     [
         ConstructionEndpoint.SSDNA_HAIRPIN,
-        ConstructionEndpoint.CLONE_READY_DUPLEX,
     ],
 )
 def test_basal_projection_rejects_endpoint_evidence_leakage(
@@ -67,8 +63,20 @@ def test_basal_projection_rejects_endpoint_evidence_leakage(
     content = source.model_dump(by_alias=True)
     content["endpoint"] = changed_endpoint
 
-    with pytest.raises(ValidationError, match="exact hairpin PCR intermediate"):
+    with pytest.raises(ValidationError, match="PCR-bearing local boundary"):
         BasalFeasibilityProjection.model_validate(content)
+
+
+def test_clone_basal_projection_exposes_future_release_as_an_obligation() -> None:
+    projection = project_basal_feasibility(
+        discover_basal_neighborhood(basal_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
+    )
+
+    assert projection.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+    assert projection.realizations
+    assert all(row.future_release_action_id for row in projection.realizations)
+    assert all(row.future_release_enzyme_id for row in projection.realizations)
+    assert all(row.required_annealing_nt == 15 for row in projection.realizations)
 
 
 def test_projection_authorities_reject_duplicate_membership_and_status_drift() -> None:
@@ -158,44 +166,21 @@ def test_overhead_projection_rejects_cross_level_membership_and_false_completion
         RetainedOverheadFrontierProjection.model_validate(content)
 
 
-def test_basal_endpoint_projection_requires_exact_complement_and_endpoint_minimality() -> None:
+def test_basal_boundary_projection_requires_exact_complement_and_pcr_endpoint() -> None:
     pcr = (
         discover_basal_neighborhood(basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
         .realizations[0]
         .projection
     )
     content = pcr.model_dump(mode="python")
-    assert pcr.pcr_reference_sequence is not None
-    content["pcr_complement_sequence"] = pcr.pcr_reference_sequence
-    assert content["pcr_complement_sequence"] != reverse_complement_iupac(
-        pcr.pcr_reference_sequence
+    content["local_complement_sequence"] = pcr.local_reference_sequence
+    assert content["local_complement_sequence"] != reverse_complement_iupac(
+        pcr.local_reference_sequence
     )
-    with pytest.raises(ValidationError, match="must derive from the complete reference"):
-        BasalEndpointProjection.model_validate(content)
+    with pytest.raises(ValidationError, match="must derive from the local reference"):
+        BasalBoundaryProjection.model_validate(content)
 
     direct = pcr.model_dump(mode="python")
     direct["endpoint"] = ConstructionEndpoint.SSDNA_HAIRPIN
     with pytest.raises(ValidationError):
-        BasalEndpointProjection.model_validate(direct)
-
-
-def test_material_partition_requires_exact_endpoint_state_and_singular_partition() -> None:
-    record = discover_basal_neighborhood(
-        basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
-    ).realizations[0]
-    retained = BasalMaterialRecord(
-        material_id="retained-product",
-        role=BasalMaterialRole.RETAINED,
-        sequence_5prime=record.hairpin_pcr_duplex.top_strand.sequence,
-    )
-    duplicate = retained.model_copy(update={"material_id": "retained-copy"})
-    with pytest.raises(ValueError, match="must be singular"):
-        assert_material_partition(
-            pcr_duplex=record.hairpin_pcr_duplex,
-            materials=(retained, duplicate),
-        )
-    with pytest.raises(ValueError, match="must replay"):
-        assert_material_partition(
-            pcr_duplex=record.hairpin_pcr_duplex,
-            materials=(retained.model_copy(update={"sequence_5prime": "ACTG"}),),
-        )
+        BasalBoundaryProjection.model_validate(direct)

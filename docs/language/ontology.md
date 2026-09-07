@@ -70,10 +70,14 @@ end-generation geometry. Type IIS processing is absent unless the endpoint
 requests clone-ready ends.
 
 A local realization is one exact local precursor, enzyme binding, operation
-program, and state trajectory. A complete realization composes exact local
-realizations around one payload and validates the staged route. Final-product
-and achieved-geometry groups are reversible projections over realization
-identities; neither may erase alternatives.
+program, and state trajectory within its declared neighborhood. A basal local
+realization ends at the nicked boundary plus proximal adapter-pairing and
+upstream completion obligations; it does not assert a finalized adapter,
+hairpin-PCR duplex, or present cohesive end. A complete realization composes
+exact local realizations around one payload, resolves complete materials, and
+validates the staged route. Final-product and achieved-geometry groups are
+reversible projections over realization identities; neither may erase
+alternatives.
 
 Construction sequence is classified as retained, transient, auxiliary, or
 destination-associated. Compactness uses achieved endpoint geometry and

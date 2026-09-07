@@ -233,14 +233,19 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         "local_realization_id",
         "basal_realization_id",
         "retained_overhead_nt",
+        "nick_enzyme_id",
+        "future_release_action_id",
+        "future_release_enzyme_id",
         "nick_strand",
         "nick_offset_nt",
         "pairing_pattern",
         "pairing_classes",
         "literal_pairs_json",
-        "retained_nt",
-        "transient_nt",
-        "auxiliary_nt",
+        "proximal_annealing_nt",
+        "required_annealing_nt",
+        "annealing_completion_nt",
+        "mismatch_fraction",
+        "warnings",
     )
     writer = _writer(buffer, fields)
     base = _base(projection)
@@ -250,6 +255,7 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         if row is not None:
             values.pop("literal_pairs")
             values["pairing_classes"] = ";".join(item.value for item in row.pairing_classes)
+            values["warnings"] = ";".join(row.warnings)
             values["literal_pairs_json"] = json.dumps(
                 [item.model_dump(mode="json") for item in row.literal_pairs],
                 sort_keys=True,

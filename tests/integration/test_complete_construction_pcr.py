@@ -142,16 +142,14 @@ def _valid_pcr_result(tmp_path: Path):
     )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=_material("forward-primer", encoding[:4]),
         reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
     )
@@ -188,16 +186,14 @@ def test_pcr_composition_accepts_both_duplex_foldback_orientations(
     )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=_material("forward-primer", encoding[:4]),
         reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
     )
@@ -331,12 +327,8 @@ def test_pcr_composition_resolves_a_reusable_adapter_handle_and_terminal_primers
 
     assert result.status is SearchCompletionStatus.COMPLETE
     realization = result.realizations[0]
-    local_adapter = next(
-        item
-        for item in realization.basal_authority.materials
-        if item.material_id == "ligation-adapter"
-    )
-    assert realization.materials[2].sequence_5prime == (local_adapter.sequence_5prime + "GATCTG")
+    proximal_adapter = realization.basal_authority.proximal_adapter_sequence
+    assert realization.materials[2].sequence_5prime == (proximal_adapter + "GATCTG")
     assert tuple(item.specification_resolution_mode for item in realization.material_uses[2:]) == (
         MaterialResolutionMode.CONSTRAIN,
         MaterialResolutionMode.DERIVE,
@@ -367,15 +359,15 @@ def test_pcr_composition_retains_outer_basal_recognition_prefix_as_route_periphe
 
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    local_adapter = next(item for item in local.materials if item.material_id == "ligation-adapter")
-    assert local_adapter.sequence_5prime == "TTTT"
+    adapter_sequence = local.proximal_adapter_sequence
+    assert adapter_sequence == "TTTT"
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        adapter=_material(local_adapter.material_id, local_adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=PcrPrimer(
             oligo=_material("forward-primer", "GGAAAA"),
             annealing_length_nt=4,
@@ -597,17 +589,15 @@ def test_hairpin_pcr_preserves_a_literal_distal_mismatch_through_copying(
     )
     design = _verified_distal_mismatch_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
-    assert adapter.sequence_5prime == "TTAT"
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
+    assert adapter_sequence == "TTAT"
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=_material("forward-primer", encoding[:4]),
         reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-1:])),
     )
@@ -623,8 +613,8 @@ def test_hairpin_pcr_preserves_a_literal_distal_mismatch_through_copying(
         tuple(item.kind for item in annealing.pairings).count(JunctionPairKind.HARD_MISMATCH) == 1
     )
     top, bottom = realization.final_product.strands
-    assert top.sequence.endswith(adapter.sequence_5prime)
-    assert bottom.sequence.startswith(reverse_complement_iupac(adapter.sequence_5prime))
+    assert top.sequence.endswith(adapter_sequence)
+    assert bottom.sequence.startswith(reverse_complement_iupac(adapter_sequence))
     adapter_spans = tuple(
         item
         for item in realization.final_product.material_function_spans
@@ -823,14 +813,12 @@ def test_hairpin_pcr_endpoint_reports_adapter_mismatch_as_infeasible(
     )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    local_adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    proximal_adapter = basal.realizations[0].proximal_adapter_sequence
     incompatible_adapters = (
         _material("ligation-adapter", "CCCC"),
         _material(
             "ligation-adapter",
-            local_adapter.sequence_5prime,
+            proximal_adapter,
             five_prime_end=EndChemistry.HYDROXYL,
         ),
     )
@@ -867,11 +855,7 @@ def test_hairpin_pcr_endpoint_rejects_top_strand_basal_nick(tmp_path: Path) -> N
     basal = _basal_result(payload, ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter_sequence = next(
-        material.sequence_5prime
-        for material in basal.realizations[0].materials
-        if material.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
@@ -905,16 +889,14 @@ def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_state(tmp_path: Path) 
     )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     request = _construction_request(
         payload=payload,
         foldback=foldback,
         basal=basal,
         design=design,
         endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-        adapter=_material(adapter.material_id, adapter.sequence_5prime),
+        adapter=_material("ligation-adapter", adapter_sequence),
         forward_primer=_material("forward-primer", encoding[:4]),
         reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
     )
@@ -946,24 +928,22 @@ def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_state(tmp_path: Path) 
     assert boundary_before_policy.rejection_reason is (
         CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
     )
-    complex_state = basal_record.adapter_annealed_complex
-    assert complex_state is not None
-    changed_pair = complex_state.pairs[0].model_copy(
-        update={"left_index": complex_state.pairs[0].left_index + 1}
+    pairing_state = basal_record.projection.pairing_state
+    changed_adapter = _substitute_first_base(pairing_state.adapter_sequence_5prime)
+    changed_projection = basal_record.projection.model_copy(
+        update={
+            "pairing_state": pairing_state.model_copy(
+                update={"adapter_sequence_5prime": changed_adapter}
+            )
+        }
     )
     profile_result = evaluate_combination(
         request,
         foldback=foldback_record,
-        basal=basal_record.model_copy(
-            update={
-                "adapter_annealed_complex": complex_state.model_copy(
-                    update={"pairs": (changed_pair, *complex_state.pairs[1:])}
-                )
-            }
-        ),
+        basal=basal_record.model_copy(update={"projection": changed_projection}),
         **policies,
     )
-    assert profile_result.rejection_reason is (CompositionRejectionCode.PCR_PAIRING_STATE_MISMATCH)
+    assert profile_result.rejection_reason is CompositionRejectionCode.PCR_ADAPTER_MISMATCH
 
 
 def test_hairpin_pcr_reports_incompatible_primer_as_infeasible(
@@ -978,9 +958,7 @@ def test_hairpin_pcr_reports_incompatible_primer_as_infeasible(
     )
     design = _verified_design(tmp_path)
     encoding = design.plan.hairpin_encoding_insert.sequence
-    adapter = next(
-        item for item in basal.realizations[0].materials if item.material_id == "ligation-adapter"
-    )
+    adapter_sequence = basal.realizations[0].proximal_adapter_sequence
     incompatible_primers = (
         _material(
             "forward-primer",
@@ -996,7 +974,7 @@ def test_hairpin_pcr_reports_incompatible_primer_as_infeasible(
             basal=basal,
             design=design,
             endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            adapter=_material(adapter.material_id, adapter.sequence_5prime),
+            adapter=_material("ligation-adapter", adapter_sequence),
             forward_primer=forward_primer,
             reverse_primer=_material("reverse-primer", reverse_complement_iupac(encoding[-4:])),
         )
@@ -1013,38 +991,37 @@ def test_hairpin_pcr_reports_incompatible_primer_as_infeasible(
 def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_path: Path) -> None:
     payload = _payload()
     foldback = _foldback(payload)
-    basal = _basal_result(payload)
     design = _verified_design(tmp_path)
     request = _construction_request(
         payload=payload,
         foldback=foldback,
-        basal=basal,
+        basal=None,
         design=design,
     )
 
-    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+    result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "6c81762117b15bf20117026dcbf88cc5197a2afec0b0f3d80f32f12a20602491@1"
+        "05ac670e3435a76a9b79939363ac49076e90e823cb3529d2ef82a3283287430e@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "12112e1e5fe9cc988dd136dbcf73be667ebed24c4f940cc5c3e9e22c76503a6f"  # pragma: allowlist secret  # noqa: E501
+            "bdc8d1d9e67d4e97ba9a6fa7962d4ffd5399a9552bfc7a66e561dc1dd16f3ab8"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "5a84e0da952cd5ce309b6a926aa458f9a6697b8ce65531801b3f0c29efe7ec3b@1",
+        "18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1",
         "hop:materialized-construction/"
-        "69ef39fd6c221fc17006131445badb12a2774a7dd2942d773d903b97abdd1f90@1",
+        "880df450a5c03f5944c92d8ac0a135fe4670ec17b3acf9b10505fb16b1c18a1d@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "53eeafff5e24f3dc294496eb4baa2357437c2f5ef59c7aa16c2ee669d32d202b@1",
+        "27b8aa1a4592f35c6bc725d215e621ceec504ca5ccb0498fbfb212923bb5f257@1",
         "hop:construction-program/"
-        "c75e1b975b65f3b822eacd1fd4c5925dc40d33af17dd53ccd8e7a5450e0c9bd1@1",
+        "7b36fbd0d77db4247491e24a55d865e850da9f6b98acebb951185284d3392719@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/31ec12c1d24c9c10e6c8bc22e815aac01842be4fc019cc18a2a36962f5117237@1",
@@ -1055,8 +1032,8 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "bcdcb679f5f0b5f85f05775766f1de1a6516e25f88316e2fe4d57b970047603a",  # pragma: allowlist secret  # noqa: E501
-            "617d28df80eddecbbd180cca3f61d1cc32c817a055f492c0a210e87cacbb76fb",  # pragma: allowlist secret  # noqa: E501
+            "6490154ed3c54235bd0d929b607bd2990d518bd68326914c22c7d298c4901a42",  # pragma: allowlist secret  # noqa: E501
+            "193523388e0ef1e6028f0d10fad7e03d4f63340b04c5c9b7b91307cf171bbafd",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -1066,25 +1043,25 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "c201d0e66dac6f3778c9fc71cd25ff84d5a05569f21a405edc26cc4e4416c5de@1"
+        "a17d6132cbbf45ddfdd086689ae3878aa1f687d2c3048ba689260d16a306ff42@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "1e62e3ca5b6c193b3da680ba40b66add742a5f56937db01d7f599b1ca3b06f22"  # pragma: allowlist secret  # noqa: E501
+            "c49b333b596ebea2f1e0ba5e5c3a667f310b2534e30a7d826c1700363e468297"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "9f8755b90f1134f6e558c76f4106b3dd5c86332fd416a92bbf14d22a6f0f343b@1",
+        "da552baad06260c53332a2a045f771cdc199a696061970c3306ddaae5b266910@1",
         "hop:materialized-construction/"
-        "367a411545a9e03a8f193abb269b4bd6c28d7db966a67d048ca01089e9dd8b56@1",
+        "3e68840ca0106f8ba76f579e8284b334424f5a4763c6093b8b15d9b810cf477a@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "d8ae1fb65b4db010305b7ffb76c343074ac0bfb97665a576acab1fff086c6f86@1",
+        "f905135a928e666c5c6e6f7f01c20d388d97691f194f9936a91918ec0192aaee@1",
         "hop:construction-program/"
-        "cc8a2225b517a6966799945e1fa5f583f43ff6753aeb7f1c6eec108ddf99713b@1",
+        "9b917811e34981d8d57f963d51179909c23f9748f820f667d93a47aa9c640b14@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/fc31f4ff8e39f543c303fcf979f3790931a43cec3cb078582de00a707d218788@1",
@@ -1095,13 +1072,13 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "80ebfaf33b476a103bb9f64b1186f4f29da67cf69f3a34b1b6504db1fbcb034b",  # pragma: allowlist secret  # noqa: E501
-            "83b4cdc242da8602fcd3ac7526d69e5474978f8454cc905631d1d7c51d8d1f8b",  # pragma: allowlist secret  # noqa: E501
+            "3e62fa14c74c7de4cb3c3c3aa5d6ba150c1025c7016376803c1ee92074370a4b",  # pragma: allowlist secret  # noqa: E501
+            "1f98ff0390ef4253ae19c448847030a81147697136454075e632c6c44fb169f2",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
 
-def test_direct_endpoint_accepts_a_valid_bottom_basal_nick_without_pcr_splitting(
+def test_direct_endpoint_rejects_basal_authority(
     tmp_path: Path,
 ) -> None:
     payload = _payload()
@@ -1112,20 +1089,13 @@ def test_direct_endpoint_accepts_a_valid_bottom_basal_nick_without_pcr_splitting
     request = _construction_request(
         payload=payload,
         foldback=foldback,
-        basal=basal,
+        basal=None,
         design=design,
     )
-
-    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
-
-    assert result.status is SearchCompletionStatus.COMPLETE
-    assert result.realizations
-    assert all(
-        "pcr-bottom" not in strand.strand_id
-        for realization in result.realizations
-        for state in realization.construction_program.states
-        for strand in state.molecules
-    )
+    content = request.model_dump(mode="python")
+    content["basal_result_id"] = basal.result_id
+    with pytest.raises(ValidationError, match="direct endpoint must omit basal authority"):
+        type(request).model_validate(content)
 
 
 def test_adapter_ligation_binds_the_exact_pre_state_adapter_material(tmp_path: Path) -> None:
@@ -2054,17 +2024,16 @@ def test_final_product_rejects_endpoint_shape_forgery(tmp_path: Path) -> None:
     pcr_product = pcr_result.realizations[0].final_product
     payload = _payload()
     foldback = _foldback(payload)
-    basal = _basal_result(payload)
     design = _verified_design(tmp_path / "direct-shape")
     direct_result = _discover_raw(
         _construction_request(
             payload=payload,
             foldback=foldback,
-            basal=basal,
+            basal=None,
             design=design,
         ),
         foldback=foldback,
-        basal=basal,
+        basal=None,
         design=design,
     )
     direct_product = direct_result.realizations[0].final_product
@@ -2130,17 +2099,16 @@ def test_direct_endpoint_rejects_pcr_only_evidence_fields(tmp_path: Path) -> Non
     pcr_realization = pcr_result.realizations[0]
     payload = _payload()
     foldback = _foldback(payload)
-    basal = _basal_result(payload)
     design = _verified_design(tmp_path / "direct")
     direct_result = _discover_raw(
         _construction_request(
             payload=payload,
             foldback=foldback,
-            basal=basal,
+            basal=None,
             design=design,
         ),
         foldback=foldback,
-        basal=basal,
+        basal=None,
         design=design,
     )
     direct = direct_result.realizations[0]

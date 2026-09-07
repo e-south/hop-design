@@ -1,4 +1,4 @@
-schema: hop.local-neighborhood-request/v4
+schema: hop.local-neighborhood-request/v5
 payload:
   schema: hop.final-payload/v1
   payload:

@@ -19,6 +19,7 @@ from pydantic import Field, field_validator, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.junction import Strand
 from hop_design.models.references import ReferenceId
+from hop_design.models.sequence import normalize_dna_sequence
 
 from .basal_release import BasalFutureReleaseRequirement
 
@@ -67,6 +68,28 @@ class BasalPairConstraint(HopModel):
 
     position_from_ligation: int = Field(ge=0)
     allowed_class: BasalPairAllowance
+    allowed_source_bases: tuple[str, ...] = Field(
+        default=("A", "C", "G", "T"),
+        min_length=1,
+        max_length=4,
+    )
+    allowed_adapter_bases: tuple[str, ...] = Field(
+        default=("A", "C", "G", "T"),
+        min_length=1,
+        max_length=4,
+    )
+
+    @field_validator("allowed_source_bases", "allowed_adapter_bases", mode="after")
+    @classmethod
+    def canonicalize_base_domain(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = tuple(
+            normalize_dna_sequence(value, allow_degenerate=False) for value in values
+        )
+        if any(len(value) != 1 for value in normalized):
+            raise ValueError("Basal base domains must contain individual nucleotides.")
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("Basal base domains must not repeat nucleotides.")
+        return tuple(base for base in ("A", "C", "G", "T") if base in normalized)
 
 
 class BasalTarget(HopModel):

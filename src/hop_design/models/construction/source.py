@@ -23,6 +23,7 @@ from .complete.request import TypeIisReleaseRequest, WholeRouteConstraints
 from .complete.source_preparation import LinearSourceMaterializationSpec
 from .payload import ConstructionEndpoint, LocalNeighborhoodFamily, RouteFamily
 from .request import LocalNeighborhoodRequest
+from .search import BasalGeometryDomain
 
 
 def _contains_internal_schema_name(value: object) -> bool:
@@ -48,7 +49,7 @@ class ConstructionCompositionSource(HopModel):
 class ConstructionSource(HopModel):
     """One strict external source for deterministic complete construction."""
 
-    schema_id: Literal["hop.construction-source/v5"] = Field(alias="schema")
+    schema_id: Literal["hop.construction-source/v6"] = Field(alias="schema")
     foldback: LocalNeighborhoodRequest
     basal: LocalNeighborhoodRequest | None = None
     composition: ConstructionCompositionSource
@@ -104,10 +105,10 @@ class ConstructionSource(HopModel):
         if (
             self.basal.family is not LocalNeighborhoodFamily.BASAL
             or self.basal.route_family is not RouteFamily.LINEAR_SOURCE_V1
-            or self.basal.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+            or self.basal.endpoint is not endpoint
         ):
             raise ValueError(
-                "Basal discovery must resolve the linear source through the hairpin PCR duplex."
+                "Basal discovery must use the requested PCR-bearing construction endpoint."
             )
         if self.basal.payload.payload_spec_id != self.foldback.payload.payload_spec_id:
             raise ValueError("Foldback and basal discovery must describe the same payload space.")
@@ -116,6 +117,21 @@ class ConstructionSource(HopModel):
                 raise ValueError("A hairpin PCR endpoint must omit clone release.")
         elif self.composition.release is None:
             raise ValueError("A clone-ready endpoint requires exact Type IIS release.")
+        else:
+            domain = self.basal.geometry_domain
+            if not isinstance(domain, BasalGeometryDomain) or domain.future_release is None:
+                raise ValueError("Clone-ready basal discovery requires future end generation.")
+            future = domain.future_release
+            release = self.composition.release
+            required = release.left if future.product_end == "left" else release.right
+            if (
+                future.orientation is not required.orientation
+                or future.cohesive_end_sequence != required.cohesive_end_sequence
+                or future.overhang_end is not required.overhang_end
+            ):
+                raise ValueError(
+                    "Basal future release must match the complete clone endpoint."
+                )
         return self
 
 

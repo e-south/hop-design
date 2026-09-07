@@ -42,8 +42,8 @@ from .request import LocalNeighborhoodRequest, geometry_id, problem_id
 class NeighborhoodDiscoveryResult(HopModel):
     """Exact local realizations with explicit coverage and feasibility evidence."""
 
-    schema_id: Literal["hop.neighborhood-discovery-result/v4"] = Field(
-        default="hop.neighborhood-discovery-result/v4", alias="schema"
+    schema_id: Literal["hop.neighborhood-discovery-result/v5"] = Field(
+        default="hop.neighborhood-discovery-result/v5", alias="schema"
     )
     disposition: SearchDisposition
     request: LocalNeighborhoodRequest

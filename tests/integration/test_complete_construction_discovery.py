@@ -287,7 +287,11 @@ def _construction_request(
         route_family=RouteFamily.LINEAR_SOURCE_V1,
         endpoint=endpoint,
         foldback_result_id=foldback.result_id,
-        basal_result_id=None if basal is None else basal.result_id,
+        basal_result_id=(
+            None
+            if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN or basal is None
+            else basal.result_id
+        ),
         materialization=LinearSourceMaterializationSpec(
             source_preparation=source_preparation
             or SourceDuplexPreparationPolicy(

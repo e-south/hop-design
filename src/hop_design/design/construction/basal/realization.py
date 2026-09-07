@@ -31,12 +31,10 @@ from hop_design.models.construction import (
     geometry_id,
 )
 from hop_design.models.construction.basal import (
+    BasalAnnealingObligation,
     BasalBoundaryControl,
-    BasalEndpointProjection,
+    BasalBoundaryProjection,
     BasalEnzymeDefinition,
-    BasalMaterialAccounting,
-    BasalMaterialRecord,
-    BasalMaterialRole,
     BasalRealizationRecord,
 )
 from hop_design.models.construction.payload import ConstructionEndpoint
@@ -44,9 +42,9 @@ from hop_design.models.coordinates import Span
 from hop_design.models.enzymes import characterized_enzyme_digest
 from hop_design.models.junction import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
+from hop_design.models.sequence import reverse_complement_iupac
 
 from .reactions import _nick_program, _nicked_duplex
-from .states import _pcr_states
 
 
 def _failure_code(codes: tuple[str, ...]) -> str:
@@ -89,21 +87,26 @@ def _realization(
     if nick_assessment.report.has_errors:
         return _failure_code(tuple(item.code for item in nick_assessment.report.diagnostics))
     nicked = _nicked_duplex(solution, target)
-    annealed, adapter_ligated, duplex = _pcr_states(solution)
-    if annealed is None or adapter_ligated is None or duplex is None:
-        raise RuntimeError("Basal discovery must materialize its exact PCR intermediate.")
     programs = [nick_program]
     assessments = list(nick_assessment.stage_assessments)
-    pcr_reference = duplex.top_strand.sequence
-    projection = BasalEndpointProjection(
+    adapter_sequence = solution.adapter_sequence
+    if adapter_sequence is None:
+        raise RuntimeError("Basal discovery must resolve one proximal adapter segment.")
+    local_reference = solution.source_precursor_sequence + adapter_sequence
+    projection = BasalBoundaryProjection(
         endpoint=request.endpoint,
         pairing_state=solution.pairing_state,
-        pcr_reference_sequence=pcr_reference,
-        pcr_complement_sequence=duplex.bottom_strand.sequence,
+        annealing_obligation=BasalAnnealingObligation.create(
+            pairing_state=solution.pairing_state,
+            minimum_annealing_nt=request.geometry_domain.minimum_adapter_annealing_nt,
+            mismatch_warning_fraction=request.geometry_domain.mismatch_warning_fraction,
+        ),
+        local_reference_sequence=local_reference,
+        local_complement_sequence=reverse_complement_iupac(local_reference),
     )
     stage_ids = tuple(stage.stage_id for program in programs for stage in program.stages)
     local = LocalRealization.create(
-        local_sequence=pcr_reference or solution.source_precursor_sequence,
+        local_sequence=local_reference,
         enzyme_binding_ids=tuple(binding.binding_id for binding in solution.enzyme_bindings),
         stage_ids=stage_ids,
         achieved_geometry=target,
@@ -138,35 +141,6 @@ def _realization(
         )
         for enzyme in enzymes
     )
-    retained_sequence = pcr_reference
-    transient_sequence = ""
-    materials = [
-        BasalMaterialRecord(
-            material_id="retained-product",
-            role=BasalMaterialRole.RETAINED,
-            sequence_5prime=retained_sequence,
-        )
-    ]
-    if transient_sequence:
-        materials.append(
-            BasalMaterialRecord(
-                material_id="transient-periphery",
-                role=BasalMaterialRole.TRANSIENT,
-                sequence_5prime=transient_sequence,
-            )
-        )
-    if solution.adapter_sequence:
-        materials.append(
-            BasalMaterialRecord(
-                material_id="ligation-adapter",
-                role=BasalMaterialRole.AUXILIARY,
-                sequence_5prime=solution.adapter_sequence,
-            )
-        )
-    totals = {
-        role: sum(len(item.sequence_5prime) for item in materials if item.role is role)
-        for role in BasalMaterialRole
-    }
     payload_start = solution.payload_span.start.offset
     payload_end = solution.payload_span.end.offset
     retained_overhead = RetainedOverheadLedger(
@@ -176,13 +150,13 @@ def _realization(
             OverheadPosition(
                 coordinate_space="basal-boundary",
                 position=position,
-                base=pcr_reference[position],
+                base=local_reference[position],
                 material_role=("source" if position < payload_start else "adapter"),
             )
-            for position in range(len(pcr_reference))
+            for position in range(len(local_reference))
             if not payload_start <= position < payload_end
         ),
-        retained_overhead_nt=len(pcr_reference) - len(payload_sequence),
+        retained_overhead_nt=len(local_reference) - len(payload_sequence),
     )
     return BasalRealizationRecord.create(
         local_realization=local,
@@ -198,20 +172,11 @@ def _realization(
             binding_id=nick_binding.binding_id,
         ),
         future_release_action=route.future_release_action,
-        pairing_constraints=tuple(item.allowed_class for item in target.pairing_constraints),
+        pairing_constraints=target.pairing_constraints,
         projection=projection,
         reaction_programs=tuple(programs),
         stage_assessments=tuple(assessments),
         nicked_duplex=nicked,
-        adapter_annealed_complex=annealed,
-        adapter_ligated_product=adapter_ligated,
-        hairpin_pcr_duplex=duplex,
-        materials=tuple(materials),
-        material_accounting=BasalMaterialAccounting(
-            retained_nt=totals[BasalMaterialRole.RETAINED],
-            transient_nt=totals[BasalMaterialRole.TRANSIENT],
-            auxiliary_nt=totals[BasalMaterialRole.AUXILIARY],
-        ),
         retained_overhead=retained_overhead,
     )
 
