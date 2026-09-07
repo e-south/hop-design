@@ -27,6 +27,8 @@ from hop_design.models.construction import (
     SearchFeasibilityStatus,
     SearchTerminationReason,
 )
+from hop_design.models.construction.complete import MaterializedConstructionRealization
+from hop_design.models.construction.projections import ConstructionNavigationAcceptedRoute
 
 
 def _position(*, coordinate: int, base: str = "A") -> OverheadPosition:
@@ -157,6 +159,15 @@ def test_local_request_exposes_one_geometry_domain_and_retained_overhead_plan() 
     assert "target" not in LocalNeighborhoodRequest.model_fields
     assert "relaxation" not in LocalNeighborhoodRequest.model_fields
     assert "enumeration" not in LocalNeighborhoodRequest.model_fields
+
+
+def test_complete_route_and_navigation_do_not_reintroduce_relaxation_radius() -> None:
+    assert "relaxation_radii" not in MaterializedConstructionRealization.model_fields
+    assert "foldback_retained_overhead_nt" in ConstructionNavigationAcceptedRoute.model_fields
+    assert "basal_retained_overhead_nt" in ConstructionNavigationAcceptedRoute.model_fields
+    assert "foldback_relaxation_radius" not in ConstructionNavigationAcceptedRoute.model_fields
+    assert "basal_relaxation_radius" not in ConstructionNavigationAcceptedRoute.model_fields
+    assert "exact_geometry" not in ConstructionNavigationAcceptedRoute.model_fields
 
 
 @pytest.mark.parametrize(
