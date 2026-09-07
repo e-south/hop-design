@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Fail when public repository surfaces contain private or secret-like material."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+scripts/check_public_safety.py
+
+Rejects private identities and secret-like material on public repository surfaces.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -19,7 +28,7 @@ SKIP_FILES = {"check_public_safety.py"}
 PATTERNS = {
     "machine-local user path": re.compile(r"(?:/Users/|/home/[A-Za-z0-9._-]+/|Dropbox/projects)"),
     "neighbor-repository identity": re.compile(
-        r"(?:research-studies|cruncher|dnadesign|eco1|retron)", re.IGNORECASE
+        r"(?:research[\s_-]+studies|manufold|cruncher|dnadesign|eco1|retron)", re.IGNORECASE
     ),
     "private key material": re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
     "token-like credential": re.compile(

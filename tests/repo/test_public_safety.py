@@ -1,7 +1,20 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/repo/test_public_safety.py
+
+Checks that public files reject private identifiers without disclosing their contents.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -39,3 +52,33 @@ def test_public_safety_rejects_downstream_application_identity(
     assert check_public_safety.main() == 1
     output = capsys.readouterr().out
     assert "application.txt:1: neighbor-repository identity" in output
+
+
+@pytest.mark.parametrize(
+    "identity",
+    ["Research" + separator + "Studies" for separator in (" ", "\n", "_", "-")] + ["Manu" + "Fold"],
+)
+def test_public_safety_rejects_named_consumers_in_documentation(
+    tmp_path: Path, monkeypatch, capsys, identity: str
+) -> None:
+    (tmp_path / "ownership.md").write_text(f"Client: {identity}\n", encoding="utf-8")
+    monkeypatch.setattr(check_public_safety, "REPO_ROOT", tmp_path)
+
+    assert check_public_safety.main() == 1
+    output = capsys.readouterr().out
+    assert "ownership.md:1: neighbor-repository identity" in output
+    assert identity not in output
+
+
+def test_public_safety_accepts_generic_product_and_consumer_responsibilities(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    (tmp_path / "ownership.md").write_text(
+        "HOP owns molecular contracts and a public product roadmap.\n"
+        "Client studies own experiments; manuscript systems own publication claims.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_public_safety, "REPO_ROOT", tmp_path)
+
+    assert check_public_safety.main() == 0
+    assert "Public-safety scan: ok (1 text files)" in capsys.readouterr().out

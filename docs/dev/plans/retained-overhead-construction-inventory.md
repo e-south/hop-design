@@ -15,7 +15,9 @@ journey:
 
 # Retained-overhead construction implementation inventory
 
-This is an implementation inventory for the breaking construction refactor. It is not a scientific evidence snapshot.
+This public inventory locates construction behavior, incomplete capabilities,
+and reproducible performance measurements. Scientific evidence and publication
+planning belong to the consuming system.
 
 ## Reusable implementation
 
@@ -63,7 +65,7 @@ This is an implementation inventory for the breaking construction refactor. It i
 
 - Client studies own finite analysis requests, independent execution, figure rendering,
   and scientific review. Their run status belongs in their own records.
-- manufold may import only explicitly accepted immutable study assets.
+- Manuscript systems own evidence admission and publication claims.
 - Physical recovery and sequence-confirmation evidence remain outside HOP.
 
 ## Foldback allocation measurement
@@ -118,14 +120,14 @@ cover that change. No cache or replay bypass is involved.
 | Concern | Current state | Refactor treatment |
 |---|---|---|
 | Source ssDNA and source-duplex materialization | Present and connected in complete construction | Verify through selected authorities |
-| Local foldback realization | Present and retained-overhead ordered | Reuse and verify in the formal study run |
+| Local foldback realization | Present and retained-overhead ordered | Preserve witness or exhaustive scope in public results |
 | Local basal realization | Present and retained-overhead ordered, with primitive pairing and future-release obligations | Keep local feasibility distinct from adapter completion and global route validity |
 | Source partition | Full-span exact authority and optional composition input | Keep it a sibling authority and bind its selected certificate into route inspection |
 | Complete route chronology | Connected from source preparation through the requested endpoint | Preserve exact authority joins and endpoint accounting |
 | Historical linear-source records | Study-owned regression inputs | Never accepted as runtime defaults or compatibility schemas |
 | Exact material specifications | Present in HOP route dependencies | Keep source, primers, adapters, chemistry, and bindings product-owned |
-| Physical material instances and observations | Outside HOP | Remain owned by Research Studies |
-| Manuscript claims and panel composition | Outside HOP | Remain owned by manufold |
+| Physical material instances and observations | Outside HOP | Remain caller-owned |
+| Manuscript claims and panel composition | Outside HOP | Remain caller-owned |
 
 ## Finite-domain requirement
 

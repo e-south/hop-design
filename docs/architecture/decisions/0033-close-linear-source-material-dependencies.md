@@ -131,10 +131,9 @@ scientific meaning.
 
 ## Consequences
 
-An external user can inspect every molecular dependency without a Research
-Studies checkout. Research Studies becomes a caller that freezes HOP requests
-and results, selects routes, records physical parts and observations, and builds
-study-specific plots.
+An external user can inspect every molecular dependency using HOP alone.
+Client studies freeze HOP requests and results, select routes, record physical
+parts and observations, and build study-specific plots.
 
 This is one intentional pre-1.0 schema change. It adds no compatibility aliases,
 fallback readers, study imports, inventory manager, dashboard, thermodynamic

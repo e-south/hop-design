@@ -46,9 +46,9 @@ Compactness is achieved endpoint geometry plus retained non-payload sequence.
 Transient recognition sites, source handles, auxiliary oligos, and destination
 sequence remain visible but do not change that measurement.
 
-HOP owns these molecular contracts and neutral projections. Research Studies
-owns frozen runs, observations, interpretation, and asset promotion. manufold
-owns accepted imports, claims, evidence cutoff, and final composition.
+HOP owns these molecular contracts and neutral projections. Client studies
+own frozen runs, observations, interpretation, and asset promotion. Manuscript
+systems own accepted imports, claims, evidence cutoff, and final composition.
 
 ## Implemented contracts
 

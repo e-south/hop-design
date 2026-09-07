@@ -1,13 +1,13 @@
 ---
 doc_id: hop-roadmap
 title: HOP product roadmap
-intent: Define public product capabilities, open pre-1.0 work, and evidence gates.
+intent: Distinguish released capabilities, source capabilities, and remaining product work.
 audience:
   - maintainers
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-09-07
 doc_type: explanation
 journey:
   - maintain
@@ -65,45 +65,31 @@ implementation availability and input exactness as a closed, immutable tuple.
 It does not introduce a plugin registry, select a method, construct a request,
 or change method resolution.
 
-## Open product work
+## Source capabilities
 
-### Payload-centered construction discovery
+The source checkout extends the published artifact. Its retained-overhead
+contracts and query checkpointing require a distinct release version before
+artifact consumers can adopt them. Use the tagged documentation with a released
+wheel; do not infer source capabilities from the shared alpha version string.
 
-The accepted semantic contract is
-[ADR 0025](../../architecture/decisions/0025-payload-centered-construction-discovery.md).
-Phase H1 is complete at the documentation layer: final-payload coordinates,
-route and endpoint hierarchy, the shared local-neighborhood contract, explicit
-foldback and basal meanings, endpoint compactness, staged state-aware
-validation, lossless grouping, the linear-route boundary, and cross-repository
-ownership are frozen before public schemas change.
+The [construction guide](../../guides/compile-construction.md) exposes:
 
-The implementation remains organized in dependency order. H2 through H8 are
-present in the current release:
+- Foldback search in increasing retained-overhead order, with explicit geometry
+  bounds, physical strand actions, coverage, and witness or all-realizations scope.
+- Profile-free local basal search with proximal pairing, adapter-completion
+  obligations, and state-indexed future-release constraints.
+- Source-partition search over enzyme programs on an exact supplied duplex,
+  including terminal fragments and inclusive maximum-fragment certificates.
+- Composition of selected local authorities, source preparation, optional
+  source-partition evidence, exact auxiliaries, and endpoint-specific chronology.
+- Replay-verified portable results, lossless geometry grouping, tidy relations,
+  and typed molecular projections. CLI navigation selects existing results;
+  discovery and compilation use the public Python facade.
+- Checkpointed collections of independent local queries. Batch size controls
+  receipt retention without changing individual result identities.
 
-1. **H2 — enzyme and operation semantics: implemented.** Vendor-neutral
-   characterized enzymes, request provisioning, ordered reaction stages,
-   concurrent operations, and state-aware active-site checks share one pure
-   replay authority.
-2. **H3 — shared local-neighborhood contract: implemented.** One bounded
-   exact-first request/result envelope carries discrete relaxation shells,
-   exact realization records, reversible geometry groups, and truthful
-   completion.
-3. **H4 — foldback neighborhood: implemented.** Exact cleavage programs
-   discover nick offset within the foldback, loop length, and annealing-arm geometry.
-4. **H5 — basal neighborhood: implemented.** Nicking and pairing are
-   endpoint-aware; Type IIS end generation is confined to clone-ready routes.
-5. **H6 — materialization and composition: implemented.** Exact precursor and
-   auxiliary materials compose through the bounded staged cross-product while
-   preserving complete-realization and final-product identities.
-6. **H7 — scientific projections: implemented.** Neutral tidy relations and
-   deterministic SVGs expose local feasibility, relaxation, complete
-   composition, and an explicitly selected exact trajectory without manuscript
-   composition.
-7. **H8 — public documentation and dogfood: implemented.** The narrow
-   `hop_design.construction` facade, strict external source, portable bundle,
-   opaque receipts, and reference contracts are present. Exact, infeasible,
-   relaxed, and composed-PCR source-versus-installed-wheel dogfood provides the
-   installed-artifact proof.
+The [implementation inventory](retained-overhead-construction-inventory.md)
+locates these responsibilities and their allocation measurements.
 
 The current small `hop_design.spaces` journey is unchanged. Circularized-source
 chemistry, thermodynamic and enzyme-performance prediction, study history,
@@ -115,19 +101,28 @@ allowlist accepts strict files and a separately verified design authority. Raw
 construction models remain internal, and no compatibility alias exposes their
 former or current internal paths.
 
+## Remaining product work
+
+### Bounded scaffold completion
+
+Source-partition search currently evaluates a supplied exact source. It does
+not derive a full scaffold across a bounded sequence/context domain while
+satisfying local junction, primer, and adapter obligations. That solver is
+required before claiming automatic global scaffold completion.
+
+### Resumption within one local query
+
+Checkpoints persist completed independent queries. A local query still assembles
+its result in memory; partial-query coverage and realization streaming are not
+persisted. Collection resumption does not remove this limit or make a truncated
+query exhaustive.
+
 ### Bounded symbolic method assessment
 
 Exact method compilation remains exact. A separate pool assessment must reason
 over correlated DNA IUPAC domains and distinguish universally feasible,
 possibly feasible, exhaustively infeasible, and truncated outcomes without
 silently enumerating an unbounded pool.
-
-### Bounded geometry ranges and named objectives
-
-Discovery currently answers exact declared geometry questions. A range surface
-may cover retained-tract, turn, and foldback-arm lengths. Any compactness choice
-must be a named objective with visible measurements and deterministic
-tie-breaking; neutral ordinals remain non-scores.
 
 ### Interoperability mappings
 
@@ -147,10 +142,10 @@ Every prerelease requires:
 
 ## Consumer adoption gate
 
-A downstream system must install one immutable release artifact, load verified
-bundles, preserve HOP features and digests without reconstruction, classify all
-semantic differences, and pass its own hosted checks. Rollback is deployment of
-a prior coherent revision and pin—not a runtime fallback.
+A downstream system installs one immutable release artifact and preserves
+verified features and identities without reconstructing molecular facts. Its
+execution, review, and evidence policy remain independent of HOP's release gate.
+Rollback is deployment of a prior coherent revision and pin, not a runtime fallback.
 
 Public HOP documentation records these generic gates. Consumer-specific status,
 repository SHAs, infrastructure blockers, and migration evidence remain in the

@@ -67,7 +67,7 @@ documentation when operating that artifact.
 | `hop.basal-overhead-frontier/v1` | public construction projection | Examined basal retained-overhead levels from one unpartitioned search with complete or partial accounting |
 | `hop.basal-overhead-frontier/v2` | public construction projection | Examined basal retained-overhead levels from one declared sequence-domain part with complete or partial accounting |
 | `hop.complete-construction-summary/v2` | public construction projection | Lossless disposition, grouping, required external material, failure, and truncation relation over one verified complete result |
-| `hop.construction-navigation/v1` | public construction projection | Unchanged summary v2 plus additive accepted-route geometry, relaxation, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
+| `hop.construction-navigation/v1` | public construction projection | Summary v2 plus accepted-route geometry, retained-overhead accounting, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
 | `hop.complete-construction-trajectory/v4` | public construction projection | One explicitly selected accepted realization with its source preparation, selected source-partition certificate when present, and exact molecular chronology |
 | `hop.construction-selection/v1` | non-authoritative construction reference | One accepted materialized realization bound to its verified source result |
 | `hop.linear-source-hairpin-pcr-materials/v1` | `LinearSourceHairpinPcrMaterialsSpec` | Six method oligos and ligation-end preparation |

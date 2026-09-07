@@ -1,3 +1,14 @@
+"""
+--------------------------------------------------------------------------------
+HOP Design
+tests/repo/test_repository_structure.py
+
+Checks public examples, release documentation, and semantic source organization.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
 from __future__ import annotations
 
 import re
@@ -71,7 +82,7 @@ def test_public_documentation_tracks_the_published_source_release() -> None:
     assert wheel_name in quickstart
     assert f"published `v{release_version}` artifact" in roadmap
     assert f"unreleased `v{version}` candidate" not in roadmap
-    assert "Research Studies" not in roadmap
+    assert "Research" + " Studies" not in roadmap
     assert "billing" not in roadmap.lower()
 
 

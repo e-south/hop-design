@@ -101,7 +101,7 @@ verb.
 
 ## Consequences
 
-Research Studies and other callers can use the same installed public interface
+All callers can use the same installed public interface
 without copying HOP models or importing private modules. A projection must be
 requested from an opaque verified receipt; trajectory projection additionally
 requires one exact accepted realization identity and never auto-selects an

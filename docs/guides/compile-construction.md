@@ -336,7 +336,7 @@ def write_selected_trajectory(*, realization_id: str) -> None:
 The summary preserves every examined composition disposition and lossless
 grouping. A trajectory requires an explicitly supplied accepted realization
 identity; HOP does not choose an exemplar. Foldback and basal feasibility plus
-their relaxation frontiers are available through the corresponding projection
+their retained-overhead frontiers are available through the corresponding projection
 operations. A basal projection rejects a construction with no basal authority.
 
 The same verified authority is navigable without importing Python:

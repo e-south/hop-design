@@ -183,9 +183,9 @@ explicit states and transitions, identities, verification, and neutral tidy or
 diagram-ready projections. It does not own experiment registries, wet-lab
 records, evidence interpretation, manuscript claims, or publication figures.
 
-Research Studies owns scientific questions, frozen HOP inputs and outputs,
+Client studies own scientific questions, frozen HOP inputs and outputs,
 experimental observations, interpretation, and promotion of candidate assets.
-manufold owns the manuscript premise, claim ceiling, evidence cutoff, accepted
+Manuscript systems own the premise, claim ceiling, evidence cutoff, accepted
 snapshot imports, captions, and final composition. Downstream applications
 consume HOP without defining this generic construction contract.
 
