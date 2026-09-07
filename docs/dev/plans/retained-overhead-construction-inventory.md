@@ -37,7 +37,7 @@ This is an implementation inventory for the breaking construction refactor. It i
 The active strict schemas remove these inputs. There is no compatibility reader or
 translation layer.
 
-## Implemented closure
+## Implemented boundaries
 
 - Foldback search is ordered by absolute retained non-payload overhead.
 - Basal search uses primitive pairing and future-release obligations rather than named
@@ -48,6 +48,19 @@ translation layer.
   chronology, and endpoint evidence.
 - Public projections expose local overhead, basal enzyme-action minima, exact source
   partitions, route navigation, and selected route trajectories.
+
+## Remaining product requirements
+
+- Public local discovery still returns an in-memory result. Sequence-domain partitioning
+  is available, but durable bounded result streaming and producer-bound resumption are
+  not implemented in HOP. Client-side checkpoints do not satisfy this product contract.
+- Source-partition discovery evaluates enzyme programs on one supplied exact source
+  duplex. Its full-span certificate does not establish bounded scaffold-sequence or
+  context-extension solving around local and primer obligations. That completion search
+  remains separate implementation work.
+- The post-release construction changes require a distinct package version and immutable
+  producer cutoff before downstream formal execution. A wheel bearing the published
+  version number is insufficient to distinguish these semantics.
 
 ## Downstream work
 
@@ -62,11 +75,12 @@ translation layer.
 |---|---|---|
 | Source ssDNA and source-duplex materialization | Present and connected in complete construction | Reuse and verify through the new selected authorities |
 | Local foldback realization | Present and retained-overhead ordered | Reuse and verify in the formal study run |
-| Local basal realization | Present and retained-overhead ordered, with profile-shaped pairing input | Reuse primitive pairing/state logic; replace the profile-shaped contract and paper search |
+| Local basal realization | Present and retained-overhead ordered, with primitive pairing and future-release obligations | Keep local feasibility distinct from adapter completion and global route validity |
 | Source partition | Full-span exact authority and optional composition input | Keep it a sibling authority and bind its selected certificate into route inspection |
 | Complete route chronology | Connected from source preparation through the requested endpoint | Preserve exact authority joins and endpoint accounting |
 | Historical linear-source records | Preserved study evidence and regression inputs | Never accepted as runtime defaults or compatibility schemas |
-| Physical materials and observations | Outside HOP | Remain owned by Research Studies |
+| Exact material specifications | Present in HOP route dependencies | Keep source, primers, adapters, chemistry, and bindings product-owned |
+| Physical material instances and observations | Outside HOP | Remain owned by Research Studies |
 | Manuscript claims and panel composition | Outside HOP | Remain owned by manufold |
 
 ## Finite-domain requirement
