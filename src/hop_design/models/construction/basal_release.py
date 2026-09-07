@@ -11,7 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal, cast
 
 from pydantic import Field, field_validator, model_validator
 
@@ -61,7 +61,7 @@ class BasalFutureReleaseAction(HopModel):
     @classmethod
     def create(cls, **content: object) -> BasalFutureReleaseAction:
         """Create a content-addressed future-action obligation."""
-        draft = cls.model_construct(action_id="", **content)
+        draft = cls.model_construct(action_id="", **cast(Any, content))
         facts = draft.model_dump(mode="json", exclude={"action_id"})
         digest = sha256_digest(canonical_json_bytes(facts)).removeprefix("sha256:")
         return cls.model_validate(

@@ -18,6 +18,7 @@ from hop_design.kernel.construction.basal import (
     BasalSequenceSolution,
 )
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     BasalTarget,
     LocalNeighborhoodRequest,
     LocalRealization,
@@ -74,6 +75,8 @@ def _realization(
         raise ValueError("Basal realizations require one exact nick strand.")
     if solution.pairing_state is None:
         raise ValueError("Basal realizations require one exact pairing state.")
+    if not isinstance(request.geometry_domain, BasalGeometryDomain):
+        raise ValueError("Basal realization requires one basal geometry domain.")
     required_operations = 1 + int(route.future_release_action is not None)
     if (
         request.enzyme_provisioning.max_operations is not None

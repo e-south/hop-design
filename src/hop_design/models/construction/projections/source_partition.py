@@ -26,7 +26,9 @@ from hop_design.models.construction.accounting import (
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.construction.source_partition import SourcePartitionCertificate
 
-SOURCE_PARTITION_CERTIFICATE_RENDERER_VERSION = "source-partition-certificate/1"
+SOURCE_PARTITION_CERTIFICATE_RENDERER_VERSION: Literal["source-partition-certificate/1"] = (
+    "source-partition-certificate/1"
+)
 
 
 class SourcePartitionCertificateProjection(HopModel):

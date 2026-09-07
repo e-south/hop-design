@@ -154,6 +154,7 @@ def discover_basal_neighborhood(
                             compatible_payloads.add(payload_sequence)
                             if (
                                 request.search.stop is SearchStopMode.RESULT_QUOTA
+                                and request.search.result_quota is not None
                                 and len(records) >= request.search.result_quota
                             ):
                                 termination = SearchTerminationReason.RESULT_QUOTA
