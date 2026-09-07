@@ -29,20 +29,20 @@ SOURCES = {
     "composed-pcr": REPO_ROOT / "examples" / "construction-composed-pcr.yaml",
     "exact": REPO_ROOT / "examples" / "construction-exact.yaml",
     "infeasible": REPO_ROOT / "examples" / "construction-infeasible.yaml",
-    "relaxed": REPO_ROOT / "examples" / "construction-relaxed.yaml",
+    "expanded-domain": REPO_ROOT / "examples" / "construction-expanded-domain.yaml",
 }
 TRAJECTORY_REALIZATION_IDS = {
     "composed-pcr": (
         "hop:materialized-construction/"
-        "ed200f1b66a4b76cd9f6f33ba214798833fe5ec515474d6eed4ef8e9233de283@1"
+        "661eedf40f6a0f9b952f56a30d238adea3151d536071ded55b7fc0265f803b4f@1"
     ),
     "exact": (
         "hop:materialized-construction/"
-        "63982f1d523dac0ad6f4034ce4ff83259fc05353392e783e96831a9096fb2109@1"
+        "18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1"
     ),
-    "relaxed": (
+    "expanded-domain": (
         "hop:materialized-construction/"
-        "05558439e5be5e026a4b14ff39bdd1907e45bf588e138bb9ef9a4e1922f1f48a@1"
+        "18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1"
     ),
 }
 LOCAL_FOLDBACK_PARTITION = REPO_ROOT / "examples" / "foldback-local-partition.yaml"
@@ -97,7 +97,7 @@ def test_construction_example_uses_only_public_hop_facades() -> None:
         ("composed-pcr", "complete", True, True),
         ("exact", "complete", True, False),
         ("infeasible", "infeasible", False, False),
-        ("relaxed", "complete", True, False),
+        ("expanded-domain", "complete", True, False),
     ],
 )
 def test_construction_example_is_deterministic_and_preserves_search_status(
@@ -111,7 +111,7 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
     second = _run_example(tmp_path, case, "second")
 
     assert first == second
-    assert first["schema"] == "hop.construction-dogfood/v1"
+    assert first["schema"] == "hop.construction-dogfood/v2"
     assert first["case"] == case
     assert first["status"] == status
     assert first["bundle_verified"] is True
@@ -119,7 +119,7 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
     assert isinstance(projection_hashes, dict)
     assert set(projection_hashes) >= {
         "foldback_feasibility",
-        "foldback_relaxation",
+        "foldback_retained_overhead",
         "navigation",
         "summary",
     }
@@ -128,21 +128,19 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
         assert set(formats) >= {"json", "svg"}
         assert all(len(value) == 64 for value in formats.values())
     assert "csv" not in projection_hashes.get("trajectory", {})
-    basal_projection_names = {"basal_feasibility", "basal_relaxation"}
+    basal_projection_names = {"basal_feasibility", "basal_retained_overhead"}
     if basal_expected:
         assert basal_projection_names <= set(projection_hashes)
     else:
         assert basal_projection_names.isdisjoint(projection_hashes)
-    shells = first["foldback_shells"]
-    if case == "relaxed":
-        assert shells == [
-            {"radius": 0, "realization_count": 0},
-            {"radius": 1, "realization_count": 2},
-        ]
-    elif case in {"composed-pcr", "exact"}:
-        assert shells == [{"radius": 0, "realization_count": 2}]
+    levels = first["foldback_overhead_levels"]
+    maximum_overhead = 9 if case == "infeasible" else 11
+    assert [level["retained_overhead_nt"] for level in levels] == list(range(maximum_overhead + 1))
+    realized_levels = [level for level in levels if level["realization_count"]]
+    if case == "infeasible":
+        assert realized_levels == []
     else:
-        assert shells == [{"radius": 0, "realization_count": 0}]
+        assert realized_levels == [{"retained_overhead_nt": 11, "realization_count": 2}]
     selected = first["selected_trajectory_realization_id"]
     if trajectory_expected:
         assert isinstance(selected, str)
@@ -207,8 +205,8 @@ def test_docs_and_wheel_smoke_share_the_construction_example() -> None:
 def test_local_foldback_partition_defaults_to_both_strands_and_replays(tmp_path: Path) -> None:
     authored = yaml.safe_load(LOCAL_FOLDBACK_PARTITION.read_text(encoding="utf-8"))
 
-    assert "nick_strand" not in authored["target"]
-    assert authored["enumeration"]["sequence_partition"] == {
+    assert "nick_strand" not in authored["geometry_domain"]
+    assert authored["search"]["sequence_partition"] == {
         "part_count": 2,
         "part_index": 0,
     }
@@ -218,7 +216,7 @@ def test_local_foldback_partition_defaults_to_both_strands_and_replays(tmp_path:
     strands = {realization["foldback_nick"]["strand"] for realization in result["realizations"]}
 
     assert receipt.family == "foldback"
-    assert receipt.status == "complete"
+    assert receipt.completion == "complete"
     assert strands == {"top", "bottom"}
     output = receipt.write(tmp_path / "foldback-partition")
     loaded = construction.load_verified_local_neighborhood(output / "result.json")

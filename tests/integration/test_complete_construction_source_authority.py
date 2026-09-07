@@ -50,7 +50,6 @@ from hop_design.models.construction.complete.source_authority import (
 from hop_design.models.construction.complete.transition_replay import (
     validate_non_enzyme_transition,
 )
-from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.realization import FinalProductReference
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import EnzymeRole, RecognitionOrientationSemantics
@@ -339,12 +338,15 @@ def _changed_state(
 
 
 def test_result_rejects_resealed_nonmember_foldback_authority(tmp_path: Path) -> None:
-    _, _, _, result = _case(tmp_path)
+    _, foldback, _, result = _case(tmp_path)
     realization = result.realizations[0]
-    local = realization.foldback_authority
-    content = local.model_dump(mode="python", exclude={"foldback_realization_id"})
-    content["changed_coordinates"] = ("different-valid-coordinate",)
-    replacement_local = FoldbackLocalRealization.create(**content)
+    alternate = discover_foldback_neighborhood(
+        _request(_nickase(), _terminus_enzyme())
+    ).realizations[0]
+    assert alternate.foldback_realization_id not in {
+        item.foldback_realization_id for item in foldback.realizations
+    }
+    replacement_local = alternate
     complete = CompleteConstructionRealization.create(
         precursor_sequence=realization.realization.precursor_sequence,
         local_realization_ids=(
@@ -850,11 +852,10 @@ def test_source_authority_validator_rejects_drifted_embedded_members(
 def test_realization_rejects_resealed_geometry_and_projection_drift(tmp_path: Path) -> None:
     _, _, _, result = _case(tmp_path)
     realization = result.realizations[0]
-    with pytest.raises(ValidationError, match=r"geometry|radius"):
+    with pytest.raises(ValidationError, match="Geometry"):
         _reseal_realization(
             realization,
             geometry_ids=("hop:geometry/" + "a" * 64 + "@1",),
-            relaxation_radii=(7,),
         )
     projection = realization.final_product.encoding_projection.model_copy(
         update={"orientation": BindingOrientation.REVERSE_COMPLEMENT_5TO3}
@@ -945,11 +946,7 @@ def test_upstream_truncation_is_distinct_from_composition_suffix(tmp_path: Path)
     request, foldback, basal, _ = _case(tmp_path)
     neighborhood = foldback.neighborhood
     local_request = neighborhood.request.model_copy(
-        update={
-            "enumeration": neighborhood.request.enumeration.model_copy(
-                update={"max_search_nodes": 1}
-            )
-        }
+        update={"search": neighborhood.request.search.model_copy(update={"max_search_nodes": 1})}
     )
     truncated_foldback = discover_foldback_neighborhood(local_request)
     truncated_request = request.model_copy(
@@ -963,7 +960,7 @@ def test_upstream_truncation_is_distinct_from_composition_suffix(tmp_path: Path)
     )
     assert result.status.value == "truncated"
     assert result.truncation_reasons == ()
-    assert result.upstream_truncation_reasons == ("foldback:max_search_nodes",)
+    assert result.upstream_truncation_reasons == ("foldback:evaluation_cap",)
     assert all(item.status.value != "unexamined" for item in result.combination_dispositions)
 
 

@@ -36,8 +36,6 @@ def _validate_list_options(
     group_by: str,
     group: str | None,
     sort: str,
-    exact: bool,
-    relaxed: bool,
     limit: int,
     has_enzyme_filter: bool,
 ) -> None:
@@ -56,11 +54,6 @@ def _validate_list_options(
             f"Unknown sort {sort!r}; use {', '.join(_SORT_FIELDS)}.",
             param_hint="--sort",
         )
-    if exact and relaxed:
-        raise typer.BadParameter(
-            "--exact and --relaxed are mutually exclusive.",
-            param_hint="--exact/--relaxed",
-        )
     if limit < 1 or limit > 1_000:
         raise typer.BadParameter("--limit must be between 1 and 1,000.", param_hint="--limit")
     if group is not None and group_by == "none":
@@ -72,11 +65,6 @@ def _validate_list_options(
         raise typer.BadParameter(
             "Rejected, truncated, and mixed listings require --group-by none.",
             param_hint="--group-by",
-        )
-    if (exact or relaxed) and status not in {"accepted", "all"}:
-        raise typer.BadParameter(
-            "Geometry-relaxation filters apply only to accepted routes.",
-            param_hint="--exact/--relaxed",
         )
     if sort != "canonical" and status != "accepted":
         raise typer.BadParameter(
@@ -105,8 +93,6 @@ def _filter_rows(
     group_by: str,
     group: str | None,
     enzymes: tuple[str, ...],
-    exact: bool,
-    relaxed: bool,
 ) -> list[dict[str, Any]]:
     selected = rows if status == "all" else [row for row in rows if row["status"] == status]
     group_field = _group_field(group_by)
@@ -116,10 +102,6 @@ def _filter_rows(
     if enzymes:
         required = set(enzymes)
         selected = [row for row in selected if required <= set(row.get("enzyme_ids", ()))]
-    if exact:
-        selected = [row for row in selected if row.get("exact_geometry") is True]
-    if relaxed:
-        selected = [row for row in selected if row.get("exact_geometry") is False]
     return selected
 
 
@@ -163,10 +145,13 @@ def _route_line(row: dict[str, Any]) -> str:
     if row["status"] != "accepted":
         basis = row.get("rejection_reason") or row.get("truncation_reason") or "unspecified"
         return f"  {row['ordinal']:>4}  {row['status']} · {basis}"
-    resolution = "exact" if row["exact_geometry"] else "relaxed"
     enzymes = ",".join(row["enzyme_ids"]) or "none"
+    basal_overhead = row["basal_retained_overhead_nt"]
+    basal_overhead_text = "not required" if basal_overhead is None else f"{basal_overhead} nt"
     return (
-        f"  {row['ordinal']:>4}  {resolution} · "
+        f"  {row['ordinal']:>4}  "
+        f"foldback overhead={row['foldback_retained_overhead_nt']} nt · "
+        f"basal overhead={basal_overhead_text} · "
         f"{row['retained_non_payload_nt']} retained non-payload nt · "
         f"cleavage_enzymes={enzymes} · auxiliaries={row['auxiliary_material_count']} · "
         f"{row['materialized_realization_id']}"
@@ -225,14 +210,6 @@ def construction_list_command(
             help="Require a cleavage-program enzyme ID; repeat to require several.",
         ),
     ] = None,
-    exact: Annotated[
-        bool,
-        typer.Option("--exact", help="Retain only zero-relaxation accepted routes."),
-    ] = False,
-    relaxed: Annotated[
-        bool,
-        typer.Option("--relaxed", help="Retain only relaxed accepted routes."),
-    ] = False,
     sort: Annotated[
         str,
         typer.Option(
@@ -259,8 +236,6 @@ def construction_list_command(
         group_by=group_by,
         group=group,
         sort=sort,
-        exact=exact,
-        relaxed=relaxed,
         limit=limit,
         has_enzyme_filter=bool(requested_enzymes),
     )
@@ -291,8 +266,6 @@ def construction_list_command(
         group_by=group_by,
         group=group,
         enzymes=requested_enzymes,
-        exact=exact,
-        relaxed=relaxed,
     )
     rows = _sort_rows(rows, sort=sort, descending=descending)
     order = "descending" if descending else "ascending"

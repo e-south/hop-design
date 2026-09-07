@@ -21,17 +21,15 @@ from hop_design.design.bundle import load_verified_bundle
 from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     BasalPairAllowance,
-    BasalTarget,
     ConstructionConstraints,
     ConstructionEndpoint,
-    EnumerationPolicy,
     FinalPayloadReference,
     FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
-    RelaxationMode,
-    RelaxationPolicy,
+    NeighborhoodSearchPlan,
     RouteFamily,
     SearchCompletionStatus,
     SourceOrientation,
@@ -149,19 +147,15 @@ def _clone_basal_result(
             family=LocalNeighborhoodFamily.BASAL,
             route_family=RouteFamily.LINEAR_SOURCE_V1,
             endpoint=ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
-            target=BasalTarget(
+            geometry_domain=BasalGeometryDomain(
                 nick_strand=Strand.BOTTOM,
-                nick_offset_nt=0,
+                nick_offsets_nt=(0,),
                 pairing_constraints=_pairing_constraints(pairing_allowances),
-                ligation_proximal_match_required=True,
             ),
             hard_constraints=ConstructionConstraints(),
             enzyme_provisioning=_provisioning(nickase, max_operations=1),
-            relaxation=RelaxationPolicy(
-                mode=RelaxationMode.EXACT_ONLY,
-                max_radius=0,
-            ),
-            enumeration=EnumerationPolicy(
+            search=NeighborhoodSearchPlan(
+                max_retained_overhead_nt=2 * len(pairing_allowances) + len(nickase_pattern),
                 max_search_nodes=10_000,
                 max_realizations=10_000,
             ),
@@ -173,7 +167,7 @@ def _clone_fixture(tmp_path: Path):
     payload = _payload()
     foldback = _foldback(payload)
     basal = _clone_basal_result(payload)
-    assert basal.discovery.status is SearchCompletionStatus.COMPLETE
+    assert basal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     assert len(basal.realizations) == 1
     basal_realization = basal.realizations[0]
     assert basal_realization.hairpin_pcr_duplex is not None
@@ -429,7 +423,7 @@ def test_clone_endpoint_does_not_infer_release_ends_from_basal_pairing_mismatch(
         nickase_pattern="TTTT",
         nickase_cut_offset_reference=0,
     )
-    assert basal.discovery.status is SearchCompletionStatus.COMPLETE
+    assert basal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     basal_realization = basal.realizations[0]
     assert basal_realization.hairpin_pcr_duplex is not None
     adapter = next(

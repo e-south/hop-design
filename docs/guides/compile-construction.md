@@ -206,8 +206,8 @@ The installed documentation smoke uses four checked-in sources:
 
 - `examples/construction-exact.yaml` is an exact direct foldback request;
 - `examples/construction-infeasible.yaml` exhausts an incompatible request;
-- `examples/construction-relaxed.yaml` reaches a realization in the first
-  allowed relaxation shell; and
+- `examples/construction-expanded-domain.yaml` includes more than one declared
+  foldback geometry and reports their absolute retained-overhead levels; and
 - `examples/construction-composed-pcr.yaml` combines verified foldback and
   basal neighborhoods into a PCR-bearing complete route.
 

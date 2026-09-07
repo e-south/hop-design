@@ -1,6 +1,6 @@
 schema: hop.construction-source/v5
 foldback:
-  schema: hop.local-neighborhood-request/v3
+  schema: hop.local-neighborhood-request/v4
   name: null
   payload:
     schema: hop.final-payload/v1
@@ -16,11 +16,14 @@ foldback:
   family: foldback
   route_family: linear_source/v1
   endpoint: ssdna_hairpin
-  target:
+  geometry_domain:
     family: foldback
-    junction_offset_nt: 0
-    loop_length_nt: 3
-    annealing_arm_length_bp: 4
+    nick_strand: any
+    junction_offsets_nt: [0]
+    minimum_loop_length_nt: 3
+    minimum_annealing_arm_length_bp: 3
+    loop_lengths_nt: [3]
+    annealing_arm_lengths_bp: [4]
   hard_constraints:
     preserve_payload: true
     forbid_unintended_actionable_sites: true
@@ -82,15 +85,14 @@ foldback:
     - role: terminus_definition
       allowed_enzyme_ids:
       - example:enzyme/foldback-terminus@1
-  relaxation:
-    mode: exact_only
-    max_radius: 0
-    coordinates: []
-  enumeration:
+  search:
+    max_retained_overhead_nt: 11
     max_search_nodes: 100
     max_realizations: 100
+    scope: all_realizations
+    stop: exhaustive
 basal:
-  schema: hop.local-neighborhood-request/v3
+  schema: hop.local-neighborhood-request/v4
   name: null
   payload:
     schema: hop.final-payload/v1
@@ -106,10 +108,10 @@ basal:
   family: basal
   route_family: linear_source/v1
   endpoint: hairpin_pcr_duplex
-  target:
+  geometry_domain:
     family: basal
     nick_strand: bottom
-    nick_offset_nt: 0
+    nick_offsets_nt: [0]
     pairing_constraints:
     - profile_position: 0
       allowed_class: match
@@ -119,7 +121,8 @@ basal:
       allowed_class: match
     - profile_position: 3
       allowed_class: match
-    ligation_proximal_match_required: true
+    minimum_adapter_annealing_nt: 15
+    mismatch_warning_fraction: 0.20
   hard_constraints:
     preserve_payload: true
     forbid_unintended_actionable_sites: true
@@ -160,13 +163,12 @@ basal:
     - role: basal_nick
       allowed_enzyme_ids:
       - example:enzyme/complete-basal@1
-  relaxation:
-    mode: exact_only
-    max_radius: 0
-    coordinates: []
-  enumeration:
+  search:
+    max_retained_overhead_nt: 8
     max_search_nodes: 100
     max_realizations: 100
+    scope: all_realizations
+    stop: exhaustive
 composition:
   endpoint: hairpin_pcr_duplex
   materialization:

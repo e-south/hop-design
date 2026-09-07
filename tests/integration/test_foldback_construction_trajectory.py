@@ -97,7 +97,8 @@ def test_unintended_actionable_site_rejects_the_exact_program() -> None:
         )
     )
 
-    assert result.neighborhood.status == "infeasible"
+    assert result.neighborhood.disposition.completion.value == "complete"
+    assert result.neighborhood.disposition.feasibility.value == "infeasible"
     assert {reason.code for reason in result.neighborhood.failure_reasons} == {
         "unintended-actionable-site"
     }

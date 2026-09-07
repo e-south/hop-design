@@ -343,20 +343,20 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
         "composed-pcr": "complete",
         "exact": "complete",
         "infeasible": "infeasible",
-        "relaxed": "complete",
+        "expanded-domain": "complete",
     }
     trajectories = {
         "composed-pcr": (
             "hop:materialized-construction/"
-            "ed200f1b66a4b76cd9f6f33ba214798833fe5ec515474d6eed4ef8e9233de283@1"
+            "661eedf40f6a0f9b952f56a30d238adea3151d536071ded55b7fc0265f803b4f@1"
         ),
         "exact": (
             "hop:materialized-construction/"
-            "63982f1d523dac0ad6f4034ce4ff83259fc05353392e783e96831a9096fb2109@1"
+            "18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1"
         ),
-        "relaxed": (
+        "expanded-domain": (
             "hop:materialized-construction/"
-            "05558439e5be5e026a4b14ff39bdd1907e45bf588e138bb9ef9a4e1922f1f48a@1"
+            "18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1"
         ),
     }
     statuses: dict[str, str] = {}

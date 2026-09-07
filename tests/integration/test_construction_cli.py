@@ -14,16 +14,33 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from rich.text import Text
 from typer.testing import CliRunner
 
 from hop_design.cli import app
+from hop_design.commands.construction.routes import _route_line
 from hop_design.design.construction.complete.bundle import compile_construction_bundle
 from hop_design.models.construction import ConstructionEndpoint
 from tests.integration.test_complete_construction_projections import _verified_result
 from tests.support.claim_language import assert_no_positive_downstream_claims
 
 runner = CliRunner()
+
+
+def test_route_line_preserves_zero_basal_overhead() -> None:
+    line = _route_line(
+        {
+            "status": "accepted",
+            "ordinal": 0,
+            "foldback_retained_overhead_nt": 7,
+            "basal_retained_overhead_nt": 0,
+            "retained_non_payload_nt": 7,
+            "enzyme_ids": (),
+            "auxiliary_material_count": 0,
+            "materialized_realization_id": "hop:materialized-construction/test@1",
+        }
+    )
+
+    assert "basal overhead=0 nt" in line
 
 
 def _write_bundle(
@@ -95,7 +112,8 @@ def test_construction_list_groups_accepted_routes_and_preserves_canonical_order(
     assert "Query: status=accepted · group_by=geometry · sort=canonical" in result.output
     assert "Foldback:" in result.output
     assert "Basal:" in result.output
-    assert "exact" in result.output
+    assert "foldback overhead=" in result.output
+    assert "basal overhead=" in result.output
     assert "retained non-payload" in result.output
     assert "Ordinal is canonical replay order, not rank." in result.output
     assert result.output.index(expected_ids[0]) < result.output.index(expected_ids[1])
@@ -113,14 +131,6 @@ def test_construction_list_filters_and_sorts_only_on_explicit_dimensions(
         for operation in stage.operations
     )
 
-    relaxed = runner.invoke(
-        app,
-        ["construction", "list", str(bundle), "--relaxed", "--limit", "5"],
-    )
-    contradictory = runner.invoke(
-        app,
-        ["construction", "list", str(bundle), "--exact", "--relaxed"],
-    )
     unknown_group = runner.invoke(
         app,
         ["construction", "list", str(bundle), "--group", "hop:geometry/unknown@1"],
@@ -177,10 +187,6 @@ def test_construction_list_filters_and_sorts_only_on_explicit_dimensions(
         ["construction", "list", str(bundle), "--limit", "1"],
     )
 
-    assert relaxed.exit_code == 0, relaxed.output
-    assert "Showing 0 of 0 matched routes." in relaxed.output
-    assert contradictory.exit_code != 0
-    assert "--exact and --relaxed are mutually" in Text.from_ansi(contradictory.output).plain
     assert unknown_group.exit_code != 0
     assert "Unknown achieved-geometry group" in unknown_group.output
     assert explicit_sort.exit_code == 0, explicit_sort.output

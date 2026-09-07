@@ -571,9 +571,7 @@ def test_resealed_basal_result_rejects_corrupted_shell_accounting() -> None:
     level = result.discovery.overhead_levels[-1]
     corrupted_level = level.model_copy(update={"candidate_count": level.candidate_count + 1})
     corrupted_discovery = result.discovery.model_copy(
-        update={
-            "overhead_levels": (*result.discovery.overhead_levels[:-1], corrupted_level)
-        }
+        update={"overhead_levels": (*result.discovery.overhead_levels[:-1], corrupted_level)}
     )
 
     with pytest.raises(ValidationError, match="candidate count"):
@@ -1350,8 +1348,7 @@ def test_overhead_coverage_and_geometry_groups_are_complete_and_lossless() -> No
     assert len(ids) > 4
     assert truncated.discovery.disposition.completion is SearchCompletionStatus.TRUNCATED
     assert (
-        truncated.discovery.disposition.termination_reason
-        is SearchTerminationReason.EVALUATION_CAP
+        truncated.discovery.disposition.termination_reason is SearchTerminationReason.EVALUATION_CAP
     )
     assert truncated.discovery.overhead_levels[-1].complete is False
     assert all(
@@ -1472,9 +1469,7 @@ def test_basal_wrapper_rejects_partial_final_level_resealed_as_complete() -> Non
     assert level.complete is False
     corrupted_level = level.model_copy(update={"complete": True})
     corrupted_discovery = result.discovery.model_copy(
-        update={
-            "overhead_levels": (*result.discovery.overhead_levels[:-1], corrupted_level)
-        }
+        update={"overhead_levels": (*result.discovery.overhead_levels[:-1], corrupted_level)}
     )
 
     with pytest.raises(ValidationError, match="Truncated coverage"):

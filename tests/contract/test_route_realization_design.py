@@ -29,9 +29,7 @@ from hop_design.design.construction.verification import (
 from hop_design.models.construction import (
     BasalPairAllowance,
     ConstructionEndpoint,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
+    FoldbackGeometryDomain,
 )
 from hop_design.models.junction import Strand
 from hop_design.models.sequence import reverse_complement_iupac
@@ -131,17 +129,12 @@ def test_each_selected_foldback_alternative_gets_its_own_exact_design() -> None:
             foldback_request(
                 _nickase(),
                 _terminus_enzyme(),
-                relaxation=RelaxationPolicy(
-                    mode=RelaxationMode.THROUGH_RADIUS,
-                    max_radius=1,
-                    coordinates=(
-                        RelaxationCoordinate(
-                            name="loop_length_nt",
-                            minimum=2,
-                            maximum=4,
-                        ),
-                    ),
+                domain=FoldbackGeometryDomain(
+                    junction_offsets_nt=(0,),
+                    loop_lengths_nt=(3, 4),
+                    annealing_arm_lengths_bp=(3,),
                 ),
+                max_retained_overhead_nt=10,
                 max_search_nodes=10_000,
                 max_realizations=10_000,
             )
@@ -349,7 +342,7 @@ def test_route_design_identity_excludes_local_search_execution_and_round_trips(
     ).discover_foldback_neighborhood(
         first.neighborhood.request.model_copy(
             update={
-                "enumeration": first.neighborhood.request.enumeration.model_copy(
+                "search": first.neighborhood.request.search.model_copy(
                     update={"max_search_nodes": 10_000, "max_realizations": 10_000}
                 )
             }

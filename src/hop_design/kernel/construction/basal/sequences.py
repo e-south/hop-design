@@ -38,6 +38,28 @@ from .programs import (
 )
 
 
+def basal_retained_overhead_nt(
+    *,
+    target: BasalTarget,
+    endpoint: ConstructionEndpoint,
+    program: BasalProgramCandidate,
+) -> int:
+    """Return the non-payload span retained in the local PCR reference state."""
+    if endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        raise ValueError("Basal retained-overhead accounting requires the PCR endpoint.")
+    arm_nt = len(target.pairing_constraints)
+    nick_cut_offset = (
+        program.nick_enzyme.cut_offset_reference_strand
+        if program.nick_orientation is SiteOrientation.FORWARD
+        else program.nick_enzyme.recognition_length
+        - program.nick_enzyme.cut_offset_reference_strand
+    )
+    nick_boundary = arm_nt - target.nick_offset_nt
+    nick_site_start = nick_boundary - nick_cut_offset
+    recognition_prefix_nt = max(0, -nick_site_start)
+    return recognition_prefix_nt + 2 * arm_nt
+
+
 def iter_basal_program_solutions(
     *,
     payload_sequence: str,

@@ -520,7 +520,7 @@ def test_hairpin_pcr_endpoint_materializes_exact_adapter_and_primer_route(
     tmp_path: Path,
 ) -> None:
     result, basal, top_sequence = _valid_pcr_result(tmp_path)
-    assert basal.discovery.status is SearchCompletionStatus.COMPLETE
+    assert basal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
 
     assert result.status is SearchCompletionStatus.COMPLETE
     realization = result.realizations[0]
@@ -1028,25 +1028,25 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "c4172531dbb5785667b19b220629ddff0f700aab59923894b536fd4370f72b70@1"
+        "27a6b3595d29e594db46cd069f39800be91a0d524a1bac966aee9645f4619f10@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "d1ae8e75f8fe97e3054eabf10197638a56393fdceb7b748893a3cca05a8d004c"  # pragma: allowlist secret  # noqa: E501
+            "ff400b6df30b6a4db32270bf4323d3d1e79a0296e14ef04d874ecb13bcc5a738"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "25643f66b8ca31abc1f88daa24f3d80244a6193289027fd61a69fedab2fd8043@1",
+        "36f49cfc4ac3b712f0f4c29a1696fbae39ddb3711b9646a80f2a5bcce347164d@1",
         "hop:materialized-construction/"
-        "abf7ac87f04c707d0e88edf0c6feb887d9f688943112023585ed91ab37f585ba@1",
+        "9c55e0aa4d7490446f13ed0bdf8b274d63b8e2cc3ef88722decb7246eb7df65d@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "15e2356490857d71c4ec93fd9a38a48cc39be90be91d1b5988764c39e044b46f@1",
+        "343430517adeceba4a9424c4a7b92a275f0065fa54942219e39785847555c823@1",
         "hop:construction-program/"
-        "f254552d623b60e227a5fce901f685f14d9cf936904cc071c8176e313fcd5184@1",
+        "62988f018f36a62eb8671732f59e79b7e2f883812bb3034504446aa9ce34a828@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/31ec12c1d24c9c10e6c8bc22e815aac01842be4fc019cc18a2a36962f5117237@1",
@@ -1057,8 +1057,8 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "53983d0f8b340263cf4b817a5524c2fdde2aeafc8e2cbe91f656e87a0fea98c8",  # pragma: allowlist secret  # noqa: E501
-            "cb68aaf4f7e3e903c9dbd21ec6504a70a17c6a201f6dac41c42b2736a5431f6c",  # pragma: allowlist secret  # noqa: E501
+            "e77ae035af162181dd60b0f5e393dd26fd360962fe24e136d8c0c6ad0cd1bc7c",  # pragma: allowlist secret  # noqa: E501
+            "da7785c111b863aa38484f4a608643d8d8fdd40f0584ccd84268629dc38f34eb",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -1068,25 +1068,25 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "5c6633170b41cbc460f778a129fab9d87a5cd2f08f11010602c4e9aacc04ec5f@1"
+        "f6bbda6ae8aad5321b4362091b8183d893e189c39c74ce0f6916c03fb44f44f4@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "5cda1e1f8c259bc064204c831e9032859fdf4c7d853f46e80bce17a9540a86d8"  # pragma: allowlist secret  # noqa: E501
+            "1c70033c0000457a2029d7b4f988c1557677b03c8c87a288094bd5187505c19b"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "c30f80ea8a099be4e02910a2b425d965e7a0b4a83000ff010d432e3afe344c43@1",
+        "3f690537b86d7d67110da0b49252c88c4bbd72f72b8dccd0aea0a0c0432b5080@1",
         "hop:materialized-construction/"
-        "a708d68e91ad1b2aeea2f3729e0b5f633a96c96a1d4a980ae60763583c3ff82f@1",
+        "3f3bcacceaa47461e112b7d219690cc4ab08fb9953659017e9bbb9d57bd92639@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "ab55d2c5a27aab27655aa894dd18bc8bab1aeca7e8917821cdf287c4a017f55e@1",
+        "31d9a9b16ee52fa58fa8943e1f0ad90ef4d4cbb2a1c02b6024188db76a3be3e3@1",
         "hop:construction-program/"
-        "de0b2e104e9d13929134c171cdf5c5f9de09457db5bc945ac8f5e462b109a3e8@1",
+        "8102b0dce480e00ad6778292310167cfad36f57fde9a5caea3c70458b492f7f6@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/fc31f4ff8e39f543c303fcf979f3790931a43cec3cb078582de00a707d218788@1",
@@ -1097,8 +1097,8 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "86bef2f45caccab76d04023260bba61116e7b106a87e25f61cf184201787df14",  # pragma: allowlist secret  # noqa: E501
-            "4260f24565fbfe63c3e5a6246da45220801acfecf15f924287f0e52640580e32",  # pragma: allowlist secret  # noqa: E501
+            "ceab6dc642aa3b8b35fa86b760d16c80525307d00afe72ed1f141b68d70559cd",  # pragma: allowlist secret  # noqa: E501
+            "8ea8577306f5558c74d6930b1eb0f6fca1d611f13320fe7e3f7ef5621b07ff22",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -1109,7 +1109,7 @@ def test_direct_endpoint_accepts_a_valid_bottom_basal_nick_without_pcr_splitting
     payload = _payload()
     foldback = _foldback(payload)
     basal = _basal_result(payload, nick_strand=Strand.BOTTOM)
-    assert basal.discovery.status is SearchCompletionStatus.COMPLETE
+    assert basal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     design = _verified_design(tmp_path)
     request = _construction_request(
         payload=payload,

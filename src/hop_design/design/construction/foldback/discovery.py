@@ -34,11 +34,6 @@ from hop_design.models.construction import (
     NeighborhoodProvenance,
     NickStrandSelection,
     OverheadLevelSummary,
-    PayloadCompatibilityAccounting,
-    PayloadCompatibilityStatus,
-    SearchCompletionStatus,
-    SearchDisposition,
-    SearchFeasibilityStatus,
     SearchStopMode,
     SearchTerminationReason,
     problem_id,
@@ -49,12 +44,17 @@ from hop_design.models.construction.foldback import (
 )
 from hop_design.models.physical import Strand
 
+from ..neighborhood_accounting import (
+    payload_accounting,
+    payload_assignments,
+    payload_cardinality,
+    reject_partial_payload_routes,
+    search_disposition,
+)
 from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
 from .realization import (
     _ROUTE_VERSION,
     _geometry_groups,
-    _payload_assignments,
-    _payload_cardinality,
     _projection_inventory,
     _realization,
 )
@@ -71,7 +71,7 @@ def discover_foldback_neighborhood(
     if request.endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
         raise ValueError("Foldback-local discovery resolves the ssDNA hairpin endpoint.")
 
-    payload_total = _payload_cardinality(request)
+    payload_total = payload_cardinality(request)
     records: list[FoldbackLocalRealization] = []
     level_summaries: list[OverheadLevelSummary] = []
     failures: Counter[str] = Counter()
@@ -96,7 +96,7 @@ def discover_foldback_neighborhood(
                     request.enzyme_provisioning,
                     target=exact_geometry,
                 )
-                for payload_sequence in _payload_assignments(request):
+                for payload_sequence in payload_assignments(request):
                     for route in routes:
                         solutions = partition_sequence_domain(
                             iter_foldback_program_solutions(
@@ -181,29 +181,33 @@ def discover_foldback_neighborhood(
         request.search.sequence_partition,
         total_assignments=payload_total,
     )
-    payload_accounting = _payload_accounting(
+    payload_accounting_result = payload_accounting(
         request=request,
-        records=exact_records,
+        has_records=bool(exact_records),
         compatible_payloads=compatible_payloads,
         payload_failures=payload_failures,
         payload_total=payload_total,
         partition_accounting=partition_accounting,
         incomplete=termination is not None,
+        incomplete_warning="Bounded foldback discovery did not exhaust route compatibility.",
+        recognition_failure_code="payload-recognition-conflict",
+        recognition_conflict_code="payload-recognition-conflict",
+        no_realization_code="payload-no-foldback-realization",
     )
     if (
         termination is None
         and exact_records
         and request.hard_constraints.require_all_members_compatible
-        and payload_accounting.excluded_assignments
+        and payload_accounting_result.excluded_assignments
     ):
-        exact_records, level_summaries, rejected_count, failures = _reject_partial_payload_routes(
+        exact_records, level_summaries, rejected_count, failures = reject_partial_payload_routes(
             records=exact_records,
             levels=level_summaries,
             rejected_count=rejected_count,
             failures=failures,
         )
 
-    disposition = _disposition(termination=termination, has_results=bool(exact_records))
+    disposition = search_disposition(termination=termination, has_results=bool(exact_records))
     hop_version = version("hop-design")
     execution = ConstructionExecution(
         problem_id=problem_id(request),
@@ -226,7 +230,7 @@ def discover_foldback_neighborhood(
         failure_reasons=tuple(
             FailureReasonCount(code=code, count=count) for code, count in sorted(failures.items())
         ),
-        payload_compatibility=payload_accounting,
+        payload_compatibility=payload_accounting_result,
         provenance=NeighborhoodProvenance(
             hop_version=hop_version,
             route_implementation_version=_ROUTE_VERSION,
@@ -244,130 +248,6 @@ def discover_foldback_neighborhood(
         neighborhood=neighborhood,
         realizations=exact_records,
     )
-
-
-def _disposition(
-    *, termination: SearchTerminationReason | None, has_results: bool
-) -> SearchDisposition:
-    if termination is None:
-        return SearchDisposition(
-            completion=SearchCompletionStatus.COMPLETE,
-            feasibility=(
-                SearchFeasibilityStatus.FEASIBLE
-                if has_results
-                else SearchFeasibilityStatus.INFEASIBLE
-            ),
-            termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
-        )
-    if termination is SearchTerminationReason.RESULT_QUOTA:
-        return SearchDisposition(
-            completion=SearchCompletionStatus.STOPPED_BY_POLICY,
-            feasibility=SearchFeasibilityStatus.FEASIBLE,
-            termination_reason=termination,
-        )
-    return SearchDisposition(
-        completion=SearchCompletionStatus.TRUNCATED,
-        feasibility=(
-            SearchFeasibilityStatus.FEASIBLE if has_results else SearchFeasibilityStatus.UNKNOWN
-        ),
-        termination_reason=termination,
-    )
-
-
-def _payload_accounting(
-    *,
-    request: LocalNeighborhoodRequest,
-    records: tuple[FoldbackLocalRealization, ...],
-    compatible_payloads: set[str],
-    payload_failures: dict[str, set[str]],
-    payload_total: int,
-    partition_accounting: PayloadCompatibilityAccounting | None,
-    incomplete: bool,
-) -> PayloadCompatibilityAccounting:
-    if incomplete:
-        return PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.NOT_COMPUTED,
-            total_assignments=payload_total,
-            exhaustive=False,
-            warning="Bounded foldback discovery did not exhaust route compatibility.",
-        )
-    if partition_accounting is not None:
-        return partition_accounting
-    if records:
-        excluded = payload_total - len(compatible_payloads)
-        conflicts = Counter(
-            code
-            for payload, codes in payload_failures.items()
-            if payload not in compatible_payloads
-            for code in codes
-        )
-        return PayloadCompatibilityAccounting(
-            status=PayloadCompatibilityStatus.COMPLETE,
-            total_assignments=payload_total,
-            compatible_assignments=len(compatible_payloads),
-            excluded_assignments=excluded,
-            conflict_counts=tuple(
-                FailureReasonCount(code=code, count=count)
-                for code, count in sorted(conflicts.items())
-                if count <= excluded
-            ),
-            exhaustive=True,
-        )
-    payload_conflicts = Counter(
-        (
-            "payload-recognition-conflict"
-            if "payload-recognition-conflict" in payload_failures[payload]
-            else "payload-no-foldback-realization"
-        )
-        for payload in _payload_assignments(request)
-    )
-    return PayloadCompatibilityAccounting(
-        status=PayloadCompatibilityStatus.COMPLETE,
-        total_assignments=payload_total,
-        compatible_assignments=0,
-        excluded_assignments=payload_total,
-        conflict_counts=tuple(
-            FailureReasonCount(code=code, count=count)
-            for code, count in sorted(payload_conflicts.items())
-        ),
-        exhaustive=True,
-    )
-
-
-def _reject_partial_payload_routes(
-    *,
-    records: tuple[FoldbackLocalRealization, ...],
-    levels: list[OverheadLevelSummary],
-    rejected_count: int,
-    failures: Counter[str],
-) -> tuple[
-    tuple[FoldbackLocalRealization, ...],
-    list[OverheadLevelSummary],
-    int,
-    Counter[str],
-]:
-    code = "all-members-compatibility-required"
-    failures[code] += len(records)
-    updated: list[OverheadLevelSummary] = []
-    for level in levels:
-        level_failures = Counter({reason.code: reason.count for reason in level.failure_reasons})
-        if level.realization_ids:
-            level_failures[code] += len(level.realization_ids)
-        updated.append(
-            OverheadLevelSummary(
-                retained_overhead_nt=level.retained_overhead_nt,
-                examined=level.examined,
-                complete=level.complete,
-                candidate_count=level.candidate_count,
-                realization_ids=(),
-                rejected_count=level.rejected_count + len(level.realization_ids),
-                failure_reasons=tuple(
-                    FailureReasonCount(code=reason, count=count)
-                    for reason, count in sorted(level_failures.items())
-                ),
-            )
-        )
-    return (), updated, rejected_count + len(records), failures
 
 
 __all__ = ["discover_foldback_neighborhood"]

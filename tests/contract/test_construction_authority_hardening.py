@@ -353,7 +353,7 @@ def test_neighborhood_result_rejects_resealed_claim_group_and_inventory_drift() 
         wrong_geometry,
         *result.achieved_geometry_groups[1:],
     )
-    with pytest.raises(ValidationError, match="group key must match"):
+    with pytest.raises(ValidationError, match="Achieved-geometry"):
         type(result).model_validate(content)
 
     duplicate_inventory = (*result.projection_inventory, result.projection_inventory[0])

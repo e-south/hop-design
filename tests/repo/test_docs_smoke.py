@@ -64,7 +64,7 @@ def test_docs_smoke_exercises_the_public_documentation_journey() -> None:
         "composed-pcr": "complete",
         "exact": "complete",
         "infeasible": "infeasible",
-        "relaxed": "complete",
+        "expanded-domain": "complete",
     }
     assert summary["method_authoring_verified"] is True
     assert summary["method_bundle_verified"] is True
@@ -85,7 +85,7 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     assert "'examples/construction-composed-pcr.yaml'" in wheel_smoke
     assert "'examples/construction-exact.yaml'" in wheel_smoke
     assert "'examples/construction-infeasible.yaml'" in wheel_smoke
-    assert "'examples/construction-relaxed.yaml'" in wheel_smoke
+    assert "'examples/construction-expanded-domain.yaml'" in wheel_smoke
     assert "'examples/linear-source-matched-design.yaml'" in wheel_smoke
     assert "'examples/author_linear_source_method.py'" in wheel_smoke
     assert "'examples/verify_design_method_handoff.py'" in wheel_smoke

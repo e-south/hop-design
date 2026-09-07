@@ -12,8 +12,6 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Iterator
-from itertools import product
 
 from hop_design.kernel.construction.foldback import (
     FoldbackProgramCandidate,
@@ -43,26 +41,8 @@ from hop_design.models.construction.foldback_replay import replay_foldback_route
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.physical import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
-from hop_design.models.sequence import iupac_bases
 
-_BASES = ("A", "C", "G", "T")
 _ROUTE_VERSION = "linear-source-foldback/3"
-
-
-def _payload_assignments(request: LocalNeighborhoodRequest) -> Iterator[str]:
-    domains = tuple(
-        tuple(base for base in _BASES if base in iupac_bases(symbol))
-        for symbol in request.payload.payload.sequence
-    )
-    for assignment in product(*domains):
-        yield "".join(assignment)
-
-
-def _payload_cardinality(request: LocalNeighborhoodRequest) -> int:
-    cardinality = 1
-    for symbol in request.payload.payload.sequence:
-        cardinality *= len(iupac_bases(symbol))
-    return cardinality
 
 
 def _failure_code(diagnostic_codes: tuple[str, ...]) -> str:
@@ -228,14 +208,10 @@ def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem
         else "foldback-feasibility-projections/3"
     )
     overhead_schema = (
-        "hop.foldback-overhead-frontier/v2"
-        if partitioned
-        else "hop.foldback-overhead-frontier/v1"
+        "hop.foldback-overhead-frontier/v2" if partitioned else "hop.foldback-overhead-frontier/v1"
     )
     overhead_renderer = (
-        "foldback-overhead-projections/2"
-        if partitioned
-        else "foldback-overhead-projections/1"
+        "foldback-overhead-projections/2" if partitioned else "foldback-overhead-projections/1"
     )
     return (
         ProjectionInventoryItem(

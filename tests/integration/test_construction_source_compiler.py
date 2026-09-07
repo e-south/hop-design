@@ -344,7 +344,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/b048e5bd2729/f1822798a89cbbc8"
+    assert pcr.bundle_id == "hop:construction-bundle/4bbe120d80b4/52c27dce57022b9c"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value
@@ -646,11 +646,11 @@ def test_selected_pair_rejects_a_basal_receipt_with_the_wrong_family(tmp_path: P
 
 def test_selected_pair_rejects_a_receipt_from_another_source_request(tmp_path: Path) -> None:
     _, foldback, basal, source = _selected_inputs(tmp_path)
-    enumeration = source.foldback.enumeration.model_copy(
-        update={"max_search_nodes": source.foldback.enumeration.max_search_nodes + 1}
+    search = source.foldback.search.model_copy(
+        update={"max_search_nodes": source.foldback.search.max_search_nodes + 1}
     )
     mismatched = source.model_copy(
-        update={"foldback": source.foldback.model_copy(update={"enumeration": enumeration})}
+        update={"foldback": source.foldback.model_copy(update={"search": search})}
     )
 
     with pytest.raises(ValueError, match="foldback receipt does not derive from the construction"):
@@ -669,11 +669,11 @@ def test_selected_pair_rejects_a_basal_receipt_from_another_source_request(
 ) -> None:
     _, foldback, basal, source = _selected_inputs(tmp_path)
     assert source.basal is not None
-    enumeration = source.basal.enumeration.model_copy(
-        update={"max_search_nodes": source.basal.enumeration.max_search_nodes + 1}
+    search = source.basal.search.model_copy(
+        update={"max_search_nodes": source.basal.search.max_search_nodes + 1}
     )
     mismatched = source.model_copy(
-        update={"basal": source.basal.model_copy(update={"enumeration": enumeration})}
+        update={"basal": source.basal.model_copy(update={"search": search})}
     )
 
     with pytest.raises(ValueError, match="basal receipt does not derive from the construction"):

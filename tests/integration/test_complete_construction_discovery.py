@@ -38,13 +38,11 @@ from hop_design.models.construction import (
     ConstructionConstraints,
     ConstructionEndpoint,
     FinalPayloadReference,
+    FoldbackGeometryDomain,
     FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
     NeighborhoodSearchPlan,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
     RouteFamily,
     SearchCompletionStatus,
     SourceOrientation,
@@ -174,7 +172,7 @@ def _basal_result(
             hard_constraints=ConstructionConstraints(),
             enzyme_provisioning=provisioning,
             search=NeighborhoodSearchPlan(
-                max_retained_overhead_nt=2 * len(pairing_allowances or (None,) * 4),
+                max_retained_overhead_nt=(2 * len(pairing_allowances or (None,) * 4) + len(motif)),
                 max_search_nodes=100,
                 max_realizations=100,
             ),
@@ -346,17 +344,12 @@ def test_complete_composition_filters_a_multi_payload_local_authority(
             motif="AAA",
             orientation_semantics=RecognitionOrientationSemantics.DECLARED_ONLY,
         ),
-        relaxation=RelaxationPolicy(
-            mode=RelaxationMode.FIRST_FEASIBLE_SHELL,
-            max_radius=1,
-            coordinates=(
-                RelaxationCoordinate(
-                    name="junction_offset_nt",
-                    minimum=0,
-                    maximum=1,
-                ),
-            ),
+        domain=FoldbackGeometryDomain(
+            junction_offsets_nt=(0, 1),
+            loop_lengths_nt=(3,),
+            annealing_arm_lengths_bp=(3,),
         ),
+        max_retained_overhead_nt=11,
         max_search_nodes=1000,
         max_realizations=1000,
     )
@@ -1028,23 +1021,18 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
-            relaxation=RelaxationPolicy(
-                mode=RelaxationMode.THROUGH_RADIUS,
-                max_radius=1,
-                coordinates=(
-                    RelaxationCoordinate(
-                        name="junction_offset_nt",
-                        minimum=0,
-                        maximum=1,
-                    ),
-                ),
+            domain=FoldbackGeometryDomain(
+                junction_offsets_nt=(0, 1),
+                loop_lengths_nt=(3,),
+                annealing_arm_lengths_bp=(4,),
             ),
+            max_retained_overhead_nt=13,
             max_search_nodes=2,
             max_realizations=100,
         )
     )
-    assert foldback.neighborhood.status is SearchCompletionStatus.TRUNCATED
-    assert foldback.neighborhood.truncation_reasons == ("max_search_nodes",)
+    assert foldback.neighborhood.disposition.completion is SearchCompletionStatus.TRUNCATED
+    assert foldback.neighborhood.disposition.termination_reason.value == "evaluation_cap"
     design = _verified_design(tmp_path)
     request = _construction_request(
         payload=payload,
@@ -1058,7 +1046,7 @@ def test_require_all_does_not_reclassify_a_truncated_upstream_search(
 
     assert result.status is SearchCompletionStatus.TRUNCATED
     assert result.truncation_reasons == ()
-    assert result.upstream_truncation_reasons == ("foldback:max_search_nodes",)
+    assert result.upstream_truncation_reasons == ("foldback:evaluation_cap",)
     assert len(result.realizations) == 2
     assert tuple(item.status for item in result.combination_dispositions) == (
         CompositionDispositionStatus.ACCEPTED,

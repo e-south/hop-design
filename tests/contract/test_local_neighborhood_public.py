@@ -107,9 +107,7 @@ def test_local_discovery_dispatches_basal_and_rejects_projection_family_mismatch
     assert receipt.family == "basal"
     assert construction.project_basal_feasibility(receipt).source_result_id == receipt.result_id
     assert (
-        construction.project_retained_overhead_frontier(
-            receipt, family="basal"
-        ).source_result_id
+        construction.project_retained_overhead_frontier(receipt, family="basal").source_result_id
         == receipt.result_id
     )
     with pytest.raises(ValueError, match=r"contains basal.*not foldback"):
