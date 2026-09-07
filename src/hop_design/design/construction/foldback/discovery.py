@@ -34,6 +34,7 @@ from hop_design.models.construction import (
     NeighborhoodProvenance,
     NickStrandSelection,
     OverheadLevelSummary,
+    SearchScope,
     SearchStopMode,
     SearchTerminationReason,
     problem_id,
@@ -151,6 +152,8 @@ def discover_foldback_neighborhood(
                                 and len(records) >= request.search.result_quota
                             ):
                                 termination = SearchTerminationReason.RESULT_QUOTA
+                                break
+                            if request.search.scope is SearchScope.EXISTENCE:
                                 break
                         if termination is not None:
                             break

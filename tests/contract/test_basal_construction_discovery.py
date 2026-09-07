@@ -52,6 +52,7 @@ from hop_design.models.construction import (
     RouteFamily,
     SearchCompletionStatus,
     SearchFeasibilityStatus,
+    SearchScope,
     SearchTerminationReason,
     problem_id,
 )
@@ -210,6 +211,7 @@ def _request(
     domain: BasalGeometryDomain | None = None,
     extra_nickase: bool = False,
     max_operations: int = 3,
+    search_scope: SearchScope = SearchScope.ALL_REALIZATIONS,
 ) -> LocalNeighborhoodRequest:
     enzymes = [_nickase()]
     future_release = None
@@ -250,6 +252,7 @@ def _request(
             ),
             max_search_nodes=max_nodes,
             max_realizations=max_realizations,
+            scope=search_scope,
         ),
     )
 
@@ -521,6 +524,27 @@ def test_realization_contains_exact_route_evidence_and_payload_conditioning() ->
     assert {position.material_role for position in record.retained_overhead.positions} == {
         "adapter"
     }
+
+
+def test_basal_existence_scope_retains_one_witness_per_exact_route_unit() -> None:
+    result = discover_basal_neighborhood(
+        _request(
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            extra_nickase=True,
+            max_nodes=100_000,
+            max_realizations=100_000,
+            search_scope=SearchScope.EXISTENCE,
+        )
+    )
+
+    assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == 2
+    assert {item.basal_nick.enzyme_id for item in result.realizations} == {
+        "example:enzyme/basal-nick-a@1",
+        "example:enzyme/basal-nick-b@1",
+    }
+    assert sum(level.candidate_count for level in result.discovery.overhead_levels) == 2
+    assert verify_basal_neighborhood_result(result).result == result
 
 
 def test_outboard_nick_cut_extends_transient_context_without_raw_coordinate_failure() -> None:

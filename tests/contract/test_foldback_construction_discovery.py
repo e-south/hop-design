@@ -37,6 +37,7 @@ from hop_design.models.construction import (
     SearchCompletionStatus,
     SearchDisposition,
     SearchFeasibilityStatus,
+    SearchScope,
     SearchTerminationReason,
     SourceOrientation,
     problem_id,
@@ -129,6 +130,7 @@ def _request(
     max_retained_overhead_nt: int | None = None,
     max_search_nodes: int = 100,
     max_realizations: int = 100,
+    search_scope: SearchScope = SearchScope.ALL_REALIZATIONS,
 ) -> LocalNeighborhoodRequest:
     catalog = CharacterizedEnzymeCatalog(
         catalog_id="example:enzyme-catalog/foldback-construction@1",
@@ -194,6 +196,7 @@ def _request(
             else exact_target.loop_length_nt + 2 * exact_target.annealing_arm_length_bp,
             max_search_nodes=max_search_nodes,
             max_realizations=max_realizations,
+            scope=search_scope,
         ),
     )
 
@@ -607,6 +610,31 @@ def test_foldback_discovery_places_the_nick_inside_the_retained_tract() -> None:
         and realization.enzyme_bindings[0].reference_cut == Boundary(offset=7)
         for realization in result.realizations
     )
+
+
+def test_foldback_existence_scope_retains_one_witness_per_exact_route_unit() -> None:
+    request = _request(
+        _nickase(motif="CCTNAGC", cut_offset=2),
+        target=FoldbackTarget(
+            junction_offset_nt=3,
+            loop_length_nt=4,
+            annealing_arm_length_bp=7,
+        ),
+        max_search_nodes=100_000,
+        max_realizations=100_000,
+        search_scope=SearchScope.EXISTENCE,
+    )
+
+    result = discover_foldback_neighborhood(request)
+
+    assert result.neighborhood.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == 2
+    assert {item.foldback_nick.strand for item in result.realizations} == {
+        Strand.TOP,
+        Strand.BOTTOM,
+    }
+    assert sum(level.candidate_count for level in result.neighborhood.overhead_levels) == 2
+    assert verify_foldback_neighborhood_result(result).result == result
 
 
 def test_foldback_result_rejects_lossy_family_detail_membership() -> None:
