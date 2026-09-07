@@ -145,8 +145,9 @@ describe the shared achieved geometry and retain every exact member identity;
 no representative is selected. Renderer evolution does not alter the
 construction result or bundle authority.
 
-`hop.complete-construction-trajectory/v3` embeds the exact source preparation and chronology of one
-explicitly selected accepted materialized realization. It has no CSV form
+`hop.complete-construction-trajectory/v4` embeds the exact source preparation,
+selected source-partition certificate when present, and chronology of one explicitly
+selected accepted materialized realization. It has no CSV form
 because it is a structured molecular-state sequence rather than a table. The
 public operation requires `materialized_realization_id`; HOP never selects an
 exemplar from canonical order.

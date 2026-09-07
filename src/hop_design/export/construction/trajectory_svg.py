@@ -15,6 +15,9 @@ from hop_design.models.construction.complete import ConstructionState
 from hop_design.models.construction.projections import (
     CompleteConstructionTrajectoryProjection,
 )
+from hop_design.models.construction.source_partition import (
+    SourcePartitionBoundaryKind,
+)
 from hop_design.models.coordinates import Boundary
 from hop_design.models.molecular_state import StrandPairObservation
 from hop_design.models.reactions import ReactionProgram
@@ -24,6 +27,59 @@ from .svg_common import escape, render_document, short_id
 
 _PAIR_CHUNK_SIZE = 4
 _SEQUENCE_CHUNK_SIZE = 48
+
+
+def _partition_boundary_label(kind: SourcePartitionBoundaryKind, values: tuple[str, ...]) -> str:
+    if kind is SourcePartitionBoundaryKind.PHYSICAL_END:
+        return "physical end"
+    return "/".join(value.removesuffix("@1").rsplit("/", 1)[-1] for value in values)
+
+
+def _source_partition_rows(
+    projection: CompleteConstructionTrajectoryProjection,
+    *,
+    y_start: int,
+) -> tuple[str, int]:
+    certificate = projection.source_partition_certificate
+    binding = projection.realization.source_partition_binding
+    if certificate is None or binding is None:
+        return "", 0
+    rows = [
+        f'<g data-source-partition-binding-id="{escape(binding.binding_id)}" '
+        f'data-source-partition-result-id="{escape(binding.result_id)}" '
+        f'data-source-partition-realization-id="{escape(binding.realization_id)}" '
+        f'data-selected-maximum-sacrificial-fragment-nt="'
+        f'{certificate.selected_maximum_sacrificial_fragment_nt}">'
+        f'<text x="72" y="{y_start}" class="label">Exact source partition</text>'
+        f'<text x="390" y="{y_start}" class="small">'
+        f'least-permissive passing maximum · '
+        f'{certificate.selected_maximum_sacrificial_fragment_nt} nt</text>'
+    ]
+    for index, fragment in enumerate(certificate.fragments):
+        left = _partition_boundary_label(
+            fragment.left_boundary.kind,
+            fragment.left_boundary.enzyme_ids,
+        )
+        right = _partition_boundary_label(
+            fragment.right_boundary.kind,
+            fragment.right_boundary.enzyme_ids,
+        )
+        y = y_start + 30 + index * 20
+        rows.append(
+            f'<text x="122" y="{y}" class="small" data-layout-row="bounded" '
+            f'data-partition-fragment-id="{escape(fragment.fragment_id)}" '
+            f'data-precursor-strand="{escape(fragment.precursor_strand.value)}" '
+            f'data-source-start="{fragment.source_span.start.offset}" '
+            f'data-source-end="{fragment.source_span.end.offset}" '
+            f'data-fragment-length-nt="{fragment.length_nt}" '
+            f'data-fragment-disposition="{escape(fragment.disposition.value)}">'
+            f'{escape(fragment.precursor_strand.value)} · '
+            f'{fragment.source_span.start.offset}-{fragment.source_span.end.offset} · '
+            f'{fragment.length_nt} nt · {escape(fragment.disposition.value)} · '
+            f'{escape(left)} → {escape(right)}</text>'
+        )
+    rows.append("</g>")
+    return "".join(rows), 58 + len(certificate.fragments) * 20
 
 
 def _strand_aliases(states: tuple[ConstructionState, ...]) -> dict[str, str]:
@@ -211,6 +267,13 @@ def render_complete_trajectory_svg(
     )
     rows.append(source_rows)
     cursor += source_height
+    partition_rows, partition_height = _source_partition_rows(
+        projection,
+        y_start=cursor,
+    )
+    if partition_rows:
+        rows.append(partition_rows)
+        cursor += partition_height
     for index, state in enumerate(program.states):
         y = cursor
         phase = state.phase.value.replace("_", " ")
@@ -282,6 +345,7 @@ def render_complete_trajectory_svg(
         )
         cursor += 50 + len(realization.final_product.cohesive_ends) * 22
     title = f"The selected digital route records {len(program.states)} exact molecular states."
+    subtitle = f"Digital route only · selected composition ordinal {projection.composition_ordinal}"
     boundary = "No physical construction, QC, or biological activity is established."
     body = f"""
 <g data-projection-id="{escape(projection.projection_id)}"
@@ -297,8 +361,7 @@ data-physical-construction="{escape(claims.physical_construction.value)}"
 data-quality-control="{escape(claims.quality_control.value)}"
 data-biological-activity="{escape(claims.biological_activity.value)}">
 <text x="72" y="58" class="title">{escape(title)}</text>
-<text x="72" y="96" class="subtitle">Digital route only · selected composition ordinal
-{projection.composition_ordinal}</text>
+<text x="72" y="96" class="subtitle">{escape(subtitle)}</text>
 <text x="72" y="128" class="small">{escape(boundary)}</text>
 </g>
 <line x1="72" y1="150" x2="1128" y2="150" class="rule"/>

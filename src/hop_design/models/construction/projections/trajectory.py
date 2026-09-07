@@ -18,26 +18,31 @@ from pydantic import Field, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.construction.complete import MaterializedConstructionRealization
 from hop_design.models.construction.payload import _content_id
+from hop_design.models.construction.source_partition import SourcePartitionCertificate
 
-COMPLETE_CONSTRUCTION_TRAJECTORY_RENDERER_VERSION: Literal["complete-construction-trajectory/2"] = (
-    "complete-construction-trajectory/2"
+COMPLETE_CONSTRUCTION_TRAJECTORY_RENDERER_VERSION: Literal["complete-construction-trajectory/3"] = (
+    "complete-construction-trajectory/3"
 )
 
 
 class CompleteConstructionTrajectoryProjection(HopModel):
     """One caller-selected accepted route embedded without scientific reduction."""
 
-    schema_id: Literal["hop.complete-construction-trajectory/v3"] = Field(
-        default="hop.complete-construction-trajectory/v3",
+    schema_id: Literal["hop.complete-construction-trajectory/v4"] = Field(
+        default="hop.complete-construction-trajectory/v4",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:complete-construction-trajectory/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
-    renderer_version: Literal["complete-construction-trajectory/2"] = (
+    renderer_version: Literal["complete-construction-trajectory/3"] = (
         COMPLETE_CONSTRUCTION_TRAJECTORY_RENDERER_VERSION
     )
     composition_ordinal: int = Field(ge=0)
     realization: MaterializedConstructionRealization
+    source_partition_certificate: SourcePartitionCertificate | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @classmethod
     def create(cls, **content: object) -> CompleteConstructionTrajectoryProjection:
@@ -53,6 +58,12 @@ class CompleteConstructionTrajectoryProjection(HopModel):
 
     @model_validator(mode="after")
     def validate_projection(self) -> CompleteConstructionTrajectoryProjection:
+        binding = self.realization.source_partition_binding
+        if (binding is None) != (self.source_partition_certificate is None):
+            raise ValueError(
+                "A selected source-partition binding and fragment certificate "
+                "are required together."
+            )
         if self.projection_id != self._expected_projection_id():
             raise ValueError("projection_id must seal the complete trajectory relation.")
         return self
