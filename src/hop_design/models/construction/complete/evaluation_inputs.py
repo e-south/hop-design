@@ -188,13 +188,13 @@ def derive_route_prefix(
         or basal.source_precursor_sequence[start:end] != payload
     ):
         return None
-    profile = basal.projection.pairing_profile
+    pairing_state = basal.projection.pairing_state
     if (
-        profile is None
-        or profile.source_span.end.offset != start
-        or profile.source_span.end.offset > len(basal.source_precursor_sequence)
+        pairing_state is None
+        or pairing_state.source_span.end.offset != start
+        or pairing_state.source_span.end.offset > len(basal.source_precursor_sequence)
         or basal.source_precursor_sequence[
-            profile.source_span.start.offset : profile.source_span.end.offset
+            pairing_state.source_span.start.offset : pairing_state.source_span.end.offset
         ]
         != basal_left
         or design_prefix != basal_left

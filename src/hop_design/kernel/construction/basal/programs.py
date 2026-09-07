@@ -20,7 +20,7 @@ from hop_design.models.construction import (
     NickStrandSelection,
 )
 from hop_design.models.construction.basal import (
-    BasalPairingProfile,
+    BasalPairingState,
     derive_basal_pair_class,
 )
 from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
@@ -49,12 +49,12 @@ class BasalProgramCandidate:
 
 @dataclass(frozen=True, slots=True)
 class BasalSequenceSolution:
-    """One exact precursor, adapter, pairing profile, and binding set."""
+    """One exact precursor, adapter, pairing state, and binding set."""
 
     source_precursor_sequence: str
     adapter_sequence: str | None
     payload_span: Span
-    pairing_profile: BasalPairingProfile | None
+    pairing_state: BasalPairingState | None
     enzyme_bindings: tuple[ConstructionEnzymeBinding, ...]
 
 

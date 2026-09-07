@@ -113,13 +113,13 @@ basal:
     nick_strand: bottom
     nick_offsets_nt: [0]
     pairing_constraints:
-    - profile_position: 0
+    - position_from_ligation: 0
       allowed_class: match
-    - profile_position: 1
+    - position_from_ligation: 1
       allowed_class: match
-    - profile_position: 2
+    - position_from_ligation: 2
       allowed_class: match
-    - profile_position: 3
+    - position_from_ligation: 3
       allowed_class: match
     minimum_adapter_annealing_nt: 15
     mismatch_warning_fraction: 0.20

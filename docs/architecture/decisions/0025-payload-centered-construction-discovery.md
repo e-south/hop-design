@@ -108,9 +108,9 @@ closure bond, and achieved retained geometry.
 
 ### 5. Basal pairing is explicit and Type IIS processing is endpoint-dependent
 
-The basal pairing profile is ordered from the payload-proximal ligation
+The basal pairing state is ordered from the payload-proximal ligation
 position outward. Every position retains its literal source and adapter bases,
-pair classification, profile position, and any later end-projection role.
+pair classification, position from ligation, and any later end-projection role.
 `match`, configured `wobble`, and declared `mismatch` are construction
 bookkeeping, not thermodynamic or biological scores.
 

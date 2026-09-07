@@ -114,7 +114,7 @@ def project_basal_feasibility(
     rows = []
     for item in result.realizations:
         achieved = cast(BasalTarget, item.local_realization.achieved_geometry)
-        pairing = item.projection.pairing_profile
+        pairing = item.projection.pairing_state
         rows.append(
             BasalFeasibilityRow(
                 local_realization_id=item.local_realization.local_realization_id,
@@ -122,7 +122,7 @@ def project_basal_feasibility(
                 retained_overhead_nt=item.retained_overhead.retained_overhead_nt,
                 nick_strand=cast(Strand, achieved.nick_strand),
                 nick_offset_nt=achieved.nick_offset_nt,
-                pairing_profile=pairing.compact_profile if pairing is not None else None,
+                pairing_pattern=pairing.pairing_pattern if pairing is not None else None,
                 pairing_classes=(
                     tuple(pair.pair_class for pair in pairing.pairs) if pairing is not None else ()
                 ),

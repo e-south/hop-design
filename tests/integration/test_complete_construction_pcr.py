@@ -65,7 +65,7 @@ from hop_design.models.construction.complete.pcr.replay import validate_pcr_tran
 from hop_design.models.construction.complete.pcr.route import select_pcr_fragments
 from hop_design.models.construction.complete.pcr.schedule import derive_pcr_reaction_program
 from hop_design.models.construction.complete.pcr.validation import (
-    validate_adapter_pairing_profile,
+    validate_adapter_pairing_state,
     validate_pcr_realization,
 )
 from hop_design.models.construction.complete.result_contract import validate_materialized_request
@@ -357,9 +357,9 @@ def test_pcr_composition_retains_outer_basal_recognition_prefix_as_route_periphe
         cut_offset_reference_strand=0,
     )
     local = basal.realizations[0]
-    profile = local.projection.pairing_profile
-    assert profile is not None
-    assert profile.source_span == Span(
+    pairing_state = local.projection.pairing_state
+    assert pairing_state is not None
+    assert pairing_state.source_span == Span(
         start=Boundary(offset=2),
         end=Boundary(offset=6),
     )
@@ -700,8 +700,8 @@ def test_pcr_adapter_pair_kind_must_match_the_h5_profile(tmp_path: Path) -> None
     adapter_annealed = realization.construction_program.states[-3]
     assert realization.basal_authority is not None
 
-    with pytest.raises(ValueError, match="exact H5 pairing profile"):
-        validate_adapter_pairing_profile(
+    with pytest.raises(ValueError, match="exact basal pairing state"):
+        validate_adapter_pairing_state(
             changed_authority,
             basal=realization.basal_authority,
             closed_strand_id=adapter_annealed.molecules[0].strand_id,
@@ -895,7 +895,7 @@ def test_hairpin_pcr_endpoint_rejects_top_strand_basal_nick(tmp_path: Path) -> N
     }
 
 
-def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_profile(tmp_path: Path) -> None:
+def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_state(tmp_path: Path) -> None:
     payload = _payload()
     foldback = _foldback(payload)
     basal = _basal_result(
@@ -963,9 +963,7 @@ def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_profile(tmp_path: Path
         ),
         **policies,
     )
-    assert profile_result.rejection_reason is (
-        CompositionRejectionCode.PCR_PAIRING_PROFILE_MISMATCH
-    )
+    assert profile_result.rejection_reason is (CompositionRejectionCode.PCR_PAIRING_STATE_MISMATCH)
 
 
 def test_hairpin_pcr_reports_incompatible_primer_as_infeasible(
@@ -1028,25 +1026,25 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "27a6b3595d29e594db46cd069f39800be91a0d524a1bac966aee9645f4619f10@1"
+        "6c81762117b15bf20117026dcbf88cc5197a2afec0b0f3d80f32f12a20602491@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "ff400b6df30b6a4db32270bf4323d3d1e79a0296e14ef04d874ecb13bcc5a738"  # pragma: allowlist secret  # noqa: E501
+            "12112e1e5fe9cc988dd136dbcf73be667ebed24c4f940cc5c3e9e22c76503a6f"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "36f49cfc4ac3b712f0f4c29a1696fbae39ddb3711b9646a80f2a5bcce347164d@1",
+        "5a84e0da952cd5ce309b6a926aa458f9a6697b8ce65531801b3f0c29efe7ec3b@1",
         "hop:materialized-construction/"
-        "9c55e0aa4d7490446f13ed0bdf8b274d63b8e2cc3ef88722decb7246eb7df65d@1",
+        "69ef39fd6c221fc17006131445badb12a2774a7dd2942d773d903b97abdd1f90@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "343430517adeceba4a9424c4a7b92a275f0065fa54942219e39785847555c823@1",
+        "53eeafff5e24f3dc294496eb4baa2357437c2f5ef59c7aa16c2ee669d32d202b@1",
         "hop:construction-program/"
-        "62988f018f36a62eb8671732f59e79b7e2f883812bb3034504446aa9ce34a828@1",
+        "c75e1b975b65f3b822eacd1fd4c5925dc40d33af17dd53ccd8e7a5450e0c9bd1@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/31ec12c1d24c9c10e6c8bc22e815aac01842be4fc019cc18a2a36962f5117237@1",
@@ -1057,8 +1055,8 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "e77ae035af162181dd60b0f5e393dd26fd360962fe24e136d8c0c6ad0cd1bc7c",  # pragma: allowlist secret  # noqa: E501
-            "da7785c111b863aa38484f4a608643d8d8fdd40f0584ccd84268629dc38f34eb",  # pragma: allowlist secret  # noqa: E501
+            "bcdcb679f5f0b5f85f05775766f1de1a6516e25f88316e2fe4d57b970047603a",  # pragma: allowlist secret  # noqa: E501
+            "617d28df80eddecbbd180cca3f61d1cc32c817a055f492c0a210e87cacbb76fb",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -1068,25 +1066,25 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "f6bbda6ae8aad5321b4362091b8183d893e189c39c74ce0f6916c03fb44f44f4@1"
+        "c201d0e66dac6f3778c9fc71cd25ff84d5a05569f21a405edc26cc4e4416c5de@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "1c70033c0000457a2029d7b4f988c1557677b03c8c87a288094bd5187505c19b"  # pragma: allowlist secret  # noqa: E501
+            "1e62e3ca5b6c193b3da680ba40b66add742a5f56937db01d7f599b1ca3b06f22"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "3f690537b86d7d67110da0b49252c88c4bbd72f72b8dccd0aea0a0c0432b5080@1",
+        "9f8755b90f1134f6e558c76f4106b3dd5c86332fd416a92bbf14d22a6f0f343b@1",
         "hop:materialized-construction/"
-        "3f3bcacceaa47461e112b7d219690cc4ab08fb9953659017e9bbb9d57bd92639@1",
+        "367a411545a9e03a8f193abb269b4bd6c28d7db966a67d048ca01089e9dd8b56@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "31d9a9b16ee52fa58fa8943e1f0ad90ef4d4cbb2a1c02b6024188db76a3be3e3@1",
+        "d8ae1fb65b4db010305b7ffb76c343074ac0bfb97665a576acab1fff086c6f86@1",
         "hop:construction-program/"
-        "8102b0dce480e00ad6778292310167cfad36f57fde9a5caea3c70458b492f7f6@1",
+        "cc8a2225b517a6966799945e1fa5f583f43ff6753aeb7f1c6eec108ddf99713b@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/fc31f4ff8e39f543c303fcf979f3790931a43cec3cb078582de00a707d218788@1",
@@ -1097,8 +1095,8 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "ceab6dc642aa3b8b35fa86b760d16c80525307d00afe72ed1f141b68d70559cd",  # pragma: allowlist secret  # noqa: E501
-            "8ea8577306f5558c74d6930b1eb0f6fca1d611f13320fe7e3f7ef5621b07ff22",  # pragma: allowlist secret  # noqa: E501
+            "80ebfaf33b476a103bb9f64b1186f4f29da67cf69f3a34b1b6504db1fbcb034b",  # pragma: allowlist secret  # noqa: E501
+            "83b4cdc242da8602fcd3ac7526d69e5474978f8454cc905631d1d7c51d8d1f8b",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -1699,17 +1697,17 @@ def test_pcr_realization_replay_rejects_exact_authority_forgery_matrix(
     program = realization.construction_program
     basal = realization.basal_authority
     assert basal is not None
-    profile = basal.projection.pairing_profile
-    assert profile is not None
+    pairing_state = basal.projection.pairing_state
+    assert pairing_state is not None
     annealing = program.transitions[-3].pcr_authority
     assert annealing is not None
     adapter_state = program.states[-3]
 
     with pytest.raises(ValueError, match="exact basal adapter-pairing authority"):
-        validate_adapter_pairing_profile(
+        validate_adapter_pairing_state(
             annealing,
             basal=basal.model_copy(
-                update={"projection": basal.projection.model_copy(update={"pairing_profile": None})}
+                update={"projection": basal.projection.model_copy(update={"pairing_state": None})}
             ),
             closed_strand_id=adapter_state.molecules[0].strand_id,
             adapter_strand_id=adapter_state.molecules[1].strand_id,

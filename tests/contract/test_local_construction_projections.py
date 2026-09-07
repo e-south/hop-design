@@ -257,7 +257,7 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
     assert tuple(row.basal_realization_id for row in projection.realizations) == tuple(
         item.basal_realization_id for item in result.realizations
     )
-    assert all(row.pairing_profile is not None for row in projection.realizations)
+    assert all(row.pairing_pattern is not None for row in projection.realizations)
     assert all(row.retained_nt >= 0 for row in projection.realizations)
     assert all(row.transient_nt >= 0 for row in projection.realizations)
     assert all(row.auxiliary_nt >= 0 for row in projection.realizations)
@@ -265,7 +265,7 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
         achieved = source.local_realization.achieved_geometry
         assert row.nick_strand == achieved.nick_strand
         assert row.nick_offset_nt == achieved.nick_offset_nt
-        assert row.literal_pairs == source.projection.pairing_profile.pairs
+        assert row.literal_pairs == source.projection.pairing_state.pairs
 
     csv_row = _csv_rows(render_projection_csv(projection))[0]
     assert csv_row["nick_strand"] == projection.realizations[0].nick_strand.value

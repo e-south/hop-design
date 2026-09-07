@@ -61,7 +61,7 @@ class BasalFeasibilityRow(HopModel):
     retained_overhead_nt: int = Field(ge=0)
     nick_strand: Strand
     nick_offset_nt: int = Field(ge=0)
-    pairing_profile: str | None
+    pairing_pattern: str | None
     pairing_classes: tuple[BasalPairClass, ...]
     literal_pairs: tuple[BasalPairRecord, ...]
     retained_nt: int = Field(ge=0)
@@ -163,7 +163,7 @@ class BasalFeasibilityProjection(HopModel):
             ids=tuple(row.local_realization_id for row in self.realizations),
         )
         if self.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX or any(
-            row.pairing_profile is None or not row.literal_pairs for row in self.realizations
+            row.pairing_pattern is None or not row.literal_pairs for row in self.realizations
         ):
             raise ValueError("Basal projections require the exact hairpin PCR intermediate.")
         _validate_projection_reference(

@@ -109,10 +109,8 @@ class BasalRealizationRecord(HopModel):
             != self.pairing_constraints
         ):
             raise ValueError("Realization must retain the authored pairing constraints.")
-        if self.projection.pairing_profile is not None:
-            realized = tuple(
-                pair.pair_class.value for pair in self.projection.pairing_profile.pairs
-            )
+        if self.projection.pairing_state is not None:
+            realized = tuple(pair.pair_class.value for pair in self.projection.pairing_state.pairs)
             for allowed, observed in zip(self.pairing_constraints, realized, strict=True):
                 if allowed is not BasalPairAllowance.ANY and allowed.value != observed:
                     raise ValueError("Literal basal pairs must satisfy authored class constraints.")

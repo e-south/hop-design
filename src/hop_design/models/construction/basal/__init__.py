@@ -14,7 +14,7 @@ from __future__ import annotations
 from .pairing import (
     BasalBoundaryControl,
     BasalEnzymeDefinition,
-    BasalPairingProfile,
+    BasalPairingState,
     BasalPairRecord,
     derive_basal_pair_class,
 )
@@ -41,7 +41,7 @@ __all__ = [
     "BasalMaterialRole",
     "BasalNeighborhoodDiscoveryResult",
     "BasalPairRecord",
-    "BasalPairingProfile",
+    "BasalPairingState",
     "BasalPcrCopyState",
     "BasalRealizationRecord",
     "derive_basal_pair_class",

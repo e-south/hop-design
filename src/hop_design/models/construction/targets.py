@@ -60,10 +60,10 @@ class BasalPairAllowance(StrEnum):
     ANY = "any"
 
 
-class BasalPairingConstraint(HopModel):
+class BasalPairConstraint(HopModel):
     """One authored class constraint ordered from the payload outward."""
 
-    profile_position: int = Field(ge=0)
+    position_from_ligation: int = Field(ge=0)
     allowed_class: BasalPairAllowance
 
 
@@ -73,12 +73,12 @@ class BasalTarget(HopModel):
     family: Literal["basal"] = "basal"
     nick_strand: Strand | NickStrandSelection
     nick_offset_nt: int = Field(ge=0)
-    pairing_constraints: tuple[BasalPairingConstraint, ...] = ()
+    pairing_constraints: tuple[BasalPairConstraint, ...] = ()
     ligation_proximal_match_required: bool = False
 
     @model_validator(mode="after")
     def validate_pairing_constraints(self) -> BasalTarget:
-        positions = tuple(item.profile_position for item in self.pairing_constraints)
+        positions = tuple(item.position_from_ligation for item in self.pairing_constraints)
         if positions != tuple(range(len(positions))):
             raise ValueError("Basal pairing positions must be contiguous from the payload outward.")
         if (

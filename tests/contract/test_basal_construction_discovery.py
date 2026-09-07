@@ -32,13 +32,13 @@ from hop_design.kernel.construction.basal import (
     BasalPlacementFailure,
     iter_basal_program_solutions,
     iter_basal_programs,
-    resolve_basal_pairing_profile,
+    resolve_basal_pairing_state,
 )
 from hop_design.models.construction import (
     BasalGeometryDomain,
     BasalPairAllowance,
     BasalPairClass,
-    BasalPairingConstraint,
+    BasalPairConstraint,
     BasalTarget,
     ConstructionConstraints,
     ConstructionEndpoint,
@@ -189,10 +189,10 @@ def _pairing_constraints(
         BasalPairAllowance.ANY,
         BasalPairAllowance.MATCH,
     ),
-) -> tuple[BasalPairingConstraint, ...]:
+) -> tuple[BasalPairConstraint, ...]:
     return tuple(
-        BasalPairingConstraint(
-            profile_position=position,
+        BasalPairConstraint(
+            position_from_ligation=position,
             allowed_class=allowance,
         )
         for position, allowance in enumerate(allowances)
@@ -203,7 +203,7 @@ def _request(
     endpoint: ConstructionEndpoint,
     *,
     payload: str | ExactPayload | DegeneratePayload = "CCCC",
-    pairing_constraints: tuple[BasalPairingConstraint, ...] | None = None,
+    pairing_constraints: tuple[BasalPairConstraint, ...] | None = None,
     max_nodes: int = 10000,
     max_realizations: int = 10000,
     domain: BasalGeometryDomain | None = None,
@@ -247,33 +247,33 @@ def _exact_target(request: LocalNeighborhoodRequest) -> BasalTarget:
 
 
 def test_literal_pairing_is_variable_length_proximal_outward_and_projects_mwx() -> None:
-    profile = resolve_basal_pairing_profile(
+    pairing_state = resolve_basal_pairing_state(
         source_sequence_5prime="AGCA",
         adapter_sequence_5prime="TATT",
         end_projection_positions=(2,),
     )
 
-    assert [pair.profile_position for pair in profile.pairs] == [0, 1, 2, 3]
-    assert [(pair.source_index, pair.adapter_index) for pair in profile.pairs] == [
+    assert [pair.position_from_ligation for pair in pairing_state.pairs] == [0, 1, 2, 3]
+    assert [(pair.source_index, pair.adapter_index) for pair in pairing_state.pairs] == [
         (3, 0),
         (2, 1),
         (1, 2),
         (0, 3),
     ]
-    assert profile.compact_profile == "MXWM"
-    assert profile.pairs[2].participates_in_end_projection
+    assert pairing_state.pairing_pattern == "MXWM"
+    assert pairing_state.pairs[2].participates_in_end_projection
 
-    shorter = resolve_basal_pairing_profile(
+    shorter = resolve_basal_pairing_state(
         source_sequence_5prime="ACG",
         adapter_sequence_5prime="CGT",
     )
-    assert shorter.compact_profile == "MMM"
+    assert shorter.pairing_pattern == "MMM"
 
 
 def test_literal_pair_record_rejects_a_pair_class_that_disagrees_with_its_bases() -> None:
     with pytest.raises(ValidationError, match="derive from the literal bases"):
         BasalPairRecord(
-            profile_position=0,
+            position_from_ligation=0,
             source_index=0,
             adapter_index=0,
             source_base="A",
@@ -285,9 +285,9 @@ def test_literal_pair_record_rejects_a_pair_class_that_disagrees_with_its_bases(
 
 def test_authored_pairing_constraints_do_not_accept_realized_literal_bases() -> None:
     with pytest.raises(ValidationError):
-        BasalPairingConstraint.model_validate(
+        BasalPairConstraint.model_validate(
             {
-                "profile_position": 0,
+                "position_from_ligation": 0,
                 "allowed_class": "match",
                 "source_base": "A",
                 "adapter_base": "T",
@@ -303,9 +303,9 @@ def test_basal_local_discovery_accepts_only_the_pcr_intermediate() -> None:
         LocalNeighborhoodRequest.model_validate(invalid)
 
     projection = pcr.realizations[0].projection
-    assert projection.pairing_profile is not None
-    assert projection.pairing_profile.pairs[0].pair_class is BasalPairClass.MATCH
-    assert projection.pairing_profile.adapter_span == Span(
+    assert projection.pairing_state is not None
+    assert projection.pairing_state.pairs[0].pair_class is BasalPairClass.MATCH
+    assert projection.pairing_state.adapter_span == Span(
         start=Boundary(offset=0),
         end=Boundary(offset=4),
     )
@@ -325,8 +325,8 @@ def test_proximal_mismatch_is_rejected_but_distal_mismatch_is_copied_exactly() -
             nick_strand=Strand.TOP,
             nick_offset_nt=0,
             pairing_constraints=(
-                BasalPairingConstraint(
-                    profile_position=0,
+                BasalPairConstraint(
+                    position_from_ligation=0,
                     allowed_class=BasalPairAllowance.MISMATCH,
                 ),
             ),
@@ -348,9 +348,9 @@ def test_proximal_mismatch_is_rejected_but_distal_mismatch_is_copied_exactly() -
 
     assert distal.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     assert distal.discovery.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
-    profile = distal.realizations[0].projection.pairing_profile
-    assert profile is not None
-    assert profile.pairs[2].pair_class is BasalPairClass.MISMATCH
+    pairing_state = distal.realizations[0].projection.pairing_state
+    assert pairing_state is not None
+    assert pairing_state.pairs[2].pair_class is BasalPairClass.MISMATCH
     assert distal.realizations[0].projection.pcr_reference_sequence is not None
     assert distal.realizations[0].projection.pcr_complement_sequence == reverse_complement_iupac(
         distal.realizations[0].projection.pcr_reference_sequence
@@ -742,7 +742,7 @@ def test_basal_realization_rejects_non_pcr_endpoint_before_materialization() -> 
         )
 
 
-def test_basal_realization_rejects_unresolved_target_and_pairing_profile() -> None:
+def test_basal_realization_rejects_unresolved_target_and_pairing_state() -> None:
     request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
     target = _exact_target(request)
     route = iter_basal_programs(
@@ -770,13 +770,13 @@ def test_basal_realization_rejects_unresolved_target_and_pairing_profile() -> No
             route=route,
             solution=solution,
         )
-    with pytest.raises(ValueError, match="exact pairing profile"):
+    with pytest.raises(ValueError, match="exact pairing state"):
         _realization(
             request=request,
             payload_sequence="CCCC",
             target=target,
             route=route,
-            solution=replace(solution, pairing_profile=None),
+            solution=replace(solution, pairing_state=None),
         )
 
 

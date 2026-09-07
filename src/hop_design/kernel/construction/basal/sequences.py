@@ -68,7 +68,7 @@ def iter_basal_program_solutions(
     program: BasalProgramCandidate,
 ) -> Iterator[BasalSequenceSolution | BasalPlacementFailure]:
     """Solve exact source and adapter sequences from geometry and recognition constraints."""
-    from .pairing import resolve_basal_pairing_profile
+    from .pairing import resolve_basal_pairing_state
 
     if not isinstance(target.nick_strand, Strand):
         raise ValueError("Basal sequence realization requires one exact nick strand.")
@@ -182,9 +182,9 @@ def iter_basal_program_solutions(
                         start=nick_site_start,
                     )
                 ]
-                profile = None
+                pairing_state = None
                 if adapter is not None:
-                    profile = resolve_basal_pairing_profile(
+                    pairing_state = resolve_basal_pairing_state(
                         source_sequence_5prime=source_arm,
                         adapter_sequence_5prime=adapter,
                         source_span=Span(
@@ -199,6 +199,6 @@ def iter_basal_program_solutions(
                     payload_span=Span(
                         start=Boundary(offset=payload_start), end=Boundary(offset=payload_end)
                     ),
-                    pairing_profile=profile,
+                    pairing_state=pairing_state,
                     enzyme_bindings=tuple(bindings),
                 )

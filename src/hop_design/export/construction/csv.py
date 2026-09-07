@@ -235,7 +235,7 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         "retained_overhead_nt",
         "nick_strand",
         "nick_offset_nt",
-        "pairing_profile",
+        "pairing_pattern",
         "pairing_classes",
         "literal_pairs_json",
         "retained_nt",

@@ -41,7 +41,7 @@ from .trajectory_svg import render_complete_trajectory_svg
 class _BasalGroupKey(NamedTuple):
     nick_strand: str
     nick_offset_nt: int
-    pairing_profile: str | None
+    pairing_pattern: str | None
     retained_nt: int
     transient_nt: int
     auxiliary_nt: int
@@ -146,7 +146,7 @@ def _render_basal(projection: BasalFeasibilityProjection) -> bytes:
         key = _BasalGroupKey(
             nick_strand=item.nick_strand.value,
             nick_offset_nt=item.nick_offset_nt,
-            pairing_profile=item.pairing_profile,
+            pairing_pattern=item.pairing_pattern,
             retained_nt=item.retained_nt,
             transient_nt=item.transient_nt,
             auxiliary_nt=item.auxiliary_nt,
@@ -155,7 +155,7 @@ def _render_basal(projection: BasalFeasibilityProjection) -> bytes:
     rows = []
     for index, (group_key, group_rows) in enumerate(grouped.items()):
         y = 250 + index * 38
-        pairing = group_key.pairing_profile or "not required"
+        pairing = group_key.pairing_pattern or "not required"
         literal_pair_patterns = {
             tuple(
                 (pair.source_base, pair.adapter_base, pair.pair_class.value)

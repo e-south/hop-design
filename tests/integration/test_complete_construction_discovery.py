@@ -34,7 +34,7 @@ from hop_design.design.construction.verification import (
 from hop_design.models.construction import (
     BasalGeometryDomain,
     BasalPairAllowance,
-    BasalPairingConstraint,
+    BasalPairConstraint,
     ConstructionConstraints,
     ConstructionEndpoint,
     FinalPayloadReference,
@@ -159,8 +159,8 @@ def _basal_result(
                 nick_offsets_nt=(nick_offset_nt,),
                 pairing_constraints=(
                     tuple(
-                        BasalPairingConstraint(
-                            profile_position=index,
+                        BasalPairConstraint(
+                            position_from_ligation=index,
                             allowed_class=allowed,
                         )
                         for index, allowed in enumerate(

@@ -71,8 +71,8 @@ def _realization(
         raise ValueError("Basal realization requires the hairpin PCR duplex endpoint.")
     if not isinstance(target.nick_strand, Strand):
         raise ValueError("Basal realizations require one exact nick strand.")
-    if solution.pairing_profile is None:
-        raise ValueError("Basal realizations require one exact pairing profile.")
+    if solution.pairing_state is None:
+        raise ValueError("Basal realizations require one exact pairing state.")
     required_operations = 1
     if (
         request.enzyme_provisioning.max_operations is not None
@@ -94,7 +94,7 @@ def _realization(
     pcr_reference = duplex.top_strand.sequence
     projection = BasalEndpointProjection(
         endpoint=request.endpoint,
-        pairing_profile=solution.pairing_profile,
+        pairing_state=solution.pairing_state,
         pcr_reference_sequence=pcr_reference,
         pcr_complement_sequence=duplex.bottom_strand.sequence,
     )

@@ -75,7 +75,7 @@ from .sequence_domain import SequenceDomainPartition
 from .targets import (
     BasalPairAllowance,
     BasalPairClass,
-    BasalPairingConstraint,
+    BasalPairConstraint,
     BasalTarget,
     ConstructionConstraints,
     ConstructionPreferences,
@@ -88,7 +88,7 @@ __all__ = [
     "BasalGeometryDomain",
     "BasalPairAllowance",
     "BasalPairClass",
-    "BasalPairingConstraint",
+    "BasalPairConstraint",
     "BasalTarget",
     "CompleteConstructionRealization",
     "ConstructionBundle",

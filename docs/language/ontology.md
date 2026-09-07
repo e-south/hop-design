@@ -65,7 +65,7 @@ identities. One part does not establish whole-domain payload compatibility.
 
 A foldback target is described by `junction_offset_nt`, `loop_length_nt`, and
 `annealing_arm_length_bp`. A basal target describes endpoint-dependent nick
-geometry, an exact payload-proximal-outward pairing profile, and optional
+geometry, an exact payload-proximal-outward pairing state, and optional
 end-generation geometry. Type IIS processing is absent unless the endpoint
 requests clone-ready ends.
 

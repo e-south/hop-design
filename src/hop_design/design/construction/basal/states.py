@@ -39,9 +39,9 @@ def _pcr_states(
     BasalAdapterLigatedProduct | None,
     BasalPcrCopyState | None,
 ]:
-    profile = solution.pairing_profile
+    pairing_state = solution.pairing_state
     adapter_sequence = solution.adapter_sequence
-    if profile is None or adapter_sequence is None:
+    if pairing_state is None or adapter_sequence is None:
         return None, None, None
     source = _strand(
         strand_id="source-fragment",
@@ -59,12 +59,12 @@ def _pcr_states(
         observe_pair(
             left_strand_id=source.strand_id,
             right_strand_id=adapter.strand_id,
-            left_index=profile.source_span.start.offset + pair.source_index,
+            left_index=pairing_state.source_span.start.offset + pair.source_index,
             right_index=pair.adapter_index,
             left_base=pair.source_base,
             right_base=pair.adapter_base,
         )
-        for pair in profile.pairs
+        for pair in pairing_state.pairs
     )
     annealed = BasalAdapterAnnealedComplex(
         source_strand=source,

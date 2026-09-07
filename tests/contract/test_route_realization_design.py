@@ -186,8 +186,8 @@ def test_route_design_supports_non_four_base_basal_arms() -> None:
     )
 
     features = compilation.plan.hairpin_encoding_insert.features
-    assert features[0].sequence == selected.projection.pairing_profile.source_sequence_5prime
-    assert features[-1].sequence == selected.projection.pairing_profile.adapter_sequence_5prime
+    assert features[0].sequence == selected.projection.pairing_state.source_sequence_5prime
+    assert features[-1].sequence == selected.projection.pairing_state.adapter_sequence_5prime
     assert len(features[0].sequence) == 3
 
 

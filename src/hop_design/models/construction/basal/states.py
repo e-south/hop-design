@@ -30,7 +30,7 @@ from hop_design.models.sequence import (
     reverse_complement_iupac,
 )
 
-from .pairing import BasalPairingProfile
+from .pairing import BasalPairingState
 
 
 class BasalMaterialRole(StrEnum):
@@ -167,7 +167,7 @@ class BasalEndpointProjection(HopModel):
     """Exact molecular obligations established for the basal PCR intermediate."""
 
     endpoint: Literal[ConstructionEndpoint.HAIRPIN_PCR_DUPLEX]
-    pairing_profile: BasalPairingProfile
+    pairing_state: BasalPairingState
     pcr_reference_sequence: str
     pcr_complement_sequence: str
 

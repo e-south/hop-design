@@ -30,6 +30,7 @@ from hop_design.models.construction import (
     SequenceDomainPartition,
 )
 from hop_design.models.construction.complete import MaterializedConstructionRealization
+from hop_design.models.construction.complete.evaluation.result import CompositionRejectionCode
 from hop_design.models.construction.projections import ConstructionNavigationAcceptedRoute
 
 
@@ -177,6 +178,27 @@ def test_public_construction_models_exclude_radius_relaxation_contracts() -> Non
 
     assert obsolete.isdisjoint(construction_models.__all__)
     assert SequenceDomainPartition.__module__.endswith("sequence_domain")
+
+
+def test_basal_constraints_use_ligation_relative_pair_obligations() -> None:
+    assert "BasalPairConstraint" in construction_models.__all__
+    assert "BasalPairingConstraint" not in construction_models.__all__
+
+    constraint_type = construction_models.BasalPairConstraint
+    constraint = constraint_type(
+        position_from_ligation=0,
+        allowed_class=construction_models.BasalPairAllowance.MATCH,
+    )
+
+    assert constraint.position_from_ligation == 0
+    assert "profile_position" not in constraint_type.model_fields
+
+
+def test_complete_route_rejection_codes_use_pairing_state_language() -> None:
+    values = {item.value for item in CompositionRejectionCode}
+
+    assert "pcr-pairing-state-mismatch" in values
+    assert all("profile" not in value for value in values)
 
 
 def test_complete_route_and_navigation_do_not_reintroduce_relaxation_radius() -> None:

@@ -148,11 +148,11 @@ def _foldback_junction(
 
 
 def _basal_junction(realization: BasalRealizationRecord) -> BasalJunction:
-    profile = realization.projection.pairing_profile
-    if profile is None:
-        raise ValueError("Selected basal realization does not contain an exact pairing profile.")
-    left = profile.source_sequence_5prime
-    right = profile.adapter_sequence_5prime
+    pairing_state = realization.projection.pairing_state
+    if pairing_state is None:
+        raise ValueError("Selected basal realization does not contain an exact pairing state.")
+    left = pairing_state.source_sequence_5prime
+    right = pairing_state.adapter_sequence_5prime
     pairs = tuple(
         JunctionPairObservation(
             left_index=index,

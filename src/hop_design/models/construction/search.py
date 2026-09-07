@@ -21,7 +21,7 @@ from hop_design.models.junction import Strand
 
 from .sequence_domain import SequenceDomainPartition
 from .targets import (
-    BasalPairingConstraint,
+    BasalPairConstraint,
     BasalTarget,
     FoldbackTarget,
     NickStrandSelection,
@@ -110,7 +110,7 @@ class BasalGeometryDomain(HopModel):
     family: Literal["basal"] = "basal"
     nick_strand: Strand | NickStrandSelection = NickStrandSelection.ANY
     nick_offsets_nt: tuple[int, ...] = (0,)
-    pairing_constraints: tuple[BasalPairingConstraint, ...] = Field(min_length=1)
+    pairing_constraints: tuple[BasalPairConstraint, ...] = Field(min_length=1)
     minimum_adapter_annealing_nt: int = Field(default=15, ge=1)
     mismatch_warning_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
 

@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from hop_design.models.construction import (
     BasalGeometryDomain,
     BasalPairAllowance,
-    BasalPairingConstraint,
+    BasalPairConstraint,
     CompleteConstructionRealization,
     ConstructionConstraints,
     ConstructionEndpoint,
@@ -405,8 +405,8 @@ def test_geometry_domains_are_canonical_and_enforce_structural_floors() -> None:
 
 def test_basal_domains_are_limited_to_the_hairpin_pcr_intermediate() -> None:
     pairing = (
-        BasalPairingConstraint(
-            profile_position=0,
+        BasalPairConstraint(
+            position_from_ligation=0,
             allowed_class=BasalPairAllowance.MATCH,
         ),
     )
