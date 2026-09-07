@@ -15,6 +15,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 import pytest
+from pydantic import ValidationError
 
 from hop_design.design.construction.complete import discover_constructions
 from hop_design.design.construction.complete.discovery import VerifiedConstructionSpaceResult
@@ -368,6 +369,14 @@ def test_complete_trajectory_embeds_the_selected_source_partition_certificate(
         assert f'data-source-start="{fragment.source_span.start.offset}"' in svg
         assert f'data-source-end="{fragment.source_span.end.offset}"' in svg
         assert f'data-fragment-disposition="{fragment.disposition.value}"' in svg
+
+    with pytest.raises(ValidationError, match="binding and fragment certificate"):
+        CompleteConstructionTrajectoryProjection.model_validate(
+            {
+                **projection.model_dump(mode="python", by_alias=True),
+                "source_partition_certificate": None,
+            }
+        )
 
 
 @pytest.mark.parametrize(

@@ -22,9 +22,13 @@ import hop_design.construction as construction
 from hop_design.design.construction.source_partition import discover_source_partitions
 from hop_design.models.construction import SearchCompletionStatus
 from hop_design.models.construction.source_partition import (
+    SacrificialFragmentPolicy,
+    SourcePartitionBoundaryKind,
+    SourcePartitionCertificate,
     SourcePartitionDiscoveryResult,
     SourcePartitionDispositionKind,
     SourcePartitionFailure,
+    SourcePartitionThresholdAssessment,
     SourcePartitionTruncationReason,
 )
 from hop_design.models.construction.source_partition.replay import (
@@ -34,6 +38,7 @@ from hop_design.models.construction.source_partition.result import (
     source_partition_realization_id,
 )
 from hop_design.models.enzymes import VendorMetadata
+from hop_design.models.molecular_state import StrandEnd
 from hop_design.serialization import canonical_json_bytes
 from tests.integration.test_source_partition_discovery import _request
 
@@ -42,6 +47,172 @@ def _revalidate(result: SourcePartitionDiscoveryResult) -> SourcePartitionDiscov
     return SourcePartitionDiscoveryResult.model_validate(
         result.model_dump(mode="python", by_alias=True)
     )
+
+
+def _certificate() -> SourcePartitionCertificate:
+    return discover_source_partitions(_request()).realizations[0].fragment_certificate
+
+
+def _revalidate_certificate(
+    certificate: SourcePartitionCertificate,
+) -> SourcePartitionCertificate:
+    return SourcePartitionCertificate.model_validate(
+        certificate.model_dump(mode="python", by_alias=True)
+    )
+
+
+def test_fragment_policy_and_threshold_assessment_fail_closed() -> None:
+    with pytest.raises(ValidationError, match="must not be below"):
+        SacrificialFragmentPolicy(preferred_maximum_nt=13, absolute_maximum_nt=12)
+
+    with pytest.raises(ValidationError, match="unique canonical fragment ids"):
+        SourcePartitionThresholdAssessment(
+            maximum_sacrificial_fragment_nt=12,
+            feasible=False,
+            violating_fragment_ids=("fragment-b", "fragment-a"),
+        )
+    with pytest.raises(ValidationError, match="must agree with its fragment violations"):
+        SourcePartitionThresholdAssessment(
+            maximum_sacrificial_fragment_nt=12,
+            feasible=True,
+            violating_fragment_ids=("fragment-a",),
+        )
+
+
+def test_fragment_boundaries_and_dispositions_fail_closed() -> None:
+    certificate = _certificate()
+    required = certificate.fragments[0]
+    sacrificial = certificate.fragments[1]
+    physical = required.left_boundary
+    cleavage = required.right_boundary
+
+    for boundary, message in (
+        (
+            physical.model_copy(update={"enzyme_ids": ("example:enzyme/cut@1",)}),
+            "requires one end and no enzyme",
+        ),
+        (
+            cleavage.model_copy(update={"physical_end": StrandEnd.THREE_PRIME}),
+            "requires enzyme evidence only",
+        ),
+        (
+            cleavage.model_copy(update={"enzyme_ids": cleavage.enzyme_ids * 2}),
+            "unique and canonical",
+        ),
+    ):
+        with pytest.raises(ValidationError, match=message):
+            boundary.__class__.model_validate(boundary.model_dump(mode="python"))
+
+    for fragment, message in (
+        (
+            required.model_copy(update={"length_nt": required.length_nt - 1}),
+            "length must equal",
+        ),
+        (
+            required.model_copy(
+                update={"left_boundary": physical.model_copy(update={"source_offset": 1})}
+            ),
+            "boundaries must equal",
+        ),
+        (
+            required.model_copy(update={"survivor_id": None}),
+            "required fragment certificate must identify",
+        ),
+        (
+            sacrificial.model_copy(update={"survivor_id": "not-a-survivor"}),
+            "sacrificial fragment certificate cannot identify",
+        ),
+    ):
+        with pytest.raises(ValidationError, match=message):
+            fragment.__class__.model_validate(fragment.model_dump(mode="python"))
+
+
+def test_full_span_fragment_certificate_rejects_forged_accounting() -> None:
+    certificate = _certificate()
+    thresholds = certificate.thresholds
+    fragments = certificate.fragments
+
+    invalid_assessment = SourcePartitionThresholdAssessment(
+        maximum_sacrificial_fragment_nt=12,
+        feasible=False,
+        violating_fragment_ids=("invented-fragment",),
+    )
+    shortened_span = fragments[0].source_span.model_copy(
+        update={"end": fragments[0].source_span.end.model_copy(update={"offset": 57})}
+    )
+    shortened_required = fragments[0].model_copy(
+        update={
+            "source_span": shortened_span,
+            "length_nt": 57,
+            "right_boundary": fragments[0].right_boundary.model_copy(update={"source_offset": 57}),
+        }
+    )
+    zero_offset_cleavage = fragments[0].left_boundary.model_copy(
+        update={
+            "kind": SourcePartitionBoundaryKind.CLEAVAGE,
+            "physical_end": None,
+            "enzyme_ids": ("example:enzyme/top-terminal@1",),
+        }
+    )
+    wrong_physical_end = fragments[0].left_boundary.model_copy(
+        update={"physical_end": StrandEnd.THREE_PRIME}
+    )
+
+    for forged, message in (
+        (
+            certificate.model_copy(update={"thresholds": thresholds[1:]}),
+            "must cover the policy ladder",
+        ),
+        (
+            certificate.model_copy(
+                update={"thresholds": (thresholds[0], invalid_assessment, *thresholds[2:])}
+            ),
+            "must derive from exact fragments",
+        ),
+        (
+            certificate.model_copy(update={"fragments": tuple(reversed(fragments))}),
+            "strand and source-coordinate order",
+        ),
+        (
+            certificate.model_copy(
+                update={
+                    "fragments": (
+                        *fragments[:-1],
+                        fragments[-1].model_copy(update={"fragment_id": fragments[0].fragment_id}),
+                    )
+                }
+            ),
+            "unique fragment ids",
+        ),
+        (
+            certificate.model_copy(update={"fragments": (shortened_required, *fragments[1:])}),
+            "cover each source strand fully",
+        ),
+        (
+            certificate.model_copy(
+                update={
+                    "fragments": (
+                        fragments[0].model_copy(update={"left_boundary": zero_offset_cleavage}),
+                        *fragments[1:],
+                    )
+                }
+            ),
+            "cleavage certificate must lie inside",
+        ),
+        (
+            certificate.model_copy(
+                update={
+                    "fragments": (
+                        fragments[0].model_copy(update={"left_boundary": wrong_physical_end}),
+                        *fragments[1:],
+                    )
+                }
+            ),
+            "must identify the exact strand end",
+        ),
+    ):
+        with pytest.raises(ValidationError, match=message):
+            _revalidate_certificate(forged)
 
 
 def test_identity_excludes_display_procurement_and_execution_metadata() -> None:

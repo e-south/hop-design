@@ -16,8 +16,12 @@ import io
 import json
 
 import pytest
+from pydantic import ValidationError
 
 import hop_design.construction as construction
+from hop_design.models.construction import SearchCompletionStatus
+from hop_design.models.construction.accounting import MethodResolutionStatus
+from hop_design.models.construction.projections import SourcePartitionCertificateProjection
 from tests.integration.test_source_partition_discovery import _request
 
 
@@ -90,3 +94,48 @@ def test_source_partition_projection_writes_one_portable_vector_packet(tmp_path)
         "projection.json",
         "projection.svg",
     }
+
+
+def test_source_partition_projection_rejects_forged_scope_and_identity(tmp_path) -> None:
+    receipt = _receipt(tmp_path)
+    projection = construction.project_source_partition_certificate(
+        receipt,
+        realization_id=receipt.realization_ids[0],
+    )
+    typed_projection = SourcePartitionCertificateProjection.model_validate_json(
+        projection.json_bytes
+    )
+    mapping = typed_projection.model_dump(mode="python", by_alias=True)
+
+    for update, message in (
+        (
+            {"status": SearchCompletionStatus.INFEASIBLE},
+            "infeasible partition result cannot have",
+        ),
+        (
+            {"examined_nodes": typed_projection.candidate_space_size + 1},
+            "cannot exceed the candidate space",
+        ),
+        (
+            {"enzyme_ids": tuple(reversed(typed_projection.enzyme_ids))},
+            "must be unique and canonical",
+        ),
+        (
+            {"enzyme_ids": typed_projection.enzyme_ids[:1]},
+            "must equal the fragment-boundary causes",
+        ),
+        (
+            {
+                "claim_boundary": typed_projection.claim_boundary.model_copy(
+                    update={"method": MethodResolutionStatus.RESOLVED}
+                )
+            },
+            "claim boundaries are fixed",
+        ),
+        (
+            {"projection_id": f"hop:projection/{'0' * 64}@1"},
+            "identity must replay exact content",
+        ),
+    ):
+        with pytest.raises(ValidationError, match=message):
+            SourcePartitionCertificateProjection.model_validate({**mapping, **update})
