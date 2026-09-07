@@ -13,7 +13,11 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-from hop_design.models.construction import ConstructionEndpoint, SearchCompletionStatus
+from hop_design.models.construction import (
+    ConstructionEndpoint,
+    SearchCompletionStatus,
+    SearchFeasibilityStatus,
+)
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     BasalFeasibilityRow,
@@ -22,7 +26,7 @@ from hop_design.models.construction.projections import (
     ConstructionNavigationProjection,
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
-    RelaxationFrontierProjection,
+    RetainedOverheadFrontierProjection,
 )
 from hop_design.models.construction.relaxation import SequenceDomainPartition
 
@@ -73,15 +77,16 @@ def render_projection_svg(
         return _render_foldback(projection)
     if isinstance(projection, BasalFeasibilityProjection):
         return _render_basal(projection)
-    if isinstance(projection, RelaxationFrontierProjection):
-        return _render_relaxation(projection)
+    if isinstance(projection, RetainedOverheadFrontierProjection):
+        return _render_retained_overhead(projection)
     raise TypeError(f"Unsupported scientific projection: {type(projection).__name__}")
 
 
 def _render_foldback(projection: FoldbackFeasibilityProjection) -> bytes:
     title = _feasibility_title(
         "Foldback",
-        projection.status,
+        projection.disposition.completion,
+        projection.disposition.feasibility,
         projection.realization_count,
         projection.sequence_partition,
     )
@@ -131,7 +136,8 @@ def _render_basal(projection: BasalFeasibilityProjection) -> bytes:
     endpoint = _endpoint_label(projection.endpoint)
     title = _feasibility_title(
         "Basal",
-        projection.status,
+        projection.disposition.completion,
+        projection.disposition.feasibility,
         projection.realization_count,
         projection.sequence_partition,
     )
@@ -188,58 +194,65 @@ Rows group identical observed dimensions; no preference is inferred.</text>
     return _document(title=title, body=body, height=max(380, 350 + len(rows) * 38))
 
 
-def _render_relaxation(projection: RelaxationFrontierProjection) -> bytes:
-    first_hit = next((shell.radius for shell in projection.shells if shell.realization_count), None)
+def _render_retained_overhead(projection: RetainedOverheadFrontierProjection) -> bytes:
+    first_hit = next(
+        (
+            level.retained_overhead_nt
+            for level in projection.levels
+            if level.realization_count
+        ),
+        None,
+    )
     partition = projection.sequence_partition
     scope = _partition_scope(partition)
     if first_hit == 0:
-        title = f"Feasibility was present at the requested geometry{scope}."
+        title = f"Feasibility was present with zero retained overhead{scope}."
     elif first_hit == 1:
-        title = f"Feasibility first appeared one step from the requested geometry{scope}."
+        title = f"Feasibility first appeared at one retained nucleotide{scope}."
     elif first_hit is not None:
-        title = f"Feasibility first appeared {first_hit} steps from the requested geometry{scope}."
-    elif projection.status is SearchCompletionStatus.INFEASIBLE:
+        title = f"Feasibility first appeared at {first_hit} retained nucleotides{scope}."
+    elif projection.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE:
         if partition is None:
-            title = "No feasible realization was found across the complete relaxation frontier."
+            title = "No feasible realization was found across the complete overhead envelope."
         else:
             title = (
-                f"No feasible realization was found{scope} across its examined relaxation frontier."
+                f"No feasible realization was found{scope} across its overhead envelope."
             )
     else:
-        title = "The relaxation frontier ended before feasibility was established."
+        title = "The overhead search ended before feasibility was established."
     scale_width = 920
-    interval = scale_width / max(1, len(projection.shells) - 1)
-    shells = []
-    for index, shell in enumerate(projection.shells):
+    interval = scale_width / max(1, len(projection.levels) - 1)
+    levels = []
+    for index, level in enumerate(projection.levels):
         x = 140 + index * interval
-        ids = " ".join(shell.realization_ids)
-        failures = ";".join(f"{reason.code}:{reason.count}" for reason in shell.failure_reasons)
-        shells.append(
-            f'<g data-radius="{shell.radius}" data-shell-status="{shell.status}" '
-            f'data-candidate-count="{shell.candidate_count}" '
-            f'data-realization-count="{shell.realization_count}" '
-            f'data-rejected-count="{shell.rejected_count}" '
+        ids = " ".join(level.realization_ids)
+        failures = ";".join(f"{reason.code}:{reason.count}" for reason in level.failure_reasons)
+        levels.append(
+            f'<g data-retained-overhead-nt="{level.retained_overhead_nt}" '
+            f'data-level-status="{level.status}" '
+            f'data-candidate-count="{level.candidate_count}" '
+            f'data-realization-count="{level.realization_count}" '
+            f'data-rejected-count="{level.rejected_count}" '
             f'data-failure-reasons="{_escape(failures)}" '
             f'data-realization-ids="{_escape(ids)}">'
             f'<circle cx="{x:.1f}" cy="260" r="22" '
-            f'fill="{ACCENT if shell.realization_count else WASH}" '
+            f'fill="{ACCENT if level.realization_count else WASH}" '
             f'stroke="{ACCENT}" stroke-width="2"/>'
             f'<text x="{x:.1f}" y="266" text-anchor="middle" class="body">'
-            f"{shell.realization_count}</text>"
+            f"{level.realization_count}</text>"
             f'<text x="{x:.1f}" y="306" text-anchor="middle" class="small">'
-            f"radius {shell.radius} · {shell.status} shell</text>"
+            f"{level.retained_overhead_nt} nt · {level.status} level</text>"
             f'<text x="{x:.1f}" y="330" text-anchor="middle" class="small">'
-            f"{shell.candidate_count} candidates · {shell.rejected_count} rejected</text></g>"
+            f"{level.candidate_count} candidates · {level.rejected_count} rejected</text></g>"
         )
-    coordinates = ", ".join(projection.coordinate_names) or "no relaxed coordinates"
     body = (
         _status_header(projection, title)
         + f"""
-<text x="72" y="174" class="subtitle">Relaxed coordinates: {_escape(coordinates)}</text>
+<text x="72" y="174" class="subtitle">Absolute retained non-payload overhead</text>
 <line x1="140" y1="260" x2="1060" y2="260" class="rule"/>
-{"".join(shells)}
+{"".join(levels)}
 <text x="72" y="378" class="small">Candidate, accepted, rejected, and primary failure counts
-replay the source shell accounting; exact realization membership remains in SVG data.</text>
+replay the source level accounting; exact realization membership remains in SVG data.</text>
 """
     )
     return _document(title=title, body=body, height=438)
@@ -247,29 +260,32 @@ replay the source shell accounting; exact realization membership remains in SVG 
 
 def _feasibility_title(
     family: str,
-    status: SearchCompletionStatus,
+    completion: SearchCompletionStatus,
+    feasibility: SearchFeasibilityStatus,
     count: int,
     partition: SequenceDomainPartition | None,
 ) -> str:
     lower = family.lower()
     scope = _partition_scope(partition)
-    if status is SearchCompletionStatus.COMPLETE:
+    if completion is not SearchCompletionStatus.COMPLETE:
+        return (
+            f"{family} discovery was {completion.value} with {count} observed exact local route "
+            f"realizations{scope}."
+        )
+    if feasibility is SearchFeasibilityStatus.FEASIBLE:
         noun = "realization" if count == 1 else "realizations"
         return (
             f"{family} discovery identified {count} exact local route {noun} "
             f"under the declared molecular model{scope}."
         )
-    if status is SearchCompletionStatus.INFEASIBLE:
+    if feasibility is SearchFeasibilityStatus.INFEASIBLE:
         if partition is not None:
             return f"No local {lower} route satisfied the declared molecular constraints{scope}."
         return (
             f"No local {lower} route satisfied the declared molecular constraints after "
             "exhaustive search."
         )
-    return (
-        f"{family} discovery was truncated with {count} observed exact local route "
-        f"realizations{scope}."
-    )
+    raise ValueError("Complete local search projections must resolve feasibility.")
 
 
 def _status_header(
@@ -279,7 +295,10 @@ def _status_header(
     claims = projection.claim_boundary
     partition_attributes = _partition_attributes(projection.sequence_partition)
     return f"""
-<g data-status="{projection.status.value}" data-endpoint="{projection.endpoint.value}"
+<g data-completion="{projection.disposition.completion.value}"
+data-feasibility="{projection.disposition.feasibility.value}"
+data-termination-reason="{projection.disposition.termination_reason.value}"
+data-endpoint="{projection.endpoint.value}"
 data-projection-id="{projection.projection_id}"
 data-result-id="{projection.source_result_id}"
 data-hop-version="{_escape(projection.provenance.hop_version)}"
@@ -290,7 +309,8 @@ data-physical-construction="{claims.physical_construction.value}"
 data-quality-control="{claims.quality_control.value}"
 data-biological-activity="{claims.biological_activity.value}">
 <text x="72" y="60" class="title">{_escape(title)}</text>
-<text x="72" y="98" class="subtitle">Status: {_escape(projection.status.value)}</text>
+<text x="72" y="98" class="subtitle">Coverage: {_escape(projection.disposition.completion.value)} ·
+feasibility: {_escape(projection.disposition.feasibility.value)}</text>
 <text x="72" y="128" class="small">Local feasibility only; complete route composition and
 physical construction are not established.</text>
 </g>

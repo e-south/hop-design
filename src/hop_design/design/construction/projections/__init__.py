@@ -18,7 +18,7 @@ from .complete import (
 from .local import (
     project_basal_feasibility,
     project_foldback_feasibility,
-    project_relaxation_frontier,
+    project_retained_overhead_frontier,
     verify_local_projection,
 )
 from .navigation import (
@@ -36,7 +36,7 @@ __all__ = [
     "project_complete_construction_summary",
     "project_complete_construction_trajectory",
     "project_foldback_feasibility",
-    "project_relaxation_frontier",
+    "project_retained_overhead_frontier",
     "verify_complete_construction_navigation",
     "verify_complete_construction_projection",
     "verify_complete_construction_trajectory",

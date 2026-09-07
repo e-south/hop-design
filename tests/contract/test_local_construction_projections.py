@@ -24,7 +24,7 @@ from hop_design.design.construction.foldback import discover_foldback_neighborho
 from hop_design.design.construction.projections import (
     project_basal_feasibility,
     project_foldback_feasibility,
-    project_relaxation_frontier,
+    project_retained_overhead_frontier,
     verify_local_projection,
 )
 from hop_design.export.construction import (
@@ -34,12 +34,13 @@ from hop_design.export.construction import (
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
-    EnumerationPolicy,
     FailureReasonCount,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
+    FoldbackGeometryDomain,
+    NickStrandSelection,
     SearchCompletionStatus,
+    SearchDisposition,
+    SearchFeasibilityStatus,
+    SearchTerminationReason,
     SequenceDomainPartition,
     grouped_realization_projection,
 )
@@ -62,13 +63,13 @@ def _csv_rows(content: bytes) -> list[dict[str, str]]:
 def _partitioned(request, *, part_count: int = 2, part_index: int = 0):
     return request.model_copy(
         update={
-            "enumeration": EnumerationPolicy(
-                max_search_nodes=request.enumeration.max_search_nodes,
-                max_realizations=request.enumeration.max_realizations,
-                sequence_partition=SequenceDomainPartition(
-                    part_count=part_count,
-                    part_index=part_index,
-                ),
+            "search": request.search.model_copy(
+                update={
+                    "sequence_partition": SequenceDomainPartition(
+                        part_count=part_count,
+                        part_index=part_index,
+                    )
+                }
             )
         }
     )
@@ -101,9 +102,9 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
             )
         )
         feasibility = project_basal_feasibility(result)
-    relaxation = project_relaxation_frontier(result)
+    overhead = project_retained_overhead_frontier(result)
 
-    for projection in (feasibility, relaxation):
+    for projection in (feasibility, overhead):
         assert projection.sequence_partition == partition
         rendered = json.loads(render_projection_json(projection))
         assert rendered["sequence_partition"] == {"part_count": 3, "part_index": 1}
@@ -114,14 +115,14 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
     expected_schemas = {
         "foldback": (
             "hop.foldback-feasibility-landscape/v4",
-            "hop.foldback-relaxation-frontier/v3",
+            "hop.foldback-overhead-frontier/v2",
         ),
         "basal": (
             "hop.basal-feasibility-landscape/v3",
-            "hop.basal-relaxation-frontier/v2",
+            "hop.basal-overhead-frontier/v2",
         ),
     }
-    assert (feasibility.schema_id, relaxation.schema_id) == expected_schemas[family]
+    assert (feasibility.schema_id, overhead.schema_id) == expected_schemas[family]
     mismatched = feasibility.model_dump(mode="python", by_alias=True)
     mismatched["schema"] = {
         "foldback": "hop.foldback-feasibility-landscape/v3",
@@ -139,18 +140,18 @@ def test_infeasible_partition_svg_cannot_claim_exhaustive_whole_domain_search() 
             part_index=2,
         )
     )
-    assert result.neighborhood.status is SearchCompletionStatus.INFEASIBLE
+    assert result.neighborhood.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
 
     for projection in (
         project_foldback_feasibility(result),
-        project_relaxation_frontier(result),
+        project_retained_overhead_frontier(result),
     ):
         svg = render_projection_svg(projection).decode("utf-8")
         assert "sequence-domain part 3 of 4" in svg
         assert 'data-sequence-part-count="4"' in svg
         assert 'data-sequence-part-index="2"' in svg
         assert "exhaustive search" not in svg
-        assert "complete relaxation frontier" not in svg
+        assert "complete overhead envelope" not in svg
 
 
 def test_foldback_projection_preserves_exact_membership_and_truthful_status() -> None:
@@ -160,7 +161,8 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
 
     projection = project_foldback_feasibility(result)
 
-    assert projection.status is SearchCompletionStatus.COMPLETE
+    assert projection.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert projection.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
     assert projection.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
     assert projection.source_result_id == result.result_id
     assert projection.projection_reference.result_id == result.result_id
@@ -202,7 +204,8 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
     assert [row["local_realization_id"] for row in csv_rows] == [
         row.local_realization_id for row in projection.realizations
     ]
-    assert all(row["status"] == "complete" for row in csv_rows)
+    assert all(row["completion"] == "complete" for row in csv_rows)
+    assert all(row["feasibility"] == "feasible" for row in csv_rows)
     assert [row["nick_strand"] for row in csv_rows] == [
         item.foldback_nick.strand.value for item in result.realizations
     ]
@@ -221,7 +224,8 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
     ) in svg
     assert "complete route composition and" in svg
     assert "physical construction are not established" in svg
-    assert 'data-status="complete"' in svg
+    assert 'data-completion="complete"' in svg
+    assert 'data-feasibility="feasible"' in svg
     assert "Exact realizations satisfying declared constraints" in svg
     assert "Exact compatible realizations" not in svg
     assert "data-sequence-part" not in svg
@@ -242,7 +246,7 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
 
     projection = project_basal_feasibility(result)
 
-    assert projection.status is SearchCompletionStatus.COMPLETE
+    assert projection.disposition.completion is SearchCompletionStatus.COMPLETE
     assert projection.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
     assert projection.schema_id == "hop.basal-feasibility-landscape/v2"
     assert projection.source_result_id == result.result_id
@@ -272,27 +276,27 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
     assert "sequence_part_count" not in csv_row
     assert "sequence_part_index" not in csv_row
 
-    frontier = project_relaxation_frontier(result)
+    frontier = project_retained_overhead_frontier(result)
     assert frontier.source_result_id == result.result_id
-    assert frontier.schema_id == "hop.basal-relaxation-frontier/v1"
+    assert frontier.schema_id == "hop.basal-overhead-frontier/v1"
     assert tuple(
         (
-            shell.status,
-            shell.candidate_count,
-            shell.realization_count,
-            shell.rejected_count,
-            shell.failure_reasons,
+            level.status,
+            level.candidate_count,
+            level.realization_count,
+            level.rejected_count,
+            level.failure_reasons,
         )
-        for shell in frontier.shells
+        for level in frontier.levels
     ) == tuple(
         (
-            "complete" if shell.complete else "partial",
-            shell.candidate_count,
-            len(shell.realization_ids),
-            shell.rejected_count,
-            shell.failure_reasons,
+            "complete" if level.complete else "partial",
+            level.candidate_count,
+            len(level.realization_ids),
+            level.rejected_count,
+            level.failure_reasons,
         )
-        for shell in result.discovery.shells
+        for level in result.discovery.overhead_levels
     )
 
     content = projection.model_dump(by_alias=True)
@@ -315,72 +319,66 @@ def test_basal_projection_keeps_endpoint_and_material_dimensions() -> None:
     assert "performance" not in svg.lower()
 
 
-def test_relaxation_frontier_preserves_empty_shells_and_exact_membership() -> None:
-    relaxation = RelaxationPolicy(
-        mode=RelaxationMode.FIRST_FEASIBLE_SHELL,
-        max_radius=1,
-        coordinates=(
-            RelaxationCoordinate(
-                name="annealing_arm_length_bp",
-                minimum=3,
-                maximum=4,
-            ),
-        ),
+def test_overhead_frontier_preserves_empty_levels_and_exact_membership() -> None:
+    domain = FoldbackGeometryDomain(
+        nick_strand=NickStrandSelection.ANY,
+        junction_offsets_nt=(0,),
+        loop_lengths_nt=(3,),
+        annealing_arm_lengths_bp=(3, 4),
     )
     result = discover_foldback_neighborhood(
         foldback_request(
             foldback_nickase(motif="GACATTT"),
-            relaxation=relaxation,
+            domain=domain,
+            max_retained_overhead_nt=11,
         )
     )
 
-    projection = project_relaxation_frontier(result)
+    projection = project_retained_overhead_frontier(result)
 
-    assert projection.status is SearchCompletionStatus.COMPLETE
+    assert projection.disposition.completion is SearchCompletionStatus.COMPLETE
     assert projection.source_result_id == result.result_id
     assert projection.provenance == result.neighborhood.provenance
     assert projection.claim_boundary == result.neighborhood.claim_boundary
-    assert projection.coordinate_names == ("annealing_arm_length_bp",)
-    assert [(shell.radius, shell.realization_count) for shell in projection.shells] == [
-        (0, 0),
-        (1, 2),
-    ]
-    assert tuple(shell.status for shell in projection.shells) == ("complete", "complete")
-    assert tuple(shell.candidate_count for shell in projection.shells) == tuple(
-        shell.candidate_count for shell in result.neighborhood.shells
+    assert tuple(level.retained_overhead_nt for level in projection.levels) == tuple(range(12))
+    assert all(level.realization_count == 0 for level in projection.levels[:11])
+    assert projection.levels[11].realization_count == 2
+    assert all(level.status == "complete" for level in projection.levels)
+    assert tuple(level.candidate_count for level in projection.levels) == tuple(
+        level.candidate_count for level in result.neighborhood.overhead_levels
     )
-    assert tuple(shell.rejected_count for shell in projection.shells) == tuple(
-        shell.rejected_count for shell in result.neighborhood.shells
+    assert tuple(level.rejected_count for level in projection.levels) == tuple(
+        level.rejected_count for level in result.neighborhood.overhead_levels
     )
-    assert tuple(shell.failure_reasons for shell in projection.shells) == tuple(
-        shell.failure_reasons for shell in result.neighborhood.shells
+    assert tuple(level.failure_reasons for level in projection.levels) == tuple(
+        level.failure_reasons for level in result.neighborhood.overhead_levels
     )
-    assert projection.shells[0].realization_ids == ()
-    assert projection.shells[1].realization_ids == tuple(
+    assert projection.levels[0].realization_ids == ()
+    assert projection.levels[11].realization_ids == tuple(
         item.local_realization.local_realization_id for item in result.realizations
     )
 
     rows = _csv_rows(render_projection_csv(projection))
-    assert rows[0]["radius"] == "0"
-    assert rows[0]["shell_status"] == "complete"
-    assert int(rows[0]["candidate_count"]) == projection.shells[0].candidate_count
-    assert int(rows[0]["rejected_count"]) == projection.shells[0].rejected_count
+    assert rows[0]["retained_overhead_nt"] == "0"
+    assert rows[0]["level_status"] == "complete"
+    assert int(rows[0]["candidate_count"]) == projection.levels[0].candidate_count
+    assert int(rows[0]["rejected_count"]) == projection.levels[0].rejected_count
     assert json.loads(rows[0]["failure_reasons_json"]) == [
-        item.model_dump(mode="json") for item in projection.shells[0].failure_reasons
+        item.model_dump(mode="json") for item in projection.levels[0].failure_reasons
     ]
     assert rows[0]["local_realization_id"] == ""
-    assert rows[1]["radius"] == "1"
-    assert rows[1]["local_realization_id"] == projection.shells[1].realization_ids[0]
+    assert rows[-2]["retained_overhead_nt"] == "11"
+    assert rows[-2]["local_realization_id"] == projection.levels[11].realization_ids[0]
 
     svg = render_projection_svg(projection).decode("utf-8")
-    assert "Feasibility first appeared one step from the requested geometry." in svg
+    assert "Feasibility first appeared at 11 retained nucleotides." in svg
     assert 'data-realization-count="0"' in svg
     assert 'data-realization-count="2"' in svg
-    assert 'data-shell-status="complete"' in svg
+    assert 'data-level-status="complete"' in svg
     assert "candidates" in svg and "rejected" in svg
 
 
-def test_relaxation_frontier_preserves_partial_and_zero_result_shell_accounting() -> None:
+def test_overhead_frontier_preserves_partial_and_zero_result_level_accounting() -> None:
     truncated = discover_foldback_neighborhood(
         foldback_request(
             foldback_nickase(),
@@ -392,56 +390,66 @@ def test_relaxation_frontier_preserves_partial_and_zero_result_shell_accounting(
         foldback_request(foldback_nickase(motif="GACA", cut_offset=4))
     )
 
-    partial = project_relaxation_frontier(truncated)
-    zero_result = project_relaxation_frontier(infeasible)
+    partial = project_retained_overhead_frontier(truncated)
+    zero_result = project_retained_overhead_frontier(infeasible)
 
-    assert partial.shells[-1].status == "partial"
-    assert partial.shells[-1].candidate_count == truncated.neighborhood.shells[-1].candidate_count
-    assert partial.shells[-1].rejected_count == truncated.neighborhood.shells[-1].rejected_count
-    assert partial.shells[-1].failure_reasons == truncated.neighborhood.shells[-1].failure_reasons
-    assert zero_result.status is SearchCompletionStatus.INFEASIBLE
-    assert all(shell.realization_count == 0 for shell in zero_result.shells)
-    assert sum(shell.rejected_count for shell in zero_result.shells) > 0
-    assert all(shell.status == "complete" for shell in zero_result.shells)
+    assert partial.levels[-1].status == "partial"
+    assert (
+        partial.levels[-1].candidate_count
+        == truncated.neighborhood.overhead_levels[-1].candidate_count
+    )
+    assert (
+        partial.levels[-1].rejected_count
+        == truncated.neighborhood.overhead_levels[-1].rejected_count
+    )
+    assert (
+        partial.levels[-1].failure_reasons
+        == truncated.neighborhood.overhead_levels[-1].failure_reasons
+    )
+    assert zero_result.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
+    assert all(level.realization_count == 0 for level in zero_result.levels)
+    assert sum(level.rejected_count for level in zero_result.levels) > 0
+    assert all(level.status == "complete" for level in zero_result.levels)
 
     zero_rows = _csv_rows(render_projection_csv(zero_result))
     assert zero_rows[0]["local_realization_id"] == ""
-    assert int(zero_rows[0]["candidate_count"]) > 0
-    assert int(zero_rows[0]["rejected_count"]) > 0
+    evaluated_row = next(row for row in zero_rows if int(row["candidate_count"]) > 0)
+    assert int(evaluated_row["rejected_count"]) > 0
     partial_svg = render_projection_svg(partial).decode("utf-8")
-    assert 'data-shell-status="partial"' in partial_svg
-    assert "partial shell" in partial_svg
+    assert 'data-level-status="partial"' in partial_svg
+    assert "partial level" in partial_svg
 
     rendered = json.loads(render_projection_json(partial))
-    assert rendered["shells"][-1]["status"] == "partial"
-    assert rendered["shells"][-1]["candidate_count"] == partial.shells[-1].candidate_count
-    assert rendered["shells"][-1]["failure_reasons"] == [
-        item.model_dump(mode="json") for item in partial.shells[-1].failure_reasons
+    assert rendered["levels"][-1]["status"] == "partial"
+    assert rendered["levels"][-1]["candidate_count"] == partial.levels[-1].candidate_count
+    assert rendered["levels"][-1]["failure_reasons"] == [
+        item.model_dump(mode="json") for item in partial.levels[-1].failure_reasons
     ]
 
-    source_shell = partial.shells[-1]
-    altered_shell = source_shell.model_copy(
+    source_level = partial.levels[-1]
+    altered_level = source_level.model_copy(
         update={
-            "candidate_count": source_shell.candidate_count + 1,
-            "rejected_count": source_shell.rejected_count + 1,
+            "candidate_count": source_level.candidate_count + 1,
+            "rejected_count": source_level.rejected_count + 1,
             "failure_reasons": (
-                *source_shell.failure_reasons,
+                *source_level.failure_reasons,
                 FailureReasonCount(code="projection-only-rejection", count=1),
             ),
         }
     )
     content = partial.model_dump(by_alias=True)
-    content["shells"] = (*partial.shells[:-1], altered_shell)
+    content["levels"] = (*partial.levels[:-1], altered_level)
     resealed = type(partial).model_validate(content)
     with pytest.raises(ValueError, match="does not replay its detailed source result"):
         verify_local_projection(resealed, truncated)
 
     invalid_completion = partial.model_dump(by_alias=True)
-    invalid_completion.update(
-        status=SearchCompletionStatus.COMPLETE,
-        truncation_reasons=(),
+    invalid_completion["disposition"] = SearchDisposition(
+        completion=SearchCompletionStatus.COMPLETE,
+        feasibility=SearchFeasibilityStatus.FEASIBLE,
+        termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
     )
-    with pytest.raises(ValidationError, match="Only a truncated frontier"):
+    with pytest.raises(ValidationError, match="partial level"):
         type(partial).model_validate(invalid_completion)
 
 
@@ -460,10 +468,13 @@ def test_infeasible_and_truncated_projections_do_not_overstate_completion() -> N
     infeasible_projection = project_foldback_feasibility(infeasible)
     truncated_projection = project_foldback_feasibility(truncated)
 
-    assert infeasible_projection.status is SearchCompletionStatus.INFEASIBLE
+    assert infeasible_projection.disposition.feasibility is SearchFeasibilityStatus.INFEASIBLE
     assert infeasible_projection.realization_count == 0
-    assert truncated_projection.status is SearchCompletionStatus.TRUNCATED
-    assert truncated_projection.truncation_reasons == ("max_search_nodes",)
+    assert truncated_projection.disposition.completion is SearchCompletionStatus.TRUNCATED
+    assert (
+        truncated_projection.disposition.termination_reason
+        is SearchTerminationReason.EVALUATION_CAP
+    )
 
     infeasible_svg = render_projection_svg(infeasible_projection).decode("utf-8")
     truncated_svg = render_projection_svg(truncated_projection).decode("utf-8")
@@ -473,7 +484,7 @@ def test_infeasible_and_truncated_projections_do_not_overstate_completion() -> N
     ) in infeasible_svg
     assert "compatible local" not in infeasible_svg
     assert "Foldback discovery was truncated" in truncated_svg
-    assert 'data-status="truncated"' in truncated_svg
+    assert 'data-completion="truncated"' in truncated_svg
     assert "identified after exhaustive search" not in truncated_svg
 
 

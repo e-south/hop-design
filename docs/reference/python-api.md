@@ -82,10 +82,10 @@ All operations and receipts in this section use `hop_design.construction`.
   the supplied verified receipt.
 - `project_foldback_feasibility(receipt) -> ConstructionProjection`
 - `project_basal_feasibility(receipt) -> ConstructionProjection`
-- `project_relaxation_frontier(receipt, family=...) -> ConstructionProjection`
+- `project_retained_overhead_frontier(receipt, family=...) -> ConstructionProjection`
 - `project_construction_navigation(receipt) -> ConstructionProjection` projects
   the unchanged complete summary plus only the additive accepted-route facts:
-  typed geometry, relaxation, cleavage-program enzyme IDs, retained
+  typed geometry, retained overhead, cleavage-program enzyme IDs, retained
   non-payload sequence, and endpoint topology. It supports browse, filter, and
   explicit-sort workflows without creating a second accounting relation.
 - `project_complete_construction_summary(receipt) -> ConstructionProjection`

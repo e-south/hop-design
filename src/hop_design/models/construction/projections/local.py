@@ -20,7 +20,7 @@ from hop_design.models.construction.accounting import (
     FailureReasonCount,
     NeighborhoodClaimBoundary,
     NeighborhoodProvenance,
-    SearchCompletionStatus,
+    SearchDisposition,
 )
 from hop_design.models.construction.basal.pairing import BasalPairRecord
 from hop_design.models.construction.foldback.binding import FoldbackCleavageProgramKind
@@ -32,8 +32,8 @@ from hop_design.models.junction import Strand
 
 FOLDBACK_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/3"
 FOLDBACK_PART_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/4"
-FOLDBACK_RELAXATION_RENDERER_VERSION = "foldback-projections/2"
-FOLDBACK_PART_RELAXATION_RENDERER_VERSION = "foldback-projections/3"
+FOLDBACK_OVERHEAD_RENDERER_VERSION = "foldback-overhead-projections/1"
+FOLDBACK_PART_OVERHEAD_RENDERER_VERSION = "foldback-overhead-projections/2"
 BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/2"
 BASAL_PART_PROJECTION_RENDERER_VERSION = "basal-projections/3"
 
@@ -46,7 +46,6 @@ class FoldbackFeasibilityRow(HopModel):
     program_kind: FoldbackCleavageProgramKind
     nick_strand: Strand
     source_orientation: SourceOrientation
-    relaxation_radius: int = Field(ge=0)
     junction_offset_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
@@ -59,7 +58,7 @@ class BasalFeasibilityRow(HopModel):
 
     local_realization_id: str = Field(pattern=r"^hop:local-realization/[0-9a-f]{64}@1$")
     basal_realization_id: str = Field(pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$")
-    relaxation_radius: int = Field(ge=0)
+    retained_overhead_nt: int = Field(ge=0)
     nick_strand: Strand
     nick_offset_nt: int = Field(ge=0)
     pairing_profile: str | None
@@ -91,14 +90,13 @@ class FoldbackFeasibilityProjection(HopModel):
     claim_boundary: NeighborhoodClaimBoundary
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     endpoint: ConstructionEndpoint
-    status: SearchCompletionStatus
+    disposition: SearchDisposition
     sequence_partition: SequenceDomainPartition | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
     realization_count: int = Field(ge=0)
     rejected_count: int = Field(ge=0)
-    truncation_reasons: tuple[str, ...]
     realizations: tuple[FoldbackFeasibilityRow, ...]
 
     @model_validator(mode="after")
@@ -109,12 +107,11 @@ class FoldbackFeasibilityProjection(HopModel):
             unpartitioned_schema="hop.foldback-feasibility-landscape/v3",
             partitioned_schema="hop.foldback-feasibility-landscape/v4",
         )
-        _validate_feasibility_status(
-            status=self.status,
+        _validate_feasibility_disposition(
+            disposition=self.disposition,
             realization_count=self.realization_count,
             row_count=len(self.realizations),
             ids=tuple(row.local_realization_id for row in self.realizations),
-            truncation_reasons=self.truncation_reasons,
         )
         _validate_projection_reference(
             schema_id=self.schema_id,
@@ -142,14 +139,13 @@ class BasalFeasibilityProjection(HopModel):
     claim_boundary: NeighborhoodClaimBoundary
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     endpoint: ConstructionEndpoint
-    status: SearchCompletionStatus
+    disposition: SearchDisposition
     sequence_partition: SequenceDomainPartition | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
     realization_count: int = Field(ge=0)
     rejected_count: int = Field(ge=0)
-    truncation_reasons: tuple[str, ...]
     realizations: tuple[BasalFeasibilityRow, ...]
 
     @model_validator(mode="after")
@@ -160,12 +156,11 @@ class BasalFeasibilityProjection(HopModel):
             unpartitioned_schema="hop.basal-feasibility-landscape/v2",
             partitioned_schema="hop.basal-feasibility-landscape/v3",
         )
-        _validate_feasibility_status(
-            status=self.status,
+        _validate_feasibility_disposition(
+            disposition=self.disposition,
             realization_count=self.realization_count,
             row_count=len(self.realizations),
             ids=tuple(row.local_realization_id for row in self.realizations),
-            truncation_reasons=self.truncation_reasons,
         )
         if self.endpoint is not ConstructionEndpoint.HAIRPIN_PCR_DUPLEX or any(
             row.pairing_profile is None or not row.literal_pairs for row in self.realizations
@@ -182,10 +177,10 @@ class BasalFeasibilityProjection(HopModel):
         return self
 
 
-class RelaxationShellProjection(HopModel):
-    """One examined relaxation shell with exact realization membership."""
+class RetainedOverheadLevelProjection(HopModel):
+    """One examined retained-overhead level with exact realization membership."""
 
-    radius: int = Field(ge=0)
+    retained_overhead_nt: int = Field(ge=0)
     status: Literal["complete", "partial"]
     candidate_count: int = Field(ge=0)
     realization_count: int = Field(ge=0)
@@ -194,31 +189,29 @@ class RelaxationShellProjection(HopModel):
     failure_reasons: tuple[FailureReasonCount, ...]
 
     @model_validator(mode="after")
-    def validate_membership(self) -> RelaxationShellProjection:
+    def validate_membership(self) -> RetainedOverheadLevelProjection:
         if self.realization_count != len(self.realization_ids):
-            raise ValueError("Relaxation-shell count must equal exact membership.")
+            raise ValueError("Overhead-level count must equal exact membership.")
         if len(self.realization_ids) != len(set(self.realization_ids)):
-            raise ValueError("Relaxation-shell membership must not repeat a realization.")
+            raise ValueError("Overhead-level membership must not repeat a realization.")
         if self.candidate_count != self.realization_count + self.rejected_count:
-            raise ValueError(
-                "Relaxation-shell candidates must equal accepted plus rejected candidates."
-            )
+            raise ValueError("Overhead-level candidates must equal accepted plus rejected.")
         codes = tuple(item.code for item in self.failure_reasons)
         if len(codes) != len(set(codes)):
-            raise ValueError("Relaxation-shell failure reasons must be unique.")
+            raise ValueError("Overhead-level failure reasons must be unique.")
         if sum(item.count for item in self.failure_reasons) != self.rejected_count:
-            raise ValueError("Relaxation-shell failure reasons must partition rejected candidates.")
+            raise ValueError("Overhead-level failures must partition rejected candidates.")
         return self
 
 
-class RelaxationFrontierProjection(HopModel):
-    """Exact-first relaxation frontier without inferred shell failure categories."""
+class RetainedOverheadFrontierProjection(HopModel):
+    """Absolute retained-overhead coverage with exact realization membership."""
 
     schema_id: Literal[
-        "hop.foldback-relaxation-frontier/v2",
-        "hop.foldback-relaxation-frontier/v3",
-        "hop.basal-relaxation-frontier/v1",
-        "hop.basal-relaxation-frontier/v2",
+        "hop.foldback-overhead-frontier/v1",
+        "hop.foldback-overhead-frontier/v2",
+        "hop.basal-overhead-frontier/v1",
+        "hop.basal-overhead-frontier/v2",
     ] = Field(alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
@@ -234,49 +227,42 @@ class RelaxationFrontierProjection(HopModel):
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     family: Literal["foldback", "basal"]
     endpoint: ConstructionEndpoint
-    status: SearchCompletionStatus
+    disposition: SearchDisposition
     sequence_partition: SequenceDomainPartition | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
-    coordinate_names: tuple[str, ...]
-    truncation_reasons: tuple[str, ...]
-    shells: tuple[RelaxationShellProjection, ...] = Field(min_length=1)
+    levels: tuple[RetainedOverheadLevelProjection, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def validate_projection(self) -> RelaxationFrontierProjection:
+    def validate_projection(self) -> RetainedOverheadFrontierProjection:
         if self.family == "foldback":
             _validate_partition_schema(
                 schema_id=self.schema_id,
                 sequence_partition=self.sequence_partition,
-                unpartitioned_schema="hop.foldback-relaxation-frontier/v2",
-                partitioned_schema="hop.foldback-relaxation-frontier/v3",
+                unpartitioned_schema="hop.foldback-overhead-frontier/v1",
+                partitioned_schema="hop.foldback-overhead-frontier/v2",
             )
         else:
             _validate_partition_schema(
                 schema_id=self.schema_id,
                 sequence_partition=self.sequence_partition,
-                unpartitioned_schema="hop.basal-relaxation-frontier/v1",
-                partitioned_schema="hop.basal-relaxation-frontier/v2",
+                unpartitioned_schema="hop.basal-overhead-frontier/v1",
+                partitioned_schema="hop.basal-overhead-frontier/v2",
             )
-        radii = tuple(shell.radius for shell in self.shells)
-        if radii != tuple(range(len(radii))):
-            raise ValueError("Relaxation-frontier shells must be contiguous and exact-first.")
-        partial_shells = tuple(
-            index for index, shell in enumerate(self.shells) if shell.status == "partial"
+        overheads = tuple(level.retained_overhead_nt for level in self.levels)
+        if overheads != tuple(range(len(overheads))):
+            raise ValueError("Overhead-frontier levels must be contiguous from zero.")
+        partial_levels = tuple(
+            index for index, level in enumerate(self.levels) if level.status == "partial"
         )
-        if partial_shells and partial_shells != (len(self.shells) - 1,):
-            raise ValueError("Only the final relaxation shell may be partial.")
-        if self.status is not SearchCompletionStatus.TRUNCATED and partial_shells:
-            raise ValueError("Only a truncated frontier may contain a partial shell.")
-        member_ids = tuple(item for shell in self.shells for item in shell.realization_ids)
+        if partial_levels and partial_levels != (len(self.levels) - 1,):
+            raise ValueError("Only the final overhead level may be partial.")
+        if self.disposition.completion == "complete" and partial_levels:
+            raise ValueError("Complete overhead coverage cannot contain a partial level.")
+        member_ids = tuple(item for level in self.levels for item in level.realization_ids)
         if len(member_ids) != len(set(member_ids)):
-            raise ValueError("Relaxation-frontier shells must partition exact membership.")
-        if self.status is SearchCompletionStatus.TRUNCATED:
-            if not self.truncation_reasons:
-                raise ValueError("Truncated relaxation projections require a reason.")
-        elif self.truncation_reasons:
-            raise ValueError("Only truncated relaxation projections may report truncation.")
+            raise ValueError("Overhead-frontier levels must partition exact membership.")
         _validate_projection_reference(
             schema_id=self.schema_id,
             reference=self.projection_reference,
@@ -289,7 +275,9 @@ class RelaxationFrontierProjection(HopModel):
 
 
 LocalScientificProjection = Annotated[
-    FoldbackFeasibilityProjection | BasalFeasibilityProjection | RelaxationFrontierProjection,
+    FoldbackFeasibilityProjection
+    | BasalFeasibilityProjection
+    | RetainedOverheadFrontierProjection,
     Field(discriminator="schema_id"),
 ]
 
@@ -306,27 +294,21 @@ def _validate_partition_schema(
         raise ValueError("Projection schema must match its sequence-domain scope.")
 
 
-def _validate_feasibility_status(
+def _validate_feasibility_disposition(
     *,
-    status: SearchCompletionStatus,
+    disposition: SearchDisposition,
     realization_count: int,
     row_count: int,
     ids: tuple[str, ...],
-    truncation_reasons: tuple[str, ...],
 ) -> None:
     if realization_count != row_count:
         raise ValueError("Feasibility count must equal exact realization rows.")
     if len(ids) != len(set(ids)):
         raise ValueError("Feasibility rows must not repeat a local realization.")
-    if status is SearchCompletionStatus.INFEASIBLE and realization_count:
+    if disposition.feasibility == "infeasible" and realization_count:
         raise ValueError("Infeasible projections cannot contain realizations.")
-    if status is SearchCompletionStatus.COMPLETE and not realization_count:
-        raise ValueError("Complete projections require at least one realization.")
-    if status is SearchCompletionStatus.TRUNCATED:
-        if not truncation_reasons:
-            raise ValueError("Truncated projections require a reason.")
-    elif truncation_reasons:
-        raise ValueError("Only truncated projections may report truncation.")
+    if disposition.feasibility == "feasible" and not realization_count:
+        raise ValueError("Feasible projections require at least one realization.")
 
 
 def _validate_projection_reference(

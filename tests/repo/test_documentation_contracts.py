@@ -182,8 +182,8 @@ def test_discovery_docs_define_truthful_exact_first_local_results() -> None:
     for schema_id in (
         "hop.foldback-feasibility-landscape/v4",
         "hop.basal-feasibility-landscape/v3",
-        "hop.foldback-relaxation-frontier/v3",
-        "hop.basal-relaxation-frontier/v2",
+        "hop.foldback-overhead-frontier/v2",
+        "hop.basal-overhead-frontier/v2",
     ):
         assert schema_id in view_contracts
     assert "verified against its exact source result" in normalized_views

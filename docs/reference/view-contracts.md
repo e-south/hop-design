@@ -79,11 +79,11 @@ of local scientific projections:
   realization from one unpartitioned search;
   `hop.basal-feasibility-landscape/v3` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
-- `hop.foldback-relaxation-frontier/v2` and
-  `hop.basal-relaxation-frontier/v1` record unpartitioned exact-first shell
-  membership; `hop.foldback-relaxation-frontier/v3` and
-  `hop.basal-relaxation-frontier/v2` carry one declared part, complete or
-  partial shell accounting, and observed rejection categories.
+- `hop.foldback-overhead-frontier/v1` and
+  `hop.basal-overhead-frontier/v1` record unpartitioned absolute
+  retained-overhead levels; `hop.foldback-overhead-frontier/v2` and
+  `hop.basal-overhead-frontier/v2` carry one declared part, complete or
+  partial level accounting, and observed rejection categories.
 
 Each projection carries its source-result identity, renderer version,
 provenance, and claim boundary. A projection is verified against its exact

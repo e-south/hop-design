@@ -19,15 +19,17 @@ from hop_design.design.construction.foldback import discover_foldback_neighborho
 from hop_design.design.construction.projections import (
     project_basal_feasibility,
     project_foldback_feasibility,
-    project_relaxation_frontier,
+    project_retained_overhead_frontier,
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
+    FoldbackGeometryDomain,
+    NickStrandSelection,
     ProjectionReference,
-    RelaxationCoordinate,
-    RelaxationMode,
-    RelaxationPolicy,
     SearchCompletionStatus,
+    SearchDisposition,
+    SearchFeasibilityStatus,
+    SearchTerminationReason,
 )
 from hop_design.models.construction.basal import (
     BasalEndpointProjection,
@@ -38,7 +40,7 @@ from hop_design.models.construction.basal.states import assert_material_partitio
 from hop_design.models.construction.projections import (
     BasalFeasibilityProjection,
     FoldbackFeasibilityProjection,
-    RelaxationFrontierProjection,
+    RetainedOverheadFrontierProjection,
 )
 from hop_design.models.sequence import reverse_complement_iupac
 from tests.contract.test_basal_construction_discovery import _request as basal_request
@@ -99,36 +101,45 @@ def test_local_projection_reference_rejects_the_dead_complete_result_spelling() 
         )
     )
     content = infeasible.model_dump(by_alias=True)
-    content["status"] = SearchCompletionStatus.COMPLETE
-    with pytest.raises(ValidationError, match="Complete projections require"):
+    content["disposition"] = SearchDisposition(
+        completion=SearchCompletionStatus.COMPLETE,
+        feasibility=SearchFeasibilityStatus.FEASIBLE,
+        termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
+    )
+    with pytest.raises(ValidationError, match="Feasible projections require"):
         FoldbackFeasibilityProjection.model_validate(content)
 
 
-def test_relaxation_projection_rejects_cross_shell_membership_and_false_completion() -> None:
-    relaxation = RelaxationPolicy(
-        mode=RelaxationMode.FIRST_FEASIBLE_SHELL,
-        max_radius=1,
-        coordinates=(RelaxationCoordinate(name="annealing_arm_length_bp", minimum=3, maximum=4),),
+def test_overhead_projection_rejects_cross_level_membership_and_false_completion() -> None:
+    domain = FoldbackGeometryDomain(
+        nick_strand=NickStrandSelection.ANY,
+        junction_offsets_nt=(0,),
+        loop_lengths_nt=(3,),
+        annealing_arm_lengths_bp=(3, 4),
     )
-    source = project_relaxation_frontier(
+    source = project_retained_overhead_frontier(
         discover_foldback_neighborhood(
-            foldback_request(foldback_nickase(motif="GACATTT"), relaxation=relaxation)
+            foldback_request(
+                foldback_nickase(motif="GACATTT"),
+                domain=domain,
+                max_retained_overhead_nt=11,
+            )
         )
     )
-    realized_id = source.shells[1].realization_ids[0]
-    duplicated_shell = source.shells[0].model_copy(
+    realized_id = source.levels[11].realization_ids[0]
+    duplicated_level = source.levels[0].model_copy(
         update={
-            "candidate_count": source.shells[0].candidate_count + 1,
+            "candidate_count": source.levels[0].candidate_count + 1,
             "realization_count": 1,
             "realization_ids": (realized_id,),
         }
     )
     content = source.model_dump(by_alias=True)
-    content["shells"] = (duplicated_shell, source.shells[1])
+    content["levels"] = (duplicated_level, *source.levels[1:])
     with pytest.raises(ValidationError, match="partition exact membership"):
-        RelaxationFrontierProjection.model_validate(content)
+        RetainedOverheadFrontierProjection.model_validate(content)
 
-    truncated = project_relaxation_frontier(
+    truncated = project_retained_overhead_frontier(
         discover_foldback_neighborhood(
             foldback_request(
                 foldback_nickase(),
@@ -138,9 +149,13 @@ def test_relaxation_projection_rejects_cross_shell_membership_and_false_completi
         )
     )
     content = truncated.model_dump(by_alias=True)
-    content["truncation_reasons"] = ()
-    with pytest.raises(ValidationError, match="require a reason"):
-        RelaxationFrontierProjection.model_validate(content)
+    content["disposition"] = SearchDisposition(
+        completion=SearchCompletionStatus.COMPLETE,
+        feasibility=SearchFeasibilityStatus.FEASIBLE,
+        termination_reason=SearchTerminationReason.EXHAUSTED_DOMAIN,
+    )
+    with pytest.raises(ValidationError, match="partial level"):
+        RetainedOverheadFrontierProjection.model_validate(content)
 
 
 def test_basal_endpoint_projection_requires_exact_complement_and_endpoint_minimality() -> None:

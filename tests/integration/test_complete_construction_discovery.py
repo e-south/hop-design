@@ -32,16 +32,16 @@ from hop_design.design.construction.verification import (
     verify_foldback_neighborhood_result,
 )
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     BasalPairAllowance,
     BasalPairingConstraint,
-    BasalTarget,
     ConstructionConstraints,
     ConstructionEndpoint,
-    EnumerationPolicy,
     FinalPayloadReference,
     FoldbackTarget,
     LocalNeighborhoodFamily,
     LocalNeighborhoodRequest,
+    NeighborhoodSearchPlan,
     RelaxationCoordinate,
     RelaxationMode,
     RelaxationPolicy,
@@ -156,9 +156,9 @@ def _basal_result(
             family=LocalNeighborhoodFamily.BASAL,
             route_family=RouteFamily.LINEAR_SOURCE_V1,
             endpoint=endpoint,
-            target=BasalTarget(
+            geometry_domain=BasalGeometryDomain(
                 nick_strand=nick_strand,
-                nick_offset_nt=nick_offset_nt,
+                nick_offsets_nt=(nick_offset_nt,),
                 pairing_constraints=(
                     tuple(
                         BasalPairingConstraint(
@@ -170,12 +170,14 @@ def _basal_result(
                         )
                     )
                 ),
-                ligation_proximal_match_required=True,
             ),
             hard_constraints=ConstructionConstraints(),
             enzyme_provisioning=provisioning,
-            relaxation=RelaxationPolicy(mode=RelaxationMode.EXACT_ONLY, max_radius=0),
-            enumeration=EnumerationPolicy(max_search_nodes=100, max_realizations=100),
+            search=NeighborhoodSearchPlan(
+                max_retained_overhead_nt=2 * len(pairing_allowances or (None,) * 4),
+                max_search_nodes=100,
+                max_realizations=100,
+            ),
         )
     )
 

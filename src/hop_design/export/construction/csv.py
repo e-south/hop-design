@@ -21,7 +21,7 @@ from hop_design.models.construction.projections import (
     ConstructionNavigationProjection,
     FoldbackFeasibilityProjection,
     LocalScientificProjection,
-    RelaxationFrontierProjection,
+    RetainedOverheadFrontierProjection,
 )
 
 from .navigation_csv import render_navigation_projection_csv
@@ -44,8 +44,8 @@ def render_projection_csv(
         _write_foldback(buffer, projection)
     elif isinstance(projection, BasalFeasibilityProjection):
         _write_basal(buffer, projection)
-    elif isinstance(projection, RelaxationFrontierProjection):
-        _write_relaxation(buffer, projection)
+    elif isinstance(projection, RetainedOverheadFrontierProjection):
+        _write_retained_overhead(buffer, projection)
     else:  # pragma: no cover - strict union protects public callers
         raise TypeError(f"Unsupported scientific projection: {type(projection).__name__}")
     return buffer.getvalue().encode("utf-8")
@@ -180,7 +180,9 @@ def _write_foldback(buffer: io.StringIO, projection: FoldbackFeasibilityProjecti
         "hop_version",
         "route_implementation_version",
         "endpoint",
-        "status",
+        "completion",
+        "feasibility",
+        "termination_reason",
         *_partition_fields(projection),
         "digital_design",
         "method",
@@ -192,13 +194,11 @@ def _write_foldback(buffer: io.StringIO, projection: FoldbackFeasibilityProjecti
         "program_kind",
         "nick_strand",
         "source_orientation",
-        "relaxation_radius",
         "junction_offset_nt",
         "loop_length_nt",
         "annealing_arm_length_bp",
         "retained_overhead_nt",
         "transient_construction_nt",
-        "truncation_reasons",
     )
     writer = _writer(buffer, fields)
     base = _base(projection)
@@ -221,7 +221,9 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         "hop_version",
         "route_implementation_version",
         "endpoint",
-        "status",
+        "completion",
+        "feasibility",
+        "termination_reason",
         *_partition_fields(projection),
         "digital_design",
         "method",
@@ -230,7 +232,7 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         "biological_activity",
         "local_realization_id",
         "basal_realization_id",
-        "relaxation_radius",
+        "retained_overhead_nt",
         "nick_strand",
         "nick_offset_nt",
         "pairing_profile",
@@ -239,7 +241,6 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         "retained_nt",
         "transient_nt",
         "auxiliary_nt",
-        "truncation_reasons",
     )
     writer = _writer(buffer, fields)
     base = _base(projection)
@@ -257,7 +258,10 @@ def _write_basal(buffer: io.StringIO, projection: BasalFeasibilityProjection) ->
         writer.writerow({**base, **values})
 
 
-def _write_relaxation(buffer: io.StringIO, projection: RelaxationFrontierProjection) -> None:
+def _write_retained_overhead(
+    buffer: io.StringIO,
+    projection: RetainedOverheadFrontierProjection,
+) -> None:
     fields = (
         "schema",
         "projection_id",
@@ -267,42 +271,41 @@ def _write_relaxation(buffer: io.StringIO, projection: RelaxationFrontierProject
         "route_implementation_version",
         "family",
         "endpoint",
-        "status",
+        "completion",
+        "feasibility",
+        "termination_reason",
         *_partition_fields(projection),
         "digital_design",
         "method",
         "physical_construction",
         "quality_control",
         "biological_activity",
-        "coordinate_names",
-        "radius",
-        "shell_status",
+        "retained_overhead_nt",
+        "level_status",
         "candidate_count",
         "realization_count",
         "rejected_count",
         "failure_reasons_json",
         "local_realization_id",
-        "truncation_reasons",
     )
     writer = _writer(buffer, fields)
     base = {
         **_base(projection),
         "family": projection.family,
-        "coordinate_names": ";".join(projection.coordinate_names),
     }
-    for shell in projection.shells:
-        member_ids: tuple[str | None, ...] = shell.realization_ids or (None,)
+    for level in projection.levels:
+        member_ids: tuple[str | None, ...] = level.realization_ids or (None,)
         for member_id in member_ids:
             writer.writerow(
                 {
                     **base,
-                    "radius": shell.radius,
-                    "shell_status": shell.status,
-                    "candidate_count": shell.candidate_count,
-                    "realization_count": shell.realization_count,
-                    "rejected_count": shell.rejected_count,
+                    "retained_overhead_nt": level.retained_overhead_nt,
+                    "level_status": level.status,
+                    "candidate_count": level.candidate_count,
+                    "realization_count": level.realization_count,
+                    "rejected_count": level.rejected_count,
                     "failure_reasons_json": json.dumps(
-                        [item.model_dump(mode="json") for item in shell.failure_reasons],
+                        [item.model_dump(mode="json") for item in level.failure_reasons],
                         sort_keys=True,
                         separators=(",", ":"),
                     ),
@@ -322,13 +325,14 @@ def _base(projection: LocalScientificProjection) -> dict[str, object]:
         "hop_version": projection.provenance.hop_version,
         "route_implementation_version": projection.provenance.route_implementation_version,
         "endpoint": projection.endpoint.value,
-        "status": projection.status.value,
+        "completion": projection.disposition.completion.value,
+        "feasibility": projection.disposition.feasibility.value,
+        "termination_reason": projection.disposition.termination_reason.value,
         "digital_design": claims.digital_design.value,
         "method": claims.method.value,
         "physical_construction": claims.physical_construction.value,
         "quality_control": claims.quality_control.value,
         "biological_activity": claims.biological_activity.value,
-        "truncation_reasons": ";".join(projection.truncation_reasons),
     }
     if partition is not None:
         base.update(

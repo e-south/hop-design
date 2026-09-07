@@ -81,7 +81,7 @@ The exact public allowlist is:
 - `project_construction_navigation`;
 - `project_construction_trajectory`;
 - `project_foldback_feasibility`; and
-- `project_relaxation_frontier`; and
+- `project_retained_overhead_frontier`; and
 - `select_construction_realization`.
 
 Receipts expose only scalar identity and accounting plus create-only writing.

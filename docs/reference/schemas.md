@@ -48,10 +48,10 @@ documentation when operating that artifact.
 | `hop.source-partition-request/v1` | public file source | Exact source duplex, payload mapping, caller-provisioned enzyme domain, required survivor spans, length selection, and finite subset-enumeration bounds |
 | `hop.source-partition-result/v1` | public discovery result | Replay-verified nick sites, denatured fragments, selected survivors, candidate dispositions, nick functions, and truthful completion status |
 | `hop.final-payload/v1` | internal construction model | Final-product payload coordinates, authored reference strand, boundaries, and derived pairing authority |
-| `hop.local-neighborhood-request/v3` | internal construction model | Exact foldback or PCR-basal target, route, local endpoint, enzyme policy, relaxation, and finite bounds |
-| `hop.neighborhood-discovery-result/v3` | internal construction model | Shared exact-first local accounting, shells, grouping, provenance, and completion status |
-| `hop.foldback-neighborhood-result/v3` | portable local construction result | Replayable exact duplex foldback realizations with nick-strand, source-orientation, and molecular lineage authorities |
-| `hop.basal-neighborhood-result/v3` | portable local construction result | Replayable basal realizations terminating at the hairpin PCR duplex authority |
+| `hop.local-neighborhood-request/v4` | internal construction model | Finite foldback or PCR-basal geometry domain, route, local endpoint, enzyme policy, retained-overhead ceiling, and search bounds |
+| `hop.neighborhood-discovery-result/v4` | internal construction model | Shared retained-overhead accounting, geometry grouping, provenance, completion, feasibility, and termination semantics |
+| `hop.foldback-neighborhood-result/v4` | portable local construction result | Replayable exact duplex foldback realizations with nick-strand, source-orientation, molecular lineage, and retained-overhead authorities |
+| `hop.basal-neighborhood-result/v4` | portable local construction result | Replayable basal realizations terminating at the hairpin PCR duplex authority with retained-overhead accounting |
 | `hop.construction-discovery-request/v5` | internal construction model | Verified design reference, local and optional selected source-partition references, source-ssDNA preparation policy, endpoint-auxiliary resolution policies, optional endpoint release, route constraints, and composition bounds |
 | `hop.construction-space-result/v5` | internal construction model | Complete examined composition prefix, source-preparation and selected-partition authorities, resolved exact endpoint auxiliaries, exact accepted routes, endpoint products, material accounting, grouping, and claim boundary |
 | `hop.construction-bundle/v5` | portable construction manifest | Content-addressed complete-construction result with source-preparation, selected-partition, and resolved-auxiliary authorities plus embedded verified design authority |
@@ -59,10 +59,10 @@ documentation when operating that artifact.
 | `hop.foldback-feasibility-landscape/v4` | public construction projection | Every exact foldback realization from one declared sequence-domain part, with its part scope and achieved construction dimensions |
 | `hop.basal-feasibility-landscape/v2` | public construction projection | Every exact basal realization from one unpartitioned search with its PCR-intermediate pairing, nick, and material facts |
 | `hop.basal-feasibility-landscape/v3` | public construction projection | Every exact basal realization from one declared sequence-domain part, with its part scope and PCR-intermediate facts |
-| `hop.foldback-relaxation-frontier/v2` | public construction projection | Exact examined foldback shells from one unpartitioned search with complete or partial accounting |
-| `hop.foldback-relaxation-frontier/v3` | public construction projection | Exact examined foldback shells from one declared sequence-domain part with complete or partial accounting |
-| `hop.basal-relaxation-frontier/v1` | public construction projection | Exact examined basal shells from one unpartitioned search with complete or partial accounting |
-| `hop.basal-relaxation-frontier/v2` | public construction projection | Exact examined basal shells from one declared sequence-domain part with complete or partial accounting |
+| `hop.foldback-overhead-frontier/v1` | public construction projection | Examined foldback retained-overhead levels from one unpartitioned search with complete or partial accounting |
+| `hop.foldback-overhead-frontier/v2` | public construction projection | Examined foldback retained-overhead levels from one declared sequence-domain part with complete or partial accounting |
+| `hop.basal-overhead-frontier/v1` | public construction projection | Examined basal retained-overhead levels from one unpartitioned search with complete or partial accounting |
+| `hop.basal-overhead-frontier/v2` | public construction projection | Examined basal retained-overhead levels from one declared sequence-domain part with complete or partial accounting |
 | `hop.complete-construction-summary/v2` | public construction projection | Lossless disposition, grouping, required external material, failure, and truncation relation over one verified complete result |
 | `hop.construction-navigation/v1` | public construction projection | Unchanged summary v2 plus additive accepted-route geometry, relaxation, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
 | `hop.complete-construction-trajectory/v3` | public construction projection | One explicitly selected accepted realization with its source preparation and exact molecular chronology |

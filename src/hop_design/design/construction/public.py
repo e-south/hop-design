@@ -30,7 +30,7 @@ from hop_design.design.construction.projections import (
     project_foldback_feasibility as _project_foldback_feasibility,
 )
 from hop_design.design.construction.projections import (
-    project_relaxation_frontier as _project_relaxation_frontier,
+    project_retained_overhead_frontier as _project_retained_overhead_frontier,
 )
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
@@ -201,16 +201,16 @@ def project_construction_trajectory(
     )
 
 
-def project_relaxation_frontier(
+def project_retained_overhead_frontier(
     receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
     *,
     family: Literal["foldback", "basal"],
 ) -> ConstructionProjection:
-    """Project one explicitly selected local relaxation family."""
+    """Project retained-overhead coverage for one local neighborhood family."""
     if family == "foldback":
-        return _packet(_project_relaxation_frontier(_foldback_source(receipt)))
+        return _packet(_project_retained_overhead_frontier(_foldback_source(receipt)))
     if family == "basal":
-        return _packet(_project_relaxation_frontier(_basal_source(receipt)))
+        return _packet(_project_retained_overhead_frontier(_basal_source(receipt)))
     raise ValueError("Construction projection family must be foldback or basal.")
 
 
@@ -235,6 +235,6 @@ __all__ = [
     "project_construction_navigation",
     "project_construction_trajectory",
     "project_foldback_feasibility",
-    "project_relaxation_frontier",
+    "project_retained_overhead_frontier",
     "select_construction_realization",
 ]

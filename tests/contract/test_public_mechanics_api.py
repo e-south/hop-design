@@ -165,7 +165,7 @@ CONSTRUCTION_OPERATIONS = {
     "project_construction_navigation",
     "project_construction_trajectory",
     "project_foldback_feasibility",
-    "project_relaxation_frontier",
+    "project_retained_overhead_frontier",
     "select_construction_realization",
 }
 

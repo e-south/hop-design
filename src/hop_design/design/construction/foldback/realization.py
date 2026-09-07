@@ -227,12 +227,16 @@ def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem
         if partitioned
         else "foldback-feasibility-projections/3"
     )
-    relaxation_schema = (
-        "hop.foldback-relaxation-frontier/v3"
+    overhead_schema = (
+        "hop.foldback-overhead-frontier/v2"
         if partitioned
-        else "hop.foldback-relaxation-frontier/v2"
+        else "hop.foldback-overhead-frontier/v1"
     )
-    relaxation_renderer = "foldback-projections/3" if partitioned else "foldback-projections/2"
+    overhead_renderer = (
+        "foldback-overhead-projections/2"
+        if partitioned
+        else "foldback-overhead-projections/1"
+    )
     return (
         ProjectionInventoryItem(
             projection_schema="hop.foldback-nucleotide-exemplar/v1",
@@ -250,8 +254,8 @@ def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem
             status=ProjectionInventoryStatus.NOT_GENERATED,
         ),
         ProjectionInventoryItem(
-            projection_schema=relaxation_schema,
-            renderer_version=relaxation_renderer,
+            projection_schema=overhead_schema,
+            renderer_version=overhead_renderer,
             status=ProjectionInventoryStatus.NOT_GENERATED,
         ),
     )

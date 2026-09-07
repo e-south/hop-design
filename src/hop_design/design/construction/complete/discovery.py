@@ -207,8 +207,12 @@ def _discover_constructions_raw(
         and failures
         and exact
         and not truncation
-        and foldback.neighborhood.status is not SearchCompletionStatus.TRUNCATED
-        and (basal is None or basal.discovery.status is not SearchCompletionStatus.TRUNCATED)
+        and foldback.neighborhood.disposition.completion
+        is not SearchCompletionStatus.TRUNCATED
+        and (
+            basal is None
+            or basal.discovery.disposition.completion is not SearchCompletionStatus.TRUNCATED
+        )
     ):
         failures[CompositionRejectionCode.ALL_COMBINATIONS_VALID_REQUIRED] += len(exact)
         dispositions = [

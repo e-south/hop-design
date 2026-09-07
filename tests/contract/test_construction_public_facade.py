@@ -43,7 +43,7 @@ PUBLIC_NAMES = [
     "project_construction_navigation",
     "project_construction_trajectory",
     "project_foldback_feasibility",
-    "project_relaxation_frontier",
+    "project_retained_overhead_frontier",
     "select_construction_realization",
 ]
 
@@ -288,21 +288,21 @@ def test_construction_local_projections_require_explicit_family_selection(
 
     foldback = construction.project_foldback_feasibility(compilation)
     basal = construction.project_basal_feasibility(compilation)
-    foldback_frontier = construction.project_relaxation_frontier(
+    foldback_frontier = construction.project_retained_overhead_frontier(
         compilation,
         family="foldback",
     )
-    basal_frontier = construction.project_relaxation_frontier(
+    basal_frontier = construction.project_retained_overhead_frontier(
         compilation,
         family="basal",
     )
 
     assert foldback.schema_id == "hop.foldback-feasibility-landscape/v3"
     assert basal.schema_id == "hop.basal-feasibility-landscape/v2"
-    assert foldback_frontier.schema_id == "hop.foldback-relaxation-frontier/v2"
-    assert basal_frontier.schema_id == "hop.basal-relaxation-frontier/v1"
+    assert foldback_frontier.schema_id == "hop.foldback-overhead-frontier/v1"
+    assert basal_frontier.schema_id == "hop.basal-overhead-frontier/v1"
     with pytest.raises(ValueError, match="family must be foldback or basal"):
-        construction.project_relaxation_frontier(
+        construction.project_retained_overhead_frontier(
             compilation,
             family="unknown",  # type: ignore[arg-type]
         )

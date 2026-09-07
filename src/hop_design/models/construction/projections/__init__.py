@@ -21,8 +21,8 @@ from .local import (
     FoldbackFeasibilityProjection,
     FoldbackFeasibilityRow,
     LocalScientificProjection,
-    RelaxationFrontierProjection,
-    RelaxationShellProjection,
+    RetainedOverheadFrontierProjection,
+    RetainedOverheadLevelProjection,
 )
 from .navigation import (
     ConstructionNavigationAcceptedRoute,
@@ -43,6 +43,6 @@ __all__ = [
     "FoldbackFeasibilityProjection",
     "FoldbackFeasibilityRow",
     "LocalScientificProjection",
-    "RelaxationFrontierProjection",
-    "RelaxationShellProjection",
+    "RetainedOverheadFrontierProjection",
+    "RetainedOverheadLevelProjection",
 ]
