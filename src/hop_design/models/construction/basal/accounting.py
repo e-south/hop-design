@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from hop_design.models.coordinates import Span
+from hop_design.models.sequence import reverse_complement_iupac
 
 from ..accounting import OverheadPosition, RetainedOverheadLedger
 from .pairing import BasalPairingState
@@ -26,30 +27,35 @@ def basal_retained_overhead_ledger(
 ) -> RetainedOverheadLedger:
     """Return one position-level ledger for the retained basal junction."""
 
+    nick_boundary = payload_span.start.offset - nick_offset_nt
+    if pairing_state.source_span.end.offset != nick_boundary:
+        raise ValueError("Basal adapter pairing must end at the declared nick boundary.")
+    retained_source = (
+        reverse_complement_iupac(
+            local_reference_sequence[nick_boundary : payload_span.start.offset]
+        )
+        if nick_offset_nt
+        else ""
+    )
+    source_positions = tuple(
+        OverheadPosition(
+            coordinate_space="basal-junction",
+            position=index,
+            base=base,
+            material_role="source",
+        )
+        for index, base in enumerate(retained_source)
+    )
     paired_positions = tuple(
         OverheadPosition(
             coordinate_space="basal-junction",
-            position=pair.position_from_ligation,
+            position=nick_offset_nt + pair.position_from_ligation,
             base=pair.adapter_base,
             material_role="adapter",
         )
         for pair in pairing_state.pairs
     )
-    pair_count = len(paired_positions)
-    additional_count = max(0, nick_offset_nt - pair_count)
-    source_start = payload_span.start.offset - pair_count
-    if source_start < additional_count:
-        raise ValueError("Retained overhead extends outside the basal local reference sequence.")
-    additional_positions = tuple(
-        OverheadPosition(
-            coordinate_space="basal-junction",
-            position=pair_count + index,
-            base=local_reference_sequence[source_start - index - 1],
-            material_role="source",
-        )
-        for index in range(additional_count)
-    )
-    positions = (*paired_positions, *additional_positions)
+    positions = (*source_positions, *paired_positions)
     return RetainedOverheadLedger(
         neighborhood="basal",
         reference_state_id="basal-retained-junction",

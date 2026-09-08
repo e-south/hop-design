@@ -54,7 +54,7 @@ def basal_retained_overhead_nt(
         raise ValueError("Basal retained-overhead accounting requires a PCR-bearing endpoint.")
     _ = program
     arm_nt = len(target.pairing_constraints)
-    return max(arm_nt, target.nick_offset_nt)
+    return arm_nt + target.nick_offset_nt
 
 
 def iter_basal_program_solutions(
@@ -76,7 +76,7 @@ def iter_basal_program_solutions(
         else max(1, program.nick_enzyme.recognition_length + target.nick_offset_nt)
     )
     source_start = 0
-    payload_start = arm_nt
+    payload_start = arm_nt + target.nick_offset_nt
     payload_end = payload_start + len(payload)
     adapter_start = payload_end
     adapter_end = adapter_start + (
@@ -100,6 +100,15 @@ def iter_basal_program_solutions(
 
     placements: list[tuple[int, str]] = [(nick_site_start, nick_pattern), (payload_start, payload)]
     release_action = program.future_release_action
+    release_sequence = _future_top_overhang_sequence(release_action)
+    retained_end_nt = min(target.nick_offset_nt, len(release_sequence or ""))
+    if release_sequence is not None and retained_end_nt:
+        placements.append(
+            (
+                payload_start - retained_end_nt,
+                reverse_complement_iupac(release_sequence[:retained_end_nt]),
+            )
+        )
     if (
         release_action is not None
         and release_action.requirement.recognition_material == "source_duplex"
@@ -118,6 +127,7 @@ def iter_basal_program_solutions(
     )
     shift = -minimum
     source_start += shift
+    nick_boundary += shift
     payload_start += shift
     payload_end += shift
     adapter_start += shift
@@ -137,7 +147,8 @@ def iter_basal_program_solutions(
     ):
         recognition_indexes.update(range(adapter_start))
 
-    variable_indexes = tuple(range(source_start, payload_start))
+    recognition_indexes.update(range(nick_boundary, payload_start))
+    variable_indexes = tuple(range(source_start, nick_boundary))
     source_domains = tuple(
         tuple(
             base
@@ -167,11 +178,8 @@ def iter_basal_program_solutions(
             adapter_assignments = product(*per_position)
         for adapter_assignment in adapter_assignments:
             adapter = "".join(adapter_assignment) if adapter_assignment else None
-            release_sequence = _future_top_overhang_sequence(program.future_release_action)
             if release_sequence is not None and (
-                adapter is None
-                or len(release_sequence) > len(adapter)
-                or adapter[: len(release_sequence)] != release_sequence
+                adapter is None or not adapter.startswith(release_sequence[retained_end_nt:])
             ):
                 continue
             if adapter is not None and any(
@@ -227,10 +235,12 @@ def iter_basal_program_solutions(
                         adapter_sequence_5prime=adapter,
                         source_span=Span(
                             start=Boundary(offset=source_start),
-                            end=Boundary(offset=payload_start),
+                            end=Boundary(offset=nick_boundary),
                         ),
                         adapter_span=Span(start=Boundary(offset=0), end=Boundary(offset=arm_nt)),
-                        end_projection_positions=tuple(range(len(release_sequence or ""))),
+                        end_projection_positions=tuple(
+                            range(max(0, len(release_sequence or "") - target.nick_offset_nt))
+                        ),
                     )
                 yield BasalSequenceSolution(
                     source_precursor_sequence=source_precursor,

@@ -139,6 +139,11 @@ class BasalRealizationRecord(HopModel):
         )
         if self.retained_overhead != expected_overhead:
             raise ValueError("Retained overhead must replay the non-payload basal boundary.")
+        if (
+            self.basal_nick.boundary.offset != payload_span.start.offset - achieved.nick_offset_nt
+            or self.basal_nick.strand is not achieved.nick_strand
+        ):
+            raise ValueError("Basal nick must agree with the achieved geometry.")
         self._validate_route_states()
         return self
 

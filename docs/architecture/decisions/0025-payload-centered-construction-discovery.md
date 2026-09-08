@@ -108,13 +108,13 @@ closure bond, and achieved retained geometry.
 
 ### 5. Basal pairing is explicit and Type IIS processing is endpoint-dependent
 
-The basal pairing state is ordered from the payload-proximal ligation
+The basal pairing state is ordered from the adapter's ligation
 position outward. Every position retains its literal source and adapter bases,
 pair classification, position from ligation, and any later end-projection role.
 `match`, configured `wobble`, and declared `mismatch` are construction
 bookkeeping, not thermodynamic or biological scores.
 
-The current adapter-ligation route requires a canonical payload-proximal match
+The current adapter-ligation route requires a canonical ligation-proximal match
 when the endpoint requires adapter capture. `ssdna_hairpin` does not invent
 adapter, PCR, or Type IIS requirements. Type IIS processing and exact cohesive
 ends belong only to `clone_ready_duplex` or another endpoint that explicitly

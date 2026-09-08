@@ -41,7 +41,7 @@ def derive_basal_pair_class(source_base: str, adapter_base: str) -> BasalPairCla
 
 
 class BasalPairRecord(HopModel):
-    """One literal pair in payload-proximal-to-outward physical order."""
+    """One literal pair in ligation-proximal-to-outward physical order."""
 
     position_from_ligation: int = Field(ge=0)
     source_index: int = Field(ge=0)

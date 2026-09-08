@@ -1044,12 +1044,12 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "f713c14f34ebbfa77049ef7745f330a8525506508c17813089dafa800f75a321@1"
+        "ac1f08ea5ab5e99c6caa14d2cd9b12c9d1e73d1b7951ed0bead2c2d9621b9440@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "38825a2acc9bb341cb8427371cb850196d5aa8b9fe72ab073127e3d1e5421c83"  # pragma: allowlist secret  # noqa: E501
+            "600690a896fc92cde62c4c9a1890f65906d24b327b1010e15baaecbe8fbed877"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (

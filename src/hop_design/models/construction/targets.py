@@ -111,13 +111,13 @@ class BasalTarget(HopModel):
             raise ValueError("A basal target requires an exact cohesive end.")
         positions = tuple(item.position_from_ligation for item in self.pairing_constraints)
         if positions != tuple(range(len(positions))):
-            raise ValueError("Basal pairing positions must be contiguous from the payload outward.")
+            raise ValueError("Basal pairing positions must be contiguous from the ligating end.")
         if (
             self.ligation_proximal_match_required
             and self.pairing_constraints
             and self.pairing_constraints[0].allowed_class is not BasalPairAllowance.MATCH
         ):
-            raise ValueError("The payload-proximal basal pair must be a match.")
+            raise ValueError("The ligation-proximal basal pair must be a match.")
         return self
 
 

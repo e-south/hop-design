@@ -215,11 +215,20 @@ finalize the complete adapter, or claim a PCR product. Complete composition
 must satisfy those obligations against the realized source scaffold and exact
 endpoint materials.
 
+Pairing position zero is the adapter base beside the nick, not the base beside
+the payload. A displaced nick leaves an intervening source-derived segment;
+those positions do not count toward adapter annealing. The local PCR accounting
+view includes that segment plus the constrained adapter positions. It does not
+measure the length of the final restriction-released insert or the complete
+adapter. Later cohesive-end obligations include any source-derived bases before
+the adapter begins; only overlapping adapter positions carry that future role.
+
 The current PCR composition path requires the basal nick to coincide with the
 payload boundary. Standalone basal search also evaluates nonzero offsets, but
 those local solutions cannot yet be completed by this PCR route. A
-`pcr-basal-open-incompatible` result is therefore a limitation of the modeled
-composition, not evidence that such a construction is physically impossible.
+rejected source mapping or `pcr-basal-open-incompatible` result is therefore a
+limitation of the modeled composition, not evidence that such a construction is
+physically impossible.
 
 For PCR-bearing composition, the adapter keeps the locally selected proximal
 pairs, including any permitted mismatches. Undeclared distal positions pair

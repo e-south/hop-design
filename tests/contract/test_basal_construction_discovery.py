@@ -275,7 +275,11 @@ def test_basal_work_units_preserve_offset_strand_payload_and_program_order() -> 
         ),
     )
     assert list(iter_basal_work_units(request, retained_overhead_nt=3)) == []
-    units = list(iter_basal_work_units(request, retained_overhead_nt=4))
+    units = [
+        unit
+        for overhead in (4, 5)
+        for unit in iter_basal_work_units(request, retained_overhead_nt=overhead)
+    ]
 
     assert [
         (
@@ -850,7 +854,7 @@ def test_basal_local_discovery_rejects_non_pcr_endpoints() -> None:
 
 
 def test_proximal_mismatch_is_rejected_but_distal_mismatch_is_copied_exactly() -> None:
-    with pytest.raises(ValidationError, match="payload-proximal basal pair must be a match"):
+    with pytest.raises(ValidationError, match="ligation-proximal basal pair must be a match"):
         BasalTarget(
             nick_strand=Strand.TOP,
             nick_offset_nt=0,
@@ -995,7 +999,8 @@ def test_outboard_nick_cut_extends_transient_context_without_raw_coordinate_fail
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         payload="ATCC",
         pairing_constraints=constraints,
-        max_retained_overhead_nt=5,
+        max_retained_overhead_nt=9,
+        search_scope=SearchScope.EXISTENCE,
         domain=BasalGeometryDomain(
             nick_strand=Strand.BOTTOM,
             nick_offsets_nt=(5,),
@@ -1009,7 +1014,7 @@ def test_outboard_nick_cut_extends_transient_context_without_raw_coordinate_fail
     assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     assert result.discovery.disposition.feasibility is SearchFeasibilityStatus.FEASIBLE
     assert all(record.basal_nick.boundary.offset >= 0 for record in result.realizations)
-    assert {record.retained_overhead.retained_overhead_nt for record in result.realizations} == {5}
+    assert {record.retained_overhead.retained_overhead_nt for record in result.realizations} == {9}
 
 
 def test_basal_result_identity_seals_details_and_binds_exact_request_payload() -> None:
@@ -1419,6 +1424,7 @@ def test_nick_offset_and_strand_change_exact_binding_geometry() -> None:
         _request(
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
             domain=offset_domain,
+            max_retained_overhead_nt=5,
         )
     ).realizations[0]
     bottom_request = _request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX, payload="TTCC")
@@ -1432,8 +1438,15 @@ def test_nick_offset_and_strand_change_exact_binding_geometry() -> None:
     )
     bottom = discover_basal_neighborhood(bottom_request).realizations[0]
 
-    assert base.basal_nick.boundary != offset.basal_nick.boundary
-    assert base.basal_nick.binding_id != offset.basal_nick.binding_id
+    assert (
+        base.payload_source_map.segments[0].source_span.start.offset
+        - base.basal_nick.boundary.offset
+    ) == 0
+    assert (
+        offset.payload_source_map.segments[0].source_span.start.offset
+        - offset.basal_nick.boundary.offset
+    ) == 1
+    assert base.basal_realization_id != offset.basal_realization_id
     assert base.basal_nick.strand is Strand.TOP
     assert bottom.basal_nick.strand is Strand.BOTTOM
     assert base.basal_nick.binding_id != bottom.basal_nick.binding_id
@@ -1574,7 +1587,7 @@ def _basal_record_content(record: BasalRealizationRecord) -> dict[str, object]:
         ("assessment-pre-state", "replay its exact pre-state"),
         ("undeclared-binding", "cannot retain undeclared bindings"),
         ("assessment-operations", "replay every declared operation"),
-        ("payload-map", "Retained overhead"),
+        ("payload-map", "declared nick boundary"),
         ("precursor-state", "act on the exact source precursor"),
         ("nicked-duplex", "replay the exact basal binding"),
         ("boundary-projection", "exact boundary projection"),
@@ -1820,6 +1833,7 @@ def test_overhead_coverage_and_geometry_groups_are_complete_and_lossless() -> No
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
             domain=domain,
             extra_nickase=True,
+            max_retained_overhead_nt=5,
         )
     )
     truncated = discover_basal_neighborhood(
@@ -1828,13 +1842,14 @@ def test_overhead_coverage_and_geometry_groups_are_complete_and_lossless() -> No
             domain=domain,
             extra_nickase=True,
             max_nodes=1,
+            max_retained_overhead_nt=5,
         )
     )
 
     assert complete.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
     assert tuple(
         level.retained_overhead_nt for level in complete.discovery.overhead_levels
-    ) == tuple(range(5))
+    ) == tuple(range(6))
     ids = {item.local_realization.local_realization_id for item in complete.realizations}
     grouped_ids = {
         realization_id
@@ -1882,7 +1897,7 @@ def test_overhead_coverage_and_geometry_groups_are_complete_and_lossless() -> No
         )
 
 
-def test_basal_bounds_at_an_overhead_boundary_do_not_emit_an_unentered_level() -> None:
+def test_basal_bounds_preserve_completed_level_before_incomplete_next_level() -> None:
     exact = discover_basal_neighborhood(_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
     active_level = exact.discovery.overhead_levels[-1]
     domain = BasalGeometryDomain(
@@ -1899,12 +1914,15 @@ def test_basal_bounds_at_an_overhead_boundary_do_not_emit_an_unentered_level() -
             _request(
                 ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
                 domain=domain,
+                max_retained_overhead_nt=5,
                 **limits,
             )
         )
 
         assert result.discovery.disposition.completion is SearchCompletionStatus.TRUNCATED
-        assert result.discovery.overhead_levels[-1].retained_overhead_nt == 4
+        assert result.discovery.overhead_levels[-2].retained_overhead_nt == 4
+        assert result.discovery.overhead_levels[-2].complete is True
+        assert result.discovery.overhead_levels[-1].retained_overhead_nt == 5
         assert result.discovery.overhead_levels[-1].complete is False
 
 
