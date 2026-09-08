@@ -33,7 +33,8 @@ from hop_design.models.reactions import ReactionProgram
 
 from .binding import SourcePartitionBinding
 from .errors import SourcePartitionBindingError, SourcePartitionBindingFailure
-from .facts import partition_cut_facts, route_cut_facts, validate_source_facts
+from .facts import route_cut_facts, validate_source_facts
+from .reaction import derive_partition_reaction_program
 from .selection import validate_partition_selection
 
 
@@ -145,9 +146,10 @@ def bind_source_partition(
         partition_result=partition_result,
     )
     program, denatured_state, selected_state = _route_partition_program(construction_program)
-    if route_cut_facts(program, route_enzyme_definitions) != partition_cut_facts(
-        partition_result,
-        realization,
+    expected_program = derive_partition_reaction_program(realization)
+    if route_cut_facts(program, route_enzyme_definitions) != route_cut_facts(
+        expected_program,
+        partition_result.request.enzyme_provisioning.catalog.enzymes,
     ):
         _fail(
             SourcePartitionBindingFailure.CUT_INCOMPATIBLE,
