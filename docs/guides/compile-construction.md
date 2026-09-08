@@ -223,7 +223,9 @@ nick, the exact proximal adapter pairs, any position-level source and adapter
 base domains, the minimum full annealing extent, mismatch warnings, retained
 overhead, and—for a clone-ready endpoint—the Type IIS action required later.
 The future release is an obligation, not a sticky end asserted in the current
-adapter state. Basal discovery does not invent the remaining annealing bases,
+adapter state. Its `cohesive_end_sequence` may pin exact DNA or declare an
+[IUPAC design domain](../discovery/overview.md#search-a-basal-cohesive-end-or-pin-it-to-a-destination).
+Basal discovery does not invent the remaining annealing bases,
 finalize the complete adapter, or claim a PCR product. Complete composition
 must satisfy those obligations against the realized source scaffold and exact
 endpoint materials.

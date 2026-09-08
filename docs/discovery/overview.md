@@ -68,6 +68,31 @@ requires every lower applicable level to be complete at the same scope.
 
 ## Symbolic domains
 
+### Search a basal cohesive end or pin it to a destination
+
+The future release's `cohesive_end_sequence` accepts either exact DNA or an
+IUPAC pattern. For example, `ATGC` pins one end; `ATNN` allows 16 exact ends;
+`NNNN` allows all 256 four-base ends. These are choices in a design search, not
+a prediction that a physical pool contains every end. See the
+[construction guide](../guides/compile-construction.md) for the full request.
+
+The source must satisfy both recognition motifs when `recognition_material`
+is `source_duplex`. The adapter can differ from the displaced strand at
+positions allowed by `pairing_constraints`. Those literal matches, wobbles,
+and mismatches remain visible in each solution. The nickase must recognize
+the source when it acts; later cleavage must recognize the copied product
+when it acts. A permitted adapter mismatch does not waive either requirement.
+
+Each returned target and enzyme action has one exact end. Complete construction
+selects an exact endpoint from the allowed domain and rejects a selected local
+end that disagrees. Enumeration uses offset then A/C/G/T end order, not an
+experimental ranking. The offset-by-end domain is limited to 100,000 exact
+targets before allocation; the request's evaluation limits still govern search
+completion. Minimum-overhead tables retain separate actions for different exact
+ends, even when the same enzyme realizes them.
+
+### Preserve payload domains
+
 An IUPAC symbol is a set of possible bases, not a wildcard character. HOP uses
 set intersection to distinguish guaranteed, possible, and absent motif
 presence. Exact precursor searches calculate their candidate-space cardinality

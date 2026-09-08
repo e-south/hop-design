@@ -126,7 +126,7 @@ class ConstructionSource(HopModel):
             required = release.left if future.product_end == "left" else release.right
             if (
                 future.orientation is not required.orientation
-                or future.cohesive_end_sequence != required.cohesive_end_sequence
+                or not future.permits_sequence(required.cohesive_end_sequence)
                 or future.overhang_end is not required.overhang_end
             ):
                 raise ValueError("Basal future release must match the complete clone endpoint.")

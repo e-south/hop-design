@@ -366,6 +366,47 @@ def test_clone_ready_requires_the_selected_basal_release_enzyme(tmp_path: Path) 
     )
 
 
+def test_clone_accepts_an_exact_end_selected_from_a_basal_end_domain(tmp_path: Path) -> None:
+    request, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    local_request = basal.discovery.request
+    domain = local_request.geometry_domain
+    future = domain.future_release.model_copy(update={"cohesive_end_sequence": "NNNN"})
+    expanded = discover_basal_neighborhood(
+        local_request.model_copy(
+            update={"geometry_domain": domain.model_copy(update={"future_release": future})}
+        )
+    )
+    request = request.model_copy(update={"basal_result_id": expanded.result_id})
+    result = _discover_raw(request, foldback=foldback, basal=expanded, design=design)
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == len(foldback.realizations)
+    assert all(
+        product.sequence == request.release.right.cohesive_end_sequence
+        for item in result.realizations
+        for product in item.final_product.cohesive_ends
+        if product.product_end == "right"
+    )
+
+
+def test_clone_checks_selected_exact_end_before_later_cut_search(tmp_path: Path) -> None:
+    request, foldback, basal, _, _, _ = _clone_request(tmp_path)
+    release = request.release
+    changed = release.right.model_copy(
+        update={
+            "cohesive_end_sequence": _substitute_first_base(release.right.cohesive_end_sequence)
+        }
+    )
+    request = request.model_copy(update={"release": release.model_copy(update={"right": changed})})
+    evaluation = evaluate_combination(
+        request,
+        foldback=foldback.realizations[0],
+        basal=basal.realizations[0],
+        foldback_policy=foldback.neighborhood.request.enzyme_provisioning,
+        basal_policy=basal.discovery.request.enzyme_provisioning,
+    )
+    assert evaluation.rejection_reason is CompositionRejectionCode.CLONE_LOCAL_RELEASE_INCOMPATIBLE
+
+
 def test_clone_ready_accepts_both_duplex_foldback_orientations(
     tmp_path: Path,
 ) -> None:

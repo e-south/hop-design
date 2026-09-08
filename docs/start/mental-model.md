@@ -20,6 +20,11 @@ journey:
 
 # Claims HOP keeps separate
 
+Start with the duplex sequence you want the hairpin to present. That payload
+stays fixed while HOP searches the surrounding sequence and enzyme arrangements.
+You can inspect where a junction is possible, what bases and cuts it requires,
+and whether selected junctions can be completed into the requested product.
+
 The most important HOP invariant is a chain of non-equivalences:
 
 ```text
@@ -54,9 +59,11 @@ the caller constrains the physical nick strand, HOP searches both exact nick
 strands by default and retains only routes permitted by the enzyme's declared
 recognition orientation and cut contract.
 
-Discovery is finite and exact-first. Its result reports every exact
-realization, neutral order, reversible geometry and final-product groups, and
-whether the declared space was completed, proved infeasible, or truncated.
+Discovery is finite and traverses increasing retained overhead. An existence
+search keeps a witness for each accessible work unit; an all-realizations search
+keeps every exact alternative within its reported coverage. Results distinguish
+exhausted, policy-stopped, and truncated searches from feasible, infeasible, or
+unknown outcomes.
 Grouping does not replace realization identity, and selection remains
 caller-owned.
 

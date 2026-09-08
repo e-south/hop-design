@@ -146,6 +146,20 @@ def test_clone_source_preserves_clone_ready_basal_search_semantics() -> None:
     assert source.basal.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
 
 
+@pytest.mark.parametrize(("end_domain", "allowed"), (("ATNN", True), ("ACNN", False)))
+def test_clone_source_selects_an_exact_end_from_the_basal_domain(
+    end_domain: str, allowed: bool
+) -> None:
+    document = _clone_source_document()
+    document["basal"]["geometry_domain"]["future_release"]["cohesive_end_sequence"] = end_domain
+    if allowed:
+        source = ConstructionSource.model_validate_json(json.dumps(document))
+        assert source.composition.release.right.cohesive_end_sequence == "ATAA"
+    else:
+        with pytest.raises(ValueError, match="Basal future release"):
+            ConstructionSource.model_validate_json(json.dumps(document))
+
+
 @pytest.mark.parametrize("suffix", [".json", ".yaml"])
 def test_construction_source_loads_strict_json_and_yaml(
     tmp_path: Path,

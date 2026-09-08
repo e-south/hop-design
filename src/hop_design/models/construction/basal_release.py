@@ -11,6 +11,9 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from itertools import product
+from math import prod
 from typing import Any, Literal, cast
 
 from pydantic import Field, field_validator, model_validator
@@ -37,7 +40,35 @@ class BasalFutureReleaseRequirement(HopModel):
     def normalize_cohesive_end(cls, value: object) -> str:
         if not isinstance(value, str):
             raise ValueError("A future cohesive end must be a DNA string.")
-        return normalize_dna_sequence(value, allow_degenerate=False)
+        return normalize_dna_sequence(value, allow_degenerate=True)
+
+    @property
+    def cardinality(self) -> int:
+        """Count allowed exact ends without allocating their sequences."""
+        return prod(len(iupac_bases(symbol)) for symbol in self.cohesive_end_sequence)
+
+    def exact_requirements(self) -> Iterator[BasalFutureReleaseRequirement]:
+        """Yield exact end obligations in 5-prime to 3-prime A/C/G/T order."""
+        domains = tuple(tuple(sorted(iupac_bases(symbol))) for symbol in self.cohesive_end_sequence)
+        for bases in product(*domains):
+            yield self.model_copy(update={"cohesive_end_sequence": "".join(bases)})
+
+    def permits(self, exact: BasalFutureReleaseRequirement) -> bool:
+        """Check one exact end against its sequence domain and fixed obligations."""
+        return (
+            self.product_end == exact.product_end
+            and self.orientation is exact.orientation
+            and self.overhang_end is exact.overhang_end
+            and self.recognition_material == exact.recognition_material
+            and self.permits_sequence(exact.cohesive_end_sequence)
+        )
+
+    def permits_sequence(self, exact: str) -> bool:
+        """Check exact nucleotide membership without changing end geometry."""
+        return len(self.cohesive_end_sequence) == len(exact) and all(
+            base in iupac_bases(symbol)
+            for base, symbol in zip(exact, self.cohesive_end_sequence, strict=True)
+        )
 
 
 class BasalFutureReleaseAction(HopModel):
@@ -105,6 +136,8 @@ class BasalFutureReleaseAction(HopModel):
 
     @model_validator(mode="after")
     def validate_action(self) -> BasalFutureReleaseAction:
+        if self.requirement.cardinality != 1:
+            raise ValueError("A future release action requires an exact cohesive end.")
         content = self.model_dump(mode="json", exclude={"action_id"})
         digest = sha256_digest(canonical_json_bytes(content)).removeprefix("sha256:")
         if self.action_id != f"hop:basal-future-release-action/{digest}@1":

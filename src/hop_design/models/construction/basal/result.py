@@ -95,6 +95,13 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
             raise ValueError("Basal results require a basal geometry domain.")
         requested = request.payload.payload.sequence
         for item in self.realizations:
+            future = item.future_release_action
+            if (future is None) != (domain.future_release is None) or (
+                future is not None
+                and domain.future_release is not None
+                and not domain.future_release.permits(future.requirement)
+            ):
+                raise ValueError("Basal result must preserve its requested cohesive-end domain.")
             obligation = item.projection.annealing_obligation
             if (
                 obligation.minimum_annealing_nt != domain.minimum_adapter_annealing_nt

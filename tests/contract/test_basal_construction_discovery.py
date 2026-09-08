@@ -15,6 +15,7 @@ import json
 import tracemalloc
 from dataclasses import replace
 from itertools import islice
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -366,6 +367,93 @@ def test_clone_ready_basal_discovery_keeps_future_release_out_of_current_state()
     assert "cohesive_end" not in type(record.projection).model_fields
 
 
+def test_variable_cohesive_ends_preserve_exact_solutions_and_source_sites(tmp_path: Path) -> None:
+    from hop_design.construction import discover_local_neighborhood
+
+    request = _request(
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+        search_scope=SearchScope.EXISTENCE,
+        pairing_constraints=_pairing_constraints(
+            (BasalPairAllowance.MATCH, *(BasalPairAllowance.ANY,) * 3)
+        ),
+    )
+    document = request.model_dump(mode="json", by_alias=True)
+    document["geometry_domain"]["future_release"]["cohesive_end_sequence"] = "ATWA"
+    path = tmp_path / "request.json"
+    path.write_text(json.dumps(document))
+    receipt = discover_local_neighborhood(path)
+    result = BasalNeighborhoodDiscoveryResult.model_validate_json(receipt.json_bytes)
+    assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert {
+        item.future_release_action.requirement.cohesive_end_sequence for item in result.realizations
+    } == {"ATAA", "ATTA"}
+    for item in result.realizations:
+        future = item.future_release_action
+        boundary = item.payload_source_map.segments[0].source_span.start.offset
+        assert item.source_precursor_sequence[boundary - 10 : boundary - 4] == "GGTCTC"
+        assert item.proximal_adapter_sequence == reverse_complement_iupac(
+            future.requirement.cohesive_end_sequence
+        )
+        assert {
+            operation.role
+            for program in item.reaction_programs
+            for stage in program.stages
+            for operation in stage.operations
+        } == {EnzymeRole.BASAL_NICK}
+    assert verify_basal_neighborhood_result(result).result == result
+
+
+def test_basal_result_rejects_a_resealed_end_outside_the_requested_domain() -> None:
+    result = discover_basal_neighborhood(_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
+    request = result.discovery.request
+    future = request.geometry_domain.future_release.model_copy(
+        update={"cohesive_end_sequence": "ACNN"}
+    )
+    changed_request = request.model_copy(
+        update={
+            "geometry_domain": request.geometry_domain.model_copy(update={"future_release": future})
+        }
+    )
+    execution = result.discovery.execution.model_copy(
+        update={"problem_id": problem_id(changed_request)}
+    )
+    discovery = result.discovery.model_copy(
+        update={
+            "request": changed_request,
+            "problem_id": problem_id(changed_request),
+            "execution": execution,
+            "execution_id": execution.execution_id,
+        }
+    )
+    with pytest.raises(ValueError, match="cohesive-end domain"):
+        BasalNeighborhoodDiscoveryResult.create(
+            discovery=discovery, realizations=result.realizations
+        )
+
+
+def test_variable_end_search_preserves_evaluation_cap() -> None:
+    request = _request(ConstructionEndpoint.CLONE_READY_DUPLEX, max_nodes=1)
+    domain = request.geometry_domain
+    future = domain.future_release.model_copy(update={"cohesive_end_sequence": "NNNN"})
+    result = discover_basal_neighborhood(
+        request.model_copy(
+            update={"geometry_domain": domain.model_copy(update={"future_release": future})}
+        )
+    )
+    assert result.discovery.disposition.completion is SearchCompletionStatus.TRUNCATED
+    assert sum(level.candidate_count for level in result.discovery.overhead_levels) == 1
+    assert verify_basal_neighborhood_result(result).result == result
+
+
+def test_future_release_action_cannot_encode_an_unresolved_end() -> None:
+    result = discover_basal_neighborhood(_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
+    action = result.realizations[0].future_release_action
+    content = action.model_dump(mode="python", exclude={"action_id"})
+    content["requirement"] = action.requirement.model_copy(update={"cohesive_end_sequence": "NNNN"})
+    with pytest.raises(ValueError, match="exact cohesive end"):
+        BasalFutureReleaseAction.create(**content)
+
+
 @pytest.mark.parametrize(
     ("product_end", "orientation", "cohesive_end"),
     (("left", SiteOrientation.FORWARD, "TTAT"), ("right", SiteOrientation.REVERSE, "ATAA")),
@@ -599,7 +687,7 @@ def test_future_release_action_rejects_forged_geometry_and_enzyme_replay() -> No
 
 def _exact_target(request: LocalNeighborhoodRequest) -> BasalTarget:
     assert isinstance(request.geometry_domain, BasalGeometryDomain)
-    return request.geometry_domain.exact_targets()[0]
+    return next(request.geometry_domain.exact_targets())
 
 
 def test_literal_pairing_is_variable_length_proximal_outward_and_projects_mwx() -> None:

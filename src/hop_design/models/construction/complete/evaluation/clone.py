@@ -47,7 +47,20 @@ def evaluate_clone_endpoint(
             role=EnzymeRole.END_GENERATION,
         )
     )
-    if local_release is None or release_enzyme_ids != (local_release.enzyme_id,):
+    local_requirement = None if local_release is None else local_release.requirement
+    required = (
+        release_request.left
+        if local_requirement is not None and local_requirement.product_end == "left"
+        else release_request.right
+    )
+    if (
+        local_release is None
+        or local_requirement is None
+        or release_enzyme_ids != (local_release.enzyme_id,)
+        or local_requirement.orientation is not required.orientation
+        or local_requirement.overhang_end is not required.overhang_end
+        or local_requirement.cohesive_end_sequence != required.cohesive_end_sequence
+    ):
         return CombinationEvaluation(
             rejection_reason=CompositionRejectionCode.CLONE_LOCAL_RELEASE_INCOMPATIBLE,
             prefix=context.prefix,

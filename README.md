@@ -5,9 +5,9 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
 
-Specify the duplex context you want to test. HOP returns the complete paired
-hairpin designs and a stable handoff for construction and measurement. It does
-not predict whether a laboratory experiment will succeed.
+Keep the duplex sequence under study unchanged. HOP derives its complement,
+searches the surrounding junctions, and checks constructions through exact
+molecular states. It does not predict laboratory success.
 
 The first journey is `question → substrate rule → exact paired designs → CSV,
 FASTA, generic projections, and verified handoff`. HOP previews bounded spaces
@@ -54,7 +54,7 @@ materialization are separate bounded competencies. Existence searches preserve
 witnesses; all-realizations searches preserve every exact alternative within
 their reported coverage. Canonical order is not a recommendation.
 
-Construction v5 resolves endpoint auxiliaries and consumes replay-verified
+Construction resolves endpoint auxiliaries and consumes replay-verified
 source partitions. `hop-design construction` groups, filters, inspects, and
 records result-bound selections without adding a rank or second authority.
 

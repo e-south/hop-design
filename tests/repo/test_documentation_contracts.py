@@ -57,7 +57,7 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "CONTRIBUTING.md" in readme
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
-    assert "Specify the duplex context you want to test" in readme
+    assert "Keep the duplex sequence under study unchanged" in readme
     assert "question → substrate rule → exact paired designs" in readme
     assert "does not choose a biological target or publication example" in readme
     assert "No physical construction, QC, or activity record is attached" in readme

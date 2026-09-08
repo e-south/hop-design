@@ -107,6 +107,8 @@ class BasalTarget(HopModel):
 
     @model_validator(mode="after")
     def validate_pairing_constraints(self) -> BasalTarget:
+        if self.future_release is not None and self.future_release.cardinality != 1:
+            raise ValueError("A basal target requires an exact cohesive end.")
         positions = tuple(item.position_from_ligation for item in self.pairing_constraints)
         if positions != tuple(range(len(positions))):
             raise ValueError("Basal pairing positions must be contiguous from the payload outward.")
