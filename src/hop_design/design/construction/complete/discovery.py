@@ -53,8 +53,8 @@ from .design_authority import assert_design_authority
 from .endpoint import materialize_endpoint
 from .partition_binding import (
     bind_partition_to_realization,
+    resolve_partition_plan,
     source_partition_enzyme_policies,
-    validate_partition_selection,
 )
 from .replay_admission import record_replay_admission
 from .results import build_result, composition_status, reject_accepted_dispositions
@@ -95,7 +95,7 @@ def _discover_constructions_raw(
     assert_design_authority(request, design)
     validate_local_authority_compatibility(request, foldback=foldback, basal=basal)
     validate_detailed_authority_ids(request, foldback=foldback, basal=basal)
-    source_partition = validate_partition_selection(request, source_partition)
+    partition_plan = resolve_partition_plan(request, source_partition)
     enzyme_policies = source_partition_enzyme_policies(foldback, basal)
     foldback_records, basal_records = select_local_domains(
         request,
@@ -127,6 +127,7 @@ def _discover_constructions_raw(
             foldback_policy=foldback.neighborhood.request.enzyme_provisioning,
             basal_policy=(None if basal is None else basal.discovery.request.enzyme_provisioning),
             source_context_sequence=source_context_sequence,
+            source_partition_plan=partition_plan,
         )
         if evaluation.truncation_reason is not None:
             dispositions.append(

@@ -126,11 +126,16 @@ The selected partition must describe the same prepared source duplex, use the
 same characterized enzyme definitions, and replay the route's concurrent nicks,
 denatured fragments, inclusive selection, and required survivors. A selected
 member remains exact even when its parent partition search was truncated.
-Binding verifies and seals agreement with the composed route; it does not add
-cleanup nicks to that route. Additional cuts outside the selected local
-operations currently fail the actionable-site check even when they are present
-in the partition result. Such a rejection does not establish that the supplied
-fragment-removal program is infeasible.
+For PCR-bearing endpoints, HOP includes every selected cleanup nick before
+checking actionable sites. The cleanup must contain the local junction nicks
+and leave exactly the strands required for foldback and adapter joining.
+The exported route includes the fragment sequences, end chemistry, and source
+coordinates; no caller-side reconstruction is needed. A different source or
+survivor set rejects that combination.
+
+This composition supports one concurrent nick-only stage. Direct hairpin
+endpoints can bind a matching partition but do not add cleanup operations;
+multi-stage cleavage requires a separately supported route model.
 
 ## Prepare the two authorities
 

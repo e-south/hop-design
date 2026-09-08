@@ -8,8 +8,12 @@ from hop_design.models.reaction_replay import assess_reaction_program
 from ..auxiliary.evaluation import evaluate_endpoint_auxiliaries
 from ..evaluation_inputs import derive_pcr_design_parent_span
 from ..pcr.products import derive_pcr_product_sequence
-from ..pcr.schedule import derive_pcr_reaction_program
+from ..pcr.source import derive_pcr_source
 from ..pcr.validation import evaluate_pcr_compatibility
+from ..source_partition.errors import (
+    COMPOSITION_REJECTION_BY_BINDING_FAILURE,
+    SourcePartitionBindingError,
+)
 from .context import PreparedContext, merged_provisioning_policy
 from .result import CombinationEvaluation, EndpointEvaluation
 
@@ -65,14 +69,20 @@ def evaluate_pcr_endpoint(
             recognition_placements_attempted=combination.recognition_placements_attempted,
             constraint_systems_attempted=combination.constraint_systems_attempted,
         )
-    program = derive_pcr_reaction_program(
-        foldback=combination.foldback,
-        basal=basal,
-        prefix=context.prefix,
-        source_return_arm=context.source_return_arm,
-        source=context.source,
-        source_complement=context.source_complement,
-    )
+    try:
+        program = derive_pcr_source(
+            foldback=combination.foldback,
+            basal=basal,
+            preparation=context.source_preparation,
+            partition=combination.source_partition_plan,
+        ).reaction
+    except SourcePartitionBindingError as exc:
+        return CombinationEvaluation(
+            rejection_reason=COMPOSITION_REJECTION_BY_BINDING_FAILURE[exc.code],
+            candidate_enzyme_programs=combination.candidate_enzyme_programs,
+            recognition_placements_attempted=combination.recognition_placements_attempted,
+            constraint_systems_attempted=combination.constraint_systems_attempted,
+        )
     assessment = assess_reaction_program(
         program=program,
         policy=merged_provisioning_policy(context),

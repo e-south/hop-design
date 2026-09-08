@@ -20,12 +20,10 @@ amends:
 
 ## Context
 
-Complete construction currently begins at an exact duplex. The named method can
-derive an expected source-PCR duplex from a source oligo and primers, and source
-partitioning can independently resolve cleanup nicks and selected fragments.
-Neither authority is connected to the complete construction result. A caller
-can therefore receive a valid downstream route without one portable account of
-the source ssDNA, source primers, source preparation, or selected partition.
+A complete construction needs one portable account of the source ssDNA,
+source primers, prepared duplex, cleanup cuts, retained fragments, auxiliary
+materials, and endpoint. These molecular dependencies must remain inspectable
+without requiring a caller to connect independent results by hand.
 
 ## Decision
 
@@ -126,12 +124,21 @@ not established by this fixed-length sequence search.
 
 ### Source partition
 
-Source partition remains a sibling local authority. A complete route may bind
-one explicit replay-verified source-partition realization. Composition verifies
-that its source duplex, molecular enzyme definitions, concurrent nick program,
-fragment rule, and required survivors equal the route states. Rejected routes
-retain sealed pre-partition candidates so the exact rejection class replays at
-the model boundary. Cleanup nicks do not become basal geometry.
+Source partition remains a sibling authority. A PCR-bearing route consumes one
+explicit replay-verified source-partition plan: its request and selected exact
+realization, without copying the full enumeration ledger into each route.
+Composition requires the same prepared source and payload coordinates, includes
+every local nick in the concurrent cleanup program, and preserves exactly the
+local survivors needed for joining. Fragment chemistry and source-coordinate
+lineage derive from the selected plan; actionable-site assessment remains active.
+
+Individual-route validation replays this plan without a search or caller
+dependency. Result validation also binds it to the selected search authority.
+An incompatibility found before materialization is replayed from the inputs;
+a rejected materialized route retains its sealed candidate. Direct endpoints
+can certify an already matching partition but do not add cleanup cuts. Cleanup
+nicks do not become basal geometry. Multi-stage partition composition remains
+outside this concurrent nick-only model.
 
 ### Operations and stages
 

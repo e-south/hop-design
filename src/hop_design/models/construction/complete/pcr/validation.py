@@ -35,8 +35,7 @@ from .authority import (
 )
 from .pairing import complete_adapter_pairing
 from .products import endpoint_fate_spans, material_function_spans
-from .route import pcr_cleaved_strands, select_pcr_fragments
-from .schedule import derive_pcr_reaction_program
+from .source import derive_pcr_source
 
 if TYPE_CHECKING:
     from ..realization import MaterializedConstructionRealization
@@ -141,7 +140,6 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR route requires one exact bottom-strand basal nick authority.")
     source, source_complement = item.materials[:2]
-    source_use, source_complement_use = item.material_uses[:2]
     prefix, source_return_arm, _ = replay_linear_source_embedding(
         foldback=item.foldback_authority,
         source_sequence=source.sequence_5prime,
@@ -151,27 +149,16 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         raise ValueError(
             "PCR source-return arm must be the reverse complement of the retained prefix."
         )
-    prefix_length = len(prefix)
-    nick_boundary = basal_nick_boundary(basal, prefix)
-    expected_reaction = derive_pcr_reaction_program(
+    source_result = derive_pcr_source(
         foldback=item.foldback_authority,
         basal=basal,
-        prefix=prefix,
-        source_return_arm=source_return_arm,
-        source=source,
-        source_complement=source_complement,
+        preparation=item.source_preparation,
+        partition=item.source_partition_plan,
     )
+    expected_reaction = source_result.reaction
     if not program.reaction_programs or program.reaction_programs[0] != expected_reaction:
         raise ValueError("PCR enzyme phase must replay the exact basal-open local authorities.")
-    expected_cleaved = pcr_cleaved_strands(
-        expected_reaction,
-        foldback=item.foldback_authority,
-        prefix_length=prefix_length,
-        source=source,
-        source_complement=source_complement,
-        source_use_id=source_use.use_id,
-        source_complement_use_id=source_complement_use.use_id,
-    )
+    expected_cleaved = source_result.cleaved
     if program.states[1].molecules != expected_cleaved:
         raise ValueError("PCR cleaved strands must replay exact source-fragment authorities.")
     if (
@@ -180,13 +167,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         or program.states[2].formed_bonds
     ):
         raise ValueError("PCR denaturation may only remove duplex associations.")
-    expected_selected = select_pcr_fragments(
-        expected_cleaved,
-        foldback=item.foldback_authority,
-        source_material_use_id=source_use.use_id,
-        source_complement_material_use_id=source_complement_use.use_id,
-        removed_return_sequence=reverse_complement_iupac(prefix[:nick_boundary]),
-    )
+    expected_selected = source_result.selected
     if program.states[3].molecules != expected_selected:
         raise ValueError("PCR selection must retain the exact source and foldback fragments.")
     pcr_indexes = tuple(

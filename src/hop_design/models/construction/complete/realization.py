@@ -52,6 +52,7 @@ from .program import ConstructionProgram
 from .request import DesignAuthorityReference
 from .source_authority import validate_local_authorities
 from .source_partition import SourcePartitionBinding
+from .source_partition.plan import SourcePartitionPlan
 from .source_preparation import SourceDuplexPreparationAuthority
 from .state import ConstructionStatePhase
 
@@ -72,6 +73,10 @@ class MaterializedConstructionRealization(HopModel):
         pattern=r"^hop:basal-realization/[0-9a-f]{64}@1$",
     )
     source_preparation: SourceDuplexPreparationAuthority
+    source_partition_plan: SourcePartitionPlan | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     source_partition_binding: SourcePartitionBinding | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
@@ -154,6 +159,8 @@ class MaterializedConstructionRealization(HopModel):
             )
         endpoint = self.final_product.reference.endpoint
         is_direct = endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
+        if is_direct and self.source_partition_plan is not None:
+            raise ValueError("A PCR source-partition plan requires a PCR-bearing endpoint.")
         validate_complete_material_uses(self.material_uses, is_direct=is_direct)
         if is_direct and self.route_material_dispositions:
             raise ValueError("Direct ssDNA endpoint cannot contain PCR-only material dispositions.")

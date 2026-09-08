@@ -24,7 +24,6 @@ from hop_design.models.construction.complete import (
     PcrPrimer,
     PrimerExtensionAuthority,
 )
-from hop_design.models.construction.complete.basal_embedding import basal_nick_boundary
 from hop_design.models.construction.complete.evaluation import CombinationEvaluation
 from hop_design.models.construction.complete.evaluation_inputs import (
     derive_linear_source_embedding,
@@ -35,10 +34,7 @@ from hop_design.models.construction.complete.pcr.products import (
     material_function_spans,
     pcr_products,
 )
-from hop_design.models.construction.complete.pcr.route import (
-    pcr_cleaved_strands,
-    select_pcr_fragments,
-)
+from hop_design.models.construction.complete.pcr.source import derive_pcr_source
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
@@ -51,11 +47,9 @@ from hop_design.models.molecular_state import (
     StrandEnd,
 )
 from hop_design.models.plan import SequenceFeature
-from hop_design.models.sequence import reverse_complement_iupac
 
 from .associations import annealed_pairings, duplex_pairings, product_pairings
 from .lineage import material_strand
-from .materialization import _global_ligation_bond
 from .pcr_program import pcr_program
 
 
@@ -89,15 +83,15 @@ def materialize_pcr_program(
     reaction = evaluation.reaction_program
     source_use, source_complement_use, adapter_use, forward_use, reverse_use = material_uses
     initial = evaluation.source_preparation.product_state
-    product_strands = pcr_cleaved_strands(
-        reaction,
+    source_result = derive_pcr_source(
         foldback=foldback,
-        prefix_length=len(prefix),
-        source=source,
-        source_complement=source_complement,
-        source_use_id=source_use.use_id,
-        source_complement_use_id=source_complement_use.use_id,
+        basal=basal,
+        preparation=evaluation.source_preparation,
+        partition=evaluation.source_partition_plan,
     )
+    if source_result.reaction != reaction:
+        raise ValueError("PCR source reaction must equal the evaluated program.")
+    product_strands = source_result.cleaved
     cleaved = ConstructionState.create(
         molecules=product_strands,
         phase=ConstructionStatePhase.CLEAVED_DUPLEX,
@@ -108,15 +102,7 @@ def materialize_pcr_program(
             source_length=len(source.sequence_5prime),
         ),
     )
-    selected_fragments = select_pcr_fragments(
-        cleaved.molecules,
-        foldback=foldback,
-        source_material_use_id=source_use.use_id,
-        source_complement_material_use_id=source_complement_use.use_id,
-        removed_return_sequence=reverse_complement_iupac(
-            prefix[: basal_nick_boundary(basal, prefix)]
-        ),
-    )
+    selected_fragments = source_result.selected
     denatured_molecules = cleaved.molecules
     denatured = ConstructionState.create(
         molecules=denatured_molecules,
@@ -162,7 +148,12 @@ def materialize_pcr_program(
         three_prime_end=selected_fragments[1].three_prime_end,
         lineage=closed_lineage,
     )
-    foldback_bond = _global_ligation_bond(foldback, selected.molecules)
+    foldback_bond = CovalentBond(
+        upstream_strand_id=selected_fragments[0].strand_id,
+        upstream_end=StrandEnd.THREE_PRIME,
+        downstream_strand_id=selected_fragments[1].strand_id,
+        downstream_end=StrandEnd.FIVE_PRIME,
+    )
     closed_state = ConstructionState.create(
         molecules=(closed,),
         phase=ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,

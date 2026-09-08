@@ -156,6 +156,7 @@ def pcr_realization(
     )
     materials = (source, source_complement, adapter, forward.oligo, reverse.oligo)
     return MaterializedConstructionRealization.create(
+        source_partition_plan=evaluation.source_partition_plan,
         realization=complete,
         foldback_authority=foldback,
         basal_authority=basal,

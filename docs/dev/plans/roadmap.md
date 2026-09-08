@@ -82,6 +82,8 @@ The [construction guide](../../guides/compile-construction.md) exposes:
   including terminal fragments and inclusive maximum-fragment certificates.
 - Composition of selected local authorities, source preparation, optional
   source-partition evidence, exact auxiliaries, and endpoint-specific chronology.
+  PCR-bearing routes incorporate the selected cleanup nick program before
+  actionable-site assessment and preserve the exact local joining strands.
   Required adapter annealing is completed against available invariant source
   bases and replayed position by position; insufficient source sequence or an
   incompatible fixed adapter rejects that exact composition.
@@ -110,15 +112,6 @@ construction models remain internal, and no compatibility alias exposes their
 former or current internal paths.
 
 ## Remaining product work
-
-### Cleanup nick programs in composed routes
-
-Partition binding checks an already composed reaction program. It does not
-install additional cleanup nicks from a selected partition. Supporting a source
-with those nicks requires composing their operations before actionable-site
-assessment, then replaying every resulting fragment and the declared survivor
-rule. The molecular checks must remain active; a partition reference is not
-permission to ignore extra sites.
 
 ### Bounded scaffold completion
 

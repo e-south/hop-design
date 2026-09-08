@@ -338,7 +338,7 @@ def test_complete_construction_execution_identifies_route_contract() -> None:
         ),
     )
 
-    assert execution.route_implementation_version == "complete-construction/7"
+    assert execution.route_implementation_version == "complete-construction/8"
     with pytest.raises(ValidationError, match="route_implementation_version"):
         ConstructionCompositionExecution.model_validate(
             {**execution.model_dump(), "route_implementation_version": "complete-construction/6"}

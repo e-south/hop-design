@@ -31,6 +31,7 @@ from ..evaluation_inputs import (
 from ..material import ExactConstructionMaterial
 from ..provisioning import merge_provisioning_policies
 from ..request import ConstructionDiscoveryRequest
+from ..source_partition.plan import SourcePartitionPlan
 from ..source_preparation import (
     SourceDuplexPreparationAuthority,
     SourcePreparationResolutionError,
@@ -53,6 +54,7 @@ class CombinationContext:
     recognition_placements_attempted: int
     constraint_systems_attempted: int
     source_context_sequence: str | None
+    source_partition_plan: SourcePartitionPlan | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +79,7 @@ def build_combination_context(
     foldback_policy: EnzymeProvisioningPolicy,
     basal_policy: EnzymeProvisioningPolicy | None,
     source_context_sequence: str | None,
+    source_partition_plan: SourcePartitionPlan | None,
 ) -> CombinationContext:
     """Bind one combination and its stable intrinsic-accounting counters."""
     return CombinationContext(
@@ -90,6 +93,7 @@ def build_combination_context(
         + (0 if basal is None else len(basal.enzyme_bindings)),
         constraint_systems_attempted=2 + (0 if basal is None else 1),
         source_context_sequence=source_context_sequence,
+        source_partition_plan=source_partition_plan,
     )
 
 
@@ -188,7 +192,12 @@ def provisioning_policies(
         return (combination.foldback_policy,)
     if combination.basal_policy is None:
         raise ValueError("Basal composition requires its exact provisioning policy.")
-    return (combination.foldback_policy, combination.basal_policy)
+    partition = combination.source_partition_plan
+    return (
+        combination.foldback_policy,
+        combination.basal_policy,
+        *((partition.request.enzyme_provisioning,) if partition is not None else ()),
+    )
 
 
 def merged_provisioning_policy(context: PreparedContext) -> EnzymeProvisioningPolicy:

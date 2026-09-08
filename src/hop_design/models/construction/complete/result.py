@@ -48,15 +48,17 @@ from .result_contract import (
     construction_space_result_id,
     expected_accounting,
     expected_material_accounting,
-    validate_combination_evaluations,
     validate_endpoint_evidence,
     validate_materialized_request,
 )
+from .result_contract.composition import validate_composition_replay
 from .source_authority import (
     expected_upstream_truncation_reasons,
     validate_result_authorities,
 )
-from .source_partition.result_validation import validate_source_partition_result_contract
+from .source_partition.result_validation import (
+    validate_partition_references,
+)
 
 
 class ConstructionSpaceResult(HopModel):
@@ -132,15 +134,12 @@ class ConstructionSpaceResult(HopModel):
                 *self.source_partition_rejection_candidates,
             ),
         )
-        validate_source_partition_result_contract(
+        validate_partition_references(
             request=self.request,
             provenance=self.provenance,
             authority=self.source_partition_authority,
             realizations=self.realizations,
             rejection_candidates=self.source_partition_rejection_candidates,
-            dispositions=self.combination_dispositions,
-            foldback_authority=self.foldback_authority,
-            basal_authority=self.basal_authority,
         )
         validate_local_authority_compatibility(
             self.request,
@@ -262,14 +261,7 @@ class ConstructionSpaceResult(HopModel):
             )
         if rejected != Counter({item.code: item.count for item in self.failure_reasons}):
             raise ValueError("Rejected dispositions must reconcile exact failure counts.")
-        validate_combination_evaluations(
-            request=self.request,
-            foldback_authority=self.foldback_authority,
-            basal_authority=self.basal_authority,
-            dispositions=self.combination_dispositions,
-            realizations=self.realizations,
-            source_partition_rejection_candidates=(self.source_partition_rejection_candidates),
-        )
+        validate_composition_replay(self)
         if self.request.whole_route_constraints.require_all_combinations_valid:
             if self.status is SearchCompletionStatus.COMPLETE and (
                 any(item is not CompositionDispositionStatus.ACCEPTED for item in statuses)

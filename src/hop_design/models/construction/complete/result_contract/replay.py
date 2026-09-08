@@ -28,6 +28,7 @@ from ..evaluation import CompositionRejectionCode, evaluate_combination
 from ..evaluation.result import SOURCE_PARTITION_REJECTION_CODES
 from ..material.inventory import required_external_materials
 from ..request import ConstructionDiscoveryRequest
+from ..source_partition.plan import SourcePartitionPlan
 from .materialized import validate_materialized_evaluation
 
 
@@ -39,7 +40,8 @@ def validate_combination_evaluations(
     dispositions: tuple[CompositionDisposition, ...],
     realizations: tuple[Any, ...],
     source_partition_rejection_candidates: tuple[Any, ...] = (),
-) -> None:
+    source_partition_plan: SourcePartitionPlan | None = None,
+) -> frozenset[int]:
     """Replay every examined disposition from exact embedded upstream authorities."""
     payload = request.payload.payload.sequence
     foldback_by_id = {
@@ -75,6 +77,7 @@ def validate_combination_evaluations(
                 else basal_authority.discovery.request.enzyme_provisioning
             ),
             source_context_sequence=disposition.source_context_sequence,
+            source_partition_plan=source_partition_plan,
         )
         observed_metrics = (
             disposition.candidate_enzyme_programs,
@@ -122,8 +125,9 @@ def validate_combination_evaluations(
         for disposition, item in zip(
             (
                 item
-                for item in dispositions
+                for item, evaluation in evaluated
                 if item.rejection_reason in SOURCE_PARTITION_REJECTION_CODES
+                and evaluation.rejection_reason is None
             ),
             source_partition_rejection_candidates,
             strict=True,
@@ -178,6 +182,11 @@ def validate_combination_evaluations(
             realization=realization,
             evaluation=evaluation,
         )
+    return frozenset(
+        disposition.ordinal
+        for disposition, evaluation in evaluated
+        if evaluation.rejection_reason in SOURCE_PARTITION_REJECTION_CODES
+    )
 
 
 def expected_accounting(

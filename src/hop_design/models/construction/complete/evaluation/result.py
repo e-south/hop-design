@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.coordinates import Span
@@ -21,6 +22,9 @@ from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 from ..auxiliary.resolution import EndpointAuxiliaryResolution
 from ..material import ExactConstructionMaterial
 from ..source_preparation import SourceDuplexPreparationAuthority
+
+if TYPE_CHECKING:
+    from ..source_partition.plan import SourcePartitionPlan
 
 
 class CompositionRejectionCode(StrEnum):
@@ -69,6 +73,7 @@ class CombinationEvaluation:
     source: ExactConstructionMaterial | None = None
     source_complement: ExactConstructionMaterial | None = None
     source_preparation: SourceDuplexPreparationAuthority | None = None
+    source_partition_plan: SourcePartitionPlan | None = None
     endpoint_auxiliaries: EndpointAuxiliaryResolution | None = None
     reaction_program: ReactionProgram | None = None
     stage_assessments: tuple[ReactionStageAssessment, ...] = ()

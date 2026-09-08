@@ -129,3 +129,172 @@ def test_displaced_nick_retains_source_bases_through_adapter_join_and_copy(
     assert [base["origin_index"] for base in strand["lineage"][-len(gap) :]] == list(
         range(len(payload) + 11, len(payload) + 11 + len(gap))
     )
+
+
+def _cleanup_case(tmp_path, *, retain_cleanup_fragment=False):
+    source, design, selection, payload = _case(tmp_path, "C", False)
+    upstream = "A" * 15 + "CGTC"
+    prefix = upstream + "A" * 15 + "C"
+    source["composition"]["materialization"]["source_preparation"]["source_ssdna"][
+        "upstream_sequence_spec"
+    ] = upstream
+    source_sequence = prefix + payload + "TCAGATGCTGA"
+    assert len(source_sequence) == 80
+    enzymes = [
+        source[family]["enzyme_provisioning"]["catalog"]["enzymes"][0]
+        for family in ("foldback", "basal")
+    ]
+
+    def span(start, end):
+        return {"start": {"offset": start}, "end": {"offset": end}}
+
+    partition_request = {
+        "schema": "hop.source-partition-request/v2",
+        "payload": source["foldback"]["payload"],
+        "source": {
+            "material_id": "source",
+            "top_sequence_5prime": source_sequence,
+            "top_five_prime_end": "hydroxyl",
+            "top_three_prime_end": "hydroxyl",
+            "bottom_five_prime_end": "phosphate",
+            "bottom_three_prime_end": "hydroxyl",
+        },
+        "payload_source_map": {
+            "segments": [
+                {
+                    "payload_span": span(0, 34),
+                    "source_material_id": "source",
+                    "source_span": span(35, 69),
+                    "orientation": "forward",
+                }
+            ],
+        },
+        "enzyme_provisioning": {
+            "catalog": {"catalog_id": "example:enzyme-catalog/cleanup@1", "enzymes": enzymes},
+            "allowed_enzyme_ids": [enzyme["enzyme_id"] for enzyme in enzymes],
+            "forbidden_enzyme_ids": [],
+            "reserved_enzyme_ids": [],
+            "role_restrictions": [],
+            "max_operations": 3,
+        },
+        "constraints": {
+            "fragment_policy": {"preferred_maximum_nt": 19, "absolute_maximum_nt": 19},
+            "required_survivors": [
+                {"survivor_id": "top", "precursor_strand": "top", "source_span": span(0, 69)},
+                {
+                    "survivor_id": "bottom",
+                    "precursor_strand": "bottom",
+                    "source_span": span(34, 80),
+                },
+            ],
+            "max_enzymes_per_program": 2,
+        },
+        "enumeration": {"max_search_nodes": 3, "max_realizations": 3},
+    }
+    if retain_cleanup_fragment:
+        partition_request["constraints"]["fragment_policy"] = {
+            "preferred_maximum_nt": 18,
+            "absolute_maximum_nt": 18,
+        }
+        partition_request["constraints"]["required_survivors"].append(
+            {
+                "survivor_id": "cleanup",
+                "precursor_strand": "bottom",
+                "source_span": span(15, 34),
+            }
+        )
+    partition = construction.discover_source_partition(
+        _write(tmp_path / "partition.json", partition_request)
+    )
+    partition_record = json.loads(partition.json_bytes)["realizations"][0]
+    design.write(tmp_path / "design")
+    selection.update(
+        source_partition=partition,
+        source_partition_realization_id=partition_record["realization_id"],
+    )
+    return source, selection, prefix, payload
+
+
+def test_selected_partition_supplies_additional_cleanup_cuts_to_complete_route(tmp_path):
+    source, selection, prefix, payload = _cleanup_case(tmp_path)
+    result = construction.compile_construction_from_local_realizations(
+        _write(tmp_path / "construction.json", source),
+        design_bundle_path=tmp_path / "design",
+        **selection,
+    )
+    assert result.status == "complete"
+    assert result.valid_realizations == 1
+    bundle = result.write(tmp_path / "construction")
+    assert construction.load_verified_construction_bundle(bundle).bundle_id == result.bundle_id
+    record = json.loads((bundle / "construction-result.json").read_bytes())["realizations"][0]
+    states = {state["phase"]: state for state in record["construction_program"]["states"]}
+    assert sorted(len(m["sequence"]) for m in states["denatured_fragments"]["molecules"]) == [
+        11,
+        15,
+        19,
+        46,
+        69,
+    ]
+    assert [len(m["sequence"]) for m in states["selected_fragments"]["molecules"]] == [69, 46]
+    closed = states["foldback_closed_hairpin"]["molecules"][0]
+    assert (
+        closed["sequence"]
+        == prefix + payload + "TCAGCATCTGA" + reverse_complement_iupac(payload) + "G"
+    )
+    assert len(states["adapter_ligated"]["formed_bonds"]) == 2
+
+
+@pytest.mark.parametrize("incompatibility", ("source", "survivors"))
+def test_cleanup_must_preserve_prepared_source_and_exact_local_survivors(tmp_path, incompatibility):
+    source, selection, _, _ = _cleanup_case(
+        tmp_path,
+        retain_cleanup_fragment=incompatibility == "survivors",
+    )
+    if incompatibility == "source":
+        policy = source["composition"]["materialization"]["source_preparation"]["source_ssdna"]
+        policy["upstream_sequence_spec"] = "C" + policy["upstream_sequence_spec"][1:]
+    result = construction.compile_construction_from_local_realizations(
+        _write(tmp_path / "construction.json", source),
+        design_bundle_path=tmp_path / "design",
+        **selection,
+    )
+    assert result.status == "infeasible"
+    bundle = result.write(tmp_path / "construction")
+    assert construction.load_verified_construction_bundle(bundle).bundle_id == result.bundle_id
+    data = json.loads((bundle / "construction-result.json").read_bytes())
+    expected = (
+        "source-partition-source-incompatible"
+        if incompatibility == "source"
+        else "source-partition-selection-incompatible"
+    )
+    assert data["combination_dispositions"][0]["rejection_reason"] == expected
+    assert not data.get("source_partition_rejection_candidates")
+
+
+@pytest.mark.parametrize("forgery", ("missing-plan", "fragment-chemistry", "survivor", "nick"))
+def test_individual_cleanup_route_rejects_resealed_molecular_forgery(tmp_path, forgery):
+    from hop_design.models.construction.complete import MaterializedConstructionRealization
+    from hop_design.models.construction.payload import _content_id
+
+    source, selection, _, _ = _cleanup_case(tmp_path)
+    result = construction.compile_construction_from_local_realizations(
+        _write(tmp_path / "construction.json", source),
+        design_bundle_path=tmp_path / "design",
+        **selection,
+    )
+    bundle = result.write(tmp_path / "construction")
+    record = json.loads((bundle / "construction-result.json").read_bytes())["realizations"][0]
+    if forgery == "missing-plan":
+        del record["source_partition_plan"]
+    else:
+        plan = record["source_partition_plan"]["realization"]
+        if forgery == "fragment-chemistry":
+            plan["denatured"]["fragments"][2]["five_prime_end"] = "hydroxyl"
+        elif forgery == "survivor":
+            plan["selected"]["retained_fragment_ids"].pop()
+        else:
+            plan["nicked_duplex"]["sites"].pop()
+    record.pop("materialized_realization_id")
+    record["materialized_realization_id"] = _content_id("materialized-construction", 1, record)
+    with pytest.raises(ValueError):
+        MaterializedConstructionRealization.model_validate_json(json.dumps(record))
