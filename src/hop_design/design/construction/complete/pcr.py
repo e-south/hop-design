@@ -24,6 +24,7 @@ from hop_design.models.construction.complete import (
     PcrPrimer,
     PrimerExtensionAuthority,
 )
+from hop_design.models.construction.complete.basal_embedding import basal_nick_boundary
 from hop_design.models.construction.complete.evaluation import CombinationEvaluation
 from hop_design.models.construction.complete.evaluation_inputs import (
     derive_linear_source_embedding,
@@ -45,40 +46,21 @@ from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.molecular_state import (
     CovalentBond,
     LineageStrand,
-    MaterialBaseLineage,
     MolecularStrand,
     PrimerBinding,
     StrandEnd,
 )
 from hop_design.models.plan import SequenceFeature
+from hop_design.models.sequence import reverse_complement_iupac
 
 from .associations import annealed_pairings, duplex_pairings, product_pairings
+from .lineage import material_strand
 from .materialization import _global_ligation_bond
 from .pcr_program import pcr_program
 
 
 def _span(start: int, end: int) -> Span:
     return Span(start=Boundary(offset=start), end=Boundary(offset=end))
-
-
-def _lineage_strand(
-    material: ExactConstructionMaterial, material_use: MaterialUse
-) -> MolecularStrand:
-    return MolecularStrand(
-        strand_id="complete-ligation-adapter",
-        sequence=material.sequence_5prime,
-        five_prime_end=material.five_prime_end,
-        three_prime_end=material.three_prime_end,
-        lineage=tuple(
-            MaterialBaseLineage(
-                product_index=index,
-                origin_id=material_use.use_id,
-                origin_strand=LineageStrand.PRIMARY,
-                origin_index=index,
-            )
-            for index in range(len(material.sequence_5prime))
-        ),
-    )
 
 
 def materialize_pcr_program(
@@ -131,7 +113,9 @@ def materialize_pcr_program(
         foldback=foldback,
         source_material_use_id=source_use.use_id,
         source_complement_material_use_id=source_complement_use.use_id,
-        source_return_arm=source_return_arm,
+        removed_return_sequence=reverse_complement_iupac(
+            prefix[: basal_nick_boundary(basal, prefix)]
+        ),
     )
     denatured_molecules = cleaved.molecules
     denatured = ConstructionState.create(
@@ -189,7 +173,12 @@ def materialize_pcr_program(
             ConstructionBondState(bond=foldback_bond, product_strand_id=closed.strand_id),
         ),
     )
-    adapter_strand = _lineage_strand(adapter, adapter_use)
+    adapter_strand = material_strand(
+        "complete-ligation-adapter",
+        adapter,
+        lineage_strand=LineageStrand.PRIMARY,
+        material_use_id=adapter_use.use_id,
+    )
     pairing_state = complete_adapter_pairing(
         basal, source_prefix=prefix, adapter_sequence=adapter.sequence_5prime
     )

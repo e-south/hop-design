@@ -328,7 +328,7 @@ def test_release_request_requires_a_type_iis_cleavage_definition() -> None:
         )
 
 
-def test_complete_construction_execution_identifies_route_contract_v5() -> None:
+def test_complete_construction_execution_identifies_route_contract() -> None:
     execution = ConstructionCompositionExecution(
         problem_id=f"hop:construction-problem/{'a' * 64}@1",
         hop_version="0.1.0a8",
@@ -338,7 +338,11 @@ def test_complete_construction_execution_identifies_route_contract_v5() -> None:
         ),
     )
 
-    assert execution.route_implementation_version == "complete-construction/6"
+    assert execution.route_implementation_version == "complete-construction/7"
+    with pytest.raises(ValidationError, match="route_implementation_version"):
+        ConstructionCompositionExecution.model_validate(
+            {**execution.model_dump(), "route_implementation_version": "complete-construction/6"}
+        )
 
 
 def test_basal_target_rejects_endpoint_release_fields() -> None:

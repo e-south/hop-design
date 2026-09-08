@@ -22,7 +22,7 @@ from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.physical import JunctionPairKind
 from hop_design.models.sequence import reverse_complement_iupac
 
-from ..basal_embedding import basal_source_offset
+from ..basal_embedding import basal_nick_boundary
 from ..evaluation.result import CompositionRejectionCode
 from ..evaluation_inputs import replay_linear_source_embedding
 from ..material import ExactConstructionMaterial, PcrPrimer
@@ -52,12 +52,9 @@ def evaluate_pcr_compatibility(
     reverse: PcrPrimer,
 ) -> CompositionRejectionCode | None:
     """Return the first closed rejection for one exact PCR route context."""
-    if (
-        basal is None
-        or basal.basal_nick.strand is not Strand.BOTTOM
-        or basal.basal_nick.boundary.offset + basal_source_offset(basal, prefix) != len(prefix)
-    ):
+    if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
+    basal_nick_boundary(basal, prefix)
     try:
         pairing_state = complete_adapter_pairing(
             basal, source_prefix=prefix, adapter_sequence=adapter.sequence_5prime
@@ -155,8 +152,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
             "PCR source-return arm must be the reverse complement of the retained prefix."
         )
     prefix_length = len(prefix)
-    if basal.basal_nick.boundary.offset + basal_source_offset(basal, prefix) != prefix_length:
-        raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
+    nick_boundary = basal_nick_boundary(basal, prefix)
     expected_reaction = derive_pcr_reaction_program(
         foldback=item.foldback_authority,
         basal=basal,
@@ -189,7 +185,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         foldback=item.foldback_authority,
         source_material_use_id=source_use.use_id,
         source_complement_material_use_id=source_complement_use.use_id,
-        source_return_arm=source_return_arm,
+        removed_return_sequence=reverse_complement_iupac(prefix[:nick_boundary]),
     )
     if program.states[3].molecules != expected_selected:
         raise ValueError("PCR selection must retain the exact source and foldback fragments.")

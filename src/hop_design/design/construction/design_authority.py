@@ -151,8 +151,14 @@ def _basal_junction(realization: BasalRealizationRecord) -> BasalJunction:
     pairing_state = realization.projection.pairing_state
     if pairing_state is None:
         raise ValueError("Selected basal realization does not contain an exact pairing state.")
-    left = pairing_state.source_sequence_5prime
-    right = pairing_state.adapter_sequence_5prime
+    payload_start = realization.payload_source_map.segments[0].source_span.start.offset
+    retained_source = realization.source_precursor_sequence[
+        pairing_state.source_span.end.offset : payload_start
+    ]
+    left = pairing_state.source_sequence_5prime + retained_source
+    right = (
+        reverse_complement_iupac(retained_source) if retained_source else ""
+    ) + pairing_state.adapter_sequence_5prime
     pairs = tuple(
         JunctionPairObservation(
             left_index=index,

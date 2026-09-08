@@ -125,9 +125,12 @@ selected = construction.compile_construction_from_local_realizations(
 The selected partition must describe the same prepared source duplex, use the
 same characterized enzyme definitions, and replay the route's concurrent nicks,
 denatured fragments, inclusive selection, and required survivors. A selected
-member remains exact even when its parent partition search was truncated. Once
-selected, that partition is consumed and sealed by complete-route replay; a
-caller does not need to restate its cuts, fragments, or survivor relation.
+member remains exact even when its parent partition search was truncated.
+Binding verifies and seals agreement with the composed route; it does not add
+cleanup nicks to that route. Additional cuts outside the selected local
+operations currently fail the actionable-site check even when they are present
+in the partition result. Such a rejection does not establish that the supplied
+fragment-removal program is infeasible.
 
 ## Prepare the two authorities
 
@@ -223,12 +226,12 @@ measure the length of the final restriction-released insert or the complete
 adapter. Later cohesive-end obligations include any source-derived bases before
 the adapter begins; only overlapping adapter positions carry that future role.
 
-The current PCR composition path requires the basal nick to coincide with the
-payload boundary. Standalone basal search also evaluates nonzero offsets, but
-those local solutions cannot yet be completed by this PCR route. A
-rejected source mapping or `pcr-basal-open-incompatible` result is therefore a
-limitation of the modeled composition, not evidence that such a construction is
-physically impossible.
+PCR composition retains the source-derived bases between the basal nick and
+the payload, together with their original complementary partners. The adapter
+joins at the nick; it does not replace those retained partners. The resulting
+design includes this intervening duplex segment, and the route records its
+pairing and source lineage through copying. A locally feasible nick still needs
+compatible source primers, a complete adapter, and valid processing states.
 
 For PCR-bearing composition, the adapter keeps the locally selected proximal
 pairs, including any permitted mismatches. Undeclared distal positions pair

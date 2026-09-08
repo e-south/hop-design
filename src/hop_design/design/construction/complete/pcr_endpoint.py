@@ -27,7 +27,7 @@ from hop_design.models.construction.complete import (
     MaterializedConstructionRealization,
     MaterializedFinalProduct,
 )
-from hop_design.models.construction.complete.basal_embedding import basal_source_offset
+from hop_design.models.construction.complete.basal_embedding import basal_nick_boundary
 from hop_design.models.construction.complete.evaluation import (
     CombinationEvaluation,
     CompositionRejectionCode,
@@ -94,8 +94,7 @@ def pcr_realization(
     reverse = endpoint_auxiliaries.reverse_primer
     if basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR basal opening requires an exact bottom-strand basal nick.")
-    if basal.basal_nick.boundary.offset + basal_source_offset(basal, prefix) != len(prefix):
-        raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
+    basal_nick_boundary(basal, prefix)
     encoding = request.design.plan.hairpin_encoding_insert
     material_uses = pcr_material_uses(
         source_preparation=source_preparation,

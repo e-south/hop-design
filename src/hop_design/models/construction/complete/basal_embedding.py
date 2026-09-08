@@ -22,3 +22,11 @@ def basal_source_offset(basal: BasalRealizationRecord, prefix: str) -> int:
     if not prefix.endswith(local_prefix):
         raise ValueError("Complete source prefix must preserve the exact basal neighborhood.")
     return len(prefix) - len(local_prefix)
+
+
+def basal_nick_boundary(basal: BasalRealizationRecord, prefix: str) -> int:
+    """Locate the nick within the exact source prefix in payload-forward coordinates."""
+    boundary = basal_source_offset(basal, prefix) + basal.basal_nick.boundary.offset
+    if not 0 < boundary <= len(prefix):
+        raise ValueError("Basal nick must separate a removable prefix from the retained strand.")
+    return boundary

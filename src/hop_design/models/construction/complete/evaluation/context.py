@@ -19,7 +19,7 @@ from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
 from hop_design.models.sequence import reverse_complement_iupac
 
-from ..basal_embedding import basal_source_offset
+from ..basal_embedding import basal_nick_boundary, basal_source_offset
 from ..composition_domain import validate_source_context
 from ..evaluation_inputs import (
     derive_complete_payload_source_span,
@@ -162,6 +162,9 @@ def prepare_context(
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }
+    retained_source = (
+        prefix[basal_nick_boundary(basal, prefix) :] if pcr_bearing and basal is not None else ""
+    )
     return PreparedContext(
         combination=context,
         prefix=prefix,
@@ -169,7 +172,9 @@ def prepare_context(
         source=source,
         source_complement=source_complement,
         source_preparation=source_preparation,
-        pcr_core_sequence=prefix + foldback.retained_sequence,
+        pcr_core_sequence=prefix
+        + foldback.retained_sequence
+        + (reverse_complement_iupac(retained_source) if retained_source else ""),
         pcr_bearing=pcr_bearing,
     )
 

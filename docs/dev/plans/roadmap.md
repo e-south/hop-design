@@ -111,13 +111,14 @@ former or current internal paths.
 
 ## Remaining product work
 
-### Offset basal nick composition
+### Cleanup nick programs in composed routes
 
-Local basal search supports nick offsets from the payload boundary. PCR
-composition currently requires zero offset. Supporting nonzero offsets requires
-carrying the intervening retained complementary strand through fragment
-selection, adapter association at the nick, joining, and endpoint copying.
-Local accessibility alone does not establish that complete trajectory.
+Partition binding checks an already composed reaction program. It does not
+install additional cleanup nicks from a selected partition. Supporting a source
+with those nicks requires composing their operations before actionable-site
+assessment, then replaying every resulting fragment and the declared survivor
+rule. The molecular checks must remain active; a partition reference is not
+permission to ignore extra sites.
 
 ### Bounded scaffold completion
 

@@ -16,6 +16,7 @@ from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.payload import SourceOrientation, _content_id
 from hop_design.models.reactions import ReactionMolecule, ReactionProgram
 
+from ..basal_embedding import basal_nick_boundary
 from ..evaluation_inputs import derive_linear_source_embedding
 from ..material import ExactConstructionMaterial
 from ..route_schedule import derive_direct_reaction_program
@@ -44,6 +45,7 @@ def derive_pcr_reaction_program(
         prefix=prefix,
         source_return_arm=source_return_arm,
     )
+    removed_length = basal_nick_boundary(basal, prefix)
     final = direct.states[-1]
     molecules: list[ReactionMolecule] = []
     split_count = 0
@@ -57,7 +59,7 @@ def derive_pcr_reaction_program(
         ):
             split_count += 1
             sequence = molecule.reference_sequence_5prime
-            split = len(sequence) - len(source_return_arm)
+            split = len(sequence) - removed_length
             molecules.extend(
                 (
                     ReactionMolecule(
@@ -82,7 +84,7 @@ def derive_pcr_reaction_program(
         ):
             split_count += 1
             sequence = molecule.reference_sequence_5prime
-            split = len(sequence) - len(source_return_arm)
+            split = len(sequence) - removed_length
             molecules.extend(
                 (
                     ReactionMolecule(
@@ -106,7 +108,7 @@ def derive_pcr_reaction_program(
             continue
         split_count += 1
         complement = molecule.complement_sequence_5prime
-        split = len(complement) - len(source_return_arm)
+        split = len(complement) - removed_length
         molecules.extend(
             (
                 ReactionMolecule(
