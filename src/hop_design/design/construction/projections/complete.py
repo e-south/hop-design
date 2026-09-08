@@ -65,6 +65,7 @@ def project_complete_construction_summary(
         rows.append(
             CompleteConstructionSummaryRow(
                 ordinal=disposition.ordinal,
+                source_context_sequence=disposition.source_context_sequence,
                 foldback_realization_id=disposition.foldback_realization_id,
                 basal_realization_id=disposition.basal_realization_id,
                 status=disposition.status,

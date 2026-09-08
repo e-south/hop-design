@@ -1004,12 +1004,12 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "b511b019642220ba2e836f7c0919a0ae7cc6032891d0a5ca178af09c3e62d420@1"
+        "3a9f1f8e8584c97aa43f94c0d4a027c9dde557240627dbc9fbef61cf2f85942e@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "bfbdcf85c59148ab18e1af532a58a4b6f2d35846a6bdff6b06765ee7d344a1f8"  # pragma: allowlist secret  # noqa: E501
+            "988cf1eaa72c5dc21f6ce9ea2122734539ad3e6898a526959de3d636126dccb9"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
@@ -1044,12 +1044,12 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "5fa29e6419969e71c7a6acc64a32a685240411e9dcd93a30cf6a333d80bb940c@1"
+        "f713c14f34ebbfa77049ef7745f330a8525506508c17813089dafa800f75a321@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "fcdc09f726f38d211f57f3c23f8cd743f7dd83f6c90dbaf959680a87cb713efa"  # pragma: allowlist secret  # noqa: E501
+            "38825a2acc9bb341cb8427371cb850196d5aa8b9fe72ab073127e3d1e5421c83"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (

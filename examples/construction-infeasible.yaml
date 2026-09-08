@@ -1,4 +1,4 @@
-schema: hop.construction-source/v6
+schema: hop.construction-source/v7
 foldback:
   schema: hop.local-neighborhood-request/v6
   name: null

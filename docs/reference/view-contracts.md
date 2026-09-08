@@ -128,7 +128,7 @@ experimental yield.
 
 ## Complete construction projections
 
-`hop.complete-construction-summary/v2` is the lossless tabular receipt over one
+`hop.complete-construction-summary/v3` is the lossless tabular receipt over one
 verified complete result. Its rows preserve the exact examined Cartesian
 prefix: accepted rows carry materialized route, achieved-geometry,
 final-product, endpoint, and material facts; rejected and truncated rows carry

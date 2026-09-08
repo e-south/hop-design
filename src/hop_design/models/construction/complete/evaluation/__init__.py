@@ -51,6 +51,7 @@ def evaluate_combination(
     basal: BasalRealizationRecord | None,
     foldback_policy: EnzymeProvisioningPolicy,
     basal_policy: EnzymeProvisioningPolicy | None,
+    source_context_sequence: str | None = None,
 ) -> CombinationEvaluation:
     """Evaluate one exact combination in the closed intrinsic gate order."""
     combination = build_combination_context(
@@ -59,6 +60,7 @@ def evaluate_combination(
         basal=basal,
         foldback_policy=foldback_policy,
         basal_policy=basal_policy,
+        source_context_sequence=source_context_sequence,
     )
     prepared = prepare_context(combination)
     if isinstance(prepared, CombinationEvaluation):

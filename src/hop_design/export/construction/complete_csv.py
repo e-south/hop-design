@@ -41,6 +41,7 @@ def write_complete_projection(
         "quality_control",
         "biological_activity",
         "ordinal",
+        "source_context_sequence",
         "foldback_realization_id",
         "basal_realization_id",
         "disposition",
@@ -108,6 +109,7 @@ def write_complete_projection(
             {
                 **base,
                 "ordinal": row.ordinal,
+                "source_context_sequence": row.source_context_sequence or "",
                 "foldback_realization_id": row.foldback_realization_id,
                 "basal_realization_id": row.basal_realization_id or "",
                 "disposition": row.status.value,

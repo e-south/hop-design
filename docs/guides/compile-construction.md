@@ -151,7 +151,7 @@ caller does not need to restate its cuts, fragments, or survivor relation.
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v6`; and
+   `hop.construction-source/v7`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
@@ -160,7 +160,7 @@ primers are resolved, endpoint-dependent auxiliary materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v6
+schema: hop.construction-source/v7
 foldback: <hop.local-neighborhood-request/v6 mapping>
 basal: <hop.local-neighborhood-request/v6 mapping or null>
 composition:
@@ -243,9 +243,37 @@ binding and full adapter annealing there, and checks additional actionable
 enzyme sites. This applies in either foldback-source orientation; it does not
 alter a local realization or count the added flank as local junction overhead.
 
-Fixed-source replay evaluates that supplied completion only. It does not search
-for an extension or prove that every alternative fails. Bounded source extension
-remains separate product work. No fixed primer is rewritten, no annealing
+Fixed-source replay evaluates that supplied completion only. To search upstream
+sequence for a PCR-bearing endpoint, use a constrained source policy. This
+fragment belongs under `composition.materialization.source_preparation`:
+
+```yaml
+source_ssdna:
+  mode: constrain
+  upstream_sequence_spec: MAAAGTCTGAC
+  five_prime_end: hydroxyl
+  three_prime_end: hydroxyl
+```
+
+The pattern precedes the unchanged basal source flank in the payload-forward
+frame. HOP derives the physical source orientation from the foldback realization;
+it does not ask the caller to reverse the pattern for a reverse-oriented foldback.
+This synthetic pattern declares two upstream assignments, not two payloads.
+Each assignment is checked for source and endpoint primer binding, complete
+adapter pairing, and actionable enzyme sites. The resulting source material is
+recorded as constrained, not caller-fixed.
+
+Composition traverses foldback, basal, then upstream assignments in deterministic
+A/C/G/T order. Its nominal denominator includes all three domains. The existing
+`max_combinations` and `max_realizations` bounds stop this traversal; a stopped
+prefix is truncated even if every examined sequence failed. Accepted alternatives
+remain distinct within geometry groups. Summary JSON and CSV bind each examined
+assignment through `source_context_sequence`.
+
+The pattern supplies one finite, fixed-length domain. HOP does not choose an
+unbounded extension length, generate a reusable handle without constraints, or
+design cleanup-nick tiling through this policy. A selected partition still
+certifies its exact supplied source. No fixed primer is rewritten, no annealing
 length is silently reduced, and no melting temperature or recovery is predicted.
 
 The future release requirement records `recognition_material`:

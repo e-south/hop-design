@@ -58,11 +58,11 @@ resources. Remote/network resolution stays outside the deterministic core.
 Construction source files follow the same bounded regular-file contract. The
 reader accepts only `.json`, `.yaml`, and `.yml`, rejects path replacement while
 opening, rejects documents larger than one megabyte before decoding, requires a
-mapping root, and dispatches only `hop.construction-source/v5`. The source
+mapping root, and dispatches only `hop.construction-source/v7`. The source
 cannot embed or assert a design authority; compilation loads the separately
 supplied design-bundle directory through complete semantic verification.
 
-PCR-bearing v5 sources resolve adapters and endpoint primers only through
+PCR-bearing sources resolve adapters and endpoint primers only through
 strict `derive`, `constrain`, or `fixed` policies. Derived and constrained
 primer bindings must remain within invariant non-payload construction sequence.
 Caller-supplied handle sequence is explicit input; HOP does not guess a handle

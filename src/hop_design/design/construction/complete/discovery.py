@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from itertools import islice, product
+from itertools import islice
 
 from hop_design.design.bundle import VerifiedHopBundle, verify_hop_bundle_semantics
 from hop_design.design.construction.verification import (
@@ -30,6 +30,10 @@ from hop_design.models.construction.complete import (
     ConstructionDiscoveryRequest,
     ConstructionSpaceResult,
     MaterializedConstructionRealization,
+)
+from hop_design.models.construction.complete.composition_domain import (
+    composition_domain,
+    source_context_count,
 )
 from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
@@ -98,16 +102,17 @@ def _discover_constructions_raw(
         foldback=foldback,
         basal=basal,
     )
-    nominal = len(foldback_records) * len(basal_records)
+    source_policy = request.materialization.source_preparation.source_ssdna
+    nominal = len(foldback_records) * len(basal_records) * source_context_count(source_policy)
     records: list[MaterializedConstructionRealization] = []
     partition_rejection_candidates: list[MaterializedConstructionRealization] = []
     failures: Counter[str] = Counter()
     examined = 0
     truncation: str | None = None
     dispositions: list[CompositionDisposition] = []
-    for ordinal, (foldback_record, basal_record) in enumerate(
+    for ordinal, (foldback_record, basal_record, source_context_sequence) in enumerate(
         islice(
-            product(foldback_records, basal_records),
+            composition_domain(foldback_records, basal_records, source_policy),
             request.enumeration.max_combinations,
         )
     ):
@@ -121,11 +126,13 @@ def _discover_constructions_raw(
             basal=basal_record,
             foldback_policy=foldback.neighborhood.request.enzyme_provisioning,
             basal_policy=(None if basal is None else basal.discovery.request.enzyme_provisioning),
+            source_context_sequence=source_context_sequence,
         )
         if evaluation.truncation_reason is not None:
             dispositions.append(
                 CompositionDisposition(
                     ordinal=ordinal,
+                    source_context_sequence=source_context_sequence,
                     foldback_realization_id=foldback_record.foldback_realization_id,
                     basal_realization_id=(
                         None if basal_record is None else basal_record.basal_realization_id
@@ -167,6 +174,7 @@ def _discover_constructions_raw(
             dispositions.append(
                 CompositionDisposition(
                     ordinal=ordinal,
+                    source_context_sequence=source_context_sequence,
                     foldback_realization_id=foldback_record.foldback_realization_id,
                     basal_realization_id=(
                         None if basal_record is None else basal_record.basal_realization_id
@@ -183,6 +191,7 @@ def _discover_constructions_raw(
         dispositions.append(
             CompositionDisposition(
                 ordinal=ordinal,
+                source_context_sequence=source_context_sequence,
                 foldback_realization_id=foldback_record.foldback_realization_id,
                 basal_realization_id=(
                     None if basal_record is None else basal_record.basal_realization_id

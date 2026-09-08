@@ -182,3 +182,169 @@ def test_extended_source_survives_public_compilation_and_portable_replay(tmp_pat
     replayed = construction.load_verified_construction_bundle(compiled.write(tmp_path / "bundle"))
     assert replayed.bundle_id == compiled.bundle_id
     assert replayed.valid_realizations == 1
+
+
+def _searched_context_case(tmp_path: Path, *, pattern: str = "MAAAGTCTGAC", reverse: bool = False):
+    request, foldback, basal, design = _context_case(tmp_path, reverse=reverse)
+    data = request.model_dump(mode="json", by_alias=True)
+    data["materialization"]["source_preparation"]["source_ssdna"] = {
+        "mode": "constrain",
+        "upstream_sequence_spec": pattern,
+        "five_prime_end": "hydroxyl",
+        "three_prime_end": "hydroxyl",
+    }
+    request = type(request).model_validate_json(json.dumps(data))
+    return request, foldback, basal, design
+
+
+@pytest.mark.parametrize("reverse", (False, True))
+def test_source_context_search_preserves_rejection_and_finds_later_completion(
+    tmp_path: Path, reverse: bool
+) -> None:
+    request, foldback, basal, design = _searched_context_case(tmp_path, reverse=reverse)
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert result.accounting.nominal_combinations == result.accounting.examined_combinations == 2
+    assert result.accounting.rejected_combinations == result.accounting.valid_realizations == 1
+    assert [item.source_context_sequence for item in result.combination_dispositions] == [
+        "AAAAGTCTGAC",
+        "CAAAGTCTGAC",
+    ]
+    assert result.combination_dispositions[0].rejection_reason == "global-actionable-site-conflict"
+    item = result.realizations[0]
+    sequence = "CAAAGTCTGACAAAAGACATCAGATGCTGA"
+    assert item.source_preparation.source_ssdna.sequence_5prime == (
+        reverse_complement_iupac(sequence) if reverse else sequence
+    )
+    assert item.source_preparation.source_ssdna_use.specification_resolution_mode == "constrain"
+    assert item.basal_authority == basal.realizations[0]
+    assert len(item.construction_program.transitions[-3].pcr_authority.pairings) == 15
+
+
+def test_source_context_search_does_not_call_a_stopped_prefix_infeasible(tmp_path: Path) -> None:
+    request, foldback, basal, design = _searched_context_case(tmp_path)
+    data = request.model_dump(mode="json", by_alias=True)
+    data["enumeration"]["max_combinations"] = 1
+    request = type(request).model_validate_json(json.dumps(data))
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.TRUNCATED
+    assert result.accounting.nominal_combinations == 2
+    assert result.accounting.examined_combinations == result.accounting.rejected_combinations == 1
+    assert result.truncation_reasons == ("max_combinations",)
+    assert not result.realizations
+
+
+def test_source_context_search_preserves_alternatives_and_reports_hit_limit(tmp_path: Path) -> None:
+    request, foldback, basal, design = _searched_context_case(tmp_path, pattern="SAAAGTCTGAC")
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert result.accounting.valid_realizations == 2
+    assert len({item.materialized_realization_id for item in result.realizations}) == 2
+    assert len(result.geometry_groups) == 1
+    assert len(result.geometry_groups[0].realization_ids) == 2
+
+    data = request.model_dump(mode="json", by_alias=True)
+    data["enumeration"]["max_realizations"] = 1
+    limited = _discover_raw(
+        type(request).model_validate_json(json.dumps(data)),
+        foldback=foldback,
+        basal=basal,
+        design=design,
+    )
+    assert limited.status is SearchCompletionStatus.TRUNCATED
+    assert limited.truncation_reasons == ("max_realizations",)
+    assert (
+        limited.realizations[0].materialized_realization_id
+        == result.realizations[0].materialized_realization_id
+    )
+
+
+@pytest.mark.parametrize(
+    ("pattern", "reason"),
+    (
+        ("AAAAGTCTGAC", "global-actionable-site-conflict"),
+        ("TGCAGTCTGC", "source-preparation-incompatible"),
+    ),
+)
+def test_exhausted_source_context_domain_retains_its_molecular_failure(
+    tmp_path: Path, pattern: str, reason: str
+) -> None:
+    request, foldback, basal, design = _searched_context_case(tmp_path, pattern=pattern)
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert result.accounting.nominal_combinations == result.accounting.rejected_combinations == 1
+    assert result.combination_dispositions[0].rejection_reason == reason
+
+
+def test_source_context_search_survives_public_bundle_and_tidy_projection(tmp_path: Path) -> None:
+    request, foldback, basal, _ = _searched_context_case(tmp_path)
+    source = _source(
+        foldback=foldback.neighborhood.request,
+        basal=basal.discovery.request,
+        endpoint=request.endpoint,
+        materialization=request.materialization,
+    )
+    compiled = construction.compile_construction_from_local_realizations(
+        _write_source(tmp_path / "source.yaml", source),
+        design_bundle_path=tmp_path / "design",
+        foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+        foldback_realization_id=request.selected_foldback_realization_id,
+        basal=_local_receipt(tmp_path / "basal.json", basal),
+        basal_realization_id=request.selected_basal_realization_id,
+    )
+    assert compiled.nominal_combinations == 2
+    assert compiled.valid_realizations == 1
+    replayed = construction.load_verified_construction_bundle(compiled.write(tmp_path / "bundle"))
+    assert replayed.bundle_id == compiled.bundle_id
+    projection = construction.project_complete_construction_summary(replayed)
+    assert projection.csv_bytes is not None
+    assert b"source_context_sequence" in projection.csv_bytes
+    assert b"AAAAGTCTGAC" in projection.csv_bytes
+    assert b"CAAAGTCTGAC" in projection.csv_bytes
+
+
+@pytest.mark.parametrize("sequence", (None, "AAAAGTCTGAC", "TAAAGTCTGAC"))
+def test_resealed_completion_cannot_change_the_examined_assignment(
+    tmp_path: Path, sequence: str | None
+) -> None:
+    request, foldback, basal, design = _searched_context_case(tmp_path)
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+    dispositions = list(result.combination_dispositions)
+    dispositions[1] = dispositions[1].model_copy(update={"source_context_sequence": sequence})
+    draft = result.model_copy(update={"combination_dispositions": tuple(dispositions)})
+    data = draft.model_dump(mode="python")
+    data["result_id"] = draft._expected_result_id()
+    with pytest.raises(ValueError, match="ordered upstream domains"):
+        type(result).model_validate(data)
+
+
+def test_upstream_completion_requires_a_basal_neighborhood(tmp_path: Path) -> None:
+    request, _, _, _ = _searched_context_case(tmp_path)
+    data = request.model_dump(mode="json", by_alias=True)
+    data["endpoint"] = "ssdna_hairpin"
+    data["basal_result_id"] = None
+    data.pop("selected_basal_realization_id")
+    data["materialization"]["endpoint_auxiliaries"] = None
+    with pytest.raises(ValueError, match="Upstream context search requires a basal"):
+        type(request).model_validate_json(json.dumps(data))
+
+
+def test_all_completions_constraint_preserves_each_sequence_disposition(tmp_path: Path) -> None:
+    request, foldback, basal, design = _searched_context_case(tmp_path)
+    data = request.model_dump(mode="json", by_alias=True)
+    data["whole_route_constraints"]["require_all_combinations_valid"] = True
+    request = type(request).model_validate_json(json.dumps(data))
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert [item.source_context_sequence for item in result.combination_dispositions] == [
+        "AAAAGTCTGAC",
+        "CAAAGTCTGAC",
+    ]
+    assert {item.code for item in result.failure_reasons} == {
+        "global-actionable-site-conflict",
+        "all-combinations-valid-required",
+    }

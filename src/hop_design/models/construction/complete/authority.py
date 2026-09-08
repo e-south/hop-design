@@ -28,7 +28,7 @@ class ConstructionCompositionExecution(HopModel):
 
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     hop_version: str
-    route_implementation_version: Literal["complete-construction/5"] = "complete-construction/5"
+    route_implementation_version: Literal["complete-construction/6"] = "complete-construction/6"
     enumeration: CompositionEnumerationPolicy
     environment: dict[str, str] = Field(default_factory=dict)
 
@@ -42,7 +42,7 @@ class ConstructionCompositionProvenance(HopModel):
     """Exact upstream authorities and implementation identity for composition."""
 
     hop_version: str
-    route_implementation_version: Literal["complete-construction/5"] = "complete-construction/5"
+    route_implementation_version: Literal["complete-construction/6"] = "complete-construction/6"
     foldback_result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     basal_result_id: str | None = Field(
         default=None,
@@ -80,9 +80,12 @@ class CompositionDispositionStatus(StrEnum):
 
 
 class CompositionDisposition(HopModel):
-    """Exact ordered disposition for one foldback-basal Cartesian pair."""
+    """Exact ordered disposition for one local pair and source-context assignment."""
 
     ordinal: int = Field(ge=0)
+    source_context_sequence: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     foldback_realization_id: str = Field(pattern=r"^hop:foldback-realization/[0-9a-f]{64}@1$")
     basal_realization_id: str | None = Field(
         default=None,

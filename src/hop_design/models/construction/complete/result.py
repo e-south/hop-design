@@ -12,7 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import Counter
-from itertools import islice, product
+from itertools import islice
 from typing import Any, Literal, cast
 
 from pydantic import Field, model_validator
@@ -39,6 +39,7 @@ from .authority import (
     ConstructionCompositionExecution,
     ConstructionCompositionProvenance,
 )
+from .composition_domain import composition_domain
 from .local_authority import validate_local_authority_compatibility
 from .realization import MaterializedConstructionRealization
 from .request import ConstructionDiscoveryRequest
@@ -61,8 +62,8 @@ from .source_partition.result_validation import validate_source_partition_result
 class ConstructionSpaceResult(HopModel):
     """Truthful bounded whole-route result with reversible exact grouping."""
 
-    schema_id: Literal["hop.construction-space-result/v5"] = Field(
-        default="hop.construction-space-result/v5", alias="schema"
+    schema_id: Literal["hop.construction-space-result/v6"] = Field(
+        default="hop.construction-space-result/v6", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
@@ -210,12 +211,16 @@ class ConstructionSpaceResult(HopModel):
         )
         expected_pairs = tuple(
             islice(
-                product(self.provenance.foldback_realization_ids, basal_domain),
+                composition_domain(
+                    self.provenance.foldback_realization_ids,
+                    basal_domain,
+                    self.request.materialization.source_preparation.source_ssdna,
+                ),
                 len(self.combination_dispositions),
             )
         )
         observed_pairs = tuple(
-            (item.foldback_realization_id, item.basal_realization_id)
+            (item.foldback_realization_id, item.basal_realization_id, item.source_context_sequence)
             for item in self.combination_dispositions
         )
         if observed_pairs != expected_pairs:
@@ -241,6 +246,7 @@ class ConstructionSpaceResult(HopModel):
             )
         )
         replayed_accounting = expected_accounting(
+            request=self.request,
             provenance=self.provenance,
             dispositions=self.combination_dispositions,
             geometry_group_count=len(self.geometry_groups),

@@ -267,7 +267,7 @@ def test_construction_projection_packet_is_portable_and_create_only(tmp_path: Pa
     )
 
     assert isinstance(summary, construction.ConstructionProjection)
-    assert summary.schema_id == "hop.complete-construction-summary/v2"
+    assert summary.schema_id == "hop.complete-construction-summary/v3"
     assert summary.projection_id.startswith("hop:complete-construction-summary/")
     assert summary.source_result_id == compilation.result_id
     assert summary.json_bytes.endswith(b"\n")

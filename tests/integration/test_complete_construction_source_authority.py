@@ -20,7 +20,6 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from hop_design.design.construction.complete import discovery as complete_discovery
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
 from hop_design.models.construction import (
     CompleteConstructionRealization,
@@ -38,6 +37,7 @@ from hop_design.models.construction.complete import (
     MaterializedConstructionRealization,
     ReactionBoundaryMapping,
     SourcePartitionBinding,
+    composition_domain,
 )
 from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
@@ -1023,7 +1023,7 @@ def test_composition_does_not_materialize_or_consume_the_unexamined_suffix(
                 raise AssertionError("composition consumed the unexamined suffix")
             yield pair
 
-    monkeypatch.setattr(complete_discovery, "product", guarded_product)
+    monkeypatch.setattr(composition_domain, "product", guarded_product)
 
     result = _discover_raw(
         request,

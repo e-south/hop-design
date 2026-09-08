@@ -37,14 +37,17 @@ from hop_design.models.construction.complete.material_disposition import (
 from hop_design.models.construction.payload import ConstructionEndpoint, _content_id
 
 COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION: Literal[
-    "complete-construction-projections/2"
-] = "complete-construction-projections/2"
+    "complete-construction-projections/3"
+] = "complete-construction-projections/3"
 
 
 class CompleteConstructionSummaryRow(HopModel):
     """One exact ordered composition disposition and its accepted-route facts."""
 
     ordinal: int = Field(ge=0)
+    source_context_sequence: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     foldback_realization_id: str = Field(pattern=r"^hop:foldback-realization/[0-9a-f]{64}@1$")
     basal_realization_id: str | None = Field(
         default=None,
@@ -128,13 +131,13 @@ class CompleteConstructionSummaryRow(HopModel):
 class CompleteConstructionSummaryProjection(HopModel):
     """Lossless presentation relation over one verified construction-space result."""
 
-    schema_id: Literal["hop.complete-construction-summary/v2"] = Field(
-        default="hop.complete-construction-summary/v2",
+    schema_id: Literal["hop.complete-construction-summary/v3"] = Field(
+        default="hop.complete-construction-summary/v3",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:complete-construction-summary/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
-    renderer_version: Literal["complete-construction-projections/2"] = (
+    renderer_version: Literal["complete-construction-projections/3"] = (
         COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION
     )
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")

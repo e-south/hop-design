@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-31
+last_verified: 2026-09-08
 doc_type: decision
 amends:
   - hop-adr-0010
@@ -89,6 +89,24 @@ authored annealing length, `constrain` uses the shortest valid length in one
 explicit range and may prepend an explicit 5′ handle, and `fixed` validates one
 exact primer. Arbitrary handle generation remains unsupported until its
 sequence-quality rules exist.
+
+### Bounded upstream completion
+
+A constrained source policy supplies one fixed-length IUPAC pattern before the
+unchanged basal source flank, in payload-forward coordinates. Composition
+enumerates local pairs and exact upstream assignments, derives the physical
+source orientation, and evaluates complete primer, adapter, and reaction
+requirements on that source. Each assignment has its own disposition and exact
+material provenance. Choosing the first valid completion would hide alternatives
+and conflate a failed candidate with an infeasible domain; the result therefore
+retains the complete examined prefix under its finite limits.
+
+This adds a sequence coordinate to composition rather than a second route
+compiler. Source patterns and assignments are covered by source schema 7,
+construction request/result schema 6, and summary schema 3. Readers reject
+other versions without compatibility aliases. Local junction schemas and
+identities do not change. Joint source-length and cleanup-nick tiling design is
+not established by this fixed-length sequence search.
 
 ### Source partition
 

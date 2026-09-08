@@ -505,7 +505,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
     assert result.status is SearchCompletionStatus.COMPLETE
-    assert result.schema_id == "hop.construction-space-result/v5"
+    assert result.schema_id == "hop.construction-space-result/v6"
     assert result.provenance.basal_result_id is None
     assert result.accounting.truncated_combinations == 0
     assert result.failure_reasons == ()

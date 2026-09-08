@@ -172,7 +172,7 @@ profile, route, source endpoint, or corrupted bundle. Construction sources are
 bounded regular nonsymlink JSON/YAML mappings read through one checked file
 descriptor. Duplicate keys and YAML aliases, anchors, and merge keys are
 rejected before model validation. Sources dispatch only the exact
-`hop.construction-source/v5` schema; the design authority is loaded from a
+`hop.construction-source/v7` schema; the design authority is loaded from a
 separate verified bundle path. Each accepted route replays its declared source
 ssDNA and two source-preparation primers into the exact duplex that seeds
 downstream construction. For PCR-bearing endpoints, a separate policy resolves

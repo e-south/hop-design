@@ -13,10 +13,11 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.molecular_state import EndChemistry
+from hop_design.models.sequence import normalize_dna_sequence
 
 from ..material import ExactConstructionMaterial, MaterialResolutionMode, PcrPrimer
 
@@ -36,8 +37,24 @@ class FixedSourceSsdnaPolicy(HopModel):
     material: ExactConstructionMaterial
 
 
+class ConstrainedSourceSsdnaPolicy(HopModel):
+    """Search an authored upstream IUPAC context without changing local junctions."""
+
+    mode: Literal[MaterialResolutionMode.CONSTRAIN]
+    upstream_sequence_spec: str
+    five_prime_end: EndChemistry
+    three_prime_end: EndChemistry
+
+    @field_validator("upstream_sequence_spec", mode="before")
+    @classmethod
+    def normalize_context(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Upstream sequence specification must be a DNA string.")
+        return normalize_dna_sequence(value, allow_degenerate=True)
+
+
 type SourceSsdnaPolicy = Annotated[
-    DerivedSourceSsdnaPolicy | FixedSourceSsdnaPolicy,
+    DerivedSourceSsdnaPolicy | ConstrainedSourceSsdnaPolicy | FixedSourceSsdnaPolicy,
     Field(discriminator="mode"),
 ]
 
@@ -86,6 +103,7 @@ class SourceDuplexPreparationPolicy(HopModel):
 
 __all__ = [
     "ConstrainedPrimerPolicy",
+    "ConstrainedSourceSsdnaPolicy",
     "DerivedPrimerPolicy",
     "DerivedSourceSsdnaPolicy",
     "FixedPrimerPolicy",

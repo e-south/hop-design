@@ -20,6 +20,7 @@ from hop_design.models.enzymes import EnzymeProvisioningPolicy
 from hop_design.models.sequence import reverse_complement_iupac
 
 from ..basal_embedding import basal_source_offset
+from ..composition_domain import validate_source_context
 from ..evaluation_inputs import (
     derive_complete_payload_source_span,
     derive_endpoint_source_return_arm,
@@ -51,6 +52,7 @@ class CombinationContext:
     candidate_enzyme_programs: int
     recognition_placements_attempted: int
     constraint_systems_attempted: int
+    source_context_sequence: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +76,7 @@ def build_combination_context(
     basal: BasalRealizationRecord | None,
     foldback_policy: EnzymeProvisioningPolicy,
     basal_policy: EnzymeProvisioningPolicy | None,
+    source_context_sequence: str | None,
 ) -> CombinationContext:
     """Bind one combination and its stable intrinsic-accounting counters."""
     return CombinationContext(
@@ -86,6 +89,7 @@ def build_combination_context(
         recognition_placements_attempted=len(foldback.enzyme_bindings)
         + (0 if basal is None else len(basal.enzyme_bindings)),
         constraint_systems_attempted=2 + (0 if basal is None else 1),
+        source_context_sequence=source_context_sequence,
     )
 
 
@@ -105,6 +109,9 @@ def prepare_context(
             constraint_systems_attempted=context.constraint_systems_attempted,
         )
     source_policy = request.materialization.source_preparation.source_ssdna
+    validate_source_context(source_policy, context.source_context_sequence)
+    if context.source_context_sequence is not None:
+        prefix = context.source_context_sequence + prefix
     if basal is not None and isinstance(source_policy, FixedSourceSsdnaPolicy):
         try:
             sequence = source_policy.material.sequence_5prime

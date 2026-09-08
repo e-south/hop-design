@@ -36,7 +36,7 @@ and verified.
 ## Decision
 
 `hop_design.construction` is the file-oriented construction facade. The caller
-provides one strict `hop.construction-source/v6` JSON or YAML file and one
+provides one strict `hop.construction-source/v7` JSON or YAML file and one
 separate verified design-bundle path. HOP loads the design authority, discovers
 and verifies the declared foldback and optional basal neighborhoods, derives
 the source ssDNA and source-preparation primers under their declared policies,

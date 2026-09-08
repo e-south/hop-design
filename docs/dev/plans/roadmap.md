@@ -85,6 +85,11 @@ The [construction guide](../../guides/compile-construction.md) exposes:
   Required adapter annealing is completed against available invariant source
   bases and replayed position by position; insufficient source sequence or an
   incompatible fixed adapter rejects that exact composition.
+- Bounded upstream sequence completion for PCR-bearing endpoints. A caller-supplied
+  IUPAC context is enumerated without changing either local junction; each assignment
+  must satisfy source preparation, adapter pairing, primer binding, and route checks.
+  The [construction guide](../../guides/compile-construction.md) defines orientation,
+  limits, and exact-versus-truncated accounting.
 - Replay-verified portable results, lossless geometry grouping, tidy relations,
   and typed molecular projections. CLI navigation selects existing results;
   discovery and compilation use the public Python facade.
@@ -108,10 +113,10 @@ former or current internal paths.
 
 ### Bounded scaffold completion
 
-Source-partition search currently evaluates a supplied exact source. It does
-not derive a full scaffold across a bounded sequence/context domain while
-satisfying local junction, primer, and adapter obligations. That solver is
-required before claiming automatic global scaffold completion.
+Upstream completion searches one caller-authored fixed-length sequence domain.
+Source-partition search still evaluates a supplied exact source. Joint design
+of source length, cleanup-nick tiling, and a required fragment partition remains
+unimplemented; bounded upstream completion alone is not global scaffold design.
 
 ### Resumption within one local query
 

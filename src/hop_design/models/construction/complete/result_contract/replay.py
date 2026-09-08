@@ -23,6 +23,7 @@ from ..authority import (
     CompositionMaterialAccounting,
     ConstructionCompositionProvenance,
 )
+from ..composition_domain import source_context_count
 from ..evaluation import CompositionRejectionCode, evaluate_combination
 from ..evaluation.result import SOURCE_PARTITION_REJECTION_CODES
 from ..material.inventory import required_external_materials
@@ -73,6 +74,7 @@ def validate_combination_evaluations(
                 if basal_authority is None
                 else basal_authority.discovery.request.enzyme_provisioning
             ),
+            source_context_sequence=disposition.source_context_sequence,
         )
         observed_metrics = (
             disposition.candidate_enzyme_programs,
@@ -92,7 +94,11 @@ def validate_combination_evaluations(
         1 if request.selects_local_realizations or basal_authority is None else len(basal_by_id)
     )
     foldback_count = 1 if request.selects_local_realizations else len(foldback_by_id)
-    all_examined = len(evaluated) == foldback_count * basal_count
+    all_examined = len(evaluated) == (
+        foldback_count
+        * basal_count
+        * source_context_count(request.materialization.source_preparation.source_ssdna)
+    )
     has_intrinsic_failure = any(
         evaluation.rejection_reason is not None
         or disposition.rejection_reason in SOURCE_PARTITION_REJECTION_CODES
@@ -111,9 +117,17 @@ def validate_combination_evaluations(
         )
     )
     realizations_by_id = {item.materialized_realization_id: item for item in realizations}
-    partition_candidates_by_pair = {
-        (item.foldback_realization_id, item.basal_realization_id): item
-        for item in source_partition_rejection_candidates
+    partition_candidates_by_ordinal = {
+        disposition.ordinal: item
+        for disposition, item in zip(
+            (
+                item
+                for item in dispositions
+                if item.rejection_reason in SOURCE_PARTITION_REJECTION_CODES
+            ),
+            source_partition_rejection_candidates,
+            strict=True,
+        )
     }
     for disposition, evaluation in evaluated:
         expected_reason = evaluation.rejection_reason
@@ -134,12 +148,7 @@ def validate_combination_evaluations(
                 )
             if disposition.status is not CompositionDispositionStatus.REJECTED:
                 raise ValueError("Source-partition incompatibility must reject the combination.")
-            candidate = partition_candidates_by_pair.get(
-                (
-                    disposition.foldback_realization_id,
-                    disposition.basal_realization_id,
-                )
-            )
+            candidate = partition_candidates_by_ordinal.get(disposition.ordinal)
             if candidate is None:
                 raise ValueError(
                     "Source-partition rejection must retain its materialized candidate."
@@ -173,6 +182,7 @@ def validate_combination_evaluations(
 
 def expected_accounting(
     *,
+    request: ConstructionDiscoveryRequest,
     provenance: ConstructionCompositionProvenance,
     dispositions: tuple[CompositionDisposition, ...],
     geometry_group_count: int,
@@ -187,7 +197,8 @@ def expected_accounting(
         "foldback_local_realizations": len(provenance.foldback_realization_ids),
         "basal_local_realizations": len(provenance.basal_realization_ids),
         "nominal_combinations": len(provenance.foldback_realization_ids)
-        * (len(provenance.basal_realization_ids) or 1),
+        * (len(provenance.basal_realization_ids) or 1)
+        * source_context_count(request.materialization.source_preparation.source_ssdna),
         "pruned_before_execution": 0,
         "executed_combinations": examined,
         "examined_combinations": examined,

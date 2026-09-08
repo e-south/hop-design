@@ -114,6 +114,7 @@ def reject_accepted_dispositions(
     return [
         CompositionDisposition(
             ordinal=item.ordinal,
+            source_context_sequence=item.source_context_sequence,
             foldback_realization_id=item.foldback_realization_id,
             basal_realization_id=item.basal_realization_id,
             status=CompositionDispositionStatus.REJECTED,
@@ -240,8 +241,8 @@ def build_result(
         ),
         projection_inventory=(
             ProjectionInventoryItem(
-                projection_schema="hop.complete-construction-summary/v2",
-                renderer_version="complete-construction-projections/2",
+                projection_schema="hop.complete-construction-summary/v3",
+                renderer_version="complete-construction-projections/3",
                 status=ProjectionInventoryStatus.NOT_GENERATED,
             ),
         ),
