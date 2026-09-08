@@ -29,7 +29,7 @@ def construction_summary_command(
         typer.Argument(help="Verified HOP construction bundle directory."),
     ],
 ) -> None:
-    """Report exact route accounting and the experimental evidence boundary."""
+    """Show the endpoint, search coverage, and route counts."""
     receipt = load_receipt(bundle_path)
     content = summary_content(receipt)
     rows = content["rows"]

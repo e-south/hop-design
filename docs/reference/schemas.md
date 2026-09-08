@@ -1,13 +1,13 @@
 ---
 doc_id: hop-schema-reference
 title: Current schema identifiers
-intent: List the exact authored, authority, and projection schemas in the unreleased current candidate.
+intent: Identify supported source-checkout document types, their purpose, and their input limits.
 audience:
   - integrators
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-09-08
 doc_type: reference
 journey:
   - compile
@@ -18,9 +18,10 @@ journey:
 
 # Current schema identifiers
 
-This table documents the published `0.1.0a8` source and release contract. The
-older `0.1.0a7` release retains construction-contract v1; use its tagged
-documentation when operating that artifact.
+This table describes the source checkout, including unreleased construction
+schemas. For the published `v0.1.0a8` wheel, use its
+[tagged reference](https://github.com/e-south/hop-design/blob/v0.1.0a8/docs/reference/schemas.md).
+The package version alone does not distinguish post-release source changes.
 
 | Schema ID | Root model | Purpose |
 | --- | --- | --- |
@@ -95,7 +96,7 @@ replayable local authority over a deterministic, disjoint portion of the exact
 sequence domain; realization and construction-problem identities remain
 unchanged. A part may be complete for its declared domain but reports
 whole-domain payload compatibility as `not_computed`. Partitioning is
-incompatible with all-member compatibility constraints. An owning study must
+incompatible with all-member compatibility constraints. A caller must
 verify every ordered part, reject truncation,
 and prove pairwise-disjoint realization membership before describing the family
 as an exhaustive aggregate. HOP never silently narrows or publishes an

@@ -17,6 +17,7 @@ import re
 import subprocess
 import sys
 import tomllib
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import ModuleType
 
@@ -49,7 +50,6 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
 
     assert readme.startswith("# ![hop — Hairpin Oligonucleotide Processing")
     assert "assets/hop-design-banner.svg" in readme
-    assert "codecov.io/gh/e-south/hop-design/graph/badge.svg" in readme
     assert "HOP is alpha software" in readme
     assert "docs/guides/quickstart.md" in readme
     assert "https://github.com/e-south/hop-design/blob/main/AGENTS.md" in readme
@@ -58,9 +58,14 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
     assert "Keep the duplex sequence under study unchanged" in readme
-    assert "question → substrate rule → exact paired designs" in readme
-    assert "does not choose a biological target or publication example" in readme
-    assert "No physical construction, QC, or activity record is attached" in readme
+    assert "does not predict laboratory success" in readme
+    assert "source oligo" in readme
+    assert "foldback" in readme and "basal" in readme
+    assert "unreleased" in readme
+    assert not re.search(r"^\|", readme, flags=re.MULTILINE)
+    assert "scientist-facing facade" not in readme
+    assert "second authority" not in readme
+    assert "publication example" not in readme
     assert "docs/guides/substrate-spaces.md" in readme
     assert "domain-specific language" not in readme
     assert "```" not in readme
@@ -139,7 +144,7 @@ def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces()
     docs_index = (REPO_ROOT / "docs" / "index.md").read_text(encoding="utf-8")
     public_text = "\n".join((readme, language, docs_index))
 
-    assert "`hop_design.spaces` is the scientist-facing facade" in public_text
+    assert "`hop_design.spaces`" in public_text
     for specialist_surface in (
         "`hop_design`",
         "`hop_design.discovery`",
@@ -218,9 +223,9 @@ def test_public_claim_language_keeps_digital_derivation_narrow() -> None:
     why_hop = (REPO_ROOT / "docs" / "start" / "why-hop.md").read_text(encoding="utf-8")
     cli = (REPO_ROOT / "src" / "hop_design" / "cli.py").read_text(encoding="utf-8")
 
-    assert "constraint-checked hairpin anatomy" in why_hop
-    assert "satisfy declared digital constraints" in why_hop
-    assert "find compatible flanking" not in why_hop
+    assert "preserving" in why_hop and "duplex payload" in why_hop
+    assert "not a prediction of experimental success" in why_hop
+    assert "does not predict" in why_hop
     assert "bundle validated" not in cli.lower()
     assert "design derivation verified; no files written" in cli.lower()
 
@@ -244,14 +249,13 @@ def test_action_routes_have_runnable_public_examples() -> None:
         "examples/verify_design_method_handoff.py",
     ):
         assert (REPO_ROOT / path).is_file(), path
-    assert "docs/guides/discover-compatible-basal-candidates.md" in readme
-    assert "docs/guides/resolve-production-method.md" in readme
+    assert "docs/index.md" in readme
     assert "guides/discover-compatible-basal-candidates.md" in docs_index
     assert "guides/resolve-production-method.md" in docs_index
     assert "discover-compatible-basal-candidates.md" in quickstart
     assert "resolve-production-method.md" in quickstart
     assert "payload-sources-and-expansion.md" in quickstart
-    for text in (docs_index, method_guide, provenance):
+    for text in (method_guide, provenance):
         assert "examples/verify_design_method_handoff.py" in text
     assert "--out build/matched-handoff" in provenance
 
@@ -435,14 +439,13 @@ def test_campaign_context_is_generic_at_the_durable_route() -> None:
     assert not (REPO_ROOT / "docs" / "ecosystem" / "proto-and-campaign-orchestration.md").exists()
 
 
-def test_docs_index_preserves_the_claim_journey_order() -> None:
+def test_docs_index_routes_from_first_use_to_tasks_and_reference() -> None:
     docs_index = (REPO_ROOT / "docs" / "index.md").read_text(encoding="utf-8")
     labels = (
-        "**Design language:**",
-        "**Discovery language:**",
-        "**Method language:**",
-        "**Verify and inspect:**",
-        "**Integrate:**",
+        "## Start here",
+        "## Work on a construction",
+        "## Inputs and reference",
+        "## Contribute",
     )
     positions = [docs_index.index(label) for label in labels]
     assert positions == sorted(positions)
@@ -697,10 +700,30 @@ def test_public_prose_does_not_use_removed_specialized_root_operations() -> None
 def test_banner_uses_literal_name_and_method_stages() -> None:
     banner = (REPO_ROOT / "assets" / "hop-design-banner.svg").read_text(encoding="utf-8")
 
-    assert 'width="1280" height="260"' in banner
     assert "HAIRPIN OLIGONUCLEOTIDE PROCESSING" in banner
     assert all(color in banner for color in ("#1E1D1A", "#F3EFE7", "#969087", "#D97757"))
-    for stage in ("SOURCE", "RELEASE", "FOLDBACK", "INSERT"):
-        assert f">{stage}</text>" in banner
+    root = ET.fromstring(banner)
+    namespace = {"svg": "http://www.w3.org/2000/svg"}
+    stages = root.findall(".//svg:g[@data-stage]", namespace)
+    assert [stage.attrib["data-stage"] for stage in stages] == [
+        "source-ssdna",
+        "source-duplex",
+        "strand-exposure",
+        "foldback",
+        "hairpin",
+    ]
+    operations = root.findall(".//svg:g[@data-operation]", namespace)
+    assert [operation.attrib["data-operation"] for operation in operations] == [
+        "template-copy",
+        "cleave-and-separate",
+        "associate",
+        "join",
+    ]
+    assert all(stage.find("svg:title", namespace) is not None for stage in stages)
+    assert root.find(".//*[@id='removed-fragment']") is not None
+    assert root.find(".//*[@id='joining-bond']") is not None
+    assert root.find(".//*[@id='hairpin-backbone']") is not None
+    assert "not to scale" in banner
+    assert "INSERT" not in banner
     for buzzword in (">SPEC</text>", ">PLAN</text>", ">BUNDLE</text>"):
         assert buzzword not in banner

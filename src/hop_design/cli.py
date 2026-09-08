@@ -99,7 +99,7 @@ def compile_command(
         ),
     ] = False,
 ) -> None:
-    """Compile one bounded design from exactly one input surface."""
+    """Compile a payload sequence or a design file."""
     try:
         if (sequence is None) == (spec_path is None):
             raise typer.BadParameter(

@@ -1,13 +1,13 @@
 ---
 doc_id: hop-compile-construction-guide
 title: Compile a payload-centered construction
-intent: Compile one strict construction source against a separate verified design authority and export neutral scientific projections.
+intent: Search peripheral junctions, compile a construction, and inspect its required materials and molecular steps.
 audience:
   - Python users
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-09-08
 doc_type: how-to
 journey:
   - discover
@@ -16,13 +16,48 @@ journey:
 
 # Compile a payload-centered construction
 
-Use `hop_design.construction` when the question is:
+Keep the payload fixed while checking whether selected foldback and basal
+junctions can be completed into the requested hairpin or duplex. A construction
+result includes required material sequences, processing steps, and reasons
+why a proposed combination cannot satisfy the request.
 
-> Which exact complete construction routes follow from these local molecular
-> requests and this separately verified hairpin design?
+Search and compilation use the Python API, `hop_design.construction`. The CLI
+inspects saved results. This guide describes the source checkout, including
+unreleased features; use [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8)
+with the published wheel.
 
-This is a specialist file-oriented workflow. It does not change the shorter
-substrate-space journey and does not select an experimentally preferred route.
+## Run one example
+
+From the repository root, with Python 3.12–3.14 and `uv` installed:
+
+```bash
+uv sync --locked
+uv run python examples/compile_construction.py \
+  --design examples/construction-exact-design.yaml \
+  --source examples/construction-composed-pcr.yaml \
+  --out build/construction-example
+uv run hop-design construction summary build/construction-example/construction
+uv run hop-design construction list build/construction-example/construction
+```
+
+This small interface example resolves to `hairpin_pcr_duplex`. It writes the
+design, construction, and JSON/SVG projections below the output directory.
+An existing output directory is refused; choose a different name to rerun.
+The example is a sequence-model demonstration, not an experimental protocol.
+
+Copy a realization ID from the listing to inspect its source, auxiliaries,
+and molecular steps:
+
+```bash
+uv run hop-design construction inspect build/construction-example/construction \
+  REALIZATION_ID --out build/construction-example/trajectory
+```
+
+For your own question, [define the inputs](#prepare-the-two-authorities),
+[select local alternatives](#derive-a-design-from-selected-local-alternatives),
+then [compile](#compile-and-write-the-authority) and
+[inspect the result](#reopen-and-project). Checkpointing below is optional for
+collections of independent queries; it is not required to compile one route.
 
 ## Checkpoint independent local queries
 
@@ -181,10 +216,12 @@ composition:
     max_realizations: <positive integer>
 ```
 
-Angle-bracketed values above describe required typed mappings; they are not
-literal values to copy. Generate those mappings from the strict construction
-models used by the owning study, serialize their external field names, and keep
-the design bundle outside the source document. YAML anchors, aliases, and merge
+Angle-bracketed values above describe required mappings; they are not literal
+values to copy. Start from a complete example source under `examples/` and
+consult the [schema reference](../reference/schemas.md) for supported document types and limits.
+The public API reads the source file directly; no study package or internal
+model import is required. Keep the design bundle outside the source document.
+YAML anchors, aliases, and merge
 keys are rejected. The source cannot author design, result, realization,
 projection, output-path, timestamp, or environment identities.
 

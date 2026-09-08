@@ -33,7 +33,9 @@ def test_release_routing_names_published_and_current_contracts() -> None:
         REPO_ROOT / "docs/architecture/decisions/0033-close-linear-source-material-dependencies.md"
     ).read_text(encoding="utf-8")
 
-    assert "Published release | [v0.1.0a8]" in readme
+    assert "[v0.1.0a8](https://github.com/e-south/hop-design/releases/tag/v0.1.0a8)" in readme
+    assert "unreleased construction-search features" in readme
+    assert "tagged documentation" in readme
     assert "unreleased v0.1.0a8" not in readme
     assert "hop_design-0.1.0a8-py3-none-any.whl" in quickstart
     assert "published `v0.1.0a8`" in roadmap
@@ -42,6 +44,15 @@ def test_release_routing_names_published_and_current_contracts() -> None:
     assert "status: accepted" in material_closure_adr
     assert "Source preparation" in material_closure_adr
     assert "Source partition" in material_closure_adr
+
+
+def test_construction_guide_starts_with_a_standalone_public_example() -> None:
+    guide = (REPO_ROOT / "docs/guides/compile-construction.md").read_text(encoding="utf-8")
+
+    assert guide.index("examples/compile_construction.py") < guide.index("## Checkpoint")
+    assert "models used by the owning study" not in " ".join(guide.split())
+    assert "examples/construction-composed-pcr.yaml" in guide
+    assert "hop-design construction summary build/construction-example/construction" in guide
 
 
 def test_docs_smoke_exercises_the_public_documentation_journey() -> None:

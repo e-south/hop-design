@@ -1,14 +1,14 @@
 ---
 doc_id: hop-docs-index
 title: HOP documentation
-intent: Route readers through HOP's design, discovery, method, provenance, and ecosystem surfaces.
+intent: Find a starting example, a molecular task guide, or the relevant API and file reference.
 audience:
   - users
   - maintainers
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-09-08
 doc_type: index
 journey:
   - install
@@ -21,98 +21,47 @@ journey:
 
 # HOP documentation
 
-HOP is a domain-specific language and compiler for sequence-encoded hairpins.
-Follow the shortest route that answers your question. The CLI supports the
-common design-compilation path; discovery, method resolution, and typed
-integration use Python.
-
-`hop_design.spaces` is the scientist-facing facade. The package root
-`hop_design`, plus `hop_design.construction`, `hop_design.discovery`,
-`hop_design.methods`, and `hop_design.views`, are specialist surfaces for
-questions that require the design language, complete route construction,
-bounded discovery, named methods, or typed projections.
+Choose the task you need. Use the CLI to compile designs, preview sequence
+spaces, and inspect saved constructions. Use Python to search junctions and
+compile construction routes.
 
 ## Start here
 
-1. **Why HOP:** [Why HOP](start/why-hop.md) explains the product's narrow-waist role.
-2. **Mental model:** [Five claims HOP keeps separate](start/mental-model.md)
-   establishes the boundary between sequence identity, method support,
-   destination fit, and experimental success.
-3. **Define a substrate space:** [Substrate-space guide](guides/substrate-spaces.md)
-   previews and compiles one complete 64-member digital design set.
-4. **Install and compile:** [Quickstart](guides/quickstart.md) covers the
-   scientist-facing space and existing single-design routes.
-5. **Design language:** [Language overview](language/overview.md) introduces the
-   specialist vocabulary and routes to the formal ontology.
-6. **Discovery language:** [Discovery overview](discovery/overview.md) explains
-   bounded competency questions; [the discovery guide](guides/discover-compatible-basal-candidates.md)
-   runs one complete and one truncated query.
-7. **Method language:** [Method overview](methods/overview.md) separates exact
-   molecular chronology from declarative design derivation; [the method guide](guides/resolve-production-method.md)
-   writes and verifies one method bundle.
-8. **Verify and inspect:** [Provenance and verification](provenance/overview.md)
-   runs the matched `examples/verify_design_method_handoff.py` journey and
-   routes to the [design-bundle](reference/bundle-layout.md),
-   [method-bundle](reference/method-bundle-layout.md), and
-   [view](reference/view-contracts.md) contracts. The
-   [component-view guide](guides/render-component-views.md) renders foldback and
-   basal anatomy without inventing processing states.
-9. **Compile a complete construction:** [Construction guide](guides/compile-construction.md)
-   binds one strict source to a separate verified design, writes one portable
-   authority, and exports neutral scientific projections.
-10. **Discover a source partition:** [Source-partition guide](guides/discover-source-partitions.md)
-    searches bounded nickase subsets for an exact denatured-fragment and
-    length-selection outcome without calling that route-level process basal geometry.
-11. **Integrate:** [Ownership boundaries](ecosystem/ownership-boundaries.md)
-   defines what remains caller-owned and how broader campaign systems can call HOP.
+1. [Install and compile](guides/quickstart.md) a first design.
+2. [Define a substrate space](guides/substrate-spaces.md) with fixed and variable positions.
+3. [Understand the construction](start/mental-model.md): payload, local junctions,
+   materials, and processing steps. [Why HOP](start/why-hop.md) explains the design question.
 
-## Sibling semantic surfaces
+## Work on a construction
 
-- [Design language](language/overview.md): anatomy, authored inputs, derived
-  relationships, invariants, and deterministic encoding.
-- [Payload-centered construction](guides/compile-construction.md): strict local
-  requests plus a separate verified design, complete bounded route
-  composition, portable replay, and neutral projections.
-- [Discovery language](discovery/overview.md): deterministic bounded queries,
-  candidate identity, completeness, and neutral order.
-- [Method language](methods/overview.md): exact materials, molecular states,
-  transformations, products, and capability status.
-- [Provenance and verification](provenance/overview.md): bundle identity,
-  semantic replay, digests, and typed handoff relations.
-- [Ecosystem](ecosystem/ownership-boundaries.md): campaign orchestration,
-  placement, assessment, studies, execution, and observations.
+- [Search junctions and compile a construction](guides/compile-construction.md):
+  payload, enzymes, local constraints, required materials, and endpoint.
+- [Search compatible basal candidates](guides/discover-compatible-basal-candidates.md):
+  a runnable bounded query. See [search interpretation](discovery/overview.md)
+  for coverage, feasibility, and ordering.
+- [Find a fragment-removal program](guides/discover-source-partitions.md):
+  which nickase combinations leave the required fragments after separation?
+- [Check exact materials through a named method](guides/resolve-production-method.md):
+  molecular states and products, explained in the [method model](methods/overview.md).
+- [Render molecular views](guides/render-component-views.md) and
+  [verify saved results](provenance/overview.md).
 
-## Guides and reference
+## Inputs and reference
 
-- [Substrate spaces](guides/substrate-spaces.md): one authored arm, symbolic
-  preview, exhaustive compilation, and verified design-set package.
-- [Degenerate payloads](guides/degenerate-payloads.md): DNA IUPAC preservation
-  and explicit expansion budgets.
-- [Payload sources and expansion](guides/payload-sources-and-expansion.md):
-  iterables, FASTA, CSV, duplicate policy, and concrete variants.
-- [Payload-centered construction](guides/compile-construction.md): strict
-  source compilation, opaque receipts, portable replay, and neutral
-  projections.
-- [Source partitioning](guides/discover-source-partitions.md): provisioned
-  nickase subsets, exact sites, denatured fragments, size-selected survivors,
-  and truthful search accounting.
-- [Component views](guides/render-component-views.md): runnable, route-neutral
-  foldback and basal SVGs backed by typed JSON.
-- [CLI](reference/cli.md) and [Python API](reference/python-api.md).
-- [Mechanics map](reference/mechanics-api.md): route to component evaluation,
-  processing discovery, or released-foldback composition without one monolith.
-- [Linear-source method materials](reference/linear-source-method-materials.md):
-  declared oligos, terminal chemistry, and binding checks.
-- [Construction bundle layout](reference/construction-bundle-layout.md): exact
-  inventory, embedded design authority, and complete semantic replay.
-- [Schema identifiers](reference/schemas.md), [formal ontology](language/ontology.md),
-  and [relationships and invariants](language/relationships-and-invariants.md).
+- [Payload files and expansion](guides/payload-sources-and-expansion.md) and
+  [degenerate bases](guides/degenerate-payloads.md).
+- [Design anatomy](language/overview.md), [terms](language/ontology.md), and
+  [pairing rules](language/relationships-and-invariants.md).
+- [CLI](reference/cli.md), [Python API](reference/python-api.md), and
+  [component calculations](reference/mechanics-api.md).
+- [Material requirements](reference/linear-source-method-materials.md) and
+  [view formats](reference/view-contracts.md).
+- [Design files](reference/bundle-layout.md),
+  [construction files](reference/construction-bundle-layout.md),
+  [method files](reference/method-bundle-layout.md), and [schemas](reference/schemas.md).
+- [Downstream integration](ecosystem/ownership-boundaries.md).
 
-## Maintain
+## Contribute
 
-- [Maintainer map](dev/README.md) routes governance, release, and migration work.
-- [Architecture](../ARCHITECTURE.md), [engineering contracts](../DESIGN.md),
-  [reliability](../RELIABILITY.md), and [security](../SECURITY.md) are the root
-  authorities.
-- [Roadmap](dev/plans/roadmap.md) defines phased proof of done.
-- [Architecture decisions](architecture/decisions/) record costly choices.
+[Contributor instructions](../CONTRIBUTING.md) and the [maintainer map](dev/README.md)
+cover implementation, verification, and releases.

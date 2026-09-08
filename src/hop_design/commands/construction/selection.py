@@ -111,7 +111,7 @@ def construction_inspect_command(
         typer.Option("--out", help="New directory for exact trajectory JSON and SVG."),
     ] = None,
 ) -> None:
-    """Inspect one explicitly identified accepted molecular trajectory."""
+    """Inspect the materials and molecular steps of one route."""
     receipt = load_receipt(bundle_path)
     if output is not None:
         require_output_outside_bundle(bundle_path, output)
@@ -149,7 +149,7 @@ def construction_select_command(
         typer.Option("--out", help="New JSON file for the result-bound reference."),
     ],
 ) -> None:
-    """Persist one result-bound route reference without endorsing or ranking it."""
+    """Save a selection referencing an existing route."""
     receipt = load_receipt(bundle_path)
     require_output_outside_bundle(bundle_path, output)
     try:

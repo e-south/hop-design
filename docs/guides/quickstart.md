@@ -6,7 +6,7 @@ audience:
   - new users
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-09-08
 doc_type: tutorial
 journey:
   - install
@@ -36,11 +36,12 @@ uv pip install ./hop_design-0.1.0a8-py3-none-any.whl
 hop-design compile --sequence ACGT --design-id exact-demo --out build/exact
 ```
 
-The release-wheel command above uses the a8 contract. The published a8 wheel
-supports the single-design command above, the scientist-facing substrate-space
-journey below, and the advanced construction facade documented separately.
+The command prints the design and saved-file identifiers. Open the output
+directory to inspect the sequence and feature files.
 
-From a contributor checkout:
+## Preview a sequence space
+
+From a source checkout, run the included small verification fixture:
 
 ```bash
 uv sync --locked
@@ -51,29 +52,19 @@ uv run hop-design verify build/fixed-site-three-base-context/bundle
 ```
 
 The example defines 64 exact designs from three variable paired positions.
-Open `build/fixed-site-three-base-context/review.html` to inspect the substrate
-anatomy, complete space accounting, evidence boundary, exact sequence table,
-and handoff files. The package establishes verified digital design; it does
-not evaluate a named method or destination, and it does not record physical
-construction, QC, or biological activity. Continue with the
-[substrate-space guide](substrate-spaces.md) for the specification and package
-contracts.
+Open `build/fixed-site-three-base-context/review.html` to inspect the paired
+sequences and download their CSV, FASTA, and SVG files. Preview calculates the
+space size without creating files. The [substrate-space guide](substrate-spaces.md)
+explains how to define a different pattern and interpret the compilation limit.
 
-`hop_design.spaces` is the scientist-facing Python facade for this journey.
-The package root `hop_design` and the `hop_design.discovery`,
-`hop_design.methods`, and `hop_design.views` facades expose specialist design,
-bounded-search, named-method, and typed-projection questions; they are not
-required to compile the 64-member verification fixture.
-
-The existing single-design route remains available:
+## Specify one design
 
 ```bash
 uv run hop-design compile --sequence ACGT --design-id exact-demo --out build/exact
 uv run hop-design compile --sequence NRY --design-id symbolic-demo --out build/symbolic
 ```
 
-The single-design CLI prints the named default, plan ID, and bundle ID. It
-refuses to replace an existing output directory. Add `--dry-run` to derive the
+The CLI refuses to replace an existing output directory. Add `--dry-run` to derive the
 design and check its constraints without writing; `--out` is not required for
 that read-only call.
 
@@ -83,13 +74,9 @@ A strict JSON or YAML specification uses the same endpoint:
 uv run hop-design compile --spec examples/generic-symbolic.yaml --out build/from-spec
 ```
 
-The release-wheel and contributor-checkout commands use the same a8 contract.
-Use `hop.design/v2` for the named generic demonstration and
-`hop.resolved-design/v2` when foldback and basal components are supplied by the
-caller. A design spec records deterministic design derivation, not an ordered
-construction or laboratory chronology. A resolved release projection requires
-explicit terminal-nick geometry; construction routes and named methods own
-their respective ordered molecular histories.
+Use `hop.design/v2` for the named generic example and `hop.resolved-design/v2`
+when you supply the foldback and basal components. See the
+[design language](../language/overview.md) for those inputs.
 
 In Python:
 
@@ -104,14 +91,18 @@ compilation.write("build/symbolic-python")
 hop.verify_bundle("build/symbolic-python")
 ```
 
-The generic design derivation builds `basal left + payload + foldback junction + derived
-paired payload + basal right`. It exists to exercise the software contracts and
-must not be interpreted as a wet-lab protocol or experimental validation.
+This compiles hairpin anatomy with a derived complementary payload arm. It
+does not specify a construction procedure or establish experimental success.
 
-The CLI intentionally exposes the common compile path. Continue in Python with:
+## Continue
 
-- [payload records and advanced composable axes](payload-sources-and-expansion.md);
-- [a bounded basal-candidate query](discover-compatible-basal-candidates.md);
-- [a named processing-method bundle](resolve-production-method.md); or
-- [route-neutral foldback and basal views](render-component-views.md); or
-- [verified consumer integration](../provenance/overview.md).
+- [Load payload records](payload-sources-and-expansion.md).
+- [Search basal candidates](discover-compatible-basal-candidates.md) or
+  [compile a construction](compile-construction.md) through Python.
+- [Check a named method](resolve-production-method.md) and
+  [render molecular views](render-component-views.md).
+
+The CLI can also inspect and select saved constructions with
+`hop-design construction`. Construction search and compilation use Python;
+check the [construction guide](compile-construction.md) for source-only features
+not available in the published release.

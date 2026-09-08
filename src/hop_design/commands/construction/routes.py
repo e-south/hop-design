@@ -229,7 +229,7 @@ def construction_list_command(
         typer.Option("--limit", help="Maximum displayed rows; scientific accounting is intact."),
     ] = 25,
 ) -> None:
-    """List exact dispositions without ranking or changing result authority."""
+    """List routes with explicit filters, grouping, and sorting."""
     requested_enzymes = tuple(enzyme or ())
     _validate_list_options(
         status=status,

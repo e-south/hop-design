@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from hop_design.cli import app
@@ -24,6 +25,32 @@ from tests.integration.test_complete_construction_projections import _verified_r
 from tests.support.claim_language import assert_no_positive_downstream_claims
 
 runner = CliRunner()
+
+
+@pytest.mark.parametrize(
+    ("arguments", "description"),
+    (
+        (["compile", "--help"], "Compile a payload sequence or a design file."),
+        (
+            ["construction", "summary", "--help"],
+            "Show the endpoint, search coverage, and route counts.",
+        ),
+        (
+            ["construction", "list", "--help"],
+            "List routes with explicit filters, grouping, and sorting.",
+        ),
+        (
+            ["construction", "inspect", "--help"],
+            "Inspect the materials and molecular steps of one route.",
+        ),
+        (["construction", "select", "--help"], "Save a selection referencing an existing route."),
+    ),
+)
+def test_command_help_describes_the_user_task(arguments: list[str], description: str) -> None:
+    result = runner.invoke(app, arguments, color=False)
+
+    assert result.exit_code == 0, result.output
+    assert description in " ".join(result.output.split())
 
 
 def test_route_line_preserves_zero_basal_overhead() -> None:

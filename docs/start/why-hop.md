@@ -1,13 +1,13 @@
 ---
 doc_id: hop-why-hop
 title: Why HOP
-intent: Explain why hairpin engineering benefits from a narrow domain-semantic language.
+intent: Explain the value and limits of searching construction sequence around an unchanged duplex payload.
 audience:
   - users
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-09-08
 doc_type: explanation
 journey:
   - compile
@@ -16,40 +16,27 @@ journey:
 
 # Why HOP
 
-Hairpin designs are often recorded as concatenated sequence fragments whose
-names—payload, cap, base, scar, or adapter—carry different meanings in different
-workflows. That representation makes it easy to duplicate a reverse complement,
-blur an authored sequence with a derived sequence, or claim that a design is
-physically producible because its final text exists.
+The region being tested should not have to change to accommodate its
+construction sequence. For a unimolecular DNA hairpin, that means preserving
+the duplex payload while arranging the flanking recognition sites, exposed
+strands, pairing regions, and joining bonds needed to assemble it.
 
-Many protein-DNA experiments compare binding or enzymatic processing across a
-family of duplex payloads. A unimolecular hairpin can keep each payload member
-and its derived reverse complement in one continuous sequence encoding. The
-reusable construction problem is to find flanking recognition sites, nick or
-cut positions, and junction geometry that satisfy declared digital constraints
-without changing that payload. HOP keeps the duplex payload fixed while it
-searches this construction periphery instead of forcing a new sequence space
-into a predetermined scaffold.
+HOP makes those arrangements searchable. You can ask which enzymes permit a
+requested foldback, how close a basal nick can lie to the payload, or which
+cuts remove unwanted source fragments. Results retain exact molecular examples
+and the bounds under which they were found, so a junction can be inspected
+rather than inferred from a final sequence string.
 
-HOP moves composition to the level of hairpin meaning:
+Local junctions are only part of the problem. A proposed construction also
+needs sufficient adapter pairing, primer-binding sequence, and compatible
+processing steps. Checking these together can expose a missing requirement
+even when both local junctions are feasible.
 
-```text
-authored payload + structural relationships
-    -> constraint-checked hairpin anatomy
-    -> deterministic feature-partitioned encoding
-```
+The useful output is an inspectable sequence and material specification for
+testing, not a prediction of experimental success. HOP models established
+copying, cleavage, association, and joining operations; it does not predict
+their efficiency or establish library-wide physical recovery from one example.
 
-Its separate method language can then ask whether exact materials resolve to
-that encoding through a named sequence of modeled molecular states. HOP is deliberately
-narrow: it gains value from specificity about hairpin anatomy, exact derivation,
-bounded compatibility, and physical lineage.
-
-Broader campaign systems can propose payloads, enumerate libraries, or optimize
-objectives. HOP remains the semantic authority for what each proposed hairpin
-means and for the exact destination-neutral molecular product modeled by a
-supported method. Replay establishes derivation consistency; it does not
-establish physical construction or recovery of a molecule.
-
-Continue with the [mental model](mental-model.md), then choose the
-[design](../language/overview.md), [discovery](../discovery/overview.md), or
-[method](../methods/overview.md) surface that answers your question.
+Start with [the molecular steps](mental-model.md), then
+[search a construction](../guides/compile-construction.md) or
+[define a substrate space](../guides/substrate-spaces.md).
