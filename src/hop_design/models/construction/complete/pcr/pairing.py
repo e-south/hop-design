@@ -11,11 +11,14 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from typing import Literal
+
 from hop_design.models.construction.basal import (
     BasalPairingState,
     BasalPairRecord,
     BasalRealizationRecord,
 )
+from hop_design.models.construction.basal.pairing import derive_basal_pair_class
 from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.sequence import reverse_complement_iupac
@@ -24,9 +27,9 @@ from ..basal_embedding import basal_source_offset
 
 
 def complete_adapter_pairing(
-    basal: BasalRealizationRecord, *, source_prefix: str
+    basal: BasalRealizationRecord, *, source_prefix: str, adapter_sequence: str | None = None
 ) -> BasalPairingState:
-    """Extend proximal pairing with canonical pairs in the available source flank."""
+    """Observe full-span pairs, deriving a canonical distal arm when none is supplied."""
     local = basal.projection.pairing_state
     if local is None:
         raise ValueError("PCR route requires the exact basal adapter-pairing authority.")
@@ -40,7 +43,24 @@ def complete_adapter_pairing(
         raise ValueError("Required adapter annealing exceeds the available invariant source flank.")
     source = source_prefix[start:end]
     distal = source[:completion]
-    adapter = local.adapter_sequence_5prime + (reverse_complement_iupac(distal) if distal else "")
+    adapter = (
+        local.adapter_sequence_5prime + (reverse_complement_iupac(distal) if distal else "")
+        if adapter_sequence is None
+        else adapter_sequence[:required]
+    )
+    if len(adapter) != required or not adapter.startswith(local.adapter_sequence_5prime):
+        raise ValueError(
+            "Adapter must preserve the exact local segment and required annealing span."
+        )
+    distal_classes = {
+        position: derive_basal_pair_class(source[required - 1 - position], adapter[position])
+        for position in range(len(local.pairs), required)
+    }
+    symbol_by_class: dict[BasalPairClass, Literal["M", "W", "X"]] = {
+        BasalPairClass.MATCH: "M",
+        BasalPairClass.WOBBLE: "W",
+        BasalPairClass.MISMATCH: "X",
+    }
     pairs = (
         *(
             pair.model_copy(update={"source_index": pair.source_index + completion})
@@ -53,8 +73,8 @@ def complete_adapter_pairing(
                 adapter_index=position,
                 source_base=source[required - 1 - position],
                 adapter_base=adapter[position],
-                pair_class=BasalPairClass.MATCH,
-                compact_symbol="M",
+                pair_class=distal_classes[position],
+                compact_symbol=symbol_by_class[distal_classes[position]],
             )
             for position in range(len(local.pairs), required)
         ),
@@ -65,5 +85,5 @@ def complete_adapter_pairing(
         source_span=Span(start=Boundary(offset=start), end=Boundary(offset=end)),
         adapter_span=Span(start=Boundary(offset=0), end=Boundary(offset=required)),
         pairs=pairs,
-        pairing_pattern=local.pairing_pattern + "M" * completion,
+        pairing_pattern="".join(pair.compact_symbol for pair in pairs),
     )

@@ -59,7 +59,9 @@ def evaluate_pcr_compatibility(
     ):
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
     try:
-        pairing_state = complete_adapter_pairing(basal, source_prefix=prefix)
+        pairing_state = complete_adapter_pairing(
+            basal, source_prefix=prefix, adapter_sequence=adapter.sequence_5prime
+        )
     except ValueError:
         return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
     if (
@@ -91,9 +93,12 @@ def validate_adapter_pairing_state(
     source_prefix: str,
     closed_strand_id: str,
     adapter_strand_id: str,
+    adapter_sequence: str | None = None,
 ) -> None:
     """Replay literal basal pair coordinates, bases, and classes into PCR authority."""
-    pairing_state = complete_adapter_pairing(basal, source_prefix=source_prefix)
+    pairing_state = complete_adapter_pairing(
+        basal, source_prefix=source_prefix, adapter_sequence=adapter_sequence
+    )
     kind_by_class = {
         BasalPairClass.MATCH: JunctionPairKind.WATSON_CRICK,
         BasalPairClass.WOBBLE: JunctionPairKind.GT_WOBBLE,
@@ -221,6 +226,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         source_prefix=prefix,
         closed_strand_id=closed.strand_id,
         adapter_strand_id=adapter_strand.strand_id,
+        adapter_sequence=adapter_strand.sequence,
     )
     terminal_transition = program.transitions[pcr_index - 1]
     if not isinstance(terminal_transition.pcr_authority, PrimerExtensionAuthority):

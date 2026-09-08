@@ -27,7 +27,11 @@ from hop_design.models.construction.complete import (
 )
 from hop_design.models.construction.complete.pcr.pairing import complete_adapter_pairing
 from hop_design.models.construction.complete.pcr.validation import validate_adapter_pairing_state
+from hop_design.models.construction.complete.result_contract.replay import (
+    validate_combination_evaluations,
+)
 from hop_design.models.junction import Strand
+from hop_design.models.physical import JunctionPairKind
 from hop_design.models.sequence import reverse_complement_iupac
 from tests.integration.test_complete_construction_discovery import (
     _basal_result,
@@ -190,3 +194,99 @@ def test_basal_result_cannot_lower_the_requested_annealing_requirement(tmp_path:
 
     with pytest.raises(ValueError, match="requested annealing"):
         type(basal).create(discovery=basal.discovery, realizations=tuple(changed))
+
+
+@pytest.mark.parametrize("mode", ("derive", "constrain", "fixed"))
+def test_explicit_distal_wobble_survives_complete_route_replay(tmp_path: Path, mode: str) -> None:
+    request, foldback, basal, design = _adapter_case(tmp_path, "TGCAGTCTGACAAAA")
+    data = request.model_dump(mode="json", by_alias=True)
+    adapter = {
+        "mode": mode,
+        "distal_pairing_constraints": [{"position_from_ligation": 6, "allowed_class": "wobble"}],
+    }
+    sequence = "TTTTGTTAGACTGCA"
+    if mode == "constrain":
+        adapter["three_prime_handle_sequence"] = "GATCTG"
+        sequence += "GATCTG"
+    elif mode == "fixed":
+        sequence += "GATCTG"
+        adapter["material"] = {
+            "sequence_5prime": sequence,
+            "five_prime_end": "phosphate",
+            "three_prime_end": "hydroxyl",
+        }
+    data["materialization"]["endpoint_auxiliaries"]["adapter"] = adapter
+    request = type(request).model_validate_json(json.dumps(data))
+
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert result.realizations
+    for item in result.realizations:
+        assert item.materials[2].sequence_5prime == sequence
+        pairing = item.construction_program.transitions[-3].pcr_authority
+        assert len(pairing.pairings) == 15
+        assert [pair.kind for pair in pairing.pairings] == [
+            *([JunctionPairKind.WATSON_CRICK] * 6),
+            JunctionPairKind.GT_WOBBLE,
+            *([JunctionPairKind.WATSON_CRICK] * 8),
+        ]
+        assert (pairing.pairings[6].left_base, pairing.pairings[6].right_base) == ("G", "T")
+        assert item.basal_authority == basal.realizations[0]
+    assert type(result).model_validate_json(result.model_dump_json()) == result
+    data["materialization"]["endpoint_auxiliaries"]["adapter"].pop("distal_pairing_constraints")
+    canonical_request = type(request).model_validate_json(json.dumps(data))
+    with pytest.raises(ValueError, match="exact combination evaluation"):
+        validate_combination_evaluations(
+            request=canonical_request,
+            foldback_authority=foldback,
+            basal_authority=basal,
+            dispositions=result.combination_dispositions,
+            realizations=result.realizations,
+        )
+
+
+def test_ambiguous_distal_design_fails_as_an_input_error_not_infeasibility(tmp_path: Path) -> None:
+    request, foldback, basal, design = _adapter_case(tmp_path, "TGCAGTCTGACAAAA")
+    data = request.model_dump(mode="json", by_alias=True)
+    data["materialization"]["endpoint_auxiliaries"]["adapter"]["distal_pairing_constraints"] = [
+        {"position_from_ligation": 6, "allowed_class": "any"}
+    ]
+    request = type(request).model_validate_json(json.dumps(data))
+
+    with pytest.raises(ValueError, match="ambiguous"):
+        _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+
+@pytest.mark.parametrize("position", (0, 3, 15, 20))
+def test_distal_constraint_cannot_rewrite_local_pairs_or_extend_the_span(
+    tmp_path: Path, position: int
+) -> None:
+    request, foldback, basal, design = _adapter_case(tmp_path, "TGCAGTCTGACAAAA")
+    data = request.model_dump(mode="json", by_alias=True)
+    data["materialization"]["endpoint_auxiliaries"]["adapter"]["distal_pairing_constraints"] = [
+        {"position_from_ligation": position, "allowed_class": "match"}
+    ]
+    request = type(request).model_validate_json(json.dumps(data))
+
+    with pytest.raises(ValueError, match="outside the local junction"):
+        _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+
+def test_undeclared_distal_wobble_is_rejected(tmp_path: Path) -> None:
+    request, foldback, basal, design = _adapter_case(tmp_path, "TGCAGTCTGACAAAA")
+    data = request.model_dump(mode="json", by_alias=True)
+    data["materialization"]["endpoint_auxiliaries"]["adapter"] = {
+        "mode": "fixed",
+        "material": {
+            "sequence_5prime": "TTTTGTTAGACTGCAGATCTG",
+            "five_prime_end": "phosphate",
+            "three_prime_end": "hydroxyl",
+        },
+    }
+    request = type(request).model_validate_json(json.dumps(data))
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+
+    assert result.status is SearchCompletionStatus.INFEASIBLE
+    assert not result.realizations
+    assert {reason.code for reason in result.failure_reasons} == {"pcr-adapter-mismatch"}

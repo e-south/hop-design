@@ -90,6 +90,22 @@ explicit range and may prepend an explicit 5′ handle, and `fixed` validates on
 exact primer. Arbitrary handle generation remains unsupported until its
 sequence-quality rules exist.
 
+Adapter policies may explicitly constrain distal pairing positions using the
+existing basal pair-class and base-domain vocabulary. They cannot override the
+selected local segment or enlarge its annealing obligation. Unspecified distal
+positions remain canonical. Resolution preserves source bases and requires one
+exact adapter base at each position, either determined by constraints or pinned
+in a fixed material; unresolved alternatives raise an input error rather than
+being ranked or reported as molecular infeasibility. The molecular replay owns
+literal full-span pair classification; request replay separately enforces the
+policy that permitted those pairs.
+
+`distal_pairing_constraints` is an optional additive field in the current
+pre-release construction contracts, omitted when empty. Schema identifiers and
+canonical bytes for requests without the field remain unchanged. Explicit
+constraints enter request identity and must survive result and bundle replay.
+No reader aliases or automatic conversion of incompatible adapters are provided.
+
 ### Bounded upstream completion
 
 A constrained source policy supplies one fixed-length IUPAC pattern before the

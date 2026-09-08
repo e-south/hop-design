@@ -215,12 +215,38 @@ finalize the complete adapter, or claim a PCR product. Complete composition
 must satisfy those obligations against the realized source scaffold and exact
 endpoint materials.
 
+The current PCR composition path requires the basal nick to coincide with the
+payload boundary. Standalone basal search also evaluates nonzero offsets, but
+those local solutions cannot yet be completed by this PCR route. A
+`pcr-basal-open-incompatible` result is therefore a limitation of the modeled
+composition, not evidence that such a construction is physically impossible.
+
 For PCR-bearing composition, the adapter keeps the locally selected proximal
-pairs, including any permitted mismatches. HOP derives the remaining required
-annealing bases as the reverse complement of the adjacent invariant source
-flank, then appends a requested adapter handle. A fixed adapter must contain
-that complete pairing sequence. The molecular trajectory records every
-associated position, not just the proximal local segment.
+pairs, including any permitted mismatches. Undeclared distal positions pair
+canonically with the adjacent invariant source flank. All adapter modes accept
+`distal_pairing_constraints` using the same position, pair-class, and base-domain
+fields as the local basal constraints. Positions are zero-based from the
+adapter's ligation end, strictly ascending, and must lie beyond the local
+segment but inside the required annealing span. For example:
+
+```yaml
+adapter:
+  mode: constrain
+  three_prime_handle_sequence: GATCTG
+  distal_pairing_constraints:
+    - position_from_ligation: 6
+      allowed_class: wobble
+```
+
+This requires G:T or T:G at position 6; it is not permission to change the
+source base. Derivation must resolve one exact adapter base per position.
+An ambiguous choice raises an input error: narrow `allowed_adapter_bases` or
+provide a fixed adapter. No arbitrary mismatch is selected. A fixed adapter
+must satisfy the declared constraints and remain canonical at undeclared
+distal positions. HOP appends a requested handle after the pairing segment;
+a fixed material can instead contain overlapping pairing and primer-binding
+spans. The trajectory records every literal pair, including permitted wobbles
+and mismatches, without predicting annealing or ligation performance.
 
 If the selected source lacks enough upstream sequence, that exact composition
 is rejected. For PCR-bearing endpoints, a `fixed` source may supply a longer

@@ -111,6 +111,14 @@ former or current internal paths.
 
 ## Remaining product work
 
+### Offset basal nick composition
+
+Local basal search supports nick offsets from the payload boundary. PCR
+composition currently requires zero offset. Supporting nonzero offsets requires
+carrying the intervening retained complementary strand through fragment
+selection, adapter association at the nick, joining, and endpoint copying.
+Local accessibility alone does not establish that complete trajectory.
+
 ### Bounded scaffold completion
 
 Upstream completion searches one caller-authored fixed-length sequence domain.

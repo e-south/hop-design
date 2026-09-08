@@ -19,7 +19,7 @@ from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import reverse_complement_iupac
 
 from ..material import ExactConstructionMaterial, MaterialResolutionMode, PcrPrimer
-from ..pcr.pairing import complete_adapter_pairing
+from .pairing import AdapterPairingPolicyError, resolve_adapter_pairing_sequence
 from .policy import (
     ConstrainedAdapterPolicy,
     ConstrainedEndpointPrimerPolicy,
@@ -85,7 +85,11 @@ def _material(
     )
 
 
-def _adapter_pairing_sequence(basal: BasalRealizationRecord, source_prefix: str) -> str:
+def _adapter_pairing_sequence(
+    basal: BasalRealizationRecord,
+    source_prefix: str,
+    policy: DerivedAdapterPolicy | ConstrainedAdapterPolicy | FixedAdapterPolicy,
+) -> str:
     pairing_state = basal.projection.pairing_state
     if pairing_state.adapter_span.start.offset != 0 or pairing_state.adapter_span.end.offset != len(
         pairing_state.adapter_sequence_5prime
@@ -95,7 +99,16 @@ def _adapter_pairing_sequence(basal: BasalRealizationRecord, source_prefix: str)
             "Basal authority must define one terminal adapter-pairing segment.",
         )
     try:
-        return complete_adapter_pairing(basal, source_prefix=source_prefix).adapter_sequence_5prime
+        return resolve_adapter_pairing_sequence(
+            basal,
+            source_prefix=source_prefix,
+            constraints=policy.distal_pairing_constraints,
+            fixed_sequence=policy.material.sequence_5prime
+            if isinstance(policy, FixedAdapterPolicy)
+            else None,
+        )
+    except AdapterPairingPolicyError:
+        raise
     except ValueError as exc:
         raise EndpointAuxiliaryResolutionError(
             EndpointAuxiliaryResolutionFailure.ADAPTER, str(exc)
@@ -108,7 +121,7 @@ def _resolve_adapter(
     basal: BasalRealizationRecord,
     source_prefix: str,
 ) -> ExactConstructionMaterial:
-    pairing_sequence = _adapter_pairing_sequence(basal, source_prefix)
+    pairing_sequence = _adapter_pairing_sequence(basal, source_prefix, policy)
     if isinstance(policy, FixedAdapterPolicy):
         adapter = policy.material
     else:

@@ -190,7 +190,9 @@ def materialize_pcr_program(
         ),
     )
     adapter_strand = _lineage_strand(adapter, adapter_use)
-    pairing_state = complete_adapter_pairing(basal, source_prefix=prefix)
+    pairing_state = complete_adapter_pairing(
+        basal, source_prefix=prefix, adapter_sequence=adapter.sequence_5prime
+    )
     adapter_pairs = tuple(
         observe_pair(
             left_strand_id=closed.strand_id,
