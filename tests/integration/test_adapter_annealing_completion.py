@@ -59,6 +59,7 @@ def test_complete_route_rejects_an_undischarged_adapter_obligation(tmp_path: Pat
         validate_adapter_pairing_state(
             authority,
             basal=basal,
+            source_prefix="AAAA",
             closed_strand_id=state.molecules[0].strand_id,
             adapter_strand_id=state.molecules[1].strand_id,
         )
@@ -161,7 +162,7 @@ def test_distal_completion_preserves_the_selected_proximal_mismatch() -> None:
 
     assert basal.realizations
     for item in basal.realizations:
-        paired = complete_adapter_pairing(item)
+        paired = complete_adapter_pairing(item, source_prefix="TGCAGTCTGACAAAA")
         assert paired.adapter_sequence_5prime[:4] == item.proximal_adapter_sequence
         assert paired.adapter_sequence_5prime[4:] == "GTCAGACTGCA"
         assert paired.pairing_pattern == "MXMM" + "M" * 11

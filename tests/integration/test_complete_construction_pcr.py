@@ -694,6 +694,7 @@ def test_pcr_adapter_pair_kind_must_match_the_h5_profile(tmp_path: Path) -> None
         validate_adapter_pairing_state(
             changed_authority,
             basal=realization.basal_authority,
+            source_prefix="AAAA",
             closed_strand_id=adapter_annealed.molecules[0].strand_id,
             adapter_strand_id=adapter_annealed.molecules[1].strand_id,
         )
@@ -1679,6 +1680,7 @@ def test_pcr_realization_replay_rejects_exact_authority_forgery_matrix(
             basal=basal.model_copy(
                 update={"projection": basal.projection.model_copy(update={"pairing_state": None})}
             ),
+            source_prefix="AAAA",
             closed_strand_id=adapter_state.molecules[0].strand_id,
             adapter_strand_id=adapter_state.molecules[1].strand_id,
         )

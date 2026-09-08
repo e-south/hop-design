@@ -1,4 +1,13 @@
-"""Shared exact inputs prepared before endpoint-specific evaluation."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/models/construction/complete/evaluation/context.py
+
+Prepares exact source inputs before endpoint-specific evaluation.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -8,12 +17,15 @@ from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
+from hop_design.models.sequence import reverse_complement_iupac
 
+from ..basal_embedding import basal_source_offset
 from ..evaluation_inputs import (
     derive_complete_payload_source_span,
     derive_endpoint_source_return_arm,
     derive_linear_source_embedding,
     derive_route_prefix,
+    replay_linear_source_embedding,
 )
 from ..material import ExactConstructionMaterial
 from ..provisioning import merge_provisioning_policies
@@ -23,6 +35,7 @@ from ..source_preparation import (
     SourcePreparationResolutionError,
     resolve_route_source_preparation,
 )
+from ..source_preparation.policy import FixedSourceSsdnaPolicy
 from .result import CombinationEvaluation, CompositionRejectionCode
 
 
@@ -91,6 +104,23 @@ def prepare_context(
             recognition_placements_attempted=context.recognition_placements_attempted,
             constraint_systems_attempted=context.constraint_systems_attempted,
         )
+    source_policy = request.materialization.source_preparation.source_ssdna
+    if basal is not None and isinstance(source_policy, FixedSourceSsdnaPolicy):
+        try:
+            sequence = source_policy.material.sequence_5prime
+            prefix, _, _ = replay_linear_source_embedding(
+                foldback=foldback,
+                source_sequence=sequence,
+                complement_sequence=reverse_complement_iupac(sequence),
+            )
+            basal_source_offset(basal, prefix)
+        except ValueError:
+            return CombinationEvaluation(
+                rejection_reason=CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE,
+                candidate_enzyme_programs=context.candidate_enzyme_programs,
+                recognition_placements_attempted=context.recognition_placements_attempted,
+                constraint_systems_attempted=context.constraint_systems_attempted,
+            )
     source_return_arm = derive_endpoint_source_return_arm(request, prefix=prefix)
     embedding = derive_linear_source_embedding(
         foldback=foldback,

@@ -236,9 +236,17 @@ that complete pairing sequence. The molecular trajectory records every
 associated position, not just the proximal local segment.
 
 If the selected source lacks enough upstream sequence, that exact composition
-is rejected. This is not proof that a longer source scaffold cannot work:
-bounded source extension remains separate product work. No annealing length
-is silently reduced, and no melting temperature or recovery is predicted.
+is rejected. For PCR-bearing endpoints, a `fixed` source may supply a longer
+upstream flank while preserving the entire local basal sequence, payload, and
+foldback source. HOP maps both junctions into that exact source, derives primer
+binding and full adapter annealing there, and checks additional actionable
+enzyme sites. This applies in either foldback-source orientation; it does not
+alter a local realization or count the added flank as local junction overhead.
+
+Fixed-source replay evaluates that supplied completion only. It does not search
+for an extension or prove that every alternative fails. Bounded source extension
+remains separate product work. No fixed primer is rewritten, no annealing
+length is silently reduced, and no melting temperature or recovery is predicted.
 
 The future release requirement records `recognition_material`:
 

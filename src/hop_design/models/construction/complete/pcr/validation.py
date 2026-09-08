@@ -22,6 +22,7 @@ from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.physical import JunctionPairKind
 from hop_design.models.sequence import reverse_complement_iupac
 
+from ..basal_embedding import basal_source_offset
 from ..evaluation.result import CompositionRejectionCode
 from ..evaluation_inputs import replay_linear_source_embedding
 from ..material import ExactConstructionMaterial, PcrPrimer
@@ -54,11 +55,11 @@ def evaluate_pcr_compatibility(
     if (
         basal is None
         or basal.basal_nick.strand is not Strand.BOTTOM
-        or basal.basal_nick.boundary.offset != len(prefix)
+        or basal.basal_nick.boundary.offset + basal_source_offset(basal, prefix) != len(prefix)
     ):
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
     try:
-        pairing_state = complete_adapter_pairing(basal)
+        pairing_state = complete_adapter_pairing(basal, source_prefix=prefix)
     except ValueError:
         return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
     if (
@@ -87,11 +88,12 @@ def validate_adapter_pairing_state(
     authority: AdapterAnnealingAuthority,
     *,
     basal: BasalRealizationRecord,
+    source_prefix: str,
     closed_strand_id: str,
     adapter_strand_id: str,
 ) -> None:
     """Replay literal basal pair coordinates, bases, and classes into PCR authority."""
-    pairing_state = complete_adapter_pairing(basal)
+    pairing_state = complete_adapter_pairing(basal, source_prefix=source_prefix)
     kind_by_class = {
         BasalPairClass.MATCH: JunctionPairKind.WATSON_CRICK,
         BasalPairClass.WOBBLE: JunctionPairKind.GT_WOBBLE,
@@ -148,7 +150,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
             "PCR source-return arm must be the reverse complement of the retained prefix."
         )
     prefix_length = len(prefix)
-    if basal.basal_nick.boundary.offset != prefix_length:
+    if basal.basal_nick.boundary.offset + basal_source_offset(basal, prefix) != prefix_length:
         raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
     expected_reaction = derive_pcr_reaction_program(
         foldback=item.foldback_authority,
@@ -216,6 +218,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     validate_adapter_pairing_state(
         adapter_authority,
         basal=basal,
+        source_prefix=prefix,
         closed_strand_id=closed.strand_id,
         adapter_strand_id=adapter_strand.strand_id,
     )

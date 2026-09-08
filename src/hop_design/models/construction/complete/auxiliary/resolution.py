@@ -85,7 +85,7 @@ def _material(
     )
 
 
-def _adapter_pairing_sequence(basal: BasalRealizationRecord) -> str:
+def _adapter_pairing_sequence(basal: BasalRealizationRecord, source_prefix: str) -> str:
     pairing_state = basal.projection.pairing_state
     if pairing_state.adapter_span.start.offset != 0 or pairing_state.adapter_span.end.offset != len(
         pairing_state.adapter_sequence_5prime
@@ -95,7 +95,7 @@ def _adapter_pairing_sequence(basal: BasalRealizationRecord) -> str:
             "Basal authority must define one terminal adapter-pairing segment.",
         )
     try:
-        return complete_adapter_pairing(basal).adapter_sequence_5prime
+        return complete_adapter_pairing(basal, source_prefix=source_prefix).adapter_sequence_5prime
     except ValueError as exc:
         raise EndpointAuxiliaryResolutionError(
             EndpointAuxiliaryResolutionFailure.ADAPTER, str(exc)
@@ -106,8 +106,9 @@ def _resolve_adapter(
     policy: DerivedAdapterPolicy | ConstrainedAdapterPolicy | FixedAdapterPolicy,
     *,
     basal: BasalRealizationRecord,
+    source_prefix: str,
 ) -> ExactConstructionMaterial:
-    pairing_sequence = _adapter_pairing_sequence(basal)
+    pairing_sequence = _adapter_pairing_sequence(basal, source_prefix)
     if isinstance(policy, FixedAdapterPolicy):
         adapter = policy.material
     else:
@@ -212,7 +213,11 @@ def resolve_endpoint_auxiliaries(
             EndpointAuxiliaryResolutionFailure.PRIMER,
             "Source primer region must be a nonempty prefix of the exact PCR core.",
         )
-    adapter = _resolve_adapter(policy.adapter, basal=basal)
+    adapter = _resolve_adapter(
+        policy.adapter,
+        basal=basal,
+        source_prefix=pcr_core_sequence[:source_primer_region_length_nt],
+    )
     template = pcr_core_sequence + adapter.sequence_5prime
     forward = _resolve_primer(
         policy.forward_primer,

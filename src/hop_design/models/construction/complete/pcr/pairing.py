@@ -20,8 +20,12 @@ from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.sequence import reverse_complement_iupac
 
+from ..basal_embedding import basal_source_offset
 
-def complete_adapter_pairing(basal: BasalRealizationRecord) -> BasalPairingState:
+
+def complete_adapter_pairing(
+    basal: BasalRealizationRecord, *, source_prefix: str
+) -> BasalPairingState:
     """Extend proximal pairing with canonical pairs in the available source flank."""
     local = basal.projection.pairing_state
     if local is None:
@@ -29,15 +33,14 @@ def complete_adapter_pairing(basal: BasalRealizationRecord) -> BasalPairingState
     obligation = basal.projection.annealing_obligation
     required = obligation.required_annealing_nt
     completion = obligation.annealing_completion_nt
-    if completion == 0:
-        return local
-    end = local.source_span.end.offset
+    offset = basal_source_offset(basal, source_prefix)
+    end = offset + local.source_span.end.offset
     start = end - required
     if start < 0:
         raise ValueError("Required adapter annealing exceeds the available invariant source flank.")
-    source = basal.source_precursor_sequence[start:end]
+    source = source_prefix[start:end]
     distal = source[:completion]
-    adapter = local.adapter_sequence_5prime + reverse_complement_iupac(distal)
+    adapter = local.adapter_sequence_5prime + (reverse_complement_iupac(distal) if distal else "")
     pairs = (
         *(
             pair.model_copy(update={"source_index": pair.source_index + completion})

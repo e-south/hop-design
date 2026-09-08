@@ -42,7 +42,7 @@ def test_constrained_adapter_and_derived_primers_resolve_exact_materials() -> No
         nick_strand=Strand.BOTTOM,
     ).realizations[0]
     proximal_adapter = basal.proximal_adapter_sequence
-    pcr_core = "AACCGGTTAACCGGTT"
+    pcr_core = "CAAAAGACATCAGATGCTGATGTC"
     handle = "GATCTG"
     policy = EndpointAuxiliaryPolicy(
         adapter=ConstrainedAdapterPolicy(
@@ -104,7 +104,7 @@ def test_endpoint_primer_annealing_cannot_cross_the_source_construction_region()
         resolve_endpoint_auxiliaries(
             policy=policy,
             basal=basal,
-            pcr_core_sequence="AACCGGTTAACCGGTT",
+            pcr_core_sequence="AAAAGACATCAGATGCTGATGTC",
             source_primer_region_length_nt=4,
         )
 
@@ -120,7 +120,7 @@ def test_constrained_endpoint_primers_choose_the_shortest_valid_terminal_binding
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         nick_strand=Strand.BOTTOM,
     ).realizations[0]
-    pcr_core = "AACCGGTTAACCGGTT"
+    pcr_core = "CCAAAAGACATCAGATGCTGATGTC"
     policy = EndpointAuxiliaryPolicy(
         adapter=ConstrainedAdapterPolicy(
             mode=MaterialResolutionMode.CONSTRAIN,
@@ -185,6 +185,35 @@ def test_fixed_adapter_rejects_incompatible_three_prime_chemistry() -> None:
     )
 
     with pytest.raises(EndpointAuxiliaryResolutionError) as error:
+        resolve_endpoint_auxiliaries(
+            policy=policy,
+            basal=basal,
+            pcr_core_sequence="AAAAGACATCAGATGCTGATGTC",
+            source_primer_region_length_nt=4,
+        )
+
+    assert error.value.failure is EndpointAuxiliaryResolutionFailure.ADAPTER
+    assert (
+        str(error.value) == "Adapter must preserve complete basal annealing and ligation chemistry."
+    )
+
+
+def test_adapter_resolution_rejects_a_source_that_disagrees_with_its_basal_bases() -> None:
+    basal = _basal_result(_payload(), nick_strand=Strand.BOTTOM).realizations[0]
+    policy = EndpointAuxiliaryPolicy(
+        adapter=ConstrainedAdapterPolicy(
+            mode=MaterialResolutionMode.CONSTRAIN,
+            three_prime_handle_sequence="GATCTG",
+        ),
+        forward_primer=DerivedEndpointPrimerPolicy(
+            mode=MaterialResolutionMode.DERIVE, annealing_length_nt=4
+        ),
+        reverse_primer=DerivedEndpointPrimerPolicy(
+            mode=MaterialResolutionMode.DERIVE, annealing_length_nt=6
+        ),
+    )
+
+    with pytest.raises(EndpointAuxiliaryResolutionError, match="exact basal neighborhood") as error:
         resolve_endpoint_auxiliaries(
             policy=policy,
             basal=basal,
