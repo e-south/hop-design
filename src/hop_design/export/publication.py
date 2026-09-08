@@ -64,6 +64,8 @@ def _publish_linux(staging: Path, destination: Path) -> None:
 
 def publish_directory_create_only(staging: Path, destination: Path) -> None:
     """Atomically publish one sibling directory without replacing any destination."""
+    staging = staging.absolute()
+    destination = destination.absolute()
     if staging.parent != destination.parent:
         raise ValueError("Directory publication requires sibling staging and destination paths.")
     if sys.platform == "darwin":
