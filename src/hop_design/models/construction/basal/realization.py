@@ -156,6 +156,11 @@ class BasalRealizationRecord(HopModel):
             self.future_release_action.assert_definition_replay(
                 definitions[self.future_release_action.enzyme_id]
             )
+            if self.future_release_action.requirement.recognition_material == "source_duplex":
+                self.future_release_action.assert_source_recognition_replay(
+                    sequence=self.source_precursor_sequence,
+                    payload_boundary=self.payload_source_map.segments[0].source_span.start.offset,
+                )
         for binding in self.enzyme_bindings:
             if binding.role is not EnzymeRole.BASAL_NICK:
                 raise ValueError("Basal local authority may contain only basal-nick bindings.")

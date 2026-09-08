@@ -145,18 +145,23 @@ def test_foldback_local_receipt_rejects_basal_projection(tmp_path: Path) -> None
         construction.project_basal_feasibility(receipt)
 
 
-def test_local_source_rejects_unknown_schema_and_fields(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "unsupported_schema", ("hop.local-neighborhood-request/v2", "hop.local-neighborhood-request/v5")
+)
+def test_local_source_rejects_unknown_schema_and_fields(
+    tmp_path: Path, unsupported_schema: str
+) -> None:
     request = foldback_request(_nickase(), _terminus_enzyme()).model_dump(
         mode="json", by_alias=True
     )
-    request["schema"] = "hop.local-neighborhood-request/v2"
-    source = tmp_path / "old-schema.json"
+    request["schema"] = unsupported_schema
+    source = tmp_path / "unsupported-schema.json"
     source.write_text(json.dumps(request))
 
     with pytest.raises(ValueError, match="Unsupported HOP local-neighborhood schema"):
         construction.discover_local_neighborhood(source)
 
-    request["schema"] = "hop.local-neighborhood-request/v5"
+    request["schema"] = "hop.local-neighborhood-request/v6"
     request["unexpected"] = True
     source.write_text(json.dumps(request))
     with pytest.raises(ValueError, match="unexpected"):
@@ -273,7 +278,12 @@ def test_local_result_loader_rejects_unknown_result_schema(tmp_path: Path) -> No
         construction.load_verified_local_neighborhood(result_path)
 
 
-def test_basal_local_result_uses_v4_and_rejects_v3_receipts(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "unsupported_schema", ("hop.basal-neighborhood-result/v3", "hop.basal-neighborhood-result/v5")
+)
+def test_basal_local_result_roundtrips_and_rejects_unsupported_schema(
+    tmp_path: Path, unsupported_schema: str
+) -> None:
     source = _write_request(
         tmp_path / "basal.json",
         basal_request(
@@ -285,16 +295,16 @@ def test_basal_local_result_uses_v4_and_rejects_v3_receipts(tmp_path: Path) -> N
     receipt = construction.discover_local_neighborhood(source)
     result = json.loads(receipt.json_bytes)
 
-    assert result["schema"] == "hop.basal-neighborhood-result/v5"
-    result_path = tmp_path / "basal-v4.json"
+    assert result["schema"] == "hop.basal-neighborhood-result/v6"
+    result_path = tmp_path / "basal-result.json"
     result_path.write_bytes(receipt.json_bytes)
     loaded = construction.load_verified_local_neighborhood(result_path)
     assert loaded.family == "basal"
     assert loaded.problem_id == receipt.problem_id
     assert loaded.realization_count == receipt.realization_count
 
-    result["schema"] = "hop.basal-neighborhood-result/v3"
-    result_path = tmp_path / "basal-v3.json"
+    result["schema"] = unsupported_schema
+    result_path = tmp_path / "unsupported-result.json"
     result_path.write_text(json.dumps(result))
     with pytest.raises(ValueError, match="Unsupported HOP local-neighborhood result schema"):
         construction.load_verified_local_neighborhood(result_path)

@@ -157,6 +157,7 @@ def _clone_basal_result(
                     orientation=SiteOrientation.REVERSE,
                     cohesive_end_sequence=requested_overhang,
                     overhang_end=StrandEnd.FIVE_PRIME,
+                    recognition_material="endpoint_material",
                 ),
             ),
             hard_constraints=ConstructionConstraints(),

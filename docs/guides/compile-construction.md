@@ -161,8 +161,8 @@ constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
 schema: hop.construction-source/v6
-foldback: <hop.local-neighborhood-request/v5 mapping>
-basal: <hop.local-neighborhood-request/v5 mapping or null>
+foldback: <hop.local-neighborhood-request/v6 mapping>
+basal: <hop.local-neighborhood-request/v6 mapping or null>
 composition:
   endpoint: ssdna_hairpin | hairpin_pcr_duplex | clone_ready_duplex
   materialization:
@@ -227,6 +227,22 @@ adapter state. Basal discovery does not invent the remaining annealing bases,
 finalize the complete adapter, or claim a PCR product. Complete composition
 must satisfy those obligations against the realized source scaffold and exact
 endpoint materials.
+
+The future release requirement records `recognition_material`:
+
+- `source_duplex` (default): the Type IIS recognition sequence must coexist
+  with the nickase recognition sequence in the source. Both motifs constrain
+  the same bases before enumeration. The source site maps to the requested
+  endpoint through copying; its presence does not apply Type IIS cleavage in
+  the earlier nicking stage.
+- `endpoint_material`: a later material, such as a PCR-primer tail, supplies
+  the recognition sequence. Local discovery establishes the requested cut
+  geometry and proximal end-sequence constraints, not source-site coexistence.
+  Complete endpoint evaluation must still find and verify the actual sites.
+
+These choices define different sequence-design questions and enter request
+and result identity. A source-encoded request cannot be satisfied by silently
+introducing its recognition site through a primer instead.
 
 Representative policy shapes are:
 

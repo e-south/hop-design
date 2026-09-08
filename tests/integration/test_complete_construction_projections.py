@@ -179,10 +179,10 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
     if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
         assert projection.projection_id == (
             "hop:complete-construction-summary/"
-            "7cab2aea5d6a4eec5421a1c2a5a755c1cf22d42b3147beded9d07a53c806dc15@1"
+            "70bd613b82c0eee8b01f84a30ea0b821b83ad892bdfdec37e1c84704515ac508@1"
         )
         assert sha256_digest(render_projection_json(projection)) == (
-            "sha256:da8cffb783e6a19e6d34f6a74f8e9ac47af8be52db0dcae88551b3220cc15dfc"
+            "sha256:8566cdb69e43c94b5a0352d68ca339c0f008a36204b85836b9210b52d557993d"
         )
 
     json_bytes = render_projection_json(projection)

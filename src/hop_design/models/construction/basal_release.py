@@ -19,7 +19,7 @@ from hop_design.models.base import HopModel
 from hop_design.models.enzymes import CharacterizedEnzyme, EnzymeClass
 from hop_design.models.molecular_state import StrandEnd
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.sequence import normalize_dna_sequence, reverse_complement_iupac
+from hop_design.models.sequence import iupac_bases, normalize_dna_sequence, reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 
@@ -30,6 +30,7 @@ class BasalFutureReleaseRequirement(HopModel):
     orientation: SiteOrientation
     cohesive_end_sequence: str
     overhang_end: StrandEnd
+    recognition_material: Literal["source_duplex", "endpoint_material"] = "source_duplex"
 
     @field_validator("cohesive_end_sequence", mode="before")
     @classmethod
@@ -50,6 +51,37 @@ class BasalFutureReleaseAction(HopModel):
     recognition_start_from_release_boundary: int
     reference_cut_from_release_boundary: int
     complement_cut_from_release_boundary: int
+
+    def source_recognition_placement(self, *, payload_boundary: int) -> tuple[int, str]:
+        """Map the future recognition site onto the payload-bearing source strand.
+
+        Proximal adapter bases pair with source positions immediately before the
+        payload. Copying presents this interval at the left endpoint directly,
+        or reverse-complemented at the right endpoint.
+        """
+        if self.requirement.recognition_material != "source_duplex":
+            raise ValueError("Endpoint-supplied recognition has no source placement.")
+        boundary = payload_boundary - len(self.requirement.cohesive_end_sequence)
+        start = self.recognition_start_from_release_boundary
+        pattern = self.recognition_pattern_5prime
+        if self.requirement.product_end == "right":
+            return boundary - start - len(pattern), reverse_complement_iupac(pattern)
+        return boundary + start, pattern
+
+    def assert_source_recognition_replay(self, *, sequence: str, payload_boundary: int) -> None:
+        """Require the source-encoded recognition pattern at its mapped coordinates."""
+        start, pattern = self.source_recognition_placement(payload_boundary=payload_boundary)
+        if (
+            start < 0
+            or start + len(pattern) > len(sequence)
+            or any(
+                base not in iupac_bases(symbol)
+                for base, symbol in zip(
+                    sequence[start : start + len(pattern)], pattern, strict=True
+                )
+            )
+        ):
+            raise ValueError("Source duplex must encode the future release recognition site.")
 
     @field_validator("recognition_pattern_5prime", mode="before")
     @classmethod

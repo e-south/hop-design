@@ -99,6 +99,14 @@ def iter_basal_program_solutions(
     )
 
     placements: list[tuple[int, str]] = [(nick_site_start, nick_pattern), (payload_start, payload)]
+    release_action = program.future_release_action
+    if (
+        release_action is not None
+        and release_action.requirement.recognition_material == "source_duplex"
+    ):
+        placements.append(
+            release_action.source_recognition_placement(payload_boundary=payload_start)
+        )
     cut_boundaries = tuple(
         boundary for boundary in (reference_cut, complement_cut) if boundary is not None
     )
@@ -123,6 +131,11 @@ def iter_basal_program_solutions(
         if not _constrain(domains, start=start, pattern=pattern):
             yield BasalPlacementFailure("recognition-payload-conflict")
             return
+    if (
+        release_action is not None
+        and release_action.requirement.recognition_material == "source_duplex"
+    ):
+        recognition_indexes.update(range(adapter_start))
 
     variable_indexes = tuple(range(source_start, payload_start))
     source_domains = tuple(

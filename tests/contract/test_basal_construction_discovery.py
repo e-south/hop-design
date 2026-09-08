@@ -366,6 +366,168 @@ def test_clone_ready_basal_discovery_keeps_future_release_out_of_current_state()
     assert "cohesive_end" not in type(record.projection).model_fields
 
 
+@pytest.mark.parametrize(
+    ("product_end", "orientation", "cohesive_end"),
+    (("left", SiteOrientation.FORWARD, "TTAT"), ("right", SiteOrientation.REVERSE, "ATAA")),
+)
+def test_clone_ready_basal_source_encodes_the_future_release_recognition_site(
+    product_end: str, orientation: SiteOrientation, cohesive_end: str
+) -> None:
+    request = _request(ConstructionEndpoint.CLONE_READY_DUPLEX)
+    domain = request.geometry_domain
+    release = domain.future_release.model_copy(
+        update={
+            "product_end": product_end,
+            "orientation": orientation,
+            "cohesive_end_sequence": cohesive_end,
+        }
+    )
+    request = request.model_copy(
+        update={"geometry_domain": domain.model_copy(update={"future_release": release})}
+    )
+    result = discover_basal_neighborhood(request)
+
+    assert result.realizations
+    for record in result.realizations:
+        payload_start = record.payload_source_map.segments[0].source_span.start.offset
+        # The fixture cutter recognizes six bases and cuts at offsets six and ten.
+        # Its source-side cuts flank the four positions immediately before the payload.
+        assert payload_start >= 10
+        assert record.source_precursor_sequence[payload_start - 10 : payload_start - 4] == "GGTCTC"
+        assert record.basal_nick.boundary.offset == payload_start
+        assert all(
+            operation.role is EnzymeRole.BASAL_NICK
+            for program in record.reaction_programs
+            for stage in program.stages
+            for operation in stage.operations
+        )
+
+
+@pytest.mark.parametrize(("nick_pattern", "feasible"), (("TCGAA", True), ("ACGAA", False)))
+def test_source_encoded_release_intersects_the_nickase_recognition_domain(
+    nick_pattern: str, feasible: bool
+) -> None:
+    request = _request(
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+        pairing_constraints=_pairing_constraints(
+            (BasalPairAllowance.MATCH, *(BasalPairAllowance.ANY,) * 3)
+        ),
+    )
+    request = request.model_copy(
+        update={
+            "enzyme_provisioning": _provisioning(
+                _enzyme(
+                    "example:enzyme/overlapping-basal-nick@1",
+                    enzyme_class=EnzymeClass.NICKASE,
+                    pattern=nick_pattern,
+                    reference_cut=6,
+                    complement_cut=None,
+                ),
+                _type_iis(),
+            )
+        }
+    )
+
+    result = discover_basal_neighborhood(request)
+
+    assert result.discovery.disposition.completion is SearchCompletionStatus.COMPLETE
+    assert bool(result.realizations) is feasible
+    assert result.discovery.disposition.feasibility is (
+        SearchFeasibilityStatus.FEASIBLE if feasible else SearchFeasibilityStatus.INFEASIBLE
+    )
+    for record in result.realizations:
+        assert record.source_precursor_sequence[:6] == "GGTCTC"
+        assert record.source_precursor_sequence[4:9] == nick_pattern
+        assert record.payload_sequence == "CCCC"
+
+
+def test_endpoint_material_release_does_not_assert_a_source_recognition_site() -> None:
+    request = _request(ConstructionEndpoint.CLONE_READY_DUPLEX)
+    domain = request.geometry_domain
+    release = domain.future_release.model_copy(update={"recognition_material": "endpoint_material"})
+    request = request.model_copy(
+        update={"geometry_domain": domain.model_copy(update={"future_release": release})}
+    )
+
+    result = discover_basal_neighborhood(request)
+
+    assert result.realizations
+    assert all("GGTCTC" not in item.source_precursor_sequence for item in result.realizations)
+    with pytest.raises(ValueError, match="no source placement"):
+        result.realizations[0].future_release_action.source_recognition_placement(
+            payload_boundary=4
+        )
+
+
+def test_source_recognition_spacing_preserves_every_unconstrained_assignment() -> None:
+    request = _request(ConstructionEndpoint.CLONE_READY_DUPLEX)
+    release = _enzyme(
+        "example:enzyme/spaced-release@1",
+        enzyme_class=EnzymeClass.DUPLEX_RESTRICTION,
+        pattern="GGTCTC",
+        reference_cut=8,
+        complement_cut=12,
+    )
+    policy = _provisioning(_nickase(), release)
+    target = _exact_target(request)
+    program = iter_basal_programs(policy, target=target, endpoint=request.endpoint)[0]
+
+    solutions = tuple(
+        solution
+        for solution in iter_basal_program_solutions(
+            payload_sequence="CCCC", target=target, endpoint=request.endpoint, program=program
+        )
+        if not isinstance(solution, BasalPlacementFailure)
+    )
+
+    assert {solution.source_precursor_sequence[6:8] for solution in solutions} == {
+        left + right for left in "ACGT" for right in "ACGT"
+    }
+
+
+def test_source_release_replay_rejects_a_resealed_recognition_substitution() -> None:
+    record = discover_basal_neighborhood(
+        _request(ConstructionEndpoint.CLONE_READY_DUPLEX)
+    ).realizations[0]
+    action = record.future_release_action
+    assert action is not None
+    substituted = _type_iis(action.enzyme_id, pattern="CGTCTC")
+    action_content = {
+        name: getattr(action, name) for name in type(action).model_fields if name != "action_id"
+    }
+    action_content.update(
+        enzyme_digest=characterized_enzyme_digest(substituted),
+        recognition_pattern_5prime="GAGACG",
+    )
+    changed_action = BasalFutureReleaseAction.create(**action_content)
+    local_content = {
+        name: getattr(record.local_realization, name)
+        for name in type(record.local_realization).model_fields
+        if name != "local_realization_id"
+    }
+    local_content["boundary_condition_ids"] = (changed_action.action_id,)
+    content = {
+        name: getattr(record, name)
+        for name in type(record).model_fields
+        if name != "basal_realization_id"
+    }
+    content.update(
+        future_release_action=changed_action,
+        local_realization=type(record.local_realization).create(**local_content),
+        enzyme_definitions=tuple(
+            item.model_copy(
+                update={"enzyme": substituted, "digest": characterized_enzyme_digest(substituted)}
+            )
+            if item.enzyme_id == substituted.enzyme_id
+            else item
+            for item in record.enzyme_definitions
+        ),
+    )
+
+    with pytest.raises(ValidationError, match="Source duplex must encode"):
+        BasalRealizationRecord.create(**content)
+
+
 def test_future_release_action_rejects_forged_geometry_and_enzyme_replay() -> None:
     result = discover_basal_neighborhood(_request(ConstructionEndpoint.CLONE_READY_DUPLEX))
     action = result.realizations[0].future_release_action
