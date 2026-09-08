@@ -19,7 +19,7 @@ import typer
 
 import hop_design.construction as construction
 
-from .common import load_receipt, require_output_outside_bundle
+from .common import load_receipt, navigation_content, require_output_outside_bundle
 
 
 def _resolve_realization_id(
@@ -27,11 +27,21 @@ def _resolve_realization_id(
     *,
     realization_id: str | None,
     selection_path: Path | None,
+    ordinal: int | None,
 ) -> str:
-    if (realization_id is None) == (selection_path is None):
+    if sum(value is not None for value in (realization_id, selection_path, ordinal)) != 1:
         raise typer.BadParameter(
-            "Provide exactly one REALIZATION_ID or --selection.",
-            param_hint="REALIZATION_ID/--selection",
+            "Provide exactly one route selector.",
+            param_hint="route selection",
+        )
+    if ordinal is not None:
+        for row in navigation_content(receipt)["rows"]:
+            if row["ordinal"] == ordinal and row["status"] == "accepted":
+                return str(row["materialized_realization_id"])
+        raise typer.BadParameter(
+            f"No accepted route has ordinal {ordinal}. "
+            "Use construction list to see available routes.",
+            param_hint="--ordinal",
         )
     if selection_path is not None:
         try:
@@ -110,6 +120,10 @@ def construction_inspect_command(
         Path | None,
         typer.Option("--out", help="New directory for exact trajectory JSON and SVG."),
     ] = None,
+    ordinal: Annotated[
+        int | None,
+        typer.Option("--ordinal", help="Route number from construction list for this same bundle."),
+    ] = None,
 ) -> None:
     """Inspect the materials and molecular steps of one route."""
     receipt = load_receipt(bundle_path)
@@ -119,6 +133,7 @@ def construction_inspect_command(
         receipt,
         realization_id=realization_id,
         selection_path=selection_path,
+        ordinal=ordinal,
     )
     try:
         trajectory = construction.project_construction_trajectory(
@@ -140,22 +155,29 @@ def construction_select_command(
         Path,
         typer.Argument(help="Verified HOP construction bundle directory."),
     ],
-    realization_id: Annotated[
-        str,
-        typer.Argument(help="Accepted materialized realization identity."),
-    ],
     output: Annotated[
         Path,
         typer.Option("--out", help="New JSON file for the result-bound reference."),
     ],
+    realization_id: Annotated[
+        str | None,
+        typer.Argument(help="Accepted materialized realization identity."),
+    ] = None,
+    ordinal: Annotated[
+        int | None,
+        typer.Option("--ordinal", help="Route number from construction list for this same bundle."),
+    ] = None,
 ) -> None:
     """Save a selection referencing an existing route."""
     receipt = load_receipt(bundle_path)
     require_output_outside_bundle(bundle_path, output)
+    selected_id = _resolve_realization_id(
+        receipt, realization_id=realization_id, selection_path=None, ordinal=ordinal
+    )
     try:
         selected = construction.select_construction_realization(
             receipt,
-            materialized_realization_id=realization_id,
+            materialized_realization_id=selected_id,
         )
         selected.write(output)
     except (OSError, ValueError) as exc:

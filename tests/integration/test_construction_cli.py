@@ -132,6 +132,7 @@ def test_construction_list_groups_accepted_routes_and_preserves_canonical_order(
             "canonical",
             "--limit",
             "25",
+            "--full-ids",
         ],
     )
 
@@ -145,6 +146,61 @@ def test_construction_list_groups_accepted_routes_and_preserves_canonical_order(
     assert "Ordinal is canonical replay order, not rank." in result.output
     assert result.output.index(expected_ids[0]) < result.output.index(expected_ids[1])
     assert "Showing 2 of 2 matched routes." in result.output
+
+
+def test_construction_list_leads_with_route_numbers_and_offers_inspection(tmp_path: Path) -> None:
+    bundle, verified = _write_bundle(tmp_path)
+    result = runner.invoke(app, ["construction", "list", str(bundle), "--descending"])
+
+    assert result.exit_code == 0, result.output
+    assert result.output.index("Route 1:") < result.output.index("Route 0:")
+    assert "--ordinal NUMBER" in result.output
+    assert "--full-ids" in result.output
+    for realization in verified.result.realizations:
+        assert realization.materialized_realization_id not in result.output
+
+
+def test_route_number_selection_retains_the_exact_identity(tmp_path: Path) -> None:
+    bundle, verified = _write_bundle(tmp_path)
+    expected_id = verified.result.realizations[1].materialized_realization_id
+    selection = tmp_path / "selected.json"
+    selected = runner.invoke(
+        app, ["construction", "select", str(bundle), "--ordinal", "1", "--out", str(selection)]
+    )
+    assert selected.exit_code == 0, selected.output
+    assert json.loads(selection.read_text()) == {
+        "schema": "hop.construction-selection/v1",
+        "source_result_id": verified.result.result_id,
+        "materialized_realization_id": expected_id,
+    }
+    inspected = runner.invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "1"])
+    assert inspected.exit_code == 0, inspected.output
+    assert f"Realization: {expected_id}" in inspected.output
+
+
+@pytest.mark.parametrize("ordinal", ["-1", "999"])
+def test_unknown_route_number_is_rejected_without_creating_output(
+    tmp_path: Path, ordinal: str
+) -> None:
+    bundle, _ = _write_bundle(tmp_path)
+    destination = tmp_path / "selected.json"
+    result = runner.invoke(
+        app,
+        ["construction", "select", str(bundle), "--ordinal", ordinal, "--out", str(destination)],
+    )
+    assert result.exit_code != 0
+    assert "No accepted route has ordinal" in result.output
+    assert not destination.exists()
+
+
+def test_route_number_cannot_be_combined_with_an_exact_identity(tmp_path: Path) -> None:
+    bundle, verified = _write_bundle(tmp_path)
+    identity = verified.result.realizations[0].materialized_realization_id
+    result = runner.invoke(
+        app, ["construction", "inspect", str(bundle), identity, "--ordinal", "0"]
+    )
+    assert result.exit_code != 0
+    assert "Provide exactly one" in result.output
 
 
 def test_construction_list_filters_and_sorts_only_on_explicit_dimensions(

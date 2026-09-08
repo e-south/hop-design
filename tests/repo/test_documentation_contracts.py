@@ -90,9 +90,9 @@ def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture()
     assert "hop-design space preview" in guide
     assert "hop-design space compile" in guide
     assert "hop-design verify" in guide
-    assert "64 exact" in guide
-    assert "verification fixture" in guide
-    assert "publication claim" in guide
+    assert "256 exact assignments" in guide
+    assert "purine" in guide and "pyrimidine" in guide
+    assert "64 exact" not in guide
     assert "review.html" in guide
     assert "No physical construction, QC, or activity record is attached" in guide
     assert "256" in guide
@@ -252,7 +252,7 @@ def test_action_routes_have_runnable_public_examples() -> None:
     assert "docs/index.md" in readme
     assert "guides/discover-compatible-basal-candidates.md" in docs_index
     assert "guides/resolve-production-method.md" in docs_index
-    assert "discover-compatible-basal-candidates.md" in quickstart
+    assert "examples/basal-junction/README.md" in quickstart
     assert "resolve-production-method.md" in quickstart
     assert "payload-sources-and-expansion.md" in quickstart
     for text in (method_guide, provenance):
@@ -727,3 +727,15 @@ def test_banner_uses_literal_name_and_method_stages() -> None:
     assert "INSERT" not in banner
     for buzzword in (">SPEC</text>", ">PLAN</text>", ">BUNDLE</text>"):
         assert buzzword not in banner
+
+
+def test_banner_uses_large_labels_without_protocol_annotations() -> None:
+    root = ET.parse(REPO_ROOT / "assets" / "hop-design-banner.svg").getroot()
+    labels = root.findall(".//{http://www.w3.org/2000/svg}text")
+    visible = " ".join("".join(label.itertext()) for label in labels)
+
+    assert len(visible.split()) <= 25
+    assert all(float(label.attrib["font-size"]) >= 16 for label in labels)
+    assert "nick boundary" not in visible
+    assert "unjoined ends" not in visible
+    assert "auxiliary oligos omitted" not in visible

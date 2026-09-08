@@ -77,6 +77,11 @@ for required in \
   'examples/construction-expanded-domain.yaml' \
   'examples/discover_basal_candidates.py' \
   'examples/fixed-site-three-base-context.yaml' \
+  'examples/loxp-spacer.yaml' \
+  'examples/loxp-spacer-base-classes.yaml' \
+  'examples/basal-junction/README.md' \
+  'examples/basal-junction/request.yaml' \
+  'examples/basal-junction/search.py' \
   'examples/foldback-local-partition.yaml' \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
@@ -205,6 +210,15 @@ if ! cmp -s "$source_local_result" "$wheel_local_result"; then
   echo "source/wheel local-neighborhood canonical result mismatch" >&2
   exit 1
 fi
+
+uv run --locked python examples/basal-junction/search.py --out "$smoke_root/source-basal"
+"$smoke_root/venv/bin/python" examples/basal-junction/search.py --out "$smoke_root/wheel-basal"
+for relative in result/result.json matrix/projection.json matrix/projection.csv matrix/projection.svg; do
+  if ! cmp -s "$smoke_root/source-basal/$relative" "$smoke_root/wheel-basal/$relative"; then
+    echo "source/wheel basal-junction mismatch: $relative" >&2
+    exit 1
+  fi
+done
 
 composed_construction=''
 for construction_case in composed-pcr exact infeasible expanded-domain; do

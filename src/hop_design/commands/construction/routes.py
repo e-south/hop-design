@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
+from shlex import quote
 from typing import Annotated, Any
 
 import typer
@@ -141,21 +142,23 @@ def _basal_text(geometry: dict[str, Any] | None) -> str:
     )
 
 
-def _route_line(row: dict[str, Any]) -> str:
+def _route_line(row: dict[str, Any], *, full_ids: bool = False) -> str:
     if row["status"] != "accepted":
         basis = row.get("rejection_reason") or row.get("truncation_reason") or "unspecified"
-        return f"  {row['ordinal']:>4}  {row['status']} · {basis}"
+        return f"  Route {row['ordinal']}: {row['status']} · {basis}"
     enzymes = ",".join(row["enzyme_ids"]) or "none"
     basal_overhead = row["basal_retained_overhead_nt"]
     basal_overhead_text = "not required" if basal_overhead is None else f"{basal_overhead} nt"
-    return (
-        f"  {row['ordinal']:>4}  "
+    line = (
+        f"  Route {row['ordinal']}: "
         f"foldback overhead={row['foldback_retained_overhead_nt']} nt · "
-        f"basal overhead={basal_overhead_text} · "
+        f"basal overhead={basal_overhead_text}\n    "
         f"{row['retained_non_payload_nt']} retained non-payload nt · "
-        f"cleavage_enzymes={enzymes} · auxiliaries={row['auxiliary_material_count']} · "
-        f"{row['materialized_realization_id']}"
+        f"{row['auxiliary_material_count']} auxiliary oligos\n    Enzymes: {enzymes}"
     )
+    if full_ids:
+        line += f"\n    ID: {row['materialized_realization_id']}"
+    return line
 
 
 def _render_list(
@@ -163,23 +166,25 @@ def _render_list(
     *,
     group_by: str,
     limit: int,
+    full_ids: bool,
 ) -> None:
     visible = rows[:limit]
     field = _group_field(group_by)
     if field is None:
         for row in visible:
-            typer.echo(_route_line(row))
+            typer.echo(_route_line(row, full_ids=full_ids))
     else:
         groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for row in visible:
             groups[str(row[field])].append(row)
-        for key, members in groups.items():
-            typer.echo(f"Group: {key} · {len(members)} displayed route(s)")
+        for number, (key, members) in enumerate(groups.items(), start=1):
+            label = key if full_ids else f"{group_by.capitalize()} group {number}"
+            typer.echo(f"Group: {label} · {len(members)} displayed route(s)")
             if group_by == "geometry":
                 typer.echo(f"  Foldback: {_foldback_text(members[0]['foldback_geometry'])}")
                 typer.echo(f"  Basal: {_basal_text(members[0]['basal_geometry'])}")
             for row in members:
-                typer.echo(_route_line(row))
+                typer.echo(_route_line(row, full_ids=full_ids))
     typer.echo(f"Showing {len(visible)} of {len(rows)} matched routes.")
     if len(visible) != len(rows):
         typer.echo("Display limiting does not change the verified search status or accounting.")
@@ -228,6 +233,10 @@ def construction_list_command(
         int,
         typer.Option("--limit", help="Maximum displayed rows; scientific accounting is intact."),
     ] = 25,
+    full_ids: Annotated[
+        bool,
+        typer.Option("--full-ids", help="Include complete route identities and grouping keys."),
+    ] = False,
 ) -> None:
     """List routes with explicit filters, grouping, and sorting."""
     requested_enzymes = tuple(enzyme or ())
@@ -272,7 +281,14 @@ def construction_list_command(
     typer.echo(f"Query: status={status} · group_by={group_by} · sort={sort} · order={order}")
     if group_field is not None and not rows:
         typer.echo("No accepted geometry or product groups matched the explicit filters.")
-    _render_list(rows, group_by=group_by, limit=limit)
+    _render_list(rows, group_by=group_by, limit=limit, full_ids=full_ids)
+    if any(row["status"] == "accepted" for row in rows[:limit]):
+        typer.echo(
+            f"Inspect a route: hop-design construction inspect {quote(str(bundle_path))} "
+            "--ordinal NUMBER"
+        )
+    if not full_ids:
+        typer.echo("Use --full-ids for complete identities and group-filter keys.")
 
 
 __all__ = ["construction_list_command"]

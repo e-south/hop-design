@@ -112,10 +112,24 @@ def render_basal_matrix_svg(projection: BasalMinimumOverheadMatrixProjection) ->
     """Render proven overhead minima across nickase and release-action pairs."""
     title = "Basal local accessibility by nickase and future release action"
     left = 300
-    top = 252
+    top = 286
     matrix_width = 820
-    cell_width = matrix_width / len(projection.release_actions)
+    columns_per_block = 4
+    columns = min(columns_per_block, len(projection.release_actions))
+    cell_width = matrix_width / columns
     cell_height = 44
+    block_height = len(projection.nick_enzyme_ids) * cell_height + 104
+    actions = sorted(
+        projection.release_actions,
+        key=lambda action: (
+            action.enzyme_id,
+            action.requirement.orientation.value,
+            action.requirement.product_end,
+            action.requirement.overhang_end.value,
+            action.requirement.cohesive_end_sequence,
+            action.action_id,
+        ),
+    )
     palette = (
         "#0d3b2e",
         "#14513f",
@@ -127,30 +141,35 @@ def render_basal_matrix_svg(projection: BasalMinimumOverheadMatrixProjection) ->
         "#bad8c9",
         "#e2efe8",
     )
-    action_index = {
-        action.action_id: index for index, action in enumerate(projection.release_actions)
-    }
+    action_index = {action.action_id: index for index, action in enumerate(actions)}
     nick_index = {enzyme_id: index for index, enzyme_id in enumerate(projection.nick_enzyme_ids)}
     labels = []
-    for index, action in enumerate(projection.release_actions):
-        x = left + index * cell_width + cell_width / 2
+    for index, action in enumerate(actions):
+        block, column = divmod(index, columns_per_block)
+        block_top = top + block * block_height
+        x = left + column * cell_width + cell_width / 2
         label = f"{_enzyme_label(action.enzyme_id)} · {action.requirement.orientation.value}"
+        end = action.requirement.cohesive_end_sequence
         labels.append(
-            f'<text x="{x:.1f}" y="{top - 22}" text-anchor="middle" class="small">'
+            f'<text x="{x:.1f}" y="{block_top - 42}" text-anchor="middle" class="small">'
             f"{escape(label)}</text>"
+            f'<text x="{x:.1f}" y="{block_top - 20}" text-anchor="middle" class="body">'
+            f"{escape(end)} · {action.requirement.product_end} end</text>"
         )
-    for index, enzyme_id in enumerate(projection.nick_enzyme_ids):
-        y = top + index * cell_height + cell_height / 2 + 5
-        labels.append(
-            f'<text x="{left - 18}" y="{y:.1f}" text-anchor="end" class="body">'
-            f"{escape(_enzyme_label(enzyme_id))}</text>"
-        )
+    block_count = (len(projection.release_actions) + columns_per_block - 1) // columns_per_block
+    for block in range(block_count):
+        for index, enzyme_id in enumerate(projection.nick_enzyme_ids):
+            y = top + block * block_height + index * cell_height + cell_height / 2 + 5
+            labels.append(
+                f'<text x="{left - 18}" y="{y:.1f}" text-anchor="end" class="body">'
+                f"{escape(_enzyme_label(enzyme_id))}</text>"
+            )
     cells = []
     for cell in projection.cells:
         row = nick_index[cell.nick_enzyme_id]
-        column = action_index[cell.future_release_action_id]
+        block, column = divmod(action_index[cell.future_release_action_id], columns_per_block)
         x = left + column * cell_width
-        y = top + row * cell_height
+        y = top + block * block_height + row * cell_height
         if cell.status == "proven_minimum":
             overhead = cell.minimum_retained_overhead_nt
             if overhead is None:  # pragma: no cover - typed cell rejects this state
@@ -176,7 +195,7 @@ def render_basal_matrix_svg(projection: BasalMinimumOverheadMatrixProjection) ->
             f'<text x="{x + cell_width / 2:.1f}" y="{y + 28:.1f}" text-anchor="middle" '
             f'class="body">{value}</text></g>'
         )
-    height = max(430, top + len(projection.nick_enzyme_ids) * cell_height + 140)
+    height = max(430, top + block_count * block_height + 36)
     scale_label = (
         "Cell value: smallest proven local retained overhead, "
         f"0-{projection.max_retained_overhead_nt} nt"
@@ -196,7 +215,8 @@ def render_basal_matrix_svg(projection: BasalMinimumOverheadMatrixProjection) ->
 patternTransform="rotate(45)"><rect width="8" height="8" fill="#ffffff"/>
 <line x1="0" y1="0" x2="0" y2="8" stroke="#9aa49f" stroke-width="2"/></pattern></defs>
 <text x="72" y="178" class="subtitle">{escape(scale_label)}</text>
-<text x="{left}" y="{top - 50}" class="label">Future Type IIS action</text>
+<text x="{left}" y="{top - 78}" class="label">
+Future Type IIS action and cohesive end (5&#8242; to 3&#8242;)</text>
 <text x="72" y="{top - 4}" class="label">Basal nickase</text>
 {"".join(labels)}
 {"".join(cells)}

@@ -18,7 +18,9 @@ doc_type: reference
 Treat every tracked file and built artifact as potentially public. Do not add
 private study names, identifiers, selected cohorts, sequences, catalogs,
 machine-local paths, credentials, tokens, execution records, or proprietary
-constraint profiles. Use short synthetic DNA IUPAC examples only.
+constraint profiles. Examples use synthetic DNA IUPAC inputs or explicitly
+sourced public reference sequences and enzyme definitions. Public references
+must be traceable to the cited source, not copied from private study records.
 
 Public user guides, API references, architecture decisions, contributor
 instructions, and product capability limits belong here. Study plans, manuscript

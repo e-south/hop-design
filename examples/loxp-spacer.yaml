@@ -1,0 +1,10 @@
+schema: hop/substrate-space/v1
+name: loxp-spacer
+question: What paired sequences follow when the eight-base spacer varies between fixed loxP arms?
+payload:
+  - fixed: ATAACTTCGTATA
+    label: left-recognition-arm
+  - variable: NNNNNNNN
+    label: spacer
+  - fixed: TATACGAAGTTAT
+    label: right-recognition-arm

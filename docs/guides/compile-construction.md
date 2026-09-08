@@ -26,91 +26,39 @@ inspects saved results. This guide describes the source checkout, including
 unreleased features; use [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8)
 with the published wheel.
 
-## Run one example
+## Search a realistic junction
 
 From the repository root, with Python 3.12–3.14 and `uv` installed:
 
 ```bash
 uv sync --locked
-uv run python examples/compile_construction.py \
-  --design examples/construction-exact-design.yaml \
-  --source examples/construction-composed-pcr.yaml \
-  --out build/construction-example
-uv run hop-design construction summary build/construction-example/construction
-uv run hop-design construction list build/construction-example/construction
+uv run python examples/basal-junction/search.py --out build/basal-junction
 ```
 
-This small interface example resolves to `hairpin_pcr_duplex`. It writes the
-design, construction, and JSON/SVG projections below the output directory.
-An existing output directory is refused; choose a different name to rerun.
-The example is a sequence-model demonstration, not an experimental protocol.
+The [worked example](../../examples/basal-junction/README.md) keeps a public
+34-bp loxP substrate unchanged while searching Nt.BsmAI/BbsI placements and
+all four-base cohesive ends. It writes exact local results and an SVG/CSV
+matrix. An existing output directory is refused. This is local discovery,
+not a completed hairpin route: adapter completion, primers, and the rest of
+the source must still satisfy the requested endpoint.
 
-Copy a realization ID from the listing to inspect its source, auxiliaries,
-and molecular steps:
+Once you have compiled a complete construction bundle, list and inspect it:
 
 ```bash
-uv run hop-design construction inspect build/construction-example/construction \
-  REALIZATION_ID --out build/construction-example/trajectory
+uv run hop-design construction list CONSTRUCTION_BUNDLE
+uv run hop-design construction inspect CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBER
 ```
 
-For your own question, [define the inputs](#prepare-the-two-authorities),
+Use the route number shown by the listing, not its position after sorting.
+`--full-ids` reveals complete identities and group keys. For a durable reference,
+`construction select CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBER --out selected.json`
+stores the full result and realization identities, not the display number.
+
+For complete construction, [define the inputs](#prepare-the-two-authorities),
 [select local alternatives](#derive-a-design-from-selected-local-alternatives),
 then [compile](#compile-and-write-the-authority) and
 [inspect the result](#reopen-and-project). Checkpointing below is optional for
 collections of independent queries; it is not required to compile one route.
-
-## Checkpoint independent local queries
-
-For a finite collection of strict local-neighborhood requests, use the public
-batch operation. Each request retains its own geometry, enzyme domain, search
-limits, status, canonical result bytes, and realization identities.
-
-```python
-import hop_design.construction as construction
-
-sources = ["foldback-top.yaml", "foldback-bottom.yaml"]
-partial = construction.discover_local_neighborhoods(
-    sources,
-    "local-results",
-    max_new_requests=1,
-)
-finished = construction.discover_local_neighborhoods(
-    sources,
-    "local-results",
-    resume=True,
-)
-for result in finished.iter_results():
-    print(result.completion, result.feasibility, result.result_id)
-```
-
-The first call is create-only. Resume requires the same normalized ordered
-requests, package-content identity, and recorded Python/dependency versions.
-Saved results pass full molecular replay before more queries execute. A changed
-producer or corrupted authority fails; it is not silently recomputed or replaced.
-Move the whole directory to transfer it. Source filenames and destination paths
-are not part of its identity.
-
-The directory contains a normalized `plan.json`, compressed canonical results
-under `batches/`, and `complete.json` only after every request has returned.
-Each immutable batch contains `results.jsonl.gz` and `inventory.json`. Batch
-size may change on resume without rewriting completed files or changing result
-identity. A `.pending-` directory left by a killed process is unpublished staging,
-not an authority; resumption leaves it untouched and executes the unfinished
-queries again.
-
-Limits are 4,096 requests, 1–256 requests per write batch, a 64-MiB normalized
-plan, and 64 MiB of decompressed canonical results per batch. A batch flushes
-at either its byte or request limit. Each local request still uses the existing
-bounded in-memory discovery engine. Checkpointing occurs **between requests**,
-not inside one large search. Resumption avoids rediscovering unfinished work
-from the beginning of the collection, but replay of saved results still costs
-computation. Concurrent writers must use separate destinations; publication
-refuses to overwrite another writer's batch.
-
-`finished` means every request returned, including requests that were truncated
-or stopped at a quota. It is not a combined molecular completeness claim.
-Repeated or overlapping requests are not deduplicated and their realization
-counts must not be summed as unique molecules without a separate comparison.
 
 ## Derive a design from selected local alternatives
 
@@ -122,7 +70,7 @@ import hop_design.construction as construction
 
 design = construction.compile_design_from_local_realizations(
     design_id="selected-route-design",
-    payload_sequence="GACA",
+    payload_sequence="ATAACTTCGTATAGCATACATTATACGAAGTTAT",
     endpoint="hairpin_pcr_duplex",
     foldback=verified_foldback_receipt,
     foldback_realization_id=selected_foldback_id,
@@ -368,19 +316,6 @@ The foldback and basal requests, when both are present, must describe the same
 payload space. The exact payload in the verified design must belong to that
 space; compilation never repairs or substitutes a payload base.
 
-The installed documentation smoke uses four checked-in sources:
-
-- `examples/construction-exact.yaml` is an exact direct foldback request;
-- `examples/construction-infeasible.yaml` exhausts an incompatible request;
-- `examples/construction-expanded-domain.yaml` includes more than one declared
-  foldback geometry and reports their absolute retained-overhead levels; and
-- `examples/construction-composed-pcr.yaml` combines verified foldback and
-  basal neighborhoods into a PCR-bearing complete route.
-
-They share `examples/construction-exact-design.yaml` only as a deterministic
-documentation fixture. They are not paper inputs, enzyme recommendations, or
-experimental evidence.
-
 ## Compile and write the authority
 
 ```python
@@ -468,6 +403,59 @@ Each `ConstructionProjection` contains canonical JSON, deterministic SVG, and
 CSV when the projection defines a table. Projection directories are also
 atomic and create-only. They are reversible, non-authoritative views over the
 verified construction result; they do not replace the bundle.
+
+## Checkpoint independent local queries
+
+For a finite collection of strict local-neighborhood requests, use the public
+batch operation. Each request retains its own geometry, enzyme domain, search
+limits, status, canonical result bytes, and realization identities.
+
+```python
+import hop_design.construction as construction
+
+sources = ["foldback-top.yaml", "foldback-bottom.yaml"]
+partial = construction.discover_local_neighborhoods(
+    sources,
+    "local-results",
+    max_new_requests=1,
+)
+finished = construction.discover_local_neighborhoods(
+    sources,
+    "local-results",
+    resume=True,
+)
+for result in finished.iter_results():
+    print(result.completion, result.feasibility, result.result_id)
+```
+
+The first call is create-only. Resume requires the same normalized ordered
+requests, package-content identity, and recorded Python/dependency versions.
+Saved results pass full molecular replay before more queries execute. A changed
+producer or corrupted authority fails; it is not silently recomputed or replaced.
+Move the whole directory to transfer it. Source filenames and destination paths
+are not part of its identity.
+
+The directory contains a normalized `plan.json`, compressed canonical results
+under `batches/`, and `complete.json` only after every request has returned.
+Each immutable batch contains `results.jsonl.gz` and `inventory.json`. Batch
+size may change on resume without rewriting completed files or changing result
+identity. A `.pending-` directory left by a killed process is unpublished staging,
+not an authority; resumption leaves it untouched and executes the unfinished
+queries again.
+
+Limits are 4,096 requests, 1–256 requests per write batch, a 64-MiB normalized
+plan, and 64 MiB of decompressed canonical results per batch. A batch flushes
+at either its byte or request limit. Each local request still uses the existing
+bounded in-memory discovery engine. Checkpointing occurs **between requests**,
+not inside one large search. Resumption avoids rediscovering unfinished work
+from the beginning of the collection, but replay of saved results still costs
+computation. Concurrent writers must use separate destinations; publication
+refuses to overwrite another writer's batch.
+
+`finished` means every request returned, including requests that were truncated
+or stopped at a quota. It is not a combined molecular completeness claim.
+Repeated or overlapping requests are not deduplicated and their realization
+counts must not be summed as unique molecules without a separate comparison.
 
 ## Claim boundary
 

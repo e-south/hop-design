@@ -6,7 +6,7 @@ audience:
   - CLI users
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-09-08
 doc_type: reference
 ---
 
@@ -64,9 +64,9 @@ existing target returns a nonzero exit with a boundary-specific message.
 hop-design construction summary BUNDLE_PATH
 hop-design construction list BUNDLE_PATH [OPTIONS]
 hop-design construction inspect BUNDLE_PATH
-                                (REALIZATION_ID | --selection SELECTION_JSON)
+                                (REALIZATION_ID | --ordinal NUMBER | --selection SELECTION_JSON)
                                 [--out NEW_DIRECTORY]
-hop-design construction select BUNDLE_PATH REALIZATION_ID
+hop-design construction select BUNDLE_PATH (REALIZATION_ID | --ordinal NUMBER)
                                --out NEW_SELECTION_JSON
 ```
 
@@ -82,9 +82,9 @@ in canonical replay order. It supports:
 - `--status accepted|rejected|truncated|all`;
 - `--group-by geometry|product|none` and an exact `--group` key;
 - repeatable `--enzyme` filters for accepted routes;
-- mutually exclusive `--exact` and `--relaxed` filters;
 - `--sort canonical|retained-overhead|cleavage-enzyme-count|auxiliary-count|source-length`;
-- `--descending`; and
+- `--descending`;
+- `--full-ids` to show complete route identities and group-filter keys; and
 - `--limit 1..1000`, with a default of 25 displayed rows.
 
 Rejected, truncated, and mixed-status listings require `--group-by none`.
@@ -93,17 +93,21 @@ rejected and truncated dispositions carry failure evidence rather than a
 materialized route. `--limit` changes terminal display only: it never changes
 verified accounting, search status, membership, or result identity. Canonical
 ordinal is replay metadata, not a rank.
+Listings lead with molecular differences and a route number. This number is
+the canonical ordinal in that bundle; filtering and sorting do not renumber it.
 
 `construction inspect` prints the exact source ssDNA, required external
 materials, molecular-state and transition counts, and endpoint for one accepted
 realization. `--out` writes its deterministic trajectory JSON and SVG to a new
 directory outside the verified input bundle. The realization may be supplied
-directly or through exactly one result-bound selection file.
+by exact identity, by `--ordinal` from the same bundle's listing, or through one
+result-bound selection file. These selectors are mutually exclusive.
 
 `construction select` writes a new `hop.construction-selection/v1` JSON file.
 The reference contains the source result identity and one accepted materialized
 realization identity. It records caller intent; it does not endorse the route,
 delete alternatives, or become evidence of physical construction. Loading it
 against a different result fails.
+Selection by ordinal stores the resolved full identities, not the display number.
 Selection paths must use the exact `.json` extension, and output paths must be
 outside the verified input bundle.

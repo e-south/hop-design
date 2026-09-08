@@ -38,8 +38,8 @@ from .validation import (
 
 BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/4"
 BASAL_PART_PROJECTION_RENDERER_VERSION = "basal-projections/5"
-BASAL_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/1"
-BASAL_PART_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/2"
+BASAL_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/3"
+BASAL_PART_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/4"
 
 
 class BasalFeasibilityRow(HopModel):

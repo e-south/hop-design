@@ -40,7 +40,8 @@ def test_quickstart_owns_installation_and_compilation_examples() -> None:
     assert "```" not in readme
     assert "hop-design compile" not in readme
     assert "uv pip install" not in readme
-    assert "--spec examples/generic-symbolic.yaml" in quickstart
+    assert "--spec FILE" in quickstart
+    assert "--sequence ATAACTTCGTATAGCATACATTATACGAAGTTAT" in quickstart
     assert 'compilation.write("build/symbolic-python")' in quickstart
     assert wheel_name in quickstart
     checksum_command = f"grep '{wheel_name}$' SHA256SUMS | shasum -a 256 -c -"

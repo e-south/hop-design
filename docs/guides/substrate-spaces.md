@@ -7,7 +7,7 @@ audience:
   - users
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-27
+last_verified: 2026-09-08
 doc_type: tutorial
 journey:
   - compile
@@ -20,43 +20,47 @@ Use this route when the scientific question concerns a finite set of paired
 payload variants in one fixed hairpin context. You author one payload arm. HOP
 derives the opposite arm by reverse complement.
 
-The repository verification fixture fixes two payload segments and varies three adjacent
-positions:
+For example, keep the two recognition arms of a public loxP substrate fixed
+while varying its eight-base spacer. A constrained comparison can preserve
+each spacer position's purine (`R`, A/G) or pyrimidine (`Y`, C/T) class:
 
 ```yaml
 schema: hop/substrate-space/v1
-name: fixed-site-three-base-context
-question: How does activity vary across three paired context positions?
+name: loxp-spacer-base-classes
+question: What paired substrates preserve each spacer position's purine or pyrimidine class?
 payload:
-  - fixed: ACTG
-  - variable: NNN
-    label: context
-  - fixed: GATC
-    label: recognition-site
+  - fixed: ATAACTTCGTATA
+    label: left-recognition-arm
+  - variable: RYRYRYRY
+    label: base-class-constrained-spacer
+  - fixed: TATACGAAGTTAT
+    label: right-recognition-arm
 ```
 
-Three `N` positions each permit `A`, `C`, `G`, or `T`, so this fixture
-contains (4^3=64) exact assignments. `question` is optional review text and
+Eight two-base domains define 256 exact assignments. This is a chosen sequence
+comparison, not a claim that these variants retain recombination activity.
+The [junction example](../../examples/basal-junction/README.md#source-definitions)
+records the public payload source. `question` is optional review text and
 does not change design-set identity. The top-level name, segment labels, and
 equivalent segment boundaries are likewise presentation concerns rather than
 molecular identity. HOP applies exhaustive enumeration and the versioned
 standard hairpin context without asking the first-use author to configure
 package policy.
 
-The fixture exercises compilation and package review. It is not a biological
-tracer, literature-grounded substrate choice, or publication claim. A consuming
-study owns those decisions and may use the structured preview and exact
-sequence exports without adopting HOP's example or visual composition.
+Varying all eight spacer positions without the base-class restriction instead
+defines 65,536 assignments. Preview
+[`examples/loxp-spacer.yaml`](../../examples/loxp-spacer.yaml) to inspect that
+larger space without allocating a design for every member.
 
 ## Define, preview, compile
 
 From a source checkout:
 
 ```bash
-uv run hop-design space preview examples/fixed-site-three-base-context.yaml
-uv run hop-design space compile examples/fixed-site-three-base-context.yaml \
-  --out build/fixed-site-three-base-context
-uv run hop-design verify build/fixed-site-three-base-context/bundle
+uv run hop-design space preview examples/loxp-spacer-base-classes.yaml
+uv run hop-design space compile examples/loxp-spacer-base-classes.yaml \
+  --out build/loxp-spacer-base-classes
+uv run hop-design verify build/loxp-spacer-base-classes/bundle
 ```
 
 Preview validates the specification, reports fixed and variable positions,
@@ -73,7 +77,7 @@ to replace an existing destination.
 ## Read the package
 
 ```text
-build/fixed-site-three-base-context/
+build/loxp-spacer-base-classes/
 ├── bundle/             verified digital authority
 ├── figures/
 │   ├── 01-substrate-space.svg
@@ -94,7 +98,7 @@ FASTA files are regenerable projections. Only `bundle/`
 participates in design-set identity and verification.
 
 Successful compilation establishes complete digital derivation and replay of
-64 exact member authorities.
+256 exact member designs.
 The verified manifest records the complete evidence boundary directly. The review says:
 
 > No physical construction, QC, or activity record is attached.
@@ -108,7 +112,8 @@ import yaml
 
 from hop_design.spaces import SubstrateSpaceSpec, compile_space, preview_space
 
-data = yaml.safe_load(open("examples/fixed-site-three-base-context.yaml"))
+with open("examples/loxp-spacer-base-classes.yaml") as source:
+    data = yaml.safe_load(source)
 spec = SubstrateSpaceSpec.model_validate(data)
 preview = preview_space(spec)
 assert preview.state == "ready"
