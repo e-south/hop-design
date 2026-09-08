@@ -151,6 +151,7 @@ def _clone_basal_result(
             geometry_domain=BasalGeometryDomain(
                 nick_strand=Strand.BOTTOM,
                 nick_offsets_nt=(0,),
+                minimum_adapter_annealing_nt=len(pairing_allowances),
                 pairing_constraints=_pairing_constraints(pairing_allowances),
                 future_release=BasalFutureReleaseRequirement(
                     product_end="right",

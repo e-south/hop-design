@@ -17,6 +17,7 @@ from pydantic import Field, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.construction import (
+    BasalGeometryDomain,
     NeighborhoodDiscoveryResult,
     PayloadCompatibilityStatus,
     SearchFeasibilityStatus,
@@ -89,8 +90,17 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
                     "assignments."
                 )
         request = self.discovery.request
+        domain = request.geometry_domain
+        if not isinstance(domain, BasalGeometryDomain):
+            raise ValueError("Basal results require a basal geometry domain.")
         requested = request.payload.payload.sequence
         for item in self.realizations:
+            obligation = item.projection.annealing_obligation
+            if (
+                obligation.minimum_annealing_nt != domain.minimum_adapter_annealing_nt
+                or obligation.mismatch_warning_fraction != domain.mismatch_warning_fraction
+            ):
+                raise ValueError("Basal result must preserve its requested annealing constraints.")
             if len(item.payload_sequence) != len(requested) or any(
                 base not in iupac_bases(symbol)
                 for base, symbol in zip(item.payload_sequence, requested, strict=True)

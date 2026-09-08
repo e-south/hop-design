@@ -228,6 +228,18 @@ finalize the complete adapter, or claim a PCR product. Complete composition
 must satisfy those obligations against the realized source scaffold and exact
 endpoint materials.
 
+For PCR-bearing composition, the adapter keeps the locally selected proximal
+pairs, including any permitted mismatches. HOP derives the remaining required
+annealing bases as the reverse complement of the adjacent invariant source
+flank, then appends a requested adapter handle. A fixed adapter must contain
+that complete pairing sequence. The molecular trajectory records every
+associated position, not just the proximal local segment.
+
+If the selected source lacks enough upstream sequence, that exact composition
+is rejected. This is not proof that a longer source scaffold cannot work:
+bounded source extension remains separate product work. No annealing length
+is silently reduced, and no melting temperature or recovery is predicted.
+
 The future release requirement records `recognition_material`:
 
 - `source_duplex` (default): the Type IIS recognition sequence must coexist

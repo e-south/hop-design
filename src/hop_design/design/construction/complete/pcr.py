@@ -28,6 +28,7 @@ from hop_design.models.construction.complete.evaluation import CombinationEvalua
 from hop_design.models.construction.complete.evaluation_inputs import (
     derive_linear_source_embedding,
 )
+from hop_design.models.construction.complete.pcr.pairing import complete_adapter_pairing
 from hop_design.models.construction.complete.pcr.products import (
     endpoint_fate_spans,
     material_function_spans,
@@ -189,9 +190,7 @@ def materialize_pcr_program(
         ),
     )
     adapter_strand = _lineage_strand(adapter, adapter_use)
-    pairing_state = basal.projection.pairing_state
-    if pairing_state is None:
-        raise ValueError("PCR adapter requires one exact basal pairing state.")
+    pairing_state = complete_adapter_pairing(basal)
     adapter_pairs = tuple(
         observe_pair(
             left_strand_id=closed.strand_id,

@@ -348,7 +348,7 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
     trajectories = {
         "composed-pcr": (
             "hop:materialized-construction/"
-            "2d2dd90b7dbaf4524dfac3500ad7c88b6ade7feaec83f854136d8990aef70059@1"
+            "b609eeb3f90cb74f20d49e6bd4b17432a03a50b0bbb1d94f3704fe837ce84e26@1"
         ),
         "exact": (
             "hop:materialized-construction/"

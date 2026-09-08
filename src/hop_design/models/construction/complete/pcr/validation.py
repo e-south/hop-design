@@ -32,6 +32,7 @@ from .authority import (
     DuplexFinalProductReference,
     PrimerExtensionAuthority,
 )
+from .pairing import complete_adapter_pairing
 from .products import endpoint_fate_spans, material_function_spans
 from .route import pcr_cleaved_strands, select_pcr_fragments
 from .schedule import derive_pcr_reaction_program
@@ -56,7 +57,10 @@ def evaluate_pcr_compatibility(
         or basal.basal_nick.boundary.offset != len(prefix)
     ):
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
-    pairing_state = basal.projection.pairing_state
+    try:
+        pairing_state = complete_adapter_pairing(basal)
+    except ValueError:
+        return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
     if (
         adapter is None
         or pairing_state.adapter_span.end.offset > len(adapter.sequence_5prime)
@@ -87,9 +91,7 @@ def validate_adapter_pairing_state(
     adapter_strand_id: str,
 ) -> None:
     """Replay literal basal pair coordinates, bases, and classes into PCR authority."""
-    pairing_state = basal.projection.pairing_state
-    if pairing_state is None:
-        raise ValueError("PCR route requires the exact basal adapter-pairing authority.")
+    pairing_state = complete_adapter_pairing(basal)
     kind_by_class = {
         BasalPairClass.MATCH: JunctionPairKind.WATSON_CRICK,
         BasalPairClass.WOBBLE: JunctionPairKind.GT_WOBBLE,

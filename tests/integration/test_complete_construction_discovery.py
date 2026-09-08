@@ -103,6 +103,7 @@ def _basal_result(
     pairing_allowances: tuple[BasalPairAllowance, ...] | None = None,
     recognition_pattern: str | None = None,
     cut_offset_reference_strand: int | None = None,
+    minimum_adapter_annealing_nt: int = 4,
 ):
     endpoint = ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
     motif = recognition_pattern or ("TTTT" if nick_strand is Strand.BOTTOM else "AAAA")
@@ -157,6 +158,7 @@ def _basal_result(
             geometry_domain=BasalGeometryDomain(
                 nick_strand=nick_strand,
                 nick_offsets_nt=(nick_offset_nt,),
+                minimum_adapter_annealing_nt=minimum_adapter_annealing_nt,
                 pairing_constraints=(
                     tuple(
                         BasalPairConstraint(

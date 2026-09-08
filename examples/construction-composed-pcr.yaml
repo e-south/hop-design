@@ -142,9 +142,9 @@ basal:
         canonical_name: complete-basal
         enzyme_class: nickase
         target_molecule: dna
-        recognition_pattern: TTTT
+        recognition_pattern: TTTTTTTTTTTTTTT
         recognition_orientation_semantics: both_orientations
-        recognition_length: 4
+        recognition_length: 15
         substrate_requirement: duplex_dna
         cut_offset_reference_strand: 0
         cut_offset_complement_strand: null

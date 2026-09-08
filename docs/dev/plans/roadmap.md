@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-07
+last_verified: 2026-09-08
 doc_type: explanation
 journey:
   - maintain
@@ -82,6 +82,9 @@ The [construction guide](../../guides/compile-construction.md) exposes:
   including terminal fragments and inclusive maximum-fragment certificates.
 - Composition of selected local authorities, source preparation, optional
   source-partition evidence, exact auxiliaries, and endpoint-specific chronology.
+  Required adapter annealing is completed against available invariant source
+  bases and replayed position by position; insufficient source sequence or an
+  incompatible fixed adapter rejects that exact composition.
 - Replay-verified portable results, lossless geometry grouping, tidy relations,
   and typed molecular projections. CLI navigation selects existing results;
   discovery and compilation use the public Python facade.
