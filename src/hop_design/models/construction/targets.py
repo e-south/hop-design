@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import StrEnum
 from typing import Annotated, Literal
 
@@ -99,6 +100,9 @@ class BasalTarget(HopModel):
     nick_strand: Strand | NickStrandSelection
     nick_offset_nt: int = Field(ge=0)
     pairing_constraints: tuple[BasalPairConstraint, ...] = ()
+    max_noncanonical_pairs: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
     ligation_proximal_match_required: bool = False
     future_release: BasalFutureReleaseRequirement | None = Field(
         default=None,
@@ -119,6 +123,14 @@ class BasalTarget(HopModel):
         ):
             raise ValueError("The ligation-proximal basal pair must be a match.")
         return self
+
+    def permits_pair_classes(self, classes: Iterable[BasalPairClass]) -> bool:
+        """Apply the cap to all declared proximal pairs, including G:T wobble."""
+        return (
+            self.max_noncanonical_pairs is None
+            or sum(pair_class is not BasalPairClass.MATCH for pair_class in classes)
+            <= self.max_noncanonical_pairs
+        )
 
 
 LocalGeometryTarget = Annotated[FoldbackTarget | BasalTarget, Field(discriminator="family")]

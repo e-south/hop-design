@@ -111,6 +111,12 @@ class BasalRealizationRecord(HopModel):
         if achieved.pairing_constraints != self.pairing_constraints:
             raise ValueError("Realization must retain the authored pairing constraints.")
         if self.projection.pairing_state is not None:
+            if not achieved.permits_pair_classes(
+                pair.pair_class for pair in self.projection.pairing_state.pairs
+            ):
+                raise ValueError(
+                    "Literal basal pairs exceed the declared noncanonical-pair budget."
+                )
             for constraint, pair in zip(
                 self.pairing_constraints,
                 self.projection.pairing_state.pairs,

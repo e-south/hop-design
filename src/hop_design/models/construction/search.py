@@ -113,6 +113,9 @@ class BasalGeometryDomain(HopModel):
     nick_strand: Strand | NickStrandSelection = NickStrandSelection.ANY
     nick_offsets_nt: tuple[int, ...] = (0,)
     pairing_constraints: tuple[BasalPairConstraint, ...] = Field(min_length=1)
+    max_noncanonical_pairs: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
     minimum_adapter_annealing_nt: int = Field(default=15, ge=1)
     mismatch_warning_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
     future_release: BasalFutureReleaseRequirement | None = Field(
@@ -149,6 +152,7 @@ class BasalGeometryDomain(HopModel):
                     nick_strand=self.nick_strand,
                     nick_offset_nt=offset,
                     pairing_constraints=self.pairing_constraints,
+                    max_noncanonical_pairs=self.max_noncanonical_pairs,
                     ligation_proximal_match_required=True,
                     future_release=release,
                 )

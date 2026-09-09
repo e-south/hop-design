@@ -211,6 +211,15 @@ prefix, and its reverse counterpart binds within the adapter. Neither may
 anneal across the payload. HOP performs no Tm, yield, or empirical ranking, and
 does not generate a reusable handle that the caller did not specify.
 
+To limit imperfect pairing, set `geometry_domain.max_noncanonical_pairs` in a
+basal request. It counts G:T/T:G wobble and other mismatches across the declared
+proximal `pairing_constraints`. For example, `2` allows at most two noncanonical
+pairs while the ligation-adjacent position still requires a match. Omission
+applies no aggregate cap. This caller-selected bound is not a prediction of
+ligation efficiency; it does not relax recognition-site fidelity or apply to
+distal adapter completion. At displaced nicks the proximal window and final
+cohesive-end footprint need not coincide.
+
 Basal discovery is deliberately local. It establishes the payload-proximal
 nick, the exact proximal adapter pairs, any position-level source and adapter
 base domains, the minimum full annealing extent, mismatch warnings, retained

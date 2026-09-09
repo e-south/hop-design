@@ -18,6 +18,7 @@ from pydantic import Field, model_validator
 from hop_design.models.base import HopModel
 from hop_design.models.construction import (
     BasalGeometryDomain,
+    BasalTarget,
     NeighborhoodDiscoveryResult,
     PayloadCompatibilityStatus,
     SearchFeasibilityStatus,
@@ -95,6 +96,14 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
             raise ValueError("Basal results require a basal geometry domain.")
         requested = request.payload.payload.sequence
         for item in self.realizations:
+            achieved = item.local_realization.achieved_geometry
+            if (
+                not isinstance(achieved, BasalTarget)
+                or achieved.max_noncanonical_pairs != domain.max_noncanonical_pairs
+            ):
+                raise ValueError(
+                    "Basal result must preserve its requested noncanonical-pair budget."
+                )
             future = item.future_release_action
             if (future is None) != (domain.future_release is None) or (
                 future is not None

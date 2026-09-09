@@ -242,6 +242,11 @@ def iter_basal_program_solutions(
                             range(max(0, len(release_sequence or "") - target.nick_offset_nt))
                         ),
                     )
+                    if not target.permits_pair_classes(
+                        pair.pair_class for pair in pairing_state.pairs
+                    ):
+                        yield BasalPlacementFailure("basal-pair-budget-exceeded")
+                        continue
                 yield BasalSequenceSolution(
                     source_precursor_sequence=source_precursor,
                     adapter_sequence=adapter_sequence,
