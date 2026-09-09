@@ -267,7 +267,10 @@ def materialize_pcr_program(
             binding_id="complete-forward-primer-binding",
             primer_id=forward_use.use_id,
             template_strand_id=f"{ligated.strand_id}-derived-complement",
-            template_span=_span(0, forward_primer.annealing_length_nt),
+            template_span=_span(
+                len(ligated.sequence) - forward_primer.annealing_length_nt,
+                len(ligated.sequence),
+            ),
             orientation=BindingOrientation.REVERSE_COMPLEMENT_5TO3,
         ),
         PrimerBinding(

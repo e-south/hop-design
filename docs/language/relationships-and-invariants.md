@@ -46,6 +46,15 @@ Compactness is achieved endpoint geometry plus retained non-payload sequence.
 Transient recognition sites, source handles, auxiliary oligos, and destination
 sequence remain visible but do not change that measurement.
 
+For endpoint PCR, each primer binding span indexes its named template's stored
+5′→3′ sequence, not a coordinate-aligned drawing. The reverse primer binds the
+ligated hairpin's terminal interval. The forward primer binds the terminal
+interval of its derived reverse complement. For a template of length `n` and
+annealing length `a`, that forward span is `[n-a, n)`. Primer 5′ tails are outside
+the annealing span. Replay rejects a binding at a different template interval,
+even if its content identity has been recomputed. These sequence checks do not
+predict annealing temperature or PCR yield.
+
 HOP owns these molecular contracts and neutral projections. Client studies
 own frozen runs, observations, interpretation, and asset promotion. Manuscript
 systems own accepted imports, claims, evidence cutoff, and final composition.

@@ -231,8 +231,8 @@ def _validate_primer_extension(
         (
             authority.forward_primer_use.use_id,
             f"{template.strand_id}-derived-complement",
-            0,
-            forward.annealing_length_nt,
+            len(template.sequence) - forward.annealing_length_nt,
+            len(template.sequence),
         ),
         (
             authority.reverse_primer_use.use_id,

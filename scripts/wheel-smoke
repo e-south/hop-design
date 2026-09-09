@@ -224,7 +224,7 @@ composed_construction=''
 for construction_case in composed-pcr exact infeasible expanded-domain; do
   construction_trajectory_id=''
   if [[ "$construction_case" == "composed-pcr" ]]; then
-    construction_trajectory_id='hop:materialized-construction/b609eeb3f90cb74f20d49e6bd4b17432a03a50b0bbb1d94f3704fe837ce84e26@1'
+    construction_trajectory_id='hop:materialized-construction/f99d722902449539461bdc405fe1fdec8e7c3205ed3e4336547795ce93168eda@1'
   elif [[ "$construction_case" == "exact" ]]; then
     construction_trajectory_id='hop:materialized-construction/18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1'
   elif [[ "$construction_case" == "expanded-domain" ]]; then

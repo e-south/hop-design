@@ -1044,25 +1044,25 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "095c6a4297d22fc5e0cdf654767f1cf1f639f96b7f07a3cfb1aff9c84786e021@1"
+        "cc1cfcd7e0174797bc32eb799b1eee037baf3beb054bb34c833eeb025ac92c8b@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "7374c2eb53d04ccbeb9be35a76b31859a856790a6d66cc153505f1a9da1ac345"  # pragma: allowlist secret  # noqa: E501
+            "4767bcfb86a1aeba125b74dff55e528bece95cfe3196b5b4d97004dc5b7426d1"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "00b853031864336c0fe9c70bed36a0bb68153c78ef5dd358d8e83b8a9cfd3af8@1",
+        "4a4220604d8c841ba40663c7d7b9d1447a113c1b6eec4d7d580f5b17f92272ed@1",
         "hop:materialized-construction/"
-        "ce5965d9ebf43b9f21f7ef093cc83cc23c252559bc2908e7af635e31232a9e1c@1",
+        "3935080b1ebdca74dbf8d00226db985e80cde3c584dfa76ac2ae6ec7dad39267@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "8c6f094bf5fee57ff230334b3f3cef6cc0e17a6c1b6276da3ca1afda4252a8d1@1",
+        "9eb0140b9b0380dc5ece697536197172da903506e3f751af63cda859a86388eb@1",
         "hop:construction-program/"
-        "57f19ec30508c000c464b0e79010f9bfaf85b52867596b7da8d6d22aea73d957@1",
+        "6ee3c7c9d1f215ee2d1c92db47d8ea9807046b183ab261bd063173a9f5141591@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/fc31f4ff8e39f543c303fcf979f3790931a43cec3cb078582de00a707d218788@1",
@@ -1073,8 +1073,8 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "92b95e021f95802d4e63f2250d98ddf835c6249027c3e5e0139808fd6c939046",  # pragma: allowlist secret  # noqa: E501
-            "c7a54ccdf8dfa172ad698c373725c005f6926db98fbee8774fd3f6d711b69eba",  # pragma: allowlist secret  # noqa: E501
+            "193fe5ac4e90f425b0345f76ae9529471526a660f7e67166f7b379a7d6a3f1ca",  # pragma: allowlist secret  # noqa: E501
+            "42c76c1b343ca393ce78691327c3db53e1ca320d8973f2093a1473eeccfc9a59",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
