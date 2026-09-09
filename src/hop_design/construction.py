@@ -13,6 +13,10 @@ from hop_design.design.construction.execution.local import (
     LocalNeighborhoodBatch,
     discover_local_neighborhoods,
 )
+from hop_design.design.construction.local_choices import (
+    LocalRealizationChoice,
+    list_local_realizations,
+)
 from hop_design.design.construction.public import (
     ConstructionCompilation,
     ConstructionProjection,
@@ -46,6 +50,7 @@ __all__ = [
     "ConstructionSelection",
     "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
+    "LocalRealizationChoice",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compile_construction",
@@ -54,6 +59,7 @@ __all__ = [
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",
+    "list_local_realizations",
     "load_construction_selection",
     "load_verified_construction_bundle",
     "load_verified_local_neighborhood",

@@ -66,6 +66,7 @@ The exact public allowlist is:
 - `ConstructionSelection`;
 - `LocalNeighborhoodDiscovery`;
 - `LocalNeighborhoodBatch`;
+- `LocalRealizationChoice`;
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
 - `compile_construction`;
@@ -74,6 +75,7 @@ The exact public allowlist is:
 - `discover_local_neighborhood`;
 - `discover_local_neighborhoods`;
 - `discover_source_partition`;
+- `list_local_realizations`;
 - `load_verified_construction_bundle`;
 - `load_construction_selection`;
 - `load_verified_local_neighborhood`;
@@ -94,8 +96,13 @@ Selection references expose only the source result identity, one accepted
 materialized-realization identity, and canonical JSON. They remain
 non-authoritative: creating or loading one requires a verified construction
 receipt, and loading cross-checks both identities against that receipt.
-Raw Pydantic source, result, projection, molecular-state, and bundle-manifest
-models remain internal. Loading a portable construction bundle performs both
+`LocalRealizationChoice` exposes immutable inspection facts, including the
+achieved geometry and the family identity required by compilation. Explicit
+filters and ascending preference keys operate on recorded witnesses only;
+they neither search unenumerated sequences nor certify a complete construction.
+The original receipt remains necessary to compile a selected identity.
+Source, result, projection, molecular-state, and bundle-manifest constructors
+remain internal. Loading a portable construction bundle performs both
 integrity and semantic replay, so the facade does not add a redundant verify
 verb.
 

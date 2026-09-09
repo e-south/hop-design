@@ -152,6 +152,7 @@ VIEW_OPERATIONS = {
 }
 
 CONSTRUCTION_OPERATIONS = {
+    "list_local_realizations",
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
@@ -174,6 +175,7 @@ CONSTRUCTION_OPERATIONS = {
 }
 
 CONSTRUCTION_FACADE = {
+    "LocalRealizationChoice",
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",

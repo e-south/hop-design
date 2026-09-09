@@ -62,8 +62,42 @@ collections of independent queries; it is not required to compile one route.
 
 ## Derive a design from selected local alternatives
 
-When local discovery precedes design compilation, select exact realization ids
-explicitly and derive the matching design before complete composition:
+First compare the molecular choices that meet your requirements. Retained
+sequence, noncanonical adapter pairs, and required enzymes are separate
+properties, not a combined quality score:
+
+```python
+choices = construction.list_local_realizations(
+    verified_basal_receipt,
+    cohesive_end="CTCA",  # An exact end required by this example, not a default.
+    max_noncanonical_pairs=0,
+    sort_by=("retained_overhead_nt", "enzyme_count"),
+)
+for choice in choices:
+    print(
+        choice.realization_id,
+        choice.geometry.nick_offset_nt,
+        choice.retained_overhead_nt,
+        choice.pairing_classes,
+        choice.annealing_completion_nt,
+    )
+```
+
+Choose a row for its molecular properties and retain its `realization_id` with
+the originating receipt. The same listing works for foldback receipts; their
+geometry exposes loop, arm, and junction offset. Basal-only filters are rejected
+for foldbacks. Sorts are ascending in the stated priority and preserve ties in
+source order. Omitting `sort_by` preserves the recorded order. No alternatives
+are removed from the search result.
+
+These are recorded witnesses. Filtering an existence search does not prove
+that all unenumerated sequences fail your additional preferences. Check the
+receipt's `completion`, `feasibility`, and original search scope before claiming
+a minimum. A local choice still needs complete source, adapter, primer, and
+processing checks; `annealing_completion_nt` names an outstanding local
+adapter requirement, not a physical success estimate.
+
+Pass the explicitly chosen family realization ids to design compilation:
 
 ```python
 import hop_design.construction as construction

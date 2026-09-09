@@ -63,6 +63,15 @@ All operations and receipts in this section use `hop_design.construction`.
 - `load_verified_local_neighborhood(result_path) -> LocalNeighborhoodDiscovery`
   loads only the active foldback or basal family result schema and repeats exact
   deterministic discovery replay.
+- `list_local_realizations(receipt, cohesive_end=None, max_retained_overhead_nt=None,
+  max_noncanonical_pairs=None, sort_by=()) -> tuple[LocalRealizationChoice, ...]`
+  lists recorded local witnesses with their compilable family identity, typed
+  geometry, retained sequence, enzymes, pairing classes, and adapter completion
+  requirement. Filters do not rerun the search. Sort keys are ascending
+  `retained_overhead_nt`, `noncanonical_pairs`, or `enzyme_count`, applied in
+  caller-specified priority with stable ties. Pairing and end filters require
+  basal evidence. Rows are immutable inspection values, not verified receipts;
+  compilation still checks the selected identity against its original receipt.
 - `discover_local_neighborhoods(source_paths, destination, resume=False,
   max_new_requests=None, batch_size=8) -> LocalNeighborhoodBatch` executes an
   explicit ordered collection of independent local requests. It publishes
