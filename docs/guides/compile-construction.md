@@ -64,7 +64,15 @@ collections of independent queries; it is not required to compile one route.
 
 First compare the molecular choices that meet your requirements. Retained
 sequence, noncanonical adapter pairs, and required enzymes are separate
-properties, not a combined quality score:
+properties, not a combined quality score.
+
+Required enzymes include both immediate nicking and declared future release
+capabilities. A local witness is not yet a usable whole route: the current
+linear PCR-bearing route requires the basal nick on the source-return strand
+(bottom in payload-forward coordinates). Its full adapter pairing, primer
+bindings, and eventual release boundaries must also be satisfiable. If a
+selected witness fails completion, inspect that reason before choosing another;
+the failure does not invalidate every alternative in the local search.
 
 ```python
 choices = construction.list_local_realizations(
