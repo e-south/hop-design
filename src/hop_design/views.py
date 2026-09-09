@@ -1,5 +1,15 @@
-"""Public workflow-view projection and rendering facade for HOP Design."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/views.py
 
+Exposes typed molecular panels, workflow views, and rendering operations.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
+from hop_design.design.construction.basal_views import build_basal_source_panel
 from hop_design.design.method_views import build_method_trajectory_view
 from hop_design.design.route_views import (
     build_hairpin_junction_route_view,
@@ -30,6 +40,7 @@ __all__ = [
     "ViewTrack",
     "WorkflowView",
     "build_basal_pairing_view",
+    "build_basal_source_panel",
     "build_basal_view",
     "build_foldback_junction_view",
     "build_foldback_view",

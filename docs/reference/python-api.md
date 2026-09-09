@@ -285,6 +285,7 @@ All operations and public contracts in this section use `hop_design.views`.
 - `build_released_workflow_view(state, foldback) -> WorkflowView`
 - `build_basal_pairing_view(evaluation) -> WorkflowView`
 - `build_basal_view(evaluation, nicked_strand=...) -> WorkflowView`
+- `build_basal_source_panel(receipt, realization_id=...) -> ViewPanel`
 - `build_method_trajectory_view(plan) -> WorkflowView`
 - `render_workflow_svg(view) -> bytes`
 
@@ -293,6 +294,18 @@ The same `hop_design.views` surface provides
 `build_hairpin_junction_route_view(...)` and
 `build_released_foldback_precursor_view(...)`; they are not package-root
 exports.
+
+`build_basal_source_panel` takes a verified local-neighborhood receipt and an
+explicit local realization ID. It shows the source duplex, payload span,
+nickase recognition sites, and nick boundary. A source-encoded recognition site
+for later release is labeled separately; endpoint-supplied sites are omitted.
+The panel does not assert strand removal, adapter joining, or future cleavage.
+Unknown selections, non-basal receipts, and corrupt receipts raise `ValueError`.
+
+The returned `ViewPanel` supports client figure composition or JSON export;
+it is not a complete `WorkflowView` for `render_workflow_svg`. Both strand
+sequences and feature coordinates are 5′→3′. Display the bottom track in reverse;
+recognition spans use the source-top coordinate reference.
 
 Stable package-root types cover payloads, design specs, coordinates, junctions,
 processing agents, design results, and operator-facing errors. Discovery,

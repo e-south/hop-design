@@ -140,6 +140,7 @@ METHOD_OPERATIONS = {
 
 VIEW_OPERATIONS = {
     "build_basal_pairing_view",
+    "build_basal_source_panel",
     "build_basal_view",
     "build_foldback_junction_view",
     "build_foldback_view",
