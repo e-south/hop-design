@@ -558,6 +558,18 @@ def test_user_skill_is_a_small_competency_router() -> None:
         assert (skill_root / "references" / name).is_file()
 
 
+def test_construction_skill_names_exported_public_operations() -> None:
+    reference = (
+        REPO_ROOT / ".agents" / "skills" / "hop-design-user" / "references" / "construction.md"
+    ).read_text(encoding="utf-8")
+    operations = set(re.findall(r"`((?:compile|load|project)_[a-z_]+)\(", reference))
+
+    assert operations
+    for operation in sorted(operations):
+        assert operation in hop_construction.__all__, operation
+        assert callable(getattr(hop_construction, operation)), operation
+
+
 def test_root_agent_router_selects_one_focused_skill() -> None:
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
 

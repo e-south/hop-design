@@ -2,7 +2,7 @@
 name: hop-design-user
 description: Use HOP to preview spaces, compile designs or construction routes, run discovery or methods, render views, and verify handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
 metadata:
-  version: 0.8.0
+  version: 0.8.1
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation, construction]
 ---

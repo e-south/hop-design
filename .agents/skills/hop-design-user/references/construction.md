@@ -46,8 +46,8 @@ choices, output paths, timestamps, or environment records.
 - Use `project_foldback_feasibility()` for the verified foldback authority.
   Use `project_basal_feasibility()` only when the route contains a basal
   authority.
-- Call `project_relaxation_frontier(..., family="foldback" | "basal")` with an
-  explicit family.
+- Call `project_retained_overhead_frontier(..., family="foldback" | "basal")`
+  to inspect accessibility across retained construction-sequence budgets.
 - Use `project_complete_construction_summary()` for lossless route accounting.
 - Call `project_construction_trajectory()` only with an explicit ID from
   `materialized_realization_ids`. Never auto-select a realization.
