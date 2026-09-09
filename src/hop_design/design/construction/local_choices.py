@@ -80,7 +80,9 @@ def _choices(
             realization_id=item.basal_realization_id,
             geometry=item.local_realization.achieved_geometry,
             retained_overhead_nt=item.retained_overhead.retained_overhead_nt,
-            enzyme_ids=tuple(sorted({str(binding.enzyme_id) for binding in item.enzyme_bindings})),
+            enzyme_ids=tuple(
+                sorted({str(definition.enzyme_id) for definition in item.enzyme_definitions})
+            ),
             cohesive_end=(
                 item.future_release_action.requirement.cohesive_end_sequence
                 if item.future_release_action is not None

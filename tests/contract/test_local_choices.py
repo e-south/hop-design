@@ -51,6 +51,15 @@ def test_local_choices_expose_compilable_id_and_unfinished_materials(basal) -> N
         choices[0].retained_overhead_nt = 0
 
 
+def test_basal_choices_include_the_required_future_release_enzyme(basal) -> None:
+    before = basal.json_bytes
+    choices = construction.list_local_realizations(basal, cohesive_end="ATAA")
+    assert choices
+    assert all(row.enzyme_count == 2 for row in choices)
+    assert all(row.enzyme_ids == ("enzyme:bbsi@1", "enzyme:nt-bsmai@1") for row in choices)
+    assert basal.json_bytes == before
+
+
 def test_local_choices_preserve_ties_and_explicit_lexicographic_preferences(basal) -> None:
     choices = construction.list_local_realizations(basal)
     assert len(choices) == basal.realization_count
