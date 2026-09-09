@@ -31,6 +31,7 @@ from hop_design.models.construction.source_partition.request import (
 )
 from hop_design.models.coordinates import Boundary, Span
 
+from .candidate import prepare_combination_source
 from .discovery import discover_source_partitions
 from .public import SourcePartitionDiscovery
 
@@ -39,35 +40,46 @@ def discover_construction_source_partition(
     receipt: ConstructionCompilation | VerifiedConstructionBundle,
     policy_path: str | Path,
     *,
-    materialized_realization_id: str,
+    materialized_realization_id: str | None = None,
+    combination_ordinal: int | None = None,
 ) -> SourcePartitionDiscovery:
-    """Search exact length-based source removal without changing the selected route."""
+    """Search removal for a selected route or examined PCR-bearing combination."""
     if not isinstance(receipt, ConstructionCompilation | VerifiedConstructionBundle):
         raise TypeError("Source-removal discovery requires a verified construction receipt.")
+    if (materialized_realization_id is None) == (combination_ordinal is None):
+        raise ValueError("Select exactly one materialized realization or combination ordinal.")
     result = receipt._verified_source().result
-    realization = next(
-        (
-            item
-            for item in result.realizations
-            if item.materialized_realization_id == materialized_realization_id
-        ),
-        None,
-    )
-    if realization is None:
-        raise ValueError("Source-removal selection is not an accepted construction realization.")
+    if combination_ordinal is not None:
+        preparation, payload_source_map, selected_strands = prepare_combination_source(
+            result, combination_ordinal
+        )
+    else:
+        realization = next(
+            (
+                item
+                for item in result.realizations
+                if item.materialized_realization_id == materialized_realization_id
+            ),
+            None,
+        )
+        if realization is None:
+            raise ValueError(
+                "Source-removal selection is not an accepted construction realization."
+            )
+        preparation = realization.source_preparation
+        payload_source_map = realization.payload_source_map
+        selected_strands = next(
+            state.molecules
+            for state in realization.construction_program.states
+            if state.phase is ConstructionStatePhase.SELECTED_FRAGMENTS
+        )
     mapping = load_source_mapping(policy_path, source_label="HOP source-partition policy")
     if mapping.get("schema") != "hop.source-partition-policy/v1":
         raise ValueError(
             f"Unsupported HOP source-partition policy schema: {mapping.get('schema')!r}."
         )
     policy = ConstructionSourcePartitionPolicy.model_validate_json(json.dumps(mapping))
-    preparation = realization.source_preparation
     top, bottom = (item.material for item in preparation.produced_material_bindings)
-    selected = next(
-        state
-        for state in realization.construction_program.states
-        if state.phase is ConstructionStatePhase.SELECTED_FRAGMENTS
-    )
     facts = tuple(
         route_fragment_fact(
             strand,
@@ -75,7 +87,7 @@ def discover_construction_source_partition(
             top_use_id=preparation.prepared_top_use.use_id,
             bottom_use_id=preparation.prepared_bottom_use.use_id,
         )
-        for strand in selected.molecules
+        for strand in selected_strands
     )
     source_id = "source-duplex"
     request = SourcePartitionDiscoveryRequest(
@@ -96,7 +108,7 @@ def discover_construction_source_partition(
                     source_span=segment.source_span,
                     orientation=segment.orientation,
                 )
-                for segment in realization.payload_source_map.segments
+                for segment in payload_source_map.segments
             )
         ),
         enzyme_provisioning=policy.enzyme_provisioning,

@@ -221,6 +221,26 @@ An infeasible removal search leaves the original construction unchanged; a
 truncated search does not establish that no removal program exists. HOP does
 not silently add source sequence or relax the length rule.
 
+For a PCR-bearing candidate rejected before an endpoint is materialized, select
+its zero-based `ordinal` from the summary's combination dispositions instead:
+
+```python
+partition = construction.discover_construction_source_partition(
+    examined,
+    "removal-policy.yaml",
+    combination_ordinal=chosen_ordinal,
+)
+```
+
+Supply exactly one selection: an accepted realization ID or an examined
+combination ordinal. HOP replays that candidate's source preparation and local
+survivor requirements. This permits a cleanup program to account for additional
+source nicks; it does not accept the rejected construction or waive adapter,
+primer, payload, or endpoint requirements. Recompile with the selected partition
+to check the complete route. Unexamined ordinals, incompatible basal strands,
+and failed source preparation are rejected. The ordinal identifies a candidate
+within this exact result, not a preference or a portable ranking.
+
 ## Prepare the two authorities
 
 Construction compilation requires two independent inputs:

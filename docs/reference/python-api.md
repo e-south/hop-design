@@ -91,9 +91,12 @@ All operations and receipts in this section use `hop_design.construction`.
   safely reopens canonical result JSON and repeats molecular, candidate-space,
   completion, and identity replay before returning the same opaque receipt.
 - `discover_construction_source_partition(receipt, policy_path,
-  materialized_realization_id=...) -> SourcePartitionDiscovery` searches removal
-  programs for one accepted construction, deriving its prepared source and
-  required surviving strands from the verified route. The policy supplies
+  materialized_realization_id=..., combination_ordinal=...) -> SourcePartitionDiscovery`
+  requires exactly one of the two selection keywords. It searches removal
+  programs for an accepted construction or an examined PCR-bearing combination,
+  deriving the prepared source and required surviving strands from verified
+  molecular inputs. An examined candidate need not have passed endpoint
+  validation; its returned partition does not confer route acceptance. The policy supplies
   enzymes, a fragment-length rule, and search bounds, not molecular overrides.
   It does not modify the route or choose a partition. See
   [checking source removal](../guides/compile-construction.md#check-removal-for-a-selected-source).

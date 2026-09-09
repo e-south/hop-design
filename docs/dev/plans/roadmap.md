@@ -81,7 +81,9 @@ The [construction guide](../../guides/compile-construction.md) exposes:
 - Source-partition search over enzyme programs on an exact supplied duplex,
   including terminal fragments and inclusive maximum-fragment certificates.
   The source and required survivors can also be derived from one selected
-  construction, with caller-supplied enzyme and fragment policies.
+  construction or an examined PCR-bearing combination, with caller-supplied
+  enzyme and fragment policies. A cleanup program can then be bound during
+  full-route compilation; rejected candidates are not silently accepted.
 - Composition of selected local authorities, source preparation, optional
   source-partition evidence, exact auxiliaries, and endpoint-specific chronology.
   PCR-bearing routes incorporate the selected cleanup nick program before

@@ -348,3 +348,111 @@ def test_all_completions_constraint_preserves_each_sequence_disposition(tmp_path
         "global-actionable-site-conflict",
         "all-combinations-valid-required",
     }
+
+
+def test_cleanup_can_complete_an_examined_source_with_additional_nicks(tmp_path: Path) -> None:
+    request, foldback, basal, _ = _searched_context_case(tmp_path, pattern="AAAAGTCTGAC")
+    source = _source(
+        foldback=foldback.neighborhood.request,
+        basal=basal.discovery.request,
+        endpoint=request.endpoint,
+        materialization=request.materialization,
+    )
+    path = _write_source(tmp_path / "source.yaml", source)
+    bindings = {
+        "design_bundle_path": tmp_path / "design",
+        "foldback": _local_receipt(tmp_path / "foldback.json", foldback),
+        "foldback_realization_id": request.selected_foldback_realization_id,
+        "basal": _local_receipt(tmp_path / "basal.json", basal),
+        "basal_realization_id": request.selected_basal_realization_id,
+    }
+    compiled = construction.compile_construction_from_local_realizations(path, **bindings)
+    assert compiled.status == "infeasible"
+    assert compiled.valid_realizations == 0
+    enzymes = [
+        enzyme.model_dump(mode="json")
+        for policy in (
+            foldback.neighborhood.request.enzyme_provisioning,
+            basal.discovery.request.enzyme_provisioning,
+        )
+        for enzyme in policy.catalog.enzymes
+    ]
+    ids = [enzyme["enzyme_id"] for enzyme in enzymes]
+    policy = {
+        "schema": "hop.source-partition-policy/v1",
+        "enzyme_provisioning": {
+            "catalog": {
+                "catalog_id": "example:enzyme-catalog/source-cleanup@1",
+                "enzymes": enzymes,
+            },
+            "allowed_enzyme_ids": ids,
+            "forbidden_enzyme_ids": [],
+            "reserved_enzyme_ids": [],
+            "max_operations": 3,
+            "role_restrictions": [{"role": "strand_exposure", "allowed_enzyme_ids": ids}],
+        },
+        "fragment_policy": {"preferred_maximum_nt": 11, "absolute_maximum_nt": 11},
+        "max_enzymes_per_program": 2,
+        "enumeration": {"max_search_nodes": 3, "max_realizations": 3},
+    }
+    policy_path = tmp_path / "removal.json"
+    policy_path.write_text(json.dumps(policy))
+
+    partition = construction.discover_construction_source_partition(
+        compiled, policy_path, combination_ordinal=0
+    )
+    transferred = construction.load_verified_construction_bundle(
+        compiled.write(tmp_path / "examined")
+    )
+    repeated = construction.discover_construction_source_partition(
+        transferred, policy_path, combination_ordinal=0
+    )
+    assert repeated.json_bytes == partition.json_bytes
+
+    result = json.loads(partition.json_bytes)
+    assert result["request"]["source"]["top_sequence_5prime"] == "AAAAGTCTGACAAAAGACATCAGATGCTGA"
+    assert partition.status == "complete"
+    assert partition.accepted_realizations == 1
+    assert {
+        (
+            item["precursor_strand"],
+            item["source_span"]["start"]["offset"],
+            item["source_span"]["end"]["offset"],
+        )
+        for item in result["request"]["constraints"]["required_survivors"]
+    } == {("top", 0, 19), ("bottom", 15, 30)}
+    completed = construction.compile_construction_from_local_realizations(
+        path,
+        **bindings,
+        source_partition=partition,
+        source_partition_realization_id=result["realizations"][0]["realization_id"],
+    )
+    assert completed.status == "complete"
+    assert completed.valid_realizations == 1
+    assert compiled.status == "infeasible"
+    replayed = construction.load_verified_construction_bundle(
+        completed.write(tmp_path / "completed")
+    )
+    assert replayed.bundle_id == completed.bundle_id
+
+
+def test_cleanup_cannot_supply_missing_source_primer_sequence(tmp_path: Path) -> None:
+    request, foldback, basal, _ = _searched_context_case(tmp_path, pattern="TGCAGTCTGC")
+    source = _source(
+        foldback=foldback.neighborhood.request,
+        basal=basal.discovery.request,
+        endpoint=request.endpoint,
+        materialization=request.materialization,
+    )
+    compiled = construction.compile_construction_from_local_realizations(
+        _write_source(tmp_path / "source.yaml", source),
+        design_bundle_path=tmp_path / "design",
+        foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+        foldback_realization_id=request.selected_foldback_realization_id,
+        basal=_local_receipt(tmp_path / "basal.json", basal),
+        basal_realization_id=request.selected_basal_realization_id,
+    )
+    with pytest.raises(ValueError, match="source preparation failed"):
+        construction.discover_construction_source_partition(
+            compiled, tmp_path / "removal.json", combination_ordinal=0
+        )

@@ -147,6 +147,44 @@ def test_partition_search_requires_an_explicit_accepted_selection(
         )
 
 
+@pytest.mark.parametrize("ordinal", [-1, "past_end", True, "0"])
+def test_partition_search_cannot_select_an_unexamined_combination(
+    tmp_path: Path, constructed_source, ordinal
+) -> None:
+    receipt, _ = constructed_source
+    if ordinal == "past_end":
+        ordinal = receipt.examined_combinations
+    with pytest.raises(ValueError, match="examined combination ordinal"):
+        construction.discover_construction_source_partition(
+            receipt, tmp_path / "absent.json", combination_ordinal=ordinal
+        )
+
+
+def test_partition_search_requires_exactly_one_selection(
+    tmp_path: Path, constructed_source
+) -> None:
+    receipt, _ = constructed_source
+    with pytest.raises(ValueError, match="exactly one"):
+        construction.discover_construction_source_partition(receipt, tmp_path / "absent.json")
+    with pytest.raises(ValueError, match="exactly one"):
+        construction.discover_construction_source_partition(
+            receipt,
+            tmp_path / "absent.json",
+            materialized_realization_id=receipt.materialized_realization_ids[0],
+            combination_ordinal=0,
+        )
+
+
+def test_combination_selection_does_not_invent_a_pcr_endpoint(
+    tmp_path: Path, constructed_source
+) -> None:
+    receipt, _ = constructed_source
+    with pytest.raises(ValueError, match="PCR-bearing endpoint"):
+        construction.discover_construction_source_partition(
+            receipt, tmp_path / "absent.json", combination_ordinal=0
+        )
+
+
 @pytest.mark.parametrize("schema", [None, "hop.source-partition-request/v2"])
 def test_partition_policy_requires_its_declared_schema(
     tmp_path: Path, constructed_source, schema: str | None
