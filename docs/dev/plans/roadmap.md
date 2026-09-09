@@ -80,6 +80,8 @@ The [construction guide](../../guides/compile-construction.md) exposes:
   obligations, and state-indexed future-release constraints.
 - Source-partition search over enzyme programs on an exact supplied duplex,
   including terminal fragments and inclusive maximum-fragment certificates.
+  The source and required survivors can also be derived from one selected
+  construction, with caller-supplied enzyme and fragment policies.
 - Composition of selected local authorities, source preparation, optional
   source-partition evidence, exact auxiliaries, and endpoint-specific chronology.
   PCR-bearing routes incorporate the selected cleanup nick program before

@@ -34,6 +34,7 @@ PUBLIC_NAMES = [
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
+    "discover_construction_source_partition",
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",

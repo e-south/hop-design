@@ -61,3 +61,18 @@ Search status remains `complete`, `infeasible`, or `truncated`. Enzyme-subset
 order is deterministic replay metadata, never a score. Catalog provenance,
 empirical performance, column recovery, PCR thermodynamics, and experimental
 selection remain caller-owned evidence or policy.
+
+## Construction-derived input
+
+`discover_construction_source_partition` derives the exact source duplex,
+terminal chemistry, payload map, and required surviving strands from one
+explicitly selected accepted construction. It reuses the route's prepared
+materials and contiguous source-lineage projection. The caller supplies only
+enzymes, the fragment-length rule, and finite search bounds through
+`hop.source-partition-policy/v1`; that policy cannot override molecular facts.
+
+The result uses the existing source-partition request and result schemas.
+Discovery neither changes the construction nor certifies a complete processing
+route. A caller selects a partition realization and binds it through complete
+composition, which checks all exact cuts and states. This staged operation
+does not jointly redesign source sequence or length when removal fails.

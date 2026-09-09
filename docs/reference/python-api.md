@@ -90,6 +90,13 @@ All operations and receipts in this section use `hop_design.construction`.
 - `load_verified_source_partition(result_path) -> SourcePartitionDiscovery`
   safely reopens canonical result JSON and repeats molecular, candidate-space,
   completion, and identity replay before returning the same opaque receipt.
+- `discover_construction_source_partition(receipt, policy_path,
+  materialized_realization_id=...) -> SourcePartitionDiscovery` searches removal
+  programs for one accepted construction, deriving its prepared source and
+  required surviving strands from the verified route. The policy supplies
+  enzymes, a fragment-length rule, and search bounds, not molecular overrides.
+  It does not modify the route or choose a partition. See
+  [checking source removal](../guides/compile-construction.md#check-removal-for-a-selected-source).
 - `load_verified_construction_bundle(path) -> VerifiedConstructionBundle`
   checks portable bytes and semantically replays the embedded design, local
   authorities, complete result, and root manifest.

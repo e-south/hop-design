@@ -43,6 +43,9 @@ from hop_design.design.construction.public import (
     project_source_partition_certificate,
     select_construction_realization,
 )
+from hop_design.design.construction.source_partition.construction import (
+    discover_construction_source_partition,
+)
 
 __all__ = [
     "ConstructionCompilation",
@@ -56,6 +59,7 @@ __all__ = [
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
+    "discover_construction_source_partition",
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",

@@ -179,6 +179,48 @@ This composition supports one concurrent nick-only stage. Direct hairpin
 endpoints can bind a matching partition but do not add cleanup operations;
 multi-stage cleavage requires a separately supported route model.
 
+### Check removal for a selected source
+
+A modeled endpoint without a bound partition does not establish how unwanted
+source fragments will be removed. After selecting a construction, ask HOP to
+search removal programs on its exact prepared source:
+
+```python
+partition = construction.discover_construction_source_partition(
+    selected,
+    "removal-policy.yaml",
+    materialized_realization_id=selected_route_id,
+)
+partition.write("source-removal")
+```
+
+`selected_route_id` must name an accepted realization in `selected`. HOP derives
+the duplex sequence, terminal chemistry, payload coordinates, and required
+surviving strands; do not copy those facts into the policy. The policy shape is:
+
+```yaml
+schema: hop.source-partition-policy/v1
+enzyme_provisioning: <characterized catalog and provisioned strand-exposure enzymes>
+fragment_policy:
+  preferred_maximum_nt: <largest unwanted fragment permitted without relaxation>
+  absolute_maximum_nt: <largest unwanted fragment permitted at all>
+max_enzymes_per_program: <positive integer>
+enumeration:
+  max_search_nodes: <positive integer>
+  max_realizations: <positive integer>
+```
+
+The angle-bracketed entries are caller choices, not runnable values or defaults.
+Set both maxima equal for one fixed rule. These are exact sequence-length
+predicates, not predictions of physical cleanup recovery.
+
+Inspect the returned alternatives, explicitly select a partition realization,
+and pass it to `compile_construction_from_local_realizations` as shown above.
+That composition checks the entire route with the selected processing program.
+An infeasible removal search leaves the original construction unchanged; a
+truncated search does not establish that no removal program exists. HOP does
+not silently add source sequence or relax the length rule.
+
 ## Prepare the two authorities
 
 Construction compilation requires two independent inputs:

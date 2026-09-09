@@ -75,6 +75,7 @@ The exact public allowlist is:
 - `discover_local_neighborhood`;
 - `discover_local_neighborhoods`;
 - `discover_source_partition`;
+- `discover_construction_source_partition`;
 - `list_local_realizations`;
 - `load_verified_construction_bundle`;
 - `load_construction_selection`;
