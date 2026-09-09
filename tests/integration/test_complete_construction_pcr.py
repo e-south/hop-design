@@ -115,7 +115,7 @@ def _foldback(payload: FinalPayloadReference):
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
-        )
+        ).model_copy(update={"payload": payload})
     )
 
 
