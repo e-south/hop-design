@@ -17,6 +17,7 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
+from hop_design import construction
 from hop_design.design.bundle import load_verified_bundle
 from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.complete import discover_constructions
@@ -239,6 +240,42 @@ def _clone_request(tmp_path: Path, *, payload_sequence: str = "GACA"):
         ),
     )
     return request, foldback, basal, design, complete_pcr_top, encoding
+
+
+def test_comparison_distinguishes_changed_primers_from_unchanged_released_strands(
+    tmp_path: Path,
+) -> None:
+    request, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    changed = request.model_dump(mode="python", by_alias=True)
+    primer = changed["materialization"]["endpoint_auxiliaries"]["forward_primer"]["primer"]["oligo"]
+    primer["sequence_5prime"] = "A" + primer["sequence_5prime"]
+    primer["five_prime_end"] = EndChemistry.HYDROXYL
+    del primer["material_id"]
+    changed_request = type(request).model_validate(changed)
+    left, right = (
+        compile_construction_bundle(
+            discover_constructions(
+                source,
+                foldback=verify_foldback_neighborhood_result(foldback),
+                basal=verify_basal_neighborhood_result(basal),
+                design=design,
+            )
+        )
+        for source in (request, changed_request)
+    )
+    left_id, right_id = left.materialized_realization_ids[0], right.materialized_realization_ids[0]
+    assert left_id != right_id
+    report = construction.compare_constructions(
+        left, right, left_realization_id=left_id, right_realization_id=right_id
+    )
+    assert "| Source oligo | same |" in report
+    assert "| Endpoint forward primer | changed |" in report
+    assert "AGGTCTCAAAA (11 nt; 5-prime hydroxyl; 3-prime hydroxyl)" in report
+    assert "| Endpoint strand 1 | same |" in report
+    assert "| Endpoint strand 2 | same |" in report
+    assert "| PCR strand lengths (nt) | changed |" in report
+    assert "| Left cohesive end | same | AAAA" in report
+    assert "| Right cohesive end | same | AAAA" in report
 
 
 def _verified_distal_mismatch_design(

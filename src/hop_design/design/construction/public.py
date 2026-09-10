@@ -213,6 +213,29 @@ def project_construction_trajectory(
     )
 
 
+def compare_constructions(
+    left: ConstructionCompilation | VerifiedConstructionBundle,
+    right: ConstructionCompilation | VerifiedConstructionBundle,
+    *,
+    left_realization_id: str,
+    right_realization_id: str,
+) -> str:
+    """Compare two selected accepted routes as a read-only Markdown report."""
+    from hop_design.export.construction.handoff.comparison import render_construction_comparison
+
+    left_source, right_source = _source(left), _source(right)
+    return render_construction_comparison(
+        _project_complete_construction_trajectory(
+            left_source, materialized_realization_id=left_realization_id
+        ),
+        _project_complete_construction_trajectory(
+            right_source, materialized_realization_id=right_realization_id
+        ),
+        left_status=left_source.result.status.value,
+        right_status=right_source.result.status.value,
+    )
+
+
 def project_retained_overhead_frontier(
     receipt: ConstructionCompilation | VerifiedConstructionBundle | LocalNeighborhoodDiscovery,
     *,
@@ -247,6 +270,7 @@ __all__ = [
     "LocalNeighborhoodDiscovery",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
+    "compare_constructions",
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",

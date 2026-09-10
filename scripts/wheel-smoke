@@ -274,6 +274,18 @@ wheel_navigation_id="$(
   --selection "$smoke_root/wheel-selected-route.json" \
   --out "$smoke_root/wheel-selected-trajectory" >/dev/null
 
+source_comparison="$(uv run --locked hop-design construction compare \
+  "$smoke_root/source-construction-composed-pcr/construction" \
+  "$smoke_root/source-construction-exact/construction" \
+  --left-ordinal 0 --right-ordinal 0)"
+wheel_comparison="$("$smoke_root/venv/bin/hop-design" construction compare \
+  "$wheel_navigation_bundle" "$smoke_root/wheel-construction-exact/construction" \
+  --left-ordinal 0 --right-ordinal 0)"
+if [[ "$source_comparison" != "$wheel_comparison" ]]; then
+  echo "source/wheel construction comparison mismatch" >&2
+  exit 1
+fi
+
 source_discovery="$(uv run --locked python examples/discover_basal_candidates.py)"
 wheel_discovery="$("$smoke_root/venv/bin/python" examples/discover_basal_candidates.py)"
 if [[ "$source_discovery" != "$wheel_discovery" ]]; then

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import typer
 
+from .comparison import construction_compare_command
 from .routes import construction_list_command
 from .selection import construction_inspect_command, construction_select_command
 from .summary import construction_summary_command
@@ -26,5 +27,6 @@ construction_app.command("summary")(construction_summary_command)
 construction_app.command("list")(construction_list_command)
 construction_app.command("inspect")(construction_inspect_command)
 construction_app.command("select")(construction_select_command)
+construction_app.command("compare")(construction_compare_command)
 
 __all__ = ["construction_app"]

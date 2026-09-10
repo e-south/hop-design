@@ -69,6 +69,7 @@ The exact public allowlist is:
 - `LocalRealizationChoice`;
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
+- `compare_constructions`;
 - `compile_construction`;
 - `compile_construction_from_local_realizations`;
 - `compile_design_from_local_realizations`;
@@ -102,6 +103,10 @@ achieved geometry and the family identity required by compilation. Explicit
 filters and ascending preference keys operate on recorded witnesses only;
 they neither search unenumerated sequences nor certify a complete construction.
 The original receipt remains necessary to compile a selected identity.
+`compare_constructions` consumes two verified receipts and explicit accepted
+realization identities. It returns a read-only Markdown comparison of recorded
+material, retained-sequence, processing-order, and endpoint properties. It is
+not a serialized molecular authority, ranking, or equivalence certificate.
 Source, result, projection, molecular-state, and bundle-manifest constructors
 remain internal. Loading a portable construction bundle performs both
 integrity and semantic replay, so the facade does not add a redundant verify

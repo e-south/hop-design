@@ -31,6 +31,7 @@ PUBLIC_NAMES = [
     "LocalRealizationChoice",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
+    "compare_constructions",
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",

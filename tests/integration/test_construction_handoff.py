@@ -136,3 +136,108 @@ def test_handoff_explains_verified_fragment_removal_and_escapes_caller_text(tmp_
     assert "Source-fragment removal: specified and verified in the model" in inspected.output
     assert "Cleanup recovery: not predicted" in inspected.output
     assert "unresolved" not in inspected.output
+    comparison = construction.compare_constructions(
+        receipt,
+        receipt,
+        left_realization_id=receipt.materialized_realization_ids[0],
+        right_realization_id=receipt.materialized_realization_ids[0],
+    )
+    assert "unresolved" not in comparison
+    assert "| Removal-rule allowance (nt) | same |" in comparison
+
+
+def test_comparison_exposes_molecular_changes_without_replacing_authorities(tmp_path: Path) -> None:
+    left = compile_construction_bundle(
+        _verified_result(tmp_path / "pcr", ConstructionEndpoint.HAIRPIN_PCR_DUPLEX)
+    )
+    right = compile_construction_bundle(
+        _verified_result(tmp_path / "release", ConstructionEndpoint.CLONE_READY_DUPLEX)
+    )
+    left_id = left.materialized_realization_ids[0]
+    right_id = right.materialized_realization_ids[0]
+    before = construction.project_construction_trajectory(
+        left, materialized_realization_id=left_id
+    ).json_bytes
+
+    report = construction.compare_constructions(
+        left, right, left_realization_id=left_id, right_realization_id=right_id
+    )
+
+    assert "| Payload | same | GACA | GACA |" in report
+    assert "| Source oligo | same |" in report
+    assert "| Adapter | same |" in report
+    assert "| Endpoint forward primer | changed |" in report
+    assert "| Endpoint reverse primer | changed |" in report
+    assert "GGTCTCAAAA" in report
+    assert "| Endpoint strand 1 | changed |" in report
+    assert "| Left cohesive end | changed | not generated | AAAA" in report
+    assert "| Right cohesive end | changed | not generated | AAAA" in report
+    assert "| Operation/enzyme order | changed |" in report
+    assert "Composition coverage: left complete; right complete." in report
+    assert "does not describe upstream scaffold-generation coverage" in report
+    assert "unresolved" in report
+    assert "not a ranking" in report
+    assert left_id in report and right_id in report
+    assert (
+        construction.project_construction_trajectory(
+            left, materialized_realization_id=left_id
+        ).json_bytes
+        == before
+    )
+    assert report == construction.compare_constructions(
+        left, right, left_realization_id=left_id, right_realization_id=right_id
+    )
+
+    left_path = left.write(tmp_path / "left-bundle")
+    right_path = right.write(tmp_path / "right-bundle")
+    compared = CliRunner().invoke(
+        app,
+        [
+            "construction",
+            "compare",
+            str(left_path),
+            str(right_path),
+            "--left-ordinal",
+            "0",
+            "--right-ordinal",
+            "0",
+        ],
+    )
+    assert compared.exit_code == 0, compared.output
+    assert compared.output == report
+    invalid = CliRunner().invoke(
+        app,
+        [
+            "construction",
+            "compare",
+            str(left_path),
+            str(right_path),
+            "--left-ordinal",
+            "0",
+            "--right-ordinal",
+            "99",
+        ],
+    )
+    assert invalid.exit_code == 2
+    assert "No accepted route has ordinal 99" in invalid.output
+
+
+def test_comparison_preserves_coverage_and_requires_verified_selections(tmp_path: Path) -> None:
+    receipt = compile_construction_bundle(
+        _verified_result(tmp_path / "source", ConstructionEndpoint.SSDNA_HAIRPIN, truncated=True)
+    )
+    selected_id = receipt.materialized_realization_ids[0]
+    report = construction.compare_constructions(
+        receipt, receipt, left_realization_id=selected_id, right_realization_id=selected_id
+    )
+    assert "| changed |" not in report
+    assert "Composition coverage: left truncated; right truncated." in report
+    assert "| Left cohesive end | same | not generated | not generated |" in report
+    with pytest.raises(ValueError, match="Unknown accepted"):
+        construction.compare_constructions(
+            receipt, receipt, left_realization_id=selected_id, right_realization_id="missing"
+        )
+    with pytest.raises(TypeError, match="verified construction receipt"):
+        construction.compare_constructions(
+            object(), receipt, left_realization_id=selected_id, right_realization_id=selected_id
+        )

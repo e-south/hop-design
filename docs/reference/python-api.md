@@ -120,6 +120,13 @@ All operations and receipts in this section use `hop_design.construction`.
   explicit-sort workflows without creating a second accounting relation.
 - `project_complete_construction_summary(receipt) -> ConstructionProjection`
 - `project_construction_trajectory(receipt, materialized_realization_id=...) -> ConstructionProjection`
+- `compare_constructions(left, right, left_realization_id=..., right_realization_id=...) -> str`
+  returns a read-only Markdown comparison of two accepted routes from verified
+  compilation or bundle receipts. It compares recorded molecular properties,
+  not request text, and preserves both search statuses and selected identities.
+  Unknown or rejected selections raise; raw model objects are not accepted.
+  No ranking, new authority, file write, or search is performed. See
+  [comparing completed choices](../guides/compile-construction.md#compare-completed-choices).
 
 The source document cannot author design or result identities. Receipts expose
 bundle, result, and design-bundle identity; endpoint and status; accepted,

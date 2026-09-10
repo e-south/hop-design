@@ -152,6 +152,7 @@ VIEW_OPERATIONS = {
 }
 
 CONSTRUCTION_OPERATIONS = {
+    "compare_constructions",
     "list_local_realizations",
     "compile_construction",
     "compile_construction_from_local_realizations",

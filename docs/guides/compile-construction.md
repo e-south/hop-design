@@ -64,6 +64,44 @@ then [compile](#compile-and-write-the-authority) and
 [inspect the result](#reopen-and-project). Checkpointing below is optional for
 collections of independent queries; it is not required to compile one route.
 
+## Compare completed choices
+
+After changing a constraint and compiling another result, compare the selected
+routes before deciding which materials to use:
+
+```bash
+uv run hop-design construction compare LEFT_BUNDLE RIGHT_BUNDLE \
+  --left-ordinal LEFT_ROUTE_NUMBER --right-ordinal RIGHT_ROUTE_NUMBER
+```
+
+Use numbers from `construction list` for each respective bundle. The two bundle
+paths may be the same. The Markdown report compares required oligos and end
+chemistry, retained encoding sequence, processing order, fragment-removal
+information, PCR strand lengths, and actual endpoint strands and cohesive ends. Full result and
+realization identities appear at the end for traceability. Neither input is
+changed, and no search is rerun.
+
+For loaded receipts and explicitly selected realization identities, the Python
+equivalent is:
+
+```python
+report = construction.compare_constructions(
+    left_receipt,
+    right_receipt,
+    left_realization_id=left_id,
+    right_realization_id=right_id,
+)
+print(report)
+```
+
+“Same” applies to the displayed property, not to every molecular interaction or
+experimental performance. Processing-order equality does not establish equal
+cut or binding coordinates; inspect either route for those details. A selected
+route can be resolved even when its originating search is truncated. The
+reported coverage belongs to the composition result; it does not describe a
+separate upstream scaffold-generation search. Comparison introduces no
+preference score.
+
 ## Derive a design from selected local alternatives
 
 First compare the molecular choices that meet your requirements. Retained
