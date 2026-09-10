@@ -304,6 +304,8 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
             realization_id,
             "--out",
             str(output),
+            "--reason",
+            "Uses the required enzymes and endpoint.",
         ],
     )
 
@@ -317,7 +319,11 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
     assert {item.name for item in output.iterdir()} == {
         "projection.json",
         "projection.svg",
+        "report.md",
+        "oligos.csv",
+        "oligos.fasta",
     }
+    assert "Uses the required enzymes and endpoint." in (output / "report.md").read_text()
 
     repeated = runner.invoke(
         app,
@@ -333,6 +339,16 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
     assert repeated.exit_code != 0
     assert "Refusing to replace existing" in repeated.output
     assert "projection path" in repeated.output
+
+
+def test_inspection_reason_requires_saved_output(tmp_path: Path) -> None:
+    bundle, _ = _write_bundle(tmp_path)
+    result = runner.invoke(
+        app,
+        ["construction", "inspect", str(bundle), "--ordinal", "0", "--reason", "My choice"],
+    )
+    assert result.exit_code != 0
+    assert "--reason requires --out" in result.output
 
 
 def test_construction_selection_is_result_bound_and_reusable_for_inspection(

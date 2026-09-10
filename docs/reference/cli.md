@@ -65,7 +65,7 @@ hop-design construction summary BUNDLE_PATH
 hop-design construction list BUNDLE_PATH [OPTIONS]
 hop-design construction inspect BUNDLE_PATH
                                 (REALIZATION_ID | --ordinal NUMBER | --selection SELECTION_JSON)
-                                [--out NEW_DIRECTORY]
+                                [--out NEW_DIRECTORY [--reason TEXT]]
 hop-design construction select BUNDLE_PATH (REALIZATION_ID | --ordinal NUMBER)
                                --out NEW_SELECTION_JSON
 ```
@@ -98,8 +98,11 @@ the canonical ordinal in that bundle; filtering and sorting do not renumber it.
 
 `construction inspect` prints the exact source ssDNA, required external
 materials, molecular-state and transition counts, and endpoint for one accepted
-realization. `--out` writes its deterministic trajectory JSON and SVG to a new
-directory outside the verified input bundle. The realization may be supplied
+realization. `--out` writes `report.md`, `oligos.csv`, and `oligos.fasta`, plus
+the exact trajectory JSON and SVG, to a new directory outside the verified input
+bundle. `--reason` records the caller's selection rationale in the report only;
+it requires `--out` and nonblank text. It does not alter the selection or result.
+The realization may be supplied
 by exact identity, by `--ordinal` from the same bundle's listing, or through one
 result-bound selection file. These selectors are mutually exclusive.
 

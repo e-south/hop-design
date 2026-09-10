@@ -118,14 +118,22 @@ def construction_inspect_command(
     ] = None,
     output: Annotated[
         Path | None,
-        typer.Option("--out", help="New directory for exact trajectory JSON and SVG."),
+        typer.Option(
+            "--out", help="New directory for the report, oligos, and exact route details."
+        ),
     ] = None,
     ordinal: Annotated[
         int | None,
         typer.Option("--ordinal", help="Route number from construction list for this same bundle."),
     ] = None,
+    selection_reason: Annotated[
+        str | None,
+        typer.Option("--reason", help="Your reason for selecting this route, saved with --out."),
+    ] = None,
 ) -> None:
     """Inspect the materials and molecular steps of one route."""
+    if selection_reason is not None and output is None:
+        raise typer.BadParameter("--reason requires --out.", param_hint="--reason")
     receipt = load_receipt(bundle_path)
     if output is not None:
         require_output_outside_bundle(bundle_path, output)
@@ -142,12 +150,13 @@ def construction_inspect_command(
         )
         content = json.loads(trajectory.json_bytes)
         if output is not None:
-            trajectory.write(output)
+            trajectory.write(output, selection_reason=selection_reason)
     except (OSError, ValueError) as exc:
         raise typer.BadParameter(str(exc), param_hint="REALIZATION_ID/--out") from exc
     _print_trajectory(content)
     if output is not None:
-        typer.echo(f"Trajectory: {output}")
+        typer.echo(f"Report: {output / 'report.md'}")
+        typer.echo(f"Oligos: {output / 'oligos.csv'} · {output / 'oligos.fasta'}")
 
 
 def construction_select_command(

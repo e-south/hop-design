@@ -129,6 +129,12 @@ atomically persists the portable authority. Projection
 packets provide canonical JSON, tidy CSV when defined, and SVG bytes; writing a
 packet is atomic and create-only. A trajectory always requires an explicit
 accepted realization identity.
+For a trajectory, `ConstructionProjection.write(path, selection_reason=None)`
+also exports `report.md`, `oligos.csv`, and `oligos.fasta`. The CSV retains required
+terminal chemistry; FASTA contains sequences only. The optional nonblank reason
+is caller-authored report text, not a molecular fact or a ranking. Other
+projection types reject a supplied selection reason. Canonical projection bytes
+and identities are independent of this text.
 `ConstructionSelection.write(path)` writes canonical JSON to exactly one new
 `.json` file path. A selection never changes or narrows the complete
 construction authority.

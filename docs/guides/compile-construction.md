@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-08
+last_verified: 2026-09-09
 doc_type: how-to
 journey:
   - discover
@@ -524,7 +524,10 @@ def write_selected_trajectory(*, realization_id: str) -> None:
         verified,
         materialized_realization_id=realization_id,
     )
-    trajectory.write("construction-trajectory")
+    trajectory.write(
+        "construction-trajectory",
+        selection_reason="Uses the required enzymes and endpoint.",
+    )
 ```
 
 The summary preserves every examined composition disposition and lossless
@@ -539,7 +542,7 @@ The same verified authority is navigable without importing Python:
 hop-design construction summary construction-bundle
 hop-design construction list construction-bundle --group-by geometry
 hop-design construction inspect construction-bundle REALIZATION_ID \
-  --out construction-trajectory
+  --out construction-trajectory --reason "Uses the required enzymes and endpoint."
 hop-design construction select construction-bundle REALIZATION_ID \
   --out selected-route.json
 hop-design construction inspect construction-bundle \
@@ -559,6 +562,19 @@ Each `ConstructionProjection` contains canonical JSON, deterministic SVG, and
 CSV when the projection defines a table. Projection directories are also
 atomic and create-only. They are reversible, non-authoritative views over the
 verified construction result; they do not replace the bundle.
+
+For a selected trajectory, start with `report.md`. It summarizes the payload,
+endpoint, caller-stated selection reason, retained sequence, enzymes, molecular
+steps, and unresolved preparation conditions. `oligos.csv` lists each distinct
+external oligo with its roles, sequence, length, and required end chemistry;
+`oligos.fasta` contains the same sequences. Keep the CSV with the FASTA because
+FASTA does not encode modifications. Produced duplexes are not extra orders.
+The exact `projection.json` and `projection.svg` remain available for inspection.
+
+The optional reason is explanatory text, not a verified preference or a score;
+it does not change the result or selection identity. Without it, the report says
+no preference was supplied. A blank reason is rejected. This handoff specifies
+sequences and operations, not reaction conditions, yields, or experimental success.
 
 ## Checkpoint independent local queries
 
