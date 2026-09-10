@@ -162,8 +162,8 @@ class WholeRouteConstraints(HopModel):
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v5"] = Field(
-        default="hop.construction-discovery-request/v5", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v6"] = Field(
+        default="hop.construction-discovery-request/v6", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily

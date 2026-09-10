@@ -16,19 +16,35 @@ from typing import Annotated, Literal
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
+from hop_design.models.construction.targets import BasalPairConstraint
 from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import normalize_dna_sequence
 
 from ..material import ExactConstructionMaterial, MaterialResolutionMode, PcrPrimer
 
 
-class DerivedAdapterPolicy(HopModel):
+class AdapterPairingPolicy(HopModel):
+    """Explicit distal pairs supplement, but cannot replace, the local junction."""
+
+    distal_pairing_constraints: tuple[BasalPairConstraint, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
+
+    @model_validator(mode="after")
+    def validate_distal_positions(self) -> AdapterPairingPolicy:
+        positions = tuple(item.position_from_ligation for item in self.distal_pairing_constraints)
+        if positions != tuple(sorted(set(positions))):
+            raise ValueError("Distal pairing constraints require distinct ascending positions.")
+        return self
+
+
+class DerivedAdapterPolicy(AdapterPairingPolicy):
     """Derive the exact ligation adapter from one basal pairing authority."""
 
     mode: Literal[MaterialResolutionMode.DERIVE]
 
 
-class ConstrainedAdapterPolicy(HopModel):
+class ConstrainedAdapterPolicy(AdapterPairingPolicy):
     """Append one caller-supplied reusable handle to the derived pairing segment."""
 
     mode: Literal[MaterialResolutionMode.CONSTRAIN]
@@ -42,7 +58,7 @@ class ConstrainedAdapterPolicy(HopModel):
         return normalize_dna_sequence(value, allow_degenerate=False)
 
 
-class FixedAdapterPolicy(HopModel):
+class FixedAdapterPolicy(AdapterPairingPolicy):
     """Require one exact caller-supplied adapter material."""
 
     mode: Literal[MaterialResolutionMode.FIXED]

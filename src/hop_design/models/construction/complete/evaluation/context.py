@@ -1,4 +1,13 @@
-"""Shared exact inputs prepared before endpoint-specific evaluation."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/models/construction/complete/evaluation/context.py
+
+Prepares exact source inputs before endpoint-specific evaluation.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -8,21 +17,27 @@ from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
+from hop_design.models.sequence import reverse_complement_iupac
 
+from ..basal_embedding import basal_nick_boundary, basal_source_offset
+from ..composition_domain import validate_source_context
 from ..evaluation_inputs import (
     derive_complete_payload_source_span,
     derive_endpoint_source_return_arm,
     derive_linear_source_embedding,
     derive_route_prefix,
+    replay_linear_source_embedding,
 )
 from ..material import ExactConstructionMaterial
 from ..provisioning import merge_provisioning_policies
 from ..request import ConstructionDiscoveryRequest
+from ..source_partition.plan import SourcePartitionPlan
 from ..source_preparation import (
     SourceDuplexPreparationAuthority,
     SourcePreparationResolutionError,
     resolve_route_source_preparation,
 )
+from ..source_preparation.policy import FixedSourceSsdnaPolicy
 from .result import CombinationEvaluation, CompositionRejectionCode
 
 
@@ -38,6 +53,8 @@ class CombinationContext:
     candidate_enzyme_programs: int
     recognition_placements_attempted: int
     constraint_systems_attempted: int
+    source_context_sequence: str | None
+    source_partition_plan: SourcePartitionPlan | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +78,8 @@ def build_combination_context(
     basal: BasalRealizationRecord | None,
     foldback_policy: EnzymeProvisioningPolicy,
     basal_policy: EnzymeProvisioningPolicy | None,
+    source_context_sequence: str | None,
+    source_partition_plan: SourcePartitionPlan | None,
 ) -> CombinationContext:
     """Bind one combination and its stable intrinsic-accounting counters."""
     return CombinationContext(
@@ -73,6 +92,8 @@ def build_combination_context(
         recognition_placements_attempted=len(foldback.enzyme_bindings)
         + (0 if basal is None else len(basal.enzyme_bindings)),
         constraint_systems_attempted=2 + (0 if basal is None else 1),
+        source_context_sequence=source_context_sequence,
+        source_partition_plan=source_partition_plan,
     )
 
 
@@ -91,6 +112,26 @@ def prepare_context(
             recognition_placements_attempted=context.recognition_placements_attempted,
             constraint_systems_attempted=context.constraint_systems_attempted,
         )
+    source_policy = request.materialization.source_preparation.source_ssdna
+    validate_source_context(source_policy, context.source_context_sequence)
+    if context.source_context_sequence is not None:
+        prefix = context.source_context_sequence + prefix
+    if basal is not None and isinstance(source_policy, FixedSourceSsdnaPolicy):
+        try:
+            sequence = source_policy.material.sequence_5prime
+            prefix, _, _ = replay_linear_source_embedding(
+                foldback=foldback,
+                source_sequence=sequence,
+                complement_sequence=reverse_complement_iupac(sequence),
+            )
+            basal_source_offset(basal, prefix)
+        except ValueError:
+            return CombinationEvaluation(
+                rejection_reason=CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE,
+                candidate_enzyme_programs=context.candidate_enzyme_programs,
+                recognition_placements_attempted=context.recognition_placements_attempted,
+                constraint_systems_attempted=context.constraint_systems_attempted,
+            )
     source_return_arm = derive_endpoint_source_return_arm(request, prefix=prefix)
     embedding = derive_linear_source_embedding(
         foldback=foldback,
@@ -125,6 +166,9 @@ def prepare_context(
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }
+    retained_source = (
+        prefix[basal_nick_boundary(basal, prefix) :] if pcr_bearing and basal is not None else ""
+    )
     return PreparedContext(
         combination=context,
         prefix=prefix,
@@ -132,7 +176,9 @@ def prepare_context(
         source=source,
         source_complement=source_complement,
         source_preparation=source_preparation,
-        pcr_core_sequence=prefix + foldback.retained_sequence,
+        pcr_core_sequence=prefix
+        + foldback.retained_sequence
+        + (reverse_complement_iupac(retained_source) if retained_source else ""),
         pcr_bearing=pcr_bearing,
     )
 
@@ -146,7 +192,12 @@ def provisioning_policies(
         return (combination.foldback_policy,)
     if combination.basal_policy is None:
         raise ValueError("Basal composition requires its exact provisioning policy.")
-    return (combination.foldback_policy, combination.basal_policy)
+    partition = combination.source_partition_plan
+    return (
+        combination.foldback_policy,
+        combination.basal_policy,
+        *((partition.request.enzyme_provisioning,) if partition is not None else ()),
+    )
 
 
 def merged_provisioning_policy(context: PreparedContext) -> EnzymeProvisioningPolicy:

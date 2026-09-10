@@ -115,7 +115,7 @@ def _foldback(payload: FinalPayloadReference):
                 loop_length_nt=3,
                 annealing_arm_length_bp=4,
             ),
-        )
+        ).model_copy(update={"payload": payload})
     )
 
 
@@ -664,7 +664,7 @@ def test_pcr_fragment_selection_requires_exact_source_return_arm_identity(
             foldback=realization.foldback_authority,
             source_material_use_id=realization.material_uses[0].use_id,
             source_complement_material_use_id=realization.material_uses[1].use_id,
-            source_return_arm=derive_source_return_arm(
+            removed_return_sequence=derive_source_return_arm(
                 realization.materials[0].sequence_5prime.removesuffix(
                     realization.foldback_authority.source_reference_sequence
                 )
@@ -694,6 +694,7 @@ def test_pcr_adapter_pair_kind_must_match_the_h5_profile(tmp_path: Path) -> None
         validate_adapter_pairing_state(
             changed_authority,
             basal=realization.basal_authority,
+            source_prefix="AAAA",
             closed_strand_id=adapter_annealed.molecules[0].strand_id,
             adapter_strand_id=adapter_annealed.molecules[1].strand_id,
         )
@@ -916,7 +917,7 @@ def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_state(tmp_path: Path) 
         **policies,
     )
     assert boundary_result.rejection_reason is (
-        CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
+        CompositionRejectionCode.BASAL_SOURCE_MAP_INCOMPATIBLE
     )
     boundary_before_policy = evaluate_combination(
         request,
@@ -926,7 +927,7 @@ def test_pcr_evaluator_rejects_wrong_boundary_and_pairing_state(tmp_path: Path) 
         basal_policy=None,
     )
     assert boundary_before_policy.rejection_reason is (
-        CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
+        CompositionRejectionCode.BASAL_SOURCE_MAP_INCOMPATIBLE
     )
     pairing_state = basal_record.projection.pairing_state
     changed_adapter = _substitute_first_base(pairing_state.adapter_sequence_5prime)
@@ -1003,12 +1004,12 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "05ac670e3435a76a9b79939363ac49076e90e823cb3529d2ef82a3283287430e@1"
+        "fe9081ac3dfe247919a6ed351d05a0c3b6b772f1533a67afe3ff3957aa9da081@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "bdc8d1d9e67d4e97ba9a6fa7962d4ffd5399a9552bfc7a66e561dc1dd16f3ab8"  # pragma: allowlist secret  # noqa: E501
+            "67b3855e9fbf4138182a7d4ecce4d74a077fbb3d0a214a0996a4ba8e9a83b115"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
@@ -1043,25 +1044,25 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
 
     assert result.result_id == (
         "hop:construction-space-result/"
-        "30b24b554dd19e2a37f0b7808ca84842f625dc5a1c7f2f06adf83c49fcde96ad@1"
+        "cc1cfcd7e0174797bc32eb799b1eee037baf3beb054bb34c833eeb025ac92c8b@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "a404943dd91ddf4c0ccaca2c40312e01a06eb61b45ea6013950374f4359a9c92"  # pragma: allowlist secret  # noqa: E501
+            "4767bcfb86a1aeba125b74dff55e528bece95cfe3196b5b4d97004dc5b7426d1"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
         "hop:materialized-construction/"
-        "af4ac9af291857954ae97be6c8e562b86f03a5d7b8ac2276ae90e0732823c543@1",
+        "4a4220604d8c841ba40663c7d7b9d1447a113c1b6eec4d7d580f5b17f92272ed@1",
         "hop:materialized-construction/"
-        "abe76af60dd70d5b04b6324d5f5a84aba7616adf72b2d7bff1d045bd5920d88d@1",
+        "3935080b1ebdca74dbf8d00226db985e80cde3c584dfa76ac2ae6ec7dad39267@1",
     )
     assert tuple(item.construction_program.program_id for item in result.realizations) == (
         "hop:construction-program/"
-        "ed0236cfe3e5227090e36b67a85846fb486ceee56b2077d067857d81e0862cb7@1",
+        "9eb0140b9b0380dc5ece697536197172da903506e3f751af63cda859a86388eb@1",
         "hop:construction-program/"
-        "13a19a849ca9bdfafbf33dce9d6b84391ef63d7d4f798c931b2859f3a41582af@1",
+        "6ee3c7c9d1f215ee2d1c92db47d8ea9807046b183ab261bd063173a9f5141591@1",
     )
     assert tuple(item.final_product.reference.final_product_id for item in result.realizations) == (
         "hop:final-product/fc31f4ff8e39f543c303fcf979f3790931a43cec3cb078582de00a707d218788@1",
@@ -1072,8 +1073,8 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
             hashlib.sha256(canonical_json_bytes(item)).hexdigest() for item in result.realizations
         )
         == (
-            "f18b1264cd3b3c7581e949bfc9cc684f105ff626d0753731dd513721d4022183",  # pragma: allowlist secret  # noqa: E501
-            "2ca73086c758bbd7117b0386da593d72c2ae8ce927eae77ea226b31a13db4c57",  # pragma: allowlist secret  # noqa: E501
+            "193fe5ac4e90f425b0345f76ae9529471526a660f7e67166f7b379a7d6a3f1ca",  # pragma: allowlist secret  # noqa: E501
+            "42c76c1b343ca393ce78691327c3db53e1ca320d8973f2093a1473eeccfc9a59",  # pragma: allowlist secret  # noqa: E501
         )
     )
 
@@ -1679,6 +1680,7 @@ def test_pcr_realization_replay_rejects_exact_authority_forgery_matrix(
             basal=basal.model_copy(
                 update={"projection": basal.projection.model_copy(update={"pairing_state": None})}
             ),
+            source_prefix="AAAA",
             closed_strand_id=adapter_state.molecules[0].strand_id,
             adapter_strand_id=adapter_state.molecules[1].strand_id,
         )
@@ -1735,7 +1737,7 @@ def test_pcr_realization_replay_rejects_exact_authority_forgery_matrix(
             realization.model_copy(
                 update={"basal_authority": basal.model_copy(update={"basal_nick": changed_nick})}
             ),
-            "aligned prefix boundary",
+            "Basal nick must separate a removable prefix from the retained strand",
         ),
         (
             realization.model_copy(

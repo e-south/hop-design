@@ -11,7 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from hop_design.models.construction.payload import SourceOrientation
 from hop_design.models.molecular_state import EndChemistry, Fragment, LineageStrand
@@ -149,14 +149,15 @@ def foldback_occurrences(
                     for fragment_id, item in fragments_by_id.items()
                     if fragment_id.startswith(strand_prefix) and fragment_id in molecule.molecule_id
                 )
+                occurrence = _embedded_fragment_occurrence(
+                    fragment=fragment,
+                    embedding=embedding,
+                    source=source,
+                    source_complement=source_complement,
+                    include_periphery=False,
+                )
                 occurrences[molecule.molecule_id] = (
-                    _embedded_fragment_occurrence(
-                        fragment=fragment,
-                        embedding=embedding,
-                        source=source,
-                        source_complement=source_complement,
-                        include_periphery=False,
-                    ),
+                    replace(occurrence, length=len(molecule.reference_sequence_5prime)),
                     None,
                 )
                 continue
@@ -169,7 +170,6 @@ def foldback_occurrences(
                             "PCR bottom source-return replay requires a forward source embedding."
                         )
                     material = source_complement
-                    start = embedding.local_complement_offset + embedding.local_source_length
                     origin_strand = LineageStrand.COMPLEMENTARY
                 else:
                     if embedding.source_orientation is not SourceOrientation.REVERSE_COMPLEMENT:
@@ -177,8 +177,8 @@ def foldback_occurrences(
                             "PCR top source-return replay requires a reverse source embedding."
                         )
                     material = source
-                    start = embedding.local_reference_offset + embedding.local_source_length
                     origin_strand = LineageStrand.PRIMARY
+                start = len(material.sequence_5prime) - len(molecule.reference_sequence_5prime)
                 occurrences[molecule.molecule_id] = (
                     MaterialOccurrence(
                         start=start,

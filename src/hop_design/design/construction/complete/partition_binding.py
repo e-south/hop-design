@@ -27,6 +27,10 @@ from hop_design.models.construction.complete.source_partition import (
     SourcePartitionBindingError,
     bind_source_partition,
 )
+from hop_design.models.construction.complete.source_partition.plan import (
+    SourcePartitionPlan,
+    selected_partition_plan,
+)
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
@@ -52,10 +56,10 @@ class PartitionBindingOutcome:
     rejection_candidate: MaterializedConstructionRealization | None
 
 
-def validate_partition_selection(
+def resolve_partition_plan(
     request: ConstructionDiscoveryRequest,
     authority: SourcePartitionDiscoveryResult | None,
-) -> SourcePartitionDiscoveryResult | None:
+) -> SourcePartitionPlan | None:
     """Require one exact embedded authority whenever the request selects a partition."""
     if not request.selects_source_partition:
         if authority is not None:
@@ -69,7 +73,7 @@ def validate_partition_selection(
     selected_id = request.selected_source_partition_realization_id
     if selected_id not in {item.realization_id for item in verified.realizations}:
         raise ValueError("The selected source-partition realization was not found.")
-    return verified
+    return selected_partition_plan(verified, selected_id)
 
 
 def bind_partition_to_realization(
@@ -91,7 +95,7 @@ def bind_partition_to_realization(
         raise ValueError("Source-partition authority requires an explicit selected realization.")
     route_enzyme_definitions = resolve_program_enzyme_definitions(
         program=realization.construction_program.reaction_programs[0],
-        policies=enzyme_policies,
+        policies=(*enzyme_policies, authority.request.enzyme_provisioning),
     )
     try:
         binding = bind_source_partition(
@@ -127,6 +131,6 @@ def bind_partition_to_realization(
 __all__ = [
     "PartitionBindingOutcome",
     "bind_partition_to_realization",
+    "resolve_partition_plan",
     "source_partition_enzyme_policies",
-    "validate_partition_selection",
 ]

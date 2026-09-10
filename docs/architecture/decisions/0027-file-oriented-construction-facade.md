@@ -36,7 +36,7 @@ and verified.
 ## Decision
 
 `hop_design.construction` is the file-oriented construction facade. The caller
-provides one strict `hop.construction-source/v6` JSON or YAML file and one
+provides one strict `hop.construction-source/v7` JSON or YAML file and one
 separate verified design-bundle path. HOP loads the design authority, discovers
 and verifies the declared foldback and optional basal neighborhoods, derives
 the source ssDNA and source-preparation primers under their declared policies,
@@ -66,14 +66,18 @@ The exact public allowlist is:
 - `ConstructionSelection`;
 - `LocalNeighborhoodDiscovery`;
 - `LocalNeighborhoodBatch`;
+- `LocalRealizationChoice`;
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
+- `compare_constructions`;
 - `compile_construction`;
 - `compile_construction_from_local_realizations`;
 - `compile_design_from_local_realizations`;
 - `discover_local_neighborhood`;
 - `discover_local_neighborhoods`;
 - `discover_source_partition`;
+- `discover_construction_source_partition`;
+- `list_local_realizations`;
 - `load_verified_construction_bundle`;
 - `load_construction_selection`;
 - `load_verified_local_neighborhood`;
@@ -94,8 +98,17 @@ Selection references expose only the source result identity, one accepted
 materialized-realization identity, and canonical JSON. They remain
 non-authoritative: creating or loading one requires a verified construction
 receipt, and loading cross-checks both identities against that receipt.
-Raw Pydantic source, result, projection, molecular-state, and bundle-manifest
-models remain internal. Loading a portable construction bundle performs both
+`LocalRealizationChoice` exposes immutable inspection facts, including the
+achieved geometry and the family identity required by compilation. Explicit
+filters and ascending preference keys operate on recorded witnesses only;
+they neither search unenumerated sequences nor certify a complete construction.
+The original receipt remains necessary to compile a selected identity.
+`compare_constructions` consumes two verified receipts and explicit accepted
+realization identities. It returns a read-only Markdown comparison of recorded
+material, retained-sequence, processing-order, and endpoint properties. It is
+not a serialized molecular authority, ranking, or equivalence certificate.
+Source, result, projection, molecular-state, and bundle-manifest constructors
+remain internal. Loading a portable construction bundle performs both
 integrity and semantic replay, so the facade does not add a redundant verify
 verb.
 

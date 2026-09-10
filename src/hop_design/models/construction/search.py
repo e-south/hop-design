@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from enum import StrEnum
 from typing import Annotated, Literal
 
@@ -112,6 +113,9 @@ class BasalGeometryDomain(HopModel):
     nick_strand: Strand | NickStrandSelection = NickStrandSelection.ANY
     nick_offsets_nt: tuple[int, ...] = (0,)
     pairing_constraints: tuple[BasalPairConstraint, ...] = Field(min_length=1)
+    max_noncanonical_pairs: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
     minimum_adapter_annealing_nt: int = Field(default=15, ge=1)
     mismatch_warning_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
     future_release: BasalFutureReleaseRequirement | None = Field(
@@ -130,18 +134,28 @@ class BasalGeometryDomain(HopModel):
             raise ValueError("Basal nick offsets must not repeat values.")
         return tuple(sorted(values))
 
-    def exact_targets(self) -> tuple[BasalTarget, ...]:
-        """Return exact basal targets in canonical offset order."""
-        return tuple(
-            BasalTarget(
-                nick_strand=self.nick_strand,
-                nick_offset_nt=offset,
-                pairing_constraints=self.pairing_constraints,
-                ligation_proximal_match_required=True,
-                future_release=self.future_release,
+    @model_validator(mode="after")
+    def validate_cardinality(self) -> BasalGeometryDomain:
+        end_count = 1 if self.future_release is None else self.future_release.cardinality
+        if len(self.nick_offsets_nt) * end_count > 100_000:
+            raise ValueError("A geometry domain may contain at most 100000 exact basal targets.")
+        return self
+
+    def exact_targets(self) -> Iterator[BasalTarget]:
+        """Yield targets in offset then exact cohesive-end sequence order."""
+        for offset in self.nick_offsets_nt:
+            releases = (
+                (None,) if self.future_release is None else self.future_release.exact_requirements()
             )
-            for offset in self.nick_offsets_nt
-        )
+            for release in releases:
+                yield BasalTarget(
+                    nick_strand=self.nick_strand,
+                    nick_offset_nt=offset,
+                    pairing_constraints=self.pairing_constraints,
+                    max_noncanonical_pairs=self.max_noncanonical_pairs,
+                    ligation_proximal_match_required=True,
+                    future_release=release,
+                )
 
 
 LocalGeometryDomain = Annotated[

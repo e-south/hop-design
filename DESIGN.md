@@ -60,7 +60,7 @@ doc_type: explanation
 - Foldback construction targets use explicit nick-offset-within-foldback,
   loop-length, and annealing-arm-length fields. The biological payload boundary
   is fixed independently of the nick position.
-- Basal pairing is ordered from the payload-proximal ligation position outward
+- Basal pairing is ordered from the adapter's ligation-adjacent position outward
   and retains literal bases and physical classifications. Type IIS processing
   exists only for an endpoint that requests generated ends.
 - Construction sequence is classified as retained, transient, auxiliary, or

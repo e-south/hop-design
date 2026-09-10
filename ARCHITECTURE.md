@@ -210,9 +210,11 @@ exact realization authorities.
 
 For a PCR-bearing linear-source route, the retained source prefix may extend
 beyond the local basal pairing span. Its source-return arm is the reverse
-complement of that complete prefix and is removed after basal nicking. The
-ligation adapter is a separate exact material paired only through the declared
-basal profile. The verified design may therefore occupy a nonzero subspan of
+complement of that complete prefix. Basal nicking removes the portion paired
+upstream of the nick; any intervening bases toward the payload retain their
+original complementary partners. The ligation adapter is a separate exact
+material paired to the exposed source under its local and distal constraints.
+The verified design may therefore occupy a nonzero subspan of
 the PCR product, with outer source periphery and primer handles remaining
 explicit.
 

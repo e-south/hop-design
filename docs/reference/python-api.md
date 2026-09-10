@@ -63,6 +63,15 @@ All operations and receipts in this section use `hop_design.construction`.
 - `load_verified_local_neighborhood(result_path) -> LocalNeighborhoodDiscovery`
   loads only the active foldback or basal family result schema and repeats exact
   deterministic discovery replay.
+- `list_local_realizations(receipt, cohesive_end=None, max_retained_overhead_nt=None,
+  max_noncanonical_pairs=None, sort_by=()) -> tuple[LocalRealizationChoice, ...]`
+  lists recorded local witnesses with their compilable family identity, typed
+  geometry, retained sequence, enzymes, pairing classes, and adapter completion
+  requirement. Filters do not rerun the search. Sort keys are ascending
+  `retained_overhead_nt`, `noncanonical_pairs`, or `enzyme_count`, applied in
+  caller-specified priority with stable ties. Pairing and end filters require
+  basal evidence. Rows are immutable inspection values, not verified receipts;
+  compilation still checks the selected identity against its original receipt.
 - `discover_local_neighborhoods(source_paths, destination, resume=False,
   max_new_requests=None, batch_size=8) -> LocalNeighborhoodBatch` executes an
   explicit ordered collection of independent local requests. It publishes
@@ -81,6 +90,16 @@ All operations and receipts in this section use `hop_design.construction`.
 - `load_verified_source_partition(result_path) -> SourcePartitionDiscovery`
   safely reopens canonical result JSON and repeats molecular, candidate-space,
   completion, and identity replay before returning the same opaque receipt.
+- `discover_construction_source_partition(receipt, policy_path,
+  materialized_realization_id=..., combination_ordinal=...) -> SourcePartitionDiscovery`
+  requires exactly one of the two selection keywords. It searches removal
+  programs for an accepted construction or an examined PCR-bearing combination,
+  deriving the prepared source and required surviving strands from verified
+  molecular inputs. An examined candidate need not have passed endpoint
+  validation; its returned partition does not confer route acceptance. The policy supplies
+  enzymes, a fragment-length rule, and search bounds, not molecular overrides.
+  It does not modify the route or choose a partition. See
+  [checking source removal](../guides/compile-construction.md#check-removal-for-a-selected-source).
 - `load_verified_construction_bundle(path) -> VerifiedConstructionBundle`
   checks portable bytes and semantically replays the embedded design, local
   authorities, complete result, and root manifest.
@@ -101,6 +120,13 @@ All operations and receipts in this section use `hop_design.construction`.
   explicit-sort workflows without creating a second accounting relation.
 - `project_complete_construction_summary(receipt) -> ConstructionProjection`
 - `project_construction_trajectory(receipt, materialized_realization_id=...) -> ConstructionProjection`
+- `compare_constructions(left, right, left_realization_id=..., right_realization_id=...) -> str`
+  returns a read-only Markdown comparison of two accepted routes from verified
+  compilation or bundle receipts. It compares recorded molecular properties,
+  not request text, and preserves both search statuses and selected identities.
+  Unknown or rejected selections raise; raw model objects are not accepted.
+  No ranking, new authority, file write, or search is performed. See
+  [comparing completed choices](../guides/compile-construction.md#compare-completed-choices).
 
 The source document cannot author design or result identities. Receipts expose
 bundle, result, and design-bundle identity; endpoint and status; accepted,
@@ -110,6 +136,12 @@ atomically persists the portable authority. Projection
 packets provide canonical JSON, tidy CSV when defined, and SVG bytes; writing a
 packet is atomic and create-only. A trajectory always requires an explicit
 accepted realization identity.
+For a trajectory, `ConstructionProjection.write(path, selection_reason=None)`
+also exports `report.md`, `oligos.csv`, and `oligos.fasta`. The CSV retains required
+terminal chemistry; FASTA contains sequences only. The optional nonblank reason
+is caller-authored report text, not a molecular fact or a ranking. Other
+projection types reject a supplied selection reason. Canonical projection bytes
+and identities are independent of this text.
 `ConstructionSelection.write(path)` writes canonical JSON to exactly one new
 `.json` file path. A selection never changes or narrows the complete
 construction authority.
@@ -285,6 +317,7 @@ All operations and public contracts in this section use `hop_design.views`.
 - `build_released_workflow_view(state, foldback) -> WorkflowView`
 - `build_basal_pairing_view(evaluation) -> WorkflowView`
 - `build_basal_view(evaluation, nicked_strand=...) -> WorkflowView`
+- `build_basal_source_panel(receipt, realization_id=...) -> ViewPanel`
 - `build_method_trajectory_view(plan) -> WorkflowView`
 - `render_workflow_svg(view) -> bytes`
 
@@ -293,6 +326,18 @@ The same `hop_design.views` surface provides
 `build_hairpin_junction_route_view(...)` and
 `build_released_foldback_precursor_view(...)`; they are not package-root
 exports.
+
+`build_basal_source_panel` takes a verified local-neighborhood receipt and an
+explicit local realization ID. It shows the source duplex, payload span,
+nickase recognition sites, and nick boundary. A source-encoded recognition site
+for later release is labeled separately; endpoint-supplied sites are omitted.
+The panel does not assert strand removal, adapter joining, or future cleavage.
+Unknown selections, non-basal receipts, and corrupt receipts raise `ValueError`.
+
+The returned `ViewPanel` supports client figure composition or JSON export;
+it is not a complete `WorkflowView` for `render_workflow_svg`. Both strand
+sequences and feature coordinates are 5′→3′. Display the bottom track in reverse;
+recognition spans use the source-top coordinate reference.
 
 Stable package-root types cover payloads, design specs, coordinates, junctions,
 processing agents, design results, and operator-facing errors. Discovery,

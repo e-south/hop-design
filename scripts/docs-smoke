@@ -130,7 +130,7 @@ def _exercise_designs(smoke_root: Path, *, content_root: Path) -> None:
 
 
 def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
-    spec_path = content_root / "examples" / "fixed-site-three-base-context.yaml"
+    spec_path = content_root / "examples" / "loxp-spacer-base-classes.yaml"
     _require(spec_path.is_file(), f"required substrate-space example is missing: {spec_path.name}")
     preview = _run(
         "substrate-space preview",
@@ -138,7 +138,7 @@ def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
         content_root=content_root,
     )
     _require(
-        "64 exact designs (4 \u00d7 4 \u00d7 4)" in preview,
+        ("256 exact designs (" + " \u00d7 ".join(["2"] * 8) + ")") in preview,
         "substrate-space cardinality changed",
     )
     _require(
@@ -176,10 +176,32 @@ def _exercise_substrate_space(smoke_root: Path, *, content_root: Path) -> int:
     )
     _require(isinstance(summary, dict), "substrate-space verification must emit an object")
     _require(summary.get("coverage") == "complete", "substrate-space coverage is not complete")
-    _require(summary.get("design_count") == 64, "substrate-space design count changed")
+    _require(summary.get("design_count") == 256, "substrate-space design count changed")
     for projection in ("designs.csv", "sequences.fasta", "review.html"):
         _require((output / projection).is_file(), f"substrate-space output omitted {projection}")
-    return 64
+    return 256
+
+
+def _exercise_basal_junction(smoke_root: Path, *, content_root: Path) -> dict[str, Any]:
+    summary = _json_output(
+        "basal-junction example",
+        [
+            "-c",
+            (
+                "import json, pathlib, runpy, sys; "
+                "example = pathlib.Path('examples/basal-junction'); "
+                "search = runpy.run_path(str(example / 'search.py'))['search_example']; "
+                "print(json.dumps(search(example / 'request.yaml', pathlib.Path(sys.argv[1]))))"
+            ),
+            str(smoke_root / "basal-junction"),
+        ],
+        content_root=content_root,
+    )
+    _require(isinstance(summary, dict), "basal-junction example must emit an object")
+    _require(summary.get("payload_nt") == 34, "basal-junction payload changed")
+    _require(summary.get("completion") == "complete", "basal-junction search is incomplete")
+    _require(summary.get("feasibility") == "feasible", "basal-junction example has no solution")
+    return dict(summary)
 
 
 def _exercise_payload_records(smoke_root: Path, *, content_root: Path) -> int:
@@ -348,7 +370,7 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
     trajectories = {
         "composed-pcr": (
             "hop:materialized-construction/"
-            "2d2dd90b7dbaf4524dfac3500ad7c88b6ade7feaec83f854136d8990aef70059@1"
+            "f99d722902449539461bdc405fe1fdec8e7c3205ed3e4336547795ce93168eda@1"
         ),
         "exact": (
             "hop:materialized-construction/"
@@ -427,12 +449,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         _exercise_handoff(smoke_root, content_root=content_root)
         _exercise_component_views(smoke_root, content_root=content_root)
         construction_statuses = _exercise_construction(smoke_root, content_root=content_root)
+        basal_junction = _exercise_basal_junction(smoke_root, content_root=content_root)
 
     print(
         json.dumps(
             {
                 "design_surfaces": ["exact", "symbolic", "spec"],
                 "component_views_verified": True,
+                "basal_junction": basal_junction,
                 "construction_statuses": construction_statuses,
                 "discovery_statuses": discovery_statuses,
                 "handoff_verified": True,

@@ -77,6 +77,11 @@ for required in \
   'examples/construction-expanded-domain.yaml' \
   'examples/discover_basal_candidates.py' \
   'examples/fixed-site-three-base-context.yaml' \
+  'examples/loxp-spacer.yaml' \
+  'examples/loxp-spacer-base-classes.yaml' \
+  'examples/basal-junction/README.md' \
+  'examples/basal-junction/request.yaml' \
+  'examples/basal-junction/search.py' \
   'examples/foldback-local-partition.yaml' \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
@@ -206,11 +211,20 @@ if ! cmp -s "$source_local_result" "$wheel_local_result"; then
   exit 1
 fi
 
+uv run --locked python examples/basal-junction/search.py --out "$smoke_root/source-basal"
+"$smoke_root/venv/bin/python" examples/basal-junction/search.py --out "$smoke_root/wheel-basal"
+for relative in result/result.json matrix/projection.json matrix/projection.csv matrix/projection.svg; do
+  if ! cmp -s "$smoke_root/source-basal/$relative" "$smoke_root/wheel-basal/$relative"; then
+    echo "source/wheel basal-junction mismatch: $relative" >&2
+    exit 1
+  fi
+done
+
 composed_construction=''
 for construction_case in composed-pcr exact infeasible expanded-domain; do
   construction_trajectory_id=''
   if [[ "$construction_case" == "composed-pcr" ]]; then
-    construction_trajectory_id='hop:materialized-construction/2d2dd90b7dbaf4524dfac3500ad7c88b6ade7feaec83f854136d8990aef70059@1'
+    construction_trajectory_id='hop:materialized-construction/f99d722902449539461bdc405fe1fdec8e7c3205ed3e4336547795ce93168eda@1'
   elif [[ "$construction_case" == "exact" ]]; then
     construction_trajectory_id='hop:materialized-construction/18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1'
   elif [[ "$construction_case" == "expanded-domain" ]]; then
@@ -259,6 +273,18 @@ wheel_navigation_id="$(
 "$smoke_root/venv/bin/hop-design" construction inspect "$wheel_navigation_bundle" \
   --selection "$smoke_root/wheel-selected-route.json" \
   --out "$smoke_root/wheel-selected-trajectory" >/dev/null
+
+source_comparison="$(uv run --locked hop-design construction compare \
+  "$smoke_root/source-construction-composed-pcr/construction" \
+  "$smoke_root/source-construction-exact/construction" \
+  --left-ordinal 0 --right-ordinal 0)"
+wheel_comparison="$("$smoke_root/venv/bin/hop-design" construction compare \
+  "$wheel_navigation_bundle" "$smoke_root/wheel-construction-exact/construction" \
+  --left-ordinal 0 --right-ordinal 0)"
+if [[ "$source_comparison" != "$wheel_comparison" ]]; then
+  echo "source/wheel construction comparison mismatch" >&2
+  exit 1
+fi
 
 source_discovery="$(uv run --locked python examples/discover_basal_candidates.py)"
 wheel_discovery="$("$smoke_root/venv/bin/python" examples/discover_basal_candidates.py)"

@@ -41,6 +41,8 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0031: Derive exact designs from selected local realizations](0031-derive-designs-from-local-realizations.md)
 - [0032: Compose explicit endpoint-local selections](0032-compose-one-selected-local-pair.md)
 - [0033: Close linear-source material dependencies](0033-close-linear-source-material-dependencies.md) — amends 0010, 0026, and 0029
+- [0034: Couple source-encoded recognition sites](0034-source-encoded-release-recognition.md) — amends 0033
+- [0035: Bound noncanonical basal pairing](0035-basal-pair-budget.md)
 
 ## Hairpin language
 

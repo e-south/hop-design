@@ -17,9 +17,17 @@ import pytest
 from pydantic import ValidationError
 
 import hop_design as hop
+from hop_design import construction
 from hop_design.design.bundle import load_verified_bundle
 from hop_design.design.construction.basal import discover_basal_neighborhood
+from hop_design.design.construction.complete import discover_constructions
+from hop_design.design.construction.complete.bundle import compile_construction_bundle
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
+from hop_design.design.construction.public import load_verified_construction_bundle
+from hop_design.design.construction.verification import (
+    verify_basal_neighborhood_result,
+    verify_foldback_neighborhood_result,
+)
 from hop_design.models.construction import (
     BasalFutureReleaseRequirement,
     BasalGeometryDomain,
@@ -100,6 +108,7 @@ from tests.integration.test_complete_construction_discovery import (
 )
 from tests.integration.test_complete_construction_pcr import _foldback, _payload
 from tests.integration.test_resolved_compile import _component_spec
+from tests.support.source_partition import source_partition_for_route
 
 
 def _substitute_first_base(sequence: str) -> str:
@@ -151,12 +160,14 @@ def _clone_basal_result(
             geometry_domain=BasalGeometryDomain(
                 nick_strand=Strand.BOTTOM,
                 nick_offsets_nt=(0,),
+                minimum_adapter_annealing_nt=len(pairing_allowances),
                 pairing_constraints=_pairing_constraints(pairing_allowances),
                 future_release=BasalFutureReleaseRequirement(
                     product_end="right",
                     orientation=SiteOrientation.REVERSE,
                     cohesive_end_sequence=requested_overhang,
                     overhang_end=StrandEnd.FIVE_PRIME,
+                    recognition_material="endpoint_material",
                 ),
             ),
             hard_constraints=ConstructionConstraints(),
@@ -170,10 +181,14 @@ def _clone_basal_result(
     )
 
 
-def _clone_fixture(tmp_path: Path):
-    payload = _payload()
+def _clone_fixture(tmp_path: Path, *, payload_sequence: str = "GACA"):
+    payload = FinalPayloadReference(
+        payload=ExactPayload(sequence=payload_sequence),
+        basal_boundary=Boundary(offset=0),
+        foldback_boundary=Boundary(offset=len(payload_sequence)),
+    )
     foldback = _foldback(payload)
-    design = _verified_design(tmp_path)
+    design = _verified_design(tmp_path, payload_sequence)
     encoding = design.plan.hairpin_encoding_insert.sequence
     basal = _clone_basal_result(
         payload,
@@ -187,9 +202,9 @@ def _clone_fixture(tmp_path: Path):
     return payload, foldback, basal, design, adapter_sequence, complete_pcr_top, encoding
 
 
-def _clone_request(tmp_path: Path):
+def _clone_request(tmp_path: Path, *, payload_sequence: str = "GACA"):
     payload, foldback, basal, design, adapter_sequence, complete_pcr_top, encoding = _clone_fixture(
-        tmp_path
+        tmp_path, payload_sequence=payload_sequence
     )
     request = _construction_request(
         payload=payload,
@@ -225,6 +240,42 @@ def _clone_request(tmp_path: Path):
         ),
     )
     return request, foldback, basal, design, complete_pcr_top, encoding
+
+
+def test_comparison_distinguishes_changed_primers_from_unchanged_released_strands(
+    tmp_path: Path,
+) -> None:
+    request, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    changed = request.model_dump(mode="python", by_alias=True)
+    primer = changed["materialization"]["endpoint_auxiliaries"]["forward_primer"]["primer"]["oligo"]
+    primer["sequence_5prime"] = "A" + primer["sequence_5prime"]
+    primer["five_prime_end"] = EndChemistry.HYDROXYL
+    del primer["material_id"]
+    changed_request = type(request).model_validate(changed)
+    left, right = (
+        compile_construction_bundle(
+            discover_constructions(
+                source,
+                foldback=verify_foldback_neighborhood_result(foldback),
+                basal=verify_basal_neighborhood_result(basal),
+                design=design,
+            )
+        )
+        for source in (request, changed_request)
+    )
+    left_id, right_id = left.materialized_realization_ids[0], right.materialized_realization_ids[0]
+    assert left_id != right_id
+    report = construction.compare_constructions(
+        left, right, left_realization_id=left_id, right_realization_id=right_id
+    )
+    assert "| Source oligo | same |" in report
+    assert "| Endpoint forward primer | changed |" in report
+    assert "AGGTCTCAAAA (11 nt; 5-prime hydroxyl; 3-prime hydroxyl)" in report
+    assert "| Endpoint strand 1 | same |" in report
+    assert "| Endpoint strand 2 | same |" in report
+    assert "| PCR strand lengths (nt) | changed |" in report
+    assert "| Left cohesive end | same | AAAA" in report
+    assert "| Right cohesive end | same | AAAA" in report
 
 
 def _verified_distal_mismatch_design(
@@ -285,6 +336,61 @@ def test_clone_end_generation_requires_endpoint_owned_bindings() -> None:
         derive_clone_end_program_for_template(
             pcr_top="AAAA",
             design_sequence="AAAA",
+        )
+
+
+def test_clone_endpoint_preserves_selected_source_partition_through_bundle_replay(
+    tmp_path: Path,
+) -> None:
+    request, foldback, basal, design, _, encoding = _clone_request(
+        tmp_path, payload_sequence="GCGTCAGATCGATGACCTAGCGTACGATCGAC"
+    )
+    baseline = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+    partition = source_partition_for_route(
+        payload=request.payload,
+        realization=baseline.realizations[0],
+        enzymes=tuple(
+            enzyme
+            for policy in (
+                foldback.neighborhood.request.enzyme_provisioning,
+                basal.discovery.request.enzyme_provisioning,
+            )
+            for enzyme in policy.catalog.enzymes
+            if enzyme.enzyme_class is EnzymeClass.NICKASE
+        ),
+    )
+    (selected,) = partition.realizations
+    content = request.model_dump(mode="python", by_alias=True)
+    content.update(
+        source_partition_result_id=partition.result_id,
+        selected_source_partition_realization_id=selected.realization_id,
+    )
+    request = type(request).model_validate(content)
+
+    verified = discover_constructions(
+        request,
+        foldback=verify_foldback_neighborhood_result(foldback),
+        basal=verify_basal_neighborhood_result(basal),
+        design=design,
+        source_partition=partition,
+    )
+
+    result = verified.result
+    assert result.status is SearchCompletionStatus.COMPLETE
+    (realization,) = result.realizations
+    assert realization.source_partition_plan is not None
+    assert realization.source_partition_plan.realization == selected
+    assert realization.source_partition_binding is not None
+    assert realization.final_product.encoding_projection.sequence == encoding
+    compilation = compile_construction_bundle(verified)
+    loaded = load_verified_construction_bundle(compilation.write(tmp_path / "construction"))
+    assert loaded.result_id == result.result_id
+    without_partition = _realization_content(realization)
+    without_partition["source_partition_plan"] = None
+    with pytest.raises(ValidationError, match="PCR enzyme phase must replay"):
+        MaterializedConstructionRealization.create(
+            **without_partition,
+            construction_program=realization.construction_program,
         )
 
 
@@ -362,6 +468,47 @@ def test_clone_ready_requires_the_selected_basal_release_enzyme(tmp_path: Path) 
     assert tuple(item.code for item in result.failure_reasons) == (
         CompositionRejectionCode.CLONE_LOCAL_RELEASE_INCOMPATIBLE,
     )
+
+
+def test_clone_accepts_an_exact_end_selected_from_a_basal_end_domain(tmp_path: Path) -> None:
+    request, foldback, basal, design, _, _ = _clone_request(tmp_path)
+    local_request = basal.discovery.request
+    domain = local_request.geometry_domain
+    future = domain.future_release.model_copy(update={"cohesive_end_sequence": "NNNN"})
+    expanded = discover_basal_neighborhood(
+        local_request.model_copy(
+            update={"geometry_domain": domain.model_copy(update={"future_release": future})}
+        )
+    )
+    request = request.model_copy(update={"basal_result_id": expanded.result_id})
+    result = _discover_raw(request, foldback=foldback, basal=expanded, design=design)
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert len(result.realizations) == len(foldback.realizations)
+    assert all(
+        product.sequence == request.release.right.cohesive_end_sequence
+        for item in result.realizations
+        for product in item.final_product.cohesive_ends
+        if product.product_end == "right"
+    )
+
+
+def test_clone_checks_selected_exact_end_before_later_cut_search(tmp_path: Path) -> None:
+    request, foldback, basal, _, _, _ = _clone_request(tmp_path)
+    release = request.release
+    changed = release.right.model_copy(
+        update={
+            "cohesive_end_sequence": _substitute_first_base(release.right.cohesive_end_sequence)
+        }
+    )
+    request = request.model_copy(update={"release": release.model_copy(update={"right": changed})})
+    evaluation = evaluate_combination(
+        request,
+        foldback=foldback.realizations[0],
+        basal=basal.realizations[0],
+        foldback_policy=foldback.neighborhood.request.enzyme_provisioning,
+        basal_policy=basal.discovery.request.enzyme_provisioning,
+    )
+    assert evaluation.rejection_reason is CompositionRejectionCode.CLONE_LOCAL_RELEASE_INCOMPATIBLE
 
 
 def test_clone_ready_accepts_both_duplex_foldback_orientations(

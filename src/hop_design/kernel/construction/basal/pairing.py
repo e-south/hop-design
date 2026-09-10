@@ -41,7 +41,7 @@ def resolve_basal_pairing_state(
     adapter_span: Span | None = None,
     end_projection_positions: tuple[int, ...] = (),
 ) -> BasalPairingState:
-    """Classify exact antiparallel pairs from the payload outward."""
+    """Classify exact antiparallel pairs outward from the adapter's ligating end."""
     source = normalize_dna_sequence(source_sequence_5prime, allow_degenerate=False)
     adapter = normalize_dna_sequence(adapter_sequence_5prime, allow_degenerate=False)
     if not source or len(source) != len(adapter):

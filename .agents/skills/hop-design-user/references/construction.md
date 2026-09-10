@@ -24,7 +24,7 @@ summary = project_complete_construction_summary(verified)
 summary.write("build/construction-summary")
 ```
 
-The source must use exact schema `hop.construction-source/v1`. It owns local
+The source must use exact schema `hop.construction-source/v7`. It owns local
 foldback and optional basal requests, the endpoint-specific materialization,
 whole-route constraints, and finite enumeration policy. It cannot embed or
 author the separate design authority, result IDs, realization IDs, projection
@@ -34,17 +34,20 @@ choices, output paths, timestamps, or environment records.
   `nominal_combinations` before interpreting a receipt.
 - Preserve `complete`, `infeasible`, and `truncated`; a missing realization is
   not automatically infeasible, and a truncated result is not definitive.
-- A direct ssDNA-hairpin endpoint omits basal discovery, adapter, and primers.
-  PCR-bearing endpoints require a matching basal request plus exact adapter
-  and forward and reverse primers.
+- Every route specifies source ssDNA and its duplex-materialization primers.
+  A direct hairpin endpoint omits basal discovery and endpoint auxiliaries.
+  PCR-bearing endpoints additionally require a matching basal request, adapter,
+  and endpoint primers, each resolved under an explicit material policy.
+- A selected source partition supplies concurrent cleanup nicks to PCR-bearing
+  routes. It must preserve the same prepared source and exact joining strands.
 - Write a `ConstructionCompilation` only to a new destination. Load it through
   `load_verified_construction_bundle()` at a later handoff boundary; there is
   no separate public construction verify verb.
 - Use `project_foldback_feasibility()` for the verified foldback authority.
   Use `project_basal_feasibility()` only when the route contains a basal
   authority.
-- Call `project_relaxation_frontier(..., family="foldback" | "basal")` with an
-  explicit family.
+- Call `project_retained_overhead_frontier(..., family="foldback" | "basal")`
+  to inspect accessibility across retained construction-sequence budgets.
 - Use `project_complete_construction_summary()` for lossless route accounting.
 - Call `project_construction_trajectory()` only with an explicit ID from
   `materialized_realization_ids`. Never auto-select a realization.

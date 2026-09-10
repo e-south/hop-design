@@ -40,7 +40,7 @@ from hop_design.models.reactions import (
 from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.models.strand_state import NickEvent
 
-_ROUTE_VERSION = "linear-source-basal/3"
+_ROUTE_VERSION = "linear-source-basal/4"
 
 
 def _declared(binding: ConstructionEnzymeBinding) -> DeclaredEnzymeBinding:

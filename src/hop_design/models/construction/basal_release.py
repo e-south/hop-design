@@ -11,6 +11,9 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from itertools import product
+from math import prod
 from typing import Any, Literal, cast
 
 from pydantic import Field, field_validator, model_validator
@@ -19,7 +22,7 @@ from hop_design.models.base import HopModel
 from hop_design.models.enzymes import CharacterizedEnzyme, EnzymeClass
 from hop_design.models.molecular_state import StrandEnd
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.sequence import normalize_dna_sequence, reverse_complement_iupac
+from hop_design.models.sequence import iupac_bases, normalize_dna_sequence, reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 
@@ -30,13 +33,42 @@ class BasalFutureReleaseRequirement(HopModel):
     orientation: SiteOrientation
     cohesive_end_sequence: str
     overhang_end: StrandEnd
+    recognition_material: Literal["source_duplex", "endpoint_material"] = "source_duplex"
 
     @field_validator("cohesive_end_sequence", mode="before")
     @classmethod
     def normalize_cohesive_end(cls, value: object) -> str:
         if not isinstance(value, str):
             raise ValueError("A future cohesive end must be a DNA string.")
-        return normalize_dna_sequence(value, allow_degenerate=False)
+        return normalize_dna_sequence(value, allow_degenerate=True)
+
+    @property
+    def cardinality(self) -> int:
+        """Count allowed exact ends without allocating their sequences."""
+        return prod(len(iupac_bases(symbol)) for symbol in self.cohesive_end_sequence)
+
+    def exact_requirements(self) -> Iterator[BasalFutureReleaseRequirement]:
+        """Yield exact end obligations in 5-prime to 3-prime A/C/G/T order."""
+        domains = tuple(tuple(sorted(iupac_bases(symbol))) for symbol in self.cohesive_end_sequence)
+        for bases in product(*domains):
+            yield self.model_copy(update={"cohesive_end_sequence": "".join(bases)})
+
+    def permits(self, exact: BasalFutureReleaseRequirement) -> bool:
+        """Check one exact end against its sequence domain and fixed obligations."""
+        return (
+            self.product_end == exact.product_end
+            and self.orientation is exact.orientation
+            and self.overhang_end is exact.overhang_end
+            and self.recognition_material == exact.recognition_material
+            and self.permits_sequence(exact.cohesive_end_sequence)
+        )
+
+    def permits_sequence(self, exact: str) -> bool:
+        """Check exact nucleotide membership without changing end geometry."""
+        return len(self.cohesive_end_sequence) == len(exact) and all(
+            base in iupac_bases(symbol)
+            for base, symbol in zip(exact, self.cohesive_end_sequence, strict=True)
+        )
 
 
 class BasalFutureReleaseAction(HopModel):
@@ -50,6 +82,37 @@ class BasalFutureReleaseAction(HopModel):
     recognition_start_from_release_boundary: int
     reference_cut_from_release_boundary: int
     complement_cut_from_release_boundary: int
+
+    def source_recognition_placement(self, *, payload_boundary: int) -> tuple[int, str]:
+        """Map the future recognition site onto the payload-bearing source strand.
+
+        Proximal adapter bases pair with source positions immediately before the
+        payload. Copying presents this interval at the left endpoint directly,
+        or reverse-complemented at the right endpoint.
+        """
+        if self.requirement.recognition_material != "source_duplex":
+            raise ValueError("Endpoint-supplied recognition has no source placement.")
+        boundary = payload_boundary - len(self.requirement.cohesive_end_sequence)
+        start = self.recognition_start_from_release_boundary
+        pattern = self.recognition_pattern_5prime
+        if self.requirement.product_end == "right":
+            return boundary - start - len(pattern), reverse_complement_iupac(pattern)
+        return boundary + start, pattern
+
+    def assert_source_recognition_replay(self, *, sequence: str, payload_boundary: int) -> None:
+        """Require the source-encoded recognition pattern at its mapped coordinates."""
+        start, pattern = self.source_recognition_placement(payload_boundary=payload_boundary)
+        if (
+            start < 0
+            or start + len(pattern) > len(sequence)
+            or any(
+                base not in iupac_bases(symbol)
+                for base, symbol in zip(
+                    sequence[start : start + len(pattern)], pattern, strict=True
+                )
+            )
+        ):
+            raise ValueError("Source duplex must encode the future release recognition site.")
 
     @field_validator("recognition_pattern_5prime", mode="before")
     @classmethod
@@ -73,6 +136,8 @@ class BasalFutureReleaseAction(HopModel):
 
     @model_validator(mode="after")
     def validate_action(self) -> BasalFutureReleaseAction:
+        if self.requirement.cardinality != 1:
+            raise ValueError("A future release action requires an exact cohesive end.")
         content = self.model_dump(mode="json", exclude={"action_id"})
         digest = sha256_digest(canonical_json_bytes(content)).removeprefix("sha256:")
         if self.action_id != f"hop:basal-future-release-action/{digest}@1":

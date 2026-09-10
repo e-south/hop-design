@@ -37,6 +37,9 @@ planning belong to the consuming system.
   finite inclusive maximum-fragment ladder.
 - Selected complete routes bind exact source preparation, source partition, molecular
   chronology, and endpoint evidence.
+- `complete/composition_domain.py` defines the bounded upstream sequence domain alongside
+  local junction choices. Composition evaluates every requested assignment under its
+  finite execution limit; intrinsic replay verifies membership, order, and disposition.
 - Public projections expose local overhead, basal enzyme-action minima, exact source
   partitions, route navigation, and selected route trajectories.
 - Foldback and basal traversal yield exact geometry/strand/payload/program work units
@@ -54,9 +57,9 @@ planning belong to the consuming system.
   partial coverage remains unimplemented. A completed collection does not establish
   exhaustive coverage for a truncated query.
 - Source-partition discovery evaluates enzyme programs on one supplied exact source
-  duplex. Its full-span certificate does not establish bounded scaffold-sequence or
-  context-extension solving around local and primer obligations. That completion search
-  remains separate implementation work.
+  duplex. Bounded context completion can satisfy primer and adapter obligations around
+  unchanged local junctions, but does not jointly design source length or cleanup-nick
+  tiling against a fragment predicate. A full-span certificate remains exact-source evidence.
 - The post-release construction changes require a distinct package version and immutable
   producer cutoff before downstream formal execution. A wheel bearing the published
   version number is insufficient to distinguish these semantics.

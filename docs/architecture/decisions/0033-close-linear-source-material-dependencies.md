@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-31
+last_verified: 2026-09-08
 doc_type: decision
 amends:
   - hop-adr-0010
@@ -20,12 +20,10 @@ amends:
 
 ## Context
 
-Complete construction currently begins at an exact duplex. The named method can
-derive an expected source-PCR duplex from a source oligo and primers, and source
-partitioning can independently resolve cleanup nicks and selected fragments.
-Neither authority is connected to the complete construction result. A caller
-can therefore receive a valid downstream route without one portable account of
-the source ssDNA, source primers, source preparation, or selected partition.
+A complete construction needs one portable account of the source ssDNA,
+source primers, prepared duplex, cleanup cuts, retained fragments, auxiliary
+materials, and endpoint. These molecular dependencies must remain inspectable
+without requiring a caller to connect independent results by hand.
 
 ## Decision
 
@@ -90,14 +88,57 @@ explicit range and may prepend an explicit 5′ handle, and `fixed` validates on
 exact primer. Arbitrary handle generation remains unsupported until its
 sequence-quality rules exist.
 
+Adapter policies may explicitly constrain distal pairing positions using the
+existing basal pair-class and base-domain vocabulary. They cannot override the
+selected local segment or enlarge its annealing obligation. Unspecified distal
+positions remain canonical. Resolution preserves source bases and requires one
+exact adapter base at each position, either determined by constraints or pinned
+in a fixed material; unresolved alternatives raise an input error rather than
+being ranked or reported as molecular infeasibility. The molecular replay owns
+literal full-span pair classification; request replay separately enforces the
+policy that permitted those pairs.
+
+`distal_pairing_constraints` is an optional additive field in the current
+pre-release construction contracts, omitted when empty. Schema identifiers and
+canonical bytes for requests without the field remain unchanged. Explicit
+constraints enter request identity and must survive result and bundle replay.
+No reader aliases or automatic conversion of incompatible adapters are provided.
+
+### Bounded upstream completion
+
+A constrained source policy supplies one fixed-length IUPAC pattern before the
+unchanged basal source flank, in payload-forward coordinates. Composition
+enumerates local pairs and exact upstream assignments, derives the physical
+source orientation, and evaluates complete primer, adapter, and reaction
+requirements on that source. Each assignment has its own disposition and exact
+material provenance. Choosing the first valid completion would hide alternatives
+and conflate a failed candidate with an infeasible domain; the result therefore
+retains the complete examined prefix under its finite limits.
+
+This adds a sequence coordinate to composition rather than a second route
+compiler. Source patterns and assignments are covered by source schema 7,
+construction request/result schema 6, and summary schema 3. Readers reject
+other versions without compatibility aliases. Local junction schemas and
+identities do not change. Joint source-length and cleanup-nick tiling design is
+not established by this fixed-length sequence search.
+
 ### Source partition
 
-Source partition remains a sibling local authority. A complete route may bind
-one explicit replay-verified source-partition realization. Composition verifies
-that its source duplex, molecular enzyme definitions, concurrent nick program,
-fragment rule, and required survivors equal the route states. Rejected routes
-retain sealed pre-partition candidates so the exact rejection class replays at
-the model boundary. Cleanup nicks do not become basal geometry.
+Source partition remains a sibling authority. A PCR-bearing route consumes one
+explicit replay-verified source-partition plan: its request and selected exact
+realization, without copying the full enumeration ledger into each route.
+Composition requires the same prepared source and payload coordinates, includes
+every local nick in the concurrent cleanup program, and preserves exactly the
+local survivors needed for joining. Fragment chemistry and source-coordinate
+lineage derive from the selected plan; actionable-site assessment remains active.
+
+Individual-route validation replays this plan without a search or caller
+dependency. Result validation also binds it to the selected search authority.
+An incompatibility found before materialization is replayed from the inputs;
+a rejected materialized route retains its sealed candidate. Direct endpoints
+can certify an already matching partition but do not add cleanup cuts. Cleanup
+nicks do not become basal geometry. Multi-stage partition composition remains
+outside this concurrent nick-only model.
 
 ### Operations and stages
 

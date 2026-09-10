@@ -8,6 +8,7 @@ from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
 
 from ..request import ConstructionDiscoveryRequest
+from ..source_partition.plan import SourcePartitionPlan
 from .clone import evaluate_clone_endpoint
 from .context import PreparedContext, build_combination_context, prepare_context
 from .direct import evaluate_direct_endpoint
@@ -29,6 +30,7 @@ def _materialize_evaluation(
         source=context.source,
         source_complement=context.source_complement,
         source_preparation=context.source_preparation,
+        source_partition_plan=combination.source_partition_plan if context.pcr_bearing else None,
         endpoint_auxiliaries=endpoint.endpoint_auxiliaries,
         reaction_program=endpoint.reaction_program,
         stage_assessments=endpoint.stage_assessments,
@@ -51,6 +53,8 @@ def evaluate_combination(
     basal: BasalRealizationRecord | None,
     foldback_policy: EnzymeProvisioningPolicy,
     basal_policy: EnzymeProvisioningPolicy | None,
+    source_context_sequence: str | None = None,
+    source_partition_plan: SourcePartitionPlan | None = None,
 ) -> CombinationEvaluation:
     """Evaluate one exact combination in the closed intrinsic gate order."""
     combination = build_combination_context(
@@ -59,6 +63,8 @@ def evaluate_combination(
         basal=basal,
         foldback_policy=foldback_policy,
         basal_policy=basal_policy,
+        source_context_sequence=source_context_sequence,
+        source_partition_plan=source_partition_plan,
     )
     prepared = prepare_context(combination)
     if isinstance(prepared, CombinationEvaluation):

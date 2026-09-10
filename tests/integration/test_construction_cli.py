@@ -14,6 +14,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+from rich.text import Text
 from typer.testing import CliRunner
 
 from hop_design.cli import app
@@ -24,6 +26,32 @@ from tests.integration.test_complete_construction_projections import _verified_r
 from tests.support.claim_language import assert_no_positive_downstream_claims
 
 runner = CliRunner()
+
+
+@pytest.mark.parametrize(
+    ("arguments", "description"),
+    (
+        (["compile", "--help"], "Compile a payload sequence or a design file."),
+        (
+            ["construction", "summary", "--help"],
+            "Show the endpoint, search coverage, and route counts.",
+        ),
+        (
+            ["construction", "list", "--help"],
+            "List routes with explicit filters, grouping, and sorting.",
+        ),
+        (
+            ["construction", "inspect", "--help"],
+            "Inspect the materials and molecular steps of one route.",
+        ),
+        (["construction", "select", "--help"], "Save a selection referencing an existing route."),
+    ),
+)
+def test_command_help_describes_the_user_task(arguments: list[str], description: str) -> None:
+    result = runner.invoke(app, arguments, color=False)
+
+    assert result.exit_code == 0, result.output
+    assert description in " ".join(result.output.split())
 
 
 def test_route_line_preserves_zero_basal_overhead() -> None:
@@ -105,6 +133,7 @@ def test_construction_list_groups_accepted_routes_and_preserves_canonical_order(
             "canonical",
             "--limit",
             "25",
+            "--full-ids",
         ],
     )
 
@@ -118,6 +147,95 @@ def test_construction_list_groups_accepted_routes_and_preserves_canonical_order(
     assert "Ordinal is canonical replay order, not rank." in result.output
     assert result.output.index(expected_ids[0]) < result.output.index(expected_ids[1])
     assert "Showing 2 of 2 matched routes." in result.output
+
+
+def test_construction_list_leads_with_route_numbers_and_offers_inspection(tmp_path: Path) -> None:
+    bundle, verified = _write_bundle(tmp_path)
+    result = runner.invoke(app, ["construction", "list", str(bundle), "--descending"])
+
+    assert result.exit_code == 0, result.output
+    assert result.output.index("Route 1:") < result.output.index("Route 0:")
+    assert "--ordinal NUMBER" in result.output
+    assert "--full-ids" in result.output
+    for realization in verified.result.realizations:
+        assert realization.materialized_realization_id not in result.output
+
+
+def test_route_number_selection_retains_the_exact_identity(tmp_path: Path) -> None:
+    bundle, verified = _write_bundle(tmp_path)
+    expected_id = verified.result.realizations[1].materialized_realization_id
+    selection = tmp_path / "selected.json"
+    selected = runner.invoke(
+        app, ["construction", "select", str(bundle), "--ordinal", "1", "--out", str(selection)]
+    )
+    assert selected.exit_code == 0, selected.output
+    assert json.loads(selection.read_text()) == {
+        "schema": "hop.construction-selection/v1",
+        "source_result_id": verified.result.result_id,
+        "materialized_realization_id": expected_id,
+    }
+    inspected = runner.invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "1"])
+    assert inspected.exit_code == 0, inspected.output
+    assert f"Realization: {expected_id}" in inspected.output
+
+
+@pytest.mark.parametrize("endpoint", tuple(ConstructionEndpoint))
+def test_inspection_reports_actual_endpoint_ends(
+    tmp_path: Path, endpoint: ConstructionEndpoint
+) -> None:
+    bundle, verified = _write_bundle(tmp_path, endpoint=endpoint)
+
+    inspected = runner.invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
+
+    assert inspected.exit_code == 0, inspected.output
+    if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        release = verified.result.request.release
+        assert release is not None
+        for side, requirement in (("Left", release.left), ("Right", release.right)):
+            assert (
+                f"{side} cohesive end: {requirement.cohesive_end_sequence} (5-prime to 3-prime)"
+                " · five-prime overhang"
+            ) in inspected.output
+        assert "Destination compatibility: not evaluated" in inspected.output
+    else:
+        assert "Cohesive ends: not generated for this endpoint" in inspected.output
+        assert "Left cohesive end:" not in inspected.output
+        assert "Right cohesive end:" not in inspected.output
+
+
+def test_inspection_distinguishes_endpoint_resolution_from_fragment_removal(tmp_path: Path) -> None:
+    bundle, _ = _write_bundle(tmp_path, endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX)
+
+    inspected = runner.invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
+
+    assert inspected.exit_code == 0, inspected.output
+    assert "Source-fragment removal: unresolved (no bound removal program)" in inspected.output
+    assert "Right cohesive end:" in inspected.output
+
+
+@pytest.mark.parametrize("ordinal", ["-1", "999"])
+def test_unknown_route_number_is_rejected_without_creating_output(
+    tmp_path: Path, ordinal: str
+) -> None:
+    bundle, _ = _write_bundle(tmp_path)
+    destination = tmp_path / "selected.json"
+    result = runner.invoke(
+        app,
+        ["construction", "select", str(bundle), "--ordinal", ordinal, "--out", str(destination)],
+    )
+    assert result.exit_code != 0
+    assert "No accepted route has ordinal" in result.output
+    assert not destination.exists()
+
+
+def test_route_number_cannot_be_combined_with_an_exact_identity(tmp_path: Path) -> None:
+    bundle, verified = _write_bundle(tmp_path)
+    identity = verified.result.realizations[0].materialized_realization_id
+    result = runner.invoke(
+        app, ["construction", "inspect", str(bundle), identity, "--ordinal", "0"]
+    )
+    assert result.exit_code != 0
+    assert "Provide exactly one" in result.output
 
 
 def test_construction_list_filters_and_sorts_only_on_explicit_dimensions(
@@ -221,6 +339,8 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
             realization_id,
             "--out",
             str(output),
+            "--reason",
+            "Uses the required enzymes and endpoint.",
         ],
     )
 
@@ -234,7 +354,11 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
     assert {item.name for item in output.iterdir()} == {
         "projection.json",
         "projection.svg",
+        "report.md",
+        "oligos.csv",
+        "oligos.fasta",
     }
+    assert "Uses the required enzymes and endpoint." in (output / "report.md").read_text()
 
     repeated = runner.invoke(
         app,
@@ -250,6 +374,18 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
     assert repeated.exit_code != 0
     assert "Refusing to replace existing" in repeated.output
     assert "projection path" in repeated.output
+
+
+@pytest.mark.parametrize("color", [False, True])
+def test_inspection_reason_requires_saved_output(tmp_path: Path, color: bool) -> None:
+    bundle, _ = _write_bundle(tmp_path)
+    result = runner.invoke(
+        app,
+        ["construction", "inspect", str(bundle), "--ordinal", "0", "--reason", "My choice"],
+        color=color,
+    )
+    assert result.exit_code != 0
+    assert "--reason requires --out" in Text.from_ansi(result.output).plain
 
 
 def test_construction_selection_is_result_bound_and_reusable_for_inspection(

@@ -33,7 +33,9 @@ def test_release_routing_names_published_and_current_contracts() -> None:
         REPO_ROOT / "docs/architecture/decisions/0033-close-linear-source-material-dependencies.md"
     ).read_text(encoding="utf-8")
 
-    assert "Published release | [v0.1.0a8]" in readme
+    assert "[v0.1.0a8](https://github.com/e-south/hop-design/releases/tag/v0.1.0a8)" in readme
+    assert "unreleased construction-search features" in readme
+    assert "tagged documentation" in readme
     assert "unreleased v0.1.0a8" not in readme
     assert "hop_design-0.1.0a8-py3-none-any.whl" in quickstart
     assert "published `v0.1.0a8`" in roadmap
@@ -42,6 +44,15 @@ def test_release_routing_names_published_and_current_contracts() -> None:
     assert "status: accepted" in material_closure_adr
     assert "Source preparation" in material_closure_adr
     assert "Source partition" in material_closure_adr
+
+
+def test_construction_guide_starts_with_a_standalone_public_example() -> None:
+    guide = (REPO_ROOT / "docs/guides/compile-construction.md").read_text(encoding="utf-8")
+
+    assert guide.index("examples/basal-junction/search.py") < guide.index("## Checkpoint")
+    assert "models used by the owning study" not in " ".join(guide.split())
+    assert "examples/construction-composed-pcr.yaml" not in guide
+    assert "--ordinal ROUTE_NUMBER" in guide
 
 
 def test_docs_smoke_exercises_the_public_documentation_journey() -> None:
@@ -56,7 +67,9 @@ def test_docs_smoke_exercises_the_public_documentation_journey() -> None:
     summary = json.loads(result.stdout)
     assert summary["schema"] == "hop.docs-smoke/v1"
     assert summary["status"] == "ok"
-    assert summary["substrate_space_designs_verified"] == 64
+    assert summary["substrate_space_designs_verified"] == 256
+    assert summary["basal_junction"]["payload_nt"] == 34
+    assert summary["basal_junction"]["completion"] == "complete"
     assert summary["payload_record_bundles_verified"] == 3
     assert summary["design_surfaces"] == ["exact", "symbolic", "spec"]
     assert summary["discovery_statuses"] == ["complete", "infeasible", "truncated"]
@@ -74,6 +87,9 @@ def test_docs_smoke_exercises_the_public_documentation_journey() -> None:
 def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     agent_verify = (REPO_ROOT / "scripts" / "agent-verify").read_text(encoding="utf-8")
     wheel_smoke = (REPO_ROOT / "scripts" / "wheel-smoke").read_text(encoding="utf-8")
+    assert "examples/basal-junction/search.py --out" in wheel_smoke
+    assert '"$smoke_root/source-basal/$relative"' in wheel_smoke
+    assert '"$smoke_root/wheel-basal/$relative"' in wheel_smoke
 
     assert "uv run --locked python scripts/docs-smoke" in agent_verify
     assert '"$smoke_root/venv/bin/python" scripts/docs-smoke' in wheel_smoke

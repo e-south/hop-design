@@ -28,15 +28,13 @@ from hop_design.models.construction.complete.evaluation import CombinationEvalua
 from hop_design.models.construction.complete.evaluation_inputs import (
     derive_linear_source_embedding,
 )
+from hop_design.models.construction.complete.pcr.pairing import complete_adapter_pairing
 from hop_design.models.construction.complete.pcr.products import (
     endpoint_fate_spans,
     material_function_spans,
     pcr_products,
 )
-from hop_design.models.construction.complete.pcr.route import (
-    pcr_cleaved_strands,
-    select_pcr_fragments,
-)
+from hop_design.models.construction.complete.pcr.source import derive_pcr_source
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
@@ -44,7 +42,6 @@ from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.molecular_state import (
     CovalentBond,
     LineageStrand,
-    MaterialBaseLineage,
     MolecularStrand,
     PrimerBinding,
     StrandEnd,
@@ -52,32 +49,12 @@ from hop_design.models.molecular_state import (
 from hop_design.models.plan import SequenceFeature
 
 from .associations import annealed_pairings, duplex_pairings, product_pairings
-from .materialization import _global_ligation_bond
+from .lineage import material_strand
 from .pcr_program import pcr_program
 
 
 def _span(start: int, end: int) -> Span:
     return Span(start=Boundary(offset=start), end=Boundary(offset=end))
-
-
-def _lineage_strand(
-    material: ExactConstructionMaterial, material_use: MaterialUse
-) -> MolecularStrand:
-    return MolecularStrand(
-        strand_id="complete-ligation-adapter",
-        sequence=material.sequence_5prime,
-        five_prime_end=material.five_prime_end,
-        three_prime_end=material.three_prime_end,
-        lineage=tuple(
-            MaterialBaseLineage(
-                product_index=index,
-                origin_id=material_use.use_id,
-                origin_strand=LineageStrand.PRIMARY,
-                origin_index=index,
-            )
-            for index in range(len(material.sequence_5prime))
-        ),
-    )
 
 
 def materialize_pcr_program(
@@ -106,15 +83,15 @@ def materialize_pcr_program(
     reaction = evaluation.reaction_program
     source_use, source_complement_use, adapter_use, forward_use, reverse_use = material_uses
     initial = evaluation.source_preparation.product_state
-    product_strands = pcr_cleaved_strands(
-        reaction,
+    source_result = derive_pcr_source(
         foldback=foldback,
-        prefix_length=len(prefix),
-        source=source,
-        source_complement=source_complement,
-        source_use_id=source_use.use_id,
-        source_complement_use_id=source_complement_use.use_id,
+        basal=basal,
+        preparation=evaluation.source_preparation,
+        partition=evaluation.source_partition_plan,
     )
+    if source_result.reaction != reaction:
+        raise ValueError("PCR source reaction must equal the evaluated program.")
+    product_strands = source_result.cleaved
     cleaved = ConstructionState.create(
         molecules=product_strands,
         phase=ConstructionStatePhase.CLEAVED_DUPLEX,
@@ -125,13 +102,7 @@ def materialize_pcr_program(
             source_length=len(source.sequence_5prime),
         ),
     )
-    selected_fragments = select_pcr_fragments(
-        cleaved.molecules,
-        foldback=foldback,
-        source_material_use_id=source_use.use_id,
-        source_complement_material_use_id=source_complement_use.use_id,
-        source_return_arm=source_return_arm,
-    )
+    selected_fragments = source_result.selected
     denatured_molecules = cleaved.molecules
     denatured = ConstructionState.create(
         molecules=denatured_molecules,
@@ -177,7 +148,12 @@ def materialize_pcr_program(
         three_prime_end=selected_fragments[1].three_prime_end,
         lineage=closed_lineage,
     )
-    foldback_bond = _global_ligation_bond(foldback, selected.molecules)
+    foldback_bond = CovalentBond(
+        upstream_strand_id=selected_fragments[0].strand_id,
+        upstream_end=StrandEnd.THREE_PRIME,
+        downstream_strand_id=selected_fragments[1].strand_id,
+        downstream_end=StrandEnd.FIVE_PRIME,
+    )
     closed_state = ConstructionState.create(
         molecules=(closed,),
         phase=ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
@@ -188,10 +164,15 @@ def materialize_pcr_program(
             ConstructionBondState(bond=foldback_bond, product_strand_id=closed.strand_id),
         ),
     )
-    adapter_strand = _lineage_strand(adapter, adapter_use)
-    pairing_state = basal.projection.pairing_state
-    if pairing_state is None:
-        raise ValueError("PCR adapter requires one exact basal pairing state.")
+    adapter_strand = material_strand(
+        "complete-ligation-adapter",
+        adapter,
+        lineage_strand=LineageStrand.PRIMARY,
+        material_use_id=adapter_use.use_id,
+    )
+    pairing_state = complete_adapter_pairing(
+        basal, source_prefix=prefix, adapter_sequence=adapter.sequence_5prime
+    )
     adapter_pairs = tuple(
         observe_pair(
             left_strand_id=closed.strand_id,
@@ -286,7 +267,10 @@ def materialize_pcr_program(
             binding_id="complete-forward-primer-binding",
             primer_id=forward_use.use_id,
             template_strand_id=f"{ligated.strand_id}-derived-complement",
-            template_span=_span(0, forward_primer.annealing_length_nt),
+            template_span=_span(
+                len(ligated.sequence) - forward_primer.annealing_length_nt,
+                len(ligated.sequence),
+            ),
             orientation=BindingOrientation.REVERSE_COMPLEMENT_5TO3,
         ),
         PrimerBinding(

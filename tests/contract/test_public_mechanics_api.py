@@ -140,6 +140,7 @@ METHOD_OPERATIONS = {
 
 VIEW_OPERATIONS = {
     "build_basal_pairing_view",
+    "build_basal_source_panel",
     "build_basal_view",
     "build_foldback_junction_view",
     "build_foldback_view",
@@ -151,9 +152,12 @@ VIEW_OPERATIONS = {
 }
 
 CONSTRUCTION_OPERATIONS = {
+    "compare_constructions",
+    "list_local_realizations",
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
+    "discover_construction_source_partition",
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",
@@ -173,6 +177,7 @@ CONSTRUCTION_OPERATIONS = {
 }
 
 CONSTRUCTION_FACADE = {
+    "LocalRealizationChoice",
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",

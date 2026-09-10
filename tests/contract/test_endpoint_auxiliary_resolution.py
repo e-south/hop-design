@@ -11,12 +11,15 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from hop_design.models.construction import ConstructionEndpoint
 from hop_design.models.construction.complete import (
     ConstrainedAdapterPolicy,
     ConstrainedEndpointPrimerPolicy,
+    DerivedAdapterPolicy,
     DerivedEndpointPrimerPolicy,
     EndpointAuxiliaryPolicy,
     ExactConstructionMaterial,
@@ -28,6 +31,10 @@ from hop_design.models.construction.complete.auxiliary import (
     EndpointAuxiliaryResolutionFailure,
     resolve_endpoint_auxiliaries,
 )
+from hop_design.models.construction.complete.auxiliary.pairing import (
+    resolve_adapter_pairing_sequence,
+)
+from hop_design.models.construction.targets import BasalPairConstraint
 from hop_design.models.junction import Strand
 from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import reverse_complement_iupac
@@ -42,7 +49,7 @@ def test_constrained_adapter_and_derived_primers_resolve_exact_materials() -> No
         nick_strand=Strand.BOTTOM,
     ).realizations[0]
     proximal_adapter = basal.proximal_adapter_sequence
-    pcr_core = "AACCGGTTAACCGGTT"
+    pcr_core = "CAAAAGACATCAGATGCTGATGTC"
     handle = "GATCTG"
     policy = EndpointAuxiliaryPolicy(
         adapter=ConstrainedAdapterPolicy(
@@ -104,7 +111,7 @@ def test_endpoint_primer_annealing_cannot_cross_the_source_construction_region()
         resolve_endpoint_auxiliaries(
             policy=policy,
             basal=basal,
-            pcr_core_sequence="AACCGGTTAACCGGTT",
+            pcr_core_sequence="AAAAGACATCAGATGCTGATGTC",
             source_primer_region_length_nt=4,
         )
 
@@ -120,7 +127,7 @@ def test_constrained_endpoint_primers_choose_the_shortest_valid_terminal_binding
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
         nick_strand=Strand.BOTTOM,
     ).realizations[0]
-    pcr_core = "AACCGGTTAACCGGTT"
+    pcr_core = "CCAAAAGACATCAGATGCTGATGTC"
     policy = EndpointAuxiliaryPolicy(
         adapter=ConstrainedAdapterPolicy(
             mode=MaterialResolutionMode.CONSTRAIN,
@@ -188,8 +195,97 @@ def test_fixed_adapter_rejects_incompatible_three_prime_chemistry() -> None:
         resolve_endpoint_auxiliaries(
             policy=policy,
             basal=basal,
+            pcr_core_sequence="AAAAGACATCAGATGCTGATGTC",
+            source_primer_region_length_nt=4,
+        )
+
+    assert error.value.failure is EndpointAuxiliaryResolutionFailure.ADAPTER
+    assert (
+        str(error.value) == "Adapter must preserve complete basal annealing and ligation chemistry."
+    )
+
+
+def test_adapter_resolution_rejects_a_source_that_disagrees_with_its_basal_bases() -> None:
+    basal = _basal_result(_payload(), nick_strand=Strand.BOTTOM).realizations[0]
+    policy = EndpointAuxiliaryPolicy(
+        adapter=ConstrainedAdapterPolicy(
+            mode=MaterialResolutionMode.CONSTRAIN,
+            three_prime_handle_sequence="GATCTG",
+        ),
+        forward_primer=DerivedEndpointPrimerPolicy(
+            mode=MaterialResolutionMode.DERIVE, annealing_length_nt=4
+        ),
+        reverse_primer=DerivedEndpointPrimerPolicy(
+            mode=MaterialResolutionMode.DERIVE, annealing_length_nt=6
+        ),
+    )
+
+    with pytest.raises(EndpointAuxiliaryResolutionError, match="exact basal neighborhood") as error:
+        resolve_endpoint_auxiliaries(
+            policy=policy,
+            basal=basal,
             pcr_core_sequence="AACCGGTTAACCGGTT",
             source_primer_region_length_nt=4,
         )
 
     assert error.value.failure is EndpointAuxiliaryResolutionFailure.ADAPTER
+
+
+def test_default_adapter_policy_keeps_its_canonical_bytes() -> None:
+    policy = DerivedAdapterPolicy(mode=MaterialResolutionMode.DERIVE)
+    assert policy.model_dump_json() == '{"mode":"derive"}'
+
+
+@pytest.mark.parametrize("positions", ((6, 6), (7, 6)))
+def test_distal_constraints_require_unique_ascending_positions(positions: tuple[int, int]) -> None:
+    with pytest.raises(ValueError, match="distinct ascending"):
+        DerivedAdapterPolicy.model_validate_json(
+            '{"mode":"derive","distal_pairing_constraints":['
+            + ",".join(
+                f'{{"position_from_ligation":{position},"allowed_class":"match"}}'
+                for position in positions
+            )
+            + "]}"
+        )
+
+
+@pytest.mark.parametrize(
+    ("constraint", "fixed_sequence", "expected"),
+    (
+        ({"allowed_class": "mismatch", "allowed_adapter_bases": ["A"]}, None, "TTTTGTAAGACTGCA"),
+        ({"allowed_class": "any"}, "TTTTGTTAGACTGCA", "TTTTGTTAGACTGCA"),
+        ({"allowed_class": "wobble", "allowed_source_bases": ["A"]}, None, None),
+        ({"allowed_class": "wobble"}, "TTTTGTCAGACTGCA", None),
+    ),
+)
+def test_distal_resolution_honors_literal_base_and_pair_constraints(
+    constraint: dict, fixed_sequence: str | None, expected: str | None
+) -> None:
+    basal = _basal_result(
+        _payload(),
+        nick_strand=Strand.BOTTOM,
+        recognition_pattern="TTTTGTCAGACTGCA",
+        cut_offset_reference_strand=0,
+        minimum_adapter_annealing_nt=15,
+    ).realizations[0]
+    pair = BasalPairConstraint.model_validate_json(
+        json.dumps({"position_from_ligation": 6, **constraint})
+    )
+    if expected is None:
+        with pytest.raises(ValueError, match="distal pairing constraint"):
+            resolve_adapter_pairing_sequence(
+                basal,
+                source_prefix="TGCAGTCTGACAAAA",
+                constraints=(pair,),
+                fixed_sequence=fixed_sequence,
+            )
+    else:
+        assert (
+            resolve_adapter_pairing_sequence(
+                basal,
+                source_prefix="TGCAGTCTGACAAAA",
+                constraints=(pair,),
+                fixed_sequence=fixed_sequence,
+            )
+            == expected
+        )

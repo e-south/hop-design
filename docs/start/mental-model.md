@@ -1,14 +1,14 @@
 ---
 doc_id: hop-mental-model
-title: Claims HOP keeps separate
-intent: Establish the distinct claims made by payload specification, construction discovery, methods, verification, and downstream use.
+title: From payload to hairpin construction
+intent: Explain the fixed payload, searchable junctions, required materials, and limits of a computed construction.
 audience:
   - users
   - integrators
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-30
+last_verified: 2026-09-10
 doc_type: explanation
 journey:
   - compile
@@ -18,106 +18,94 @@ journey:
   - integrate
 ---
 
-# Claims HOP keeps separate
+# From payload to hairpin construction
 
-The most important HOP invariant is a chain of non-equivalences:
+Start with the duplex sequence you want the hairpin to present. That payload
+stays fixed while HOP searches the surrounding sequence and enzyme arrangements.
+You can inspect where a junction is possible, what bases and cuts it requires,
+and whether selected junctions can be completed into the requested product.
 
-```text
-a sequence exists
-    != a production method is available
-    != that method resolves for this request
-    != the product fits a destination
-    != the experiment succeeds
-```
+## What do you specify?
 
-HOP represents those questions on sibling surfaces. The same separation holds
-when the starting point is a bounded substrate space or a payload-centered
-construction request.
+Author one payload arm as exact DNA or fixed and degenerate positions. HOP
+derives its complementary arm; you do not specify the two independently.
+Compiling this anatomy gives the intended hairpin sequence, not a construction
+procedure. See [substrate spaces](../guides/substrate-spaces.md).
 
-## 1. Design language
+For construction, also specify the endpoint, available enzymes, local geometry,
+pairing requirements, and finite search limits. The physical starting material
+is a source ssDNA oligo with construction flanks around the payload. Its sequence
+and required auxiliaries depend on the chosen route.
 
-A design declares hairpin anatomy and authored sequence. HOP derives the paired
-payload, evaluates structural relationships, and produces one deterministic
-`HairpinEncodingInsert`. Successful compilation establishes design identity;
-it makes no production-method claim.
+## What can the search change?
 
-## 2. Construction discovery and composition
-
-A construction request starts from the final duplex payload, selects a
-source-realization route family and requested endpoint, and asks which exact
-foldback and basal neighborhood realizations satisfy the declared geometry and
-molecular constraints. Source coordinates are route-specific; they never
-replace final-payload coordinates as the biological authority.
+The foldback neighborhood supplies the sequence that can be exposed, folded,
+and joined to close the cap. The basal neighborhood supplies the opposite
+junction, including adapter pairing and later end generation when required.
+Neither search changes the payload.
 
 Foldback-local discovery treats the PCR-amplified material as a duplex. Unless
 the caller constrains the physical nick strand, HOP searches both exact nick
 strands by default and retains only routes permitted by the enzyme's declared
 recognition orientation and cut contract.
 
-Discovery is finite and exact-first. Its result reports every exact
-realization, neutral order, reversible geometry and final-product groups, and
-whether the declared space was completed, proved infeasible, or truncated.
-Grouping does not replace realization identity, and selection remains
-caller-owned.
+For a basal search, the cohesive end can be fixed or specified as an IUPAC
+pattern. Pairing constraints determine where an adapter may differ from the
+displaced source strand. Recognition sites must be valid in the molecular state
+where the relevant enzyme acts; a later adapter cannot supply a site required
+in the initial source duplex.
 
-The file-oriented construction operation accepts local requests in one strict
-source document and the design as a separate verified bundle. HOP discovers
-and replay-verifies the local authorities, composes the bounded whole route,
-requires the exact endpoint encoding to agree with the verified design, and
-can persist one portable construction bundle. The source cannot assert design
-or result identities.
+Searches explore increasing retained non-payload sequence. An existence search
+keeps a witness for each accessible work unit; an all-realizations search keeps
+every exact alternative within its reported coverage. Neither order nor a
+shorter junction predicts experimental performance. A truncated search leaves
+part of the declared space unresolved. See [search interpretation](../discovery/overview.md).
 
-## 3. Method language
+## How do local junctions become a construction?
 
-A method request supplies exact materials to one named production method. A
-successful method compiler derives exact modeled molecular states, transitions,
-and a destination-neutral molecular-product model. Only a route or method plan owns temporal
-production history. Construction routes use ordered reaction stages;
-concurrent operations in one stage resolve against the same pre-stage state. A
-design derivation owns no ordered production chronology.
+A local solution describes a possible junction, not the entire molecule.
+Composition checks selected junctions together with the source, adapters,
+primers, fragment-removal program, and endpoint requirements. Missing annealing
+sequence or incompatible materials must reject that proposed construction.
 
-The requested endpoint determines method obligations. A direct
-single-stranded hairpin does not require adapter capture, PCR, or Type IIS end
-generation merely because a clone-ready endpoint does.
-
-Replay verifies that those modeled states and products follow from the request.
-It does not establish laboratory execution, physical construction, or recovery
-of a molecule.
-
-## 4. Provenance and verification
-
-Design, construction, and method bundles are distinct immutable authorities.
-A construction bundle embeds and replay-verifies the design authority used for
-whole-route composition. A method bundle records one named method request and
-its derived products independently. Byte checks and semantic replay establish
-internal consistency; one valid authority does not imply laboratory execution
-or that an unrelated authority belongs to it.
-
-## 5. Ecosystem and downstream use
-
-A caller may place a verified product in a larger construct, assess an exact
-state, record protocol context, or interpret observations. Those activities do
-not redefine HOP anatomy or retroactively change method feasibility.
+For the supported linear-source route, the modeled sequence of steps is:
 
 ```text
-campaign or human intent
-          |
-          v
- payload -+-- local discovery -- exact realizations
-          |
-          +-- route composition -- requested endpoint product
-          |
-          +-- provenance and verification
-                              |
-                              v
-             study evidence, manuscript, downstream use
+source ssDNA + primers → source duplex
+    → cleavage → strand separation → fragment selection
+    → foldback and required adapter pairing → covalent joins → ssDNA hairpin
+    → optional PCR duplex → optional end-generating cleavage
 ```
 
-HOP owns the molecular computation through the verified endpoint projection.
-Client studies own experimental observations and scientific asset
-promotion. Manuscript systems own claims, evidence cutoff, and accepted
-composition.
+Nicking breaks one backbone; it does not itself remove a fragment. Separation
+and selection are distinct steps. PCR derives expected strands from declared
+primer bindings; HOP does not predict amplification efficiency.
 
-Continue with the [design language](../language/overview.md),
-[discovery language](../discovery/overview.md), [method language](../methods/overview.md),
-or [ecosystem ownership](../ecosystem/ownership-boundaries.md).
+The requested endpoint determines which steps and materials are required.
+A direct ssDNA hairpin does not acquire adapter, PCR, or end-generation
+requirements merely because another endpoint needs them. For material and
+request examples, use the [construction guide](../guides/compile-construction.md)
+or [check a named method](../guides/resolve-production-method.md).
+
+## What can you conclude?
+
+Choose against your requirements first: available enzymes, permitted product
+ends, pairing rules, and the materials you can supply or allow HOP to derive.
+Then compare complete candidates using an explicit preference, such as less
+retained construction sequence. An example's particular end sequence is not
+a requirement for other designs. See the [construction guide](../guides/compile-construction.md)
+for filtering, sorting, inspecting, and selecting alternatives.
+
+A complete candidate can be found before a search is exhausted. Its completion
+means that its declared molecular requirements are satisfied; it does not mean
+that every alternative was examined or that this candidate is the shortest.
+Keep the candidate's completeness separate from the search's coverage.
+
+A successful computation supplies exact sequence and processing expectations.
+[Verification](../provenance/overview.md) checks that the saved result follows
+from its inputs. It does not establish recovery, folding, cleavage efficiency,
+ligation efficiency, or biological activity. Defined cohesive ends also need
+a separate compatibility check against the intended cloning destination.
+
+Experimental protocols, tubes, controls, and observations belong in the
+researcher's laboratory records, not in a computed molecular specification.

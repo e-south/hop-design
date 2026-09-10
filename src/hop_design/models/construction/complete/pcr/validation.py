@@ -22,6 +22,7 @@ from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.physical import JunctionPairKind
 from hop_design.models.sequence import reverse_complement_iupac
 
+from ..basal_embedding import basal_nick_boundary
 from ..evaluation.result import CompositionRejectionCode
 from ..evaluation_inputs import replay_linear_source_embedding
 from ..material import ExactConstructionMaterial, PcrPrimer
@@ -32,9 +33,9 @@ from .authority import (
     DuplexFinalProductReference,
     PrimerExtensionAuthority,
 )
+from .pairing import complete_adapter_pairing
 from .products import endpoint_fate_spans, material_function_spans
-from .route import pcr_cleaved_strands, select_pcr_fragments
-from .schedule import derive_pcr_reaction_program
+from .source import derive_pcr_source
 
 if TYPE_CHECKING:
     from ..realization import MaterializedConstructionRealization
@@ -50,13 +51,15 @@ def evaluate_pcr_compatibility(
     reverse: PcrPrimer,
 ) -> CompositionRejectionCode | None:
     """Return the first closed rejection for one exact PCR route context."""
-    if (
-        basal is None
-        or basal.basal_nick.strand is not Strand.BOTTOM
-        or basal.basal_nick.boundary.offset != len(prefix)
-    ):
+    if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         return CompositionRejectionCode.PCR_BASAL_OPEN_INCOMPATIBLE
-    pairing_state = basal.projection.pairing_state
+    basal_nick_boundary(basal, prefix)
+    try:
+        pairing_state = complete_adapter_pairing(
+            basal, source_prefix=prefix, adapter_sequence=adapter.sequence_5prime
+        )
+    except ValueError:
+        return CompositionRejectionCode.PCR_ADAPTER_MISMATCH
     if (
         adapter is None
         or pairing_state.adapter_span.end.offset > len(adapter.sequence_5prime)
@@ -83,13 +86,15 @@ def validate_adapter_pairing_state(
     authority: AdapterAnnealingAuthority,
     *,
     basal: BasalRealizationRecord,
+    source_prefix: str,
     closed_strand_id: str,
     adapter_strand_id: str,
+    adapter_sequence: str | None = None,
 ) -> None:
     """Replay literal basal pair coordinates, bases, and classes into PCR authority."""
-    pairing_state = basal.projection.pairing_state
-    if pairing_state is None:
-        raise ValueError("PCR route requires the exact basal adapter-pairing authority.")
+    pairing_state = complete_adapter_pairing(
+        basal, source_prefix=source_prefix, adapter_sequence=adapter_sequence
+    )
     kind_by_class = {
         BasalPairClass.MATCH: JunctionPairKind.WATSON_CRICK,
         BasalPairClass.WOBBLE: JunctionPairKind.GT_WOBBLE,
@@ -135,7 +140,6 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR route requires one exact bottom-strand basal nick authority.")
     source, source_complement = item.materials[:2]
-    source_use, source_complement_use = item.material_uses[:2]
     prefix, source_return_arm, _ = replay_linear_source_embedding(
         foldback=item.foldback_authority,
         source_sequence=source.sequence_5prime,
@@ -145,28 +149,16 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         raise ValueError(
             "PCR source-return arm must be the reverse complement of the retained prefix."
         )
-    prefix_length = len(prefix)
-    if basal.basal_nick.boundary.offset != prefix_length:
-        raise ValueError("PCR basal nick must equal the exact aligned prefix boundary.")
-    expected_reaction = derive_pcr_reaction_program(
+    source_result = derive_pcr_source(
         foldback=item.foldback_authority,
         basal=basal,
-        prefix=prefix,
-        source_return_arm=source_return_arm,
-        source=source,
-        source_complement=source_complement,
+        preparation=item.source_preparation,
+        partition=item.source_partition_plan,
     )
+    expected_reaction = source_result.reaction
     if not program.reaction_programs or program.reaction_programs[0] != expected_reaction:
         raise ValueError("PCR enzyme phase must replay the exact basal-open local authorities.")
-    expected_cleaved = pcr_cleaved_strands(
-        expected_reaction,
-        foldback=item.foldback_authority,
-        prefix_length=prefix_length,
-        source=source,
-        source_complement=source_complement,
-        source_use_id=source_use.use_id,
-        source_complement_use_id=source_complement_use.use_id,
-    )
+    expected_cleaved = source_result.cleaved
     if program.states[1].molecules != expected_cleaved:
         raise ValueError("PCR cleaved strands must replay exact source-fragment authorities.")
     if (
@@ -175,13 +167,7 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
         or program.states[2].formed_bonds
     ):
         raise ValueError("PCR denaturation may only remove duplex associations.")
-    expected_selected = select_pcr_fragments(
-        expected_cleaved,
-        foldback=item.foldback_authority,
-        source_material_use_id=source_use.use_id,
-        source_complement_material_use_id=source_complement_use.use_id,
-        source_return_arm=source_return_arm,
-    )
+    expected_selected = source_result.selected
     if program.states[3].molecules != expected_selected:
         raise ValueError("PCR selection must retain the exact source and foldback fragments.")
     pcr_indexes = tuple(
@@ -214,8 +200,10 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     validate_adapter_pairing_state(
         adapter_authority,
         basal=basal,
+        source_prefix=prefix,
         closed_strand_id=closed.strand_id,
         adapter_strand_id=adapter_strand.strand_id,
+        adapter_sequence=adapter_strand.sequence,
     )
     terminal_transition = program.transitions[pcr_index - 1]
     if not isinstance(terminal_transition.pcr_authority, PrimerExtensionAuthority):

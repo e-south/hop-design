@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-07
+last_verified: 2026-09-08
 doc_type: explanation
 journey:
   - maintain
@@ -80,8 +80,22 @@ The [construction guide](../../guides/compile-construction.md) exposes:
   obligations, and state-indexed future-release constraints.
 - Source-partition search over enzyme programs on an exact supplied duplex,
   including terminal fragments and inclusive maximum-fragment certificates.
+  The source and required survivors can also be derived from one selected
+  construction or an examined PCR-bearing combination, with caller-supplied
+  enzyme and fragment policies. A cleanup program can then be bound during
+  full-route compilation; rejected candidates are not silently accepted.
 - Composition of selected local authorities, source preparation, optional
   source-partition evidence, exact auxiliaries, and endpoint-specific chronology.
+  PCR-bearing routes incorporate the selected cleanup nick program before
+  actionable-site assessment and preserve the exact local joining strands.
+  Required adapter annealing is completed against available invariant source
+  bases and replayed position by position; insufficient source sequence or an
+  incompatible fixed adapter rejects that exact composition.
+- Bounded upstream sequence completion for PCR-bearing endpoints. A caller-supplied
+  IUPAC context is enumerated without changing either local junction; each assignment
+  must satisfy source preparation, adapter pairing, primer binding, and route checks.
+  The [construction guide](../../guides/compile-construction.md) defines orientation,
+  limits, and exact-versus-truncated accounting.
 - Replay-verified portable results, lossless geometry grouping, tidy relations,
   and typed molecular projections. CLI navigation selects existing results;
   discovery and compilation use the public Python facade.
@@ -105,10 +119,10 @@ former or current internal paths.
 
 ### Bounded scaffold completion
 
-Source-partition search currently evaluates a supplied exact source. It does
-not derive a full scaffold across a bounded sequence/context domain while
-satisfying local junction, primer, and adapter obligations. That solver is
-required before claiming automatic global scaffold completion.
+Upstream completion searches one caller-authored fixed-length sequence domain.
+Source-partition search still evaluates a supplied exact source. Joint design
+of source length, cleanup-nick tiling, and a required fragment partition remains
+unimplemented; bounded upstream completion alone is not global scaffold design.
 
 ### Resumption within one local query
 

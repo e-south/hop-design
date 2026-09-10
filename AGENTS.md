@@ -1,20 +1,13 @@
 # HOP Design agent router
 
-Use this file only to select the owning workflow. Load one skill first; follow
-its progressive-disclosure references as the task requires.
+Load one skill for the task:
 
-## Choose one skill
+- Use HOP: `.agents/skills/hop-design-user/SKILL.md`.
+- Change or review HOP: `.agents/skills/hop-maintainer/SKILL.md`.
 
-| Requested work | Load |
-| --- | --- |
-| Explain or use the design language, payload-centered construction, discovery, named methods, typed views, bundle verification, or immutable handoffs | `.agents/skills/hop-design-user/SKILL.md` |
-| Change or review code, schemas, architecture, documentation, tests, packaging, CI, or releases | `.agents/skills/hop-maintainer/SKILL.md` |
+Load the other only for a repository defect or public-use verification.
 
-Do not load both skills for routine work. Cross the boundary only when a user
-operation exposes a repository defect or a maintainer change needs public
-dogfood evidence.
-
-## Escalate to an authority
+## Find the contract
 
 - Product meaning or terminology: `docs/start/mental-model.md` and
   `docs/language/ontology.md`.
@@ -24,7 +17,7 @@ dogfood evidence.
   `docs/language/relationships-and-invariants.md`.
 - Bundle identity or replay: `RELIABILITY.md` and the matching bundle reference.
 
-## Verification endpoints
+## Verify changes
 
 Run targeted checks while editing. Before declaring a repository change
 complete, run `bash ./scripts/agent-preflight --strict` and

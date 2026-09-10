@@ -36,7 +36,7 @@ from tests.integration.test_complete_construction_pcr import _payload
 def _source_document() -> dict[str, object]:
     foldback = _request(_nickase(), _terminus_enzyme())
     return {
-        "schema": "hop.construction-source/v6",
+        "schema": "hop.construction-source/v7",
         "foldback": foldback.model_dump(mode="json", by_alias=True),
         "basal": None,
         "composition": {
@@ -146,6 +146,20 @@ def test_clone_source_preserves_clone_ready_basal_search_semantics() -> None:
     assert source.basal.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
 
 
+@pytest.mark.parametrize(("end_domain", "allowed"), (("ATNN", True), ("ACNN", False)))
+def test_clone_source_selects_an_exact_end_from_the_basal_domain(
+    end_domain: str, allowed: bool
+) -> None:
+    document = _clone_source_document()
+    document["basal"]["geometry_domain"]["future_release"]["cohesive_end_sequence"] = end_domain
+    if allowed:
+        source = ConstructionSource.model_validate_json(json.dumps(document))
+        assert source.composition.release.right.cohesive_end_sequence == "ATAA"
+    else:
+        with pytest.raises(ValueError, match="Basal future release"):
+            ConstructionSource.model_validate_json(json.dumps(document))
+
+
 @pytest.mark.parametrize("suffix", [".json", ".yaml"])
 def test_construction_source_loads_strict_json_and_yaml(
     tmp_path: Path,
@@ -164,7 +178,7 @@ def test_construction_source_loads_strict_json_and_yaml(
         json.dumps(load_source_mapping(source_path), separators=(",", ":"))
     )
 
-    assert loaded.schema_id == "hop.construction-source/v6"
+    assert loaded.schema_id == "hop.construction-source/v7"
     assert loaded.composition.endpoint == "ssdna_hairpin"
     assert loaded.composition.materialization.source_preparation.source_ssdna.five_prime_end is (
         EndChemistry.HYDROXYL
@@ -175,7 +189,7 @@ def test_construction_source_rejects_another_schema_version() -> None:
     document = _source_document()
     document["schema"] = "hop.construction-source/v1"
 
-    with pytest.raises(ValidationError, match=r"hop\.construction-source/v6"):
+    with pytest.raises(ValidationError, match=r"hop\.construction-source/v7"):
         ConstructionSource.model_validate_json(json.dumps(document))
 
 

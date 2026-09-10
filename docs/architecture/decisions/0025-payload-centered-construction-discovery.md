@@ -108,18 +108,26 @@ closure bond, and achieved retained geometry.
 
 ### 5. Basal pairing is explicit and Type IIS processing is endpoint-dependent
 
-The basal pairing state is ordered from the payload-proximal ligation
+The basal pairing state is ordered from the adapter's ligation
 position outward. Every position retains its literal source and adapter bases,
 pair classification, position from ligation, and any later end-projection role.
 `match`, configured `wobble`, and declared `mismatch` are construction
 bookkeeping, not thermodynamic or biological scores.
 
-The current adapter-ligation route requires a canonical payload-proximal match
+The current adapter-ligation route requires a canonical ligation-proximal match
 when the endpoint requires adapter capture. `ssdna_hairpin` does not invent
 adapter, PCR, or Type IIS requirements. Type IIS processing and exact cohesive
 ends belong only to `clone_ready_duplex` or another endpoint that explicitly
 requests end generation. Directional or asymmetric ends are derived from exact
 heteroduplex copying and cleavage states; they are not caller-assigned labels.
+
+A basal geometry domain may constrain its future cohesive end with IUPAC DNA.
+Its exact targets and future enzyme actions contain exact DNA only. Offset then
+end-sequence traversal preserves distinct exact alternatives and checks the
+offset-by-end cardinality before allocation. Complete composition accepts an
+endpoint belonging to that domain, then requires the selected local action to
+agree with the exact endpoint. This input grammar does not change the serialized
+fields or the canonical bytes of exact requests and results.
 
 ### 6. Compactness is retained endpoint geometry
 

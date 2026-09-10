@@ -111,6 +111,12 @@ class BasalRealizationRecord(HopModel):
         if achieved.pairing_constraints != self.pairing_constraints:
             raise ValueError("Realization must retain the authored pairing constraints.")
         if self.projection.pairing_state is not None:
+            if not achieved.permits_pair_classes(
+                pair.pair_class for pair in self.projection.pairing_state.pairs
+            ):
+                raise ValueError(
+                    "Literal basal pairs exceed the declared noncanonical-pair budget."
+                )
             for constraint, pair in zip(
                 self.pairing_constraints,
                 self.projection.pairing_state.pairs,
@@ -139,6 +145,11 @@ class BasalRealizationRecord(HopModel):
         )
         if self.retained_overhead != expected_overhead:
             raise ValueError("Retained overhead must replay the non-payload basal boundary.")
+        if (
+            self.basal_nick.boundary.offset != payload_span.start.offset - achieved.nick_offset_nt
+            or self.basal_nick.strand is not achieved.nick_strand
+        ):
+            raise ValueError("Basal nick must agree with the achieved geometry.")
         self._validate_route_states()
         return self
 
@@ -156,6 +167,11 @@ class BasalRealizationRecord(HopModel):
             self.future_release_action.assert_definition_replay(
                 definitions[self.future_release_action.enzyme_id]
             )
+            if self.future_release_action.requirement.recognition_material == "source_duplex":
+                self.future_release_action.assert_source_recognition_replay(
+                    sequence=self.source_precursor_sequence,
+                    payload_boundary=self.payload_source_map.segments[0].source_span.start.offset,
+                )
         for binding in self.enzyme_bindings:
             if binding.role is not EnzymeRole.BASAL_NICK:
                 raise ValueError("Basal local authority may contain only basal-nick bindings.")

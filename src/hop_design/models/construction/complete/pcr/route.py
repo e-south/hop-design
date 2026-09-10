@@ -57,9 +57,9 @@ def select_pcr_fragments(
     foldback: FoldbackLocalRealization,
     source_material_use_id: str,
     source_complement_material_use_id: str,
-    source_return_arm: str,
+    removed_return_sequence: str,
 ) -> tuple[MolecularStrand, MolecularStrand]:
-    """Select exact source fragments after removing the source-return arm."""
+    """Retain the payload-bearing fragments after removing the nick-defined return fragment."""
     orientation = foldback.payload_source_map.segments[0].orientation
     released_suffix = (
         "-pcr-bottom-source-return-arm-top"
@@ -74,7 +74,7 @@ def select_pcr_fragments(
     released = next((item for item in molecules if item.strand_id.endswith(released_suffix)), None)
     if (
         released is None
-        or released.sequence != source_return_arm
+        or released.sequence != removed_return_sequence
         or any(item.origin_id != released_material_id for item in released.lineage)
     ):
         raise ValueError("PCR basal nick must create the exact removable source-return fragment.")

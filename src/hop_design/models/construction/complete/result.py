@@ -12,7 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import Counter
-from itertools import islice, product
+from itertools import islice
 from typing import Any, Literal, cast
 
 from pydantic import Field, model_validator
@@ -39,6 +39,7 @@ from .authority import (
     ConstructionCompositionExecution,
     ConstructionCompositionProvenance,
 )
+from .composition_domain import composition_domain
 from .local_authority import validate_local_authority_compatibility
 from .realization import MaterializedConstructionRealization
 from .request import ConstructionDiscoveryRequest
@@ -47,22 +48,24 @@ from .result_contract import (
     construction_space_result_id,
     expected_accounting,
     expected_material_accounting,
-    validate_combination_evaluations,
     validate_endpoint_evidence,
     validate_materialized_request,
 )
+from .result_contract.composition import validate_composition_replay
 from .source_authority import (
     expected_upstream_truncation_reasons,
     validate_result_authorities,
 )
-from .source_partition.result_validation import validate_source_partition_result_contract
+from .source_partition.result_validation import (
+    validate_partition_references,
+)
 
 
 class ConstructionSpaceResult(HopModel):
     """Truthful bounded whole-route result with reversible exact grouping."""
 
-    schema_id: Literal["hop.construction-space-result/v5"] = Field(
-        default="hop.construction-space-result/v5", alias="schema"
+    schema_id: Literal["hop.construction-space-result/v6"] = Field(
+        default="hop.construction-space-result/v6", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
@@ -131,15 +134,12 @@ class ConstructionSpaceResult(HopModel):
                 *self.source_partition_rejection_candidates,
             ),
         )
-        validate_source_partition_result_contract(
+        validate_partition_references(
             request=self.request,
             provenance=self.provenance,
             authority=self.source_partition_authority,
             realizations=self.realizations,
             rejection_candidates=self.source_partition_rejection_candidates,
-            dispositions=self.combination_dispositions,
-            foldback_authority=self.foldback_authority,
-            basal_authority=self.basal_authority,
         )
         validate_local_authority_compatibility(
             self.request,
@@ -210,12 +210,16 @@ class ConstructionSpaceResult(HopModel):
         )
         expected_pairs = tuple(
             islice(
-                product(self.provenance.foldback_realization_ids, basal_domain),
+                composition_domain(
+                    self.provenance.foldback_realization_ids,
+                    basal_domain,
+                    self.request.materialization.source_preparation.source_ssdna,
+                ),
                 len(self.combination_dispositions),
             )
         )
         observed_pairs = tuple(
-            (item.foldback_realization_id, item.basal_realization_id)
+            (item.foldback_realization_id, item.basal_realization_id, item.source_context_sequence)
             for item in self.combination_dispositions
         )
         if observed_pairs != expected_pairs:
@@ -241,6 +245,7 @@ class ConstructionSpaceResult(HopModel):
             )
         )
         replayed_accounting = expected_accounting(
+            request=self.request,
             provenance=self.provenance,
             dispositions=self.combination_dispositions,
             geometry_group_count=len(self.geometry_groups),
@@ -256,14 +261,7 @@ class ConstructionSpaceResult(HopModel):
             )
         if rejected != Counter({item.code: item.count for item in self.failure_reasons}):
             raise ValueError("Rejected dispositions must reconcile exact failure counts.")
-        validate_combination_evaluations(
-            request=self.request,
-            foldback_authority=self.foldback_authority,
-            basal_authority=self.basal_authority,
-            dispositions=self.combination_dispositions,
-            realizations=self.realizations,
-            source_partition_rejection_candidates=(self.source_partition_rejection_candidates),
-        )
+        validate_composition_replay(self)
         if self.request.whole_route_constraints.require_all_combinations_valid:
             if self.status is SearchCompletionStatus.COMPLETE and (
                 any(item is not CompositionDispositionStatus.ACCEPTED for item in statuses)

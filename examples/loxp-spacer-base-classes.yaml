@@ -1,0 +1,10 @@
+schema: hop/substrate-space/v1
+name: loxp-spacer-base-classes
+question: What paired substrates preserve each spacer position's purine or pyrimidine class?
+payload:
+  - fixed: ATAACTTCGTATA
+    label: left-recognition-arm
+  - variable: RYRYRYRY
+    label: base-class-constrained-spacer
+  - fixed: TATACGAAGTTAT
+    label: right-recognition-arm

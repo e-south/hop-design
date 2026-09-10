@@ -25,7 +25,6 @@ from hop_design.models.construction.complete.source_preparation import (
 from hop_design.models.construction.payload import FinalPayloadReference, PayloadSourceMap
 from hop_design.models.construction.source_partition.result import (
     SourcePartitionDiscoveryResult,
-    SourcePartitionRealization,
 )
 from hop_design.models.enzymes import CharacterizedEnzyme, characterized_enzyme_digest
 from hop_design.models.junction import Strand
@@ -112,27 +111,6 @@ def validate_source_facts(
             "Partition source sequence or terminal chemistry differs from the prepared duplex.",
         )
     return material_uses[0], material_uses[1]
-
-
-def partition_cut_facts(
-    result: SourcePartitionDiscoveryResult,
-    realization: SourcePartitionRealization,
-) -> Counter[tuple[object, ...]]:
-    """Project partition nick sites into an exact molecular-fact multiset."""
-    return Counter(
-        (
-            site.agent_id,
-            characterized_enzyme_digest(
-                result.request.enzyme_provisioning.catalog.by_id(site.agent_id)
-            ),
-            site.site_span.start.offset,
-            site.site_span.end.offset,
-            site.orientation,
-            site.nick.strand,
-            site.nick.boundary.offset,
-        )
-        for site in realization.nicked_duplex.sites
-    )
 
 
 def route_cut_facts(
@@ -235,7 +213,6 @@ def partition_fragment_fact(fragment: Fragment) -> FragmentFact:
 
 __all__ = [
     "FragmentFact",
-    "partition_cut_facts",
     "partition_fragment_fact",
     "route_cut_facts",
     "route_fragment_fact",

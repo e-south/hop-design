@@ -141,6 +141,7 @@ def validate_materialized_evaluation(
         endpoint_matches = realization.final_product.reference.sequence == evaluation.final_sequence
     if (
         realization.source_preparation != evaluation.source_preparation
+        or realization.source_partition_plan != evaluation.source_partition_plan
         or tuple(realization.materials[:2]) != (evaluation.source, evaluation.source_complement)
         or tuple(realization.materials[2:]) != expected_auxiliaries
         or realization.construction_program.reaction_programs != expected_programs

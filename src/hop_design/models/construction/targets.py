@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import StrEnum
 from typing import Annotated, Literal
 
@@ -99,6 +100,9 @@ class BasalTarget(HopModel):
     nick_strand: Strand | NickStrandSelection
     nick_offset_nt: int = Field(ge=0)
     pairing_constraints: tuple[BasalPairConstraint, ...] = ()
+    max_noncanonical_pairs: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
     ligation_proximal_match_required: bool = False
     future_release: BasalFutureReleaseRequirement | None = Field(
         default=None,
@@ -107,16 +111,26 @@ class BasalTarget(HopModel):
 
     @model_validator(mode="after")
     def validate_pairing_constraints(self) -> BasalTarget:
+        if self.future_release is not None and self.future_release.cardinality != 1:
+            raise ValueError("A basal target requires an exact cohesive end.")
         positions = tuple(item.position_from_ligation for item in self.pairing_constraints)
         if positions != tuple(range(len(positions))):
-            raise ValueError("Basal pairing positions must be contiguous from the payload outward.")
+            raise ValueError("Basal pairing positions must be contiguous from the ligating end.")
         if (
             self.ligation_proximal_match_required
             and self.pairing_constraints
             and self.pairing_constraints[0].allowed_class is not BasalPairAllowance.MATCH
         ):
-            raise ValueError("The payload-proximal basal pair must be a match.")
+            raise ValueError("The ligation-proximal basal pair must be a match.")
         return self
+
+    def permits_pair_classes(self, classes: Iterable[BasalPairClass]) -> bool:
+        """Apply the cap to all declared proximal pairs, including G:T wobble."""
+        return (
+            self.max_noncanonical_pairs is None
+            or sum(pair_class is not BasalPairClass.MATCH for pair_class in classes)
+            <= self.max_noncanonical_pairs
+        )
 
 
 LocalGeometryTarget = Annotated[FoldbackTarget | BasalTarget, Field(discriminator="family")]

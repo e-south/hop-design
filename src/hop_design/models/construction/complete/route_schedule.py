@@ -28,6 +28,7 @@ from hop_design.models.reactions import (
     ReactionState,
 )
 
+from .basal_embedding import basal_source_offset
 from .evaluation_inputs import derive_linear_source_embedding
 from .material import ExactConstructionMaterial
 from .route_lineage import lift_reaction_molecules
@@ -158,7 +159,13 @@ def derive_direct_reaction_program(
             raise ValueError("Pre-hairpin composition requires one exact basal nick phase.")
         basal_operations = tuple(
             _operation(
-                operation,
+                operation.model_copy(
+                    update={
+                        "intended_binding": _shift_binding(
+                            operation.intended_binding, basal_source_offset(basal, prefix)
+                        )
+                    }
+                ),
                 namespace=namespace,
                 reverse_source_length=(
                     len(source.sequence_5prime)

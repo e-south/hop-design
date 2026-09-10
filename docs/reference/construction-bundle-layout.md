@@ -81,6 +81,16 @@ verified design bundle without redefining that design identity. A construction
 result may be `complete`, `infeasible`, or `truncated`; all three are digital
 outcomes under declared bounds and a declared molecular model.
 
+The route implementation identity is `complete-construction/8`. It includes
+retention of source-derived bases between a basal nick and the payload and
+composition of selected cleanup nicks into PCR-bearing routes. Each such route
+embeds its selected partition request and realization as `source_partition_plan`,
+so individual-route validation can replay cuts, fragment lineage, and selection.
+The field is omitted when no cleanup plan is consumed.
+Readers require this identity; results made with another implementation must
+be regenerated from their requests. The request and result schemas remain
+`hop.construction-request/v6` and `hop.construction-result/v6`.
+
 Verification establishes byte integrity and deterministic molecular replay. It
 does not establish that a route was performed, that a product was recovered,
 that a destination accepts the product, or that construction, QC, activity,

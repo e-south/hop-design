@@ -152,6 +152,18 @@ class SourcePartitionEnumerationPolicy(HopModel):
     max_realizations: int = Field(ge=1)
 
 
+class ConstructionSourcePartitionPolicy(HopModel):
+    """Caller-owned search choices; source and survivors come from a construction."""
+
+    schema_id: Literal["hop.source-partition-policy/v1"] = Field(
+        default="hop.source-partition-policy/v1", alias="schema"
+    )
+    enzyme_provisioning: EnzymeProvisioningPolicy
+    fragment_policy: SacrificialFragmentPolicy
+    max_enzymes_per_program: int = Field(ge=1)
+    enumeration: SourcePartitionEnumerationPolicy
+
+
 class SourcePartitionDiscoveryRequest(HopModel):
     """One exact source, payload relation, enzyme domain, and required partition."""
 
@@ -261,6 +273,7 @@ class SourcePartitionDiscoveryRequest(HopModel):
 
 
 __all__ = [
+    "ConstructionSourcePartitionPolicy",
     "SourceDuplexMaterial",
     "SourcePartitionConstraints",
     "SourcePartitionDiscoveryRequest",

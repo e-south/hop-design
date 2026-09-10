@@ -19,12 +19,13 @@ from ..material import ExactConstructionMaterial, MaterialResolutionMode, PcrPri
 from .authority import SourceDuplexPreparationAuthority, derive_source_duplex_preparation
 from .policy import (
     ConstrainedPrimerPolicy,
+    ConstrainedSourceSsdnaPolicy,
     DerivedPrimerPolicy,
-    DerivedSourceSsdnaPolicy,
     FixedPrimerPolicy,
     FixedSourceSsdnaPolicy,
     PrimerResolutionPolicy,
     SourceDuplexPreparationPolicy,
+    SourceSsdnaPolicy,
 )
 
 
@@ -33,17 +34,17 @@ class SourcePreparationResolutionError(ValueError):
 
 
 def _resolution_mode(
-    policy: DerivedSourceSsdnaPolicy | FixedSourceSsdnaPolicy | PrimerResolutionPolicy,
+    policy: SourceSsdnaPolicy | PrimerResolutionPolicy,
 ) -> MaterialResolutionMode:
     if isinstance(policy, (FixedSourceSsdnaPolicy, FixedPrimerPolicy)):
         return MaterialResolutionMode.FIXED
-    if isinstance(policy, ConstrainedPrimerPolicy):
+    if isinstance(policy, (ConstrainedPrimerPolicy, ConstrainedSourceSsdnaPolicy)):
         return MaterialResolutionMode.CONSTRAIN
     return MaterialResolutionMode.DERIVE
 
 
 def _source_material(
-    policy: DerivedSourceSsdnaPolicy | FixedSourceSsdnaPolicy,
+    policy: SourceSsdnaPolicy,
     *,
     source_sequence: str,
 ) -> ExactConstructionMaterial:

@@ -28,14 +28,18 @@ PUBLIC_NAMES = [
     "ConstructionSelection",
     "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
+    "LocalRealizationChoice",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
+    "compare_constructions",
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
+    "discover_construction_source_partition",
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",
+    "list_local_realizations",
     "load_construction_selection",
     "load_verified_construction_bundle",
     "load_verified_local_neighborhood",
@@ -267,7 +271,7 @@ def test_construction_projection_packet_is_portable_and_create_only(tmp_path: Pa
     )
 
     assert isinstance(summary, construction.ConstructionProjection)
-    assert summary.schema_id == "hop.complete-construction-summary/v2"
+    assert summary.schema_id == "hop.complete-construction-summary/v3"
     assert summary.projection_id.startswith("hop:complete-construction-summary/")
     assert summary.source_result_id == compilation.result_id
     assert summary.json_bytes.endswith(b"\n")

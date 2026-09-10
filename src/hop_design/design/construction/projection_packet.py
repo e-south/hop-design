@@ -22,6 +22,8 @@ from hop_design.export.construction import (
     render_projection_json,
     render_projection_svg,
 )
+from hop_design.export.construction.handoff.materials import render_oligos_csv, render_oligos_fasta
+from hop_design.export.construction.handoff.report import render_construction_report
 from hop_design.export.publication import publish_directory_create_only
 from hop_design.models.construction.projections import (
     CompleteConstructionTrajectoryProjection,
@@ -78,8 +80,13 @@ class ConstructionProjection:
         """Return deterministic scientific SVG bytes."""
         return render_projection_svg(self._projection)
 
-    def write(self, destination: str | Path) -> Path:
+    def write(self, destination: str | Path, *, selection_reason: str | None = None) -> Path:
         """Atomically write the projection packet into a new directory."""
+        if selection_reason is not None:
+            if not isinstance(self._projection, CompleteConstructionTrajectoryProjection):
+                raise ValueError("A selection reason only applies to a selected trajectory.")
+            if not selection_reason.strip():
+                raise ValueError("Selection reason must contain text.")
         output = Path(destination)
         if output.exists() or output.is_symlink():
             raise FileExistsError(f"Refusing to replace existing projection path: {output}")
@@ -93,6 +100,16 @@ class ConstructionProjection:
             if csv_bytes is not None:
                 (staging / "projection.csv").write_bytes(csv_bytes)
             (staging / "projection.svg").write_bytes(svg_bytes)
+            if isinstance(self._projection, CompleteConstructionTrajectoryProjection):
+                (staging / "report.md").write_bytes(
+                    render_construction_report(self._projection, selection_reason=selection_reason)
+                )
+                (staging / "oligos.csv").write_bytes(
+                    render_oligos_csv(self._projection.realization)
+                )
+                (staging / "oligos.fasta").write_bytes(
+                    render_oligos_fasta(self._projection.realization)
+                )
             publish_directory_create_only(staging, output)
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)

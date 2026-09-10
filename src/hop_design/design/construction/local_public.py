@@ -213,7 +213,7 @@ class LocalNeighborhoodDiscovery:
 
 def _load_request(path: str | Path) -> LocalNeighborhoodRequest:
     mapping = load_source_mapping(path, source_label="HOP local-neighborhood")
-    if mapping.get("schema") != "hop.local-neighborhood-request/v5":
+    if mapping.get("schema") != "hop.local-neighborhood-request/v6":
         raise ValueError(f"Unsupported HOP local-neighborhood schema: {mapping.get('schema')!r}.")
     request = LocalNeighborhoodRequest.model_validate_json(
         json.dumps(mapping, separators=(",", ":"))
@@ -262,7 +262,7 @@ def _verify_result_mapping(mapping: dict[str, object]) -> LocalNeighborhoodDisco
         verified: _VerifiedLocalResult = verify_foldback_neighborhood_result(
             FoldbackNeighborhoodDiscoveryResult.model_validate_json(payload)
         )
-    elif schema == "hop.basal-neighborhood-result/v5":
+    elif schema == "hop.basal-neighborhood-result/v6":
         _validate_result_mapping_execution_limits(mapping, result_container="discovery")
         verified = verify_basal_neighborhood_result(
             BasalNeighborhoodDiscoveryResult.model_validate_json(payload)

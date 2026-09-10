@@ -17,6 +17,8 @@ from pydantic import Field, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.construction import (
+    BasalGeometryDomain,
+    BasalTarget,
     NeighborhoodDiscoveryResult,
     PayloadCompatibilityStatus,
     SearchFeasibilityStatus,
@@ -32,8 +34,8 @@ from .realization import BasalRealizationRecord
 class BasalNeighborhoodDiscoveryResult(HopModel):
     """Shared discovery authority plus lossless exact basal route records."""
 
-    schema_id: Literal["hop.basal-neighborhood-result/v5"] = Field(
-        default="hop.basal-neighborhood-result/v5", alias="schema"
+    schema_id: Literal["hop.basal-neighborhood-result/v6"] = Field(
+        default="hop.basal-neighborhood-result/v6", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
     discovery: NeighborhoodDiscoveryResult
@@ -89,8 +91,32 @@ class BasalNeighborhoodDiscoveryResult(HopModel):
                     "assignments."
                 )
         request = self.discovery.request
+        domain = request.geometry_domain
+        if not isinstance(domain, BasalGeometryDomain):
+            raise ValueError("Basal results require a basal geometry domain.")
         requested = request.payload.payload.sequence
         for item in self.realizations:
+            achieved = item.local_realization.achieved_geometry
+            if (
+                not isinstance(achieved, BasalTarget)
+                or achieved.max_noncanonical_pairs != domain.max_noncanonical_pairs
+            ):
+                raise ValueError(
+                    "Basal result must preserve its requested noncanonical-pair budget."
+                )
+            future = item.future_release_action
+            if (future is None) != (domain.future_release is None) or (
+                future is not None
+                and domain.future_release is not None
+                and not domain.future_release.permits(future.requirement)
+            ):
+                raise ValueError("Basal result must preserve its requested cohesive-end domain.")
+            obligation = item.projection.annealing_obligation
+            if (
+                obligation.minimum_annealing_nt != domain.minimum_adapter_annealing_nt
+                or obligation.mismatch_warning_fraction != domain.mismatch_warning_fraction
+            ):
+                raise ValueError("Basal result must preserve its requested annealing constraints.")
             if len(item.payload_sequence) != len(requested) or any(
                 base not in iupac_bases(symbol)
                 for base, symbol in zip(item.payload_sequence, requested, strict=True)
