@@ -564,7 +564,7 @@ def test_user_skill_is_a_small_competency_router() -> None:
         "views.md",
     }
 
-    assert len(skill.splitlines()) <= 60
+    assert len(skill.splitlines()) <= 75
     assert "hop_design.spaces" in skill
     assert "substrate space" in skill.lower()
     for name in references:

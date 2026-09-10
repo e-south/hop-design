@@ -9,6 +9,8 @@ metadata:
 
 # HOP Design user router
 
+## Scope
+
 Use HOP as the authority for hairpin meaning. Never invent a paired arm,
 junction, route, or destination constraint outside a typed contract.
 
@@ -53,8 +55,16 @@ Read `docs/start/mental-model.md` when a request crosses competencies. Read
 - Competency, public operation, and strict input kind.
 - Relevant authority IDs, exact status, accounting, bounds, and diagnostics.
 - New output path or write-free state, plus verification outcome.
-- Claim boundary: distinguish `schema-valid`, `compiled`, `bundle-verified`, `destination-compatible`, and `experimentally supported`. Digital derivation
-  does not establish physical construction, QC, activity, yield, or performance.
+## Success Criteria
 
-Use the [route and behavior matrix](references/test-matrix.md) to check routing;
-[external sources](references/external-sources.md) record its source guidance.
+Distinguish `schema-valid`, `compiled`, `bundle-verified`, `destination-compatible`,
+and `experimentally supported`. Digital derivation does not establish physical
+construction, QC, activity, yield, or performance.
+
+## Trigger Tests
+
+Use the [route and behavior matrix](references/test-matrix.md) to check routing.
+
+## Progressive Disclosure Resources
+
+- `references/external-sources.md`: source guidance.
