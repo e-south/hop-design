@@ -50,6 +50,10 @@ uv run hop-design construction inspect CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBE
 ```
 
 Use the route number shown by the listing, not its position after sorting.
+Inspection shows whether source-fragment removal is specified and reports the
+actual released ends, each read 5′→3′ on its protruding strand. Compare both
+ends with any required interface; a sequence match alone is not a check of
+destination compatibility or laboratory performance.
 `--full-ids` reveals complete identities and group keys. For a durable reference,
 `construction select CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBER --out selected.json`
 stores the full result and realization identities, not the display number.

@@ -15,8 +15,10 @@ import csv
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
 from hop_design import construction
+from hop_design.cli import app
 from hop_design.design.construction.complete import discover_constructions
 from hop_design.design.construction.complete.bundle import compile_construction_bundle
 from hop_design.design.construction.verification import verify_foldback_neighborhood_result
@@ -128,3 +130,9 @@ def test_handoff_explains_verified_fragment_removal_and_escapes_caller_text(tmp_
             if fragment.disposition.value == disposition
         )
         assert f"{label} separated fragment lengths: {lengths} nt." in report
+
+    inspected = CliRunner().invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
+    assert inspected.exit_code == 0, inspected.output
+    assert "Source-fragment removal: specified and verified in the model" in inspected.output
+    assert "Cleanup recovery: not predicted" in inspected.output
+    assert "unresolved" not in inspected.output

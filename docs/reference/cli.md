@@ -98,7 +98,13 @@ the canonical ordinal in that bundle; filtering and sorting do not renumber it.
 
 `construction inspect` prints the exact source ssDNA, required external
 materials, molecular-state and transition counts, and endpoint for one accepted
-realization. `--out` writes `report.md`, `oligos.csv`, and `oligos.fasta`, plus
+realization. It states whether source-fragment removal has a bound, verified
+program; resolving an endpoint alone does not establish that preparation step.
+For a released insert, it prints both actual cohesive ends in 5′→3′ order and
+their overhang polarity, without asserting destination compatibility. Earlier
+endpoints do not report prospective ends as already generated.
+
+`--out` writes `report.md`, `oligos.csv`, and `oligos.fasta`, plus
 the exact trajectory JSON and SVG, to a new directory outside the verified input
 bundle. `--reason` records the caller's selection rationale in the report only;
 it requires `--out` and nonblank text. It does not alter the selection or result.

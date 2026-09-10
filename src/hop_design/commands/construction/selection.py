@@ -98,8 +98,22 @@ def _print_trajectory(content: dict[str, Any]) -> None:
     typer.echo(
         f"Molecular states: {len(program['states'])} · transitions: {len(program['transitions'])}"
     )
+    if content.get("source_partition_certificate") is None:
+        typer.echo("Source-fragment removal: unresolved (no bound removal program)")
+    else:
+        typer.echo("Source-fragment removal: specified and verified in the model")
+        typer.echo("Cleanup recovery: not predicted")
     typer.echo(f"Endpoint: {reference['endpoint']} · {reference['topology']}")
     typer.echo(f"Endpoint sequence: {reference['sequence']}")
+    if reference["endpoint"] == "clone_ready_duplex":
+        for end in realization["final_product"]["cohesive_ends"]:
+            typer.echo(
+                f"{end['product_end'].capitalize()} cohesive end: {end['sequence']} "
+                f"(5-prime to 3-prime) · {end['overhang_end'].replace('_', '-')} overhang"
+            )
+        typer.echo("Destination compatibility: not evaluated")
+    else:
+        typer.echo("Cohesive ends: not generated for this endpoint")
     typer.echo("Physical construction, QC, and biological activity: not recorded")
 
 

@@ -179,6 +179,40 @@ def test_route_number_selection_retains_the_exact_identity(tmp_path: Path) -> No
     assert f"Realization: {expected_id}" in inspected.output
 
 
+@pytest.mark.parametrize("endpoint", tuple(ConstructionEndpoint))
+def test_inspection_reports_actual_endpoint_ends(
+    tmp_path: Path, endpoint: ConstructionEndpoint
+) -> None:
+    bundle, verified = _write_bundle(tmp_path, endpoint=endpoint)
+
+    inspected = runner.invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
+
+    assert inspected.exit_code == 0, inspected.output
+    if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        release = verified.result.request.release
+        assert release is not None
+        for side, requirement in (("Left", release.left), ("Right", release.right)):
+            assert (
+                f"{side} cohesive end: {requirement.cohesive_end_sequence} (5-prime to 3-prime)"
+                " · five-prime overhang"
+            ) in inspected.output
+        assert "Destination compatibility: not evaluated" in inspected.output
+    else:
+        assert "Cohesive ends: not generated for this endpoint" in inspected.output
+        assert "Left cohesive end:" not in inspected.output
+        assert "Right cohesive end:" not in inspected.output
+
+
+def test_inspection_distinguishes_endpoint_resolution_from_fragment_removal(tmp_path: Path) -> None:
+    bundle, _ = _write_bundle(tmp_path, endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX)
+
+    inspected = runner.invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
+
+    assert inspected.exit_code == 0, inspected.output
+    assert "Source-fragment removal: unresolved (no bound removal program)" in inspected.output
+    assert "Right cohesive end:" in inspected.output
+
+
 @pytest.mark.parametrize("ordinal", ["-1", "999"])
 def test_unknown_route_number_is_rejected_without_creating_output(
     tmp_path: Path, ordinal: str
