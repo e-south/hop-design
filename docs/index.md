@@ -1,29 +1,19 @@
 ---
 doc_id: hop-docs-index
 title: HOP documentation
-intent: Find a starting example, a molecular task guide, or the relevant API and file reference.
-audience:
-  - users
-  - maintainers
-  - agent executors
+intent: Choose a design task, then open its guide or API reference.
+audience: [users]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-08
+last_verified: 2026-09-10
 doc_type: index
-journey:
-  - install
-  - compile
-  - discover
-  - method
-  - verify
-  - integrate
+journey: [install, compile, discover, method, verify, integrate]
 ---
 
 # HOP documentation
 
-Choose the task you need. Use the CLI to compile designs, preview sequence
-spaces, and inspect saved constructions. Use Python to search junctions and
-compile construction routes.
+Start with an example, then choose a task. The CLI previews and compiles designs
+and inspects saved constructions; Python also searches junctions and compiles routes.
 
 ## Start here
 

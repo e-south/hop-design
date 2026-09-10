@@ -75,6 +75,19 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert len(readme.splitlines()) <= 80
 
 
+def test_landing_page_opens_with_one_short_product_paragraph() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    opening = readme.split("## Start here", maxsplit=1)[0]
+    paragraphs = [
+        paragraph
+        for paragraph in opening.split("\n\n")
+        if paragraph.strip() and not paragraph.startswith(("#", "[!"))
+    ]
+
+    assert len(paragraphs) == 1
+    assert len(paragraphs[0].split()) <= 90
+
+
 def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     guide = (REPO_ROOT / "docs" / "guides" / "substrate-spaces.md").read_text(encoding="utf-8")
@@ -551,7 +564,7 @@ def test_user_skill_is_a_small_competency_router() -> None:
         "views.md",
     }
 
-    assert len(skill.splitlines()) <= 90
+    assert len(skill.splitlines()) <= 60
     assert "hop_design.spaces" in skill
     assert "substrate space" in skill.lower()
     for name in references:
@@ -577,7 +590,7 @@ def test_root_agent_router_selects_one_focused_skill() -> None:
     assert "Load one skill" in agents
     assert ".agents/skills/hop-design-user/SKILL.md" in agents
     assert ".agents/skills/hop-maintainer/SKILL.md" in agents
-    assert len(agents.splitlines()) <= 50
+    assert len(agents.splitlines()) <= 35
 
 
 def test_active_docs_do_not_teach_retired_design_schemas_or_route_fields() -> None:
@@ -747,8 +760,9 @@ def test_banner_uses_large_labels_without_protocol_annotations() -> None:
     labels = root.findall(".//{http://www.w3.org/2000/svg}text")
     visible = " ".join("".join(label.itertext()) for label in labels)
 
-    assert len(visible.split()) <= 25
-    assert all(float(label.attrib["font-size"]) >= 16 for label in labels)
+    assert float(root.attrib["height"]) / float(root.attrib["width"]) <= 0.16
+    assert len(visible.split()) <= 10
+    assert all(float(label.attrib["font-size"]) >= 18 for label in labels)
     assert "nick boundary" not in visible
     assert "unjoined ends" not in visible
     assert "auxiliary oligos omitted" not in visible

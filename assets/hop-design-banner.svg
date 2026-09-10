@@ -1,4 +1,4 @@
-<svg width="1280" height="340" viewBox="0 0 1280 340" fill="none"
+<svg width="1280" height="200" viewBox="0 0 1280 200" fill="none"
   xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">hop — HAIRPIN OLIGONUCLEOTIDE PROCESSING</title>
   <desc id="desc">Specify a payload and search its basal and foldback flanks.
@@ -6,7 +6,7 @@
     Cleavage followed by strand separation exposes a foldback region; pairing
     and a covalent join close the hairpin. The payload and its copied partner
     remain orange. Schematic, not to scale; auxiliary oligos are omitted.</desc>
-  <rect width="1280" height="340" fill="#1E1D1A"/>
+  <rect width="1280" height="200" rx="12" fill="#1E1D1A"/>
   <defs>
     <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4"
       markerWidth="5" markerHeight="5" orient="auto-start-reverse">
@@ -14,69 +14,64 @@
     </marker>
   </defs>
   <g font-family="Arial, Helvetica, sans-serif">
-    <text x="48" y="77" fill="#F3EFE7" font-family="Menlo, Monaco, Consolas, monospace"
-      font-size="68" font-weight="700" letter-spacing="-3">hop</text>
-    <text x="220" y="77" fill="#F3EFE7" font-size="30">Design the flanks. Preserve the payload.</text>
-    <path d="M222 111H246" stroke="#D97757" stroke-width="9"/>
-    <text x="257" y="117" fill="#C5BFB5" font-size="17">payload</text>
+    <text x="42" y="117" fill="#F3EFE7" font-family="Menlo, Monaco, Consolas, monospace"
+      font-size="76" font-weight="700" letter-spacing="-4">hop</text>
 
-    <g data-stage="source-ssdna" transform="translate(56 0)">
+    <g data-stage="source-ssdna" transform="translate(250 -84)">
       <title>Source ssDNA: basal flank, invariant payload, foldback flank</title>
-      <path d="M0 176H156" stroke="#F3EFE7" stroke-width="9"/>
-      <path d="M50 176H108" stroke="#D97757" stroke-width="9"/>
-      <text x="78" y="280" fill="#F3EFE7" font-size="22" text-anchor="middle">Source ssDNA</text>
+      <path d="M0 176H128" stroke="#F3EFE7" stroke-width="8"/>
+      <path d="M38 176H86" stroke="#D97757" stroke-width="8"/>
+      <text x="64" y="242" fill="#F3EFE7" font-size="22" text-anchor="middle">ssDNA</text>
     </g>
     <g data-operation="template-copy">
-      <path d="M245 176H281" stroke="#969087" stroke-width="1.5" marker-end="url(#arrow)"/>
-      <text x="263" y="147" fill="#C5BFB5" font-size="16" text-anchor="middle">PCR</text>
+      <title>Copy the source into a duplex</title>
+      <path d="M398 92H432" stroke="#969087" stroke-width="2" marker-end="url(#arrow)"/>
     </g>
-    <g data-stage="source-duplex" transform="translate(298 0)">
+    <g data-stage="source-duplex" transform="translate(454 -84)">
       <title>Source duplex before cleavage: the source strand and its copied complement</title>
-      <path d="M16 159V193M47 159V193M78 159V193M109 159V193M140 159V193"
+      <path d="M16 162V190M48 162V190M80 162V190M112 162V190"
         stroke="#969087" stroke-width="2"/>
-      <path d="M0 159H156M0 193H156" stroke="#F3EFE7" stroke-width="9"/>
-      <path d="M50 159H108M50 193H108" stroke="#D97757" stroke-width="9"/>
-      <text x="78" y="280" fill="#F3EFE7" font-size="22" text-anchor="middle">Duplex</text>
+      <path d="M0 162H128M0 190H128" stroke="#F3EFE7" stroke-width="8"/>
+      <path d="M38 162H86M38 190H86" stroke="#D97757" stroke-width="8"/>
+      <text x="64" y="242" fill="#F3EFE7" font-size="22" text-anchor="middle">Duplex</text>
     </g>
     <g data-operation="cleave-and-separate">
-      <path d="M467 176H524" stroke="#969087" stroke-width="1.5" marker-end="url(#arrow)"/>
-      <text x="496" y="131" fill="#C5BFB5" font-size="16" text-anchor="middle">cleave</text>
-      <text x="496" y="151" fill="#C5BFB5" font-size="16" text-anchor="middle">+ separate</text>
+      <title>Cleave, then separate the strands</title>
+      <path d="M602 92H636" stroke="#969087" stroke-width="2" marker-end="url(#arrow)"/>
     </g>
-    <g data-stage="strand-exposure" transform="translate(540 0)">
+    <g data-stage="strand-exposure" transform="translate(658 -84)">
       <title>Strand exposure: retained strands and a separated sacrificial fragment</title>
-      <path d="M0 151H156M0 193H108" stroke="#F3EFE7" stroke-width="9"/>
-      <path d="M50 151H108M50 193H108" stroke="#D97757" stroke-width="9"/>
-      <path id="removed-fragment" d="M114 235H156" stroke="#969087" stroke-width="9" opacity="0.6"/>
-      <path d="M135 198V221" stroke="#969087" stroke-width="1.5" marker-end="url(#arrow)"/>
-      <text x="78" y="280" fill="#F3EFE7" font-size="22" text-anchor="middle">Exposed strand</text>
+      <path d="M0 162H128M0 190H86" stroke="#F3EFE7" stroke-width="8"/>
+      <path d="M38 162H86M38 190H86" stroke="#D97757" stroke-width="8"/>
+      <path id="removed-fragment" d="M96 208H128" stroke="#969087" stroke-width="8" opacity="0.6"/>
+      <text x="64" y="242" fill="#F3EFE7" font-size="22" text-anchor="middle">Expose</text>
     </g>
     <g data-operation="associate">
-      <path d="M709 176H767" stroke="#969087" stroke-width="1.5" marker-end="url(#arrow)"/>
-      <text x="738" y="136" fill="#C5BFB5" font-size="16" text-anchor="middle">anneal</text>
+      <title>Anneal the exposed foldback arm</title>
+      <path d="M806 92H840" stroke="#969087" stroke-width="2" marker-end="url(#arrow)"/>
     </g>
-    <g data-stage="foldback" transform="translate(782 0)">
+    <g data-stage="foldback" transform="translate(862 -84)">
       <title>Foldback pairing: a curved cap with an unjoined backbone boundary</title>
-      <path d="M16 151V185M47 151V185M78 151V185M109 151V185M140 151V185"
+      <path d="M16 162V190M48 162V190M80 162V190M112 162V190"
         stroke="#969087" stroke-width="2"/>
-      <path d="M0 151H140A17 17 0 0 1 140 185H118M0 185H108"
-        stroke="#F3EFE7" stroke-width="9"/>
-      <path d="M50 151H108M50 185H108" stroke="#D97757" stroke-width="9"/>
-      <text x="78" y="280" fill="#F3EFE7" font-size="22" text-anchor="middle">Foldback</text>
+      <path d="M0 162H114A14 14 0 0 1 114 190H98M0 190H86"
+        stroke="#F3EFE7" stroke-width="8"/>
+      <path d="M38 162H86M38 190H86" stroke="#D97757" stroke-width="8"/>
+      <text x="64" y="242" fill="#F3EFE7" font-size="22" text-anchor="middle">Foldback</text>
     </g>
     <g data-operation="join">
-      <path d="M954 176H1009" stroke="#969087" stroke-width="1.5" marker-end="url(#arrow)"/>
-      <text x="981" y="136" fill="#C5BFB5" font-size="16" text-anchor="middle">join</text>
+      <title>Join the backbone to close the hairpin</title>
+      <path d="M1010 92H1044" stroke="#969087" stroke-width="2" marker-end="url(#arrow)"/>
     </g>
-    <g data-stage="hairpin" transform="translate(1024 0)">
+    <g data-stage="hairpin" transform="translate(1066 -84)">
       <title>Unimolecular hairpin: payload and copied partner on one continuous backbone</title>
-      <path d="M16 151V185M47 151V185M78 151V185M109 151V185M140 151V185"
+      <path d="M16 162V190M48 162V190M80 162V190M112 162V190"
         stroke="#969087" stroke-width="2"/>
-      <path id="hairpin-backbone" d="M0 151H140A17 17 0 0 1 140 185H0"
-        stroke="#F3EFE7" stroke-width="9"/>
-      <path d="M50 151H108M50 185H108" stroke="#D97757" stroke-width="9"/>
-      <path id="joining-bond" d="M108 185H118" stroke="#F3EFE7" stroke-width="9"/>
-      <text x="78" y="280" fill="#F3EFE7" font-size="22" text-anchor="middle">Hairpin</text>
+      <path id="hairpin-backbone" d="M0 162H114A14 14 0 0 1 114 190H0"
+        stroke="#F3EFE7" stroke-width="8"/>
+      <path d="M38 162H86M38 190H86" stroke="#D97757" stroke-width="8"/>
+      <path id="joining-bond" d="M86 190H98" stroke="#F3EFE7" stroke-width="8"/>
+      <text x="64" y="242" fill="#F3EFE7" font-size="22" text-anchor="middle">Hairpin</text>
     </g>
   </g>
 </svg>
