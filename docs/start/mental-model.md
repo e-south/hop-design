@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-08
+last_verified: 2026-09-10
 doc_type: explanation
 journey:
   - compile
@@ -88,6 +88,18 @@ request examples, use the [construction guide](../guides/compile-construction.md
 or [check a named method](../guides/resolve-production-method.md).
 
 ## What can you conclude?
+
+Choose against your requirements first: available enzymes, permitted product
+ends, pairing rules, and the materials you can supply or allow HOP to derive.
+Then compare complete candidates using an explicit preference, such as less
+retained construction sequence. An example's particular end sequence is not
+a requirement for other designs. See the [construction guide](../guides/compile-construction.md)
+for filtering, sorting, inspecting, and selecting alternatives.
+
+A complete candidate can be found before a search is exhausted. Its completion
+means that its declared molecular requirements are satisfied; it does not mean
+that every alternative was examined or that this candidate is the shortest.
+Keep the candidate's completeness separate from the search's coverage.
 
 A successful computation supplies exact sequence and processing expectations.
 [Verification](../provenance/overview.md) checks that the saved result follows

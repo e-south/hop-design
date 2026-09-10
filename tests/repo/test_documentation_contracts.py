@@ -57,8 +57,9 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "CONTRIBUTING.md" in readme
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
-    assert "Keep the duplex sequence under study unchanged" in readme
-    assert "does not predict laboratory success" in readme
+    normalized = " ".join(readme.split())
+    assert "HOP keeps that payload unchanged" in normalized
+    assert "not predictions of laboratory success" in normalized
     assert "source oligo" in readme
     assert "foldback" in readme and "basal" in readme
     assert "unreleased" in readme
