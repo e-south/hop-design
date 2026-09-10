@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 
 import pytest
+from rich.text import Text
 from typer.testing import CliRunner
 
 from hop_design.cli import app
@@ -341,14 +342,16 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
     assert "projection path" in repeated.output
 
 
-def test_inspection_reason_requires_saved_output(tmp_path: Path) -> None:
+@pytest.mark.parametrize("color", [False, True])
+def test_inspection_reason_requires_saved_output(tmp_path: Path, color: bool) -> None:
     bundle, _ = _write_bundle(tmp_path)
     result = runner.invoke(
         app,
         ["construction", "inspect", str(bundle), "--ordinal", "0", "--reason", "My choice"],
+        color=color,
     )
     assert result.exit_code != 0
-    assert "--reason requires --out" in result.output
+    assert "--reason requires --out" in Text.from_ansi(result.output).plain
 
 
 def test_construction_selection_is_result_bound_and_reusable_for_inspection(
