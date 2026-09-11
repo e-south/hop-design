@@ -30,10 +30,11 @@ def test_public_example_is_a_real_strict_spec() -> None:
     assert compilation.plan.payload_sequence == "NRY"
 
 
-def test_quickstart_owns_installation_and_compilation_examples() -> None:
+def test_installation_and_quickstart_separate_setup_from_compilation() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    install = (REPO_ROOT / "docs" / "guides" / "install.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
-    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", quickstart)
+    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", install)
     assert release_match is not None
     wheel_name = release_match.group(0)
 
@@ -43,9 +44,12 @@ def test_quickstart_owns_installation_and_compilation_examples() -> None:
     assert "--spec FILE" in quickstart
     assert "--sequence ATAACTTCGTATAGCATACATTATACGAAGTTAT" in quickstart
     assert 'compilation.write("build/symbolic-python")' in quickstart
-    assert wheel_name in quickstart
+    assert "install.md" in quickstart
+    assert "uv pip install" not in quickstart
+    assert "doc_type: how-to" in install
+    assert "doc_id: hop-install" in install
     checksum_command = f"grep '{wheel_name}$' SHA256SUMS | shasum -a 256 -c -"
-    assert checksum_command in quickstart
+    assert checksum_command in install
 
 
 def test_governance_and_release_routes_exist() -> None:
@@ -68,19 +72,18 @@ def test_governance_and_release_routes_exist() -> None:
 def test_public_documentation_tracks_the_published_source_release() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         version = tomllib.load(handle)["project"]["version"]
-    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
+    install = (REPO_ROOT / "docs" / "guides" / "install.md").read_text(encoding="utf-8")
     roadmap = (REPO_ROOT / "docs" / "dev" / "plans" / "roadmap.md").read_text(encoding="utf-8")
 
-    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", quickstart)
+    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", install)
     assert release_match is not None
     release_version = release_match.group(1)
     wheel_name = release_match.group(0)
     assert release_version == version
-    assert f"[v{release_version}]" in readme
-    assert f"tree/v{release_version}" in readme
-    assert f"unreleased v{version} candidate" not in readme
-    assert wheel_name in quickstart
+    assert f"[v{release_version}]" in install
+    assert f"tree/v{release_version}" in install
+    assert f"unreleased v{version} candidate" not in install
+    assert wheel_name in install
     assert f"published `v{release_version}` artifact" in roadmap
     assert f"unreleased `v{version}` candidate" not in roadmap
     assert "Research" + " Studies" not in roadmap

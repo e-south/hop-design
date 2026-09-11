@@ -26,6 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 def test_release_routing_names_published_and_current_contracts() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs/guides/quickstart.md").read_text(encoding="utf-8")
     roadmap = (REPO_ROOT / "docs/dev/plans/roadmap.md").read_text(encoding="utf-8")
     maintainer_index = (REPO_ROOT / "docs/dev/README.md").read_text(encoding="utf-8")
@@ -33,11 +34,14 @@ def test_release_routing_names_published_and_current_contracts() -> None:
         REPO_ROOT / "docs/architecture/decisions/0033-close-linear-source-material-dependencies.md"
     ).read_text(encoding="utf-8")
 
-    assert "[v0.1.0a8](https://github.com/e-south/hop-design/releases/tag/v0.1.0a8)" in readme
-    assert "unreleased construction-search features" in readme
-    assert "tagged documentation" in readme
+    assert "docs/guides/install.md" in readme
+    assert "[v0.1.0a8](https://github.com/e-south/hop-design/releases/tag/v0.1.0a8)" in install
+    assert "HOP is alpha software" in install
+    assert "unreleased construction-search features" in install
+    assert "tagged documentation" in install
     assert "unreleased v0.1.0a8" not in readme
-    assert "hop_design-0.1.0a8-py3-none-any.whl" in quickstart
+    assert "hop_design-0.1.0a8-py3-none-any.whl" in install
+    assert "install.md" in quickstart
     assert "published `v0.1.0a8`" in roadmap
     assert "Historical construction realignment audit" not in maintainer_index
     assert "Linear-source product closure audit" not in maintainer_index
@@ -94,6 +98,8 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     assert "uv run --locked python scripts/docs-smoke" in agent_verify
     assert '"$smoke_root/venv/bin/python" scripts/docs-smoke' in wheel_smoke
     assert "'examples/fixed-site-three-base-context.yaml'" in wheel_smoke
+    assert "'docs/guides/install.md'" in wheel_smoke
+    assert "'docs/guides/quickstart.md'" in wheel_smoke
     assert "'examples/foldback-local-partition.yaml'" in wheel_smoke
     assert "'examples/compile_payload_records.py'" in wheel_smoke
     assert "'examples/compile_construction.py'" in wheel_smoke

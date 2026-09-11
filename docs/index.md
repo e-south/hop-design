@@ -17,9 +17,10 @@ and inspects saved constructions; Python also searches junctions and compiles ro
 
 ## Start here
 
-1. [Install and compile](guides/quickstart.md) a first design.
-2. [Define a substrate space](guides/substrate-spaces.md) with fixed and variable positions.
-3. [Understand the construction](start/mental-model.md): payload, local junctions,
+1. [Install HOP](guides/install.md).
+2. [Compile a first design](guides/quickstart.md).
+3. [Define and preview a substrate space](guides/substrate-spaces.md).
+4. [Understand the construction](start/mental-model.md): payload, local junctions,
    materials, and processing steps. [Why HOP](start/why-hop.md) explains the design question.
 
 ## Work on a construction

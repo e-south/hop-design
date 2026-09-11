@@ -66,6 +66,8 @@ for required in \
   'assets/examples/basal-junction.svg' \
   'assets/examples/foldback-junction.svg' \
   'docs/index.md' \
+  'docs/guides/install.md' \
+  'docs/guides/quickstart.md' \
   'examples/author_linear_source_method.py' \
   'examples/compile_payload_records.py' \
   'examples/compile_construction.py' \
