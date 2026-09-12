@@ -11,7 +11,7 @@ from hop_design.api import verify_bundle
 from hop_design.cli import app
 from hop_design.models.construction import ConstructionEndpoint
 from hop_design.models.sequence import reverse_complement_iupac
-from hop_design.serialization import canonical_json_bytes
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 from tests.contract.test_route_realization_design import _compile_selected, _pcr_authorities
 from tests.integration.test_complete_construction_discovery import _material
 from tests.integration.test_construction_cli import _write_bundle
@@ -52,7 +52,12 @@ def test_projection_cannot_write_into_verified_input_bundle(
     assert construction.load_verified_construction_bundle(bundle).bundle_id == receipt.bundle_id
 
 
-def test_selected_design_cli_matches_public_compilation(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "replaced_artifact", [None, "construction-bundle.json", "construction-result.json"]
+)
+def test_selected_design_cli_matches_public_compilation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, replaced_artifact: str | None
+) -> None:
     payload, foldback, basal = _pcr_authorities()
     foldback_path, basal_path = tmp_path / "foldback.json", tmp_path / "basal.json"
     foldback_path.write_bytes(canonical_json_bytes(foldback))
@@ -126,9 +131,30 @@ def test_selected_design_cli_matches_public_compilation(tmp_path: Path) -> None:
     assert "outside the verified" in " ".join(rejected.output.split())
     assert not (output / "nested-construction").exists()
     assert verify_bundle(output).bundle_id == original_bundle_id
+    admitted_files: dict[str, bytes] = {}
+    if replaced_artifact is not None:
+        original_write = construction.ConstructionCompilation.write
+
+        def replace_after_write(self: construction.ConstructionCompilation, target: Path) -> Path:
+            written = original_write(self, target)
+            for name in ("construction-bundle.json", "construction-result.json"):
+                admitted_files[name] = (written / name).read_bytes()
+            (written / replaced_artifact).write_bytes(b"{}")
+            return written
+
+        monkeypatch.setattr(construction.ConstructionCompilation, "write", replace_after_write)
     compiled = runner.invoke(app, compile_arguments)
     assert compiled.exit_code == 0, compiled.output
     report = json.loads(compiled.output)
+    if replaced_artifact is not None:
+        assert (bundle_path / replaced_artifact).read_bytes() == b"{}"
+        assert report["bundle"] == json.loads(admitted_files["construction-bundle.json"])
+        assert report["result"] == json.loads(admitted_files["construction-result.json"])
+        assert report["bundle_file_sha256"] == sha256_digest(
+            admitted_files["construction-bundle.json"]
+        )
+        assert report["result_sha256"] == sha256_digest(admitted_files["construction-result.json"])
+        (bundle_path / replaced_artifact).write_bytes(admitted_files[replaced_artifact])
     assert report["nominal_combinations"] == report["examined_combinations"] == 1
     assert report["status"] == "complete"
     verified = runner.invoke(app, ["construction", "verify-complete", str(bundle_path)])
@@ -164,3 +190,28 @@ def test_selected_design_cli_matches_public_compilation(tmp_path: Path) -> None:
     assert (tmp_path / "construction-trajectory/oligos.fasta").is_file()
     (bundle_path / "construction-result.json").write_bytes(b"{}")
     assert runner.invoke(app, ["construction", "verify-complete", str(bundle_path)]).exit_code != 0
+
+
+@pytest.mark.parametrize(
+    "replaced_artifact", ["construction-bundle.json", "construction-result.json"]
+)
+def test_complete_verification_report_retains_the_admitted_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, replaced_artifact: str
+) -> None:
+    bundle, _ = _write_bundle(tmp_path)
+    runner = CliRunner()
+    arguments = ["construction", "verify-complete", str(bundle)]
+    expected = runner.invoke(app, arguments)
+    assert expected.exit_code == 0, expected.output
+    original_load = construction.load_verified_construction_bundle
+
+    def replace_after_load(path: Path) -> construction.VerifiedConstructionBundle:
+        admitted = original_load(path)
+        (path / replaced_artifact).write_bytes(b"{}")
+        return admitted
+
+    monkeypatch.setattr(construction, "load_verified_construction_bundle", replace_after_load)
+    observed = runner.invoke(app, arguments)
+    assert observed.exit_code == 0, observed.output
+    assert (bundle / replaced_artifact).read_bytes() == b"{}"
+    assert json.loads(observed.output) == json.loads(expected.output)

@@ -103,6 +103,8 @@ canonical authorities and SHA-256 byte bindings. Explicit metadata exposes
 producer-computed dispositions, counts, and identifiers; the caller need not
 duplicate molecular derivation to inspect them. Publication uses the existing
 atomic writers and does not add report files to, or reseal, a bundle.
+Construction reports serialize the admitted in-memory snapshot, so later file
+replacement cannot mix unverified contents with the verified identities.
 
 `identity` returns `hop/runtime-identity/v1`, distribution and dependency
 versions, a digest of the executing package's Python source bytes, supported

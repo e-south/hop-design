@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -66,6 +67,7 @@ class _ConstructionReceipt:
 
     _construction: VerifiedConstructionSpaceResult
     _bundle: ConstructionBundle
+    _artifacts: Mapping[str, bytes]
 
     @property
     def bundle_id(self) -> str:
@@ -112,6 +114,31 @@ class _ConstructionReceipt:
         """Return accepted exact route identities in canonical order."""
         return tuple(
             item.materialized_realization_id for item in self._construction.result.realizations
+        )
+
+    def report_json(self) -> str:
+        """Serialize the admitted authority snapshot without rereading published paths."""
+        bundle = canonical_json_bytes(self._bundle)
+        result = self._artifacts[RESULT_PATH]
+        return json.dumps(
+            {
+                "schema": "hop/construction-report/v1",
+                "verification": "deterministic_derivation",
+                "bundle_file_sha256": sha256_digest(bundle),
+                "result_sha256": sha256_digest(result),
+                "bundle": json.loads(bundle),
+                "result": json.loads(result),
+                "bundle_id": self.bundle_id,
+                "result_id": self.result_id,
+                "design_bundle_id": self.design_bundle_id,
+                "status": self.status,
+                "endpoint": self.endpoint,
+                "valid_realizations": self.valid_realizations,
+                "examined_combinations": self.examined_combinations,
+                "nominal_combinations": self.nominal_combinations,
+                "materialized_realization_ids": self.materialized_realization_ids,
+            },
+            sort_keys=True,
         )
 
     def _verified_source(self) -> VerifiedConstructionSpaceResult:

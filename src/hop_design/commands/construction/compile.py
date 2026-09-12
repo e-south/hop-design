@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -47,31 +45,6 @@ def compile_local_design_command(
         raise typer.BadParameter(str(error)) from error
 
 
-def _construction_report(
-    receipt: construction.ConstructionCompilation | construction.VerifiedConstructionBundle,
-    output: Path,
-) -> dict[str, object]:
-    bundle = (output / "construction-bundle.json").read_bytes()
-    result = (output / "construction-result.json").read_bytes()
-    return {
-        "schema": "hop/construction-report/v1",
-        "verification": "deterministic_derivation",
-        "bundle_file_sha256": "sha256:" + hashlib.sha256(bundle).hexdigest(),
-        "result_sha256": "sha256:" + hashlib.sha256(result).hexdigest(),
-        "bundle": json.loads(bundle),
-        "result": json.loads(result),
-        "bundle_id": receipt.bundle_id,
-        "result_id": receipt.result_id,
-        "design_bundle_id": receipt.design_bundle_id,
-        "status": receipt.status,
-        "endpoint": receipt.endpoint,
-        "valid_realizations": receipt.valid_realizations,
-        "examined_combinations": receipt.examined_combinations,
-        "nominal_combinations": receipt.nominal_combinations,
-        "materialized_realization_ids": receipt.materialized_realization_ids,
-    }
-
-
 def compile_selected_command(
     source: Path,
     design_bundle: Annotated[Path, typer.Option("--design-bundle")],
@@ -103,7 +76,7 @@ def compile_selected_command(
             source_partition_realization_id=source_partition_realization_id,
         )
         compiled.write(output)
-        typer.echo(json.dumps(_construction_report(compiled, output), sort_keys=True))
+        typer.echo(compiled.report_json())
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
 
@@ -112,6 +85,6 @@ def verify_complete_command(bundle: Path) -> None:
     """Replay every byte and route of a complete construction bundle."""
     try:
         verified = construction.load_verified_construction_bundle(bundle)
-        typer.echo(json.dumps(_construction_report(verified, bundle), sort_keys=True))
+        typer.echo(verified.report_json())
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error

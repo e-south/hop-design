@@ -154,8 +154,11 @@ The source document cannot author design or result identities. Receipts expose
 bundle, result, and design-bundle identity; endpoint and status; accepted,
 examined, and nominal counts; and accepted materialized-realization identities
 rather than internal result models. `ConstructionCompilation.write(path)`
-atomically persists the portable authority. Projection
-packets provide canonical JSON, tidy CSV when defined, and SVG bytes; writing a
+atomically persists the portable authority. Both construction receipt types
+expose `report_json()`, which serializes the admitted manifest, result, byte
+digests, and scalar accounting in the existing `hop/construction-report/v1`
+format without reading published files again. Projection packets provide
+canonical JSON, tidy CSV when defined, and SVG bytes; writing a
 packet is atomic and create-only. A trajectory always requires an explicit
 accepted realization identity.
 For a trajectory, `ConstructionProjection.write(path, selection_reason=None)`
