@@ -13,6 +13,23 @@ doc_type: reference
 
 # Python API
 
+Callers with independent installations can use the
+[external command and artifact interface](external-artifacts.md). Its named
+file operations preserve the authorities below while avoiding consumer Python
+model imports.
+
+The file-oriented operations in `hop_design.api` are
+`resolve_linear_source_method_file(source)`,
+`compile_linear_source_method_file(source, output)`, and
+`verify_linear_source_method_file(bundle)`. They return the named method's
+canonical authority report through the existing compiler and replay path.
+`design_report(receipt)` serializes admitted design authorities and
+producer-computed checks. `runtime_identity()` returns installation provenance
+and the executing package-content digest. The
+[external artifact reference](external-artifacts.md) defines their authored
+inputs, lineage bindings, and the distinction between recorded evidence and
+fresh execution.
+
 The package root is the single-design language. Five sibling facades make
 scientist workflow and specialized competency questions explicit:
 
@@ -36,6 +53,11 @@ not public facades.
 ## Payload-centered construction
 
 All operations and receipts in this section use `hop_design.construction`.
+
+- `project_basal_source_panel(receipt, realization_id=...) -> bytes` emits the
+  existing neutral molecular panel as canonical JSON for one verified local
+  basal realization. It preserves source coordinates and exact pairing facts;
+  it does not select a route or make a complete-construction claim.
 
 - `compile_construction(source_path, design_bundle_path=...) -> ConstructionCompilation`
 - `compile_construction_from_local_realizations(source_path, design_bundle_path=...,

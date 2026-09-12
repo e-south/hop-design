@@ -18,6 +18,7 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from hop_design.design.runtime import producer_identity
 from hop_design.export.publication import publish_directory_create_only, publish_file_create_only
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -28,7 +29,6 @@ from ..local_public import (
     _load_request,
     _verify_result_mapping,
 )
-from .producer import producer_identity
 from .records import (
     MAX_BATCH_REQUESTS,
     MAX_DOCUMENT_BYTES,

@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from hop_design.design.basal import evaluate_basal_pairing
-from hop_design.design.bundle import load_verified_bundle, verify_bundle
+from hop_design.design.bundle import design_report, load_verified_bundle, verify_bundle
 from hop_design.design.compile import check_spec, compile_spec, create_catalog_spec
 from hop_design.design.design_space import plan_design_space
 from hop_design.design.foldback import evaluate_foldback
 from hop_design.design.loading import load_spec
+from hop_design.design.method_bundle import (
+    compile_linear_source_method_file,
+    resolve_linear_source_method_file,
+    verify_linear_source_method_file,
+)
 from hop_design.design.payloads import (
     collect_payloads,
     expand_payload,
@@ -16,6 +21,7 @@ from hop_design.design.payloads import (
 )
 from hop_design.design.processing import project_released_strand_state
 from hop_design.design.result import Compilation
+from hop_design.design.runtime import runtime_identity
 from hop_design.design.stem import evaluate_paired_stem_extension
 from hop_design.models.diagnostics import CheckReport
 from hop_design.models.spec import DesignSpec, HopSpec
@@ -24,7 +30,9 @@ __all__ = [
     "check",
     "collect_payloads",
     "compile",
+    "compile_linear_source_method_file",
     "create_spec",
+    "design_report",
     "evaluate_basal_pairing",
     "evaluate_foldback",
     "evaluate_paired_stem_extension",
@@ -35,7 +43,10 @@ __all__ = [
     "load_verified_bundle",
     "plan_design_space",
     "project_released_strand_state",
+    "resolve_linear_source_method_file",
+    "runtime_identity",
     "verify_bundle",
+    "verify_linear_source_method_file",
 ]
 
 

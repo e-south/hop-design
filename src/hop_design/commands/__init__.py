@@ -10,5 +10,6 @@ Module Author(s): Eric J. South
 """
 
 from .construction import construction_app
+from .method import method_app
 
-__all__ = ["construction_app"]
+__all__ = ["construction_app", "method_app"]

@@ -15,6 +15,12 @@ amended_by: hop-adr-0028
 
 # ADR 0027: Compile construction from strict files behind a narrow facade
 
+The external artifact interface adds `project_basal_source_panel` to this
+allowlist. It returns the existing basal molecular panel as canonical JSON
+bytes from a verified local receipt and an explicit local realization ID.
+It does not select a route or derive additional molecular state. See
+[ADR 0036](0036-external-command-artifact-boundary.md).
+
 > [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md) makes
 > duplex foldback nick orientation explicit. [ADR 0033](0033-close-linear-source-material-dependencies.md)
 > closes the source-ssDNA preparation dependency in the active v5 construction
