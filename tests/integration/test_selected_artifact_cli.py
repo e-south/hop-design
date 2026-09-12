@@ -3,20 +3,53 @@
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from hop_design import construction
+from hop_design.api import verify_bundle
 from hop_design.cli import app
 from hop_design.models.construction import ConstructionEndpoint
 from hop_design.models.sequence import reverse_complement_iupac
 from hop_design.serialization import canonical_json_bytes
 from tests.contract.test_route_realization_design import _compile_selected, _pcr_authorities
 from tests.integration.test_complete_construction_discovery import _material
+from tests.integration.test_construction_cli import _write_bundle
 from tests.integration.test_construction_source_compiler import (
     _materialization,
     _source,
     _write_source,
 )
+
+
+@pytest.mark.parametrize(
+    "kind", ["construction-summary", "construction-navigation", "construction-trajectory"]
+)
+@pytest.mark.parametrize("linked", [False, True])
+def test_projection_cannot_write_into_verified_input_bundle(
+    tmp_path: Path, kind: str, linked: bool
+) -> None:
+    bundle, _ = _write_bundle(tmp_path / "case")
+    receipt = construction.load_verified_construction_bundle(bundle)
+    destination = bundle
+    if linked:
+        destination = tmp_path / "bundle-link"
+        destination.symlink_to(bundle, target_is_directory=True)
+    output = destination / "projection"
+    before = {
+        path.relative_to(bundle): path.read_bytes() for path in bundle.rglob("*") if path.is_file()
+    }
+    arguments = ["construction", "project", str(bundle), "--kind", kind, "--out", str(output)]
+    if kind == "construction-trajectory":
+        arguments += ["--realization-id", receipt.materialized_realization_ids[0]]
+    result = CliRunner().invoke(app, arguments)
+    assert result.exit_code != 0, result.output
+    assert "outside the verified" in " ".join(result.output.split())
+    assert not output.exists()
+    assert {
+        path.relative_to(bundle): path.read_bytes() for path in bundle.rglob("*") if path.is_file()
+    } == before
+    assert construction.load_verified_construction_bundle(bundle).bundle_id == receipt.bundle_id
 
 
 def test_selected_design_cli_matches_public_compilation(tmp_path: Path) -> None:
@@ -69,26 +102,31 @@ def test_selected_design_cli_matches_public_compilation(tmp_path: Path) -> None:
     source_path = _write_source(tmp_path / "construction.yaml", source)
     bundle_path = tmp_path / "construction"
     runner = CliRunner()
-    compiled = runner.invoke(
-        app,
-        [
-            "construction",
-            "compile-selected",
-            str(source_path),
-            "--design-bundle",
-            str(output),
-            "--foldback",
-            str(foldback_path),
-            "--foldback-realization-id",
-            foldback.realizations[0].foldback_realization_id,
-            "--basal",
-            str(basal_path),
-            "--basal-realization-id",
-            basal.realizations[0].basal_realization_id,
-            "--out",
-            str(bundle_path),
-        ],
-    )
+    compile_arguments = [
+        "construction",
+        "compile-selected",
+        str(source_path),
+        "--design-bundle",
+        str(output),
+        "--foldback",
+        str(foldback_path),
+        "--foldback-realization-id",
+        foldback.realizations[0].foldback_realization_id,
+        "--basal",
+        str(basal_path),
+        "--basal-realization-id",
+        basal.realizations[0].basal_realization_id,
+        "--out",
+        str(bundle_path),
+    ]
+    original_bundle_id = verify_bundle(output).bundle_id
+    nested_arguments = [*compile_arguments[:-1], str(output / "nested-construction")]
+    rejected = runner.invoke(app, nested_arguments)
+    assert rejected.exit_code != 0, rejected.output
+    assert "outside the verified" in " ".join(rejected.output.split())
+    assert not (output / "nested-construction").exists()
+    assert verify_bundle(output).bundle_id == original_bundle_id
+    compiled = runner.invoke(app, compile_arguments)
     assert compiled.exit_code == 0, compiled.output
     report = json.loads(compiled.output)
     assert report["nominal_combinations"] == report["examined_combinations"] == 1

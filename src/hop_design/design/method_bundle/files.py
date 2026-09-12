@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from hop_design.design.linear_source_method import compile_linear_source_multinick_hairpin_pcr
+from hop_design.design.source_documents import load_source_mapping
 from hop_design.models.bundle import MethodBundle
 from hop_design.models.linear_source_method import (
     LinearSourceMultinickHairpinPcrRequest,
@@ -20,11 +21,10 @@ from .authority import (
 
 
 def _request(path: Path) -> LinearSourceMultinickHairpinPcrRequest:
-    if path.is_symlink() or not path.is_file():
-        raise ValueError("Method request must be a regular non-symlink JSON file.")
-    if path.stat().st_size > 1_000_000:
-        raise ValueError("Method request exceeds 1000000 bytes.")
-    return LinearSourceMultinickHairpinPcrRequest.model_validate_json(path.read_bytes())
+    if path.suffix.lower() != ".json":
+        raise ValueError("Method request file extension must be .json.")
+    mapping = load_source_mapping(path, source_label="HOP method request")
+    return LinearSourceMultinickHairpinPcrRequest.model_validate_json(json.dumps(mapping))
 
 
 def _report(

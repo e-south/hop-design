@@ -12,6 +12,8 @@ import typer
 from hop_design import construction
 from hop_design.api import design_report
 
+from .common import require_output_outside_bundle
+
 
 def compile_local_design_command(
     design_id: Annotated[str, typer.Option("--design-id")],
@@ -85,6 +87,7 @@ def compile_selected_command(
 ) -> None:
     """Publish one endpoint-complete construction for explicit local selections."""
     try:
+        require_output_outside_bundle(design_bundle, output)
         compiled = construction.compile_construction_from_local_realizations(
             source,
             design_bundle_path=design_bundle,

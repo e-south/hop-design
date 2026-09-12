@@ -475,10 +475,10 @@ def test_construction_exports_cannot_modify_their_verified_input_bundle(tmp_path
     )
 
     assert selected.exit_code != 0
-    assert "must be outside the verified construction" in selected.output
+    assert "must be outside the verified input" in selected.output
     assert "bundle." in selected.output
     assert inspected.exit_code != 0
-    assert "must be outside the verified construction" in inspected.output
+    assert "must be outside the verified input" in inspected.output
     assert "bundle." in inspected.output
     assert not (bundle / "selected.json").exists()
     assert not (bundle / "trajectory").exists()

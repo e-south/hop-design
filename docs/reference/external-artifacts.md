@@ -29,7 +29,9 @@ dispatcher, or Python-object transport is involved.
 ## Authored inputs and operations
 
 Commands below emit one JSON report on stdout; errors return nonzero. `OUT`
-must name a new directory. File arguments retain the schemas of the
+must name a new directory outside any input bundle, including when paths pass
+through symbolic links. Method request files must use `.json`; duplicate keys
+are rejected before model validation. File arguments retain the schemas of the
 [design](bundle-layout.md), [method](method-bundle-layout.md), and
 [construction](construction-bundle-layout.md) authorities.
 

@@ -12,6 +12,8 @@ import typer
 
 from hop_design import construction
 
+from .common import require_output_outside_bundle
+
 
 def _local_report(receipt: construction.LocalNeighborhoodDiscovery) -> dict[str, object]:
     return {
@@ -123,6 +125,7 @@ def discover_construction_partition_command(
 ) -> None:
     """Discover source removal for an explicitly selected complete-construction disposition."""
     try:
+        require_output_outside_bundle(bundle, output)
         receipt = construction.load_verified_construction_bundle(bundle)
         partition = construction.discover_construction_source_partition(
             receipt, policy, combination_ordinal=combination_ordinal
@@ -166,6 +169,7 @@ def project_command(
             ProjectionKind.CONSTRUCTION_TRAJECTORY,
             ProjectionKind.CONSTRUCTION_SUMMARY,
         }:
+            require_output_outside_bundle(source, output)
             complete = construction.load_verified_construction_bundle(source)
             if kind is ProjectionKind.CONSTRUCTION_TRAJECTORY:
                 if realization_id is None:

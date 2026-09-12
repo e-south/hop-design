@@ -17,9 +17,12 @@ from pathlib import Path
 
 import pytest
 import yaml
+from typer.testing import CliRunner
 
 import hop_design as hop
 import hop_design.construction as construction
+from hop_design.cli import app
+from tests.integration.test_construction_cli import _write_bundle
 
 
 @pytest.fixture(scope="module")
@@ -50,6 +53,36 @@ def constructed_source(tmp_path_factory):
         "enumeration": {"max_search_nodes": 1, "max_realizations": 1},
     }
     return receipt, search
+
+
+def test_partition_command_keeps_outputs_outside_its_verified_bundle(
+    tmp_path: Path, constructed_source
+) -> None:
+    _, policy = constructed_source
+    bundle, _ = _write_bundle(tmp_path / "case")
+    receipt = construction.load_verified_construction_bundle(bundle)
+    policy_path = tmp_path / "policy.json"
+    policy_path.write_text(json.dumps(policy))
+    arguments = [
+        "construction",
+        "discover-construction-partition",
+        str(bundle),
+        str(policy_path),
+        "--combination-ordinal",
+        "0",
+        "--out",
+    ]
+    control = CliRunner().invoke(app, [*arguments, str(tmp_path / "partition")])
+    assert control.exit_code == 0, control.output
+    output = bundle / "partition"
+    result = CliRunner().invoke(
+        app,
+        [*arguments, str(output)],
+    )
+    assert result.exit_code != 0, result.output
+    assert "outside the verified" in " ".join(result.output.split())
+    assert not output.exists()
+    assert construction.load_verified_construction_bundle(bundle).bundle_id == receipt.bundle_id
 
 
 def test_partition_search_uses_the_selected_prepared_source_and_survivors(

@@ -34,7 +34,7 @@ def require_output_outside_bundle(bundle_path: Path, output_path: Path) -> None:
     destination = output_path.resolve(strict=False)
     if destination == bundle_root or destination.is_relative_to(bundle_root):
         raise typer.BadParameter(
-            "--out must be outside the verified construction bundle.",
+            "--out must be outside the verified input bundle.",
             param_hint="--out",
         )
 
