@@ -18,12 +18,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Self
 
-from hop_design.design.source_documents import SourceDocumentLimitError, load_source_mapping
+from hop_design.design.source_documents import (
+    DEFAULT_RESULT_MAX_BYTES,
+    SourceDocumentLimitError,
+    load_source_mapping,
+)
 from hop_design.export.publication import publish_directory_create_only
 from hop_design.models.construction import LocalNeighborhoodFamily, LocalNeighborhoodRequest
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
-from hop_design.serialization import canonical_json_bytes
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from .basal import discover_basal_neighborhood
 from .foldback import discover_foldback_neighborhood
@@ -37,7 +41,7 @@ from .verification import (
 _VerifiedLocalResult = VerifiedFoldbackNeighborhoodResult | VerifiedBasalNeighborhoodResult
 _LocalResult = FoldbackNeighborhoodDiscoveryResult | BasalNeighborhoodDiscoveryResult
 _LOCAL_EXECUTION_MAX = 100_000
-_LOCAL_RESULT_MAX_BYTES = 64 * 1024 * 1024
+_LOCAL_RESULT_MAX_BYTES = DEFAULT_RESULT_MAX_BYTES
 
 
 def _canonical_local_result_bytes(
@@ -177,6 +181,25 @@ class LocalNeighborhoodDiscovery:
     def json_bytes(self) -> bytes:
         """Return canonical family-result JSON bytes."""
         return self._json_bytes
+
+    def report_json(self) -> str:
+        """Serialize the admitted local authority and its existing inspection metadata."""
+        return json.dumps(
+            {
+                "schema": "hop/local-result-report/v1",
+                "verification": "deterministic_discovery",
+                "result_sha256": sha256_digest(self.json_bytes),
+                "result_id": self.result_id,
+                "problem_id": self.problem_id,
+                "family": self.family,
+                "completion": self.completion,
+                "feasibility": self.feasibility,
+                "termination_reason": self.termination_reason,
+                "realization_count": self.realization_count,
+                "result": json.loads(self.json_bytes),
+            },
+            sort_keys=True,
+        )
 
     def write(self, destination: str | Path) -> Path:
         """Atomically write the canonical result into a new directory."""

@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
 
 from hop_design.design.compile import compile_spec
+from hop_design.design.result import Compilation
 from hop_design.export.bundle import (
     BundleIntegrityError,
     VerifiedBundleContents,
@@ -15,6 +18,7 @@ from hop_design.export.bundle import (
     write_bundle_files,
 )
 from hop_design.models.bundle import HopBundle
+from hop_design.models.derivation import EvaluatedComponentDerivation, ResolvedJunctionDerivation
 from hop_design.serialization import canonical_json_bytes
 
 
@@ -79,3 +83,25 @@ __all__ = [
     "verify_hop_bundle_semantics",
     "write_bundle",
 ]
+
+
+def design_report(design: Compilation | VerifiedHopBundle) -> str:
+    """Report existing authorities after the caller has derived or replayed them."""
+    check = design.report if isinstance(design, Compilation) else compile_spec(design.spec).report
+    derivation = design.plan.design_derivation
+    payload = {
+        "schema": "hop/design-report/v1",
+        "verification": "deterministic_derivation",
+        "bundle_file_sha256": "sha256:"
+        + hashlib.sha256(canonical_json_bytes(design.bundle)).hexdigest(),
+        "spec": design.spec.model_dump(mode="json", by_alias=True),
+        "plan": design.plan.model_dump(mode="json", by_alias=True),
+        "bundle": design.bundle.model_dump(mode="json", by_alias=True),
+        "checks": {
+            "design_status": check.status,
+            "foldback_status": derivation.foldback.report.status
+            if isinstance(derivation, (EvaluatedComponentDerivation, ResolvedJunctionDerivation))
+            else None,
+        },
+    }
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)

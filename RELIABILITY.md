@@ -196,5 +196,7 @@ narrow its declared search or use every member of a deterministic, disjoint
 sequence-domain partition. Each part remains independently replayable and
 cannot claim whole-domain payload compatibility; the loader never treats an
 oversized result as a partial authority.
+Source-partition result creation and replay enforce the same 64 MiB envelope before
+publication or semantic replay; authored requests retain the one-megabyte limit.
 External observations may be unavailable without invalidating a prospective
 HOP bundle because execution evidence is caller-owned.

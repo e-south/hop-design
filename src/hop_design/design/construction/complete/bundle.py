@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,7 @@ from hop_design.export.bundle import (
     verify_manifested_bundle_contents,
     write_manifested_bundle_files,
 )
+from hop_design.export.publication import ProtectedRootInput
 from hop_design.kernel.bundle_identity import (
     construction_bundle_id,
     construction_manifest_seed,
@@ -66,6 +68,21 @@ class _ConstructionReceipt:
 
     _construction: VerifiedConstructionSpaceResult
     _bundle: ConstructionBundle
+    _artifacts: Mapping[str, bytes]
+
+    @classmethod
+    def _create(
+        cls,
+        *,
+        construction: VerifiedConstructionSpaceResult,
+        bundle: ConstructionBundle,
+        artifacts: Mapping[str, bytes],
+    ) -> Self:
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "_construction", construction)
+        object.__setattr__(instance, "_bundle", bundle)
+        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
+        return instance
 
     @property
     def bundle_id(self) -> str:
@@ -114,6 +131,31 @@ class _ConstructionReceipt:
             item.materialized_realization_id for item in self._construction.result.realizations
         )
 
+    def report_json(self) -> str:
+        """Serialize the admitted authority snapshot without rereading published paths."""
+        bundle = canonical_json_bytes(self._bundle)
+        result = self._artifacts[RESULT_PATH]
+        return json.dumps(
+            {
+                "schema": "hop/construction-report/v1",
+                "verification": "deterministic_derivation",
+                "bundle_file_sha256": sha256_digest(bundle),
+                "result_sha256": sha256_digest(result),
+                "bundle": json.loads(bundle),
+                "result": json.loads(result),
+                "bundle_id": self.bundle_id,
+                "result_id": self.result_id,
+                "design_bundle_id": self.design_bundle_id,
+                "status": self.status,
+                "endpoint": self.endpoint,
+                "valid_realizations": self.valid_realizations,
+                "examined_combinations": self.examined_combinations,
+                "nominal_combinations": self.nominal_combinations,
+                "materialized_realization_ids": self.materialized_realization_ids,
+            },
+            sort_keys=True,
+        )
+
     def _verified_source(self) -> VerifiedConstructionSpaceResult:
         return self._construction
 
@@ -133,23 +175,11 @@ class ConstructionCompilation(_ConstructionReceipt):
     _bundle: ConstructionBundle
     _artifacts: Mapping[str, bytes]
 
-    @classmethod
-    def _create(
-        cls,
-        *,
-        construction: VerifiedConstructionSpaceResult,
-        bundle: ConstructionBundle,
-        artifacts: Mapping[str, bytes],
-    ) -> Self:
-        instance = object.__new__(cls)
-        object.__setattr__(instance, "_construction", construction)
-        object.__setattr__(instance, "_bundle", bundle)
-        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
-        return instance
-
-    def write(self, output: str | Path) -> Path:
+    def write(
+        self, output: str | Path, *, protected_root: ProtectedRootInput | None = None
+    ) -> Path:
         """Atomically write the construction bundle after complete replay."""
-        return write_construction_bundle(self, Path(output))
+        return write_construction_bundle(self, Path(output), protected_root=protected_root)
 
 
 @dataclass(frozen=True, init=False, repr=False)
@@ -159,20 +189,6 @@ class VerifiedConstructionBundle(_ConstructionReceipt):
     _construction: VerifiedConstructionSpaceResult
     _bundle: ConstructionBundle
     _artifacts: Mapping[str, bytes]
-
-    @classmethod
-    def _create(
-        cls,
-        *,
-        construction: VerifiedConstructionSpaceResult,
-        bundle: ConstructionBundle,
-        artifacts: Mapping[str, bytes],
-    ) -> Self:
-        instance = object.__new__(cls)
-        object.__setattr__(instance, "_construction", construction)
-        object.__setattr__(instance, "_bundle", bundle)
-        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
-        return instance
 
 
 def compile_construction_bundle(
@@ -305,6 +321,8 @@ def verify_construction_bundle(bundle_path: str | Path) -> ConstructionBundle:
 def write_construction_bundle(
     compilation: ConstructionCompilation,
     output: Path,
+    *,
+    protected_root: ProtectedRootInput | None = None,
 ) -> Path:
     """Write one construction bundle atomically after semantic replay."""
     return write_manifested_bundle_files(
@@ -315,6 +333,7 @@ def write_construction_bundle(
         output,
         manifest_name=_MANIFEST_NAME,
         verifier=verify_construction_bundle,
+        protected_root=protected_root,
     )
 
 

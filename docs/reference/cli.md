@@ -12,6 +12,11 @@ doc_type: reference
 
 # CLI reference
 
+For independently installed consumers, see the
+[external command and artifact interface](external-artifacts.md). It documents
+JSON reports, runtime identity, file discovery and replay, named methods, and
+selected-local construction without requiring Python model imports.
+
 ## Substrate spaces
 
 ```text

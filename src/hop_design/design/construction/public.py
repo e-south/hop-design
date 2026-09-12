@@ -44,7 +44,9 @@ from hop_design.models.construction.projections import (
     ConstructionScientificProjection,
 )
 from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
+from hop_design.serialization import canonical_json_bytes
 
+from .basal_views import build_basal_source_panel
 from .complete.bundle import ConstructionCompilation, VerifiedConstructionBundle
 from .complete.discovery import VerifiedConstructionSpaceResult
 from .design_authority import compile_design_from_local_realizations
@@ -263,6 +265,13 @@ def project_source_partition_certificate(
     )
 
 
+def project_basal_source_panel(
+    receipt: LocalNeighborhoodDiscovery, *, realization_id: str
+) -> bytes:
+    """Export existing neutral molecular-panel JSON for one verified basal selection."""
+    return canonical_json_bytes(build_basal_source_panel(receipt, realization_id=realization_id))
+
+
 __all__ = [
     "ConstructionCompilation",
     "ConstructionProjection",
@@ -282,6 +291,7 @@ __all__ = [
     "load_verified_source_partition",
     "project_basal_feasibility",
     "project_basal_minimum_overhead_matrix",
+    "project_basal_source_panel",
     "project_complete_construction_summary",
     "project_construction_navigation",
     "project_construction_trajectory",

@@ -57,6 +57,8 @@ amends an earlier one, the earlier frontmatter names the current decision.
 
 ## States, discovery, and views
 
+- [0036: Command and artifact handoffs](0036-external-command-artifact-boundary.md)
+
 - [0004: Route state and sequence orientation](0004-route-state-and-sequence-orientation.md)
 - [0010: Linear-source method materials](0010-linear-source-method-materials.md)
 - [0014: Separate basal pairing from processing geometry](0014-separate-basal-pairing-from-processing-geometry.md)

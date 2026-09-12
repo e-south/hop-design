@@ -8,12 +8,18 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-09-07
+last_verified: 2026-09-12
 doc_type: decision
 amended_by: hop-adr-0028
 ---
 
 # ADR 0027: Compile construction from strict files behind a narrow facade
+
+The external artifact interface adds `project_basal_source_panel` to this
+allowlist. It returns the existing basal molecular panel as canonical JSON
+bytes from a verified local receipt and an explicit local realization ID.
+It does not select a route or derive additional molecular state. See
+[ADR 0036](0036-external-command-artifact-boundary.md).
 
 > [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md) makes
 > duplex foldback nick orientation explicit. [ADR 0033](0033-close-linear-source-material-dependencies.md)
@@ -67,6 +73,7 @@ The exact public allowlist is:
 - `LocalNeighborhoodDiscovery`;
 - `LocalNeighborhoodBatch`;
 - `LocalRealizationChoice`;
+- `ProtectedRoot`;
 - `SourcePartitionDiscovery`;
 - `VerifiedConstructionBundle`;
 - `compare_constructions`;
@@ -94,6 +101,9 @@ The exact public allowlist is:
 
 Receipts expose only scalar identity and accounting plus create-only writing.
 Projection packets expose deterministic JSON, optional CSV, and SVG bytes.
+`ProtectedRoot` retains an input directory's filesystem identity across
+verification and protected publication. Its mechanics remain in the existing
+publication owner; it is neither a molecular model nor portable evidence.
 Selection references expose only the source result identity, one accepted
 materialized-realization identity, and canonical JSON. They remain
 non-authoritative: creating or loading one requires a verified construction

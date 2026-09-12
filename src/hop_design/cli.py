@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import json
 from importlib.metadata import version
 from pathlib import Path
 from typing import Annotated, Any
@@ -20,8 +21,14 @@ import yaml
 from pydantic import ValidationError
 
 from hop_design.api import compile as compile_design
-from hop_design.api import load_spec, verify_bundle
-from hop_design.commands import construction_app
+from hop_design.api import (
+    design_report,
+    load_spec,
+    load_verified_bundle,
+    runtime_identity,
+    verify_bundle,
+)
+from hop_design.commands import construction_app, method_app
 from hop_design.spaces import (
     SubstrateSpacePreview,
     SubstrateSpaceSpec,
@@ -42,6 +49,7 @@ space_app = typer.Typer(
 )
 app.add_typer(space_app, name="space")
 app.add_typer(construction_app, name="construction")
+app.add_typer(method_app, name="method")
 
 _SPACE_SPEC_MAX_BYTES = 1_000_000
 
@@ -65,6 +73,12 @@ def main(
     ] = False,
 ) -> None:
     """HOP Design command-line interface."""
+
+
+@app.command("identity")
+def identity_command() -> None:
+    """Report the selected runtime's source provenance and artifact interfaces as JSON."""
+    typer.echo(json.dumps(runtime_identity(), sort_keys=True))
 
 
 @app.command("compile")
@@ -97,6 +111,10 @@ def compile_command(
             "--dry-run",
             help="Derive the design and check constraints without writing files.",
         ),
+    ] = False,
+    report: Annotated[
+        bool,
+        typer.Option("--report", help="Emit a machine-readable verified design report as JSON."),
     ] = False,
 ) -> None:
     """Compile a payload sequence or a design file."""
@@ -136,6 +154,9 @@ def compile_command(
     ) as exc:
         raise typer.BadParameter(str(exc), param_hint="--sequence/--spec") from exc
 
+    if report:
+        typer.echo(design_report(compilation))
+        return
     typer.echo(f"Default: {compilation.spec.defaults_ref}")
     typer.echo(f"Plan: {compilation.plan.plan_id}")
     typer.echo(f"Bundle: {compilation.bundle.bundle_id}")
@@ -274,6 +295,10 @@ def compile_space_command(
 @app.command("verify")
 def verify_command(
     bundle_path: Annotated[Path, typer.Argument(help="Design or design-set bundle directory.")],
+    report: Annotated[
+        bool,
+        typer.Option("--report", help="Emit the replay-verified design authorities as JSON."),
+    ] = False,
 ) -> None:
     """Verify a HOP design or design-set bundle."""
     try:
@@ -282,6 +307,8 @@ def verify_command(
         if has_design_set == has_member:
             raise ValueError("Bundle must contain exactly one of manifest.json or hop-bundle.json.")
         if has_design_set:
+            if report:
+                raise ValueError("--report requires one design bundle, not a design set.")
             verified = load_verified_design_set(bundle_path)
             typer.echo(f"Verified design set: {verified.design_set.design_set_id}")
             typer.echo(
@@ -289,6 +316,10 @@ def verify_command(
                 f"{verified.design_set.unique_designs:,} exact designs"
             )
         else:
+            if report:
+                design = load_verified_bundle(bundle_path)
+                typer.echo(design_report(design))
+                return
             bundle = verify_bundle(bundle_path)
             typer.echo(f"Verified design: {bundle.bundle_id}")
     except (OSError, ValidationError, ValueError, yaml.YAMLError) as exc:

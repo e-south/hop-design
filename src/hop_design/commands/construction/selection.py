@@ -148,9 +148,8 @@ def construction_inspect_command(
     """Inspect the materials and molecular steps of one route."""
     if selection_reason is not None and output is None:
         raise typer.BadParameter("--reason requires --out.", param_hint="--reason")
-    receipt = load_receipt(bundle_path)
-    if output is not None:
-        require_output_outside_bundle(bundle_path, output)
+    protected_root = None if output is None else require_output_outside_bundle(bundle_path, output)
+    receipt = load_receipt(bundle_path, protected_root=protected_root)
     selected_id = _resolve_realization_id(
         receipt,
         realization_id=realization_id,
@@ -164,7 +163,9 @@ def construction_inspect_command(
         )
         content = json.loads(trajectory.json_bytes)
         if output is not None:
-            trajectory.write(output, selection_reason=selection_reason)
+            trajectory.write(
+                output, selection_reason=selection_reason, protected_root=protected_root
+            )
     except (OSError, ValueError) as exc:
         raise typer.BadParameter(str(exc), param_hint="REALIZATION_ID/--out") from exc
     _print_trajectory(content)
@@ -192,8 +193,8 @@ def construction_select_command(
     ] = None,
 ) -> None:
     """Save a selection referencing an existing route."""
-    receipt = load_receipt(bundle_path)
-    require_output_outside_bundle(bundle_path, output)
+    protected_root = require_output_outside_bundle(bundle_path, output)
+    receipt = load_receipt(bundle_path, protected_root=protected_root)
     selected_id = _resolve_realization_id(
         receipt, realization_id=realization_id, selection_path=None, ordinal=ordinal
     )
@@ -202,7 +203,7 @@ def construction_select_command(
             receipt,
             materialized_realization_id=selected_id,
         )
-        selected.write(output)
+        selected.write(output, protected_root=protected_root)
     except (OSError, ValueError) as exc:
         raise typer.BadParameter(str(exc), param_hint="REALIZATION_ID/--out") from exc
     typer.echo(f"Selected reference: {output}")

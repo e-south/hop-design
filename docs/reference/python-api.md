@@ -13,6 +13,23 @@ doc_type: reference
 
 # Python API
 
+Callers with independent installations can use the
+[external command and artifact interface](external-artifacts.md). Its named
+file operations preserve the authorities below while avoiding consumer Python
+model imports.
+
+The file-oriented operations in `hop_design.api` are
+`resolve_linear_source_method_file(source)`,
+`compile_linear_source_method_file(source, output)`, and
+`verify_linear_source_method_file(bundle)`. They return the named method's
+canonical authority report through the existing compiler and replay path.
+`design_report(receipt)` serializes admitted design authorities and
+producer-computed checks. `runtime_identity()` returns installation provenance
+and the executing package-content digest. The
+[external artifact reference](external-artifacts.md) defines their authored
+inputs, lineage bindings, and the distinction between recorded evidence and
+fresh execution.
+
 The package root is the single-design language. Five sibling facades make
 scientist workflow and specialized competency questions explicit:
 
@@ -36,6 +53,11 @@ not public facades.
 ## Payload-centered construction
 
 All operations and receipts in this section use `hop_design.construction`.
+
+- `project_basal_source_panel(receipt, realization_id=...) -> bytes` emits the
+  existing neutral molecular panel as canonical JSON for one verified local
+  basal realization. It preserves source coordinates and exact pairing facts;
+  it does not select a route or make a complete-construction claim.
 
 - `compile_construction(source_path, design_bundle_path=...) -> ConstructionCompilation`
 - `compile_construction_from_local_realizations(source_path, design_bundle_path=...,
@@ -77,7 +99,12 @@ All operations and receipts in this section use `hop_design.construction`.
   explicit ordered collection of independent local requests. It publishes
   bounded immutable batches and replays saved results before resuming. The
   receipt exposes `planned_requests`, `completed_requests`, `finished`, and
-  lazy replay through `iter_results()`. Execution completion does not imply
+  lazy replay through `iter_results()`. Its `report_json()` serializes the full
+  `hop/local-batch-report/v1` result bodies within the existing 64 MiB execution
+  document ceiling, including the CLI newline. Exceeding that limit raises
+  without changing the checkpoint; `iter_results()` still provides individual
+  receipts with `report_json()` and `write()` for separate access.
+  Execution completion does not imply
   exhaustive coverage or feasibility of any individual request. See
   [checkpointed discovery](../guides/compile-construction.md#checkpoint-independent-local-queries)
   for limits, persistence, and recovery semantics.
@@ -132,8 +159,11 @@ The source document cannot author design or result identities. Receipts expose
 bundle, result, and design-bundle identity; endpoint and status; accepted,
 examined, and nominal counts; and accepted materialized-realization identities
 rather than internal result models. `ConstructionCompilation.write(path)`
-atomically persists the portable authority. Projection
-packets provide canonical JSON, tidy CSV when defined, and SVG bytes; writing a
+atomically persists the portable authority. Both construction receipt types
+expose `report_json()`, which serializes the admitted manifest, result, byte
+digests, and scalar accounting in the existing `hop/construction-report/v1`
+format without reading published files again. Projection packets provide
+canonical JSON, tidy CSV when defined, and SVG bytes; writing a
 packet is atomic and create-only. A trajectory always requires an explicit
 accepted realization identity.
 For a trajectory, `ConstructionProjection.write(path, selection_reason=None)`
@@ -142,6 +172,23 @@ terminal chemistry; FASTA contains sequences only. The optional nonblank reason
 is caller-authored report text, not a molecular fact or a ranking. Other
 projection types reject a supplied selection reason. Canonical projection bytes
 and identities are independent of this text.
+`ConstructionCompilation.write(...)`, `ConstructionProjection.write(...)`,
+`ConstructionSelection.write(...)`, and `SourcePartitionDiscovery.write(...)`
+accept optional `protected_root=path` for the verified input bundle. On macOS
+and Linux this checks bundle exclusion and binds all staging and publication to
+an opened parent directory, so later ancestor redirects cannot redirect those
+writes. Protected publication fails explicitly on other platforms. Construction
+compilation, projection, route-selection, and derived-partition commands supply
+their input bundle automatically. Nested construction bundles retain staged
+semantic verification before publication; artifact files use owner-only access.
+Commands retain the input directory's identity from verification through
+publication. A root replaced during verification fails; a later rename does not
+transfer protection to a replacement at the old pathname. Direct Python callers
+that pass a path capture its identity when the writer begins.
+To retain protection across an earlier Python verification step, capture
+`construction.ProtectedRoot.capture(path)`, verify the input, call the token's
+`require_unchanged()`, and pass that token as `protected_root`. The token is
+ephemeral filesystem identity, not a portable scientific artifact.
 `ConstructionSelection.write(path)` writes canonical JSON to exactly one new
 `.json` file path. A selection never changes or narrows the complete
 construction authority.

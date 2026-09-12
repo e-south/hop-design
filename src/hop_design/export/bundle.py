@@ -39,7 +39,11 @@ from hop_design.models.spec import (
 )
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from .publication import publish_directory_create_only
+from .publication import (
+    ProtectedRootInput,
+    publish_directory_create_only,
+    publish_directory_files_create_only,
+)
 
 _SPEC_ADAPTER: TypeAdapter[DesignAuthoritySpec] = TypeAdapter(DesignAuthoritySpec)
 
@@ -100,6 +104,7 @@ def write_manifested_bundle_files(
     *,
     manifest_name: str,
     verifier: BundleVerifier,
+    protected_root: ProtectedRootInput | None = None,
 ) -> Path:
     """Write one manifested directory atomically without crossing its root."""
     _safe_artifact_path(manifest_name)
@@ -109,6 +114,15 @@ def write_manifested_bundle_files(
         )
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"Refusing to replace existing bundle path: {output}")
+    if protected_root is not None:
+        files = {
+            _safe_artifact_path(path): content for path, content in compilation.artifacts.items()
+        }
+        files[manifest_name] = canonical_json_bytes(compilation.bundle)
+        publish_directory_files_create_only(
+            files, output, protected_root=protected_root, verifier=verifier
+        )
+        return output
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix=f".{output.name}.", dir=output.parent))
     try:

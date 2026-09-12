@@ -36,6 +36,7 @@ from hop_design.design.construction.public import (
     load_verified_source_partition,
     project_basal_feasibility,
     project_basal_minimum_overhead_matrix,
+    project_basal_source_panel,
     project_complete_construction_summary,
     project_construction_navigation,
     project_construction_trajectory,
@@ -47,6 +48,7 @@ from hop_design.design.construction.public import (
 from hop_design.design.construction.source_partition.construction import (
     discover_construction_source_partition,
 )
+from hop_design.export.publication import ProtectedRoot
 
 __all__ = [
     "ConstructionCompilation",
@@ -55,6 +57,7 @@ __all__ = [
     "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
     "LocalRealizationChoice",
+    "ProtectedRoot",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compare_constructions",
@@ -72,6 +75,7 @@ __all__ = [
     "load_verified_source_partition",
     "project_basal_feasibility",
     "project_basal_minimum_overhead_matrix",
+    "project_basal_source_panel",
     "project_complete_construction_summary",
     "project_construction_navigation",
     "project_construction_trajectory",

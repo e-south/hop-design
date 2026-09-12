@@ -11,11 +11,14 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import errno
+import os
 from contextlib import chdir
 from pathlib import Path
 
 import pytest
 
+from hop_design.export import publication
 from hop_design.export.publication import publish_directory_create_only
 
 
@@ -85,3 +88,258 @@ def test_directory_publication_rejects_different_parents(tmp_path: Path) -> None
 
     assert staging.is_dir()
     assert not (other / "published").exists()
+
+
+@pytest.mark.parametrize("name", ["", ".", "..", "nested/child"])
+@pytest.mark.parametrize("invalid_staging", [False, True])
+def test_descriptor_publication_requires_immediate_child_names(
+    name: str, invalid_staging: bool
+) -> None:
+    staging, destination = (
+        (Path(name), Path("valid")) if invalid_staging else (Path("valid"), Path(name))
+    )
+    with pytest.raises(ValueError, match="immediate child names"):
+        publication.publish_directory_create_only(staging, destination, parent_fd=-1)
+
+
+def test_protected_publication_accepts_safe_parent_aliases(tmp_path: Path) -> None:
+    parent, protected = tmp_path / "exports", tmp_path / "input"
+    parent.mkdir()
+    protected.mkdir()
+    alias = tmp_path / "alias"
+    alias.symlink_to(parent, target_is_directory=True)
+    publication.publish_directory_files_create_only(
+        {"artifact.txt": b"complete\n"}, alias / "new-parent/published", protected_root=protected
+    )
+    artifact = parent / "new-parent/published/artifact.txt"
+    assert artifact.read_bytes() == b"complete\n"
+    assert artifact.stat().st_mode & 0o077 == 0
+    assert list(protected.iterdir()) == []
+
+
+def test_protected_publication_retains_open_parent_through_path_swap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parent, protected = tmp_path / "exports", tmp_path / "input"
+    parent.mkdir()
+    protected.mkdir()
+    original_parent = tmp_path / "original-exports"
+    original_open = publication._open_publication_parent
+
+    def swap_after_open(destination: Path, protected_root: Path) -> int:
+        descriptor = original_open(destination, protected_root)
+        parent.rename(original_parent)
+        parent.symlink_to(protected, target_is_directory=True)
+        return descriptor
+
+    monkeypatch.setattr(publication, "_open_publication_parent", swap_after_open)
+    publication.publish_directory_files_create_only(
+        {"artifact.txt": b"complete\n"}, parent / "published", protected_root=protected
+    )
+    assert (original_parent / "published/artifact.txt").read_bytes() == b"complete\n"
+    assert list(protected.iterdir()) == []
+    assert [path.name for path in original_parent.iterdir()] == ["published"]
+
+
+def test_protected_publication_preserves_collision_and_cleans_staging(tmp_path: Path) -> None:
+    parent, protected = tmp_path / "exports", tmp_path / "input"
+    parent.mkdir()
+    protected.mkdir()
+    destination = parent / "published"
+    destination.mkdir()
+    (destination / "original.txt").write_bytes(b"original\n")
+    with pytest.raises(FileExistsError):
+        publication.publish_directory_files_create_only(
+            {"artifact.txt": b"complete\n"}, destination, protected_root=protected
+        )
+    assert (destination / "original.txt").read_bytes() == b"original\n"
+    assert [path.name for path in parent.iterdir()] == ["published"]
+    assert list(protected.iterdir()) == []
+
+
+@pytest.mark.parametrize("missing", ["new-parent", "new-parent/.."])
+def test_protected_publication_checks_missing_parents_before_creating_them(
+    tmp_path: Path, missing: str
+) -> None:
+    protected = tmp_path / "input"
+    protected.mkdir()
+    alias = tmp_path / "exports"
+    alias.symlink_to(protected, target_is_directory=True)
+    with pytest.raises(ValueError, match="outside the verified input bundle"):
+        publication.publish_directory_files_create_only(
+            {"artifact.txt": b"complete\n"},
+            alias / missing / "published",
+            protected_root=protected,
+        )
+    assert list(protected.iterdir()) == []
+
+
+def test_protected_publication_normalizes_missing_parent_traversal(tmp_path: Path) -> None:
+    protected, parent = tmp_path / "input", tmp_path / "exports"
+    protected.mkdir()
+    parent.mkdir()
+    with pytest.raises(ValueError, match="outside the verified input bundle"):
+        publication.publish_directory_files_create_only(
+            {"artifact.txt": b"complete\n"},
+            parent / "missing/../../input/published",
+            protected_root=protected,
+        )
+    assert list(protected.iterdir()) == []
+    assert list(parent.iterdir()) == []
+
+
+def test_protected_publication_fails_before_writing_on_unsupported_platform(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(publication.sys, "platform", "win32")
+    with pytest.raises(OSError, match="requires directory descriptors") as error:
+        publication.publish_directory_files_create_only(
+            {"artifact.txt": b"complete\n"}, tmp_path / "published", protected_root=tmp_path
+        )
+    assert error.value.errno == errno.ENOTSUP
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("cleanup_operation", ["unlink", "rmdir"])
+def test_protected_publication_cleanup_preserves_error_and_closes_descriptors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cleanup_operation: str
+) -> None:
+    protected = tmp_path / "input"
+    protected.mkdir()
+    descriptors = []
+    original_open = os.open
+
+    def track_open(*args, **kwargs):
+        descriptor = original_open(*args, **kwargs)
+        descriptors.append(descriptor)
+        return descriptor
+
+    def fail_publication(*args, **kwargs):
+        raise FileExistsError("primary publication collision")
+
+    def fail_cleanup(*args, **kwargs):
+        raise OSError("racing cleanup entry")
+
+    monkeypatch.setattr(publication.os, "open", track_open)
+    monkeypatch.setattr(publication, "publish_directory_create_only", fail_publication)
+    monkeypatch.setattr(publication.os, cleanup_operation, fail_cleanup)
+    with pytest.raises(FileExistsError, match="primary publication collision"):
+        publication.publish_directory_files_create_only(
+            {"artifact.txt": b"complete\n"}, tmp_path / "published", protected_root=protected
+        )
+    for descriptor in descriptors:
+        with pytest.raises(OSError) as error:
+            os.fstat(descriptor)
+        assert error.value.errno == errno.EBADF
+    assert list(protected.iterdir()) == []
+
+
+@pytest.mark.parametrize("failure", [None, "verification", "redirect"])
+def test_protected_nested_publication_requires_staged_verification(
+    tmp_path: Path, failure: str | None
+) -> None:
+    parent, protected = tmp_path / "exports", tmp_path / "input"
+    parent.mkdir()
+    protected.mkdir()
+    original_parent = tmp_path / "original-exports"
+    files = {"root.json": b"root", "nested/a.json": b"a", "nested/b.json": b"b"}
+    verified = []
+
+    def verifier(staging: Path) -> None:
+        assert {
+            path.relative_to(staging).as_posix(): path.read_bytes()
+            for path in staging.rglob("*")
+            if path.is_file()
+        } == files
+        verified.append(True)
+        if failure == "verification":
+            raise ValueError("semantic verification rejected")
+        if failure == "redirect":
+            parent.rename(original_parent)
+            parent.symlink_to(protected, target_is_directory=True)
+
+    def publish() -> None:
+        publication.publish_directory_files_create_only(
+            files, parent / "bundle", protected_root=protected, verifier=verifier
+        )
+
+    if failure is None:
+        publish()
+        assert (parent / "bundle/nested/a.json").read_bytes() == b"a"
+    else:
+        with pytest.raises((ValueError, FileNotFoundError)):
+            publish()
+        remaining_parent = original_parent if failure == "redirect" else parent
+        assert list(remaining_parent.iterdir()) == []
+    assert verified == [True]
+    assert list(protected.iterdir()) == []
+
+
+@pytest.mark.parametrize("redirect", [False, True])
+def test_protected_single_file_publication_remains_create_only_and_bound(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, redirect: bool
+) -> None:
+    parent, protected = tmp_path / "exports", tmp_path / "input"
+    parent.mkdir()
+    protected.mkdir()
+    original_parent = tmp_path / "original-exports"
+    original_open = publication._open_publication_parent
+
+    def open_parent(destination: Path, protected_root: Path) -> int:
+        descriptor = original_open(destination, protected_root)
+        if redirect:
+            parent.rename(original_parent)
+            parent.symlink_to(protected, target_is_directory=True)
+        return descriptor
+
+    monkeypatch.setattr(publication, "_open_publication_parent", open_parent)
+    publication.publish_file_create_only(
+        b"selected", parent / "selection.json", protected_root=protected
+    )
+    actual = (original_parent if redirect else parent) / "selection.json"
+    assert actual.read_bytes() == b"selected"
+    assert actual.stat().st_mode & 0o077 == 0
+    monkeypatch.setattr(publication, "_open_publication_parent", original_open)
+    with pytest.raises(FileExistsError):
+        publication.publish_file_create_only(b"replacement", actual, protected_root=protected)
+    assert actual.read_bytes() == b"selected"
+    assert [path.name for path in actual.parent.iterdir()] == ["selection.json"]
+    assert list(protected.iterdir()) == []
+
+
+@pytest.mark.parametrize("name", ["../x", "/absolute", "nested/../x", "./x", "nested//x", "."])
+def test_protected_artifact_paths_are_validated_before_publication(
+    tmp_path: Path, name: str
+) -> None:
+    with pytest.raises(ValueError, match="normalized relative file paths"):
+        publication.publish_directory_files_create_only(
+            {name: b"artifact"}, tmp_path / "published", protected_root=tmp_path
+        )
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("descendant", [".", "nested/child"])
+def test_publication_protects_captured_input_ancestry_after_rename(
+    tmp_path: Path, descendant: str
+) -> None:
+    protected = tmp_path / "input"
+    protected.mkdir()
+    (protected / descendant).mkdir(parents=True, exist_ok=True)
+    (protected / "authority.json").write_bytes(b"admitted")
+    captured = publication.ProtectedRoot.capture(protected)
+    retained = tmp_path / "renamed-input"
+    protected.rename(retained)
+    protected.mkdir()
+    alias = tmp_path / "exports"
+    alias.symlink_to(retained / descendant, target_is_directory=True)
+    with pytest.raises(ValueError, match="outside the verified input bundle"):
+        publication.publish_directory_files_create_only(
+            {"view.json": b"derived"}, alias / "view", protected_root=captured
+        )
+    assert (retained / "authority.json").read_bytes() == b"admitted"
+    assert not (retained / descendant / "view").exists()
+    publication.publish_file_create_only(
+        b"derived", tmp_path / "outside.json", protected_root=captured
+    )
+    assert (tmp_path / "outside.json").read_bytes() == b"derived"
+    assert list(protected.iterdir()) == []

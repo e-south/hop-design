@@ -12,14 +12,62 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import json
+import shutil
 from copy import deepcopy
 from pathlib import Path
 
 import pytest
 import yaml
+from typer.testing import CliRunner
 
 import hop_design as hop
 import hop_design.construction as construction
+from hop_design.cli import app
+from hop_design.design.construction.source_partition import public as partition_public
+from hop_design.design.source_documents import SourceDocumentLimitError
+from hop_design.serialization import canonical_json_bytes
+from tests.integration.test_construction_cli import _write_bundle
+from tests.integration.test_source_partition_discovery import _request as partition_request
+
+
+def test_partition_result_above_authored_source_limit_replays_exactly(tmp_path: Path) -> None:
+    source = tmp_path / "request.json"
+    source.write_bytes(canonical_json_bytes(partition_request(absolute_maximum_nt=10_000)))
+    assert source.stat().st_size < 1_000_000
+    receipt = construction.discover_source_partition(source)
+    output = receipt.write(tmp_path / "result")
+    assert (output / "result.json").stat().st_size > 1_000_000
+    loaded = construction.load_verified_source_partition(output / "result.json")
+    assert loaded.json_bytes == receipt.json_bytes
+    assert loaded.csv_bytes == receipt.csv_bytes
+    assert loaded.result_id == receipt.result_id
+
+
+def test_partition_request_retains_authored_source_limit(tmp_path: Path) -> None:
+    source = tmp_path / "request.json"
+    source.write_bytes(canonical_json_bytes(partition_request()) + b" " * 1_000_000)
+    with pytest.raises(SourceDocumentLimitError):
+        construction.discover_source_partition(source)
+
+
+def test_partition_result_limit_applies_before_publication_and_replay(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "request.json"
+    source.write_bytes(canonical_json_bytes(partition_request()))
+    receipt = construction.discover_source_partition(source)
+    existing = receipt.write(tmp_path / "existing") / "result.json"
+    monkeypatch.setattr(partition_public, "DEFAULT_RESULT_MAX_BYTES", 1, raising=False)
+    output = tmp_path / "oversized"
+    result = CliRunner().invoke(
+        app, ["construction", "discover-partition", str(source), "--out", str(output)]
+    )
+    assert result.exit_code != 0
+    assert result.stdout == ""
+    assert "max_bytes exceeded" in " ".join(result.output.split())
+    assert not output.exists()
+    with pytest.raises(SourceDocumentLimitError):
+        construction.load_verified_source_partition(existing)
 
 
 @pytest.fixture(scope="module")
@@ -50,6 +98,97 @@ def constructed_source(tmp_path_factory):
         "enumeration": {"max_search_nodes": 1, "max_realizations": 1},
     }
     return receipt, search
+
+
+def test_partition_command_keeps_outputs_outside_its_verified_bundle(
+    tmp_path: Path, constructed_source
+) -> None:
+    _, policy = constructed_source
+    bundle, _ = _write_bundle(tmp_path / "case")
+    receipt = construction.load_verified_construction_bundle(bundle)
+    policy_path = tmp_path / "policy.json"
+    policy_path.write_text(json.dumps(policy))
+    arguments = [
+        "construction",
+        "discover-construction-partition",
+        str(bundle),
+        str(policy_path),
+        "--combination-ordinal",
+        "0",
+        "--out",
+    ]
+    control = CliRunner().invoke(app, [*arguments, str(tmp_path / "partition")])
+    assert control.exit_code == 0, control.output
+    output = bundle / "partition"
+    result = CliRunner().invoke(
+        app,
+        [*arguments, str(output)],
+    )
+    assert result.exit_code != 0, result.output
+    assert "outside the verified" in " ".join(result.output.split())
+    assert not output.exists()
+    assert construction.load_verified_construction_bundle(bundle).bundle_id == receipt.bundle_id
+
+
+@pytest.mark.parametrize("phase", ["output-only", "renamed-input", "before-admission"])
+def test_partition_command_rejects_parent_redirected_after_cli_check(
+    tmp_path: Path, constructed_source, monkeypatch: pytest.MonkeyPatch, phase: str
+) -> None:
+    _, policy = constructed_source
+    bundle, _ = _write_bundle(tmp_path / "case")
+    bundle_id = construction.load_verified_construction_bundle(bundle).bundle_id
+    policy_path = tmp_path / "policy.json"
+    policy_path.write_text(json.dumps(policy))
+    parent = tmp_path / "exports"
+    parent.mkdir()
+    original = construction.discover_construction_source_partition
+
+    def redirect_after_discovery(*args, **kwargs):
+        receipt = original(*args, **kwargs)
+        protected = bundle
+        if phase == "renamed-input":
+            protected = tmp_path / "renamed-input"
+            bundle.rename(protected)
+            bundle.mkdir()
+        parent.rename(tmp_path / "original-exports")
+        parent.symlink_to(protected, target_is_directory=True)
+        return receipt
+
+    if phase == "before-admission":
+        loader = construction.load_verified_construction_bundle
+
+        def replace_before_load(path):
+            bundle.rename(tmp_path / "renamed-input")
+            shutil.copytree(tmp_path / "renamed-input", bundle)
+            return loader(path)
+
+        monkeypatch.setattr(construction, "load_verified_construction_bundle", replace_before_load)
+    else:
+        monkeypatch.setattr(
+            construction, "discover_construction_source_partition", redirect_after_discovery
+        )
+    result = CliRunner().invoke(
+        app,
+        [
+            "construction",
+            "discover-construction-partition",
+            str(bundle),
+            str(policy_path),
+            "--combination-ordinal",
+            "0",
+            "--out",
+            str(parent / "partition"),
+        ],
+    )
+    assert result.exit_code != 0, result.output
+    assert result.stdout == ""
+    protected = bundle if phase == "output-only" else tmp_path / "renamed-input"
+    assert not (protected / "partition").exists()
+    assert not (parent / "partition").exists()
+    if phase == "before-admission":
+        monkeypatch.setattr(construction, "load_verified_construction_bundle", loader)
+        assert "Protected input root changed" in " ".join(result.output.split())
+    assert construction.load_verified_construction_bundle(protected).bundle_id == bundle_id
 
 
 def test_partition_search_uses_the_selected_prepared_source_and_survivors(
