@@ -29,6 +29,7 @@ PUBLIC_NAMES = [
     "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
     "LocalRealizationChoice",
+    "ProtectedRoot",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compare_constructions",

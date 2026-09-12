@@ -1,6 +1,7 @@
 """Selected local authorities compose through explicit file arguments."""
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -60,8 +61,13 @@ def test_projection_cannot_write_into_verified_input_bundle(
         ("construction-trajectory", "project_construction_trajectory"),
     ],
 )
+@pytest.mark.parametrize("rename_input", [False, True])
 def test_projection_rejects_parent_redirected_into_bundle_after_cli_check(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str, operation: str
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+    operation: str,
+    rename_input: bool,
 ) -> None:
     bundle, _ = _write_bundle(tmp_path / "case")
     receipt = construction.load_verified_construction_bundle(bundle)
@@ -71,8 +77,13 @@ def test_projection_rejects_parent_redirected_into_bundle_after_cli_check(
 
     def redirect_parent(*args, **kwargs):
         projection = original(*args, **kwargs)
+        protected = bundle
+        if rename_input:
+            protected = tmp_path / "renamed-input"
+            bundle.rename(protected)
+            bundle.mkdir()
         parent.rename(tmp_path / "original-exports")
-        parent.symlink_to(bundle, target_is_directory=True)
+        parent.symlink_to(protected, target_is_directory=True)
         return projection
 
     monkeypatch.setattr(construction, operation, redirect_parent)
@@ -90,13 +101,21 @@ def test_projection_rejects_parent_redirected_into_bundle_after_cli_check(
     result = CliRunner().invoke(app, arguments)
     assert result.exit_code != 0
     assert result.stdout == ""
-    assert not (bundle / "view").exists()
-    assert construction.load_verified_construction_bundle(bundle).bundle_id == receipt.bundle_id
+    protected = tmp_path / "renamed-input" if rename_input else bundle
+    assert not (protected / "view").exists()
+    assert construction.load_verified_construction_bundle(protected).bundle_id == receipt.bundle_id
 
 
 @pytest.mark.parametrize(
     "replaced_artifact",
-    [None, "construction-bundle.json", "construction-result.json", "redirected-parent"],
+    [
+        None,
+        "construction-bundle.json",
+        "construction-result.json",
+        "redirected-parent",
+        "redirected-root",
+        "replaced-before-admission",
+    ],
 )
 def test_selected_design_cli_matches_public_compilation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, replaced_artifact: str | None
@@ -177,13 +196,22 @@ def test_selected_design_cli_matches_public_compilation(
     assert not (output / "nested-construction").exists()
     assert verify_bundle(output).bundle_id == original_bundle_id
     admitted_files: dict[str, bytes] = {}
-    if replaced_artifact == "redirected-parent":
+    if replaced_artifact in {"redirected-parent", "redirected-root", "replaced-before-admission"}:
         original_compile = construction.compile_construction_from_local_realizations
 
         def redirect_after_compile(*args, **kwargs):
+            if replaced_artifact == "replaced-before-admission":
+                output.rename(tmp_path / "renamed-design")
+                shutil.copytree(tmp_path / "renamed-design", output)
+                return original_compile(*args, **kwargs)
             receipt = original_compile(*args, **kwargs)
+            protected = output
+            if replaced_artifact == "redirected-root":
+                protected = tmp_path / "renamed-design"
+                output.rename(protected)
+                output.mkdir()
             parent.rename(tmp_path / "original-exports")
-            parent.symlink_to(output, target_is_directory=True)
+            parent.symlink_to(protected, target_is_directory=True)
             return receipt
 
         monkeypatch.setattr(
@@ -203,11 +231,15 @@ def test_selected_design_cli_matches_public_compilation(
 
         monkeypatch.setattr(construction.ConstructionCompilation, "write", replace_after_write)
     compiled = runner.invoke(app, compile_arguments)
-    if replaced_artifact == "redirected-parent":
+    if replaced_artifact in {"redirected-parent", "redirected-root", "replaced-before-admission"}:
         assert compiled.exit_code != 0, compiled.output
         assert compiled.stdout == ""
-        assert not (output / "construction").exists()
-        assert verify_bundle(output).bundle_id == original_bundle_id
+        protected = (
+            tmp_path / "renamed-design" if replaced_artifact != "redirected-parent" else output
+        )
+        assert not (protected / "construction").exists()
+        assert not bundle_path.exists()
+        assert verify_bundle(protected).bundle_id == original_bundle_id
         return
     assert compiled.exit_code == 0, compiled.output
     report = json.loads(compiled.output)
@@ -289,8 +321,14 @@ def test_complete_verification_report_retains_the_admitted_snapshot(
         ("inspect", "project_construction_trajectory", "handoff"),
     ],
 )
+@pytest.mark.parametrize("phase", ["output-only", "renamed-input", "before-admission"])
 def test_selected_route_write_rejects_parent_redirected_after_cli_check(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, command: str, operation: str, filename: str
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    operation: str,
+    filename: str,
+    phase: str,
 ) -> None:
     bundle, _ = _write_bundle(tmp_path / "case")
     bundle_id = construction.load_verified_construction_bundle(bundle).bundle_id
@@ -300,11 +338,26 @@ def test_selected_route_write_rejects_parent_redirected_after_cli_check(
 
     def redirect_after_selection(*args, **kwargs):
         selected = original(*args, **kwargs)
+        protected = bundle
+        if phase == "renamed-input":
+            protected = tmp_path / "renamed-input"
+            bundle.rename(protected)
+            bundle.mkdir()
         parent.rename(tmp_path / "original-exports")
-        parent.symlink_to(bundle, target_is_directory=True)
+        parent.symlink_to(protected, target_is_directory=True)
         return selected
 
-    monkeypatch.setattr(construction, operation, redirect_after_selection)
+    if phase == "before-admission":
+        loader = construction.load_verified_construction_bundle
+
+        def replace_before_load(path):
+            bundle.rename(tmp_path / "renamed-input")
+            shutil.copytree(tmp_path / "renamed-input", bundle)
+            return loader(path)
+
+        monkeypatch.setattr(construction, "load_verified_construction_bundle", replace_before_load)
+    else:
+        monkeypatch.setattr(construction, operation, redirect_after_selection)
     result = CliRunner().invoke(
         app,
         [
@@ -319,5 +372,59 @@ def test_selected_route_write_rejects_parent_redirected_after_cli_check(
     )
     assert result.exit_code != 0, result.output
     assert result.stdout == ""
-    assert not (bundle / filename).exists()
-    assert construction.load_verified_construction_bundle(bundle).bundle_id == bundle_id
+    protected = bundle if phase == "output-only" else tmp_path / "renamed-input"
+    assert not (protected / filename).exists()
+    assert not (parent / filename).exists()
+    if phase == "before-admission":
+        monkeypatch.setattr(construction, "load_verified_construction_bundle", loader)
+        assert "Protected input root changed" in " ".join(result.output.split())
+    assert construction.load_verified_construction_bundle(protected).bundle_id == bundle_id
+
+
+def test_projection_rejects_input_replaced_during_admission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle, _ = _write_bundle(tmp_path / "case")
+    original = construction.load_verified_construction_bundle
+
+    def replace_before_load(path):
+        bundle.rename(tmp_path / "original-input")
+        shutil.copytree(tmp_path / "original-input", bundle)
+        return original(path)
+
+    monkeypatch.setattr(construction, "load_verified_construction_bundle", replace_before_load)
+    output = tmp_path / "view"
+    result = CliRunner().invoke(
+        app,
+        [
+            "construction",
+            "project",
+            str(bundle),
+            "--kind",
+            "construction-summary",
+            "--out",
+            str(output),
+        ],
+    )
+    assert result.exit_code != 0
+    assert result.stdout == ""
+    assert "Protected input root changed" in " ".join(result.output.split())
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("command", ["inspect", "select"])
+@pytest.mark.parametrize("input_kind", ["missing", "file"])
+def test_guarded_route_commands_preserve_readable_input_errors(
+    tmp_path: Path, command: str, input_kind: str
+) -> None:
+    source = tmp_path / "input"
+    if input_kind == "file":
+        source.write_bytes(b"not a bundle")
+    output = tmp_path / ("selection.json" if command == "select" else "view")
+    result = CliRunner().invoke(
+        app, ["construction", command, str(source), "--ordinal", "0", "--out", str(output)]
+    )
+    assert result.exit_code == 2
+    assert "Invalid value" in result.output
+    assert result.stdout == ""
+    assert not output.exists()

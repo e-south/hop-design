@@ -98,12 +98,13 @@ def discover_construction_partition_command(
 ) -> None:
     """Discover source removal for an explicitly selected complete-construction disposition."""
     try:
-        require_output_outside_bundle(bundle, output)
+        protected_root = require_output_outside_bundle(bundle, output)
         receipt = construction.load_verified_construction_bundle(bundle)
+        protected_root.require_unchanged()
         partition = construction.discover_construction_source_partition(
             receipt, policy, combination_ordinal=combination_ordinal
         )
-        partition.write(output, protected_root=bundle)
+        partition.write(output, protected_root=protected_root)
         typer.echo(json.dumps(_partition_report(partition), sort_keys=True))
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
@@ -130,6 +131,7 @@ def project_command(
 ) -> None:
     """Publish one existing JSON/CSV/SVG projection from a replay-verified authority."""
     try:
+        protected_root = None
         if kind is ProjectionKind.SOURCE_PARTITION_CERTIFICATE:
             if realization_id is None:
                 raise ValueError("Source-partition certificate requires --realization-id")
@@ -142,8 +144,9 @@ def project_command(
             ProjectionKind.CONSTRUCTION_TRAJECTORY,
             ProjectionKind.CONSTRUCTION_SUMMARY,
         }:
-            require_output_outside_bundle(source, output)
+            protected_root = require_output_outside_bundle(source, output)
             complete = construction.load_verified_construction_bundle(source)
+            protected_root.require_unchanged()
             if kind is ProjectionKind.CONSTRUCTION_TRAJECTORY:
                 if realization_id is None:
                     raise ValueError("Construction trajectory requires --realization-id")
@@ -173,16 +176,6 @@ def project_command(
                     "basal" if kind is ProjectionKind.BASAL_RETAINED_OVERHEAD else "foldback"
                 )
                 projection = construction.project_retained_overhead_frontier(local, family=family)
-        protected_root = (
-            source
-            if kind
-            in {
-                ProjectionKind.CONSTRUCTION_NAVIGATION,
-                ProjectionKind.CONSTRUCTION_TRAJECTORY,
-                ProjectionKind.CONSTRUCTION_SUMMARY,
-            }
-            else None
-        )
         projection.write(output, selection_reason=selection_reason, protected_root=protected_root)
         typer.echo(
             json.dumps(

@@ -107,7 +107,10 @@ Construction reports serialize the admitted in-memory snapshot, so later file
 replacement cannot mix unverified contents with the verified identities.
 Selected constructions, route references, projections, and derived source
 partitions publish outside their verified input bundle through an opened parent
-directory. On macOS and Linux,
+directory. Commands capture the input directory's filesystem identity before
+verification and reject replacement across that admission. Publication checks
+output ancestry against the captured identity even if the admitted input is
+later renamed. On macOS and Linux,
 publication remains bound to that directory if an ancestor pathname is replaced
 or redirected. An output already redirected into the input bundle fails before
 creating children. Protected publication fails explicitly on unsupported

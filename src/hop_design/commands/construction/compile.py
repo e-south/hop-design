@@ -60,7 +60,7 @@ def compile_selected_command(
 ) -> None:
     """Publish one endpoint-complete construction for explicit local selections."""
     try:
-        require_output_outside_bundle(design_bundle, output)
+        protected_root = require_output_outside_bundle(design_bundle, output)
         compiled = construction.compile_construction_from_local_realizations(
             source,
             design_bundle_path=design_bundle,
@@ -75,7 +75,8 @@ def compile_selected_command(
             else None,
             source_partition_realization_id=source_partition_realization_id,
         )
-        compiled.write(output, protected_root=design_bundle)
+        protected_root.require_unchanged()
+        compiled.write(output, protected_root=protected_root)
         typer.echo(compiled.report_json())
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error

@@ -28,6 +28,7 @@ from hop_design.export.bundle import (
     verify_manifested_bundle_contents,
     write_manifested_bundle_files,
 )
+from hop_design.export.publication import ProtectedRootInput
 from hop_design.kernel.bundle_identity import (
     construction_bundle_id,
     construction_manifest_seed,
@@ -174,7 +175,9 @@ class ConstructionCompilation(_ConstructionReceipt):
     _bundle: ConstructionBundle
     _artifacts: Mapping[str, bytes]
 
-    def write(self, output: str | Path, *, protected_root: str | Path | None = None) -> Path:
+    def write(
+        self, output: str | Path, *, protected_root: ProtectedRootInput | None = None
+    ) -> Path:
         """Atomically write the construction bundle after complete replay."""
         return write_construction_bundle(self, Path(output), protected_root=protected_root)
 
@@ -319,7 +322,7 @@ def write_construction_bundle(
     compilation: ConstructionCompilation,
     output: Path,
     *,
-    protected_root: str | Path | None = None,
+    protected_root: ProtectedRootInput | None = None,
 ) -> Path:
     """Write one construction bundle atomically after semantic replay."""
     return write_manifested_bundle_files(
@@ -330,7 +333,7 @@ def write_construction_bundle(
         output,
         manifest_name=_MANIFEST_NAME,
         verifier=verify_construction_bundle,
-        protected_root=None if protected_root is None else Path(protected_root),
+        protected_root=protected_root,
     )
 
 

@@ -181,6 +181,14 @@ writes. Protected publication fails explicitly on other platforms. Construction
 compilation, projection, route-selection, and derived-partition commands supply
 their input bundle automatically. Nested construction bundles retain staged
 semantic verification before publication; artifact files use owner-only access.
+Commands retain the input directory's identity from verification through
+publication. A root replaced during verification fails; a later rename does not
+transfer protection to a replacement at the old pathname. Direct Python callers
+that pass a path capture its identity when the writer begins.
+To retain protection across an earlier Python verification step, capture
+`construction.ProtectedRoot.capture(path)`, verify the input, call the token's
+`require_unchanged()`, and pass that token as `protected_root`. The token is
+ephemeral filesystem identity, not a portable scientific artifact.
 `ConstructionSelection.write(path)` writes canonical JSON to exactly one new
 `.json` file path. A selection never changes or narrows the complete
 construction authority.

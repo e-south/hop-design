@@ -179,6 +179,7 @@ CONSTRUCTION_OPERATIONS = {
 
 CONSTRUCTION_FACADE = {
     "LocalRealizationChoice",
+    "ProtectedRoot",
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",

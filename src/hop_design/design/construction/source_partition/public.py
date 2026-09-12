@@ -26,6 +26,7 @@ from hop_design.design.source_documents import (
     load_source_mapping,
 )
 from hop_design.export.publication import (
+    ProtectedRootInput,
     publish_directory_create_only,
     publish_directory_files_create_only,
 )
@@ -223,7 +224,9 @@ class SourcePartitionDiscovery:
     def csv_bytes(self) -> bytes:
         return self._csv_bytes
 
-    def write(self, destination: str | Path, *, protected_root: str | Path | None = None) -> Path:
+    def write(
+        self, destination: str | Path, *, protected_root: ProtectedRootInput | None = None
+    ) -> Path:
         """Atomically write canonical result and tidy candidate data into a new directory."""
         output = Path(destination)
         if output.exists() or output.is_symlink():
@@ -235,7 +238,7 @@ class SourcePartitionDiscovery:
             "thresholds.csv": self._threshold_csv_bytes,
         }
         if protected_root is not None:
-            publish_directory_files_create_only(files, output, protected_root=Path(protected_root))
+            publish_directory_files_create_only(files, output, protected_root=protected_root)
             return output
         output.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.", dir=output.parent))

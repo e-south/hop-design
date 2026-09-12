@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Self
 
 from hop_design.design.source_documents import load_source_mapping
-from hop_design.export.publication import publish_file_create_only
+from hop_design.export.publication import ProtectedRootInput, publish_file_create_only
 from hop_design.models.construction.selection import ConstructionSelectionRecord
 from hop_design.serialization import canonical_json_bytes
 
@@ -94,7 +94,9 @@ class ConstructionSelection:
         """Return canonical non-authoritative selection JSON."""
         return self._json_bytes
 
-    def write(self, destination: str | Path, *, protected_root: str | Path | None = None) -> Path:
+    def write(
+        self, destination: str | Path, *, protected_root: ProtectedRootInput | None = None
+    ) -> Path:
         """Atomically write the selection to exactly one new file path."""
         output = Path(destination)
         _require_json_path(output)
@@ -103,7 +105,7 @@ class ConstructionSelection:
         publish_file_create_only(
             self._json_bytes,
             output,
-            protected_root=None if protected_root is None else Path(protected_root),
+            protected_root=protected_root,
         )
         return output
 

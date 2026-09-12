@@ -25,6 +25,7 @@ from hop_design.export.construction import (
 from hop_design.export.construction.handoff.materials import render_oligos_csv, render_oligos_fasta
 from hop_design.export.construction.handoff.report import render_construction_report
 from hop_design.export.publication import (
+    ProtectedRootInput,
     publish_directory_create_only,
     publish_directory_files_create_only,
 )
@@ -88,7 +89,7 @@ class ConstructionProjection:
         destination: str | Path,
         *,
         selection_reason: str | None = None,
-        protected_root: str | Path | None = None,
+        protected_root: ProtectedRootInput | None = None,
     ) -> Path:
         """Atomically write the projection packet into a new directory."""
         if selection_reason is not None:
@@ -101,7 +102,7 @@ class ConstructionProjection:
             raise FileExistsError(f"Refusing to replace existing projection path: {output}")
         files = self._artifact_files(selection_reason)
         if protected_root is not None:
-            publish_directory_files_create_only(files, output, protected_root=Path(protected_root))
+            publish_directory_files_create_only(files, output, protected_root=protected_root)
             return output
         output.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.", dir=output.parent))

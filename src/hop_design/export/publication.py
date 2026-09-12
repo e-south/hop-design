@@ -19,8 +19,35 @@ import sys
 import tempfile
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack, suppress
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
+
+
+@dataclass(frozen=True)
+class ProtectedRoot:
+    """Filesystem identity captured before admitting a command's input bundle."""
+
+    path: Path
+    canonical_path: Path
+    device: int
+    inode: int
+
+    @classmethod
+    def capture(cls, value: str | Path) -> ProtectedRoot:
+        path = Path(value).absolute()
+        identity = path.stat()
+        instance = cls(path, path.resolve(strict=True), identity.st_dev, identity.st_ino)
+        instance.require_unchanged()
+        return instance
+
+    def require_unchanged(self) -> None:
+        identity = self.path.stat()
+        if (identity.st_dev, identity.st_ino) != (self.device, self.inode):
+            raise ValueError("Protected input root changed during verification.")
+
+
+type ProtectedRootInput = str | Path | ProtectedRoot
 
 
 def _raise_publication_error(result: int, destination: Path) -> None:
@@ -116,8 +143,30 @@ def publish_directory_create_only(
     )
 
 
-def _open_publication_parent(destination: Path, protected_root: Path) -> int:
+def _require_outside_root(descriptor: int, protected: ProtectedRoot) -> None:
+    current = os.dup(descriptor)
+    try:
+        while True:
+            identity = os.fstat(current)
+            if (identity.st_dev, identity.st_ino) == (protected.device, protected.inode):
+                raise ValueError("Output must be outside the verified input bundle.")
+            parent = os.open("..", os.O_RDONLY | os.O_DIRECTORY, dir_fd=current)
+            os.close(current)
+            current = parent
+            ancestor = os.fstat(current)
+            if (identity.st_dev, identity.st_ino) == (ancestor.st_dev, ancestor.st_ino):
+                return
+    finally:
+        os.close(current)
+
+
+def _open_publication_parent(destination: Path, protected_root: ProtectedRootInput) -> int:
     """Bind the nearest existing parent before checking exclusion and creating children."""
+    protected = (
+        protected_root
+        if isinstance(protected_root, ProtectedRoot)
+        else ProtectedRoot.capture(protected_root)
+    )
     parent = destination.absolute().parent
     missing = []
     while not parent.exists():
@@ -133,15 +182,16 @@ def _open_publication_parent(destination: Path, protected_root: Path) -> int:
         if (opened.st_dev, opened.st_ino) != (named.st_dev, named.st_ino):
             raise ValueError("Publication parent changed while it was being opened.")
         target = Path(os.path.normpath(canonical.joinpath(*reversed(missing), destination.name)))
-        protected = protected_root.resolve(strict=True)
-        if target == protected or target.is_relative_to(protected):
+        if target == protected.canonical_path or target.is_relative_to(protected.canonical_path):
             raise ValueError("Output must be outside the verified input bundle.")
+        _require_outside_root(descriptor, protected)
         for component in reversed(missing):
             with suppress(FileExistsError):
                 os.mkdir(component, mode=0o755, dir_fd=descriptor)
             child = os.open(component, flags | os.O_NOFOLLOW, dir_fd=descriptor)
             os.close(descriptor)
             descriptor = child
+            _require_outside_root(descriptor, protected)
         return descriptor
     except BaseException:
         os.close(descriptor)
@@ -186,7 +236,7 @@ def publish_directory_files_create_only(
     files: Mapping[str, bytes],
     destination: Path,
     *,
-    protected_root: Path,
+    protected_root: ProtectedRootInput,
     verifier: Callable[[Path], object] | None = None,
 ) -> None:
     """Publish artifact files through pinned directories outside one input authority."""
@@ -230,7 +280,9 @@ def publish_directory_files_create_only(
                     shutil.rmtree(staging_name, dir_fd=parent_fd)
 
 
-def _publish_protected_file(content: bytes, destination: Path, protected_root: Path) -> None:
+def _publish_protected_file(
+    content: bytes, destination: Path, protected_root: ProtectedRootInput
+) -> None:
     if not (sys.platform == "darwin" or sys.platform.startswith("linux")):
         raise OSError(errno.ENOTSUP, "Protected publication requires directory descriptors.")
     with ExitStack() as descriptors:
@@ -252,7 +304,7 @@ def _publish_protected_file(content: bytes, destination: Path, protected_root: P
 
 
 def publish_file_create_only(
-    content: bytes, destination: Path, *, protected_root: Path | None = None
+    content: bytes, destination: Path, *, protected_root: ProtectedRootInput | None = None
 ) -> None:
     """Atomically publish one sibling-staged file without replacing a destination."""
     if protected_root is not None:
@@ -275,6 +327,8 @@ def publish_file_create_only(
 
 
 __all__ = [
+    "ProtectedRoot",
+    "ProtectedRootInput",
     "publish_directory_create_only",
     "publish_directory_files_create_only",
     "publish_file_create_only",

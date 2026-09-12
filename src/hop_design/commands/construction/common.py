@@ -18,25 +18,36 @@ from typing import Any
 import typer
 
 import hop_design.construction as construction
+from hop_design.construction import ProtectedRoot
 
 
-def load_receipt(path: Path) -> construction.VerifiedConstructionBundle:
+def load_receipt(
+    path: Path, *, protected_root: ProtectedRoot | None = None
+) -> construction.VerifiedConstructionBundle:
     """Load a construction authority and translate expected CLI failures."""
     try:
-        return construction.load_verified_construction_bundle(path)
+        receipt = construction.load_verified_construction_bundle(path)
+        if protected_root is not None:
+            protected_root.require_unchanged()
+        return receipt
     except (OSError, ValueError) as exc:
         raise typer.BadParameter(str(exc), param_hint="BUNDLE_PATH") from exc
 
 
-def require_output_outside_bundle(bundle_path: Path, output_path: Path) -> None:
+def require_output_outside_bundle(bundle_path: Path, output_path: Path) -> ProtectedRoot:
     """Keep non-authoritative exports outside the verified input authority."""
-    bundle_root = bundle_path.resolve(strict=True)
-    destination = output_path.resolve(strict=False)
+    try:
+        protected = ProtectedRoot.capture(bundle_path)
+        destination = output_path.resolve(strict=False)
+    except (OSError, ValueError) as exc:
+        raise typer.BadParameter(str(exc), param_hint="BUNDLE_PATH/--out") from exc
+    bundle_root = protected.canonical_path
     if destination == bundle_root or destination.is_relative_to(bundle_root):
         raise typer.BadParameter(
             "--out must be outside the verified input bundle.",
             param_hint="--out",
         )
+    return protected
 
 
 def summary_content(

@@ -39,7 +39,11 @@ from hop_design.models.spec import (
 )
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from .publication import publish_directory_create_only, publish_directory_files_create_only
+from .publication import (
+    ProtectedRootInput,
+    publish_directory_create_only,
+    publish_directory_files_create_only,
+)
 
 _SPEC_ADAPTER: TypeAdapter[DesignAuthoritySpec] = TypeAdapter(DesignAuthoritySpec)
 
@@ -100,7 +104,7 @@ def write_manifested_bundle_files(
     *,
     manifest_name: str,
     verifier: BundleVerifier,
-    protected_root: Path | None = None,
+    protected_root: ProtectedRootInput | None = None,
 ) -> Path:
     """Write one manifested directory atomically without crossing its root."""
     _safe_artifact_path(manifest_name)

@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import json
+import shutil
 from copy import deepcopy
 from pathlib import Path
 
@@ -129,8 +130,9 @@ def test_partition_command_keeps_outputs_outside_its_verified_bundle(
     assert construction.load_verified_construction_bundle(bundle).bundle_id == receipt.bundle_id
 
 
+@pytest.mark.parametrize("phase", ["output-only", "renamed-input", "before-admission"])
 def test_partition_command_rejects_parent_redirected_after_cli_check(
-    tmp_path: Path, constructed_source, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, constructed_source, monkeypatch: pytest.MonkeyPatch, phase: str
 ) -> None:
     _, policy = constructed_source
     bundle, _ = _write_bundle(tmp_path / "case")
@@ -143,13 +145,28 @@ def test_partition_command_rejects_parent_redirected_after_cli_check(
 
     def redirect_after_discovery(*args, **kwargs):
         receipt = original(*args, **kwargs)
+        protected = bundle
+        if phase == "renamed-input":
+            protected = tmp_path / "renamed-input"
+            bundle.rename(protected)
+            bundle.mkdir()
         parent.rename(tmp_path / "original-exports")
-        parent.symlink_to(bundle, target_is_directory=True)
+        parent.symlink_to(protected, target_is_directory=True)
         return receipt
 
-    monkeypatch.setattr(
-        construction, "discover_construction_source_partition", redirect_after_discovery
-    )
+    if phase == "before-admission":
+        loader = construction.load_verified_construction_bundle
+
+        def replace_before_load(path):
+            bundle.rename(tmp_path / "renamed-input")
+            shutil.copytree(tmp_path / "renamed-input", bundle)
+            return loader(path)
+
+        monkeypatch.setattr(construction, "load_verified_construction_bundle", replace_before_load)
+    else:
+        monkeypatch.setattr(
+            construction, "discover_construction_source_partition", redirect_after_discovery
+        )
     result = CliRunner().invoke(
         app,
         [
@@ -165,8 +182,13 @@ def test_partition_command_rejects_parent_redirected_after_cli_check(
     )
     assert result.exit_code != 0, result.output
     assert result.stdout == ""
-    assert not (bundle / "partition").exists()
-    assert construction.load_verified_construction_bundle(bundle).bundle_id == bundle_id
+    protected = bundle if phase == "output-only" else tmp_path / "renamed-input"
+    assert not (protected / "partition").exists()
+    assert not (parent / "partition").exists()
+    if phase == "before-admission":
+        monkeypatch.setattr(construction, "load_verified_construction_bundle", loader)
+        assert "Protected input root changed" in " ".join(result.output.split())
+    assert construction.load_verified_construction_bundle(protected).bundle_id == bundle_id
 
 
 def test_partition_search_uses_the_selected_prepared_source_and_survivors(

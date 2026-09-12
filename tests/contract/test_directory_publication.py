@@ -316,3 +316,30 @@ def test_protected_artifact_paths_are_validated_before_publication(
             {name: b"artifact"}, tmp_path / "published", protected_root=tmp_path
         )
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("descendant", [".", "nested/child"])
+def test_publication_protects_captured_input_ancestry_after_rename(
+    tmp_path: Path, descendant: str
+) -> None:
+    protected = tmp_path / "input"
+    protected.mkdir()
+    (protected / descendant).mkdir(parents=True, exist_ok=True)
+    (protected / "authority.json").write_bytes(b"admitted")
+    captured = publication.ProtectedRoot.capture(protected)
+    retained = tmp_path / "renamed-input"
+    protected.rename(retained)
+    protected.mkdir()
+    alias = tmp_path / "exports"
+    alias.symlink_to(retained / descendant, target_is_directory=True)
+    with pytest.raises(ValueError, match="outside the verified input bundle"):
+        publication.publish_directory_files_create_only(
+            {"view.json": b"derived"}, alias / "view", protected_root=captured
+        )
+    assert (retained / "authority.json").read_bytes() == b"admitted"
+    assert not (retained / descendant / "view").exists()
+    publication.publish_file_create_only(
+        b"derived", tmp_path / "outside.json", protected_root=captured
+    )
+    assert (tmp_path / "outside.json").read_bytes() == b"derived"
+    assert list(protected.iterdir()) == []

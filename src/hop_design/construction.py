@@ -48,6 +48,7 @@ from hop_design.design.construction.public import (
 from hop_design.design.construction.source_partition.construction import (
     discover_construction_source_partition,
 )
+from hop_design.export.publication import ProtectedRoot
 
 __all__ = [
     "ConstructionCompilation",
@@ -56,6 +57,7 @@ __all__ = [
     "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
     "LocalRealizationChoice",
+    "ProtectedRoot",
     "SourcePartitionDiscovery",
     "VerifiedConstructionBundle",
     "compare_constructions",
