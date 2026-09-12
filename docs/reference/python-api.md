@@ -172,12 +172,15 @@ terminal chemistry; FASTA contains sequences only. The optional nonblank reason
 is caller-authored report text, not a molecular fact or a ranking. Other
 projection types reject a supplied selection reason. Canonical projection bytes
 and identities are independent of this text.
-`ConstructionProjection.write(...)` and `SourcePartitionDiscovery.write(...)`
+`ConstructionCompilation.write(...)`, `ConstructionProjection.write(...)`,
+`ConstructionSelection.write(...)`, and `SourcePartitionDiscovery.write(...)`
 accept optional `protected_root=path` for the verified input bundle. On macOS
 and Linux this checks bundle exclusion and binds all staging and publication to
 an opened parent directory, so later ancestor redirects cannot redirect those
 writes. Protected publication fails explicitly on other platforms. Construction
-projection and derived-partition commands supply their input bundle automatically.
+compilation, projection, route-selection, and derived-partition commands supply
+their input bundle automatically. Nested construction bundles retain staged
+semantic verification before publication; artifact files use owner-only access.
 `ConstructionSelection.write(path)` writes canonical JSON to exactly one new
 `.json` file path. A selection never changes or narrows the complete
 construction authority.

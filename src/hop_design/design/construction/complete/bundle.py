@@ -174,9 +174,9 @@ class ConstructionCompilation(_ConstructionReceipt):
     _bundle: ConstructionBundle
     _artifacts: Mapping[str, bytes]
 
-    def write(self, output: str | Path) -> Path:
+    def write(self, output: str | Path, *, protected_root: str | Path | None = None) -> Path:
         """Atomically write the construction bundle after complete replay."""
-        return write_construction_bundle(self, Path(output))
+        return write_construction_bundle(self, Path(output), protected_root=protected_root)
 
 
 @dataclass(frozen=True, init=False, repr=False)
@@ -318,6 +318,8 @@ def verify_construction_bundle(bundle_path: str | Path) -> ConstructionBundle:
 def write_construction_bundle(
     compilation: ConstructionCompilation,
     output: Path,
+    *,
+    protected_root: str | Path | None = None,
 ) -> Path:
     """Write one construction bundle atomically after semantic replay."""
     return write_manifested_bundle_files(
@@ -328,6 +330,7 @@ def write_construction_bundle(
         output,
         manifest_name=_MANIFEST_NAME,
         verifier=verify_construction_bundle,
+        protected_root=None if protected_root is None else Path(protected_root),
     )
 
 

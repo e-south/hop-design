@@ -232,3 +232,87 @@ def test_protected_publication_cleanup_preserves_error_and_closes_descriptors(
             os.fstat(descriptor)
         assert error.value.errno == errno.EBADF
     assert list(protected.iterdir()) == []
+
+
+@pytest.mark.parametrize("failure", [None, "verification", "redirect"])
+def test_protected_nested_publication_requires_staged_verification(
+    tmp_path: Path, failure: str | None
+) -> None:
+    parent, protected = tmp_path / "exports", tmp_path / "input"
+    parent.mkdir()
+    protected.mkdir()
+    original_parent = tmp_path / "original-exports"
+    files = {"root.json": b"root", "nested/a.json": b"a", "nested/b.json": b"b"}
+    verified = []
+
+    def verifier(staging: Path) -> None:
+        assert {
+            path.relative_to(staging).as_posix(): path.read_bytes()
+            for path in staging.rglob("*")
+            if path.is_file()
+        } == files
+        verified.append(True)
+        if failure == "verification":
+            raise ValueError("semantic verification rejected")
+        if failure == "redirect":
+            parent.rename(original_parent)
+            parent.symlink_to(protected, target_is_directory=True)
+
+    def publish() -> None:
+        publication.publish_directory_files_create_only(
+            files, parent / "bundle", protected_root=protected, verifier=verifier
+        )
+
+    if failure is None:
+        publish()
+        assert (parent / "bundle/nested/a.json").read_bytes() == b"a"
+    else:
+        with pytest.raises((ValueError, FileNotFoundError)):
+            publish()
+        remaining_parent = original_parent if failure == "redirect" else parent
+        assert list(remaining_parent.iterdir()) == []
+    assert verified == [True]
+    assert list(protected.iterdir()) == []
+
+
+@pytest.mark.parametrize("redirect", [False, True])
+def test_protected_single_file_publication_remains_create_only_and_bound(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, redirect: bool
+) -> None:
+    parent, protected = tmp_path / "exports", tmp_path / "input"
+    parent.mkdir()
+    protected.mkdir()
+    original_parent = tmp_path / "original-exports"
+    original_open = publication._open_publication_parent
+
+    def open_parent(destination: Path, protected_root: Path) -> int:
+        descriptor = original_open(destination, protected_root)
+        if redirect:
+            parent.rename(original_parent)
+            parent.symlink_to(protected, target_is_directory=True)
+        return descriptor
+
+    monkeypatch.setattr(publication, "_open_publication_parent", open_parent)
+    publication.publish_file_create_only(
+        b"selected", parent / "selection.json", protected_root=protected
+    )
+    actual = (original_parent if redirect else parent) / "selection.json"
+    assert actual.read_bytes() == b"selected"
+    assert actual.stat().st_mode & 0o077 == 0
+    monkeypatch.setattr(publication, "_open_publication_parent", original_open)
+    with pytest.raises(FileExistsError):
+        publication.publish_file_create_only(b"replacement", actual, protected_root=protected)
+    assert actual.read_bytes() == b"selected"
+    assert [path.name for path in actual.parent.iterdir()] == ["selection.json"]
+    assert list(protected.iterdir()) == []
+
+
+@pytest.mark.parametrize("name", ["../x", "/absolute", "nested/../x", "./x", "nested//x", "."])
+def test_protected_artifact_paths_are_validated_before_publication(
+    tmp_path: Path, name: str
+) -> None:
+    with pytest.raises(ValueError, match="normalized relative file paths"):
+        publication.publish_directory_files_create_only(
+            {name: b"artifact"}, tmp_path / "published", protected_root=tmp_path
+        )
+    assert list(tmp_path.iterdir()) == []

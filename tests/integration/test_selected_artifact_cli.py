@@ -95,7 +95,8 @@ def test_projection_rejects_parent_redirected_into_bundle_after_cli_check(
 
 
 @pytest.mark.parametrize(
-    "replaced_artifact", [None, "construction-bundle.json", "construction-result.json"]
+    "replaced_artifact",
+    [None, "construction-bundle.json", "construction-result.json", "redirected-parent"],
 )
 def test_selected_design_cli_matches_public_compilation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, replaced_artifact: str | None
@@ -147,7 +148,9 @@ def test_selected_design_cli_matches_public_compilation(
         ),
     )
     source_path = _write_source(tmp_path / "construction.yaml", source)
-    bundle_path = tmp_path / "construction"
+    parent = tmp_path / "exports"
+    parent.mkdir()
+    bundle_path = parent / "construction"
     runner = CliRunner()
     compile_arguments = [
         "construction",
@@ -174,11 +177,25 @@ def test_selected_design_cli_matches_public_compilation(
     assert not (output / "nested-construction").exists()
     assert verify_bundle(output).bundle_id == original_bundle_id
     admitted_files: dict[str, bytes] = {}
-    if replaced_artifact is not None:
+    if replaced_artifact == "redirected-parent":
+        original_compile = construction.compile_construction_from_local_realizations
+
+        def redirect_after_compile(*args, **kwargs):
+            receipt = original_compile(*args, **kwargs)
+            parent.rename(tmp_path / "original-exports")
+            parent.symlink_to(output, target_is_directory=True)
+            return receipt
+
+        monkeypatch.setattr(
+            construction, "compile_construction_from_local_realizations", redirect_after_compile
+        )
+    elif replaced_artifact is not None:
         original_write = construction.ConstructionCompilation.write
 
-        def replace_after_write(self: construction.ConstructionCompilation, target: Path) -> Path:
-            written = original_write(self, target)
+        def replace_after_write(
+            self: construction.ConstructionCompilation, target: Path, **kwargs
+        ) -> Path:
+            written = original_write(self, target, **kwargs)
             for name in ("construction-bundle.json", "construction-result.json"):
                 admitted_files[name] = (written / name).read_bytes()
             (written / replaced_artifact).write_bytes(b"{}")
@@ -186,6 +203,12 @@ def test_selected_design_cli_matches_public_compilation(
 
         monkeypatch.setattr(construction.ConstructionCompilation, "write", replace_after_write)
     compiled = runner.invoke(app, compile_arguments)
+    if replaced_artifact == "redirected-parent":
+        assert compiled.exit_code != 0, compiled.output
+        assert compiled.stdout == ""
+        assert not (output / "construction").exists()
+        assert verify_bundle(output).bundle_id == original_bundle_id
+        return
     assert compiled.exit_code == 0, compiled.output
     report = json.loads(compiled.output)
     if replaced_artifact is not None:
@@ -257,3 +280,44 @@ def test_complete_verification_report_retains_the_admitted_snapshot(
     assert observed.exit_code == 0, observed.output
     assert (bundle / replaced_artifact).read_bytes() == b"{}"
     assert json.loads(observed.output) == json.loads(expected.output)
+
+
+@pytest.mark.parametrize(
+    ("command", "operation", "filename"),
+    [
+        ("select", "select_construction_realization", "selection.json"),
+        ("inspect", "project_construction_trajectory", "handoff"),
+    ],
+)
+def test_selected_route_write_rejects_parent_redirected_after_cli_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, command: str, operation: str, filename: str
+) -> None:
+    bundle, _ = _write_bundle(tmp_path / "case")
+    bundle_id = construction.load_verified_construction_bundle(bundle).bundle_id
+    parent = tmp_path / "exports"
+    parent.mkdir()
+    original = getattr(construction, operation)
+
+    def redirect_after_selection(*args, **kwargs):
+        selected = original(*args, **kwargs)
+        parent.rename(tmp_path / "original-exports")
+        parent.symlink_to(bundle, target_is_directory=True)
+        return selected
+
+    monkeypatch.setattr(construction, operation, redirect_after_selection)
+    result = CliRunner().invoke(
+        app,
+        [
+            "construction",
+            command,
+            str(bundle),
+            "--ordinal",
+            "0",
+            "--out",
+            str(parent / filename),
+        ],
+    )
+    assert result.exit_code != 0, result.output
+    assert result.stdout == ""
+    assert not (bundle / filename).exists()
+    assert construction.load_verified_construction_bundle(bundle).bundle_id == bundle_id

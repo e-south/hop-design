@@ -75,7 +75,7 @@ def compile_selected_command(
             else None,
             source_partition_realization_id=source_partition_realization_id,
         )
-        compiled.write(output)
+        compiled.write(output, protected_root=design_bundle)
         typer.echo(compiled.report_json())
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error

@@ -202,7 +202,7 @@ def construction_select_command(
             receipt,
             materialized_realization_id=selected_id,
         )
-        selected.write(output)
+        selected.write(output, protected_root=bundle_path)
     except (OSError, ValueError) as exc:
         raise typer.BadParameter(str(exc), param_hint="REALIZATION_ID/--out") from exc
     typer.echo(f"Selected reference: {output}")

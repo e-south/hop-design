@@ -94,13 +94,17 @@ class ConstructionSelection:
         """Return canonical non-authoritative selection JSON."""
         return self._json_bytes
 
-    def write(self, destination: str | Path) -> Path:
+    def write(self, destination: str | Path, *, protected_root: str | Path | None = None) -> Path:
         """Atomically write the selection to exactly one new file path."""
         output = Path(destination)
         _require_json_path(output)
         if output.exists() or output.is_symlink():
             raise FileExistsError(f"Refusing to replace existing selection path: {output}")
-        publish_file_create_only(self._json_bytes, output)
+        publish_file_create_only(
+            self._json_bytes,
+            output,
+            protected_root=None if protected_root is None else Path(protected_root),
+        )
         return output
 
     def __repr__(self) -> str:
