@@ -48,9 +48,10 @@ def _load_docs_checker() -> ModuleType:
 def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert readme.startswith("# ![hop — Hairpin Oligonucleotide Processing")
+    assert readme.startswith("# ![hop: Hairpin Oligonucleotide Processing")
     assert "assets/hop-design-banner.svg" in readme
-    assert "HOP is alpha software" in readme
+    assert "—" not in readme
+    assert "docs/guides/install.md" in readme
     assert "docs/guides/quickstart.md" in readme
     assert "https://github.com/e-south/hop-design/blob/main/AGENTS.md" in readme
     assert "[AGENTS.md](AGENTS.md)" not in readme
@@ -62,7 +63,8 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "not predictions of laboratory success" in normalized
     assert "source oligo" in readme
     assert "foldback" in readme and "basal" in readme
-    assert "unreleased" in readme
+    assert "## Availability" not in readme
+    assert "unreleased" not in readme
     assert not re.search(r"^\|", readme, flags=re.MULTILINE)
     assert "scientist-facing facade" not in readme
     assert "second authority" not in readme
@@ -86,6 +88,18 @@ def test_landing_page_opens_with_one_short_product_paragraph() -> None:
 
     assert len(paragraphs) == 1
     assert len(paragraphs[0].split()) <= 90
+    assert paragraphs[0].startswith("Hairpin Oligonucleotide Processing (HOP)")
+
+
+def test_landing_page_routes_tasks_and_ends_with_a_citation_placeholder() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    sections = re.findall(r"^## (.+)$", readme, flags=re.MULTILINE)
+
+    assert sections == ["Start here", "Documentation", "Contribute", "Cite HOP"]
+    citation = " ".join(readme.split("## Cite HOP", maxsplit=1)[1].split())
+    assert "If you use HOP in your research, please cite" in citation
+    assert "version or commit" in citation
+    assert "Citation placeholder" in citation
 
 
 def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture() -> None:
@@ -640,16 +654,16 @@ def test_active_docs_do_not_teach_retired_candidate_ordering() -> None:
 def test_schema_reference_distinguishes_release_and_source_generations() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         source_version = tomllib.load(handle)["project"]["version"]
-    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    install = (REPO_ROOT / "docs" / "guides" / "install.md").read_text(encoding="utf-8")
     schemas = (REPO_ROOT / "docs" / "reference" / "schemas.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
 
-    match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", quickstart)
+    match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", install)
     assert match is not None
     published_version = match.group(1)
 
     if published_version != source_version:
-        for text in (readme, schemas, quickstart):
+        for text in (install, schemas, quickstart):
             assert source_version in text
             assert published_version in text
             assert "unreleased" in text

@@ -1,38 +1,29 @@
 ---
 doc_id: hop-quickstart
-title: HOP Design quickstart
+title: Compile a first HOP design
 intent: Compile a public duplex substrate and preview a realistic variable-spacer family.
 audience:
   - new users
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-08
+last_verified: 2026-09-10
 doc_type: tutorial
 journey:
-  - install
   - compile
   - verify
 ---
 
 # Quickstart
 
-This page describes the published v0.1.0a8 artifact. Use the release's
-[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8)
-when operating that immutable artifact.
+[Install HOP](install.md), then compile one exact payload. The installation
+guide distinguishes the released package from the source checkout. Commands
+beginning with `uv run` below assume you are in that checkout.
 
-Download a versioned wheel and `SHA256SUMS` from
-[GitHub Releases](https://github.com/e-south/hop-design/releases), verify the
-wheel's checksum, and install it into a Python 3.12–3.14 environment. HOP is not
-published on PyPI.
+## Compile an exact payload
+
+From a source checkout, prefix this command with `uv run`.
 
 ```bash
-# macOS
-grep 'hop_design-0.1.0a8-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
-# Linux
-grep 'hop_design-0.1.0a8-py3-none-any.whl$' SHA256SUMS | sha256sum -c -
-uv venv --python 3.12
-source .venv/bin/activate
-uv pip install ./hop_design-0.1.0a8-py3-none-any.whl
 hop-design compile --sequence ATAACTTCGTATAGCATACATTATACGAAGTTAT \
   --design-id loxp-payload --out build/loxp-exact
 ```
