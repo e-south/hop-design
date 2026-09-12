@@ -69,6 +69,20 @@ class _ConstructionReceipt:
     _bundle: ConstructionBundle
     _artifacts: Mapping[str, bytes]
 
+    @classmethod
+    def _create(
+        cls,
+        *,
+        construction: VerifiedConstructionSpaceResult,
+        bundle: ConstructionBundle,
+        artifacts: Mapping[str, bytes],
+    ) -> Self:
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "_construction", construction)
+        object.__setattr__(instance, "_bundle", bundle)
+        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
+        return instance
+
     @property
     def bundle_id(self) -> str:
         """Return the portable construction authority identity."""
@@ -160,20 +174,6 @@ class ConstructionCompilation(_ConstructionReceipt):
     _bundle: ConstructionBundle
     _artifacts: Mapping[str, bytes]
 
-    @classmethod
-    def _create(
-        cls,
-        *,
-        construction: VerifiedConstructionSpaceResult,
-        bundle: ConstructionBundle,
-        artifacts: Mapping[str, bytes],
-    ) -> Self:
-        instance = object.__new__(cls)
-        object.__setattr__(instance, "_construction", construction)
-        object.__setattr__(instance, "_bundle", bundle)
-        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
-        return instance
-
     def write(self, output: str | Path) -> Path:
         """Atomically write the construction bundle after complete replay."""
         return write_construction_bundle(self, Path(output))
@@ -186,20 +186,6 @@ class VerifiedConstructionBundle(_ConstructionReceipt):
     _construction: VerifiedConstructionSpaceResult
     _bundle: ConstructionBundle
     _artifacts: Mapping[str, bytes]
-
-    @classmethod
-    def _create(
-        cls,
-        *,
-        construction: VerifiedConstructionSpaceResult,
-        bundle: ConstructionBundle,
-        artifacts: Mapping[str, bytes],
-    ) -> Self:
-        instance = object.__new__(cls)
-        object.__setattr__(instance, "_construction", construction)
-        object.__setattr__(instance, "_bundle", bundle)
-        object.__setattr__(instance, "_artifacts", MappingProxyType(dict(artifacts)))
-        return instance
 
 
 def compile_construction_bundle(
