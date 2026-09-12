@@ -172,7 +172,7 @@ def publish_directory_files_create_only(
             descriptors.callback(os.close, staging_fd)
             for name, content in files.items():
                 descriptor = os.open(
-                    name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644, dir_fd=staging_fd
+                    name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=staging_fd
                 )
                 written.append(name)
                 with os.fdopen(descriptor, "wb") as handle:

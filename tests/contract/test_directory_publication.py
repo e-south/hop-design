@@ -111,7 +111,9 @@ def test_protected_publication_accepts_safe_parent_aliases(tmp_path: Path) -> No
     publication.publish_directory_files_create_only(
         {"artifact.txt": b"complete\n"}, alias / "new-parent/published", protected_root=protected
     )
-    assert (parent / "new-parent/published/artifact.txt").read_bytes() == b"complete\n"
+    artifact = parent / "new-parent/published/artifact.txt"
+    assert artifact.read_bytes() == b"complete\n"
+    assert artifact.stat().st_mode & 0o077 == 0
     assert list(protected.iterdir()) == []
 
 
