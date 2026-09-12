@@ -18,7 +18,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Self
 
-from hop_design.design.source_documents import SourceDocumentLimitError, load_source_mapping
+from hop_design.design.source_documents import (
+    DEFAULT_RESULT_MAX_BYTES,
+    SourceDocumentLimitError,
+    load_source_mapping,
+)
 from hop_design.export.publication import publish_directory_create_only
 from hop_design.models.construction import LocalNeighborhoodFamily, LocalNeighborhoodRequest
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
@@ -37,7 +41,7 @@ from .verification import (
 _VerifiedLocalResult = VerifiedFoldbackNeighborhoodResult | VerifiedBasalNeighborhoodResult
 _LocalResult = FoldbackNeighborhoodDiscoveryResult | BasalNeighborhoodDiscoveryResult
 _LOCAL_EXECUTION_MAX = 100_000
-_LOCAL_RESULT_MAX_BYTES = 64 * 1024 * 1024
+_LOCAL_RESULT_MAX_BYTES = DEFAULT_RESULT_MAX_BYTES
 
 
 def _canonical_local_result_bytes(

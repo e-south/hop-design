@@ -53,6 +53,48 @@ def test_projection_cannot_write_into_verified_input_bundle(
 
 
 @pytest.mark.parametrize(
+    "kind,operation",
+    [
+        ("construction-summary", "project_complete_construction_summary"),
+        ("construction-navigation", "project_construction_navigation"),
+        ("construction-trajectory", "project_construction_trajectory"),
+    ],
+)
+def test_projection_rejects_parent_redirected_into_bundle_after_cli_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str, operation: str
+) -> None:
+    bundle, _ = _write_bundle(tmp_path / "case")
+    receipt = construction.load_verified_construction_bundle(bundle)
+    parent = tmp_path / "exports"
+    parent.mkdir()
+    original = getattr(construction, operation)
+
+    def redirect_parent(*args, **kwargs):
+        projection = original(*args, **kwargs)
+        parent.rename(tmp_path / "original-exports")
+        parent.symlink_to(bundle, target_is_directory=True)
+        return projection
+
+    monkeypatch.setattr(construction, operation, redirect_parent)
+    arguments = [
+        "construction",
+        "project",
+        str(bundle),
+        "--kind",
+        kind,
+        "--out",
+        str(parent / "view"),
+    ]
+    if kind == "construction-trajectory":
+        arguments += ["--realization-id", receipt.materialized_realization_ids[0]]
+    result = CliRunner().invoke(app, arguments)
+    assert result.exit_code != 0
+    assert result.stdout == ""
+    assert not (bundle / "view").exists()
+    assert construction.load_verified_construction_bundle(bundle).bundle_id == receipt.bundle_id
+
+
+@pytest.mark.parametrize(
     "replaced_artifact", [None, "construction-bundle.json", "construction-result.json"]
 )
 def test_selected_design_cli_matches_public_compilation(

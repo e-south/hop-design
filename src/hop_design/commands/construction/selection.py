@@ -164,7 +164,7 @@ def construction_inspect_command(
         )
         content = json.loads(trajectory.json_bytes)
         if output is not None:
-            trajectory.write(output, selection_reason=selection_reason)
+            trajectory.write(output, selection_reason=selection_reason, protected_root=bundle_path)
     except (OSError, ValueError) as exc:
         raise typer.BadParameter(str(exc), param_hint="REALIZATION_ID/--out") from exc
     _print_trajectory(content)

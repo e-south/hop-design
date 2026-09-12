@@ -105,6 +105,12 @@ duplicate molecular derivation to inspect them. Publication uses the existing
 atomic writers and does not add report files to, or reseal, a bundle.
 Construction reports serialize the admitted in-memory snapshot, so later file
 replacement cannot mix unverified contents with the verified identities.
+Construction projections and derived source partitions publish outside their
+verified input bundle through an opened parent directory. On macOS and Linux,
+publication remains bound to that directory if an ancestor pathname is replaced
+or redirected. An output already redirected into the input bundle fails before
+creating children. Protected publication fails explicitly on unsupported
+platforms and retains create-only destination semantics.
 
 The complete `discover-batch` stdout report is limited to the existing 64 MiB
 execution-document ceiling, including its envelope, separators, and newline.

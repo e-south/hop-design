@@ -20,8 +20,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Self
 
-from hop_design.design.source_documents import load_source_mapping
-from hop_design.export.publication import publish_directory_create_only
+from hop_design.design.source_documents import (
+    DEFAULT_RESULT_MAX_BYTES,
+    SourceDocumentLimitError,
+    load_source_mapping,
+)
+from hop_design.export.publication import (
+    publish_directory_create_only,
+    publish_directory_files_create_only,
+)
 from hop_design.models.construction.source_partition import (
     SourcePartitionDiscoveryRequest,
     SourcePartitionDiscoveryResult,
@@ -165,9 +172,12 @@ class SourcePartitionDiscovery:
         verified = SourcePartitionDiscoveryResult.model_validate(
             result.model_dump(mode="python", by_alias=True)
         )
+        content = canonical_json_bytes(verified)
+        if len(content) > DEFAULT_RESULT_MAX_BYTES:
+            raise SourceDocumentLimitError(actual=len(content), max_bytes=DEFAULT_RESULT_MAX_BYTES)
         instance = object.__new__(cls)
         object.__setattr__(instance, "_result", verified)
-        object.__setattr__(instance, "_json_bytes", canonical_json_bytes(verified))
+        object.__setattr__(instance, "_json_bytes", content)
         object.__setattr__(instance, "_csv_bytes", _result_csv(verified))
         object.__setattr__(instance, "_fragment_csv_bytes", _fragment_csv(verified))
         object.__setattr__(instance, "_threshold_csv_bytes", _threshold_csv(verified))
@@ -213,18 +223,25 @@ class SourcePartitionDiscovery:
     def csv_bytes(self) -> bytes:
         return self._csv_bytes
 
-    def write(self, destination: str | Path) -> Path:
+    def write(self, destination: str | Path, *, protected_root: str | Path | None = None) -> Path:
         """Atomically write canonical result and tidy candidate data into a new directory."""
         output = Path(destination)
         if output.exists() or output.is_symlink():
             raise FileExistsError(f"Refusing to replace existing source-partition path: {output}")
+        files = {
+            "result.json": self._json_bytes,
+            "data.csv": self._csv_bytes,
+            "fragments.csv": self._fragment_csv_bytes,
+            "thresholds.csv": self._threshold_csv_bytes,
+        }
+        if protected_root is not None:
+            publish_directory_files_create_only(files, output, protected_root=Path(protected_root))
+            return output
         output.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.", dir=output.parent))
         try:
-            (staging / "result.json").write_bytes(self._json_bytes)
-            (staging / "data.csv").write_bytes(self._csv_bytes)
-            (staging / "fragments.csv").write_bytes(self._fragment_csv_bytes)
-            (staging / "thresholds.csv").write_bytes(self._threshold_csv_bytes)
+            for name, content in files.items():
+                (staging / name).write_bytes(content)
             publish_directory_create_only(staging, output)
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)
@@ -260,7 +277,9 @@ def discover_source_partition(source_path: str | Path) -> SourcePartitionDiscove
 
 def load_verified_source_partition(result_path: str | Path) -> SourcePartitionDiscovery:
     """Load one source-partition result after exact molecular and search replay."""
-    mapping = load_source_mapping(result_path, source_label="HOP source-partition result")
+    mapping = load_source_mapping(
+        result_path, max_bytes=DEFAULT_RESULT_MAX_BYTES, source_label="HOP source-partition result"
+    )
     if mapping.get("schema") != "hop.source-partition-result/v2":
         raise ValueError(
             f"Unsupported HOP source-partition result schema: {mapping.get('schema')!r}."

@@ -24,7 +24,10 @@ from hop_design.export.construction import (
 )
 from hop_design.export.construction.handoff.materials import render_oligos_csv, render_oligos_fasta
 from hop_design.export.construction.handoff.report import render_construction_report
-from hop_design.export.publication import publish_directory_create_only
+from hop_design.export.publication import (
+    publish_directory_create_only,
+    publish_directory_files_create_only,
+)
 from hop_design.models.construction.projections import (
     CompleteConstructionTrajectoryProjection,
     ConstructionScientificProjection,
@@ -80,7 +83,13 @@ class ConstructionProjection:
         """Return deterministic scientific SVG bytes."""
         return render_projection_svg(self._projection)
 
-    def write(self, destination: str | Path, *, selection_reason: str | None = None) -> Path:
+    def write(
+        self,
+        destination: str | Path,
+        *,
+        selection_reason: str | None = None,
+        protected_root: str | Path | None = None,
+    ) -> Path:
         """Atomically write the projection packet into a new directory."""
         if selection_reason is not None:
             if not isinstance(self._projection, CompleteConstructionTrajectoryProjection):
@@ -90,31 +99,33 @@ class ConstructionProjection:
         output = Path(destination)
         if output.exists() or output.is_symlink():
             raise FileExistsError(f"Refusing to replace existing projection path: {output}")
+        files = self._artifact_files(selection_reason)
+        if protected_root is not None:
+            publish_directory_files_create_only(files, output, protected_root=Path(protected_root))
+            return output
         output.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.", dir=output.parent))
         try:
-            json_bytes = self.json_bytes
-            csv_bytes = self.csv_bytes
-            svg_bytes = self.svg_bytes
-            (staging / "projection.json").write_bytes(json_bytes)
-            if csv_bytes is not None:
-                (staging / "projection.csv").write_bytes(csv_bytes)
-            (staging / "projection.svg").write_bytes(svg_bytes)
-            if isinstance(self._projection, CompleteConstructionTrajectoryProjection):
-                (staging / "report.md").write_bytes(
-                    render_construction_report(self._projection, selection_reason=selection_reason)
-                )
-                (staging / "oligos.csv").write_bytes(
-                    render_oligos_csv(self._projection.realization)
-                )
-                (staging / "oligos.fasta").write_bytes(
-                    render_oligos_fasta(self._projection.realization)
-                )
+            for name, content in files.items():
+                (staging / name).write_bytes(content)
             publish_directory_create_only(staging, output)
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)
             raise
         return output
+
+    def _artifact_files(self, selection_reason: str | None) -> dict[str, bytes]:
+        files = {"projection.json": self.json_bytes, "projection.svg": self.svg_bytes}
+        csv_bytes = self.csv_bytes
+        if csv_bytes is not None:
+            files["projection.csv"] = csv_bytes
+        if isinstance(self._projection, CompleteConstructionTrajectoryProjection):
+            files["report.md"] = render_construction_report(
+                self._projection, selection_reason=selection_reason
+            )
+            files["oligos.csv"] = render_oligos_csv(self._projection.realization)
+            files["oligos.fasta"] = render_oligos_fasta(self._projection.realization)
+        return files
 
     def __repr__(self) -> str:
         return (

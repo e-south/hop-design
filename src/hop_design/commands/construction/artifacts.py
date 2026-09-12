@@ -103,7 +103,7 @@ def discover_construction_partition_command(
         partition = construction.discover_construction_source_partition(
             receipt, policy, combination_ordinal=combination_ordinal
         )
-        partition.write(output)
+        partition.write(output, protected_root=bundle)
         typer.echo(json.dumps(_partition_report(partition), sort_keys=True))
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
@@ -173,7 +173,17 @@ def project_command(
                     "basal" if kind is ProjectionKind.BASAL_RETAINED_OVERHEAD else "foldback"
                 )
                 projection = construction.project_retained_overhead_frontier(local, family=family)
-        projection.write(output, selection_reason=selection_reason)
+        protected_root = (
+            source
+            if kind
+            in {
+                ProjectionKind.CONSTRUCTION_NAVIGATION,
+                ProjectionKind.CONSTRUCTION_TRAJECTORY,
+                ProjectionKind.CONSTRUCTION_SUMMARY,
+            }
+            else None
+        )
+        projection.write(output, selection_reason=selection_reason, protected_root=protected_root)
         typer.echo(
             json.dumps(
                 {

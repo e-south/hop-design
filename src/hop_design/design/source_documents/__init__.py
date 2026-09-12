@@ -24,6 +24,7 @@ from yaml.resolver import BaseResolver
 from yaml.tokens import AliasToken, AnchorToken
 
 DEFAULT_SOURCE_MAX_BYTES = 1_000_000
+DEFAULT_RESULT_MAX_BYTES = 64 * 1024 * 1024
 
 
 class SourceDocumentLimitError(ValueError):
@@ -155,6 +156,7 @@ def load_source_mapping(
 
 
 __all__ = [
+    "DEFAULT_RESULT_MAX_BYTES",
     "DEFAULT_SOURCE_MAX_BYTES",
     "SourceDocumentLimitError",
     "load_source_mapping",
