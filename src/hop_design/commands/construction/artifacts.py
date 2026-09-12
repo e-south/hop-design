@@ -15,22 +15,6 @@ from hop_design import construction
 from .common import require_output_outside_bundle
 
 
-def _local_report(receipt: construction.LocalNeighborhoodDiscovery) -> dict[str, object]:
-    return {
-        "schema": "hop/local-result-report/v1",
-        "verification": "deterministic_discovery",
-        "result_sha256": "sha256:" + hashlib.sha256(receipt.json_bytes).hexdigest(),
-        "result_id": receipt.result_id,
-        "problem_id": receipt.problem_id,
-        "family": receipt.family,
-        "completion": receipt.completion,
-        "feasibility": receipt.feasibility,
-        "termination_reason": receipt.termination_reason,
-        "realization_count": receipt.realization_count,
-        "result": json.loads(receipt.json_bytes),
-    }
-
-
 def discover_local_command(
     request: Path,
     output: Annotated[Path, typer.Option("--out", help="New local-authority directory.")],
@@ -39,7 +23,7 @@ def discover_local_command(
     try:
         receipt = construction.discover_local_neighborhood(request)
         receipt.write(output)
-        typer.echo(json.dumps(_local_report(receipt), sort_keys=True))
+        typer.echo(receipt.report_json())
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
 
@@ -48,7 +32,7 @@ def verify_local_command(result: Path) -> None:
     """Replay an existing local result and emit its authority-bound JSON report."""
     try:
         receipt = construction.load_verified_local_neighborhood(result)
-        typer.echo(json.dumps(_local_report(receipt), sort_keys=True))
+        typer.echo(receipt.report_json())
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
 
@@ -61,18 +45,7 @@ def discover_batch_command(
     """Execute explicit local request files using producer-owned durable checkpoints."""
     try:
         batch = construction.discover_local_neighborhoods(requests, checkpoint, resume=resume)
-        typer.echo(
-            json.dumps(
-                {
-                    "schema": "hop/local-batch-report/v1",
-                    "finished": batch.finished,
-                    "planned_requests": batch.planned_requests,
-                    "completed_requests": batch.completed_requests,
-                    "results": [_local_report(result) for result in batch.iter_results()],
-                },
-                sort_keys=True,
-            )
-        )
+        typer.echo(batch.report_json())
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
 

@@ -23,7 +23,7 @@ from hop_design.export.publication import publish_directory_create_only
 from hop_design.models.construction import LocalNeighborhoodFamily, LocalNeighborhoodRequest
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
-from hop_design.serialization import canonical_json_bytes
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from .basal import discover_basal_neighborhood
 from .foldback import discover_foldback_neighborhood
@@ -177,6 +177,25 @@ class LocalNeighborhoodDiscovery:
     def json_bytes(self) -> bytes:
         """Return canonical family-result JSON bytes."""
         return self._json_bytes
+
+    def report_json(self) -> str:
+        """Serialize the admitted local authority and its existing inspection metadata."""
+        return json.dumps(
+            {
+                "schema": "hop/local-result-report/v1",
+                "verification": "deterministic_discovery",
+                "result_sha256": sha256_digest(self.json_bytes),
+                "result_id": self.result_id,
+                "problem_id": self.problem_id,
+                "family": self.family,
+                "completion": self.completion,
+                "feasibility": self.feasibility,
+                "termination_reason": self.termination_reason,
+                "realization_count": self.realization_count,
+                "result": json.loads(self.json_bytes),
+            },
+            sort_keys=True,
+        )
 
     def write(self, destination: str | Path) -> Path:
         """Atomically write the canonical result into a new directory."""

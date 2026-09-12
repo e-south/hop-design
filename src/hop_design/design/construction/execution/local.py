@@ -45,6 +45,8 @@ from .storage import (
     result_mappings,
 )
 
+_REPORT_MAX_BYTES = MAX_DOCUMENT_BYTES
+
 
 def _iter_results(
     directory: Path, plan: ExecutionPlan, *, stop_at: int | None = None
@@ -106,6 +108,43 @@ class LocalNeighborhoodBatch:
     def iter_results(self) -> Iterator[LocalNeighborhoodDiscovery]:
         """Replay saved results one at a time in declared request order."""
         yield from _iter_results(self._directory, self._plan, stop_at=self.completed_requests)
+
+    def report_json(self) -> str:
+        """Serialize complete result bodies within the aggregate document byte ceiling."""
+        header = json.dumps(
+            {
+                "completed_requests": self.completed_requests,
+                "finished": self.finished,
+                "planned_requests": self.planned_requests,
+            },
+            sort_keys=True,
+        )
+        prefix = header[:-1] + ', "results": ['
+        suffix = '], "schema": "hop/local-batch-report/v1"}'
+        size = len(prefix.encode("utf-8")) + len(suffix.encode("utf-8")) + 1
+        message = (
+            f"Local batch aggregate report exceeds its {_REPORT_MAX_BYTES}-byte limit. "
+            "The checkpoint is retained; use iter_results() for individual result access."
+        )
+        if size > _REPORT_MAX_BYTES:
+            raise ValueError(message)
+        parts = [prefix]
+        for index, result in enumerate(self.iter_results()):
+            separator = ", " if index else ""
+            size += len(separator)
+            # Reject before creating a second decoded authority when it cannot fit.
+            if size + len(result.json_bytes) > _REPORT_MAX_BYTES:
+                raise ValueError(message)
+            report = result.report_json()
+            size += len(report.encode("utf-8"))
+            if size > _REPORT_MAX_BYTES:
+                raise ValueError(message)
+            parts.extend((separator, report))
+            del result, report
+            if index + 1 < self.completed_requests and size + len(", ") >= _REPORT_MAX_BYTES:
+                raise ValueError(message)
+        parts.append(suffix)
+        return "".join(parts)
 
 
 def discover_local_neighborhoods(

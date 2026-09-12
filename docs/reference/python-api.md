@@ -99,7 +99,12 @@ All operations and receipts in this section use `hop_design.construction`.
   explicit ordered collection of independent local requests. It publishes
   bounded immutable batches and replays saved results before resuming. The
   receipt exposes `planned_requests`, `completed_requests`, `finished`, and
-  lazy replay through `iter_results()`. Execution completion does not imply
+  lazy replay through `iter_results()`. Its `report_json()` serializes the full
+  `hop/local-batch-report/v1` result bodies within the existing 64 MiB execution
+  document ceiling, including the CLI newline. Exceeding that limit raises
+  without changing the checkpoint; `iter_results()` still provides individual
+  receipts with `report_json()` and `write()` for separate access.
+  Execution completion does not imply
   exhaustive coverage or feasibility of any individual request. See
   [checkpointed discovery](../guides/compile-construction.md#checkpoint-independent-local-queries)
   for limits, persistence, and recovery semantics.

@@ -106,6 +106,15 @@ atomic writers and does not add report files to, or reseal, a bundle.
 Construction reports serialize the admitted in-memory snapshot, so later file
 replacement cannot mix unverified contents with the verified identities.
 
+The complete `discover-batch` stdout report is limited to the existing 64 MiB
+execution-document ceiling, including its envelope, separators, and newline.
+HOP budgets serialized UTF-8 bytes while replaying results individually; it
+does not accumulate every decoded authority. An oversized report fails with
+no partial stdout after discovery has retained its complete checkpoint.
+`--resume` preserves that checkpoint and applies the same report limit. Use
+`LocalNeighborhoodBatch.iter_results()` for individual results, then each
+receipt's `report_json()` or `write()` to retain or inspect it separately.
+
 `identity` returns `hop/runtime-identity/v1`, distribution and dependency
 versions, a digest of the executing package's Python source bytes, supported
 report schemas, and available installation provenance. Git source metadata

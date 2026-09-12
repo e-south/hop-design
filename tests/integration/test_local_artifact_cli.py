@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 
 from hop_design import construction
 from hop_design.cli import app
+from hop_design.design.construction.execution import local as execution
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -78,6 +79,119 @@ def test_local_batch_preserves_request_order_and_resume(tmp_path: Path) -> None:
     resumed = runner.invoke(app, [*arguments, "--resume"])
     assert resumed.exit_code == 0, resumed.output
     assert json.loads(resumed.output) == report
+
+
+def test_oversized_batch_report_preserves_complete_checkpoint_and_stops_replay(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = ROOT / "examples/foldback-local-partition.yaml"
+    local = construction.discover_local_neighborhood(source)
+    individual = local.write(tmp_path / "individual") / "result.json"
+    runner = CliRunner()
+    expected = runner.invoke(app, ["construction", "verify-local", str(individual)])
+    assert expected.exit_code == 0, expected.output
+    report_limit = len(expected.stdout.encode("utf-8")) + 1024
+    monkeypatch.setattr(execution, "_REPORT_MAX_BYTES", report_limit, raising=False)
+    replayed: list[str] = []
+    original_iter = construction.LocalNeighborhoodBatch.iter_results
+
+    def observe_replay(self: construction.LocalNeighborhoodBatch):
+        for result in original_iter(self):
+            replayed.append(result.result_id)
+            yield result
+
+    monkeypatch.setattr(construction.LocalNeighborhoodBatch, "iter_results", observe_replay)
+    checkpoint = tmp_path / "checkpoint"
+    arguments = [
+        "construction",
+        "discover-batch",
+        *([str(source)] * 3),
+        "--checkpoint",
+        str(checkpoint),
+    ]
+    initial = runner.invoke(app, arguments)
+    assert initial.exit_code != 0
+    assert initial.stdout == ""
+    assert "aggregate report" in " ".join(initial.output.split())
+    assert "iter_results()" in initial.output
+    assert len(replayed) == 2
+    before = {
+        path.relative_to(checkpoint): path.read_bytes()
+        for path in checkpoint.rglob("*")
+        if path.is_file()
+    }
+    assert Path("complete.json") in before
+    replayed.clear()
+    resumed = runner.invoke(app, [*arguments, "--resume"])
+    assert resumed.exit_code != 0
+    assert resumed.stdout == ""
+    assert "aggregate report" in " ".join(resumed.output.split())
+    assert len(replayed) == 2
+    assert {
+        path.relative_to(checkpoint): path.read_bytes()
+        for path in checkpoint.rglob("*")
+        if path.is_file()
+    } == before
+    batch = construction.discover_local_neighborhoods([source] * 3, checkpoint, resume=True)
+    assert batch.finished and batch.completed_requests == 3
+    assert [result.json_bytes for result in batch.iter_results()] == [local.json_bytes] * 3
+    verified = runner.invoke(app, ["construction", "verify-local", str(individual)])
+    assert verified.exit_code == 0, verified.output
+    assert json.loads(verified.stdout) == json.loads(expected.stdout)
+    monkeypatch.setattr(execution, "_REPORT_MAX_BYTES", 64 * 1024 * 1024)
+    recovered = runner.invoke(app, [*arguments, "--resume"])
+    assert recovered.exit_code == 0, recovered.output
+    assert json.loads(recovered.stdout) == {
+        "schema": "hop/local-batch-report/v1",
+        "finished": True,
+        "planned_requests": 3,
+        "completed_requests": 3,
+        "results": [json.loads(expected.stdout)] * 3,
+    }
+
+
+def test_batch_report_counts_envelope_separators_and_stdout_newline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = ROOT / "examples/foldback-local-partition.yaml"
+    batch = construction.discover_local_neighborhoods([source] * 3, tmp_path / "checkpoint")
+    expected = json.dumps(
+        {
+            "schema": "hop/local-batch-report/v1",
+            "finished": True,
+            "planned_requests": 3,
+            "completed_requests": 3,
+            "results": [json.loads(result.report_json()) for result in batch.iter_results()],
+        },
+        sort_keys=True,
+    )
+    exact_size = len(expected.encode("utf-8")) + 1
+    monkeypatch.setattr(execution, "_REPORT_MAX_BYTES", exact_size)
+    assert batch.report_json() == expected
+    monkeypatch.setattr(execution, "_REPORT_MAX_BYTES", exact_size - 1)
+    with pytest.raises(ValueError, match="aggregate report"):
+        batch.report_json()
+    first_only = json.loads(expected)
+    first_only["results"] = first_only["results"][:1]
+    first_size = len(json.dumps(first_only, sort_keys=True).encode("utf-8")) + 1
+    monkeypatch.setattr(execution, "_REPORT_MAX_BYTES", first_size)
+    replayed = []
+    original_iter = construction.LocalNeighborhoodBatch.iter_results
+
+    def observe_replay(self: construction.LocalNeighborhoodBatch):
+        for result in original_iter(self):
+            replayed.append(result.result_id)
+            yield result
+
+    monkeypatch.setattr(construction.LocalNeighborhoodBatch, "iter_results", observe_replay)
+    with pytest.raises(ValueError, match="aggregate report"):
+        batch.report_json()
+    assert len(replayed) == 1
+    replayed.clear()
+    monkeypatch.setattr(execution, "_REPORT_MAX_BYTES", 1)
+    with pytest.raises(ValueError, match="aggregate report"):
+        batch.report_json()
+    assert replayed == []
 
 
 def test_basal_choices_panels_and_projection_files_match_owner(tmp_path: Path) -> None:
