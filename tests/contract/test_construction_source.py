@@ -36,7 +36,7 @@ from tests.integration.test_complete_construction_pcr import _payload
 def _source_document() -> dict[str, object]:
     foldback = _request(_nickase(), _terminus_enzyme())
     return {
-        "schema": "hop.construction-source/v7",
+        "schema": "hop.construction-source/v8",
         "foldback": foldback.model_dump(mode="json", by_alias=True),
         "basal": None,
         "composition": {
@@ -123,11 +123,13 @@ def _clone_source_document() -> dict[str, object]:
             by_alias=True,
         ),
         "left": {
+            "payload_end_offset_bp": 0,
             "orientation": "forward",
             "cohesive_end_sequence": "CCCC",
             "overhang_end": "five_prime",
         },
         "right": {
+            "payload_end_offset_bp": 0,
             "orientation": "reverse",
             "cohesive_end_sequence": "ATAA",
             "overhang_end": "five_prime",
@@ -178,7 +180,7 @@ def test_construction_source_loads_strict_json_and_yaml(
         json.dumps(load_source_mapping(source_path), separators=(",", ":"))
     )
 
-    assert loaded.schema_id == "hop.construction-source/v7"
+    assert loaded.schema_id == "hop.construction-source/v8"
     assert loaded.composition.endpoint == "ssdna_hairpin"
     assert loaded.composition.materialization.source_preparation.source_ssdna.five_prime_end is (
         EndChemistry.HYDROXYL
@@ -189,7 +191,7 @@ def test_construction_source_rejects_another_schema_version() -> None:
     document = _source_document()
     document["schema"] = "hop.construction-source/v1"
 
-    with pytest.raises(ValidationError, match=r"hop\.construction-source/v7"):
+    with pytest.raises(ValidationError, match=r"hop\.construction-source/v8"):
         ConstructionSource.model_validate_json(json.dumps(document))
 
 

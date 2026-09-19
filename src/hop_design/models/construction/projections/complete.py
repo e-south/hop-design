@@ -37,8 +37,8 @@ from hop_design.models.construction.complete.material_disposition import (
 from hop_design.models.construction.payload import ConstructionEndpoint, _content_id
 
 COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION: Literal[
-    "complete-construction-projections/3"
-] = "complete-construction-projections/3"
+    "complete-construction-projections/4"
+] = "complete-construction-projections/4"
 
 
 class CompleteConstructionSummaryRow(HopModel):
@@ -74,6 +74,10 @@ class CompleteConstructionSummaryRow(HopModel):
     source_material_nt: int = Field(default=0, ge=0)
     auxiliary_material_nt: int = Field(default=0, ge=0)
     endpoint_product_nt: int = Field(default=0, ge=0)
+    endpoint_strand_lengths_nt: tuple[int, ...]
+    endpoint_paired_positions_bp: int = Field(ge=0)
+    left_payload_end_offset_bp: int | None = Field(ge=0)
+    right_payload_end_offset_bp: int | None = Field(ge=0)
     candidate_enzyme_programs: int = Field(ge=0)
     recognition_placements_attempted: int = Field(ge=0)
     constraint_systems_attempted: int = Field(ge=0)
@@ -99,6 +103,15 @@ class CompleteConstructionSummaryRow(HopModel):
                 or self.endpoint_product_nt == 0
             ):
                 raise ValueError("Accepted summary rows require exact material accounting.")
+            if sum(self.endpoint_strand_lengths_nt) != self.endpoint_product_nt:
+                raise ValueError(
+                    "Endpoint strand lengths must reconcile with nucleotide accounting."
+                )
+            if any(
+                (offset is None) != (self.endpoint is not ConstructionEndpoint.CLONE_READY_DUPLEX)
+                for offset in (self.left_payload_end_offset_bp, self.right_payload_end_offset_bp)
+            ):
+                raise ValueError("Released end offsets require an accepted clone endpoint.")
         elif self.status is CompositionDispositionStatus.REJECTED and (
             self.rejection_reason is None
             or self.truncation_reason is not None
@@ -121,6 +134,10 @@ class CompleteConstructionSummaryRow(HopModel):
             or self.source_material_nt
             or self.auxiliary_material_nt
             or self.endpoint_product_nt
+            or self.endpoint_strand_lengths_nt
+            or self.endpoint_paired_positions_bp
+            or self.left_payload_end_offset_bp is not None
+            or self.right_payload_end_offset_bp is not None
         ):
             raise ValueError(
                 "Rejected and truncated summary rows cannot report materialized route evidence."
@@ -131,13 +148,13 @@ class CompleteConstructionSummaryRow(HopModel):
 class CompleteConstructionSummaryProjection(HopModel):
     """Lossless presentation relation over one verified construction-space result."""
 
-    schema_id: Literal["hop.complete-construction-summary/v3"] = Field(
-        default="hop.complete-construction-summary/v3",
+    schema_id: Literal["hop.complete-construction-summary/v4"] = Field(
+        default="hop.complete-construction-summary/v4",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:complete-construction-summary/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
-    renderer_version: Literal["complete-construction-projections/3"] = (
+    renderer_version: Literal["complete-construction-projections/4"] = (
         COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION
     )
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")

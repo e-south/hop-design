@@ -34,7 +34,7 @@ from hop_design.models.construction.payload import (
 from hop_design.models.enzymes import EnzymeClass, EnzymeProvisioningPolicy, EnzymeRole
 from hop_design.models.molecular_state import StrandEnd
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.plan import HopPlan
+from hop_design.models.plan import FeatureRole, HopPlan
 from hop_design.models.sequence import normalize_dna_sequence
 from hop_design.models.spec import DesignAuthoritySpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -51,6 +51,7 @@ class ReleaseSideRequirement(HopModel):
     orientation: SiteOrientation
     cohesive_end_sequence: str
     overhang_end: StrandEnd
+    payload_end_offset_bp: int = Field(ge=0)
 
     @field_validator("cohesive_end_sequence", mode="before")
     @classmethod
@@ -109,6 +110,16 @@ class DesignAuthorityReference(HopModel):
     encoding_sequence: str
     encoding_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
 
+    @property
+    def payload_boundaries(self) -> tuple[int, int]:
+        """Return the outer payload edges in the verified design encoding frame."""
+        features = self.plan.hairpin_encoding_insert.features
+        (payload,) = tuple(feature for feature in features if feature.role is FeatureRole.PAYLOAD)
+        (paired,) = tuple(
+            feature for feature in features if feature.role is FeatureRole.PAIRED_PAYLOAD
+        )
+        return payload.span.start.offset, paired.span.end.offset
+
     @field_validator("payload_sequence", "encoding_sequence", mode="before")
     @classmethod
     def normalize_sequence(cls, value: object) -> str:
@@ -162,8 +173,8 @@ class WholeRouteConstraints(HopModel):
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v6"] = Field(
-        default="hop.construction-discovery-request/v6", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v7"] = Field(
+        default="hop.construction-discovery-request/v7", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily

@@ -229,7 +229,7 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
             "hop.foldback-overhead-frontier/v2",
         ),
         "basal": (
-            "hop.basal-feasibility-landscape/v5",
+            "hop.basal-feasibility-landscape/v7",
             "hop.basal-overhead-frontier/v2",
         ),
     }
@@ -237,7 +237,7 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
     mismatched = feasibility.model_dump(mode="python", by_alias=True)
     mismatched["schema"] = {
         "foldback": "hop.foldback-feasibility-landscape/v5",
-        "basal": "hop.basal-feasibility-landscape/v4",
+        "basal": "hop.basal-feasibility-landscape/v6",
     }[family]
     with pytest.raises(ValidationError, match="sequence-domain scope"):
         type(feasibility).model_validate(mismatched)
@@ -359,10 +359,10 @@ def test_basal_projection_keeps_local_pairing_and_completion_obligations() -> No
 
     assert projection.disposition.completion is SearchCompletionStatus.COMPLETE
     assert projection.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
-    assert projection.schema_id == "hop.basal-feasibility-landscape/v4"
+    assert projection.schema_id == "hop.basal-feasibility-landscape/v6"
     assert projection.source_result_id == result.result_id
     assert projection.projection_reference.result_id == result.result_id
-    assert projection.projection_reference.renderer_version == "basal-projections/4"
+    assert projection.projection_reference.renderer_version == "basal-projections/6"
     assert projection.provenance == result.discovery.provenance
     assert projection.claim_boundary == result.discovery.claim_boundary
     assert tuple(row.basal_realization_id for row in projection.realizations) == tuple(
@@ -421,7 +421,7 @@ def test_basal_projection_keeps_local_pairing_and_completion_obligations() -> No
     assert "hairpin PCR duplex endpoint" in svg
     assert 'data-endpoint="hairpin_pcr_duplex"' in svg
     assert f'data-result-id="{result.result_id}"' in svg
-    assert 'data-renderer-version="basal-projections/4"' in svg
+    assert 'data-renderer-version="basal-projections/6"' in svg
     assert 'data-physical-construction="not_recorded"' in svg
     assert "data-sequence-part" not in svg
     assert "top strand · offset" in svg
@@ -459,7 +459,7 @@ def test_basal_minimum_overhead_matrix_preserves_proven_and_unknown_cells() -> N
     partial = project_basal_minimum_overhead_matrix(truncated)
     negative = project_basal_minimum_overhead_matrix(infeasible)
 
-    assert matrix.schema_id == "hop.basal-minimum-overhead-matrix/v1"
+    assert matrix.schema_id == "hop.basal-minimum-overhead-matrix/v3"
     assert matrix.nick_enzyme_ids == (
         "example:enzyme/basal-nick-a@1",
         "example:enzyme/basal-nick-b@1",
@@ -504,7 +504,7 @@ def test_partitioned_basal_matrix_uses_the_partitioned_schema() -> None:
 
     matrix = project_basal_minimum_overhead_matrix(result)
 
-    assert matrix.schema_id == "hop.basal-minimum-overhead-matrix/v2"
+    assert matrix.schema_id == "hop.basal-minimum-overhead-matrix/v4"
     assert matrix.sequence_partition == SequenceDomainPartition(
         part_count=2,
         part_index=0,

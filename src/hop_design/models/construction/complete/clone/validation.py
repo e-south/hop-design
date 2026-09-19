@@ -23,6 +23,7 @@ from ..pcr.validation import validate_pcr_realization
 from ..state import ConstructionStatePhase
 from ..transition import ConstructionTransitionKind
 from .digest import derive_clone_digest
+from .geometry import clone_payload_end_offsets
 from .products import clone_endpoint_fate_spans
 from .reaction import derive_clone_end_program
 
@@ -71,6 +72,17 @@ def validate_clone_realization(realization: MaterializedConstructionRealization)
         design_sequence=item.design.encoding_sequence,
         design_digest=item.design.encoding_digest,
     )
+    action = basal.future_release_action
+    if action is None:
+        raise ValueError("Clone-ready routes require an exact future release action.")
+    offsets = clone_payload_end_offsets(
+        ends=digest.cohesive_ends,
+        encoding_start=digest.encoding_projection.source_span.start.offset,
+        payload_boundaries=item.design.payload_boundaries,
+    )
+    side_index = 0 if action.requirement.product_end == "left" else 1
+    if offsets[side_index] != action.requirement.payload_end_offset_bp:
+        raise ValueError("Clone payload end offsets must satisfy the exact local obligation.")
     expected_program = derive_clone_end_program(pcr_state=pcr_state, digest=digest)
     if program.reaction_programs[-1] != expected_program:
         raise ValueError("Clone end-generation program must replay exact endpoint bindings.")

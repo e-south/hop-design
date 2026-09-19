@@ -33,6 +33,7 @@ class BasalFutureReleaseRequirement(HopModel):
     orientation: SiteOrientation
     cohesive_end_sequence: str
     overhang_end: StrandEnd
+    payload_end_offset_bp: int = Field(ge=0)
     recognition_material: Literal["source_duplex", "endpoint_material"] = "source_duplex"
 
     @field_validator("cohesive_end_sequence", mode="before")
@@ -59,6 +60,7 @@ class BasalFutureReleaseRequirement(HopModel):
             self.product_end == exact.product_end
             and self.orientation is exact.orientation
             and self.overhang_end is exact.overhang_end
+            and self.payload_end_offset_bp == exact.payload_end_offset_bp
             and self.recognition_material == exact.recognition_material
             and self.permits_sequence(exact.cohesive_end_sequence)
         )
@@ -83,16 +85,84 @@ class BasalFutureReleaseAction(HopModel):
     reference_cut_from_release_boundary: int
     complement_cut_from_release_boundary: int
 
+    @property
+    def endpoint_reference_sequence(self) -> str:
+        """Return the end footprint on the endpoint's reference strand, 5-prime first."""
+        requirement = self.requirement
+        reverse = (
+            requirement.overhang_end is StrandEnd.FIVE_PRIME and requirement.product_end == "right"
+        ) or (
+            requirement.overhang_end is StrandEnd.THREE_PRIME and requirement.product_end == "left"
+        )
+        return (
+            reverse_complement_iupac(requirement.cohesive_end_sequence)
+            if reverse
+            else requirement.cohesive_end_sequence
+        )
+
+    def source_end_placement(
+        self, *, payload_boundary: int, nick_offset_nt: int
+    ) -> tuple[int, str] | None:
+        """Constrain end bases supplied by the payload-forward source strand."""
+        offset = self.requirement.payload_end_offset_bp
+        sequence = self.endpoint_reference_sequence
+        if self.requirement.product_end == "left":
+            return payload_boundary - offset - len(sequence), sequence
+        end = min(offset + len(sequence), nick_offset_nt)
+        if end <= offset:
+            return None
+        return payload_boundary - end, reverse_complement_iupac(sequence[: end - offset])
+
+    def adapter_end_bases(self, *, nick_offset_nt: int) -> tuple[tuple[int, str], ...]:
+        """Map adapter-supplied endpoint bases to positions from the ligation bond."""
+        if self.requirement.product_end == "left":
+            return ()
+        start = self.requirement.payload_end_offset_bp - nick_offset_nt
+        return tuple(
+            (start + index, base)
+            for index, base in enumerate(self.endpoint_reference_sequence)
+            if start + index >= 0
+        )
+
+    def paired_end_positions(
+        self, *, nick_offset_nt: int, pairing_length_nt: int
+    ) -> tuple[int, ...]:
+        """Locate source-adapter pairs whose coordinates intersect the future end."""
+        start = self.requirement.payload_end_offset_bp - nick_offset_nt
+        end = start + len(self.requirement.cohesive_end_sequence)
+        return tuple(position for position in range(pairing_length_nt) if start <= position < end)
+
+    def source_cut_boundaries(self, *, payload_boundary: int) -> tuple[int, int]:
+        """Project future reference/complement cuts into the payload-forward source frame."""
+        boundary = (
+            payload_boundary
+            - self.requirement.payload_end_offset_bp
+            - len(self.requirement.cohesive_end_sequence)
+        )
+        if self.requirement.product_end == "right":
+            return (
+                boundary - self.complement_cut_from_release_boundary,
+                boundary - self.reference_cut_from_release_boundary,
+            )
+        return (
+            boundary + self.reference_cut_from_release_boundary,
+            boundary + self.complement_cut_from_release_boundary,
+        )
+
     def source_recognition_placement(self, *, payload_boundary: int) -> tuple[int, str]:
         """Map the future recognition site onto the payload-bearing source strand.
 
-        Proximal adapter bases pair with source positions immediately before the
-        payload. Copying presents this interval at the left endpoint directly,
+        The source-forward end footprint precedes the payload by the declared
+        paired gap. Copying presents the interval at the left endpoint directly,
         or reverse-complemented at the right endpoint.
         """
         if self.requirement.recognition_material != "source_duplex":
             raise ValueError("Endpoint-supplied recognition has no source placement.")
-        boundary = payload_boundary - len(self.requirement.cohesive_end_sequence)
+        boundary = (
+            payload_boundary
+            - self.requirement.payload_end_offset_bp
+            - len(self.requirement.cohesive_end_sequence)
+        )
         start = self.recognition_start_from_release_boundary
         pattern = self.recognition_pattern_5prime
         if self.requirement.product_end == "right":

@@ -15,7 +15,9 @@ from hop_design.design.construction.complete.discovery import VerifiedConstructi
 from hop_design.design.construction.complete.replay_admission import (
     has_current_replay_admission,
 )
-from hop_design.models.construction import RealizationGrouping
+from hop_design.models.construction import ConstructionEndpoint, RealizationGrouping
+from hop_design.models.construction.complete import MaterializedConstructionRealization
+from hop_design.models.construction.complete.clone.geometry import clone_payload_end_offsets
 from hop_design.models.construction.complete.material.inventory import (
     required_external_materials,
 )
@@ -62,6 +64,7 @@ def project_complete_construction_summary(
             if disposition.materialized_realization_id is None
             else realizations[disposition.materialized_realization_id]
         )
+        end_offsets = _end_offsets(realization)
         rows.append(
             CompleteConstructionSummaryRow(
                 ordinal=disposition.ordinal,
@@ -113,6 +116,14 @@ def project_complete_construction_summary(
                     if realization is None
                     else sum(len(strand.sequence) for strand in realization.final_product.strands)
                 ),
+                endpoint_strand_lengths_nt=()
+                if realization is None
+                else tuple(len(strand.sequence) for strand in realization.final_product.strands),
+                endpoint_paired_positions_bp=0
+                if realization is None
+                else len(realization.final_product.pairings),
+                left_payload_end_offset_bp=end_offsets[0],
+                right_payload_end_offset_bp=end_offsets[1],
                 candidate_enzyme_programs=disposition.candidate_enzyme_programs,
                 recognition_placements_attempted=disposition.recognition_placements_attempted,
                 constraint_systems_attempted=disposition.constraint_systems_attempted,
@@ -134,6 +145,23 @@ def project_complete_construction_summary(
         upstream_truncation_reasons=result.upstream_truncation_reasons,
         provenance=result.provenance,
         claim_boundary=result.claim_boundary,
+    )
+
+
+def _end_offsets(
+    realization: MaterializedConstructionRealization | None,
+) -> tuple[int | None, int | None]:
+    if (
+        realization is None
+        or realization.final_product.reference.endpoint
+        is not ConstructionEndpoint.CLONE_READY_DUPLEX
+    ):
+        return None, None
+    left, right = realization.final_product.cohesive_ends
+    return clone_payload_end_offsets(
+        ends=(left, right),
+        encoding_start=realization.final_product.encoding_projection.source_span.start.offset,
+        payload_boundaries=realization.design.payload_boundaries,
     )
 
 

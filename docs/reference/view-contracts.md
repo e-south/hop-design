@@ -75,15 +75,15 @@ of local scientific projections:
   realization from one unpartitioned search;
   `hop.foldback-feasibility-landscape/v6` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
-- `hop.basal-feasibility-landscape/v4` records every exact basal local
+- `hop.basal-feasibility-landscape/v6` records every exact basal local
   realization from one unpartitioned search as a local pairing and upstream
   completion obligation;
-  `hop.basal-feasibility-landscape/v5` carries the same relation for one
+  `hop.basal-feasibility-landscape/v7` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
-- `hop.basal-minimum-overhead-matrix/v1` records the smallest proven local
+- `hop.basal-minimum-overhead-matrix/v3` records the smallest proven local
   retained overhead for every declared basal nickase by future Type IIS action
   cell, while distinguishing complete infeasibility from unresolved cells;
-  `hop.basal-minimum-overhead-matrix/v2` carries the same relation for one
+  `hop.basal-minimum-overhead-matrix/v4` carries the same relation for one
   declared sequence-domain part;
 - `hop.foldback-overhead-frontier/v1` and
   `hop.basal-overhead-frontier/v1` record unpartitioned absolute
@@ -97,6 +97,22 @@ source result by rebuilding the typed relation and requiring canonical
 equality; a resealed subset, reordering, or invented row is rejected. JSON,
 CSV, and SVG renderers preserve that relation without ranking candidates or
 recalculating molecular state.
+
+Basal feasibility rows expose `nick_boundary_from_payload` in the signed
+payload-forward source frame. For clone-bearing local queries they also carry
+`payload_end_offset_bp`, `future_reference_cut_from_payload`,
+`future_complementary_cut_from_payload`, and the exact future side, polarity and
+cohesive-end sequence. These cuts describe an obligation for a later molecular
+state, not cleavage in the current local state. `pending_adapter_end_bases`
+lists exact position/base obligations beyond the constrained local adapter span;
+the full annealing requirement remains separate. Local `retained_overhead_nt`
+continues to measure the PCR-intermediate accounting interval.
+
+Complete summary rows expose actual endpoint strand lengths in nt and paired
+positions in bp. Only accepted released endpoints carry left and right
+`payload_end_offset_bp` measurements, derived from their two cuts and verified
+payload features. Rejected or unfinished continuations carry no invented
+endpoint measurements. JSON and CSV preserve these distinctions.
 
 Foldback feasibility rows distinguish total paired arm `A`, nick displacement
 `D`, and post-nick self-pairing arm `R`. The latter counts observed pairs whose
@@ -155,14 +171,14 @@ experimental yield.
 
 ## Complete construction projections
 
-`hop.complete-construction-summary/v3` is the lossless tabular receipt over one
+`hop.complete-construction-summary/v4` is the lossless tabular receipt over one
 verified complete result. Its rows preserve the exact examined Cartesian
 prefix: accepted rows carry materialized route, achieved-geometry,
 final-product, endpoint, and material facts; rejected and truncated rows carry
 evidence only. Counts, failure partitions, material totals, group membership,
 and truncation evidence replay the source result exactly.
 
-`hop.construction-navigation/v1` is a narrow non-authoritative overlay around
+`hop.construction-navigation/v2` is a narrow non-authoritative overlay around
 the unchanged summary v2 relation. Its accepted-route records add only typed
 foldback and basal geometry, exact relaxation state, the sorted enzyme IDs from
 the declared cleavage programs, retained non-payload sequence, and endpoint
@@ -172,7 +188,7 @@ describe the shared achieved geometry and retain every exact member identity;
 no representative is selected. Renderer evolution does not alter the
 construction result or bundle authority.
 
-`hop.complete-construction-trajectory/v4` embeds the exact source preparation,
+`hop.complete-construction-trajectory/v5` embeds the exact source preparation,
 selected source-partition certificate when present, and chronology of one explicitly
 selected accepted materialized realization. It has no CSV form
 because it is a structured molecular-state sequence rather than a table. The

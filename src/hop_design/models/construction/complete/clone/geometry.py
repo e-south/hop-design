@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBinding
 from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.molecular_state import CohesiveEnd
 
 
 class CloneEndGenerationError(ValueError):
@@ -28,6 +29,26 @@ class CloneCutGeometry:
     primary_parent_span: Span
     complementary_parent_span: Span
     encoding_span: Span
+
+
+def clone_payload_end_offsets(
+    *,
+    ends: tuple[CohesiveEnd, CohesiveEnd],
+    encoding_start: int,
+    payload_boundaries: tuple[int, int],
+) -> tuple[int, int]:
+    """Measure paired gaps from actual cuts to design-relative payload boundaries."""
+    left, right = ends
+    if (left.product_end, right.product_end) != ("left", "right"):
+        raise CloneEndGenerationError("Payload end offsets require ordered left and right ends.")
+    return (
+        encoding_start
+        + payload_boundaries[0]
+        - max(left.primary_cut.offset, left.complementary_cut.offset),
+        min(right.primary_cut.offset, right.complementary_cut.offset)
+        - encoding_start
+        - payload_boundaries[1],
+    )
 
 
 def derive_clone_cut_geometry(
@@ -88,5 +109,6 @@ def derive_clone_cut_geometry(
 __all__ = [
     "CloneCutGeometry",
     "CloneEndGenerationError",
+    "clone_payload_end_offsets",
     "derive_clone_cut_geometry",
 ]

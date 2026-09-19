@@ -60,7 +60,7 @@ resources. Remote/network resolution stays outside the deterministic core.
 Construction source files follow the same bounded regular-file contract. The
 reader accepts only `.json`, `.yaml`, and `.yml`, rejects path replacement while
 opening, rejects documents larger than one megabyte before decoding, requires a
-mapping root, and dispatches only `hop.construction-source/v7`. The source
+mapping root, and dispatches only `hop.construction-source/v8`. The source
 cannot embed or assert a design authority; compilation loads the separately
 supplied design-bundle directory through complete semantic verification.
 

@@ -781,7 +781,7 @@ def test_foldback_result_rejects_reordered_family_detail_membership() -> None:
 
 def test_foldback_family_identity_binds_all_detailed_evidence() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
-    assert result.schema_id == "hop.foldback-neighborhood-result/v4"
+    assert result.schema_id == "hop.foldback-neighborhood-result/v5"
     assert result.model_dump(mode="json", by_alias=True)["schema"] == result.schema_id
     assert result.model_dump(mode="json")["result_id"] == result.result_id
     first = result.realizations[0]

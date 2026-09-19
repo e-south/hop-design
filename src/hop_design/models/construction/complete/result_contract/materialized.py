@@ -16,6 +16,7 @@ from typing import Any
 from hop_design.models.construction.payload import ConstructionEndpoint
 
 from ..authority import CompositionDisposition, ConstructionCompositionProvenance
+from ..clone.geometry import clone_payload_end_offsets
 from ..evaluation.result import CombinationEvaluation
 from ..payload_validation import validate_payload_source_map
 from ..request import ConstructionDiscoveryRequest
@@ -48,6 +49,16 @@ def validate_endpoint_evidence(
         != ("left", "right")
     ):
         raise ValueError("Clone-ready topology, terminal phase, and cohesive ends must match.")
+    if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        release = request.release
+        assert release is not None
+        left, right = realization.final_product.cohesive_ends
+        if clone_payload_end_offsets(
+            ends=(left, right),
+            encoding_start=realization.final_product.encoding_projection.source_span.start.offset,
+            payload_boundaries=request.design.payload_boundaries,
+        ) != (release.left.payload_end_offset_bp, release.right.payload_end_offset_bp):
+            raise ValueError("Clone payload end offsets must replay the actual strand cuts.")
 
 
 def validate_materialized_request(

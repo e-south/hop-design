@@ -127,7 +127,7 @@ def test_local_clone_discovery_exposes_the_basal_minimum_overhead_matrix(
 
     projection = construction.project_basal_minimum_overhead_matrix(receipt)
 
-    assert projection.schema_id == "hop.basal-minimum-overhead-matrix/v1"
+    assert projection.schema_id == "hop.basal-minimum-overhead-matrix/v3"
     assert projection.source_result_id == receipt.result_id
     assert projection.csv_bytes is not None
     assert projection.svg_bytes.startswith(b"<svg")
@@ -161,7 +161,7 @@ def test_local_source_rejects_unknown_schema_and_fields(
     with pytest.raises(ValueError, match="Unsupported HOP local-neighborhood schema"):
         construction.discover_local_neighborhood(source)
 
-    request["schema"] = "hop.local-neighborhood-request/v6"
+    request["schema"] = "hop.local-neighborhood-request/v7"
     request["unexpected"] = True
     source.write_text(json.dumps(request))
     with pytest.raises(ValueError, match="unexpected"):
@@ -295,7 +295,7 @@ def test_basal_local_result_roundtrips_and_rejects_unsupported_schema(
     receipt = construction.discover_local_neighborhood(source)
     result = json.loads(receipt.json_bytes)
 
-    assert result["schema"] == "hop.basal-neighborhood-result/v6"
+    assert result["schema"] == "hop.basal-neighborhood-result/v7"
     result_path = tmp_path / "basal-result.json"
     result_path.write_bytes(receipt.json_bytes)
     loaded = construction.load_verified_local_neighborhood(result_path)
@@ -318,7 +318,7 @@ def test_foldback_local_result_uses_v4_and_rejects_v3_receipts(tmp_path: Path) -
     receipt = construction.discover_local_neighborhood(source)
     result = json.loads(receipt.json_bytes)
 
-    assert result["schema"] == "hop.foldback-neighborhood-result/v4"
+    assert result["schema"] == "hop.foldback-neighborhood-result/v5"
 
     result["schema"] = "hop.foldback-neighborhood-result/v3"
     result_path = tmp_path / "foldback-v3.json"

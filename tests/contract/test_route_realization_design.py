@@ -42,6 +42,7 @@ from tests.contract.test_foldback_construction_discovery import (
 from tests.contract.test_foldback_construction_discovery import (
     _request as foldback_request,
 )
+from tests.integration.test_complete_construction_clone import _clone_basal_result
 from tests.integration.test_complete_construction_discovery import _basal_result, _material
 from tests.integration.test_complete_construction_pcr import _foldback, _payload
 from tests.integration.test_construction_source_compiler import (
@@ -187,6 +188,59 @@ def test_route_design_supports_non_four_base_basal_arms() -> None:
     assert features[0].sequence == selected.projection.pairing_state.source_sequence_5prime
     assert features[-1].sequence == selected.projection.pairing_state.adapter_sequence_5prime
     assert len(features[0].sequence) == 3
+
+
+@pytest.mark.parametrize(("local_pair_count", "end_offset"), ((6, 0), (4, 2)))
+def test_clone_design_uses_release_span_independently_of_local_pair_count(
+    local_pair_count: int, end_offset: int
+) -> None:
+    payload = _payload()
+    foldback = _foldback(payload)
+    basal = _clone_basal_result(
+        payload,
+        pairing_allowances=(BasalPairAllowance.MATCH,) * local_pair_count,
+        nickase_pattern="TTTTTT",
+        requested_overhang="AAAA",
+        payload_end_offset_bp=end_offset,
+    )
+    assert basal.realizations
+    selected = basal.realizations[0]
+    compilation = construction.compile_design_from_local_realizations(
+        design_id="release-span",
+        payload_sequence=payload.payload.sequence,
+        endpoint="clone_ready_duplex",
+        foldback=_receipt(foldback),
+        foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+        basal=_receipt(basal),
+        basal_realization_id=selected.basal_realization_id,
+    )
+    junction = compilation.spec.basal_junction
+    assert junction.left_arm == "A" * (end_offset + 4)
+    assert junction.right_arm == "T" * (end_offset + 4)
+    assert len(selected.projection.pairing_state.pairs) == local_pair_count
+
+
+def test_clone_design_requires_exact_bases_across_the_declared_release_span() -> None:
+    payload = _payload()
+    foldback = _foldback(payload)
+    basal = _clone_basal_result(
+        payload,
+        pairing_allowances=(BasalPairAllowance.MATCH,) * 4,
+        nickase_pattern="TTTTTTTTTT",
+        requested_overhang="AAAA",
+        payload_end_offset_bp=6,
+    )
+    assert basal.realizations
+    with pytest.raises(ValueError, match="undetermined adapter bases"):
+        construction.compile_design_from_local_realizations(
+            design_id="undetermined-release-gap",
+            payload_sequence=payload.payload.sequence,
+            endpoint="clone_ready_duplex",
+            foldback=_receipt(foldback),
+            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+            basal=_receipt(basal),
+            basal_realization_id=basal.realizations[0].basal_realization_id,
+        )
 
 
 def test_route_design_reuses_receipt_verification_without_discovery_replay(

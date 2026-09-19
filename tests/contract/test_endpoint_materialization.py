@@ -259,11 +259,13 @@ def test_release_request_preserves_oriented_left_and_right_requirements() -> Non
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
         left=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.FORWARD,
             cohesive_end_sequence="AATG",
             overhang_end=StrandEnd.FIVE_PRIME,
         ),
         right=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.REVERSE,
             cohesive_end_sequence="CGCT",
             overhang_end=StrandEnd.FIVE_PRIME,
@@ -282,11 +284,13 @@ def test_release_request_requires_one_exact_end_generation_enzyme() -> None:
         TypeIisReleaseRequest(
             enzyme_provisioning=_release_policy_with_two_enzymes(),
             left=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.FORWARD,
                 cohesive_end_sequence="AATG",
                 overhang_end=StrandEnd.FIVE_PRIME,
             ),
             right=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.REVERSE,
                 cohesive_end_sequence="CGCT",
                 overhang_end=StrandEnd.FIVE_PRIME,
@@ -315,11 +319,13 @@ def test_release_request_requires_a_type_iis_cleavage_definition() -> None:
         TypeIisReleaseRequest(
             enzyme_provisioning=policy,
             left=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.FORWARD,
                 cohesive_end_sequence="AATG",
                 overhang_end=StrandEnd.FIVE_PRIME,
             ),
             right=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.REVERSE,
                 cohesive_end_sequence="CGCT",
                 overhang_end=StrandEnd.FIVE_PRIME,
@@ -338,7 +344,7 @@ def test_complete_construction_execution_identifies_route_contract() -> None:
         ),
     )
 
-    assert execution.route_implementation_version == "complete-construction/8"
+    assert execution.route_implementation_version == "complete-construction/9"
     with pytest.raises(ValidationError, match="route_implementation_version"):
         ConstructionCompositionExecution.model_validate(
             {**execution.model_dump(), "route_implementation_version": "complete-construction/6"}
@@ -367,11 +373,13 @@ def test_release_search_recovers_the_oriented_pair_that_retains_the_design_union
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
         left=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.FORWARD,
             cohesive_end_sequence=design[:4],
             overhang_end=StrandEnd.FIVE_PRIME,
         ),
         right=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.REVERSE,
             cohesive_end_sequence=reverse_complement_iupac(design[-4:]),
             overhang_end=StrandEnd.FIVE_PRIME,
@@ -380,6 +388,7 @@ def test_release_search_recovers_the_oriented_pair_that_retains_the_design_union
     )
 
     result = discover_endpoint_release(
+        payload_boundaries=(4, len(design) - 4),
         request=request,
         pcr_top=pcr_top,
         design_sequence=design,
@@ -390,17 +399,52 @@ def test_release_search_recovers_the_oriented_pair_that_retains_the_design_union
     assert result.truncated is False
 
 
+@pytest.mark.parametrize(
+    ("left_offset", "right_offset", "feasible"), ((2, 2, True), (0, 2, False), (2, 0, False))
+)
+def test_release_search_checks_payload_gap_against_both_actual_strand_cuts(
+    left_offset, right_offset, feasible
+):
+    design = "AACC" + "GT" + "CCCC" + "AC" + "GGTT"
+    request = TypeIisReleaseRequest(
+        enzyme_provisioning=_release_policy(),
+        left=ReleaseSideRequirement(
+            orientation=SiteOrientation.FORWARD,
+            cohesive_end_sequence="AACC",
+            overhang_end=StrandEnd.FIVE_PRIME,
+            payload_end_offset_bp=left_offset,
+        ),
+        right=ReleaseSideRequirement(
+            orientation=SiteOrientation.REVERSE,
+            cohesive_end_sequence="AACC",
+            overhang_end=StrandEnd.FIVE_PRIME,
+            payload_end_offset_bp=right_offset,
+        ),
+        max_site_pairs=1,
+    )
+    result = discover_endpoint_release(
+        request=request,
+        pcr_top=f"GGTCTCA{design}AGAGACC",
+        design_sequence=design,
+        payload_boundaries=(6, 10),
+    )
+    assert (result.bindings is not None) is feasible
+    assert result.truncated is False
+
+
 def test_release_search_reports_truncation_before_unique_pair_is_established() -> None:
     design = "AACCGGTT"
     pcr_top = f"GGTCTCA{design}AGAGACCAGAGACC"
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
         left=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.FORWARD,
             cohesive_end_sequence=design[:4],
             overhang_end=StrandEnd.FIVE_PRIME,
         ),
         right=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.REVERSE,
             cohesive_end_sequence=reverse_complement_iupac(design[-4:]),
             overhang_end=StrandEnd.FIVE_PRIME,
@@ -409,6 +453,7 @@ def test_release_search_reports_truncation_before_unique_pair_is_established() -
     )
 
     result = discover_endpoint_release(
+        payload_boundaries=(4, len(design) - 4),
         request=request,
         pcr_top=pcr_top,
         design_sequence=design,
@@ -426,11 +471,13 @@ def test_release_search_consumes_only_the_bounded_cartesian_prefix() -> None:
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
         left=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.FORWARD,
             cohesive_end_sequence=design[:4],
             overhang_end=StrandEnd.FIVE_PRIME,
         ),
         right=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.REVERSE,
             cohesive_end_sequence=reverse_complement_iupac(design[-4:]),
             overhang_end=StrandEnd.FIVE_PRIME,
@@ -440,6 +487,7 @@ def test_release_search_consumes_only_the_bounded_cartesian_prefix() -> None:
 
     tracemalloc.start()
     result = discover_endpoint_release(
+        payload_boundaries=(4, len(design) - 4),
         request=request,
         pcr_top=pcr_top,
         design_sequence=design,
@@ -457,11 +505,13 @@ def test_release_search_reports_ambiguous_and_zero_match_outcomes() -> None:
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
         left=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.FORWARD,
             cohesive_end_sequence=design[:4],
             overhang_end=StrandEnd.FIVE_PRIME,
         ),
         right=ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.REVERSE,
             cohesive_end_sequence=reverse_complement_iupac(design[-4:]),
             overhang_end=StrandEnd.FIVE_PRIME,
@@ -470,11 +520,13 @@ def test_release_search_reports_ambiguous_and_zero_match_outcomes() -> None:
     )
 
     ambiguous = discover_endpoint_release(
+        payload_boundaries=(4, len(design) - 4),
         request=request,
         pcr_top=f"GGTCTCA{design}AGAGACCGGTCTCA{design}AGAGACC",
         design_sequence=design,
     )
     zero = discover_endpoint_release(
+        payload_boundaries=(4, len(design) - 4),
         request=request,
         pcr_top="A" * 32,
         design_sequence=design,

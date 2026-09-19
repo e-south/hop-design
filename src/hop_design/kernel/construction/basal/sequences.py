@@ -15,7 +15,6 @@ from collections.abc import Iterator
 from itertools import product
 
 from hop_design.models.construction import (
-    BasalFutureReleaseAction,
     BasalTarget,
     ConstructionEndpoint,
 )
@@ -25,7 +24,7 @@ from hop_design.models.enzymes import (
 )
 from hop_design.models.junction import Strand
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.sequence import normalize_dna_sequence, reverse_complement_iupac
+from hop_design.models.sequence import normalize_dna_sequence
 
 from .programs import (
     _BASES,
@@ -100,15 +99,14 @@ def iter_basal_program_solutions(
 
     placements: list[tuple[int, str]] = [(nick_site_start, nick_pattern), (payload_start, payload)]
     release_action = program.future_release_action
-    release_sequence = _future_top_overhang_sequence(release_action)
-    retained_end_nt = min(target.nick_offset_nt, len(release_sequence or ""))
-    if release_sequence is not None and retained_end_nt:
-        placements.append(
-            (
-                payload_start - retained_end_nt,
-                reverse_complement_iupac(release_sequence[:retained_end_nt]),
-            )
+    adapter_end_bases: tuple[tuple[int, str], ...] = ()
+    if release_action is not None:
+        end_placement = release_action.source_end_placement(
+            payload_boundary=payload_start, nick_offset_nt=target.nick_offset_nt
         )
+        if end_placement is not None:
+            placements.append(end_placement)
+        adapter_end_bases = release_action.adapter_end_bases(nick_offset_nt=target.nick_offset_nt)
     if (
         release_action is not None
         and release_action.requirement.recognition_material == "source_duplex"
@@ -178,8 +176,10 @@ def iter_basal_program_solutions(
             adapter_assignments = product(*per_position)
         for adapter_assignment in adapter_assignments:
             adapter = "".join(adapter_assignment) if adapter_assignment else None
-            if release_sequence is not None and (
-                adapter is None or not adapter.startswith(release_sequence[retained_end_nt:])
+            if adapter is not None and any(
+                adapter[position] != base
+                for position, base in adapter_end_bases
+                if position < len(adapter)
             ):
                 continue
             if adapter is not None and any(
@@ -238,8 +238,12 @@ def iter_basal_program_solutions(
                             end=Boundary(offset=nick_boundary),
                         ),
                         adapter_span=Span(start=Boundary(offset=0), end=Boundary(offset=arm_nt)),
-                        end_projection_positions=tuple(
-                            range(max(0, len(release_sequence or "") - target.nick_offset_nt))
+                        end_projection_positions=(
+                            ()
+                            if release_action is None
+                            else release_action.paired_end_positions(
+                                nick_offset_nt=target.nick_offset_nt, pairing_length_nt=arm_nt
+                            )
                         ),
                     )
                     if not target.permits_pair_classes(
@@ -256,21 +260,3 @@ def iter_basal_program_solutions(
                     pairing_state=pairing_state,
                     enzyme_bindings=tuple(bindings),
                 )
-
-
-def _future_top_overhang_sequence(action: BasalFutureReleaseAction | None) -> str | None:
-    """Return the future top-strand bases constrained by one cohesive-end requirement."""
-    if action is None:
-        return None
-    requirement = action.requirement
-    reference_before_complement = (
-        action.reference_cut_from_release_boundary < action.complement_cut_from_release_boundary
-    )
-    reverse = (reference_before_complement and requirement.product_end == "right") or (
-        not reference_before_complement and requirement.product_end == "left"
-    )
-    return (
-        reverse_complement_iupac(requirement.cohesive_end_sequence)
-        if reverse
-        else requirement.cohesive_end_sequence
-    )

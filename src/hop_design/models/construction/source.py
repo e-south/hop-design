@@ -49,7 +49,7 @@ class ConstructionCompositionSource(HopModel):
 class ConstructionSource(HopModel):
     """One strict external source for deterministic complete construction."""
 
-    schema_id: Literal["hop.construction-source/v7"] = Field(alias="schema")
+    schema_id: Literal["hop.construction-source/v8"] = Field(alias="schema")
     foldback: LocalNeighborhoodRequest
     basal: LocalNeighborhoodRequest | None = None
     composition: ConstructionCompositionSource
@@ -128,6 +128,7 @@ class ConstructionSource(HopModel):
                 future.orientation is not required.orientation
                 or not future.permits_sequence(required.cohesive_end_sequence)
                 or future.overhang_end is not required.overhang_end
+                or future.payload_end_offset_bp != required.payload_end_offset_bp
             ):
                 raise ValueError("Basal future release must match the complete clone endpoint.")
         return self

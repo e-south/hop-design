@@ -60,6 +60,7 @@ def evaluate_clone_endpoint(
         or local_requirement.orientation is not required.orientation
         or local_requirement.overhang_end is not required.overhang_end
         or local_requirement.cohesive_end_sequence != required.cohesive_end_sequence
+        or local_requirement.payload_end_offset_bp != required.payload_end_offset_bp
     ):
         return CombinationEvaluation(
             rejection_reason=CompositionRejectionCode.CLONE_LOCAL_RELEASE_INCOMPATIBLE,
@@ -89,6 +90,7 @@ def evaluate_clone_endpoint(
         request=release_request,
         pcr_top=pcr_product,
         design_sequence=request.design.encoding_sequence,
+        payload_boundaries=request.design.payload_boundaries,
     )
     if release.bindings is None:
         return CombinationEvaluation(

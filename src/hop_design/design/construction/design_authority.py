@@ -147,7 +147,9 @@ def _foldback_junction(
     )
 
 
-def _basal_junction(realization: BasalRealizationRecord) -> BasalJunction:
+def _basal_junction(
+    realization: BasalRealizationRecord, *, endpoint: _RouteDesignEndpoint
+) -> BasalJunction:
     pairing_state = realization.projection.pairing_state
     if pairing_state is None:
         raise ValueError("Selected basal realization does not contain an exact pairing state.")
@@ -159,6 +161,22 @@ def _basal_junction(realization: BasalRealizationRecord) -> BasalJunction:
     right = (
         reverse_complement_iupac(retained_source) if retained_source else ""
     ) + pairing_state.adapter_sequence_5prime
+    if endpoint == "clone_ready_duplex":
+        action = realization.future_release_action
+        if action is None:
+            raise ValueError("A clone-ready design requires an exact future release action.")
+        requirement = action.requirement
+        arm_length = requirement.payload_end_offset_bp + len(requirement.cohesive_end_sequence)
+        if payload_start < arm_length:
+            raise ValueError("The release span extends beyond the exact local source sequence.")
+        left = realization.source_precursor_sequence[payload_start - arm_length : payload_start]
+        end_bases = dict(action.adapter_end_bases(nick_offset_nt=len(retained_source)))
+        while len(right) < arm_length:
+            base = end_bases.get(len(right) - len(retained_source))
+            if base is None:
+                raise ValueError("The release span contains undetermined adapter bases.")
+            right += base
+        right = right[:arm_length]
     pairs = tuple(
         JunctionPairObservation(
             left_index=index,
@@ -224,7 +242,7 @@ def compile_design_from_local_realizations(
                 foldback_record,
                 payload_sequence=payload.sequence,
             ),
-            basal_junction=_basal_junction(basal_record),
+            basal_junction=_basal_junction(basal_record, endpoint=endpoint),
         )
     )
 

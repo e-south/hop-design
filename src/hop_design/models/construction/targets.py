@@ -65,7 +65,7 @@ class BasalPairAllowance(StrEnum):
 
 
 class BasalPairConstraint(HopModel):
-    """One authored class constraint ordered from the payload outward."""
+    """One authored class constraint ordered outward from the adapter ligation bond."""
 
     position_from_ligation: int = Field(ge=0)
     allowed_class: BasalPairAllowance

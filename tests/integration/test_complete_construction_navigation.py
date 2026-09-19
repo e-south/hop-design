@@ -89,7 +89,7 @@ def test_navigation_adds_route_facts_without_resealing_or_repeating_summary(
     packet = construction.project_construction_navigation(compilation)
 
     assert isinstance(packet, construction.ConstructionProjection)
-    assert packet.schema_id == "hop.construction-navigation/v1"
+    assert packet.schema_id == "hop.construction-navigation/v2"
     assert packet.source_result_id == result_id
     assert packet.json_bytes.endswith(b"\n")
     assert packet.csv_bytes is not None
@@ -104,10 +104,10 @@ def test_navigation_adds_route_facts_without_resealing_or_repeating_summary(
         "accepted_routes",
         "geometry_groups",
     }
-    assert rendered["renderer_version"] == "construction-navigation/1"
+    assert rendered["renderer_version"] == "construction-navigation/2"
     assert rendered["source_result_id"] == result_id
     summary = rendered["summary"]
-    assert summary["schema"] == "hop.complete-construction-summary/v3"
+    assert summary["schema"] == "hop.complete-construction-summary/v4"
     assert summary["source_result_id"] == result_id
     assert summary["status"] == "complete"
 

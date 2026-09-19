@@ -141,7 +141,7 @@ def _source(
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v7",
+        schema="hop.construction-source/v8",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
@@ -321,11 +321,13 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
         release=TypeIisReleaseRequest(
             enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
             left=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.FORWARD,
                 cohesive_end_sequence=complete_pcr_top[:4],
                 overhang_end=StrandEnd.FIVE_PRIME,
             ),
             right=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.REVERSE,
                 cohesive_end_sequence=reverse_complement_iupac(complete_pcr_top[-4:]),
                 overhang_end=StrandEnd.FIVE_PRIME,
@@ -340,7 +342,7 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/7d19f2c9ead2/20f7ad3322239c4c"
+    assert pcr.bundle_id == "hop:construction-bundle/d6153faef4d7/2128d179eff378b5"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value

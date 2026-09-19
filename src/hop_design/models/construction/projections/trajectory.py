@@ -20,21 +20,21 @@ from hop_design.models.construction.complete import MaterializedConstructionReal
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.construction.source_partition import SourcePartitionCertificate
 
-COMPLETE_CONSTRUCTION_TRAJECTORY_RENDERER_VERSION: Literal["complete-construction-trajectory/3"] = (
-    "complete-construction-trajectory/3"
+COMPLETE_CONSTRUCTION_TRAJECTORY_RENDERER_VERSION: Literal["complete-construction-trajectory/4"] = (
+    "complete-construction-trajectory/4"
 )
 
 
 class CompleteConstructionTrajectoryProjection(HopModel):
     """One caller-selected accepted route embedded without scientific reduction."""
 
-    schema_id: Literal["hop.complete-construction-trajectory/v4"] = Field(
-        default="hop.complete-construction-trajectory/v4",
+    schema_id: Literal["hop.complete-construction-trajectory/v5"] = Field(
+        default="hop.complete-construction-trajectory/v5",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:complete-construction-trajectory/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
-    renderer_version: Literal["complete-construction-trajectory/3"] = (
+    renderer_version: Literal["complete-construction-trajectory/4"] = (
         COMPLETE_CONSTRUCTION_TRAJECTORY_RENDERER_VERSION
     )
     composition_ordinal: int = Field(ge=0)

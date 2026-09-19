@@ -61,6 +61,16 @@ def complete_adapter_pairing(
         BasalPairClass.WOBBLE: "W",
         BasalPairClass.MISMATCH: "X",
     }
+    action = basal.future_release_action
+    end_positions = (
+        ()
+        if action is None
+        else action.paired_end_positions(
+            nick_offset_nt=basal.payload_source_map.segments[0].source_span.start.offset
+            - basal.basal_nick.boundary.offset,
+            pairing_length_nt=required,
+        )
+    )
     pairs = (
         *(
             pair.model_copy(update={"source_index": pair.source_index + completion})
@@ -75,6 +85,7 @@ def complete_adapter_pairing(
                 adapter_base=adapter[position],
                 pair_class=distal_classes[position],
                 compact_symbol=symbol_by_class[distal_classes[position]],
+                participates_in_end_projection=position in end_positions,
             )
             for position in range(len(local.pairs), required)
         ),

@@ -55,6 +55,10 @@ def write_complete_projection(
         "source_material_nt",
         "auxiliary_material_nt",
         "endpoint_product_nt",
+        "endpoint_strand_lengths_nt",
+        "endpoint_paired_positions_bp",
+        "left_payload_end_offset_bp",
+        "right_payload_end_offset_bp",
         "candidate_enzyme_programs",
         "recognition_placements_attempted",
         "constraint_systems_attempted",
@@ -129,6 +133,12 @@ def write_complete_projection(
                 "source_material_nt": row.source_material_nt,
                 "auxiliary_material_nt": row.auxiliary_material_nt,
                 "endpoint_product_nt": row.endpoint_product_nt,
+                "endpoint_strand_lengths_nt": ";".join(
+                    str(length) for length in row.endpoint_strand_lengths_nt
+                ),
+                "endpoint_paired_positions_bp": row.endpoint_paired_positions_bp,
+                "left_payload_end_offset_bp": row.left_payload_end_offset_bp,
+                "right_payload_end_offset_bp": row.right_payload_end_offset_bp,
                 "candidate_enzyme_programs": row.candidate_enzyme_programs,
                 "recognition_placements_attempted": row.recognition_placements_attempted,
                 "constraint_systems_attempted": row.constraint_systems_attempted,

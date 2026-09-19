@@ -241,8 +241,8 @@ def build_result(
         ),
         projection_inventory=(
             ProjectionInventoryItem(
-                projection_schema="hop.complete-construction-summary/v3",
-                renderer_version="complete-construction-projections/3",
+                projection_schema="hop.complete-construction-summary/v4",
+                renderer_version="complete-construction-projections/4",
                 status=ProjectionInventoryStatus.NOT_GENERATED,
             ),
         ),

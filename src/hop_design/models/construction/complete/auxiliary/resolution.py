@@ -144,6 +144,18 @@ def _resolve_adapter(
             EndpointAuxiliaryResolutionFailure.ADAPTER,
             "Adapter must preserve complete basal annealing and ligation chemistry.",
         )
+    action = basal.future_release_action
+    if action is not None and any(
+        position >= len(adapter.sequence_5prime) or adapter.sequence_5prime[position] != base
+        for position, base in action.adapter_end_bases(
+            nick_offset_nt=basal.payload_source_map.segments[0].source_span.start.offset
+            - basal.basal_nick.boundary.offset
+        )
+    ):
+        raise EndpointAuxiliaryResolutionError(
+            EndpointAuxiliaryResolutionFailure.ADAPTER,
+            "Complete adapter must satisfy every base of its future end obligation.",
+        )
     return adapter
 
 

@@ -24,7 +24,7 @@ from hop_design.models.reactions import ActionableEnzymeBinding, ReactionMolecul
 from hop_design.models.sequence import reverse_complement_iupac
 
 from ..request import TypeIisReleaseRequest
-from .geometry import CloneEndGenerationError, derive_clone_cut_geometry
+from .geometry import CloneEndGenerationError, clone_payload_end_offsets, derive_clone_cut_geometry
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +54,7 @@ def discover_endpoint_release(
     request: TypeIisReleaseRequest,
     pcr_top: str,
     design_sequence: str,
+    payload_boundaries: tuple[int, int],
 ) -> EndpointReleaseDiscovery:
     """Return one unique exact site pair after bounded exhaustive assessment."""
     state = ReactionState(
@@ -90,7 +91,7 @@ def discover_endpoint_release(
             continue
         bindings = (_binding(left_site), _binding(right_site))
         try:
-            derive_clone_cut_geometry(
+            geometry = derive_clone_cut_geometry(
                 bindings=bindings,
                 parent_length=len(pcr_top),
                 template_sequence=pcr_top,
@@ -110,6 +111,12 @@ def discover_endpoint_release(
                 primary_strand_id="complete-clone-primary",
                 complementary_strand_id="complete-clone-complementary",
             )
+            if clone_payload_end_offsets(
+                ends=(left_end, right_end),
+                encoding_start=geometry.encoding_span.start.offset,
+                payload_boundaries=payload_boundaries,
+            ) != (request.left.payload_end_offset_bp, request.right.payload_end_offset_bp):
+                continue
         except (CloneEndGenerationError, ValueError):
             continue
         if (

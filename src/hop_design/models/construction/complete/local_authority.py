@@ -72,6 +72,7 @@ def validate_local_authority_compatibility(
             future.orientation is not required.orientation
             or not future.permits_sequence(required.cohesive_end_sequence)
             or future.overhang_end is not required.overhang_end
+            or future.payload_end_offset_bp != required.payload_end_offset_bp
         ):
             raise ValueError("Basal future release does not match the complete clone request.")
 

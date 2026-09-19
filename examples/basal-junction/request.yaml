@@ -1,4 +1,4 @@
-schema: hop.local-neighborhood-request/v6
+schema: hop.local-neighborhood-request/v7
 name: loxp-basal-junction
 payload:
   schema: hop.final-payload/v1
@@ -29,6 +29,7 @@ geometry_domain:
     product_end: right
     overhang_end: five_prime
     cohesive_end_sequence: NNNN
+    payload_end_offset_bp: 0
 hard_constraints:
   preserve_payload: true
   forbid_unintended_actionable_sites: true

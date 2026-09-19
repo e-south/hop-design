@@ -39,21 +39,40 @@ def resolve_adapter_pairing_sequence(
             )
     by_position = {item.position_from_ligation: item for item in constraints}
     adapter = list(canonical.adapter_sequence_5prime)
-    for position in range(len(local.pairs), required):
-        constraint = by_position.get(position)
-        if constraint is None:
-            continue
-        source_base = canonical.pairs[position].source_base
-        choices = tuple(
-            base
-            for base in constraint.allowed_adapter_bases
-            if source_base in constraint.allowed_source_bases
-            and (
-                constraint.allowed_class is BasalPairAllowance.ANY
-                or derive_basal_pair_class(source_base, base).value
-                == constraint.allowed_class.value
+    action = basal.future_release_action
+    end_bases = (
+        {}
+        if action is None
+        else dict(
+            action.adapter_end_bases(
+                nick_offset_nt=basal.payload_source_map.segments[0].source_span.start.offset
+                - basal.basal_nick.boundary.offset
             )
         )
+    )
+    for position in range(len(local.pairs), required):
+        constraint = by_position.get(position)
+        if constraint is None and position not in end_bases:
+            continue
+        source_base = canonical.pairs[position].source_base
+        choices = (
+            (adapter[position],)
+            if constraint is None
+            else tuple(
+                base
+                for base in constraint.allowed_adapter_bases
+                if source_base in constraint.allowed_source_bases
+                and (
+                    constraint.allowed_class is BasalPairAllowance.ANY
+                    or derive_basal_pair_class(source_base, base).value
+                    == constraint.allowed_class.value
+                )
+            )
+        )
+        if position in end_bases:
+            choices = tuple(base for base in choices if base == end_bases[position])
+            if not choices:
+                raise ValueError("Distal pairing constraints conflict with the exact future end.")
         if fixed_sequence is not None:
             if position >= len(fixed_sequence) or fixed_sequence[position] not in choices:
                 raise ValueError("Fixed adapter violates a declared distal pairing constraint.")

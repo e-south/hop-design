@@ -151,8 +151,8 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
 
     projection = project_complete_construction_summary(source)
 
-    assert projection.schema_id == "hop.complete-construction-summary/v3"
-    assert projection.renderer_version == "complete-construction-projections/3"
+    assert projection.schema_id == "hop.complete-construction-summary/v4"
+    assert projection.renderer_version == "complete-construction-projections/4"
     assert projection.source_result_id == source.result.result_id
     assert projection.endpoint is endpoint
     assert projection.status is SearchCompletionStatus.COMPLETE
@@ -179,10 +179,10 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
     if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
         assert projection.projection_id == (
             "hop:complete-construction-summary/"
-            "281a24a48d6c98e133f9d9b02a03bb0030fb6133a4da1061f3972d21e9016a8a@1"
+            "31295683f3f373fbe0761c98c5bfae32ccce99f610688624fd9c81cc01669447@1"
         )
         assert sha256_digest(render_projection_json(projection)) == (
-            "sha256:dea1386a8b1e6806b3cfb259cb1f26eb0a758302154512c69b5cb353df415983"
+            "sha256:73bacc45dc583fea0a90e1145e39ad7e72967e69edabb29205775e5aee282c7e"
         )
 
     json_bytes = render_projection_json(projection)

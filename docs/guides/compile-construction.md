@@ -288,7 +288,7 @@ within this exact result, not a preference or a portable ranking.
 Construction compilation requires two independent inputs:
 
 1. a regular, nonsymlink JSON or YAML file with schema
-   `hop.construction-source/v7`; and
+   `hop.construction-source/v8`; and
 2. a verified design-bundle directory produced by HOP.
 
 The construction source declares the foldback request, an optional basal
@@ -297,9 +297,9 @@ primers are resolved, endpoint-dependent auxiliary materials, whole-route
 constraints, and finite enumeration bounds. Its shape is:
 
 ```yaml
-schema: hop.construction-source/v7
-foldback: <hop.local-neighborhood-request/v6 mapping>
-basal: <hop.local-neighborhood-request/v6 mapping or null>
+schema: hop.construction-source/v8
+foldback: <hop.local-neighborhood-request/v7 mapping>
+basal: <hop.local-neighborhood-request/v7 mapping or null>
 composition:
   endpoint: ssdna_hairpin | hairpin_pcr_duplex | clone_ready_duplex
   materialization:
@@ -377,6 +377,26 @@ Basal discovery does not invent the remaining annealing bases,
 finalize the complete adapter, or claim a PCR product. Complete composition
 must satisfy those obligations against the realized source scaffold and exact
 endpoint materials.
+
+The future release requires an explicit `payload_end_offset_bp`, independent
+of the nick offset. It measures paired non-payload positions between the payload
+and the near edge of the final overhang. Both complete release-side requirements
+also declare this field. The side selected by the local action must agree with
+the complete request. A zero gap excludes the overhang itself from the paired
+count; it does not describe a zero-length end.
+
+The source recognition placement follows the characterized action's cuts at
+that gap. It does not follow the nick when only the nick is moved. Local search
+intersects the independently placed recognition and end constraints. At complete
+release, the exact cut union must still equal the verified design encoding;
+HOP then measures each gap from the cuts to the design's payload features.
+
+When compiling an exact design from selected local realizations, the clone-ready
+basal arms cover the declared gap plus overhang length. Their exact source bases
+and adapter bases must be determined by the local record or its future end
+obligation. An undetermined adapter position requires an explicitly authored
+design; the compiler does not choose an undeclared distal base. The PCR-only
+design instead preserves the full local retained span.
 
 Pairing position zero is the adapter base beside the nick, not the base beside
 the payload. A displaced nick leaves an intervening source-derived segment;

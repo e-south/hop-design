@@ -91,6 +91,22 @@ targets before allocation; the request's evaluation limits still govern search
 completion. Minimum-overhead tables retain separate actions for different exact
 ends, even when the same enzyme realizes them.
 
+Every future release declares `payload_end_offset_bp`: the number of non-payload
+paired positions between the payload edge and the near edge of the protruding
+end. It is independent of `nick_offsets_nt`. Zero places the end beside the
+payload and still retains the declared overhang length. In the payload-forward
+source frame, an end of length `k` at offset `e` occupies `[-e-k, -e)` and a nick
+of displacement `n` has boundary `-n`. HOP transforms each oriented action's two
+cuts into that frame; the overhang sequence remains in its own protruding
+strand's 5-prime direction.
+
+Source-supplied end bases and adapter-supplied end bases follow their actual
+interval overlaps. Unspecified source bases remain searchable. End bases beyond
+the constrained local adapter span remain explicit completion obligations, not
+invented local sequence. Complete construction requires the same declared gap
+and checks it against both actual strand cuts. An omitted offset is invalid;
+current requests do not infer zero from an earlier schema.
+
 ### Preserve payload domains
 
 An IUPAC symbol is a set of possible bases, not a wildcard character. HOP uses
