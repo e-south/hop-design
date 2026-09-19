@@ -468,16 +468,41 @@ Each assignment is checked for source and endpoint primer binding, complete
 adapter pairing, and actionable enzyme sites. The resulting source material is
 recorded as constrained, not caller-fixed.
 
-Composition traverses foldback, basal, then upstream assignments in deterministic
-A/C/G/T order. Its nominal denominator includes all three domains. The existing
+To search lengths as well as bases, supply an explicit range and one IUPAC
+base domain applied independently at every upstream position:
+
+```yaml
+source_ssdna:
+  mode: constrain
+  upstream_sequence_spec:
+    min_length_nt: 10
+    max_length_nt: 12
+    base_spec: N
+  five_prime_end: hydroxyl
+  three_prime_end: hydroxyl
+```
+
+These are synthetic domain bounds, not preferred source lengths. A range
+contains every permitted sequence at every inclusive length. HOP evaluates
+lengths in ascending order and bases in A/C/G/T order within each length;
+it does not stop at the first working length. A range has positive lengths
+and an operational maximum of 1,000 nt. A source policy with `mode: derive`
+instead evaluates the local source without an added upstream context.
+
+Composition traverses foldback, basal, then upstream assignments. Its nominal
+denominator includes all three domains. The existing
 `max_combinations` and `max_realizations` bounds stop this traversal; a stopped
 prefix is truncated even if every examined sequence failed. Accepted alternatives
 remain distinct within geometry groups. Summary JSON and CSV bind each examined
 assignment through `source_context_sequence`.
 
-The pattern supplies one finite, fixed-length domain. HOP does not choose an
-unbounded extension length, generate a reusable handle without constraints, or
-design cleanup-nick tiling through this policy. A selected partition still
+The string form supplies one finite, fixed-length domain; the range form
+supplies a finite union of length-specific sequence domains. Neither form
+provides constraint-directed cleanup-site placement. An unrestricted `N` domain
+can be much larger than the declared execution budget, and a truncated prefix
+does not establish absence at later lengths. HOP does not choose an unbounded
+extension length, generate a reusable handle without constraints, or design
+cleanup-nick tiling through this policy. A selected partition still
 certifies its exact supplied source. No fixed primer is rewritten, no annealing
 length is silently reduced, and no melting temperature or recovery is predicted.
 

@@ -119,10 +119,13 @@ former or current internal paths.
 
 ### Bounded scaffold completion
 
-Upstream completion searches one caller-authored fixed-length sequence domain.
-Source-partition search still evaluates a supplied exact source. Joint design
-of source length, cleanup-nick tiling, and a required fragment partition remains
-unimplemented; bounded upstream completion alone is not global scaffold design.
+Upstream completion searches a caller-authored fixed-length IUPAC pattern or
+an inclusive length range with an explicit base domain. Every examined length
+and sequence retains its own disposition; a stopped prefix remains truncated.
+Source-partition search still evaluates a supplied exact source. Constraint-directed
+joint design of source sequence, cleanup-nick tiling, and a required fragment
+partition remains unimplemented; bounded upstream enumeration alone is not
+global scaffold design.
 
 ### Resumption within one local query
 

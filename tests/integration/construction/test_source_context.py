@@ -197,6 +197,79 @@ def _searched_context_case(tmp_path: Path, *, pattern: str = "MAAAGTCTGAC", reve
     return request, foldback, basal, design
 
 
+def _length_context_case(tmp_path: Path, *, reverse: bool = False):
+    request, foldback, basal, design = _context_case(tmp_path, reverse=reverse)
+    data = request.model_dump(mode="json", by_alias=True)
+    data["materialization"]["source_preparation"]["source_ssdna"] = {
+        "mode": "constrain",
+        "upstream_sequence_spec": {
+            "min_length_nt": 10,
+            "max_length_nt": 11,
+            "base_spec": "C",
+        },
+        "five_prime_end": "hydroxyl",
+        "three_prime_end": "hydroxyl",
+    }
+    return type(request).model_validate_json(json.dumps(data)), foldback, basal, design
+
+
+@pytest.mark.parametrize("reverse", (False, True))
+def test_length_search_preserves_short_source_rejection_and_longer_completion(
+    tmp_path: Path, reverse: bool
+) -> None:
+    request, foldback, basal, design = _length_context_case(tmp_path, reverse=reverse)
+    result = _discover_raw(request, foldback=foldback, basal=basal, design=design)
+    assert result.status is SearchCompletionStatus.COMPLETE
+    assert result.accounting.nominal_combinations == result.accounting.examined_combinations == 2
+    assert [item.source_context_sequence for item in result.combination_dispositions] == [
+        "C" * 10,
+        "C" * 11,
+    ]
+    assert result.combination_dispositions[0].rejection_reason == "source-preparation-incompatible"
+    assert len(result.realizations) == 1
+    item = result.realizations[0]
+    source = "C" * 11 + "AAAAGACATCAGATGCTGA"
+    assert item.source_preparation.source_ssdna.sequence_5prime == (
+        reverse_complement_iupac(source) if reverse else source
+    )
+    assert item.basal_authority == basal.realizations[0]
+    assert item.foldback_authority in foldback.realizations
+
+    data = request.model_dump(mode="json", by_alias=True)
+    data["enumeration"]["max_combinations"] = 1
+    limited = _discover_raw(
+        type(request).model_validate_json(json.dumps(data)),
+        foldback=foldback,
+        basal=basal,
+        design=design,
+    )
+    assert limited.status is SearchCompletionStatus.TRUNCATED
+    assert limited.truncation_reasons == ("max_combinations",)
+    assert not limited.realizations
+
+
+def test_source_length_search_survives_public_bundle_replay(tmp_path: Path) -> None:
+    request, foldback, basal, _ = _length_context_case(tmp_path)
+    source = _source(
+        foldback=foldback.neighborhood.request,
+        basal=basal.discovery.request,
+        endpoint=request.endpoint,
+        materialization=request.materialization,
+    )
+    compiled = construction.compile_construction_from_local_realizations(
+        _write_source(tmp_path / "source.yaml", source),
+        design_bundle_path=tmp_path / "design",
+        foldback=_local_receipt(tmp_path / "foldback.json", foldback),
+        foldback_realization_id=request.selected_foldback_realization_id,
+        basal=_local_receipt(tmp_path / "basal.json", basal),
+        basal_realization_id=request.selected_basal_realization_id,
+    )
+    assert compiled.nominal_combinations == 2
+    assert compiled.valid_realizations == 1
+    replayed = construction.load_verified_construction_bundle(compiled.write(tmp_path / "bundle"))
+    assert replayed.bundle_id == compiled.bundle_id
+
+
 @pytest.mark.parametrize("reverse", (False, True))
 def test_source_context_search_preserves_rejection_and_finds_later_completion(
     tmp_path: Path, reverse: bool

@@ -9,6 +9,7 @@ Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
 """
 
+import json
 from itertools import islice
 
 import pytest
@@ -72,3 +73,60 @@ def test_exact_resolution_cannot_smuggle_in_a_sequence_extension() -> None:
 def test_context_policy_rejects_invalid_dna(pattern: str) -> None:
     with pytest.raises(ValueError):
         _policy(pattern)
+
+
+def _length_policy(minimum: int, maximum: int, base_spec: str) -> ConstrainedSourceSsdnaPolicy:
+    return ConstrainedSourceSsdnaPolicy.model_validate_json(
+        json.dumps(
+            {
+                "mode": "constrain",
+                "upstream_sequence_spec": {
+                    "min_length_nt": minimum,
+                    "max_length_nt": maximum,
+                    "base_spec": base_spec,
+                },
+                "five_prime_end": "hydroxyl",
+                "three_prime_end": "hydroxyl",
+            }
+        )
+    )
+
+
+def test_source_lengths_are_enumerated_before_bases_with_exact_cardinality() -> None:
+    policy = _length_policy(1, 2, "m")
+    assert source_context_count(policy) == 6
+    assert list(composition_domain(("fold",), ("base",), policy)) == [
+        ("fold", "base", sequence) for sequence in ("A", "C", "AA", "AC", "CA", "CC")
+    ]
+    for sequence in ("A", "C", "AA", "AC", "CA", "CC"):
+        validate_source_context(policy, sequence)
+    for sequence in (None, "", "AAA", "G", "AN", "ac"):
+        with pytest.raises(ValueError, match=r"upstream assignment|sequence domain"):
+            validate_source_context(policy, sequence)
+
+
+def test_source_length_range_is_lazy_and_does_not_choose_one_length() -> None:
+    policy = _length_policy(99, 100, "N")
+    assert source_context_count(policy) == 4**99 + 4**100
+    assert list(islice(composition_domain((1,), (2,), policy), 2)) == [
+        (1, 2, "A" * 99),
+        (1, 2, "A" * 98 + "C"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("minimum", "maximum", "base_spec"),
+    (
+        (0, 1, "N"),
+        (2, 1, "N"),
+        (1, 1001, "N"),
+        (1, 2, "NN"),
+        (1, 2, "U"),
+        (1, 2, ""),
+    ),
+)
+def test_source_length_range_rejects_invalid_bounds_or_alphabet(
+    minimum: int, maximum: int, base_spec: str
+) -> None:
+    with pytest.raises(ValueError):
+        _length_policy(minimum, maximum, base_spec)

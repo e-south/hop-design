@@ -106,9 +106,11 @@ No reader aliases or automatic conversion of incompatible adapters are provided.
 
 ### Bounded upstream completion
 
-A constrained source policy supplies one fixed-length IUPAC pattern before the
-unchanged basal source flank, in payload-forward coordinates. Composition
-enumerates local pairs and exact upstream assignments, derives the physical
+A constrained source policy supplies either a fixed-length IUPAC pattern or
+an inclusive length range with one IUPAC base domain at every position, before
+the unchanged basal source flank in payload-forward coordinates. A range has
+positive lengths and a 1,000-nt operational maximum. Composition enumerates
+local pairs, then lengths and exact upstream assignments, derives the physical
 source orientation, and evaluates complete primer, adapter, and reaction
 requirements on that source. Each assignment has its own disposition and exact
 material provenance. Choosing the first valid completion would hide alternatives
@@ -116,11 +118,14 @@ and conflate a failed candidate with an infeasible domain; the result therefore
 retains the complete examined prefix under its finite limits.
 
 This adds a sequence coordinate to composition rather than a second route
-compiler. Source patterns and assignments are covered by source schema 7,
-construction request/result schema 6, and summary schema 3. Readers reject
-other versions without compatibility aliases. Local junction schemas and
-identities do not change. Joint source-length and cleanup-nick tiling design is
-not established by this fixed-length sequence search.
+compiler. The range object is an additive domain expression within the current
+pre-release source policy. A string still denotes only its literal fixed-length
+IUPAC domain, with unchanged normalization and canonical bytes. An object has
+explicit minimum, maximum, and base-domain fields; its content enters request
+identity and replay. Readers do not convert between the two expressions or
+accept predecessor schema versions. Local junction schemas and identities do
+not change. Bounded length enumeration does not establish joint source and
+cleanup-nick tiling design or make broad unconstrained enumeration tractable.
 
 ### Source partition
 

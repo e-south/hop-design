@@ -37,20 +37,39 @@ class FixedSourceSsdnaPolicy(HopModel):
     material: ExactConstructionMaterial
 
 
+class UpstreamSequenceLengthRange(HopModel):
+    """Bound upstream lengths and the IUPAC base domain at every position."""
+
+    min_length_nt: int = Field(ge=1)
+    max_length_nt: int = Field(ge=1, le=1_000)
+    base_spec: str = Field(min_length=1, max_length=1)
+
+    @field_validator("base_spec")
+    @classmethod
+    def normalize_base(cls, value: str) -> str:
+        return normalize_dna_sequence(value, allow_degenerate=True)
+
+    @model_validator(mode="after")
+    def validate_range(self) -> UpstreamSequenceLengthRange:
+        if self.max_length_nt < self.min_length_nt:
+            raise ValueError("Maximum upstream length must not be below the minimum.")
+        return self
+
+
 class ConstrainedSourceSsdnaPolicy(HopModel):
     """Search an authored upstream IUPAC context without changing local junctions."""
 
     mode: Literal[MaterialResolutionMode.CONSTRAIN]
-    upstream_sequence_spec: str
+    upstream_sequence_spec: str | UpstreamSequenceLengthRange
     five_prime_end: EndChemistry
     three_prime_end: EndChemistry
 
     @field_validator("upstream_sequence_spec", mode="before")
     @classmethod
-    def normalize_context(cls, value: object) -> str:
-        if not isinstance(value, str):
-            raise ValueError("Upstream sequence specification must be a DNA string.")
-        return normalize_dna_sequence(value, allow_degenerate=True)
+    def normalize_context(cls, value: object) -> object:
+        if isinstance(value, str):
+            return normalize_dna_sequence(value, allow_degenerate=True)
+        return value
 
 
 type SourceSsdnaPolicy = Annotated[
@@ -111,4 +130,5 @@ __all__ = [
     "PrimerResolutionPolicy",
     "SourceDuplexPreparationPolicy",
     "SourceSsdnaPolicy",
+    "UpstreamSequenceLengthRange",
 ]
