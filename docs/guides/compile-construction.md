@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-09
+last_verified: 2026-09-19
 doc_type: how-to
 journey:
   - discover
@@ -41,6 +41,11 @@ all four-base cohesive ends. It writes exact local results and an SVG/CSV
 matrix. An existing output directory is refused. This is local discovery,
 not a completed hairpin route: adapter completion, primers, and the rest of
 the source must still satisfy the requested endpoint.
+
+To interpret a collection of local searches, see the
+[bounded-neighborhood teaching example](../reference/view-contracts.md#teaching-example-two-bounded-local-neighborhoods).
+It separates search coordinates, physical measurements, local existence, and
+exhaustive alternative coverage before choosing an exemplar.
 
 Once you have compiled a complete construction bundle, list and inspect it:
 

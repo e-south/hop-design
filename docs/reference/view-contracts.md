@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-07
+last_verified: 2026-09-19
 doc_type: reference
 ---
 
@@ -151,6 +151,48 @@ These projections establish local feasibility only under the declared
 molecular model. They do not establish a complete construction route,
 physical construction, quality control, biological activity, or empirical
 enzyme performance.
+
+### Teaching example: two bounded local neighborhoods
+
+A fixed payload can leave two independent local construction questions.
+Declare finite coordinate and action domains before searching, retain all
+exact local solutions allowed by the execution bounds, and select an example
+from those results. The selected example must not define which alternatives
+were allowed into the search.
+
+For the basal neighborhood, plot nick displacement `n` in nt against final
+paired gap `e` in bp. Moving the nick need not move the eventual assembly end.
+State the full association obligation `a` separately, along with the locally
+constrained pairing window and its permitted noncanonical pairs. Faceting by
+the pairing cap makes that conditioning visible. A count of end identities is
+a different question from whether any local solution exists.
+
+For the foldback neighborhood, a direct search-coordinate plot uses total
+added paired arm `A` in bp against cap `C` in nt, with one panel per nick
+displacement `D`. A structural view may instead use the reported post-nick arm
+`R`. At fixed `D`, the supported model relates them by `R=A-D`. For example,
+`A=6,C=4,D=2` has `R=4`; this is a coordinate illustration, not an assertion
+that a particular payload or enzyme supports that point. Holding `A,C` while
+varying `D` preserves the retained path, whereas holding `R,C` while varying
+`D` changes the required total arm. Consume the physical projection for
+realized measurements rather than inferring them from a sketch.
+
+A plotted point aggregates an explicitly named set of requests. A filled point
+means at least one exact member exists among those requests. An open point can
+mean absence only when every included domain has exhausted. An empty partial
+search remains unresolved. A positive point may still have incomplete
+alternative coverage. An exhausted traversal that generated no candidate
+should be distinguished from evaluated candidates that failed constraints;
+neither reports a failed laboratory reaction. Coordinates outside the declared
+domain carry no claim. Every point should retain its request, result, and exact
+member identities so the aggregate can be inspected.
+
+If a plot collapses displacement, strands, orientations, or action choices,
+its legend must state the existential meaning: “some searched choice works.”
+A catalog union does not prescribe applying every enzyme together. Neither
+the shape of the feasible region nor the size of the chosen domain establishes
+a global optimum or a complete route. Material preparation and endpoint
+verification remain separate continuation questions.
 
 ## Source-partition projection
 
