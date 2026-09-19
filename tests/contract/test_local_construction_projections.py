@@ -37,6 +37,7 @@ from hop_design.models.construction import (
     ConstructionEndpoint,
     FailureReasonCount,
     FoldbackGeometryDomain,
+    FoldbackTarget,
     NickStrandSelection,
     SearchCompletionStatus,
     SearchDisposition,
@@ -45,6 +46,8 @@ from hop_design.models.construction import (
     SequenceDomainPartition,
     grouped_realization_projection,
 )
+from hop_design.models.enzymes import RecognitionOrientationSemantics
+from hop_design.models.physical import Strand
 from tests.contract.test_basal_construction_discovery import _request as basal_request
 from tests.contract.test_foldback_construction_discovery import (
     _nickase as foldback_nickase,
@@ -59,6 +62,113 @@ from tests.contract.test_foldback_construction_discovery import (
 
 def _csv_rows(content: bytes) -> list[dict[str, str]]:
     return list(csv.DictReader(io.StringIO(content.decode("utf-8"))))
+
+
+@pytest.mark.parametrize("strand", (Strand.TOP, Strand.BOTTOM))
+@pytest.mark.parametrize("defined_terminus", (False, True))
+@pytest.mark.parametrize(
+    ("arm", "offset", "post_nick", "tail", "extension", "retained"),
+    (
+        (6, 0, 6, 16, 16, 16),
+        (6, 2, 4, 12, 14, 16),
+        (8, 2, 6, 16, 18, 20),
+        (6, 6, 0, 4, 10, 16),
+    ),
+)
+def test_foldback_physical_measurements_follow_replayed_strands(
+    strand: Strand,
+    defined_terminus: bool,
+    arm: int,
+    offset: int,
+    post_nick: int,
+    tail: int,
+    extension: int,
+    retained: int,
+) -> None:
+    motif = {6: "ACGATGGGAA", 8: "ACGATGACGGAA"}[arm]
+    enzymes = (foldback_nickase(motif=motif, cut_offset=offset),)
+    if defined_terminus:
+        enzymes += (
+            foldback_terminus_enzyme(
+                motif="AAGC",
+                orientation_semantics=RecognitionOrientationSemantics.BOTH_ORIENTATIONS,
+            ),
+        )
+    result = discover_foldback_neighborhood(
+        foldback_request(
+            *enzymes,
+            target=FoldbackTarget(
+                nick_strand=strand,
+                junction_offset_nt=offset,
+                loop_length_nt=4,
+                annealing_arm_length_bp=arm,
+            ),
+            max_search_nodes=10,
+            max_realizations=2,
+        )
+    )
+    assert result.realizations
+    if defined_terminus:
+        assert "sequential_terminus_plus_nick" in {
+            item.program_kind for item in result.realizations
+        }
+    projection = project_foldback_feasibility(result)
+    for row, realization in zip(projection.realizations, result.realizations, strict=True):
+        assert row.post_nick_arm_length_bp == post_nick
+        assert row.exposed_tail_length_nt == tail
+        assert row.source_extension_length_nt == extension
+        assert row.retained_foldback_length_nt == retained
+        assert row.source_nick_boundary == realization.foldback_nick.boundary.offset
+        assert row.source_terminus_boundary == realization.terminus.boundary.offset
+        assert abs(row.source_nick_boundary - row.source_payload_boundary) == offset
+        assert abs(row.source_terminus_boundary - row.source_nick_boundary) == tail
+        assert abs(row.source_terminus_boundary - row.source_payload_boundary) == extension
+        assert row.retained_foldback_start == 4
+        assert row.retained_foldback_end == 4 + retained
+        assert row.exposed_tail_length_nt == realization.released_state.active_nick_boundary.offset
+        assert row.post_nick_arm_length_bp == sum(
+            pair.left_strand_id == pair.right_strand_id for pair in realization.annealing_pairs
+        )
+    rows = _csv_rows(render_projection_csv(projection))
+    assert {row["post_nick_arm_length_bp"] for row in rows} == {str(post_nick)}
+    assert {row["exposed_tail_length_nt"] for row in rows} == {str(tail)}
+    assert verify_local_projection(projection, result) == projection
+
+
+@pytest.mark.parametrize(
+    "schema", ("hop.foldback-feasibility-landscape/v3", "hop.foldback-feasibility-landscape/v4")
+)
+def test_foldback_projection_rejects_missing_physical_coordinate_contract(schema: str) -> None:
+    result = discover_foldback_neighborhood(foldback_request(foldback_nickase()))
+    projection = project_foldback_feasibility(result)
+    content = projection.model_dump(mode="python", by_alias=True)
+    content["schema"] = schema
+    with pytest.raises(ValidationError, match=r"hop\.foldback-feasibility-landscape/v5"):
+        type(projection).model_validate(content)
+
+
+@pytest.mark.parametrize(
+    "field",
+    (
+        "post_nick_arm_length_bp",
+        "exposed_tail_length_nt",
+        "source_extension_length_nt",
+        "retained_foldback_length_nt",
+        "source_payload_boundary",
+        "source_nick_boundary",
+        "source_terminus_boundary",
+        "retained_foldback_start",
+        "retained_foldback_end",
+    ),
+)
+def test_foldback_projection_replay_rejects_changed_physical_measurement(field: str) -> None:
+    result = discover_foldback_neighborhood(foldback_request(foldback_nickase()))
+    projection = project_foldback_feasibility(result)
+    content = projection.model_dump(mode="python", by_alias=True)
+    content["realizations"][0][field] += 1
+    altered = type(projection).model_validate(content)
+    with pytest.raises(ValueError, match="does not replay its detailed source result"):
+        verify_local_projection(altered, result)
 
 
 def _partitioned(request, *, part_count: int = 2, part_index: int = 0):
@@ -115,7 +225,7 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
         assert {row["sequence_part_index"] for row in rows} == {"1"}
     expected_schemas = {
         "foldback": (
-            "hop.foldback-feasibility-landscape/v4",
+            "hop.foldback-feasibility-landscape/v6",
             "hop.foldback-overhead-frontier/v2",
         ),
         "basal": (
@@ -126,7 +236,7 @@ def test_partitioned_local_projections_preserve_declared_scope_in_json_and_csv(
     assert (feasibility.schema_id, overhead.schema_id) == expected_schemas[family]
     mismatched = feasibility.model_dump(mode="python", by_alias=True)
     mismatched["schema"] = {
-        "foldback": "hop.foldback-feasibility-landscape/v3",
+        "foldback": "hop.foldback-feasibility-landscape/v5",
         "basal": "hop.basal-feasibility-landscape/v4",
     }[family]
     with pytest.raises(ValidationError, match="sequence-domain scope"):
@@ -167,8 +277,8 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
     assert projection.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
     assert projection.source_result_id == result.result_id
     assert projection.projection_reference.result_id == result.result_id
-    assert projection.schema_id == "hop.foldback-feasibility-landscape/v3"
-    assert projection.projection_reference.renderer_version == "foldback-feasibility-projections/3"
+    assert projection.schema_id == "hop.foldback-feasibility-landscape/v5"
+    assert projection.projection_reference.renderer_version == "foldback-feasibility-projections/5"
     assert projection.provenance == result.neighborhood.provenance
     assert projection.claim_boundary == result.neighborhood.claim_boundary
     assert (
@@ -176,7 +286,7 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
         == grouped_realization_projection(
             result_id=result.result_id,
             projection_schema=projection.schema_id,
-            renderer_version="foldback-feasibility-projections/3",
+            renderer_version="foldback-feasibility-projections/5",
             realization_ids=tuple(
                 item.local_realization.local_realization_id for item in result.realizations
             ),
@@ -238,7 +348,7 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
 
     legacy = projection.model_dump(mode="python", by_alias=True)
     legacy["schema"] = "hop.foldback-feasibility-landscape/v2"
-    with pytest.raises(ValidationError, match=r"hop\.foldback-feasibility-landscape/v3"):
+    with pytest.raises(ValidationError, match=r"hop\.foldback-feasibility-landscape/v5"):
         type(projection).model_validate(legacy)
 
 

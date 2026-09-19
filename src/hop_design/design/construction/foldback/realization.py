@@ -198,14 +198,14 @@ def _geometry_groups(
 
 def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem, ...]:
     feasibility_schema = (
-        "hop.foldback-feasibility-landscape/v4"
+        "hop.foldback-feasibility-landscape/v6"
         if partitioned
-        else "hop.foldback-feasibility-landscape/v3"
+        else "hop.foldback-feasibility-landscape/v5"
     )
     feasibility_renderer = (
-        "foldback-feasibility-projections/4"
+        "foldback-feasibility-projections/6"
         if partitioned
-        else "foldback-feasibility-projections/3"
+        else "foldback-feasibility-projections/5"
     )
     overhead_schema = (
         "hop.foldback-overhead-frontier/v2" if partitioned else "hop.foldback-overhead-frontier/v1"

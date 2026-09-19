@@ -213,7 +213,7 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
     assert "searches both exact nick strands by default" in normalized_mental_model
     assert "local construction projection" in normalized
     for schema_id in (
-        "hop.foldback-feasibility-landscape/v4",
+        "hop.foldback-feasibility-landscape/v6",
         "hop.basal-feasibility-landscape/v5",
         "hop.basal-minimum-overhead-matrix/v1",
         "hop.basal-minimum-overhead-matrix/v2",

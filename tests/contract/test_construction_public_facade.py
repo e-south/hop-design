@@ -308,7 +308,7 @@ def test_construction_local_projections_require_explicit_family_selection(
         family="basal",
     )
 
-    assert foldback.schema_id == "hop.foldback-feasibility-landscape/v3"
+    assert foldback.schema_id == "hop.foldback-feasibility-landscape/v5"
     assert basal.schema_id == "hop.basal-feasibility-landscape/v4"
     assert foldback_frontier.schema_id == "hop.foldback-overhead-frontier/v1"
     assert basal_frontier.schema_id == "hop.basal-overhead-frontier/v1"

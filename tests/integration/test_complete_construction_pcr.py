@@ -1009,7 +1009,7 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "67b3855e9fbf4138182a7d4ecce4d74a077fbb3d0a214a0996a4ba8e9a83b115"  # pragma: allowlist secret  # noqa: E501
+            "1ab092a3d3ca2fbeadbf367467f41378dbc3780234a7cfa54f128e4ac66be03d"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
@@ -1049,7 +1049,7 @@ def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Pat
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "4767bcfb86a1aeba125b74dff55e528bece95cfe3196b5b4d97004dc5b7426d1"  # pragma: allowlist secret  # noqa: E501
+            "11b3c69ed933bc323e2e354715679ab249fc0ea738d57a347cae32b9a5b17803"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (

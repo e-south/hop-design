@@ -359,7 +359,7 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
     assert {item.projection_schema for item in result.neighborhood.projection_inventory} == {
         "hop.foldback-nucleotide-exemplar/v1",
         "hop.foldback-geometry-count-table/v1",
-        "hop.foldback-feasibility-landscape/v3",
+        "hop.foldback-feasibility-landscape/v5",
         "hop.foldback-overhead-frontier/v1",
     }
     assert all(item.status == "not_generated" for item in result.neighborhood.projection_inventory)

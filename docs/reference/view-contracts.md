@@ -71,9 +71,9 @@ SVG is a deterministic convenience artifact. Neither is experimental evidence.
 Payload-centered foldback and basal discovery also support a narrower family
 of local scientific projections:
 
-- `hop.foldback-feasibility-landscape/v3` records every exact foldback local
+- `hop.foldback-feasibility-landscape/v5` records every exact foldback local
   realization from one unpartitioned search;
-  `hop.foldback-feasibility-landscape/v4` carries the same relation for one
+  `hop.foldback-feasibility-landscape/v6` carries the same relation for one
   declared sequence-domain part and includes its exact part scope;
 - `hop.basal-feasibility-landscape/v4` records every exact basal local
   realization from one unpartitioned search as a local pairing and upstream
@@ -97,6 +97,33 @@ source result by rebuilding the typed relation and requiring canonical
 equality; a resealed subset, reordering, or invented row is rejected. JSON,
 CSV, and SVG renderers preserve that relation without ranking candidates or
 recalculating molecular state.
+
+Foldback feasibility rows distinguish total paired arm `A`, nick displacement
+`D`, and post-nick self-pairing arm `R`. The latter counts observed pairs whose
+two bases belong to the same released fragment. It is not an additional arm
+added to `A`. Each row links to its exact local realization and exposes:
+
+| Field | Physical authority and unit |
+| --- | --- |
+| `annealing_arm_length_bp` | Total added paired arm `A`, in bp. |
+| `junction_offset_nt` | Nick displacement `D` within that arm, in nt. |
+| `post_nick_arm_length_bp` | Observed same-fragment pairs `R=A-D`, in bp. |
+| `loop_length_nt` | Unpaired cap length `C`, in nt. |
+| `exposed_tail_length_nt` | Released active strand from its 5′ end to its nick-relative boundary, in nt. |
+| `source_extension_length_nt` | Distance from the mapped foldback payload boundary to the controlled terminus on the source reference, in nt. |
+| `retained_foldback_length_nt` | Number of retained non-payload positions in the ligated foldback path, in nt. |
+| `source_payload_boundary`, `source_nick_boundary`, `source_terminus_boundary` | Zero-based boundaries in the exact source-reference coordinate frame; strand and source orientation accompany them. |
+| `retained_foldback_start`, `retained_foldback_end` | Half-open retained interval in the ligated strand's 5′→3′ coordinates. |
+
+The source tail interval lies between the nick and controlled terminus; the
+source extension lies between the payload boundary and controlled terminus.
+Their source-reference order reverses with the physical nick strand. Both
+source-terminus and separately cleaved-terminus local programs carry these
+measurements; local program support does not imply complete-route eligibility.
+For `A=6, D=2, C=4`, the measured values are `R=4` bp, a 12-nt exposed tail,
+a 14-nt source extension and a 16-nt retained path. Moving `D` at fixed `A,C`
+does not lengthen that retained path. The general projection permits `R=0`;
+it does not impose a biochemical minimum for the post-nick arm.
 
 When local execution declares a `sequence_partition`, every projection carries
 its exact part count and zero-based part index. JSON and CSV expose those typed
