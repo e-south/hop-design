@@ -153,6 +153,15 @@ candidates; `discovery.py` owns evaluation limits, witness stopping, coverage,
 and final result assembly. These internal work units are not serialized
 authorities or additional public request types.
 
+The foldback kernel solves finite independent arm/cap base domains and a
+correlated source expression before materializing exact sequence solutions.
+Both source orientations use that same domain; reverse complementation changes
+the source expression and binding coordinates while preserving final-product
+variables. Domain cardinality counts placement-compatible assignments before
+reaction-stage admission. It is not an admitted construction count. Concrete
+enumeration materializes those assignments in canonical base order and retains
+the same placement-exclusion diagnostics.
+
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,
 and fails on unknown first-party layers. The root facade and serialization module are narrow documented
