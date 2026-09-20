@@ -255,6 +255,10 @@ narrow its declared search or use every member of a deterministic, disjoint
 sequence-domain partition. Each part remains independently replayable and
 cannot claim whole-domain payload compatibility; the loader never treats an
 oversized result as a partial authority.
+Basal sequence partitions select canonical assignment ordinals before building
+molecular solutions. They preserve the unpartitioned outcome order, including
+pair-budget failures; a sole placement failure belongs to part zero. Partition
+selection changes neither the molecular constraints nor the selected outcomes.
 Source-partition result creation and replay enforce the same 64 MiB envelope before
 publication or semantic replay; authored requests retain the one-megabyte limit.
 External observations may be unavailable without invalidating a prospective

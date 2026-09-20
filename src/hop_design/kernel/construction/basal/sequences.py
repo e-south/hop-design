@@ -17,6 +17,7 @@ from itertools import product
 from hop_design.models.construction import (
     BasalTarget,
     ConstructionEndpoint,
+    SequenceDomainPartition,
 )
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import (
@@ -62,6 +63,7 @@ def iter_basal_program_solutions(
     target: BasalTarget,
     endpoint: ConstructionEndpoint,
     program: BasalProgramCandidate,
+    sequence_partition: SequenceDomainPartition | None = None,
 ) -> Iterator[BasalSequenceSolution | BasalPlacementFailure]:
     """Solve exact source and adapter sequences from geometry and recognition constraints."""
     from .pairing import resolve_basal_pairing_state
@@ -137,7 +139,8 @@ def iter_basal_program_solutions(
     for start, pattern in placements:
         recognition_indexes.update(range(start, start + len(pattern)))
         if not _constrain(domains, start=start, pattern=pattern):
-            yield BasalPlacementFailure("recognition-payload-conflict")
+            if sequence_partition is None or sequence_partition.part_index == 0:
+                yield BasalPlacementFailure("recognition-payload-conflict")
             return
     if (
         release_action is not None
@@ -157,8 +160,10 @@ def iter_basal_program_solutions(
         for source_index, index in enumerate(variable_indexes)
     )
     if any(not domain for domain in source_domains):
-        yield BasalPlacementFailure("basal-source-conflict")
+        if sequence_partition is None or sequence_partition.part_index == 0:
+            yield BasalPlacementFailure("basal-source-conflict")
         return
+    canonical_ordinal = 0
     for source_assignment in product(*source_domains):
         source_arm = "".join(source_assignment)
         if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
@@ -202,6 +207,13 @@ def iter_basal_program_solutions(
                 for index in unresolved_indexes
             )
             for unresolved_assignment in product(*unresolved_domains):
+                ordinal = canonical_ordinal
+                canonical_ordinal += 1
+                if (
+                    sequence_partition is not None
+                    and ordinal % sequence_partition.part_count != sequence_partition.part_index
+                ):
+                    continue
                 bases = [next(base for base in _BASES if base in domain) for domain in domains]
                 for index, base in zip(variable_indexes, source_assignment, strict=True):
                     bases[index] = base

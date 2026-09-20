@@ -46,7 +46,7 @@ from ..neighborhood_accounting import (
     reject_partial_payload_routes,
     search_disposition,
 )
-from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
+from ..sequence_domain import partition_payload_accounting
 from .reactions import _ROUTE_VERSION
 from .realization import _groups, _realization
 from .traversal import iter_basal_work_units
@@ -76,14 +76,12 @@ def discover_basal_neighborhood(
         level_failures: Counter[str] = Counter()
         level_rejected = 0
         for unit in iter_basal_work_units(request, retained_overhead_nt=retained_overhead_nt):
-            solutions = partition_sequence_domain(
-                iter_basal_program_solutions(
-                    payload_sequence=unit.payload_sequence,
-                    target=unit.target,
-                    endpoint=request.endpoint,
-                    program=unit.program,
-                ),
-                request.search.sequence_partition,
+            solutions = iter_basal_program_solutions(
+                payload_sequence=unit.payload_sequence,
+                target=unit.target,
+                endpoint=request.endpoint,
+                program=unit.program,
+                sequence_partition=request.search.sequence_partition,
             )
             for solution in solutions:
                 if examined >= request.search.max_search_nodes:
