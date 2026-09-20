@@ -34,6 +34,8 @@ and inspects saved constructions; Python also searches junctions and compiles ro
   which nickase combinations leave the required fragments after separation?
 - [Enumerate foldback sequence populations](guides/foldback-sequence-space.md):
   count exact local configurations and recover molecular examples from compact sets.
+- [Enumerate basal sequence populations](guides/basal-sequence-space.md):
+  admit full sources, count distinct local words, and recover molecular examples.
 - [Check exact materials through a named method](guides/resolve-production-method.md):
   molecular states and products, explained in the [method model](methods/overview.md).
 - [Render molecular views](guides/render-component-views.md) and

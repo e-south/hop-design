@@ -132,6 +132,19 @@ placement exclusions, admitted sets, and totals by deterministic rediscovery.
 An empty case with no permitted program remains part of the raw denominator.
 An empty geometry envelope has zero cases and zero raw population.
 
+Complete basal sequence-space requests use the same computational limit contract.
+One case fixes exact payload, nick coordinate and strand, and a canonical local
+pairing window. Its raw population is `4**(n+W)`; exact end identities and enzyme
+programs do not multiply that denominator. The local window must cover the
+future-end footprint. The retained-overhead ceiling filters n+W and does not
+claim to bound complete material cost. Placement domains may extend outside
+that window. Admission checks every oriented recognition window on the full
+source before projection removes outside context. Result limits count both
+source and local decisions; exhaustion never yields completed absence. Verified
+loading recomputes complete request coverage and supporting sets. Member recovery
+preserves full adapter recognition context and checks ordinary molecular
+realization, including unresolved association obligations.
+
 Every spec has an explicit positive candidate bound. The convenience route
 resolves exactly one generic design. Foldback enumeration reports `complete`,
 `infeasible`, or `truncated`, including the fired node or hit bound; a truncated

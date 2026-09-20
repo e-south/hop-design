@@ -206,6 +206,17 @@ Selected members use the same full molecular realization authority as concrete
 local discovery. This receipt establishes local admission, not complete materials,
 method performance, thermodynamic stability, or experimental recovery.
 
+Canonical basal populations use `models/construction/basal_space.py` and the
+parallel `BasalSequenceSpace` public receipt. Shared basal domains retain the
+full source through reaction admission; `basal_space_admission.py` applies the
+ordinary nick program and shared reaction-site rules before window projection.
+Each case unions local words across exact ends and enzyme support while retaining
+admitted source sets for molecular recovery. Loading repeats complete discovery;
+selected words recover a supporting source and pass ordinary basal realization.
+Noncanonical pair permissions raise rather than being silently narrowed.
+Computational limits belong to the shared sequence-set models; study budgets,
+pooling across requests, plots, and selection policies remain caller-owned.
+
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,
 and fails on unknown first-party layers. The root facade and serialization module are narrow documented

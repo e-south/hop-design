@@ -123,6 +123,7 @@ def test_materialization_retains_recognition_context_beyond_the_paired_adapter()
     domain = solve_basal_sequence_domain(**arguments)
     assert len(domain.canonical_source_domains()) == 8
     assert domain.materialize("AAAACCCC", "TTTTGA") == solutions[0]
+    assert domain.materialize_canonical_source("AAAACCCC") == solutions[0]
 
 
 def test_domain_preserves_placement_exclusion_before_sequence_allocation():

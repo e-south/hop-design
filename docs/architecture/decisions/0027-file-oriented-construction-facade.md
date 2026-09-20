@@ -67,6 +67,7 @@ Direct, PCR, and clone-ready endpoints have fail-closed structural requirements.
 
 The exact public allowlist is:
 
+- `BasalSequenceSpace`;
 - `ConstructionCompilation`;
 - `ConstructionProjection`;
 - `ConstructionSelection`;
@@ -82,6 +83,7 @@ The exact public allowlist is:
 - `compile_construction_from_local_realizations`;
 - `compile_design_from_local_realizations`;
 - `discover_foldback_sequence_space`;
+- `discover_basal_sequence_space`;
 - `discover_local_neighborhood`;
 - `discover_local_neighborhoods`;
 - `discover_source_partition`;
@@ -89,6 +91,7 @@ The exact public allowlist is:
 - `list_local_realizations`;
 - `load_verified_construction_bundle`;
 - `load_verified_foldback_sequence_space`;
+- `load_verified_basal_sequence_space`;
 - `load_construction_selection`;
 - `load_verified_local_neighborhood`;
 - `load_verified_source_partition`;

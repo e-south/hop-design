@@ -82,6 +82,13 @@ If every point has a solution, binary dots are uninformative; inspect exact
 counts or another scientifically defined quantity rather than inventing a
 cutoff. Selection happens after enumeration and requires a named caller rule.
 
+For exact populations without generating every detailed witness, use the public
+[basal](../../docs/guides/basal-sequence-space.md) and
+[foldback](../../docs/guides/foldback-sequence-space.md) sequence-space operations.
+They preserve exact admitted sets and recover selected molecular examples.
+Basal admission checks the complete source before removing outside context from
+the counted local window. End optionality can use those same admitted words.
+
 The script accepts an unpartitioned basal request with source-duplex recognition
 and a right 5′ endpoint. It rejects other coordinate conventions before writing
 output rather than applying this interval formula to a different strand model.

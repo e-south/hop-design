@@ -9,6 +9,11 @@ Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
 """
 
+from hop_design.design.construction.basal_space_public import (
+    BasalSequenceSpace,
+    discover_basal_sequence_space,
+    load_verified_basal_sequence_space,
+)
 from hop_design.design.construction.execution.local import (
     LocalNeighborhoodBatch,
     discover_local_neighborhoods,
@@ -56,6 +61,7 @@ from hop_design.design.construction.source_partition.construction import (
 from hop_design.export.publication import ProtectedRoot
 
 __all__ = [
+    "BasalSequenceSpace",
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",
@@ -70,6 +76,7 @@ __all__ = [
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
+    "discover_basal_sequence_space",
     "discover_construction_source_partition",
     "discover_foldback_sequence_space",
     "discover_local_neighborhood",
@@ -77,6 +84,7 @@ __all__ = [
     "discover_source_partition",
     "list_local_realizations",
     "load_construction_selection",
+    "load_verified_basal_sequence_space",
     "load_verified_construction_bundle",
     "load_verified_foldback_sequence_space",
     "load_verified_local_neighborhood",

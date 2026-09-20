@@ -152,6 +152,8 @@ VIEW_OPERATIONS = {
 }
 
 CONSTRUCTION_OPERATIONS = {
+    "discover_basal_sequence_space",
+    "load_verified_basal_sequence_space",
     "compare_constructions",
     "list_local_realizations",
     "compile_construction",
@@ -180,6 +182,7 @@ CONSTRUCTION_OPERATIONS = {
 }
 
 CONSTRUCTION_FACADE = {
+    "BasalSequenceSpace",
     "FoldbackSequenceSpace",
     "LocalRealizationChoice",
     "ProtectedRoot",

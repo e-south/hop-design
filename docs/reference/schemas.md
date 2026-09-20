@@ -57,6 +57,9 @@ The package version alone does not distinguish post-release source changes.
 | `hop.foldback-sequence-request/v1` | public file source | Payload, finite geometry domain, enzyme policy, retained-path ceiling, and explicit compact execution bounds |
 | `hop.foldback-sequence-result/v1` | portable local construction result | Complete exact case populations, raw denominators, placement exclusions, program-supported sets, and deduplicated admitted unions |
 | `hop.foldback-sequence-member/v1` | public member report | An explicitly selected sequence and supporting program recovered through full molecular realization |
+| `hop.basal-sequence-request/v1` | public file source | Payload, canonical basal geometry, endpoint, enzyme policy, local-span ceiling, and compact execution bounds |
+| `hop.basal-sequence-result/v1` | portable local construction result | Complete local populations, raw denominators, full-source support, and deduplicated local unions |
+| `hop.basal-sequence-member/v1` | public member report | A selected local word and supporting source recovered through ordinary basal molecular realization |
 | `hop.sequence-set/v1` | embedded exact DNA set | Canonical reduced A/C/G/T decisions, exact cardinality, and recoverable independent-base membership |
 | `hop.basal-neighborhood-result/v7` | portable local construction result | Replayable basal nick and proximal adapter-pairing realizations with retained-overhead, annealing-completion, and optional future-release obligations; full adapter materialization and PCR chronology remain whole-route concerns |
 | `hop.construction-discovery-request/v7` | internal construction model | Verified design reference, local and optional selected source-partition references, source-ssDNA preparation policy, endpoint-auxiliary resolution policies, optional endpoint release, route constraints, and composition bounds |

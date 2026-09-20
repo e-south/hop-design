@@ -23,6 +23,7 @@ from tests.integration.test_complete_construction_bundle import _verified_constr
 from tests.integration.test_source_partition_discovery import _request as source_partition_request
 
 PUBLIC_NAMES = [
+    "BasalSequenceSpace",
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",
@@ -37,6 +38,7 @@ PUBLIC_NAMES = [
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
+    "discover_basal_sequence_space",
     "discover_construction_source_partition",
     "discover_foldback_sequence_space",
     "discover_local_neighborhood",
@@ -44,6 +46,7 @@ PUBLIC_NAMES = [
     "discover_source_partition",
     "list_local_realizations",
     "load_construction_selection",
+    "load_verified_basal_sequence_space",
     "load_verified_construction_bundle",
     "load_verified_foldback_sequence_space",
     "load_verified_local_neighborhood",
@@ -75,6 +78,7 @@ def test_construction_facade_is_an_exact_allowlist() -> None:
     ):
         assert not hasattr(construction, internal_name)
     for receipt_type in (
+        construction.BasalSequenceSpace,
         construction.ConstructionCompilation,
         construction.ConstructionProjection,
         construction.ConstructionSelection,

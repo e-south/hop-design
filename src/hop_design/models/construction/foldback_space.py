@@ -24,19 +24,8 @@ from hop_design.models.sequence import normalize_dna_sequence
 from .foldback import FoldbackCleavageProgramKind
 from .payload import FinalPayloadReference, RouteFamily, _content_id, validate_linear_source_payload
 from .search import FoldbackGeometryDomain
-from .sequence_sets import SequenceSet
+from .sequence_sets import SequenceSet, SequenceSpaceLimits
 from .targets import FoldbackTarget
-
-
-class SequenceSpaceLimits(HopModel):
-    """Execution limits, independent of the molecular construction envelope."""
-
-    max_cases: int = Field(ge=1, le=100_000)
-    max_programs: int = Field(ge=1, le=100_000)
-    max_decisions: int = Field(ge=1, le=100_000)
-    max_set_operations: int = Field(ge=1, le=1_000_000)
-    max_site_checks: int = Field(ge=1, le=1_000_000)
-    max_result_decisions: int = Field(ge=1, le=1_000_000)
 
 
 class FoldbackSequenceRequest(HopModel):

@@ -24,6 +24,17 @@ BASE_ORDER = "ACGT"
 _Branch = Annotated[int, Field(ge=0)]
 
 
+class SequenceSpaceLimits(HopModel):
+    """Execution limits, independent of the molecular construction envelope."""
+
+    max_cases: int = Field(ge=1, le=100_000)
+    max_programs: int = Field(ge=1, le=100_000)
+    max_decisions: int = Field(ge=1, le=100_000)
+    max_set_operations: int = Field(ge=1, le=1_000_000)
+    max_site_checks: int = Field(ge=1, le=1_000_000)
+    max_result_decisions: int = Field(ge=1, le=1_000_000)
+
+
 class SequenceDecision(HopModel):
     """One independent base position with branches ordered A, C, G, T."""
 

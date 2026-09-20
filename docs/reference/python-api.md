@@ -85,6 +85,18 @@ All operations and receipts in this section use `hop_design.construction`.
 - `load_verified_local_neighborhood(result_path) -> LocalNeighborhoodDiscovery`
   loads only the active foldback or basal family result schema and repeats exact
   deterministic discovery replay.
+- `discover_basal_sequence_space(source_path) -> BasalSequenceSpace`
+  evaluates a finite canonical basal domain, admits complete source contexts,
+  then projects exact local sequence sets. Different enzyme programs or source
+  contexts do not multiply the local count. Other pairing permissions raise.
+  Computational exhaustion cannot return complete authority. See the
+  [basal sequence-space guide](../guides/basal-sequence-space.md).
+- `load_verified_basal_sequence_space(result_path) -> BasalSequenceSpace`
+  repeats complete deterministic discovery before exposing `json_bytes`,
+  `result_id`, `candidate_count`, and `admitted_count`. Create-only
+  `write(destination)` retains the portable result. Explicit
+  `member_json(case_id=..., rank=..., program_index=...)` recovers a complete
+  source and molecular realization supporting the selected local sequence.
 - `discover_foldback_sequence_space(source_path) -> FoldbackSequenceSpace`
   exhausts a finite foldback domain into compact exact sequence sets, retaining
   each examined enzyme program and its support. Raw and admitted counts use

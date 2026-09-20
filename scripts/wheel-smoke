@@ -86,6 +86,7 @@ for required in \
   'examples/basal-junction/search.py' \
   'examples/foldback-local-partition.yaml' \
   'examples/foldback-sequence-space.yaml' \
+  'examples/basal-sequence-space.yaml' \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
   'examples/linear-source-method.json' \
@@ -208,6 +209,18 @@ case = next(item for item in json.loads(space.json_bytes)["cases"] if item["sequ
 (output / "sequence-member.json").write_text(space.member_json(
     case_id=case["case_id"], rank=0, program_index=0,
 ))
+basal_space = construction.discover_basal_sequence_space("examples/basal-sequence-space.yaml")
+basal_path = basal_space.write(output / "basal-sequence-space") / "result.json"
+loaded_basal = construction.load_verified_basal_sequence_space(basal_path)
+if loaded_basal.json_bytes != basal_space.json_bytes:
+    raise SystemExit("basal sequence space failed reload verification")
+if (basal_space.candidate_count, basal_space.admitted_count) != (512, 4):
+    raise SystemExit("basal sequence space changed its exact populations")
+basal_case = next(item for item in json.loads(basal_space.json_bytes)["cases"] if item["sequences"]["cardinality"])
+basal_program = next(i for i, item in enumerate(basal_case["programs"]) if item["sequences"]["cardinality"])
+(output / "basal-sequence-member.json").write_text(basal_space.member_json(
+    case_id=basal_case["case_id"], rank=0, program_index=basal_program,
+))
 print(result)
 PY
 }
@@ -224,9 +237,9 @@ if ! cmp -s "$source_local_result" "$wheel_local_result"; then
   echo "source/wheel local-neighborhood canonical result mismatch" >&2
   exit 1
 fi
-for relative in sequence-space/result.json sequence-member.json; do
+for relative in sequence-space/result.json sequence-member.json basal-sequence-space/result.json basal-sequence-member.json; do
   if ! cmp -s "$(dirname "$source_local_result")/$relative" "$(dirname "$wheel_local_result")/$relative"; then
-    echo "source/wheel foldback sequence-space mismatch: $relative" >&2
+    echo "source/wheel sequence-space mismatch: $relative" >&2
     exit 1
   fi
 done

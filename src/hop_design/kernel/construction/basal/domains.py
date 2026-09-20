@@ -19,7 +19,7 @@ from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.junction import Strand
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.sequence import normalize_dna_sequence
+from hop_design.models.sequence import normalize_dna_sequence, reverse_complement_iupac
 
 from .pairing import resolve_basal_pairing_state
 from .programs import (
@@ -175,6 +175,18 @@ class BasalSequenceDomain:
             pairing_state=pairing_state,
             enzyme_bindings=self.enzyme_bindings,
         )
+
+    def materialize_canonical_source(self, source: str) -> BasalSequenceSolution:
+        """Recover a canonical adapter and its required recognition context from a source."""
+        self.canonical_source_domains()
+        arm = source[self.source_span.start.offset : self.source_span.end.offset]
+        adapter = reverse_complement_iupac(arm) + "".join(
+            bases[0] for bases in self.base_domains[self.adapter_span.end.offset :]
+        )
+        solution = self.materialize(source, adapter)
+        if isinstance(solution, BasalPlacementFailure):
+            raise ValueError(f"Canonical basal source failed materialization: {solution.code}.")
+        return solution
 
 
 def solve_basal_sequence_domain(

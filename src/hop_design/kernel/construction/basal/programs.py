@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from hop_design.models.construction import (
@@ -113,7 +114,13 @@ def iter_basal_programs(
     policy: EnzymeProvisioningPolicy, *, target: BasalTarget, endpoint: ConstructionEndpoint
 ) -> tuple[BasalProgramCandidate, ...]:
     """Enumerate every provisioned oriented program in canonical order."""
-    programs: list[BasalProgramCandidate] = []
+    return tuple(stream_basal_programs(policy, target=target, endpoint=endpoint))
+
+
+def stream_basal_programs(
+    policy: EnzymeProvisioningPolicy, *, target: BasalTarget, endpoint: ConstructionEndpoint
+) -> Iterator[BasalProgramCandidate]:
+    """Traverse provisioned programs without allocating their Cartesian product."""
     nickases = tuple(
         enzyme
         for enzyme in sorted(policy.catalog.enzymes, key=lambda item: item.enzyme_id)
@@ -152,7 +159,7 @@ def iter_basal_programs(
                 and controlled is not target.nick_strand
             ):
                 continue
-            programs.extend(
+            yield from (
                 BasalProgramCandidate(
                     nick_enzyme=nickase,
                     nick_orientation=nick_orientation,
@@ -161,7 +168,6 @@ def iter_basal_programs(
                 )
                 for release_enzyme, release_action in release_actions
             )
-    return tuple(programs)
 
 
 def _future_release_action(
