@@ -25,6 +25,11 @@ HOP keeps four operations distinct:
 
 Discovery does not silently perform selection.
 
+The [two-region envelope example](../../examples/local-envelope/README.md)
+derives local contact lengths from geometry and varies independent basal and
+foldback budgets. It also explains how to project the results without turning
+an incomplete search or a union across variable sources into a stronger claim.
+
 ## Payload-centered local construction discovery
 
 A local construction request fixes the final payload, route family, requested
