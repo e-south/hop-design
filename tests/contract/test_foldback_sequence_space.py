@@ -25,6 +25,42 @@ from hop_design.models.physical import Strand
 from tests.contract.test_foldback_construction_discovery import _nickase, _request
 
 
+@pytest.mark.parametrize("strand", (Strand.TOP, Strand.BOTTOM))
+def test_foldback_domain_excludes_nick_recognition_removed_by_terminus_cleavage(strand):
+    from hop_design.kernel.construction.foldback.domains import solve_foldback_sequence_domain
+    from hop_design.models.construction.foldback import FoldbackCleavageProgramKind
+    from hop_design.models.enzymes import RecognitionOrientationSemantics
+    from tests.contract.test_foldback_construction_discovery import _terminus_enzyme
+
+    target = FoldbackTarget(
+        nick_strand=strand,
+        junction_offset_nt=3,
+        loop_length_nt=3,
+        annealing_arm_length_bp=3,
+    )
+    request = _request(
+        _nickase(motif="ACANNN"),
+        _terminus_enzyme(
+            motif="AAGC",
+            orientation_semantics=RecognitionOrientationSemantics.BOTH_ORIENTATIONS,
+        ),
+        target=target,
+    )
+    programs = tuple(
+        program
+        for program in iter_foldback_programs(request.enzyme_provisioning, target=target)
+        if program.kind is FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK
+    )
+    outcomes = tuple(
+        solve_foldback_sequence_domain(payload_sequence="GACA", target=target, program=program)
+        for program in programs
+    )
+    assert outcomes
+    assert all(
+        outcome.code == "foldback-nick-site-exceeds-terminated-substrate" for outcome in outcomes
+    )
+
+
 @pytest.mark.parametrize(
     ("strand", "source"),
     ((Strand.TOP, "GACAACAACTTGT"), (Strand.BOTTOM, "ACAAGTTGTTGTC")),

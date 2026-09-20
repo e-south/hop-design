@@ -86,6 +86,23 @@ for unconstrained positions skipped by reduction. Exact A/C/G/T member rank
 can be recovered without enumerating earlier members. Nucleotide-set validity
 does not validate the molecular process that would admit those sequences.
 
+Internal compact foldback admission requires a solved finite domain and explicit
+decision, set-operation, and recognition-window budgets. The recognition-window
+budget is at most 1,000,000 and counts every oriented motif window in every
+pre-stage duplex, including discarded terminus products and windows whose cuts
+would be unavailable. This inventory is checked before reaction-site scanning.
+Exceeding any computation budget raises; it cannot produce an empty completed
+set. Exact admission intersects required intended events and excludes every
+undeclared actionable event under the shared reaction rules. Substrate topology
+or assessment semantics outside the supported sequential single-operation
+programs raise instead of being silently classified as infeasible.
+
+A nickase recognition span must remain wholly present after terminus cleavage.
+Foldback placement excludes spans removed by that cut before sequence expansion,
+including mirrored bottom-strand routes. Cleavage at the recognition interval's
+edge or outside it still uses the characterized enzyme offsets and actual
+molecule boundaries.
+
 Every spec has an explicit positive candidate bound. The convenience route
 resolves exactly one generic design. Foldback enumeration reports `complete`,
 `infeasible`, or `truncated`, including the fired node or hit bound; a truncated

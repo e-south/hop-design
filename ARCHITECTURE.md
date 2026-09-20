@@ -172,6 +172,18 @@ These internal sets describe nucleotide membership only. They are not local
 construction authorities and do not establish reaction admission, complete
 query coverage, enzyme support, or a public compact-discovery operation.
 
+`kernel/construction/foldback/admission.py` applies ordered molecular admission
+to one solved foldback domain and returns its exact independent-base set.
+Concrete replay supplies the stage topology; shared source-span mappings retain
+both duplex products after terminus cleavage. Shared recognition orientations,
+cut availability, intended-binding matching, and operation-policy assessment
+govern both concrete and compact evaluation. Recognition predicates preserve
+repeated and complemented variable correlations. One representative assignment
+provides topology and sequence-independent policy checks; its sequence-dependent
+admission result does not classify other members. These internal admitted sets
+do not establish coverage of a query roster or provide a portable construction
+receipt. Selected members still materialize through ordinary molecular replay.
+
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,
 and fails on unknown first-party layers. The root facade and serialization module are narrow documented

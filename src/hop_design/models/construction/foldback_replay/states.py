@@ -46,6 +46,8 @@ from hop_design.models.strand_state import (
     ReleasedStrandState,
 )
 
+from .substrates import FoldbackReactionSubstrate, foldback_reaction_substrates
+
 
 @dataclass(frozen=True, slots=True)
 class FoldbackRouteReplay:
@@ -195,6 +197,26 @@ def _shifted_declared_binding(
     )
 
 
+def _substrate_state(
+    *, source: str, state_id: str, substrates: tuple[FoldbackReactionSubstrate, ...]
+) -> ReactionState:
+    return ReactionState(
+        state_id=state_id,
+        molecules=tuple(
+            ReactionMolecule(
+                molecule_id=substrate.molecule_id,
+                reference_sequence_5prime=sequence,
+                complement_sequence_5prime=reverse_complement_iupac(sequence),
+            )
+            for substrate in substrates
+            if substrate.state_id == state_id
+            for sequence in (
+                source[substrate.source_span.start.offset : substrate.source_span.end.offset],
+            )
+        ),
+    )
+
+
 def _reaction_program(
     *,
     source: str,
@@ -204,16 +226,14 @@ def _reaction_program(
     bindings: tuple[FoldbackEnzymeBinding, ...],
     fragments: tuple[Fragment, ...],
 ) -> ReactionProgram:
-    source_state = ReactionState(
-        state_id="source-duplex",
-        molecules=(
-            ReactionMolecule(
-                molecule_id="source",
-                reference_sequence_5prime=source,
-                complement_sequence_5prime=reverse_complement_iupac(source),
-            ),
-        ),
+    nick_binding = next(binding for binding in bindings if binding.role is EnzymeRole.FOLDBACK_NICK)
+    substrates = foldback_reaction_substrates(
+        source_nt=len(source),
+        program_kind=program_kind,
+        nick_strand=nick_binding.strand,
+        terminus=terminus,
     )
+    source_state = _substrate_state(source=source, state_id="source-duplex", substrates=substrates)
     released_state = ReactionState(
         state_id="released-foldback-strands",
         molecules=tuple(
@@ -225,7 +245,6 @@ def _reaction_program(
             for fragment in fragments
         ),
     )
-    nick_binding = next(binding for binding in bindings if binding.role is EnzymeRole.FOLDBACK_NICK)
     nick_operation = ReactionOperation(
         operation_id="foldback-nick",
         enzyme_id=nick_binding.enzyme_id,
@@ -250,27 +269,8 @@ def _reaction_program(
     terminus_binding = next(
         binding for binding in bindings if binding.role is EnzymeRole.TERMINUS_DEFINITION
     )
-    retains_left = nick_binding.strand is Strand.TOP
-    retained_source = source[:terminus] if retains_left else source[terminus:]
-    released_source = source[terminus:] if retains_left else source[:terminus]
-    intermediate_molecules = [
-        ReactionMolecule(
-            molecule_id="source",
-            reference_sequence_5prime=retained_source,
-            complement_sequence_5prime=reverse_complement_iupac(retained_source),
-        )
-    ]
-    if released_source:
-        intermediate_molecules.append(
-            ReactionMolecule(
-                molecule_id="released-duplex",
-                reference_sequence_5prime=released_source,
-                complement_sequence_5prime=reverse_complement_iupac(released_source),
-            )
-        )
-    intermediate_state = ReactionState(
-        state_id="terminus-defined-duplexes",
-        molecules=tuple(intermediate_molecules),
+    intermediate_state = _substrate_state(
+        source=source, state_id="terminus-defined-duplexes", substrates=substrates
     )
     terminus_operation = ReactionOperation(
         operation_id="terminus-definition",
@@ -279,12 +279,17 @@ def _reaction_program(
         molecule_id="source",
         intended_binding=_declared_binding(terminus_binding),
     )
-    if not retains_left:
+    retained_offset = next(
+        substrate.source_span.start.offset
+        for substrate in substrates
+        if substrate.state_id == intermediate_state.state_id and substrate.molecule_id == "source"
+    )
+    if retained_offset:
         nick_operation = nick_operation.model_copy(
             update={
                 "intended_binding": _shifted_declared_binding(
                     nick_binding,
-                    offset=terminus,
+                    offset=retained_offset,
                 )
             }
         )

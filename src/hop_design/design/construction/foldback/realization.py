@@ -42,7 +42,7 @@ from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.physical import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
 
-_ROUTE_VERSION = "linear-source-foldback/4"
+_ROUTE_VERSION = "linear-source-foldback/5"
 
 
 def _failure_code(diagnostic_codes: tuple[str, ...]) -> str:

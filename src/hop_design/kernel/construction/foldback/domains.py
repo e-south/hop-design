@@ -244,11 +244,14 @@ def solve_foldback_sequence_domain(
     if nick_binding is None:
         return FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
     bindings = [nick_binding]
-    if (
-        program.kind is FoldbackCleavageProgramKind.SINGLE_CLEAVAGE
-        and nick_binding.recognition_span.end.offset > terminus
-    ):
-        return FoldbackPlacementFailure(code="single-cleavage-site-exceeds-source-terminus")
+    if nick_binding.recognition_span.end.offset > terminus:
+        return FoldbackPlacementFailure(
+            code=(
+                "single-cleavage-site-exceeds-source-terminus"
+                if program.kind is FoldbackCleavageProgramKind.SINGLE_CLEAVAGE
+                else "foldback-nick-site-exceeds-terminated-substrate"
+            )
+        )
     if program.terminus_enzyme is not None:
         if program.terminus_orientation is None:
             raise ValueError("A sequential foldback program requires a terminus orientation.")

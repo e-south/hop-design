@@ -82,6 +82,40 @@ def _cut_offsets(
     )
 
 
+def _binding_at(
+    *,
+    enzyme: CharacterizedEnzyme,
+    molecule_id: str,
+    sequence_nt: int,
+    orientation: SiteOrientation,
+    start: int,
+) -> ActionableEnzymeBinding | None:
+    """Locate a recognition event only when its complete motif and cuts fit the molecule."""
+    end = start + enzyme.recognition_length
+    if not 0 <= start <= end <= sequence_nt:
+        return None
+    reference_cut_offset, complement_cut_offset = _cut_offsets(
+        enzyme=enzyme, orientation=orientation, start=start
+    )
+    if any(
+        offset is not None and not 0 <= offset <= sequence_nt
+        for offset in (reference_cut_offset, complement_cut_offset)
+    ):
+        return None
+    return ActionableEnzymeBinding(
+        enzyme_id=enzyme.enzyme_id,
+        molecule_id=molecule_id,
+        recognition_span=Span(start=Boundary(offset=start), end=Boundary(offset=end)),
+        orientation=orientation,
+        reference_cut=(
+            Boundary(offset=reference_cut_offset) if reference_cut_offset is not None else None
+        ),
+        complement_cut=(
+            Boundary(offset=complement_cut_offset) if complement_cut_offset is not None else None
+        ),
+    )
+
+
 def _scan_molecule(
     *,
     molecule: ReactionMolecule,
@@ -104,37 +138,15 @@ def _scan_molecule(
                 and not _recognition_span_is_duplex(molecule, start=start, end=end)
             ):
                 continue
-            reference_cut_offset, complement_cut_offset = _cut_offsets(
+            binding = _binding_at(
                 enzyme=enzyme,
+                molecule_id=molecule.molecule_id,
+                sequence_nt=len(sequence),
                 orientation=orientation,
                 start=start,
             )
-            if any(
-                offset is not None and not 0 <= offset <= len(sequence)
-                for offset in (reference_cut_offset, complement_cut_offset)
-            ):
-                continue
-            reference_cut = (
-                Boundary(offset=reference_cut_offset) if reference_cut_offset is not None else None
-            )
-            complement_cut = (
-                Boundary(offset=complement_cut_offset)
-                if complement_cut_offset is not None
-                else None
-            )
-            bindings.append(
-                ActionableEnzymeBinding(
-                    enzyme_id=enzyme.enzyme_id,
-                    molecule_id=molecule.molecule_id,
-                    recognition_span=Span(
-                        start=Boundary(offset=start),
-                        end=Boundary(offset=end),
-                    ),
-                    orientation=orientation,
-                    reference_cut=reference_cut,
-                    complement_cut=complement_cut,
-                )
-            )
+            if binding is not None:
+                bindings.append(binding)
     return tuple(bindings)
 
 
