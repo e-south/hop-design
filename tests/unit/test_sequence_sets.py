@@ -83,6 +83,67 @@ def test_overlapping_iupac_constraints_preserve_correlations() -> None:
     assert not result.contains("GG")
 
 
+@settings(max_examples=30, deadline=None)
+@given(st.sets(st.text(alphabet="ACGT", min_size=4, max_size=4), max_size=30))
+def test_window_projection_matches_distinct_substrings(words: set[str]) -> None:
+    from hop_design.kernel.construction.sequence_sets import SequenceSetBuilder
+
+    source = SequenceSetBuilder(length_nt=4, max_nodes=10000, max_operations=100000)
+    root = 0
+    for word in sorted(words):
+        root = source.union(root, source.from_iupac(word))
+    sequences = source.freeze(root)
+    for start, end in ((0, 4), (0, 2), (1, 3), (2, 4), (2, 3)):
+        destination = SequenceSetBuilder(
+            length_nt=end - start, max_nodes=10000, max_operations=100000
+        )
+        projected = destination.freeze(destination.project_window(sequences, start=start, end=end))
+        expected = sorted({word[start:end] for word in words})
+        assert projected.cardinality == len(expected)
+        assert [projected.member_at(i) for i in range(projected.cardinality)] == expected
+
+
+def test_projection_preserves_correlations_and_unconstrained_positions() -> None:
+    from hop_design.kernel.construction.sequence_sets import SequenceSetBuilder
+
+    source = SequenceSetBuilder(length_nt=6, max_nodes=1000, max_operations=10000)
+    sequences = source.freeze(
+        source.union(source.from_iupac("NACNNG"), source.from_iupac("CGTNNN"))
+    )
+    destination = SequenceSetBuilder(length_nt=4, max_nodes=1000, max_operations=10000)
+    projected = destination.freeze(destination.project_window(sequences, start=1, end=5))
+    expected = {prefix + a + b for prefix in ("AC", "GT") for a in "ACGT" for b in "ACGT"}
+    assert projected.cardinality == 32
+    assert {projected.member_at(i) for i in range(32)} == expected
+    assert not projected.contains("ATAA")
+
+
+@pytest.mark.parametrize("start,end", [(-1, 1), (1, 1), (2, 1), (0, 5), (True, 3), (0, 2)])
+def test_projection_rejects_invalid_window_or_destination_length(start: int, end: int) -> None:
+    from hop_design.kernel.construction.sequence_sets import SequenceSetBuilder
+
+    source = SequenceSetBuilder(length_nt=4, max_nodes=100, max_operations=1000)
+    sequences = source.freeze(source.from_iupac("NNNN"))
+    destination = SequenceSetBuilder(length_nt=3, max_nodes=100, max_operations=1000)
+    with pytest.raises(ValueError, match="window"):
+        destination.project_window(sequences, start=start, end=end)
+
+
+def test_projection_exhaustion_cannot_publish_partial_membership() -> None:
+    from hop_design.kernel.construction.sequence_sets import (
+        SequenceSetBuilder,
+        SequenceSetLimitError,
+    )
+
+    source = SequenceSetBuilder(length_nt=4, max_nodes=100, max_operations=1000)
+    sequences = source.freeze(source.from_iupac("ACGT"))
+    destination = SequenceSetBuilder(length_nt=2, max_nodes=100, max_operations=1)
+    with pytest.raises(SequenceSetLimitError, match="operation"):
+        destination.project_window(sequences, start=1, end=3)
+    with pytest.raises(SequenceSetLimitError, match="exhausted"):
+        destination.freeze(0)
+
+
 def test_large_cartesian_domain_has_exact_count_and_rank_recovery_without_members() -> None:
     from hop_design.kernel.construction.sequence_sets import SequenceSetBuilder
 

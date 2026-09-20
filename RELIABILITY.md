@@ -75,7 +75,9 @@ Internal exact DNA sequence sets contain at most 256 independent nucleotide
 variables and 100,000 reduced decisions. A builder requires explicit positive
 decision and computation budgets, capped at 100,000 decisions and 1,000,000
 operations. An operation is a per-position domain step, imported decision,
-or uncached binary set subproblem. Exhaustion raises and prevents that builder
+or uncached binary set subproblem. Projection also spends one operation per
+visited source decision or terminal, plus the union operations needed to remove
+positions before the retained window. Exhaustion raises and prevents that builder
 from publishing even a previously obtained handle as a completed set. These
 limits bound representation and computation, not molecular feasibility.
 
@@ -85,6 +87,14 @@ ordering, and incorrect cardinality. Cardinality and member recovery account
 for unconstrained positions skipped by reduction. Exact A/C/G/T member rank
 can be recovered without enumerating earlier members. Nucleotide-set validity
 does not validate the molecular process that would admit those sequences.
+
+Basal source domains preserve recognition context outside the paired adapter
+and retained source window. Exact materialization validates placement masks,
+source-base restrictions, adapter pairing permissions, future-end bases, and
+fixed context before deriving pairing records. Canonical compact source masks
+require every pairing position to declare canonical pairing; unsupported pair
+permissions raise rather than silently narrowing the population. These internal
+domains establish neither molecular admission nor complete search coverage.
 
 Internal compact foldback admission requires a solved finite domain and explicit
 decision, set-operation, and recognition-window budgets. The recognition-window

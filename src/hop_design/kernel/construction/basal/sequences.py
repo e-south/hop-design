@@ -19,24 +19,13 @@ from hop_design.models.construction import (
     ConstructionEndpoint,
     SequenceDomainPartition,
 )
-from hop_design.models.coordinates import Boundary, Span
-from hop_design.models.enzymes import (
-    EnzymeRole,
-)
-from hop_design.models.junction import Strand
-from hop_design.models.physical import SiteOrientation
-from hop_design.models.sequence import normalize_dna_sequence
 
+from .domains import solve_basal_sequence_domain
 from .programs import (
-    _BASES,
     BasalPlacementFailure,
     BasalProgramCandidate,
     BasalSequenceSolution,
     _adapter_domains,
-    _binding,
-    _constrain,
-    _oriented_cuts,
-    _oriented_pattern,
 )
 
 
@@ -66,114 +55,23 @@ def iter_basal_program_solutions(
     sequence_partition: SequenceDomainPartition | None = None,
 ) -> Iterator[BasalSequenceSolution | BasalPlacementFailure]:
     """Solve exact source and adapter sequences from geometry and recognition constraints."""
-    from .pairing import resolve_basal_pairing_state
-
-    if not isinstance(target.nick_strand, Strand):
-        raise ValueError("Basal sequence realization requires one exact nick strand.")
-    payload = normalize_dna_sequence(payload_sequence, allow_degenerate=False)
-    arm_nt = (
-        len(target.pairing_constraints)
-        if target.pairing_constraints
-        else max(1, program.nick_enzyme.recognition_length + target.nick_offset_nt)
+    domain = solve_basal_sequence_domain(
+        payload_sequence=payload_sequence, target=target, endpoint=endpoint, program=program
     )
-    source_start = 0
-    payload_start = arm_nt + target.nick_offset_nt
-    payload_end = payload_start + len(payload)
-    adapter_start = payload_end
-    adapter_end = adapter_start + (
-        arm_nt if endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN else 0
-    )
-
-    nick_pattern = _oriented_pattern(program.nick_enzyme, program.nick_orientation)
-    nick_cut_offset = (
-        program.nick_enzyme.cut_offset_reference_strand
-        if program.nick_orientation is SiteOrientation.FORWARD
-        else program.nick_enzyme.recognition_length
-        - program.nick_enzyme.cut_offset_reference_strand
-    )
-    nick_boundary = payload_start - target.nick_offset_nt
-    nick_site_start = nick_boundary - nick_cut_offset
-    reference_cut, complement_cut = _oriented_cuts(
-        program.nick_enzyme,
-        orientation=program.nick_orientation,
-        site_start=nick_site_start,
-    )
-
-    placements: list[tuple[int, str]] = [(nick_site_start, nick_pattern), (payload_start, payload)]
-    release_action = program.future_release_action
-    adapter_end_bases: tuple[tuple[int, str], ...] = ()
-    if release_action is not None:
-        end_placement = release_action.source_end_placement(
-            payload_boundary=payload_start, nick_offset_nt=target.nick_offset_nt
-        )
-        if end_placement is not None:
-            placements.append(end_placement)
-        adapter_end_bases = release_action.adapter_end_bases(nick_offset_nt=target.nick_offset_nt)
-    if (
-        release_action is not None
-        and release_action.requirement.recognition_material == "source_duplex"
-    ):
-        placements.append(
-            release_action.source_recognition_placement(payload_boundary=payload_start)
-        )
-    cut_boundaries = tuple(
-        boundary for boundary in (reference_cut, complement_cut) if boundary is not None
-    )
-    minimum = min(0, *(start for start, _pattern in placements), *cut_boundaries)
-    maximum = max(
-        adapter_end,
-        *(start + len(pattern) for start, pattern in placements),
-        *cut_boundaries,
-    )
-    shift = -minimum
-    source_start += shift
-    nick_boundary += shift
-    payload_start += shift
-    payload_end += shift
-    adapter_start += shift
-    adapter_end += shift
-    nick_site_start += shift
-    placements = [(start + shift, pattern) for start, pattern in placements]
-    domains = [set(_BASES) for _ in range(maximum - minimum)]
-    recognition_indexes: set[int] = set()
-    for start, pattern in placements:
-        recognition_indexes.update(range(start, start + len(pattern)))
-        if not _constrain(domains, start=start, pattern=pattern):
-            if sequence_partition is None or sequence_partition.part_index == 0:
-                yield BasalPlacementFailure("recognition-payload-conflict")
-            return
-    if (
-        release_action is not None
-        and release_action.requirement.recognition_material == "source_duplex"
-    ):
-        recognition_indexes.update(range(adapter_start))
-
-    recognition_indexes.update(range(nick_boundary, payload_start))
-    variable_indexes = tuple(range(source_start, nick_boundary))
-    source_domains = tuple(
-        tuple(
-            base
-            for base in _BASES
-            if base in domains[index]
-            and base in target.pairing_constraints[arm_nt - 1 - source_index].allowed_source_bases
-        )
-        for source_index, index in enumerate(variable_indexes)
-    )
-    if any(not domain for domain in source_domains):
+    if isinstance(domain, BasalPlacementFailure):
         if sequence_partition is None or sequence_partition.part_index == 0:
-            yield BasalPlacementFailure("basal-source-conflict")
+            yield domain
         return
+    arm_nt = len(domain.source_arm_domains)
     canonical_ordinal = 0
-    for source_assignment in product(*source_domains):
+    unresolved_domains = tuple(domain.base_domains[index] for index in domain.unresolved_indexes)
+    for source_assignment in product(*domain.source_arm_domains):
         source_arm = "".join(source_assignment)
         if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             adapter_assignments: Iterator[tuple[str, ...]] = iter(((),))
         else:
             per_position = tuple(
-                _adapter_domains(
-                    source_arm[arm_nt - 1 - position],
-                    constraint=constraint,
-                )
+                _adapter_domains(source_arm[arm_nt - 1 - position], constraint=constraint)
                 for position, constraint in enumerate(target.pairing_constraints)
             )
             if any(not allowed for allowed in per_position):
@@ -181,31 +79,8 @@ def iter_basal_program_solutions(
             adapter_assignments = product(*per_position)
         for adapter_assignment in adapter_assignments:
             adapter = "".join(adapter_assignment) if adapter_assignment else None
-            if adapter is not None and any(
-                adapter[position] != base
-                for position, base in adapter_end_bases
-                if position < len(adapter)
-            ):
+            if not domain.permits_adapter(source_arm, adapter):
                 continue
-            if adapter is not None and any(
-                base not in domains[index]
-                for index, base in enumerate(adapter, start=adapter_start)
-            ):
-                continue
-            assigned_indexes = {
-                *variable_indexes,
-                *range(payload_start, payload_end),
-                *(range(adapter_start, adapter_end) if adapter is not None else ()),
-            }
-            unresolved_indexes = tuple(
-                index
-                for index in sorted(recognition_indexes - assigned_indexes)
-                if len(domains[index]) > 1
-            )
-            unresolved_domains = tuple(
-                tuple(base for base in _BASES if base in domains[index])
-                for index in unresolved_indexes
-            )
             for unresolved_assignment in product(*unresolved_domains):
                 ordinal = canonical_ordinal
                 canonical_ordinal += 1
@@ -214,61 +89,18 @@ def iter_basal_program_solutions(
                     and ordinal % sequence_partition.part_count != sequence_partition.part_index
                 ):
                     continue
-                bases = [next(base for base in _BASES if base in domain) for domain in domains]
-                for index, base in zip(variable_indexes, source_assignment, strict=True):
-                    bases[index] = base
-                for index, base in enumerate(payload, start=payload_start):
+                bases = [bases[0] for bases in domain.base_domains]
+                for index, base in zip(domain.variable_indexes, source_assignment, strict=True):
                     bases[index] = base
                 if adapter is not None:
-                    for index, base in enumerate(adapter, start=adapter_start):
+                    for index, base in enumerate(adapter, start=domain.adapter_span.start.offset):
                         bases[index] = base
                 for index, base in zip(
-                    unresolved_indexes,
-                    unresolved_assignment,
-                    strict=True,
+                    domain.unresolved_indexes, unresolved_assignment, strict=True
                 ):
                     bases[index] = base
                 complete = "".join(bases)
-                source_precursor = complete[:adapter_start]
-                adapter_sequence = complete[adapter_start:] if adapter is not None else None
-                bindings = [
-                    _binding(
-                        enzyme=program.nick_enzyme,
-                        role=EnzymeRole.BASAL_NICK,
-                        strand=target.nick_strand,
-                        orientation=program.nick_orientation,
-                        start=nick_site_start,
-                    )
-                ]
-                pairing_state = None
-                if adapter is not None:
-                    pairing_state = resolve_basal_pairing_state(
-                        source_sequence_5prime=source_arm,
-                        adapter_sequence_5prime=adapter,
-                        source_span=Span(
-                            start=Boundary(offset=source_start),
-                            end=Boundary(offset=nick_boundary),
-                        ),
-                        adapter_span=Span(start=Boundary(offset=0), end=Boundary(offset=arm_nt)),
-                        end_projection_positions=(
-                            ()
-                            if release_action is None
-                            else release_action.paired_end_positions(
-                                nick_offset_nt=target.nick_offset_nt, pairing_length_nt=arm_nt
-                            )
-                        ),
-                    )
-                    if not target.permits_pair_classes(
-                        pair.pair_class for pair in pairing_state.pairs
-                    ):
-                        yield BasalPlacementFailure("basal-pair-budget-exceeded")
-                        continue
-                yield BasalSequenceSolution(
-                    source_precursor_sequence=source_precursor,
-                    adapter_sequence=adapter_sequence,
-                    payload_span=Span(
-                        start=Boundary(offset=payload_start), end=Boundary(offset=payload_end)
-                    ),
-                    pairing_state=pairing_state,
-                    enzyme_bindings=tuple(bindings),
+                yield domain.materialize(
+                    complete[: domain.adapter_span.start.offset],
+                    complete[domain.adapter_span.start.offset :] if adapter is not None else None,
                 )

@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections.abc import Collection, Sequence
+from functools import cache
 from typing import Literal
 
 from hop_design.models.construction.sequence_sets import (
@@ -110,6 +111,32 @@ class SequenceSetBuilder:
             a, c, g, t = (identities[child] for child in decision.branches)
             identities.append(self._node(decision.position_nt, (a, c, g, t)))
         return identities[sequences.root]
+
+    def project_window(self, sequences: SequenceSet, *, start: int, end: int) -> int:
+        """Keep exact substrings after existentially removing the surrounding bases."""
+        self._active()
+        if (
+            type(start) is not int
+            or type(end) is not int
+            or not 0 <= start < end <= sequences.length_nt
+            or end - start != self.length_nt
+        ):
+            raise ValueError("Projection window must match the destination sequence length.")
+
+        @cache
+        def visit(identity: int) -> int:
+            self._spend()
+            if identity < 2:
+                return identity
+            decision = sequences.decisions[identity - 2]
+            if decision.position_nt >= end:
+                return 1
+            a, c, g, t = (visit(child) for child in decision.branches)
+            if decision.position_nt < start:
+                return self.union(self.union(a, c), self.union(g, t))
+            return self._node(decision.position_nt - start, (a, c, g, t))
+
+        return visit(sequences.root)
 
     def union(self, left: int, right: int) -> int:
         """Admit members present in either exact set, once each."""

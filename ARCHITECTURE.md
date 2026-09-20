@@ -162,11 +162,23 @@ reaction-stage admission. It is not an admitted construction count. Concrete
 enumeration materializes those assignments in canonical base order and retains
 the same placement-exclusion diagnostics.
 
+The basal kernel likewise solves source and adapter placement domains before
+concrete sequence enumeration. `kernel/construction/basal/domains.py` owns the
+shared recognition masks, source and adapter coordinates, pairing permissions,
+and exact materialization. Source context outside the retained local window
+remains in this domain. Canonical-pair source masks incorporate adapter-side
+base restrictions and future-end requirements; they describe placement choices,
+not molecular admission. Concrete enumeration retains its source/adapter/context
+order and sequence-partition ordinals, including noncanonical pair outcomes.
+
 `models/construction/sequence_sets.py` owns strict, finite exact DNA sets over
 independent bases. Reduced A/C/G/T decisions have canonical reachable postorder,
 verified cardinality, exact membership, and lexicographic member recovery.
 `kernel/construction/sequence_sets.py` constructs their unions, intersections,
-and differences within explicit decision and operation budgets. The same set
+and differences within explicit decision and operation budgets. Window projection
+preserves exact substrings while existentially removing surrounding positions;
+correlations within the retained window remain intact. Molecular admission must
+precede projection when discarded context can affect reaction-site checks. The same set
 serializes identically regardless of insertion order or redundant witnesses.
 These sets describe nucleotide membership only. Construction authority requires
 the molecular admission and complete request coverage layers below.
