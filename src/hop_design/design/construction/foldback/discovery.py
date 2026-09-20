@@ -17,7 +17,6 @@ from importlib.metadata import version
 from hop_design.design.construction.overhead import foldback_overhead_levels
 from hop_design.kernel.construction.foldback import (
     FoldbackPlacementFailure,
-    iter_foldback_program_solutions,
 )
 from hop_design.models.construction import (
     ConstructionEndpoint,
@@ -49,6 +48,7 @@ from ..neighborhood_accounting import (
     search_disposition,
 )
 from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
+from .candidates import iter_foldback_candidates
 from .realization import (
     _ROUTE_VERSION,
     _geometry_groups,
@@ -85,11 +85,7 @@ def discover_foldback_neighborhood(
         level_rejected = 0
         for unit in iter_foldback_work_units(request, level=level):
             solutions = partition_sequence_domain(
-                iter_foldback_program_solutions(
-                    payload_sequence=unit.payload_sequence,
-                    target=unit.target,
-                    program=unit.program,
-                ),
+                iter_foldback_candidates(unit),
                 request.search.sequence_partition,
             )
             for solution in solutions:

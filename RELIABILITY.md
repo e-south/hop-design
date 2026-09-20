@@ -109,6 +109,14 @@ enumerated. Projection verification rebuilds level membership and accounting
 from the exact source result, so a checksum-consistent subset, reordering, or
 extra row is rejected.
 
+Foldback discovery can exclude one enzyme program before expanding its variable
+sequence domain when an unintended actionable site lies wholly within the
+unchanged payload duplex. Recognition and cut availability come from the same
+reaction-state evaluator used by exact replay. Kernel placement failures retain
+their precedence. A proven program exclusion contributes one rejected evaluation;
+evaluation counts are not the cardinality of the raw sequence population.
+Programs without this proof retain their exact sequence enumeration and replay.
+
 Complete construction composition computes the nominal local Cartesian
 cardinality before evaluation, examines only its canonical bounded prefix, and
 records accepted plus rejected dispositions for every examined combination.

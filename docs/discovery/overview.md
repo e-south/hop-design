@@ -57,6 +57,13 @@ result as neutral JSON, CSV, or SVG without selecting a realization or
 recomputing molecular state. Local feasibility does not establish physical
 construction, a complete route, quality control, or biological activity.
 
+An unchanged payload can itself exclude a foldback enzyme program: an extra
+actionable site wholly inside that duplex cannot be repaired by varying the
+construction region. HOP checks this using the same recognition, orientation,
+substrate, and cut rules as exact reaction replay. Such a whole-program exclusion
+counts as one rejected evaluation. Evaluation counts therefore do not supply a
+raw sequence-space denominator.
+
 ## Foldback geometry
 
 A foldback domain declares finite nick-boundary, strand, annealing-arm, and loop
