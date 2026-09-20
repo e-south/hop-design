@@ -31,8 +31,8 @@ class _BasalGroupKey(NamedTuple):
     nick_offset_nt: int
     pairing_pattern: str | None
     retained_overhead_nt: int
-    required_annealing_nt: int
-    annealing_completion_nt: int
+    required_annealing_nt: int | None
+    annealing_completion_nt: int | None
     warning_count: int
 
 
@@ -79,10 +79,15 @@ def render_basal_projection_svg(projection: BasalFeasibilityProjection) -> bytes
             f"{group_key.nick_enzyme_id} · {group_key.nick_strand} strand · "
             f"offset {group_key.nick_offset_nt} nt"
         )
+        annealing = (
+            "full annealing unspecified"
+            if group_key.required_annealing_nt is None
+            else f"annealing {group_key.required_annealing_nt} nt "
+            f"({group_key.annealing_completion_nt} nt completion)"
+        )
         obligation = (
             f"release {release} · retained overhead {group_key.retained_overhead_nt} nt · "
-            f"annealing {group_key.required_annealing_nt} nt "
-            f"({group_key.annealing_completion_nt} nt completion)"
+            f"{annealing}"
         )
         if group_key.warning_count:
             obligation += " · mismatch warning"

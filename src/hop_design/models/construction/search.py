@@ -116,7 +116,7 @@ class BasalGeometryDomain(HopModel):
     max_noncanonical_pairs: int | None = Field(
         default=None, ge=0, exclude_if=lambda value: value is None
     )
-    minimum_adapter_annealing_nt: int = Field(default=15, ge=1)
+    minimum_adapter_annealing_nt: int | None = Field(default=15, ge=1)
     mismatch_warning_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
     future_release: BasalFutureReleaseRequirement | None = Field(
         default=None,

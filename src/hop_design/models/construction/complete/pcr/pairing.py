@@ -36,6 +36,10 @@ def complete_adapter_pairing(
     obligation = basal.projection.annealing_obligation
     required = obligation.required_annealing_nt
     completion = obligation.annealing_completion_nt
+    if required is None or completion is None:
+        raise ValueError(
+            "Complete construction requires an explicit adapter annealing requirement."
+        )
     offset = basal_source_offset(basal, source_prefix)
     end = offset + local.source_span.end.offset
     start = end - required

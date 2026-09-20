@@ -83,6 +83,16 @@ and mismatches remain visible in each solution. The nickase must recognize
 the source when it acts; later cleavage must recognize the copied product
 when it acts. A permitted adapter mismatch does not waive either requirement.
 
+Local discovery can leave the full association requirement open by setting
+`minimum_adapter_annealing_nt` explicitly to `null`. The exact proximal pairs
+remain resolved; the full required length, distal completion count, and
+full-span mismatch fraction remain unknown. This is not a zero-length distal
+arm or a claim that the local segment supplies sufficient annealing. Complete
+construction requires an explicit association requirement and rejects an
+unresolved parent as an input error before evaluating combinations. Discovery
+can be repeated with a chosen requirement without changing its local sequence
+search; the resulting authority retains that requirement for composition.
+
 Each returned target and enzyme action has one exact end. Complete construction
 selects an exact endpoint from the allowed domain and rejects a selected local
 end that disagrees. Enumeration uses offset then A/C/G/T end order, not an

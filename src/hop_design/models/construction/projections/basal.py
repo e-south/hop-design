@@ -66,9 +66,9 @@ class BasalFeasibilityRow(HopModel):
     pairing_classes: tuple[BasalPairClass, ...]
     literal_pairs: tuple[BasalPairRecord, ...]
     proximal_annealing_nt: int = Field(ge=1)
-    required_annealing_nt: int = Field(ge=1)
-    annealing_completion_nt: int = Field(ge=0)
-    mismatch_fraction: float = Field(ge=0.0, le=1.0)
+    required_annealing_nt: int | None = Field(ge=1)
+    annealing_completion_nt: int | None = Field(ge=0)
+    mismatch_fraction: float | None = Field(ge=0.0, le=1.0)
     warnings: tuple[Literal["mismatch-fraction-above-threshold"], ...] = ()
 
     @model_validator(mode="after")
