@@ -13,6 +13,11 @@ from hop_design.design.construction.execution.local import (
     LocalNeighborhoodBatch,
     discover_local_neighborhoods,
 )
+from hop_design.design.construction.foldback_space_public import (
+    FoldbackSequenceSpace,
+    discover_foldback_sequence_space,
+    load_verified_foldback_sequence_space,
+)
 from hop_design.design.construction.local_choices import (
     LocalRealizationChoice,
     list_local_realizations,
@@ -54,6 +59,7 @@ __all__ = [
     "ConstructionCompilation",
     "ConstructionProjection",
     "ConstructionSelection",
+    "FoldbackSequenceSpace",
     "LocalNeighborhoodBatch",
     "LocalNeighborhoodDiscovery",
     "LocalRealizationChoice",
@@ -65,12 +71,14 @@ __all__ = [
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
     "discover_construction_source_partition",
+    "discover_foldback_sequence_space",
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",
     "list_local_realizations",
     "load_construction_selection",
     "load_verified_construction_bundle",
+    "load_verified_foldback_sequence_space",
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",

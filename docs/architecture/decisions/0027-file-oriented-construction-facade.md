@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-09-12
+last_verified: 2026-09-20
 doc_type: decision
 amended_by: hop-adr-0028
 ---
@@ -70,6 +70,7 @@ The exact public allowlist is:
 - `ConstructionCompilation`;
 - `ConstructionProjection`;
 - `ConstructionSelection`;
+- `FoldbackSequenceSpace`;
 - `LocalNeighborhoodDiscovery`;
 - `LocalNeighborhoodBatch`;
 - `LocalRealizationChoice`;
@@ -80,12 +81,14 @@ The exact public allowlist is:
 - `compile_construction`;
 - `compile_construction_from_local_realizations`;
 - `compile_design_from_local_realizations`;
+- `discover_foldback_sequence_space`;
 - `discover_local_neighborhood`;
 - `discover_local_neighborhoods`;
 - `discover_source_partition`;
 - `discover_construction_source_partition`;
 - `list_local_realizations`;
 - `load_verified_construction_bundle`;
+- `load_verified_foldback_sequence_space`;
 - `load_construction_selection`;
 - `load_verified_local_neighborhood`;
 - `load_verified_source_partition`;
@@ -143,6 +146,16 @@ it cannot be reopened without the verified result that establishes membership.
 Standalone local-neighborhood discovery returns one replay-verified family
 receipt. It establishes only the declared foldback or basal neighborhood and
 cannot be interpreted as a complete-route authority.
+
+Exhaustive foldback population discovery may return compact exact sequence sets
+through `FoldbackSequenceSpace`. Its strict file request declares finite geometry
+and execution bounds; every exact payload/geometry/strand case retains its raw
+population, per-program support, and admitted union. Loading repeats complete
+deterministic discovery. Computational exhaustion raises without a completed
+receipt, and enzyme aliases cannot multiply sequence configurations. Explicit
+member recovery uses ordinary full molecular realization for one case, sequence
+rank, and supporting program. These operations retain local claim scope and do
+not expose internal model constructors or rank biological performance.
 
 An ordered finite collection may use `discover_local_neighborhoods` for
 producer-bound checkpoints. `LocalNeighborhoodBatch` exposes execution counts

@@ -158,11 +158,13 @@ CONSTRUCTION_OPERATIONS = {
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
     "discover_construction_source_partition",
+    "discover_foldback_sequence_space",
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",
     "load_construction_selection",
     "load_verified_construction_bundle",
+    "load_verified_foldback_sequence_space",
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",
@@ -178,6 +180,7 @@ CONSTRUCTION_OPERATIONS = {
 }
 
 CONSTRUCTION_FACADE = {
+    "FoldbackSequenceSpace",
     "LocalRealizationChoice",
     "ProtectedRoot",
     "ConstructionCompilation",

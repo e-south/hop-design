@@ -1,0 +1,62 @@
+schema: hop.foldback-sequence-request/v1
+payload:
+  schema: hop.final-payload/v1
+  payload:
+    kind: exact
+    sequence: GACA
+  basal_boundary:
+    offset: 0
+  foldback_boundary:
+    offset: 4
+  pair_state_exceptions: []
+route_family: linear_source/v1
+geometry_domain:
+  family: foldback
+  junction_offsets_nt:
+  - 0
+  - 1
+  - 2
+  - 3
+  minimum_loop_length_nt: 3
+  minimum_annealing_arm_length_bp: 3
+  loop_lengths_nt: []
+  annealing_arm_lengths_bp: []
+enzyme_provisioning:
+  catalog:
+    schema: hop/characterized-enzyme-catalog/v1
+    catalog_id: example:enzyme-catalog/foldback-construction@1
+    enzymes:
+    - schema: hop/characterized-enzyme/v1
+      enzyme_id: example:enzyme/foldback-nick@1
+      canonical_name: foldback-nick@1
+      enzyme_class: nickase
+      target_molecule: dna
+      recognition_pattern: ACANTT
+      recognition_orientation_semantics: both_orientations
+      recognition_length: 6
+      substrate_requirement: duplex_dna
+      cut_offset_reference_strand: 0
+      cut_offset_complement_strand: null
+      resulting_end_model: nick
+      characterization_source:
+        system: literature
+        kind: synthetic-characterization-fixture
+        id: example:enzyme/foldback-nick@1
+      vendor_metadata: []
+  allowed_enzyme_ids:
+  - example:enzyme/foldback-nick@1
+  forbidden_enzyme_ids: []
+  reserved_enzyme_ids: []
+  max_operations: 4
+  role_restrictions:
+  - role: foldback_nick
+    allowed_enzyme_ids:
+    - example:enzyme/foldback-nick@1
+max_retained_overhead_nt: 10
+limits:
+  max_cases: 100
+  max_programs: 100
+  max_decisions: 10000
+  max_set_operations: 100000
+  max_site_checks: 10000
+  max_result_decisions: 100000

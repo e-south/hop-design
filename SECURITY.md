@@ -82,6 +82,14 @@ sequence-domain partition is limited to 256 parts, binds execution identity,
 and cannot be combined with stopping or compatibility semantics that require a
 whole-domain conclusion.
 
+Foldback sequence-space requests and results use the same one-megabyte and
+64 MiB descriptor-safe input limits. Strict embedded execution bounds apply
+before rediscovery; exact payload expansion is preflighted against the case
+limit. Canonical sequence decisions receive structural and cardinality checks,
+then the entire result is recomputed before a verified receipt is returned.
+Membership changes or omitted cases remain invalid even when their totals and
+content identities are recomputed consistently.
+
 Construction-bundle loading rejects unsafe paths, symlinks, incomplete or
 extra inventories, modified embedded design artifacts, and checksum-consistent
 scientific forgeries through exact semantic replay. Construction authorities

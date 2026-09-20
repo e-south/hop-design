@@ -103,6 +103,25 @@ including mirrored bottom-strand routes. Cleavage at the recognition interval's
 edge or outside it still uses the characterized enzyme offsets and actual
 molecule boundaries.
 
+Complete foldback sequence-space requests separately bound retained overhead and
+computation. The current execution envelope permits retained overhead through
+256 nt, at most 100,000 exact payload/geometry/strand cases and 100,000 examined
+programs. Decision and set-operation limits apply separately to each program
+admission and each case union; recognition-window limits apply per program.
+An additional limit of at most 1,000,000 serialized decisions bounds all stored
+program and union sets together. Case cardinality is checked before symbolic
+payload expansion, and program traversal does not allocate the program product.
+Any exhausted limit raises without a complete result. These ceilings are
+computational capabilities, not biological thresholds.
+
+The raw population of one exact foldback case is `4**(A+C)`. Its compact union
+counts each admitted independent sequence once across all supporting enzyme
+programs. Cases remain distinct by exact payload, A, C, D, and nick strand.
+Result loading binds the full request, catalog, implementation versions, roster,
+placement exclusions, admitted sets, and totals by deterministic rediscovery.
+An empty case with no permitted program remains part of the raw denominator.
+An empty geometry envelope has zero cases and zero raw population.
+
 Every spec has an explicit positive candidate bound. The convenience route
 resolves exactly one generic design. Foldback enumeration reports `complete`,
 `infeasible`, or `truncated`, including the fired node or hit bound; a truncated

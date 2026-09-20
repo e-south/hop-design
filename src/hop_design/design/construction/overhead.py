@@ -11,6 +11,8 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 from hop_design.models.construction.search import (
     FoldbackGeometryDomain,
     FoldbackOverheadLevel,
@@ -19,35 +21,47 @@ from hop_design.models.construction.search import (
 from hop_design.models.construction.targets import FoldbackTarget
 
 
+def iter_foldback_geometries(
+    domain: FoldbackGeometryDomain, *, maximum: int
+) -> Iterator[FoldbackTarget]:
+    """Yield bounded geometries in overhead, displacement, cap, and arm order."""
+    loop_lengths = domain.loop_lengths_nt or tuple(
+        range(domain.minimum_loop_length_nt, maximum + 1)
+    )
+    allowed_arms = set(domain.annealing_arm_lengths_bp)
+    for overhead in range(maximum + 1):
+        for junction_offset in domain.junction_offsets_nt:
+            if junction_offset > overhead // 2:
+                break
+            for loop_length in loop_lengths:
+                paired = overhead - loop_length
+                if paired < 0 or paired % 2:
+                    continue
+                arm_length = paired // 2
+                if arm_length < max(domain.minimum_annealing_arm_length_bp, junction_offset):
+                    continue
+                if allowed_arms and arm_length not in allowed_arms:
+                    continue
+                yield FoldbackTarget(
+                    nick_strand=domain.nick_strand,
+                    junction_offset_nt=junction_offset,
+                    loop_length_nt=loop_length,
+                    annealing_arm_length_bp=arm_length,
+                )
+
+
 def foldback_overhead_levels(
     domain: FoldbackGeometryDomain,
     plan: NeighborhoodSearchPlan,
 ) -> tuple[FoldbackOverheadLevel, ...]:
     """Return every admissible foldback geometry grouped by exact overhead."""
     maximum = plan.max_retained_overhead_nt
-    loop_lengths = domain.loop_lengths_nt or tuple(
-        range(domain.minimum_loop_length_nt, maximum + 1)
-    )
-    arm_lengths = domain.annealing_arm_lengths_bp or tuple(
-        range(domain.minimum_annealing_arm_length_bp, maximum // 2 + 1)
-    )
     geometries_by_overhead: dict[int, list[FoldbackTarget]] = {
         overhead: [] for overhead in range(maximum + 1)
     }
-    for junction_offset in domain.junction_offsets_nt:
-        for loop_length in loop_lengths:
-            for arm_length in arm_lengths:
-                retained_overhead = loop_length + 2 * arm_length
-                if retained_overhead > maximum or junction_offset > arm_length:
-                    continue
-                geometries_by_overhead[retained_overhead].append(
-                    FoldbackTarget(
-                        nick_strand=domain.nick_strand,
-                        junction_offset_nt=junction_offset,
-                        loop_length_nt=loop_length,
-                        annealing_arm_length_bp=arm_length,
-                    )
-                )
+    for target in iter_foldback_geometries(domain, maximum=maximum):
+        overhead = target.loop_length_nt + 2 * target.annealing_arm_length_bp
+        geometries_by_overhead[overhead].append(target)
     return tuple(
         FoldbackOverheadLevel(
             retained_overhead_nt=overhead,

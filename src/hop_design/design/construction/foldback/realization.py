@@ -38,6 +38,7 @@ from hop_design.models.construction.foldback import (
     FoldbackMaterialRequirement,
 )
 from hop_design.models.construction.foldback_replay import replay_foldback_route
+from hop_design.models.construction.foldback_space import FoldbackSequenceRequest
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.physical import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
@@ -57,7 +58,7 @@ def _failure_code(diagnostic_codes: tuple[str, ...]) -> str:
 
 def _realization(
     *,
-    request: LocalNeighborhoodRequest,
+    request: LocalNeighborhoodRequest | FoldbackSequenceRequest,
     payload_sequence: str,
     target: FoldbackTarget,
     route: FoldbackProgramCandidate,

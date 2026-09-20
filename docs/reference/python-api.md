@@ -85,6 +85,19 @@ All operations and receipts in this section use `hop_design.construction`.
 - `load_verified_local_neighborhood(result_path) -> LocalNeighborhoodDiscovery`
   loads only the active foldback or basal family result schema and repeats exact
   deterministic discovery replay.
+- `discover_foldback_sequence_space(source_path) -> FoldbackSequenceSpace`
+  exhausts a finite foldback domain into compact exact sequence sets, retaining
+  each examined enzyme program and its support. Raw and admitted counts use
+  distinct payload/geometry/strand/sequence configurations; enzyme aliases do
+  not multiply them. Computational exhaustion raises without returning a
+  complete receipt. See the [sequence-space guide](../guides/foldback-sequence-space.md).
+- `load_verified_foldback_sequence_space(result_path) -> FoldbackSequenceSpace`
+  repeats complete deterministic discovery and requires exact result equality.
+  The receipt exposes `json_bytes`, `result_id`, `candidate_count`, and
+  `admitted_count`. Its `write(destination)` publishes a create-only directory;
+  `member_json(case_id=..., rank=..., program_index=...)` recovers one exact
+  molecular realization through an explicitly selected supporting program.
+  Lexicographic rank is an address within the admitted set, not a biological ranking.
 - `list_local_realizations(receipt, cohesive_end=None, max_retained_overhead_nt=None,
   max_noncanonical_pairs=None, sort_by=()) -> tuple[LocalRealizationChoice, ...]`
   lists recorded local witnesses with their compilable family identity, typed

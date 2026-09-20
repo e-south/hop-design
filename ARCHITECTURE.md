@@ -168,9 +168,8 @@ verified cardinality, exact membership, and lexicographic member recovery.
 `kernel/construction/sequence_sets.py` constructs their unions, intersections,
 and differences within explicit decision and operation budgets. The same set
 serializes identically regardless of insertion order or redundant witnesses.
-These internal sets describe nucleotide membership only. They are not local
-construction authorities and do not establish reaction admission, complete
-query coverage, enzyme support, or a public compact-discovery operation.
+These sets describe nucleotide membership only. Construction authority requires
+the molecular admission and complete request coverage layers below.
 
 `kernel/construction/foldback/admission.py` applies ordered molecular admission
 to one solved foldback domain and returns its exact independent-base set.
@@ -183,6 +182,17 @@ provides topology and sequence-independent policy checks; its sequence-dependent
 admission result does not classify other members. These internal admitted sets
 do not establish coverage of a query roster or provide a portable construction
 receipt. Selected members still materialize through ordinary molecular replay.
+
+`models/construction/foldback_space.py` binds exact case populations and individual
+program support to a finite request. `design/construction/foldback_space.py`
+exhausts the geometry, exact payload, strand, and provisioned program roster;
+its verifier recomputes every set and requires canonical result equality.
+The file-oriented `FoldbackSequenceSpace` receipt is exposed only through
+`hop_design.construction`. It preserves compact sets, exact raw denominators,
+and program support without multiplying physical configurations by witnesses.
+Selected members use the same full molecular realization authority as concrete
+local discovery. This receipt establishes local admission, not complete materials,
+method performance, thermodynamic stability, or experimental recovery.
 
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,

@@ -85,6 +85,7 @@ for required in \
   'examples/basal-junction/request.yaml' \
   'examples/basal-junction/search.py' \
   'examples/foldback-local-partition.yaml' \
+  'examples/foldback-sequence-space.yaml' \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
   'examples/linear-source-method.json' \
@@ -196,6 +197,17 @@ if not resumed.finished or resumed.completed_requests != 2:
     raise SystemExit("local collection did not resume")
 if any(item.json_bytes != receipt.json_bytes for item in resumed.iter_results()):
     raise SystemExit("local collection changed canonical result bytes")
+space = construction.discover_foldback_sequence_space("examples/foldback-sequence-space.yaml")
+space_path = space.write(output / "sequence-space") / "result.json"
+loaded_space = construction.load_verified_foldback_sequence_space(space_path)
+if loaded_space.json_bytes != space.json_bytes:
+    raise SystemExit("foldback sequence space failed reload verification")
+if (space.candidate_count, space.admitted_count) != (163840, 190):
+    raise SystemExit("foldback sequence space changed its exact populations")
+case = next(item for item in json.loads(space.json_bytes)["cases"] if item["sequences"]["cardinality"])
+(output / "sequence-member.json").write_text(space.member_json(
+    case_id=case["case_id"], rank=0, program_index=0,
+))
 print(result)
 PY
 }
@@ -212,6 +224,12 @@ if ! cmp -s "$source_local_result" "$wheel_local_result"; then
   echo "source/wheel local-neighborhood canonical result mismatch" >&2
   exit 1
 fi
+for relative in sequence-space/result.json sequence-member.json; do
+  if ! cmp -s "$(dirname "$source_local_result")/$relative" "$(dirname "$wheel_local_result")/$relative"; then
+    echo "source/wheel foldback sequence-space mismatch: $relative" >&2
+    exit 1
+  fi
+done
 
 uv run --locked python examples/basal-junction/search.py --out "$smoke_root/source-basal"
 "$smoke_root/venv/bin/python" examples/basal-junction/search.py --out "$smoke_root/wheel-basal"
