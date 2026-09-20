@@ -71,6 +71,21 @@ manifest rather than maintaining a second claim authority.
 
 ## Limits
 
+Internal exact DNA sequence sets contain at most 256 independent nucleotide
+variables and 100,000 reduced decisions. A builder requires explicit positive
+decision and computation budgets, capped at 100,000 decisions and 1,000,000
+operations. An operation is a per-position domain step, imported decision,
+or uncached binary set subproblem. Exhaustion raises and prevents that builder
+from publishing even a previously obtained handle as a completed set. These
+limits bound representation and computation, not molecular feasibility.
+
+Sequence-set serialization rejects cycles, forward references, decreasing
+positions, redundant or duplicate decisions, unreachable content, noncanonical
+ordering, and incorrect cardinality. Cardinality and member recovery account
+for unconstrained positions skipped by reduction. Exact A/C/G/T member rank
+can be recovered without enumerating earlier members. Nucleotide-set validity
+does not validate the molecular process that would admit those sequences.
+
 Every spec has an explicit positive candidate bound. The convenience route
 resolves exactly one generic design. Foldback enumeration reports `complete`,
 `infeasible`, or `truncated`, including the fired node or hit bound; a truncated

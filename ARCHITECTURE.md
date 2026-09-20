@@ -162,6 +162,16 @@ reaction-stage admission. It is not an admitted construction count. Concrete
 enumeration materializes those assignments in canonical base order and retains
 the same placement-exclusion diagnostics.
 
+`models/construction/sequence_sets.py` owns strict, finite exact DNA sets over
+independent bases. Reduced A/C/G/T decisions have canonical reachable postorder,
+verified cardinality, exact membership, and lexicographic member recovery.
+`kernel/construction/sequence_sets.py` constructs their unions, intersections,
+and differences within explicit decision and operation budgets. The same set
+serializes identically regardless of insertion order or redundant witnesses.
+These internal sets describe nucleotide membership only. They are not local
+construction authorities and do not establish reaction admission, complete
+query coverage, enzyme support, or a public compact-discovery operation.
+
 `scripts/check_architecture.py` enforces absolute and relative imports, maps the
 root `api.py` and `cli.py` modules and the `commands` adapter layer explicitly,
 and fails on unknown first-party layers. The root facade and serialization module are narrow documented
