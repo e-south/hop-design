@@ -1,4 +1,4 @@
-# ![hop: Hairpin Oligonucleotide Processing](assets/hop-design-banner.svg)
+# ![Hairpin Oligonucleotide Processing (HOP) Design: specify a stem, discover compatible flanks, retrieve oligos and processing](assets/hop-design-banner.png)
 
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
