@@ -19,6 +19,7 @@ from .design.construction.discovery.prepare import (
     prepare_scaffold_discovery,
 )
 from .design.construction.discovery.selection import select_scaffold_options
+from .design.construction.editions.partitions import combine_design_discoveries
 from .design.construction.editions.reader import AtlasEdition, load_atlas_edition
 from .design.construction.editions.recorded import freeze_design_choices
 from .design.construction.edits.execute import MolecularEditEvaluation, execute_molecular_edit
@@ -235,6 +236,7 @@ __all__ = [
     "assess_scaffold_comparison",
     "author_construction_family",
     "author_molecular_edit",
+    "combine_design_discoveries",
     "compare_constructions",
     "compare_scaffold_variants",
     "compile_construction",

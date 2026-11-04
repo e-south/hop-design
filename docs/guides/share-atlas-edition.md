@@ -17,6 +17,37 @@ their exact material handoffs and original producer identity. It can retain the
 original drawings or draw the selected molecule when inspected.
 You can move the directory and inspect it without rerunning the search.
 
+## Combine independent discovery jobs
+
+For parallel exploration, divide the requested end pairs into disjoint jobs using
+the ordinary intent's `ends.left` and `ends.right` alternatives. Keep the same
+stem, context, molecular permissions and effort file in every job. Each process
+owns one discovery directory and one checkpoint. Worker count and resource
+supervision belong to the caller; HOP does not start a background campaign.
+
+After stopping the writers, capture their union against the original full intent:
+
+```bash
+hop-design design combine job-a job-b --request full-intent.json --out combined-edition
+hop-design design query combined-edition --format text
+```
+
+`construction.combine_design_discoveries(full_intent, ["job-a", "job-b"],
+"combined-edition")` is the same API operation. It requires the jobs' target
+grids to cover the declared grid exactly once and rejects changed permissions,
+different effort policies or producers. Jobs without preparations still contribute
+their coverage. All jobs may be incomplete; complete grid assignment is not
+exhaustive molecular search.
+
+The compact edition preserves every captured preparation and exact oligo handoff.
+Capture replays those preparations; it does not replay every negative search
+result. Its origin record binds each source snapshot and distinguishes that
+verification level. Continue searching through the original jobs, then create a
+new edition. Never copy or concatenate checkpoint tables. Diversity allocation
+is independent within each job, so a fixed compute budget need not discover the
+same prefix as one unpartitioned search. Record the partition recipe with the
+study's computation costs and coverage.
+
 ## Capture the choices you want to share
 
 Start with an admitted result from [design discovery](discover-designs.md):

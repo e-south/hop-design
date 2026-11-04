@@ -968,6 +968,14 @@ contracts remain available for native scaffold-discovery requests.
 
 ## Frozen atlas editions and guided exploration
 
+`combine_design_discoveries(request, directories, destination) -> AtlasEdition`
+captures one compact edition from 2–256 disjoint, stopped released-insert
+discoveries. The explicit parent intent binds the unchanged stem and all molecular
+permissions. The input target grids must cover its Cartesian end-pair grid exactly
+once, with identical effort policies and current producer admission. Empty jobs
+retain their coverage. The result is read-only; each original checkpoint remains
+the continuation authority. See [independent jobs](../guides/share-atlas-edition.md#combine-independent-discovery-jobs).
+
 `load_atlas_edition(directory) -> AtlasEdition` verifies an immutable inventory
 of captured molecular packets, choices and material handoffs. It never loads a
 live discovery or runs its producer. Create one with

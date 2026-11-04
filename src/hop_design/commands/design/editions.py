@@ -5,12 +5,28 @@ from typing import Annotated
 
 import typer
 
-from hop_design.construction import freeze_design_choices
+from hop_design.construction import combine_design_discoveries, freeze_design_choices
 
 from .common import emit, errors, load_choices
 
 
 def register_edition_commands(app: typer.Typer) -> None:
+    @app.command("combine")
+    def combine(
+        directories: list[Path],
+        request: Annotated[Path, typer.Option(help="Full intent covered by the disjoint jobs.")],
+        output: Annotated[Path, typer.Option("--out")],
+    ) -> None:
+        """Capture one atlas from stopped, disjoint discovery jobs; preserve their checkpoints."""
+        with errors():
+            edition = combine_design_discoveries(request, directories, output)
+            emit(
+                {
+                    "edition_digest": edition.digest,
+                    "preparations": edition.query()["matching_preparations"],
+                }
+            )
+
     @app.command("neighbors")
     def neighbors(
         directory: Path,
