@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-10
+last_verified: 2026-11-04
 doc_type: explanation
 journey:
   - compile
@@ -120,6 +120,14 @@ their own roles. Construction cost reports the exact non-payload nucleotides
 retained on each endpoint strand. It does not add the two local search ceilings
 or equate a transient basal contact span with retained stem extension. Keep the
 loop, added pairing, end-to-stem gaps and auxiliary materials separately visible.
+
+Identical sticky-end words do not require identical added stem. The exposed
+cloning sequences can stay the same while the paired DNA between an end and
+the supplied stem, or between the supplied stem and loop, changes. Say which
+region changes instead of calling all these bases "flanks." A loop length and
+a paired foldback-arm length are separate requirements. Short-loop limits belong
+to the caller's request; another application can permit longer loops without
+changing HOP's general model. Neither choice asserts reaction efficiency.
 
 By default, freezing an atlas includes all matching recorded preparations,
 deduplicated by preparation identity. It does not choose only shortest designs
