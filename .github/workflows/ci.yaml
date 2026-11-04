@@ -18,69 +18,69 @@ jobs:
     name: Verify repository
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      UV_PYTHON: "3.12"
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+      - name: Select verification scope
+        id: scope
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python scripts/ci_scope.py
+      - name: Require a known verification scope
+        env:
+          CI_SCOPE: ${{ steps.scope.outputs.scope }}
+        run: |
+          case "$CI_SCOPE" in
+            artwork|full) ;;
+            *) echo "Missing or invalid verification scope" >&2; exit 1 ;;
+          esac
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
           prune-cache: true
       - name: Verify repository
+        if: steps.scope.outputs.scope == 'full'
         run: bash ./scripts/agent-verify --workers 2
+      - name: Verify README artwork
+        if: steps.scope.outputs.scope == 'artwork'
+        run: |
+          bash ./scripts/agent-preflight --strict
+          bash ./scripts/precommit-all
+          uv run --locked pytest -q tests/repo/test_ci_scope.py tests/repo/test_supply_chain_contracts.py
+          uv build --no-sources --out-dir .artifacts/ci-distributions
+          uv run --locked twine check .artifacts/ci-distributions/*
       - name: Upload coverage to Codecov
         if: >-
-          github.event_name != 'pull_request' ||
-          (github.actor != 'dependabot[bot]' &&
-          github.event.pull_request.head.repo.full_name == github.repository)
+          steps.scope.outputs.scope == 'full' &&
+          (github.event_name != 'pull_request' ||
+            (github.actor != 'dependabot[bot]' &&
+            github.event.pull_request.head.repo.full_name == github.repository))
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           use_oidc: true
           files: .artifacts/coverage.xml
           fail_ci_if_error: true
 
-  python-compatibility:
-    name: Python ${{ matrix.python-version }} compatibility
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12", "3.13", "3.14"]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          enable-cache: true
-          prune-cache: true
-      - name: Test installed package
-        run: >-
-          uv run --locked --python ${{ matrix.python-version }}
-          pytest -q -n 2 --dist loadscope --no-cov tests/contract tests/integration
-
   checks:
     name: Checks
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [verify, python-compatibility]
+    needs: verify
     if: always()
     steps:
       - name: Require successful jobs
         run: |
           test "${{ needs.verify.result }}" = "success"
-          test "${{ needs.python-compatibility.result }}" = "success"

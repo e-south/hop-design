@@ -23,8 +23,9 @@ Run targeted checks while editing, then use the scope in
   `bash ./scripts/agent-verify --scope presentation` plus visual and molecular-inventory review.
 - Molecular rules, requests, discovery, identity, admission or handoff behavior:
   `bash ./scripts/agent-verify --scope source`.
-- Packaging, runtime dependencies, publication, or an uncertain boundary:
-  `bash ./scripts/agent-verify` (full). CI keeps this full endpoint before merge.
+- Packaging, runtime dependencies, publication, CI routing, or an uncertain boundary:
+  `bash ./scripts/agent-verify` (full). CI keeps this endpoint before merge,
+  except for the exact README/artwork paths documented in the verification guide.
 
 Each scope includes strict preflight. Report the scope actually passed; presentation
 is not whole-package verification. Use `--workers 2` when useful; never duplicate gates.

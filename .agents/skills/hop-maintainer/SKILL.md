@@ -23,7 +23,8 @@ outside HOP.
 - A failing test proves the missing behavior before implementation.
 - The smallest owning layer changes and all affected contracts remain explicit.
 - Targeted checks and the verification scope appropriate to the changed responsibility pass.
-- Full source and installed-distribution verification passes before merge or release.
+- Full source and installed-distribution verification passes before merge or release,
+  except for the documented README/artwork-only merge gate.
 - Documentation, schemas, and public/private boundaries agree with the code.
 
 ## Workflow
@@ -46,7 +47,9 @@ outside HOP.
 
    Choose one boundary; these are not three commands to run in sequence. Each
    includes strict preflight. Packaging, runtime dependencies, uncertain scope,
-   merge and release require the full gate. A presentation-only change requires
+   CI routing and release require the full gate. Merge uses that gate except for
+   the exact README/artwork paths documented in the verification guide.
+   A presentation-only change requires
    rendered review and conserved molecular content as well as its focused gate.
    See `docs/dev/performance.md#choose-the-verification-boundary` for the
    responsibility map and bounded worker option.

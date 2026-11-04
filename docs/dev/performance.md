@@ -550,7 +550,8 @@ Choose one command for the task; do not run all three as a ritual.
   suite with the existing 90% coverage floor, all browser checks and repository
   checks. Uncertain change impact also requires the full gate below.
 - **Full (default):** source verification plus dependency audit, build, clean
-  installation and source/wheel parity. Required before merge or release, and
+  installation and source/wheel parity. Required before merge (except for the
+  README/artwork gate below) or release, and
   for packaging, asset-inclusion rules or runtime-dependency changes. Editing an
   already packaged view's appearance uses presentation verification; changing
   which assets ship requires the full gate. CI retains
@@ -562,6 +563,34 @@ Verification-runner changes need the routing/failure tests in
 runner test proves command selection and failure propagation, not molecular
 behavior. A narrowed scope must be named in the handoff; it must not be reported
 as a full gate.
+
+### Hosted CI policy
+
+Routine pull requests and main-branch pushes run the full gate once on Python
+3.12, the minimum supported runtime. Python 3.13 and 3.14 remain supported;
+their contract and integration suites run through the separate
+`python-compatibility.yaml` workflow on explicit dispatch and during release.
+Release publication depends on both compatibility and exact-distribution checks.
+Dispatch compatibility before merging Python-version-sensitive or dependency
+changes. Choosing a new primary runtime is a separate support-policy change.
+
+`scripts/ci_scope.py` limits the smaller merge gate to its exact README/banner
+path allowlist. It checks the complete changed-path set, including both sides of
+renames. Empty, mixed, unknown, or unavailable comparisons require the full gate;
+invalid revisions or a failed diff stop verification. A manual
+CI run always selects full verification. Workflow and selector changes also
+require the full gate.
+
+The README/artwork gate runs strict preflight, repository lint and workflow
+validation, CI contract tests, distribution builds and metadata checks. Review
+the banner visually as well. This gate establishes repository and packaging
+integrity, not molecular replay or installed-package parity. Packaged browser
+assets and molecular figures do not qualify for this exception.
+
+The stable `Checks` job remains required for both scopes and rejects a failed,
+canceled or skipped verification job. The workflow itself is never path-skipped;
+that would leave required checks pending. The full gate still produces coverage;
+artwork-only runs do not upload or replace that report.
 
 ### Use bounded parallelism
 

@@ -8,6 +8,9 @@ permissions:
   contents: read
 
 jobs:
+  compatibility:
+    uses: ./.github/workflows/python-compatibility.yaml
+
   build:
     name: Build release artifacts
     runs-on: ubuntu-latest
@@ -49,7 +52,7 @@ jobs:
 
   publish:
     name: Publish verified GitHub release
-    needs: build
+    needs: [build, compatibility]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

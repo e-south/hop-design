@@ -7,7 +7,7 @@ audience:
   - security reviewers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-11-04
 doc_type: how-to
 journey:
   - maintain
@@ -27,6 +27,14 @@ branch that does not yet exist. Protect `main` immediately after that push.
 For a single-maintainer repository, zero approving reviews avoids making every
 pull request impossible to merge. Review comments and automated review remain
 useful evidence but do not replace required tests.
+
+`Checks` requires successful verification on Python 3.12. The complete gate runs
+unless the diff contains only the exact README/banner paths admitted by
+`scripts/ci_scope.py`. That exception retains repository and packaging checks;
+it does not cover installed assets or CI changes. Additional supported Python
+versions are checked on explicit dispatch and gate release publication. See the
+[verification policy](performance.md#hosted-ci-policy) for scope and commands.
+Neither workflow path filters nor a skipped verification job satisfy the rule.
 
 ## Repository security
 
