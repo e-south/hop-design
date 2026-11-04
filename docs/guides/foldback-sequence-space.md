@@ -39,6 +39,32 @@ It admits 190 distinct configurations. Exhaustive full molecular discovery
 independently checks every admitted member, including the empty cases. The
 enzyme definition is a synthetic fixture, not a reagent recommendation.
 
+## Enzyme roles and alternative preparations
+
+Foldback closure and final cloning-end generation are separate operations.
+The foldback solver represents two ways to establish the strand ends needed
+for closure:
+
+| Foldback program | Source of the foldback-side terminus | Material consequence |
+| --- | --- | --- |
+| `single_cleavage` | The source already ends at the required boundary; a nick controls the opposite strand. | The recorded source terminus must carry the required 5′ phosphate. |
+| `sequential_terminus_plus_nick` | A duplex cut defines the terminus before nicking; sequence beyond that boundary is removed. | The cut supplies the phosphate-bearing terminus; the extra cleavage step and transient source DNA remain part of the preparation. |
+
+The current sequential solver requires coincident cuts on the two strands at
+that boundary: a blunt terminus. It reports `unsupported-staggered-terminus`
+for staggered cuts. That is a boundary of this modeled route, not a conclusion
+that other termini cannot be used experimentally. Ordinary blunt cutters can
+therefore be relevant here even though they cannot generate the requested
+cloning sticky ends. Type IIS classification alone does not establish an
+enzyme's role; recognition, cut geometry and the actual substrate do.
+
+Only caller-permitted programs are searched. A new supported program may
+prepare a sequence already admitted by another program. Keep the program
+alternatives and distinct sequence configurations separate; adding enzyme
+names does not necessarily add molecular diversity. A caller-supplied cut
+definition also does not establish that all necessary biochemical conditions
+have been represented or satisfied.
+
 ## What is counted
 
 One case fixes the exact payload, A, C, D, and nick strand. It starts with
