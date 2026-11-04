@@ -388,6 +388,13 @@ before their receipts are reused; identifiers alone are insufficient.
 
 ## Frozen inspection editions
 
+`combine_design_discoveries` captures one read-only edition from disjoint
+discovery jobs covering an explicit parent request grid. It requires unchanged
+molecular permissions, effort and producer; empty jobs remain in coverage.
+Captured preparations use the existing replay and handoff path. Writable
+checkpoints and their independent continuation histories are not merged.
+Aggregate negative replay remains explicit and separate from capture.
+
 `freeze_design_choices` provides file-oriented capture and explicit read-only
 recorded-source admission, without authorizing foreign-producer execution.
 `AtlasEdition` and `load_atlas_edition` expose captured choices, molecular drawings

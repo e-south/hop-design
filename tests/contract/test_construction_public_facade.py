@@ -78,6 +78,7 @@ PUBLIC_NAMES = [
     "assess_scaffold_comparison",
     "author_construction_family",
     "author_molecular_edit",
+    "combine_design_discoveries",
     "compare_constructions",
     "compare_scaffold_variants",
     "compile_construction",
