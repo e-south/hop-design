@@ -147,6 +147,7 @@ def _replace_artifact_and_reseal(output: Path, artifact_path: str, content: byte
 
 def test_construction_bundle_round_trips_verified_authorities_deterministically(
     tmp_path: Path,
+    frozen_a8_artifact_producer,
 ) -> None:
     verified = _verified_construction(tmp_path)
 
@@ -157,15 +158,17 @@ def test_construction_bundle_round_trips_verified_authorities_deterministically(
 
     assert first._bundle == second._bundle == loaded._bundle
     assert dict(first._artifacts) == dict(second._artifacts) == dict(loaded._artifacts)
-    assert first.bundle_id == "hop:construction-bundle/914bdbe089fa/367b551f9da89f68"
+    # Fixed goldens for result v9 with foldback implementation 6; regenerated
+    # with frozen producer metadata, never calculated as expected values in this test.
+    assert first.bundle_id == "hop:construction-bundle/06808c4bd6d6/3aa023d7a7f22610"
     assert first._bundle.manifest_digest == (
-        "sha256:367b551f9da89f68cb4636abe30d125680414bee62e2bd8365aa7235d7af3902"
+        "sha256:3aa023d7a7f2261051158ee421ddf17a48053a3c64645aa7ec358e74cea17896"
     )
     assert first._bundle.result_digest == (
-        "sha256:67b3855e9fbf4138182a7d4ecce4d74a077fbb3d0a214a0996a4ba8e9a83b115"
+        "sha256:7287cc143075641c375360b1e10838b1e22a08d0a177ca25413e9fd38b2f17ef"
     )
     assert sha256_digest(canonical_json_bytes(first._bundle)) == (
-        "sha256:a2ad59e1f855a8878a1b641c05ad1eff4d10822979e7dd254d91153b0176b784"
+        "sha256:402c7b809f6e8cbae33621b9be79f8e7dc6ab105964f1c8981847f8edd97fc48"
     )
     assert loaded._construction.result == verified.result
     assert loaded._construction.design == verified.design

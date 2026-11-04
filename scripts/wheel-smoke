@@ -36,6 +36,8 @@ if [[ ${#sdists[@]} -ne 1 ]]; then
 fi
 wheel_path="${wheels[0]}"
 sdist_path="${sdists[0]}"
+uv run --locked python scripts/check_public_safety.py --distribution "$wheel_path" \
+  --distribution "$sdist_path"
 sdist_extract_root="$smoke_root/sdist"
 mkdir -p "$sdist_extract_root"
 tar -xzf "$sdist_path" -C "$sdist_extract_root"
@@ -71,6 +73,35 @@ for required in \
   'examples/author_linear_source_method.py' \
   'examples/compile_payload_records.py' \
   'examples/compile_construction.py' \
+  'examples/complete-construction/README.md' \
+  'examples/complete-construction/product-request.json' \
+  'examples/complete-construction/run.py' \
+  'examples/complete-construction/family.py' \
+  'examples/scaffold-options/run.py' \
+  'examples/scaffold-options/insert.json' \
+  'examples/scaffold-options/hairpin.json' \
+  'examples/scaffold-options/comparison.json' \
+  'examples/scaffold-discovery/request.json' \
+  'examples/scaffold-discovery/run.py' \
+  'examples/scaffold-discovery/terminal-form.json' \
+  'examples/scaffold-discovery/terminal_forms.py' \
+  'examples/scaffold-comparison/run.py' \
+  'examples/scaffold-comparison/controlled_panel.py' \
+  'examples/scaffold-comparison/crossed.json' \
+  'examples/scaffold-comparison/methods.json' \
+  'examples/scaffold-comparison/hairpin.json' \
+  'examples/scaffold-comparison/grouped.json' \
+  'examples/scaffold-comparison/loop-sequences.json' \
+  'examples/molecular-editing/README.md' \
+  'examples/molecular-editing/request.json' \
+  'examples/molecular-editing/sequence-family.json' \
+  'examples/molecular-editing/run.py' \
+  'examples/molecular-editing/conditional.py' \
+  'examples/molecular-editing/parameters.py' \
+  'examples/molecular-editing/envelope.py' \
+  'examples/molecular-editing/construction-envelope.json' \
+  'docs/guides/explore-conditional-variants.md' \
+  'docs/guides/edit-folded-sequences.md' \
   'examples/construction-composed-pcr.yaml' \
   'examples/compile_linear_source_method.py' \
   'examples/construction-exact-design.yaml' \
@@ -85,6 +116,8 @@ for required in \
   'examples/basal-junction/request.yaml' \
   'examples/basal-junction/search.py' \
   'examples/foldback-local-partition.yaml' \
+  'examples/foldback-sequence-space.yaml' \
+  'examples/basal-sequence-space.yaml' \
   'examples/generic-symbolic.yaml' \
   'examples/linear-source-matched-design.yaml' \
   'examples/linear-source-method.json' \
@@ -96,8 +129,14 @@ for required in \
   fi
 done
 
-uv venv --python 3.12 "$smoke_root/venv"
-uv pip install --python "$smoke_root/venv/bin/python" "$wheel_path"
+# Byte parity includes the declared runtime producer, so hold that context equal.
+# A fresh wheel environment must not silently choose a newer Python patch release.
+source_python="$(uv run --locked python -c 'import sys; print(sys.executable)')"
+uv export --locked --no-dev --no-emit-project --format requirements-txt \
+  --output-file "$smoke_root/runtime-constraints.txt" >/dev/null
+uv venv --python "$source_python" "$smoke_root/venv"
+uv pip install --python "$smoke_root/venv/bin/python" \
+  --constraint "$smoke_root/runtime-constraints.txt" "$wheel_path"
 uv pip check --python "$smoke_root/venv/bin/python"
 "$smoke_root/venv/bin/python" scripts/docs-smoke --content-root "$sdist_root"
 
@@ -196,6 +235,29 @@ if not resumed.finished or resumed.completed_requests != 2:
     raise SystemExit("local collection did not resume")
 if any(item.json_bytes != receipt.json_bytes for item in resumed.iter_results()):
     raise SystemExit("local collection changed canonical result bytes")
+space = construction.discover_foldback_sequence_space("examples/foldback-sequence-space.yaml")
+space_path = space.write(output / "sequence-space") / "result.json"
+loaded_space = construction.load_verified_foldback_sequence_space(space_path)
+if loaded_space.json_bytes != space.json_bytes:
+    raise SystemExit("foldback sequence space failed reload verification")
+if (space.candidate_count, space.admitted_count) != (163840, 190):
+    raise SystemExit("foldback sequence space changed its exact populations")
+case = next(item for item in json.loads(space.json_bytes)["cases"] if item["sequences"]["cardinality"])
+(output / "sequence-member.json").write_text(space.member_json(
+    case_id=case["case_id"], rank=0, program_index=0,
+))
+basal_space = construction.discover_basal_sequence_space("examples/basal-sequence-space.yaml")
+basal_path = basal_space.write(output / "basal-sequence-space") / "result.json"
+loaded_basal = construction.load_verified_basal_sequence_space(basal_path)
+if loaded_basal.json_bytes != basal_space.json_bytes:
+    raise SystemExit("basal sequence space failed reload verification")
+if (basal_space.candidate_count, basal_space.admitted_count) != (512, 4):
+    raise SystemExit("basal sequence space changed its exact populations")
+basal_case = next(item for item in json.loads(basal_space.json_bytes)["cases"] if item["sequences"]["cardinality"])
+basal_program = next(i for i, item in enumerate(basal_case["programs"]) if item["sequences"]["cardinality"])
+(output / "basal-sequence-member.json").write_text(basal_space.member_json(
+    case_id=basal_case["case_id"], rank=0, program_index=basal_program,
+))
 print(result)
 PY
 }
@@ -212,6 +274,12 @@ if ! cmp -s "$source_local_result" "$wheel_local_result"; then
   echo "source/wheel local-neighborhood canonical result mismatch" >&2
   exit 1
 fi
+for relative in sequence-space/result.json sequence-member.json basal-sequence-space/result.json basal-sequence-member.json; do
+  if ! cmp -s "$(dirname "$source_local_result")/$relative" "$(dirname "$wheel_local_result")/$relative"; then
+    echo "source/wheel sequence-space mismatch: $relative" >&2
+    exit 1
+  fi
+done
 
 uv run --locked python examples/basal-junction/search.py --out "$smoke_root/source-basal"
 "$smoke_root/venv/bin/python" examples/basal-junction/search.py --out "$smoke_root/wheel-basal"
@@ -222,15 +290,97 @@ for relative in result/result.json matrix/projection.json matrix/projection.csv 
   fi
 done
 
+uv run --locked python examples/complete-construction/family.py --out "$smoke_root/source-family"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/complete-construction/family.py" --out "$smoke_root/wheel-family"
+if ! diff -qr "$smoke_root/source-family" "$smoke_root/wheel-family"; then
+  echo "source/wheel scaffold-family mismatch" >&2
+  exit 1
+fi
+
+uv run --locked python examples/complete-construction/family.py --endpoint hairpin --out "$smoke_root/source-hairpin-family"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/complete-construction/family.py" --endpoint hairpin --out "$smoke_root/wheel-hairpin-family"
+if ! diff -qr "$smoke_root/source-hairpin-family" "$smoke_root/wheel-hairpin-family"; then
+  echo "source/wheel direct-hairpin family mismatch" >&2
+  exit 1
+fi
+uv run --locked python examples/complete-construction/continue_family.py --out "$smoke_root/source-family-recovery"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/complete-construction/continue_family.py" --out "$smoke_root/wheel-family-recovery"
+if ! diff -qr "$smoke_root/source-family-recovery" "$smoke_root/wheel-family-recovery"; then
+  echo "source/wheel family recovery mismatch" >&2
+  exit 1
+fi
+
+options_args=(--endpoint insert --max-continuations 12
+  --option option-0005-01 --option option-0006-01
+  --option option-0007-01 --option option-0008-01 --baseline option-0005-01)
+uv run --locked python examples/scaffold-options/run.py \
+  "${options_args[@]}" --out "$smoke_root/source-options"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/scaffold-options/run.py" \
+  "${options_args[@]}" --out "$smoke_root/wheel-options"
+if ! diff -qr "$smoke_root/source-options" "$smoke_root/wheel-options"; then
+  echo "source/wheel scaffold-options mismatch" >&2
+  exit 1
+fi
+
+uv run --locked python examples/scaffold-discovery/run.py "$smoke_root/source-scaffolds"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/scaffold-discovery/run.py" "$smoke_root/wheel-scaffolds"
+if ! diff -qr "$smoke_root/source-scaffolds" "$smoke_root/wheel-scaffolds"; then
+  echo "source/wheel product-first discovery mismatch" >&2
+  exit 1
+fi
+
+uv run --locked python examples/scaffold-discovery/terminal_forms.py "$smoke_root/source-terminals"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/scaffold-discovery/terminal_forms.py" "$smoke_root/wheel-terminals"
+if ! diff -qr "$smoke_root/source-terminals" "$smoke_root/wheel-terminals"; then
+  echo "source/wheel terminal scaffold mismatch" >&2
+  exit 1
+fi
+
+for comparison_case in crossed methods hairpin grouped loop-sequences; do
+  case "$comparison_case" in
+    crossed) comparison_baseline=loop3-open17 ;;
+    methods) comparison_baseline=bsai ;;
+    hairpin) comparison_baseline=loop3 ;;
+    grouped) comparison_baseline=loop3-bsai ;;
+    loop-sequences) comparison_baseline=aaa-bsai ;;
+  esac
+  uv run --locked python examples/scaffold-comparison/run.py \
+    --case "$comparison_case" --set set-0001 --baseline "$comparison_baseline" \
+    --out "$smoke_root/source-comparison-$comparison_case"
+  "$smoke_root/venv/bin/python" "$sdist_root/examples/scaffold-comparison/run.py" \
+    --case "$comparison_case" --set set-0001 --baseline "$comparison_baseline" \
+    --out "$smoke_root/wheel-comparison-$comparison_case"
+  if ! diff -qr "$smoke_root/source-comparison-$comparison_case" "$smoke_root/wheel-comparison-$comparison_case"; then
+    echo "source/wheel molecular comparison mismatch: $comparison_case" >&2
+    exit 1
+  fi
+done
+
+uv run --locked python examples/scaffold-comparison/controlled_panel.py --out "$smoke_root/source-controlled-panel"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/scaffold-comparison/controlled_panel.py" --out "$smoke_root/wheel-controlled-panel"
+if ! diff -qr "$smoke_root/source-controlled-panel" "$smoke_root/wheel-controlled-panel"; then
+  echo "source/wheel stage-controlled panel mismatch" >&2
+  exit 1
+fi
+
 composed_construction=''
+uv run --locked python examples/complete-construction/run.py --out "$smoke_root/source-journey"
+"$smoke_root/venv/bin/python" "$sdist_root/examples/complete-construction/run.py" --out "$smoke_root/wheel-journey"
+for journey_case in released hairpin fixed-source-edit redesigned-source-edit; do
+  if ! diff -qr "$smoke_root/source-journey/$journey_case" "$smoke_root/wheel-journey/$journey_case"; then
+    echo "source/wheel complete journey mismatch: $journey_case" >&2
+    exit 1
+  fi
+done
+
 for construction_case in composed-pcr exact infeasible expanded-domain; do
   construction_trajectory_id=''
   if [[ "$construction_case" == "composed-pcr" ]]; then
-    construction_trajectory_id='hop:materialized-construction/f99d722902449539461bdc405fe1fdec8e7c3205ed3e4336547795ce93168eda@1'
+    construction_trajectory_id='hop:materialized-construction/427a738083142d5f09f9b48bfade8b2e613bff8da96e068770f17ab1c0fd9f44@1'
   elif [[ "$construction_case" == "exact" ]]; then
-    construction_trajectory_id='hop:materialized-construction/18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1'
+    construction_trajectory_id='hop:materialized-construction/6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1'
   elif [[ "$construction_case" == "expanded-domain" ]]; then
-    construction_trajectory_id='hop:materialized-construction/18b865aacc420439aa8fefe839ee1f4d6743b5d5588142adee713cebcfe55877@1'
+    construction_trajectory_id='hop:materialized-construction/6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1'
   fi
   if [[ -n "$construction_trajectory_id" ]]; then
     source_construction="$(uv run --locked python examples/compile_construction.py \
@@ -320,5 +470,45 @@ fi
 installed_version="$("$smoke_root/venv/bin/python" -c \
   'from importlib.metadata import version; print(version("hop-design"))')"
 test "$("$smoke_root/venv/bin/hop-design" --version)" = "hop-design $installed_version"
+
+source_edit="$(uv run --locked python examples/molecular-editing/run.py "$smoke_root/source-molecular-edit")"
+wheel_edit="$("$smoke_root/venv/bin/python" examples/molecular-editing/run.py "$smoke_root/wheel-molecular-edit")"
+if [[ "$source_edit" != "$wheel_edit" ]]; then
+  echo "source/wheel molecular edit and retrieval mismatch" >&2
+  exit 1
+fi
+"$smoke_root/venv/bin/python" -c 'from importlib.resources import files; assets = files("hop_design").joinpath("assets/molecular_editor"); assert all(assets.joinpath(n).is_file() for n in ("index.html", "editor.js", "editor.css"))'
+"$smoke_root/venv/bin/python" -c 'from importlib.resources import files; assets = files("hop_design").joinpath("assets/variant_explorer"); assert all(assets.joinpath(n).is_file() for n in ("index.html", "editor.js", "editor.css", "choice_space_model.js", "choice_space_brush.js", "choice_space_axes.js", "choice_space_coverage.js", "choice_space_local.js", "parameter_key.js", "envelope_browser.js", "envelope_model.js", "envelope_fields.js"))'
+
+"$smoke_root/venv/bin/python" -c 'from importlib.resources import files; assets = files("hop_design").joinpath("assets/survey_explorer"); assert all(assets.joinpath(n).is_file() for n in ("index.html", "editor.js", "editor.css", "model.js", "plot.js", "atlas.js"))'
+"$smoke_root/venv/bin/hop-design" construction survey view --help >/dev/null
+
+source_parameters="$(uv run --locked python examples/molecular-editing/parameters.py "$smoke_root/source-molecular-edit/alternatives" "$smoke_root/source-parameters")"
+wheel_parameters="$("$smoke_root/venv/bin/python" examples/molecular-editing/parameters.py "$smoke_root/wheel-molecular-edit/alternatives" "$smoke_root/wheel-parameters")"
+if [[ "$source_parameters" != "$wheel_parameters" ]]; then
+  echo "source/wheel parameter query, evaluation and retrieval mismatch" >&2
+  exit 1
+fi
+
+source_envelope="$(uv run --locked python examples/molecular-editing/envelope.py "$smoke_root/source-molecular-edit/alternatives" "$smoke_root/source-envelope")"
+wheel_envelope="$("$smoke_root/venv/bin/python" examples/molecular-editing/envelope.py "$smoke_root/wheel-molecular-edit/alternatives" "$smoke_root/wheel-envelope")"
+if [[ "$source_envelope" != "$wheel_envelope" ]]; then
+  echo "source/wheel envelope revision mismatch" >&2
+  exit 1
+fi
+
+source_survey="$(uv run --locked python scripts/interface-survey-smoke.py)"
+wheel_survey="$("$smoke_root/venv/bin/python" scripts/interface-survey-smoke.py --content-root "$sdist_root")"
+if [[ "$source_survey" != "$wheel_survey" ]]; then
+  echo "source/wheel interface-survey resume, replay and retrieval mismatch" >&2
+  exit 1
+fi
+
+source_design="$(uv run --locked python scripts/design-discovery-smoke.py)"
+wheel_design="$("$smoke_root/venv/bin/python" scripts/design-discovery-smoke.py)"
+if [[ "$source_design" != "$wheel_design" ]]; then
+  echo "source/wheel optional design intent, selection, atlas and handoff mismatch" >&2
+  exit 1
+fi
 
 echo "Distribution smoke and source parity: ok ($source_digest; $source_method_digest)"

@@ -75,6 +75,17 @@ def test_handoff_lists_external_oligos_and_preserves_molecular_authority(
     for end in realization.final_product.cohesive_ends:
         assert end.sequence in report
         assert f"{end.product_end.capitalize()} cohesive end:" in report
+    if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        assert "Destination compatibility: not evaluated" in report
+    inspected = CliRunner().invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
+    assert inspected.exit_code == 0, inspected.output
+    assert trajectory.inspection_text + "\n" == inspected.output
+    assert f"Distinct external oligos: {len(oligos)}" in inspected.output
+    role_count = sum(len(row["roles"].split(";")) for row in oligos)
+    assert f"External material roles: {role_count}" in inspected.output
+    listed = CliRunner().invoke(app, ["construction", "list", str(bundle)])
+    assert listed.exit_code == 0, listed.output
+    assert f"{len(oligos) - 1} distinct auxiliary oligos" in listed.output
     assert realization.materialized_realization_id in report
 
 
@@ -94,6 +105,8 @@ def test_handoff_requires_nonblank_selection_reason_before_writing(tmp_path: Pat
     assert "No selection preference was supplied" in (output / "report.md").read_text()
 
     summary = construction.project_complete_construction_summary(receipt)
+    with pytest.raises(ValueError, match="only applies to a selected trajectory"):
+        _ = summary.inspection_text
     with pytest.raises(ValueError, match="only applies to a selected trajectory"):
         summary.write(tmp_path / "summary", selection_reason="A chosen route")
     assert not (tmp_path / "summary").exists()

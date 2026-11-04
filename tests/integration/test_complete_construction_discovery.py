@@ -67,6 +67,7 @@ from hop_design.models.construction.complete import (
     TypeIisReleaseRequest,
     WholeRouteConstraints,
 )
+from hop_design.models.construction.complete.auxiliary.policy import AdapterResolutionPolicy
 from hop_design.models.construction.complete.evaluation import (
     CompositionRejectionCode,
 )
@@ -105,7 +106,8 @@ def _basal_result(
     cut_offset_reference_strand: int | None = None,
     minimum_adapter_annealing_nt: int = 4,
 ):
-    endpoint = ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
+    if endpoint is not ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN:
+        endpoint = ConstructionEndpoint.HAIRPIN_PCR_DUPLEX
     motif = recognition_pattern or ("TTTT" if nick_strand is Strand.BOTTOM else "AAAA")
     enzyme = CharacterizedEnzyme(
         enzyme_id="example:enzyme/complete-basal@1",
@@ -238,6 +240,7 @@ def _construction_request(
     reverse_primer: ExactConstructionMaterial | PcrPrimer | None = None,
     source_preparation: SourceDuplexPreparationPolicy | None = None,
     endpoint_auxiliaries: EndpointAuxiliaryPolicy | None = None,
+    adapter_ligation: AdapterResolutionPolicy | None = None,
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionDiscoveryRequest:
     encoding = design.plan.hairpin_encoding_insert
@@ -312,6 +315,7 @@ def _construction_request(
                 ),
             ),
             endpoint_auxiliaries=endpoint_auxiliaries,
+            adapter_ligation=adapter_ligation,
         ),
         release=release,
         design=DesignAuthorityReference(
@@ -505,7 +509,7 @@ def test_direct_composition_materializes_complete_precursor_and_verified_encodin
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
     assert result.status is SearchCompletionStatus.COMPLETE
-    assert result.schema_id == "hop.construction-space-result/v6"
+    assert result.schema_id == "hop.construction-space-result/v9"
     assert result.provenance.basal_result_id is None
     assert result.accounting.truncated_combinations == 0
     assert result.failure_reasons == ()

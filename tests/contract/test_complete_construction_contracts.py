@@ -204,11 +204,13 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
             TypeIisReleaseRequest(
                 enzyme_provisioning=_release_policy(),
                 left=ReleaseSideRequirement(
+                    payload_end_offset_bp=0,
                     orientation=SiteOrientation.FORWARD,
                     cohesive_end_sequence="AATG",
                     overhang_end=StrandEnd.FIVE_PRIME,
                 ),
                 right=ReleaseSideRequirement(
+                    payload_end_offset_bp=0,
                     orientation=SiteOrientation.REVERSE,
                     cohesive_end_sequence="CGCT",
                     overhang_end=StrandEnd.FIVE_PRIME,
@@ -230,7 +232,7 @@ def _request(endpoint: ConstructionEndpoint) -> ConstructionDiscoveryRequest:
 
 def test_direct_endpoint_forbids_adapter_and_pcr_materials() -> None:
     direct = _request(ConstructionEndpoint.SSDNA_HAIRPIN)
-    assert direct.schema_id == "hop.construction-discovery-request/v6"
+    assert direct.schema_id == "hop.construction-discovery-request/v7"
     assert direct.model_dump(mode="json", by_alias=True)["schema"] == direct.schema_id
     assert direct.basal_result_id is None
     assert direct.materialization.endpoint_auxiliaries is None
@@ -338,6 +340,7 @@ def test_pcr_and_clone_endpoints_enforce_release_ownership() -> None:
 def test_release_side_requires_a_dna_string() -> None:
     with pytest.raises(ValidationError, match="Cohesive-end sequence must be a DNA string"):
         ReleaseSideRequirement(
+            payload_end_offset_bp=0,
             orientation=SiteOrientation.FORWARD,
             cohesive_end_sequence=123,
             overhang_end=StrandEnd.FIVE_PRIME,

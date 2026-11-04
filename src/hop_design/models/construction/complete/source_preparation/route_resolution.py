@@ -54,7 +54,11 @@ def resolve_route_source_preparation(
         or complement.sequence_5prime != expected_complement_sequence
     ):
         raise SourcePreparationResolutionError(
-            "Source preparation must produce the exact complete-route duplex."
+            "Source preparation must produce the exact complete-route duplex.",
+            code="prepared-duplex-sequence-mismatch",
+            field="source_ssdna",
+            requested=expected_complement_sequence,
+            available=complement.sequence_5prime,
         )
     return preparation
 

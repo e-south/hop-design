@@ -1,0 +1,116 @@
+:root{color-scheme:light;--ink:#242a2c;--accent:#216e72;--line:#dde2e1;--muted:#60696b;--surface:#f7f8f6;--ui-font:Inter,"Helvetica Neue",Arial,sans-serif;font:15px/1.45 var(--ui-font);color:var(--ink);background:#fff}
+*{box-sizing:border-box}body{margin:0;overflow:hidden}main{height:100dvh;width:100%;position:relative;--inspector-width:clamp(440px,38vw,600px)}
+header,.viewbar,.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.viewbar{justify-content:space-between}.atlas-brand{position:absolute;top:20px;left:24px;z-index:5;pointer-events:none}.atlas-brand h1{font-size:21px;font-weight:500;letter-spacing:-.035em;line-height:1.2}main:has(#inspector[data-focus]) .atlas-brand{display:none}
+h1{font-size:24px;letter-spacing:-.025em;margin:0;font-weight:650}h2{font-size:18px;margin:0 0 10px}
+button,select{font:inherit;border:1px solid var(--line);border-radius:6px;background:white;color:var(--ink);padding:6px 10px;cursor:pointer}button.primary,button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:white}button:disabled{opacity:.45;cursor:default}button:hover:not(:disabled){border-color:#a4b3b1;background:var(--surface)}button.primary:hover,button[aria-pressed=true]:hover{background:var(--accent)}button.icon-close{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;padding:0!important;border:0;background:transparent;color:var(--muted);font-size:22px;line-height:1}button.icon-close:hover{color:var(--ink);background:#edf1ee}:focus-visible{outline:3px solid #bd6634;outline-offset:3px}a{color:var(--accent)}[hidden]{display:none!important}
+#object{background:white;position:absolute;inset:0;overflow:hidden}#landscape{position:absolute;inset:0;display:flex;flex-direction:column}#object:has(#inspector[data-has-pin="true"]:not([data-dismissed="true"]):not([hidden])) #landscape{right:var(--inspector-width)}#landscape-panels{position:relative;flex:1;min-height:0}#plot{height:100%;outline-offset:-3px}#plot svg{display:block;width:100%;height:100%}#fit-map{font-size:22px;width:32px;height:32px;padding:0}.map-tools{position:absolute;bottom:18px;left:24px;z-index:3;background:#ffffffdd;border-radius:6px;padding:5px 0}.map-tools button{border:0;background:transparent;padding:5px 8px;font-size:14px}.map-tools button:hover{background:#edf3f2}.map-tools .actions{gap:14px}#counts{margin:5px 8px 0;font-size:12px;color:var(--muted)}
+#plot [role=button],#plot [data-node-value],#plot [data-members],#trace-context [role=button]{cursor:pointer}#plot [data-selected=true] circle{stroke:#a55236;stroke-width:4}#plot path[data-selected=true]{stroke:#a55236;stroke-width:2.3;opacity:.95}#plot [data-family-ids]:hover,#plot [data-family-ids]:focus{stroke:var(--accent);stroke-width:4}
+.linked-focus [data-choice-mark]:not([data-linked-count]){opacity:.12}.linked-focus path[data-choice-mark][data-linked-count]{opacity:1;stroke-width:3}.linked-focus [data-choice-mark][data-preparations][data-linked-count] circle{stroke:#a55236;stroke-width:5}.linked-focus [data-choice-mark][data-family-ids][data-linked-count]{stroke:#a55236;stroke-width:4}
+#refinement{position:absolute;top:116px;left:24px;width:min(650px,calc(100% - 48px));z-index:6;padding:12px 16px;background:#fff;box-shadow:0 4px 20px #20383f20;border:1px solid var(--line);border-radius:6px;max-height:65%;overflow:auto}#refinement:not([open]){display:none}#refinement p{font-size:14px;margin:6px 0;color:var(--muted)}.viewbar{margin:8px 0}.viewbar [role=group]{display:flex;gap:6px;flex-wrap:wrap}.viewbar label{font-size:14px}
+#inspector{position:absolute;inset:0 0 0 auto;width:var(--inspector-width);min-width:0;z-index:4;background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:clip}#preview-heading{min-height:50px;padding:8px 12px;justify-content:space-between;flex-wrap:nowrap;border-bottom:1px solid var(--line);font-size:14px;flex:none}#preview-heading button{padding:3px 9px}#inspector-scroll{overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:0 14px 16px;flex:1;min-height:0}.figure-cell{margin:0;padding:14px 0;border-bottom:1px solid var(--line)}.figure-cell figcaption{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;font-weight:600;margin-bottom:12px}.figure-cell figcaption button{font-size:13px;font-weight:400}.figure-caption{font-size:13px;color:var(--muted);margin:8px 0 0}
+#figure-one-canvas{position:relative;isolation:isolate}#molecular-area,#teaching,#trace-context{position:relative;z-index:1}#molecular-area{aspect-ratio:1008/230}#teaching{height:100%;display:flex;align-items:center;justify-content:center}#teaching svg{display:block;width:100%;height:auto;overflow:visible}#hover-molecule{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:white;z-index:3}#hover-molecule svg{width:100%;height:auto}.previewing>#teaching{visibility:hidden}#trace-preview{position:relative;padding:0;border:0}#trace-context svg{display:block;width:100%;height:auto}#teaching [data-teaching-note="loop"]{cursor:pointer}
+.teaching-links{position:absolute;left:0;top:0;pointer-events:none;z-index:0}.teaching-links polygon{fill:#8ba0a8;fill-opacity:.1;stroke:#79939e;stroke-opacity:.2}.teaching-links polygon.parameter-highlight{fill-opacity:.22;stroke-opacity:.6}.parameter-highlight,#route [data-inspected]{filter:drop-shadow(0 0 3px #a95121)}
+#route-frame{position:relative;aspect-ratio:1/1.08;overflow:hidden;border:1px solid var(--line);border-radius:6px;margin-top:10px}#route{height:100%}#route svg{width:100%;height:100%;touch-action:none}#fit{position:absolute;bottom:10px;left:10px;font-size:13px}#stage-label{display:block;font-size:13px}#stage-label select{max-width:100%;font-size:13px}#selection-actions{padding:14px 0}#selection-actions button{font-size:14px}
+#inspector[data-focus]{inset:0;width:100%;min-width:0;border-left:0}#inspector[data-focus] .figure-cell{border:0}#inspector[data-focus] #inspector-scroll{padding:0 22px 16px}#inspector[data-focus="figure-two"] #figure-one,#inspector[data-focus] #selection-actions,#inspector[data-focus] #selection-details,#inspector[data-focus] footer{display:none}#inspector[data-focus="figure-two"] #route-frame{height:calc(100dvh - 250px);min-height:280px;aspect-ratio:auto}#inspector[data-focus] .figure-cell figcaption{font-size:18px}#inspector[data-focus="figure-two"] #focus-route{display:none}
+#members{position:absolute;bottom:94px;left:24px;width:min(360px,calc(100% - 48px));z-index:5;max-height:228px;display:flex;flex-direction:column;overflow:hidden;padding:8px;background:#fffffff5;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 18px #242a2c12}#members>header{justify-content:space-between;flex-wrap:nowrap;gap:8px;flex:none;padding:0 0 5px 4px}#member-title{font-size:13px;font-weight:500;margin:0;color:var(--muted)}#member-options{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;overflow:auto;overscroll-behavior:contain;min-height:0}#member-options button{text-align:left;overflow-wrap:anywhere;border-color:transparent;background:transparent;padding:6px 8px;line-height:1.35}#member-options button:hover,#member-options button:focus-visible{background:#edf3f0}#object-caption p{margin:8px 0}#cost{font-size:14px;color:var(--muted)}#distributions svg{display:block;width:100%;height:auto;max-height:90px}#selection-details{padding:12px 0}footer{border-top:1px solid var(--line);padding-top:12px}footer details{margin:12px 0}summary{cursor:pointer;font-weight:550}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;background:#eef2f1;padding:14px}dl{font-size:14px}dt{font-weight:600}dd{margin:0 0 12px}#status{height:28px;flex:none;margin:0;padding:4px 0;color:#9b3d23;font-size:13px}#neighbor-options{display:grid;gap:8px;margin:8px 0}#neighbor-options button{text-align:left;white-space:normal}#neighbor-options p{font-size:14px;color:var(--muted);margin:0}
+@media(max-width:720px){main{--inspector-width:92vw}#member-options{grid-template-columns:1fr}}
+.member-pages{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+#member-options button{font-size:13px}#member-options button[aria-disabled="true"]{color:var(--muted);border-style:dashed}
+
+#status-row{position:absolute;top:152px;left:24px;max-width:min(520px,calc(100% - 48px));z-index:7;display:flex;align-items:center;gap:.6rem;pointer-events:none}#status-row:has(#status:not(:empty)){background:#fff8ee;border-radius:6px;padding:6px 10px}#status-row button{pointer-events:auto}#status-row #status{margin:0;height:auto}
+#discovery-controls{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}#discovery-controls details{margin:10px 0}#discovery-request{display:block;width:100%;font:12px/1.4 monospace;resize:vertical;border:1px solid var(--line);border-radius:5px;padding:8px}#discovery-evaluations{width:7ch;font:inherit;border:1px solid var(--line);border-radius:5px;padding:5px}#discovery-status{font-size:13px;margin:8px 0}#discovery-progress{width:100%;height:8px;accent-color:var(--accent)}#discovery-command{user-select:all;font-size:12px;margin-bottom:0}
+/* Keep camera navigation available while a committed drawing awaits recovery. */
+.render-pending #another,.render-pending #back,.render-pending #retrieve,.render-pending #bookmark,.render-pending #open-view,.render-pending #stage-label,.render-pending #route-view,.render-pending #render-policy,.render-pending #nearby {pointer-events:none;opacity:.5}
+/* Publication captions remain in exported maps; the browser has one fixed scope line. */
+#plot [data-map-context]{display:none}
+
+/* Figure 1 shares the export's coordinate plate; focus only scales that plate. */
+#figure-one-plate {position:relative;isolation:isolate;aspect-ratio:1200/1032}
+#figure-one-canvas #molecular-area,#figure-one-canvas #trace-context {position:absolute;aspect-ratio:auto}
+#figure-one-canvas #trace-preview {position:static}
+#figure-one-canvas #teaching svg,#figure-one-canvas #hover-molecule svg,#figure-one-canvas #trace-context svg {width:100%;height:100%;display:block}
+.figure-layout-layer {position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.teaching-origins {z-index:4}
+
+#inspection-facts{font-size:14px;line-height:20px;padding-bottom:8px}#inspection-facts p{margin:0 0 4px}#inspection-facts [data-reference],#inspection-facts [data-cost]{color:var(--muted)}
+
+#plot {position:relative} #plot>svg {position:relative;z-index:2}
+#plot>canvas[data-map-raster] {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:none}
+#plot>canvas[data-map-raster]+canvas[data-map-raster] {z-index:1}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+
+/* Same connector ink and weights as the static composed Figure 1. */
+.figure-layout-layer.teaching-links polygon {fill:#679a9c;fill-opacity:.07;stroke:#679a9c;stroke-opacity:.28;stroke-width:.8}
+.figure-layout-layer.teaching-links polygon.parameter-highlight {fill-opacity:.22;stroke-opacity:.6}
+
+/* Preserve geometry and scroll; retained molecular references are visibly old. */
+#route-content,#route-focus,#preparation-info{position:relative}
+.panel-status{display:none;position:absolute;inset:0;z-index:10;background:white;padding:18px 8px;color:var(--muted);font-size:14px;align-items:flex-start;gap:9px}
+[data-panel-state]>.panel-status{display:flex}
+[data-panel-state]>:not(.panel-status){visibility:hidden;pointer-events:none}
+[data-panel-retained="previous"]>:not(.panel-status){visibility:visible;opacity:.42;filter:grayscale(1);pointer-events:none}
+[data-panel-retained="previous"]>.panel-status{background:transparent}
+[data-panel-retained="previous"]>.panel-status>span{background:#fffffff2;border:1px solid var(--line);border-radius:4px;padding:3px 6px}
+[data-panel-state="loading"]>.panel-status::before{content:"";flex:none;width:14px;height:14px;margin-top:3px;border:2px solid #dbe5e4;border-top-color:var(--accent);border-radius:50%;animation:panel-spin .75s linear infinite}
+#landscape-panels>.panel-status{padding:74px 24px}
+#figure-one-canvas[data-panel-state]{min-height:160px}
+#preparation-info[data-panel-state]{min-height:60px}
+@keyframes panel-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.panel-status::before{animation:none!important}}
+
+/* Map controls stay anchored while transient previews overlay the right edge. */
+#map-color{position:absolute;left:24px;top:56px;z-index:3;max-width:min(270px,calc(100% - 48px));padding:4px 0;background:#fffffff0;border-radius:6px;font-size:13px}
+#map-color label{display:flex;align-items:center;gap:6px;color:var(--muted)}#map-color select{min-width:0;font-size:13px;border-color:transparent;padding:2px 4px;max-width:220px}#map-color [data-word]{margin:4px 0 0 35px;max-width:200px}
+[data-color-legend]{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:5px;color:var(--muted);font-size:12px}.color-ramp{width:65px;height:8px;border-radius:4px}.color-swatch{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+
+/* Measured pin bounds replace the provisional slot; hover retains that geometry. */
+#route-scenes{overflow-anchor:none}
+.route-scene{aspect-ratio:2;min-height:64px;position:relative;overflow:hidden;margin:0 0 10px;contain:layout paint}
+.route-scene-drawing{position:absolute;inset:0}
+.route-scene-drawing,.route-scene-drawing svg{display:block;width:100%;height:100%}
+.route-scene>.panel-status{padding:18px 8px}
+
+/* The boundary is the control; resizing never adds another toolbar. */
+#inspector-resize{position:absolute;top:0;bottom:0;right:calc(var(--inspector-width) - 4px);width:8px;z-index:5;cursor:col-resize;touch-action:none}
+#inspector-resize::after{content:"";position:absolute;left:3px;top:calc(50% - 20px);height:40px;width:2px;border-radius:2px;background:var(--line)}
+#inspector-resize:hover::after,#inspector-resize:focus-visible::after,#inspector-resize[data-resizing]::after{background:var(--accent);width:3px}
+
+/* One temporary feature disclosure, anchored to the selected molecular drawing. */
+#molecular-area [aria-controls="molecular-feature-details"]{cursor:pointer}
+#molecular-area [data-parameter-anchor][role="button"]{pointer-events:bounding-box}
+#feature-details{position:absolute;top:0;right:0;width:min(100%,390px);z-index:6}
+.local-feature{max-height:240px;overflow:auto;background:#fff;font-size:14px;line-height:1.4;padding:10px;border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 16px #172b3a18}
+.feature-heading{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.local-feature p{margin:4px 0 8px!important}
+.local-feature .actions{gap:6px}.local-feature button{font-size:13px;padding:5px 7px}
+.feature-heading button{border-color:transparent;background:transparent;color:var(--muted)}
+.feature-heading button[aria-pressed="true"]{color:var(--ink);font-weight:650;background:#eef4f2;border-color:transparent}
+.feature-heading .feature-close{margin-left:auto;font-size:18px;line-height:1;padding:5px 8px}
+
+.figure-premise{color:#5d696c;font-size:14px;line-height:1.4;margin:0 0 10px}.inspection-difference:has([data-description]:empty){display:none}
+
+/* Exact saved feature values stay in the map column, independent of the inspector. */
+#landscape{container-type:inline-size}
+#map-comparison{--comparison-label-height:32px;position:relative;flex:none;z-index:3;width:100%;min-height:calc(var(--comparison-label-height) + 94px);padding:8px 12px 10px;background:transparent;font-size:12px;line-height:1.2}
+/* Reserve the vector row before the first preview so map targets stay put. */
+.similarity-context #map-comparison[hidden]{display:block!important;visibility:hidden}
+[data-comparison-values]{display:flex;align-items:stretch;gap:6px;min-width:0;overflow-x:auto}
+.comparison-vector-open,.comparison-vector-close{align-self:stretch;white-space:nowrap;font:22px/25px Georgia,serif;padding-top:calc(var(--comparison-label-height) + 36px)}
+.comparison-feature{display:grid;grid-template-rows:var(--comparison-label-height) 30px 9px minmax(25px,auto);flex:1 0 min-content;min-width:min-content;outline-offset:2px;border-radius:3px;text-align:center}
+.comparison-name{display:flex;flex-direction:column;white-space:nowrap;font-size:11px;color:var(--muted);align-self:end;padding-bottom:4px}
+.comparison-value{font-family:monospace;font-size:12px;line-height:1.15;align-self:center;white-space:nowrap;color:#284f51}
+.comparison-pairs{display:flex;flex-direction:column;letter-spacing:.01em}.comparison-pairs [data-contact-class]:not([data-contact-class="watson_crick"]){color:#a35b32;text-decoration:underline;text-decoration-style:dotted}
+.comparison-encoding-link{height:8px;width:1px;background:#9eafac;justify-self:center}
+.comparison-code{grid-row:4;align-self:start;font:12px/1.25 monospace;white-space:nowrap;color:#173c40;position:relative;padding:3px 0;border-top:1px solid #bdceca}
+.comparison-feature:not(:nth-last-child(2)) .comparison-code::after{content:",";position:absolute;right:-5px;top:3px;color:#73817f}
+.comparison-feature:hover,.comparison-feature:focus-visible{background:#ecf3f14d}
+#map-comparison>.panel-status{padding:7px 10px;font-size:12px}
+#object:has(#inspector[data-dismissed="true"]:not([hidden])) #map-comparison,#object:has(#inspector:not([hidden]):not([data-has-pin="true"])) #map-comparison{width:calc(100% - var(--inspector-width))}
+/* Transparent map controls occupy one corner and never intercept the surrounding canvas. */
+.map-tools{top:18px;right:20px;bottom:auto;left:auto;text-align:right;background:transparent;padding:0;pointer-events:none}
+.map-tools button{pointer-events:auto}.map-tools .actions{justify-content:flex-end;gap:6px}
+#counts{margin:3px 8px 0}
+#map-color{top:88px;right:24px;left:auto;background:transparent;text-align:right;pointer-events:none;max-width:270px}
+#map-color label,[data-color-legend]{justify-content:flex-end}#map-color select{pointer-events:auto;background:transparent}
+#map-color [data-word]{margin-left:auto}.atlas-brand{max-width:44%}
+@container(max-width:700px){.comparison-name{font-size:10px}.comparison-value,.comparison-code{font-size:11px}#map-comparison{padding-inline:10px}[data-comparison-values]{gap:5px}}

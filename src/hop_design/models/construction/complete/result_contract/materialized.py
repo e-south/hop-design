@@ -16,6 +16,7 @@ from typing import Any
 from hop_design.models.construction.payload import ConstructionEndpoint
 
 from ..authority import CompositionDisposition, ConstructionCompositionProvenance
+from ..clone.geometry import clone_payload_end_offsets
 from ..evaluation.result import CombinationEvaluation
 from ..payload_validation import validate_payload_source_map
 from ..request import ConstructionDiscoveryRequest
@@ -36,6 +37,12 @@ def validate_endpoint_evidence(
         or terminal_phase is not ConstructionStatePhase.LIGATED_PRODUCT
     ):
         raise ValueError("Direct final product topology and terminal phase must match.")
+    if request.endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN and (
+        topology != "single_stranded_hairpin"
+        or terminal_phase is not ConstructionStatePhase.ADAPTER_LIGATED
+        or realization.final_product.cohesive_ends
+    ):
+        raise ValueError("Adapter hairpin endpoint must terminate at its exact joined strand.")
     if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
         topology != "linear_duplex"
         or terminal_phase is not ConstructionStatePhase.HAIRPIN_PCR_DUPLEX
@@ -48,6 +55,16 @@ def validate_endpoint_evidence(
         != ("left", "right")
     ):
         raise ValueError("Clone-ready topology, terminal phase, and cohesive ends must match.")
+    if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
+        release = request.release
+        assert release is not None
+        left, right = realization.final_product.cohesive_ends
+        if clone_payload_end_offsets(
+            ends=(left, right),
+            encoding_start=realization.final_product.design_projection.source_span.start.offset,
+            payload_boundaries=request.design.payload_boundaries,
+        ) != (release.left.payload_end_offset_bp, release.right.payload_end_offset_bp):
+            raise ValueError("Clone payload end offsets must replay the actual strand cuts.")
 
 
 def validate_materialized_request(
@@ -70,9 +87,14 @@ def validate_materialized_request(
             for binding in realization.source_preparation.produced_material_bindings
         )
         != (source, source_complement)
-        or (policy.endpoint_auxiliaries is None) != (not auxiliaries)
+        or (policy.endpoint_auxiliaries is None and policy.adapter_ligation is None)
+        != (not auxiliaries)
     ):
         raise ValueError("Materialized set must equal the exact result request policy.")
+    if policy.adapter_ligation is not None and tuple(
+        item.specification_resolution_mode for item in realization.material_uses[2:]
+    ) != (policy.adapter_ligation.mode,):
+        raise ValueError("Adapter resolution mode must match the requested policy.")
     if policy.endpoint_auxiliaries is not None and tuple(
         item.specification_resolution_mode for item in realization.material_uses[2:]
     ) != (
@@ -117,7 +139,7 @@ def validate_materialized_evaluation(
         *evaluation.end_generation_stage_assessments,
     )
     expected_auxiliaries = (
-        ()
+        (() if evaluation.adapter is None else (evaluation.adapter,))
         if evaluation.endpoint_auxiliaries is None
         else (
             evaluation.endpoint_auxiliaries.adapter,
@@ -127,14 +149,17 @@ def validate_materialized_evaluation(
     )
     if request.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
         endpoint_matches = (
-            realization.final_product.encoding_projection.sequence == evaluation.final_sequence
-            and realization.final_product.encoding_projection.source_span
+            realization.final_product.design_projection.sequence == evaluation.final_sequence
+            and realization.final_product.design_projection.source_span
             == evaluation.design_parent_span
         )
-    elif request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+    elif request.endpoint in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+    }:
         endpoint_matches = (
             realization.final_product.reference.sequence == evaluation.final_sequence
-            and realization.final_product.encoding_projection.source_span
+            and realization.final_product.design_projection.source_span
             == evaluation.design_parent_span
         )
     else:

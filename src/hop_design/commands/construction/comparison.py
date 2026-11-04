@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -20,6 +21,11 @@ import hop_design.construction as construction
 
 from .common import load_receipt
 from .selection import _resolve_realization_id
+
+
+class ComparisonFormat(StrEnum):
+    TEXT = "text"
+    JSON = "json"
 
 
 def construction_compare_command(
@@ -35,6 +41,10 @@ def construction_compare_command(
     right_ordinal: Annotated[
         int, typer.Option("--right-ordinal", help="Right route number from construction list.")
     ],
+    output_format: Annotated[
+        ComparisonFormat,
+        typer.Option("--format", help="Human report or structured property differences."),
+    ] = ComparisonFormat.TEXT,
 ) -> None:
     """Compare selected oligos, processing, retained sequence, and actual products."""
     left = load_receipt(left_bundle)
@@ -46,9 +56,14 @@ def construction_compare_command(
         right, realization_id=None, selection_path=None, ordinal=right_ordinal
     )
     try:
-        report = construction.compare_constructions(
+        comparison = construction.project_construction_comparison(
             left, right, left_realization_id=left_id, right_realization_id=right_id
         )
     except (OSError, ValueError) as exc:
         raise typer.BadParameter(str(exc), param_hint="route selection") from exc
-    typer.echo(report, nl=False)
+    output = (
+        comparison.json_bytes.decode()
+        if output_format is ComparisonFormat.JSON
+        else comparison.report_text
+    )
+    typer.echo(output, nl=False)

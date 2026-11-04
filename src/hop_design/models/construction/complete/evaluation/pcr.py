@@ -89,7 +89,10 @@ def evaluate_pcr_endpoint(
     )
     final_sequence = derive_pcr_product_sequence(pcr_template, forward, reverse)
     design_parent_span = None
-    if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+    if request.endpoint in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.CLONE_READY_DUPLEX,
+    }:
         design_parent_span = derive_pcr_design_parent_span(
             request,
             prefix=context.prefix,

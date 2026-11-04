@@ -247,8 +247,8 @@ class FoldbackLocalRealization(HopModel):
 class FoldbackNeighborhoodDiscoveryResult(HopModel):
     """Shared neighborhood authority plus lossless foldback-family evidence."""
 
-    schema_id: Literal["hop.foldback-neighborhood-result/v4"] = Field(
-        default="hop.foldback-neighborhood-result/v4", alias="schema"
+    schema_id: Literal["hop.foldback-neighborhood-result/v5"] = Field(
+        default="hop.foldback-neighborhood-result/v5", alias="schema"
     )
     result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     neighborhood: NeighborhoodDiscoveryResult

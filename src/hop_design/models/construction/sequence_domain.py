@@ -19,7 +19,7 @@ from hop_design.models.base import HopModel
 class SequenceDomainPartition(HopModel):
     """One disjoint part of canonical exact sequence-solution enumeration."""
 
-    part_count: int = Field(ge=2, le=256)
+    part_count: int = Field(ge=2)
     part_index: int = Field(ge=0)
 
     @model_validator(mode="after")

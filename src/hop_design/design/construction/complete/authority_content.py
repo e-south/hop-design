@@ -11,8 +11,12 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from hop_design.models.bundle import HopBundle
-from hop_design.serialization import canonical_json_bytes
+from collections.abc import Mapping
+
+from hop_design.kernel.bundle_identity import construction_bundle_id, construction_manifest_seed
+from hop_design.models.bundle import ArtifactManifestEntry, HopBundle
+from hop_design.models.construction import ConstructionBundle
+from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from .discovery import VerifiedConstructionSpaceResult
 
@@ -48,6 +52,41 @@ def artifact_media_types(
     }
 
 
+def construction_manifest(
+    construction: VerifiedConstructionSpaceResult, artifacts: Mapping[str, bytes]
+) -> ConstructionBundle:
+    """Seal canonical artifact bytes without performing another molecular replay."""
+    media_types = artifact_media_types(construction)
+    entries = tuple(
+        ArtifactManifestEntry(
+            path=path,
+            media_type=media_types[path],
+            digest=sha256_digest(content),
+            size_bytes=len(content),
+        )
+        for path, content in sorted(artifacts.items())
+    )
+    result_digest = sha256_digest(artifacts[RESULT_PATH])
+    seed = construction_manifest_seed(
+        result_id=construction.result.result_id,
+        design_bundle_id=construction.design.bundle.bundle_id,
+        result_digest=result_digest,
+        artifacts=entries,
+    )
+    manifest_digest = sha256_digest(canonical_json_bytes(seed))
+    return ConstructionBundle(
+        bundle_id=construction_bundle_id(
+            result_id=construction.result.result_id,
+            manifest_digest=manifest_digest,
+        ),
+        result_id=construction.result.result_id,
+        design_bundle_id=construction.design.bundle.bundle_id,
+        result_digest=result_digest,
+        manifest_digest=manifest_digest,
+        artifacts=entries,
+    )
+
+
 def expected_artifact_paths(design_bundle: HopBundle) -> set[str]:
     """Return the exact artifact inventory implied by an embedded design manifest."""
     return {
@@ -63,5 +102,6 @@ __all__ = [
     "RESULT_PATH",
     "artifact_media_types",
     "construction_artifacts",
+    "construction_manifest",
     "expected_artifact_paths",
 ]

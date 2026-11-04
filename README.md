@@ -3,21 +3,38 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](LICENSE)
 
-Hairpin Oligonucleotide Processing (HOP) finds construction sequences and
-processing routes for unimolecular DNA hairpins. Define a payload as an exact
-sequence or a pattern of fixed and degenerate bases.
-HOP keeps that payload unchanged while searching foldback and basal junctions
-compatible with your enzymes and requested product. Inspect the source oligo,
-adapter, primers, and modeled processing steps; compare selected constructions
-before choosing one. These are sequence and processing specifications, not
-predictions of laboratory success.
+Hairpin Oligonucleotide Processing (HOP) connects desired DNA hairpins and released
+duplex inserts to exact preparations. Start with a stem and intended product.
+Define optional scaffold or end constraints as needed, explore complete options
+under visible enzyme and material permissions, and choose a preparation or comparison. Each selection connects to
+source, adapter and primer specifications, terminal chemistry and a modeled
+processing trace. These are sequence and processing specifications, not
+predictions of laboratory success. Separate exact and DNA IUPAC design workflows
+describe sequence anatomy and preserve the authored payload's paired relationship.
 
 ## Start here
 
 - [Install HOP](docs/guides/install.md).
-- [Compile a first design](docs/guides/quickstart.md).
-- [Define and preview a substrate space](docs/guides/substrate-spaces.md).
-- [Search junctions and compile a construction](docs/guides/compile-construction.md).
+- [Discover complete designs around your stem](docs/guides/discover-designs.md):
+  choose the intended product, optionally constrain ends or scaffold properties,
+  then follow one selection through both figures and the exact oligos.
+
+The installation guide distinguishes published behavior from the current source
+candidate. [Lower-level exploration](docs/guides/explore-scaffolds.md) and
+[explicit junction composition](docs/guides/compile-construction.md) remain
+available when a task needs those controls.
+
+### When you need more control
+
+- [Specify desired scaffolds](docs/guides/discover-product-scaffolds.md):
+  describe the product stage, dimensions and terminal form; discover complete
+  options under explicit enzyme and material permissions.
+- [Prepare a molecular comparison](docs/guides/specify-a-comparison.md):
+  require members and shared properties, then retrieve their exact preparations.
+- [From ssDNA to a hairpin and released insert](docs/guides/design-a-construction.md):
+  inspect an explicit construction request and its materials.
+- For sequence anatomy only, [compile a payload design](docs/guides/quickstart.md)
+  or [preview a substrate space](docs/guides/substrate-spaces.md).
 
 ## Documentation
 

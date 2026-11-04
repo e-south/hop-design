@@ -61,6 +61,15 @@ def write_foldback_projection(
         "junction_offset_nt",
         "loop_length_nt",
         "annealing_arm_length_bp",
+        "post_nick_arm_length_bp",
+        "exposed_tail_length_nt",
+        "source_extension_length_nt",
+        "retained_foldback_length_nt",
+        "source_payload_boundary",
+        "source_nick_boundary",
+        "source_terminus_boundary",
+        "retained_foldback_start",
+        "retained_foldback_end",
         "retained_overhead_nt",
         "transient_construction_nt",
     )
@@ -88,6 +97,14 @@ def write_basal_projection(
         "future_release_enzyme_id",
         "nick_strand",
         "nick_offset_nt",
+        "nick_boundary_from_payload",
+        "payload_end_offset_bp",
+        "future_reference_cut_from_payload",
+        "future_complementary_cut_from_payload",
+        "future_product_end",
+        "future_overhang_end",
+        "future_cohesive_end_sequence",
+        "pending_adapter_end_bases_json",
         "pairing_pattern",
         "pairing_classes",
         "literal_pairs_json",
@@ -104,6 +121,9 @@ def write_basal_projection(
         values = row.model_dump(mode="json") if row is not None else {}
         if row is not None:
             values.pop("literal_pairs")
+            values["pending_adapter_end_bases_json"] = json.dumps(
+                values.pop("pending_adapter_end_bases"), separators=(",", ":")
+            )
             values["pairing_classes"] = ";".join(item.value for item in row.pairing_classes)
             values["warnings"] = ";".join(row.warnings)
             values["literal_pairs_json"] = json.dumps(

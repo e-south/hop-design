@@ -55,6 +55,7 @@ def evaluate_endpoint_auxiliaries(
                 if exc.failure is EndpointAuxiliaryResolutionFailure.ADAPTER
                 else CompositionRejectionCode.PCR_PRIMER_MISMATCH
             ),
+            preparation_constraint=exc.diagnostic,
             prefix=prefix,
             source_return_arm=source_return_arm,
             source=source,

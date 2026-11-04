@@ -359,7 +359,7 @@ def test_exact_foldback_discovery_preserves_literal_pairing_and_reversible_group
     assert {item.projection_schema for item in result.neighborhood.projection_inventory} == {
         "hop.foldback-nucleotide-exemplar/v1",
         "hop.foldback-geometry-count-table/v1",
-        "hop.foldback-feasibility-landscape/v3",
+        "hop.foldback-feasibility-landscape/v5",
         "hop.foldback-overhead-frontier/v1",
     }
     assert all(item.status == "not_generated" for item in result.neighborhood.projection_inventory)
@@ -781,7 +781,7 @@ def test_foldback_result_rejects_reordered_family_detail_membership() -> None:
 
 def test_foldback_family_identity_binds_all_detailed_evidence() -> None:
     result = discover_foldback_neighborhood(_request(_nickase(), _terminus_enzyme()))
-    assert result.schema_id == "hop.foldback-neighborhood-result/v4"
+    assert result.schema_id == "hop.foldback-neighborhood-result/v5"
     assert result.model_dump(mode="json", by_alias=True)["schema"] == result.schema_id
     assert result.model_dump(mode="json")["result_id"] == result.result_id
     first = result.realizations[0]

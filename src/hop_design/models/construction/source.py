@@ -49,7 +49,7 @@ class ConstructionCompositionSource(HopModel):
 class ConstructionSource(HopModel):
     """One strict external source for deterministic complete construction."""
 
-    schema_id: Literal["hop.construction-source/v7"] = Field(alias="schema")
+    schema_id: Literal["hop.construction-source/v8"] = Field(alias="schema")
     foldback: LocalNeighborhoodRequest
     basal: LocalNeighborhoodRequest | None = None
     composition: ConstructionCompositionSource
@@ -89,6 +89,10 @@ class ConstructionSource(HopModel):
 
         endpoint = self.composition.endpoint
         auxiliaries = self.composition.materialization.endpoint_auxiliaries
+        adapter = self.composition.materialization.adapter_ligation
+        adapter_endpoint = endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN
+        if (adapter is not None) != adapter_endpoint:
+            raise ValueError("Adapter-only material policy must match the requested endpoint.")
         if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             if self.basal is not None:
                 raise ValueError("A direct endpoint must omit basal discovery.")
@@ -100,7 +104,7 @@ class ConstructionSource(HopModel):
 
         if self.basal is None:
             raise ValueError("PCR-bearing endpoints require basal discovery.")
-        if auxiliaries is None:
+        if auxiliaries is None and not adapter_endpoint:
             raise ValueError("PCR-bearing endpoints require endpoint auxiliary policies.")
         if (
             self.basal.family is not LocalNeighborhoodFamily.BASAL
@@ -112,7 +116,10 @@ class ConstructionSource(HopModel):
             )
         if self.basal.payload.payload_spec_id != self.foldback.payload.payload_spec_id:
             raise ValueError("Foldback and basal discovery must describe the same payload space.")
-        if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if endpoint in {
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+        }:
             if self.composition.release is not None:
                 raise ValueError("A hairpin PCR endpoint must omit clone release.")
         elif self.composition.release is None:
@@ -128,6 +135,7 @@ class ConstructionSource(HopModel):
                 future.orientation is not required.orientation
                 or not future.permits_sequence(required.cohesive_end_sequence)
                 or future.overhang_end is not required.overhang_end
+                or future.payload_end_offset_bp != required.payload_end_offset_bp
             ):
                 raise ValueError("Basal future release must match the complete clone endpoint.")
         return self

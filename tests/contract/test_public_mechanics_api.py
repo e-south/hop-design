@@ -152,17 +152,69 @@ VIEW_OPERATIONS = {
 }
 
 CONSTRUCTION_OPERATIONS = {
+    "evaluate_interface_survey",
+    "inspect_interface_survey",
+    "inspect_interface_survey_atlas",
+    "query_interface_survey",
+    "verify_interface_survey",
+    "retrieve_interface_survey_witness",
+    "evaluate_scaffold_envelope_revision",
+    "load_scaffold_envelope_revision",
+    "preview_scaffold_envelope_revision",
+    "query_scaffold_parameter_domain",
+    "evaluate_scaffold_parameters",
+    "author_molecular_edit",
+    "prepare_molecular_edit",
+    "execute_molecular_edit",
+    "select_molecular_edit",
+    "prepare_sequence_family",
+    "preview_scaffold_variant",
+    "execute_sequence_family",
+    "select_sequence_family",
+    "assess_scaffold_comparison",
+    "prepare_scaffold_comparison",
+    "execute_scaffold_comparison",
+    "select_scaffold_comparison",
+    "prepare_scaffold_discovery",
+    "discover_scaffolds",
+    "select_scaffold_options",
+    "select_scaffold_variants",
+    "select_scaffold_variant_comparison",
+    "compare_scaffold_variants",
+    "inspect_scaffold_atlas",
+    "inspect_scaffold_variant",
+    "load_scaffold_variant_choices",
+    "explore_construction_options",
+    "find_construction_option_sets",
+    "select_construction_options",
+    "author_construction_family",
+    "reconcile_construction_family",
+    "project_construction_comparison",
+    "project_construction_family_report",
+    "execute_construction_family",
+    "match_construction_family",
+    "prepare_construction_family",
+    "select_construction_set",
+    "execute_construction_request",
+    "continue_construction_request",
+    "prepare_construction_request",
+    "discover_basal_sequence_space",
+    "load_verified_basal_sequence_space",
     "compare_constructions",
     "list_local_realizations",
     "compile_construction",
     "compile_construction_from_local_realizations",
     "compile_design_from_local_realizations",
     "discover_construction_source_partition",
+    "discover_foldback_sequence_space",
     "discover_local_neighborhood",
     "discover_local_neighborhoods",
     "discover_source_partition",
     "load_construction_selection",
+    "load_interface_survey_choices",
+    "load_scaffold_exploration",
     "load_verified_construction_bundle",
+    "load_verified_foldback_sequence_space",
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "project_basal_feasibility",
@@ -172,22 +224,14 @@ CONSTRUCTION_OPERATIONS = {
     "project_construction_navigation",
     "project_construction_trajectory",
     "project_foldback_feasibility",
+    "project_hairpin_portrait",
     "project_retained_overhead_frontier",
+    "project_scaffold_variant",
     "project_source_partition_certificate",
+    "query_scaffold_variants",
     "select_construction_realization",
 }
 
-CONSTRUCTION_FACADE = {
-    "LocalRealizationChoice",
-    "ProtectedRoot",
-    "ConstructionCompilation",
-    "ConstructionProjection",
-    "ConstructionSelection",
-    "LocalNeighborhoodDiscovery",
-    "LocalNeighborhoodBatch",
-    "SourcePartitionDiscovery",
-    "VerifiedConstructionBundle",
-} | CONSTRUCTION_OPERATIONS
 
 DISCOVERY_FACADE = {
     "AdditionalNickConstraint",
@@ -363,9 +407,7 @@ def test_view_facade_exposes_projection_and_rendering_only() -> None:
 
 
 def test_construction_facade_exposes_file_oriented_compilation_and_projections() -> None:
-    assert set(construction.__all__) == CONSTRUCTION_FACADE
-    assert len(construction.__all__) == len(CONSTRUCTION_FACADE)
-    assert all(hasattr(construction, name) for name in construction.__all__)
+    # Exact export membership is owned by test_construction_public_facade.
     assert all(callable(getattr(construction, name)) for name in CONSTRUCTION_OPERATIONS)
 
 
@@ -380,6 +422,15 @@ def _hop_annotation_types(annotation: object) -> set[type[object]]:
     if inspect.isclass(annotation) and annotation.__module__.startswith("hop_design"):
         return {annotation}
     return set()
+
+
+def test_public_atlas_operations_keep_complete_export_contracts() -> None:
+    for operation, packet_type in (
+        (construction.inspect_scaffold_atlas, construction.ScaffoldAtlas),
+        (construction.inspect_interface_survey_atlas, construction.InterfaceSurveyAtlas),
+    ):
+        assert "draw_route" not in inspect.signature(operation).parameters
+        assert typing.get_type_hints(operation)["return"] is packet_type
 
 
 def test_public_operation_annotations_are_reachable_from_a_public_facade() -> None:

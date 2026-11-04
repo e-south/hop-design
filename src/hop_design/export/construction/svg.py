@@ -19,6 +19,7 @@ from hop_design.models.construction.projections import (
     ConstructionNavigationProjection,
     ConstructionScientificProjection,
     FoldbackFeasibilityProjection,
+    HairpinPortraitProjection,
     RetainedOverheadFrontierProjection,
     SourcePartitionCertificateProjection,
 )
@@ -26,6 +27,7 @@ from hop_design.models.construction.projections import (
 from .basal_svg import render_basal_matrix_svg, render_basal_projection_svg
 from .complete_svg import render_complete_projection_svg
 from .foldback_svg import render_foldback_projection_svg
+from .hairpin_svg import render_hairpin_portrait_svg
 from .navigation_svg import render_navigation_projection_svg
 from .overhead_svg import render_retained_overhead_svg
 from .source_partition_svg import render_source_partition_projection_svg
@@ -40,6 +42,8 @@ def render_projection_svg(projection: ConstructionScientificProjection) -> bytes
         return render_navigation_projection_svg(projection)
     if isinstance(projection, CompleteConstructionTrajectoryProjection):
         return render_complete_trajectory_svg(projection)
+    if isinstance(projection, HairpinPortraitProjection):
+        return render_hairpin_portrait_svg(projection)
     if isinstance(projection, SourcePartitionCertificateProjection):
         return render_source_partition_projection_svg(projection)
     if isinstance(projection, FoldbackFeasibilityProjection):

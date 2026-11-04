@@ -37,6 +37,7 @@ from hop_design.models.construction.basal import (
     BasalRealizationRecord,
     basal_retained_overhead_ledger,
 )
+from hop_design.models.construction.basal_space import BasalSequenceRequest
 from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.coordinates import Span
 from hop_design.models.enzymes import characterized_enzyme_digest
@@ -59,7 +60,7 @@ def _failure_code(codes: tuple[str, ...]) -> str:
 
 def _realization(
     *,
-    request: LocalNeighborhoodRequest,
+    request: LocalNeighborhoodRequest | BasalSequenceRequest,
     payload_sequence: str,
     target: BasalTarget,
     route: BasalProgramCandidate,
@@ -67,6 +68,7 @@ def _realization(
 ) -> BasalRealizationRecord | str:
     if request.endpoint not in {
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }:
         raise ValueError("Basal realization requires a PCR-bearing endpoint.")

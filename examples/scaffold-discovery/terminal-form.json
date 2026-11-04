@@ -1,0 +1,263 @@
+{
+  "schema": "hop.scaffold-discovery/v2",
+  "product": {
+    "schema": "hop.product-request/v1",
+    "name": "public scaffold repertoire",
+    "stem_arm": "ATAACTTCGTATAGCATACATTATACGAAGTTAT",
+    "endpoint": "adapter_ligated_hairpin",
+    "ends": null,
+    "foldback": {
+      "geometry": {
+        "family": "foldback",
+        "nick_strand": "top",
+        "junction_offsets_nt": [
+          2
+        ],
+        "minimum_loop_length_nt": 3,
+        "minimum_annealing_arm_length_bp": 3,
+        "loop_lengths_nt": [
+          3
+        ],
+        "annealing_arm_lengths_bp": [
+          9
+        ]
+      },
+      "search": {
+        "max_retained_overhead_nt": 32,
+        "max_search_nodes": 100000,
+        "max_realizations": 8,
+        "scope": "existence",
+        "stop": "result_quota",
+        "result_quota": 8
+      },
+      "enzymes": {
+        "allowed_enzyme_ids": [
+          "example:enzyme/nt.bpu10i@1"
+        ],
+        "forbidden_enzyme_ids": [],
+        "reserved_enzyme_ids": [],
+        "max_operations": 2,
+        "role_restrictions": [
+          {
+            "role": "foldback_nick",
+            "allowed_enzyme_ids": [
+              "example:enzyme/nt.bpu10i@1"
+            ]
+          }
+        ]
+      }
+    },
+    "basal": {
+      "geometry": {
+        "family": "basal",
+        "nick_strand": "bottom",
+        "nick_offsets_nt": [
+          0
+        ],
+        "minimum_adapter_annealing_nt": 17,
+        "mismatch_warning_fraction": 0.2,
+        "pairing_constraints": [
+          {
+            "position_from_ligation": 0,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 1,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 2,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 3,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 4,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 5,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 6,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 7,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 8,
+            "allowed_class": "match"
+          },
+          {
+            "position_from_ligation": 9,
+            "allowed_class": "match"
+          }
+        ],
+        "max_noncanonical_pairs": 0
+      },
+      "search": {
+        "max_retained_overhead_nt": 24,
+        "max_search_nodes": 10000,
+        "max_realizations": 1,
+        "scope": "existence",
+        "stop": "result_quota",
+        "result_quota": 1
+      },
+      "enzymes": {
+        "allowed_enzyme_ids": [
+          "example:enzyme/nb.bsrdi@1",
+          "example:enzyme/bsai-hfv2@1"
+        ],
+        "forbidden_enzyme_ids": [],
+        "reserved_enzyme_ids": [],
+        "max_operations": 2,
+        "role_restrictions": [
+          {
+            "role": "basal_nick",
+            "allowed_enzyme_ids": [
+              "example:enzyme/nb.bsrdi@1"
+            ]
+          },
+          {
+            "role": "end_generation",
+            "allowed_enzyme_ids": [
+              "example:enzyme/bsai-hfv2@1"
+            ]
+          }
+        ]
+      }
+    },
+    "release": null,
+    "enzyme_catalog": {
+      "schema": "hop/characterized-enzyme-catalog/v1",
+      "catalog_id": "example:catalog/public-product@1",
+      "enzymes": [
+        {
+          "schema": "hop/characterized-enzyme/v1",
+          "enzyme_id": "example:enzyme/nt.bpu10i@1",
+          "canonical_name": "Nt.Bpu10I",
+          "enzyme_class": "nickase",
+          "target_molecule": "dna",
+          "recognition_pattern": "CCTNAGC",
+          "recognition_orientation_semantics": "both_orientations",
+          "recognition_length": 7,
+          "substrate_requirement": "duplex_dna",
+          "cut_offset_reference_strand": 2,
+          "cut_offset_complement_strand": null,
+          "resulting_end_model": "nick",
+          "characterization_source": {
+            "system": "manufacturer",
+            "kind": "recognition-and-cleavage-definition",
+            "id": "https://www.thermofisher.cn/order/catalog/product/hk/en/ER2011"
+          },
+          "vendor_metadata": []
+        },
+        {
+          "schema": "hop/characterized-enzyme/v1",
+          "enzyme_id": "example:enzyme/nb.bsrdi@1",
+          "canonical_name": "Nb.BsrDI",
+          "enzyme_class": "nickase",
+          "target_molecule": "dna",
+          "recognition_pattern": "CATTGC",
+          "recognition_orientation_semantics": "both_orientations",
+          "recognition_length": 6,
+          "substrate_requirement": "duplex_dna",
+          "cut_offset_reference_strand": 0,
+          "cut_offset_complement_strand": null,
+          "resulting_end_model": "nick",
+          "characterization_source": {
+            "system": "manufacturer",
+            "kind": "recognition-and-cleavage-definition",
+            "id": "https://www.neb.com/en-us/tools-and-resources/selection-charts/alphabetized-list-of-recognition-specificities"
+          },
+          "vendor_metadata": []
+        },
+        {
+          "schema": "hop/characterized-enzyme/v1",
+          "enzyme_id": "example:enzyme/bsai-hfv2@1",
+          "canonical_name": "BsaI-HFv2",
+          "enzyme_class": "duplex_restriction",
+          "target_molecule": "dna",
+          "recognition_pattern": "GGTCTC",
+          "recognition_orientation_semantics": "both_orientations",
+          "recognition_length": 6,
+          "substrate_requirement": "duplex_dna",
+          "cut_offset_reference_strand": 7,
+          "cut_offset_complement_strand": 11,
+          "resulting_end_model": "duplex_break",
+          "characterization_source": {
+            "system": "manufacturer",
+            "kind": "recognition-and-cleavage-definition",
+            "id": "https://www.neb.com/en-us/tools-and-resources/selection-charts/alphabetized-list-of-recognition-specificities"
+          },
+          "vendor_metadata": []
+        }
+      ]
+    },
+    "materialization": {
+      "source_preparation": {
+        "source_ssdna": {
+          "mode": "constrain",
+          "upstream_sequence_spec": "ACGTACAGTCGTAC",
+          "five_prime_end": "hydroxyl",
+          "three_prime_end": "hydroxyl"
+        },
+        "forward_primer": {
+          "mode": "derive",
+          "annealing_length_nt": 14
+        },
+        "reverse_primer": {
+          "mode": "derive",
+          "annealing_length_nt": 14
+        }
+      },
+      "adapter_ligation": {
+        "mode": "constrain",
+        "three_prime_handle_sequence": "ACGTCAGTACGATC"
+      }
+    },
+    "local_constraints": {
+      "preserve_payload": true,
+      "forbid_unintended_actionable_sites": true,
+      "require_all_members_compatible": false
+    },
+    "preferences": {
+      "retained_construction": "compact",
+      "payload_compatibility": "report",
+      "ranking": "none",
+      "preferred_enzyme_ids": []
+    },
+    "whole_route_constraints": {
+      "preserve_payload": true,
+      "reject_unintended_actionable_sites": true,
+      "require_exact_materials": true,
+      "require_all_combinations_valid": false
+    },
+    "enumeration": {
+      "pruning": "disabled",
+      "max_combinations": 1,
+      "max_realizations": 1
+    }
+  },
+  "scaffold": {
+    "five_prime_unpaired_nt": {
+      "minimum": 6,
+      "maximum": 6
+    },
+    "three_prime_unpaired_nt": {
+      "minimum": 14,
+      "maximum": 14
+    }
+  },
+  "preparation_changes": {
+    "adapter_redesign": "allow"
+  },
+  "comparison_stage": "endpoint",
+  "max_branches": 8,
+  "max_continuations_per_branch": 1
+}

@@ -18,7 +18,7 @@ from hop_design.design.bundle import VerifiedHopBundle, load_verified_bundle
 from hop_design.design.construction.basal import discover_basal_neighborhood
 from hop_design.design.construction.complete.bundle import (
     ConstructionCompilation,
-    compile_construction_bundle,
+    _package_replayed_construction,
 )
 from hop_design.design.construction.complete.discovery import discover_constructions
 from hop_design.design.construction.foldback import discover_foldback_neighborhood
@@ -45,7 +45,7 @@ from hop_design.serialization import canonical_json_bytes
 
 def _load_construction_source(path: str | Path) -> ConstructionSource:
     mapping = load_source_mapping(path)
-    if mapping.get("schema") != "hop.construction-source/v7":
+    if mapping.get("schema") != "hop.construction-source/v8":
         raise ValueError(f"Unsupported HOP construction source schema: {mapping.get('schema')!r}.")
     return ConstructionSource.model_validate_json(json.dumps(mapping, separators=(",", ":")))
 
@@ -145,7 +145,9 @@ def _compile_verified_authorities(
         design=design,
         source_partition=source_partition,
     )
-    return compile_construction_bundle(construction)
+    # Discovery just replayed this immutable authority in this invocation.
+    # Packaging need not repeat it; staged-file publication still replays.
+    return _package_replayed_construction(construction)
 
 
 def compile_construction_source(

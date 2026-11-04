@@ -31,11 +31,11 @@ class BasalAnnealingObligation(HopModel):
     """Required full adapter annealing extent derived from one proximal pairing state."""
 
     proximal_annealing_nt: int = Field(ge=1)
-    minimum_annealing_nt: int = Field(ge=1)
-    required_annealing_nt: int = Field(ge=1)
-    annealing_completion_nt: int = Field(ge=0)
+    minimum_annealing_nt: int | None = Field(ge=1)
+    required_annealing_nt: int | None = Field(ge=1)
+    annealing_completion_nt: int | None = Field(ge=0)
     mismatch_count: int = Field(ge=0)
-    mismatch_fraction: float = Field(ge=0.0, le=1.0)
+    mismatch_fraction: float | None = Field(ge=0.0, le=1.0)
     mismatch_warning_fraction: float = Field(ge=0.0, le=1.0)
     warnings: tuple[Literal["mismatch-fraction-above-threshold"], ...] = ()
 
@@ -44,24 +44,24 @@ class BasalAnnealingObligation(HopModel):
         cls,
         *,
         pairing_state: BasalPairingState,
-        minimum_annealing_nt: int,
+        minimum_annealing_nt: int | None,
         mismatch_warning_fraction: float,
     ) -> BasalAnnealingObligation:
         """Derive one annealing obligation without inventing completion bases."""
         proximal = len(pairing_state.pairs)
-        required = max(proximal, minimum_annealing_nt)
+        required = None if minimum_annealing_nt is None else max(proximal, minimum_annealing_nt)
         mismatches = sum(pair.pair_class.value == "mismatch" for pair in pairing_state.pairs)
-        mismatch_fraction = mismatches / required
+        mismatch_fraction = None if required is None else mismatches / required
         warnings: tuple[Literal["mismatch-fraction-above-threshold"], ...] = (
             ("mismatch-fraction-above-threshold",)
-            if mismatch_fraction > mismatch_warning_fraction
+            if mismatch_fraction is not None and mismatch_fraction > mismatch_warning_fraction
             else ()
         )
         return cls(
             proximal_annealing_nt=proximal,
             minimum_annealing_nt=minimum_annealing_nt,
             required_annealing_nt=required,
-            annealing_completion_nt=required - proximal,
+            annealing_completion_nt=None if required is None else required - proximal,
             mismatch_count=mismatches,
             mismatch_fraction=mismatch_fraction,
             mismatch_warning_fraction=mismatch_warning_fraction,
@@ -70,16 +70,21 @@ class BasalAnnealingObligation(HopModel):
 
     @model_validator(mode="after")
     def validate_obligation(self) -> BasalAnnealingObligation:
-        required = max(self.proximal_annealing_nt, self.minimum_annealing_nt)
-        fraction = self.mismatch_count / required
+        required = (
+            None
+            if self.minimum_annealing_nt is None
+            else max(self.proximal_annealing_nt, self.minimum_annealing_nt)
+        )
+        completion = None if required is None else required - self.proximal_annealing_nt
+        fraction = None if required is None else self.mismatch_count / required
         warnings = (
             ("mismatch-fraction-above-threshold",)
-            if fraction > self.mismatch_warning_fraction
+            if fraction is not None and fraction > self.mismatch_warning_fraction
             else ()
         )
         if (
             self.required_annealing_nt != required
-            or self.annealing_completion_nt != required - self.proximal_annealing_nt
+            or self.annealing_completion_nt != completion
             or self.mismatch_count > self.proximal_annealing_nt
             or self.mismatch_fraction != fraction
             or self.warnings != warnings
@@ -93,6 +98,7 @@ class BasalBoundaryProjection(HopModel):
 
     endpoint: Literal[
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     ]
     pairing_state: BasalPairingState

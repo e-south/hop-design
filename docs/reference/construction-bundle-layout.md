@@ -81,7 +81,7 @@ verified design bundle without redefining that design identity. A construction
 result may be `complete`, `infeasible`, or `truncated`; all three are digital
 outcomes under declared bounds and a declared molecular model.
 
-The route implementation identity is `complete-construction/8`. It includes
+The route implementation identity is `complete-construction/10`. It includes
 retention of source-derived bases between a basal nick and the payload and
 composition of selected cleanup nicks into PCR-bearing routes. Each such route
 embeds its selected partition request and realization as `source_partition_plan`,

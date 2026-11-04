@@ -47,6 +47,12 @@ def project_basal_feasibility(
         pairing = item.projection.pairing_state
         obligation = item.projection.annealing_obligation
         future_release = item.future_release_action
+        cuts = (
+            (None, None)
+            if future_release is None
+            else future_release.source_cut_boundaries(payload_boundary=0)
+        )
+        requirement = None if future_release is None else future_release.requirement
         rows.append(
             BasalFeasibilityRow(
                 local_realization_id=item.local_realization.local_realization_id,
@@ -61,6 +67,27 @@ def project_basal_feasibility(
                 ),
                 nick_strand=cast(Strand, achieved.nick_strand),
                 nick_offset_nt=achieved.nick_offset_nt,
+                nick_boundary_from_payload=item.basal_nick.boundary.offset
+                - item.payload_source_map.segments[0].source_span.start.offset,
+                payload_end_offset_bp=None
+                if requirement is None
+                else requirement.payload_end_offset_bp,
+                future_reference_cut_from_payload=cuts[0],
+                future_complementary_cut_from_payload=cuts[1],
+                future_product_end=None if requirement is None else requirement.product_end,
+                future_overhang_end=None if requirement is None else requirement.overhang_end,
+                future_cohesive_end_sequence=None
+                if requirement is None
+                else requirement.cohesive_end_sequence,
+                pending_adapter_end_bases=()
+                if future_release is None
+                else tuple(
+                    (position, base)
+                    for position, base in future_release.adapter_end_bases(
+                        nick_offset_nt=achieved.nick_offset_nt
+                    )
+                    if position >= obligation.proximal_annealing_nt
+                ),
                 pairing_pattern=pairing.pairing_pattern if pairing is not None else None,
                 pairing_classes=(
                     tuple(pair.pair_class for pair in pairing.pairs) if pairing is not None else ()
@@ -76,12 +103,12 @@ def project_basal_feasibility(
     exact_rows = tuple(rows)
     partition = discovery.request.search.sequence_partition
     schema: Literal[
-        "hop.basal-feasibility-landscape/v4",
-        "hop.basal-feasibility-landscape/v5",
+        "hop.basal-feasibility-landscape/v6",
+        "hop.basal-feasibility-landscape/v7",
     ] = (
-        "hop.basal-feasibility-landscape/v5"
+        "hop.basal-feasibility-landscape/v7"
         if partition is not None
-        else "hop.basal-feasibility-landscape/v4"
+        else "hop.basal-feasibility-landscape/v6"
     )
     renderer_version = (
         BASAL_PART_PROJECTION_RENDERER_VERSION
@@ -171,12 +198,12 @@ def project_basal_minimum_overhead_matrix(
             )
     partition = request.search.sequence_partition
     schema: Literal[
-        "hop.basal-minimum-overhead-matrix/v1",
-        "hop.basal-minimum-overhead-matrix/v2",
+        "hop.basal-minimum-overhead-matrix/v3",
+        "hop.basal-minimum-overhead-matrix/v4",
     ] = (
-        "hop.basal-minimum-overhead-matrix/v2"
+        "hop.basal-minimum-overhead-matrix/v4"
         if partition is not None
-        else "hop.basal-minimum-overhead-matrix/v1"
+        else "hop.basal-minimum-overhead-matrix/v3"
     )
     renderer_version = (
         BASAL_PART_MATRIX_RENDERER_VERSION

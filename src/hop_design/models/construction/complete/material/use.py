@@ -69,27 +69,29 @@ def validate_complete_material_uses(
     material_uses: tuple[MaterialUse, ...],
     *,
     is_direct: bool,
+    adapter_only: bool = False,
 ) -> None:
     """Require contextual roles and route entry to match one complete endpoint."""
+    auxiliary_roles = (
+        (MaterialUseRole.LIGATION_ADAPTER,)
+        if adapter_only
+        else (
+            MaterialUseRole.LIGATION_ADAPTER,
+            MaterialUseRole.ENDPOINT_FORWARD_PRIMER,
+            MaterialUseRole.ENDPOINT_REVERSE_PRIMER,
+        )
+    )
     expected_roles = (
         MaterialUseRole.PREPARED_SOURCE_REFERENCE,
         MaterialUseRole.PREPARED_SOURCE_COMPLEMENT,
-        *(
-            ()
-            if is_direct
-            else (
-                MaterialUseRole.LIGATION_ADAPTER,
-                MaterialUseRole.ENDPOINT_FORWARD_PRIMER,
-                MaterialUseRole.ENDPOINT_REVERSE_PRIMER,
-            )
-        ),
+        *(() if is_direct else auxiliary_roles),
     )
     if tuple(item.role for item in material_uses) != expected_roles:
         raise ValueError("Complete route material uses must preserve closed contextual roles.")
     expected_entries = (
         MaterialRouteEntry.MODELED_PRODUCT,
         MaterialRouteEntry.MODELED_PRODUCT,
-        *((MaterialRouteEntry.REQUIRED_EXTERNAL,) * (0 if is_direct else 3)),
+        *((MaterialRouteEntry.REQUIRED_EXTERNAL,) * (0 if is_direct else len(auxiliary_roles))),
     )
     if tuple(item.route_entry for item in material_uses) != expected_entries:
         raise ValueError("Complete route material uses must preserve exact route entry semantics.")

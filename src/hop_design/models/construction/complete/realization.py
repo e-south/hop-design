@@ -31,6 +31,7 @@ from hop_design.models.construction.realization import CompleteConstructionReali
 from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import LineageStrand
 
+from .adapter.validation import validate_adapter_realization
 from .clone.validation import validate_clone_realization
 from .evaluation_inputs import (
     derive_complete_payload_source_map,
@@ -161,7 +162,11 @@ class MaterializedConstructionRealization(HopModel):
         is_direct = endpoint is ConstructionEndpoint.SSDNA_HAIRPIN
         if is_direct and self.source_partition_plan is not None:
             raise ValueError("A PCR source-partition plan requires a PCR-bearing endpoint.")
-        validate_complete_material_uses(self.material_uses, is_direct=is_direct)
+        validate_complete_material_uses(
+            self.material_uses,
+            is_direct=is_direct,
+            adapter_only=endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+        )
         if is_direct and self.route_material_dispositions:
             raise ValueError("Direct ssDNA endpoint cannot contain PCR-only material dispositions.")
         if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
@@ -234,7 +239,7 @@ class MaterializedConstructionRealization(HopModel):
             for end in (strand.five_prime_end, strand.three_prime_end)
         ):
             raise ValueError("Final product reference must seal exact terminal end chemistry.")
-        projection = self.final_product.encoding_projection
+        projection = self.final_product.design_projection
         if is_direct:
             if (
                 projection.source_span.start.offset != 0
@@ -252,6 +257,8 @@ class MaterializedConstructionRealization(HopModel):
                 raise ValueError(
                     "Materialized direct endpoint, topology, and terminal phase must be exact."
                 )
+        elif endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN:
+            validate_adapter_realization(self)
         elif endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
             validate_pcr_realization(self)
             expected_dispositions = derive_route_material_dispositions(
@@ -287,8 +294,8 @@ class MaterializedConstructionRealization(HopModel):
         )
         if self.realization.stage_ids != stage_ids:
             raise ValueError("Complete relation must preserve every global enzyme stage.")
-        if self.final_product.encoding_projection.sequence != self.design.encoding_sequence or (
-            self.final_product.encoding_projection.sequence_digest != self.design.encoding_digest
+        if self.final_product.design_projection.sequence != self.design.encoding_sequence or (
+            self.final_product.design_projection.sequence_digest != self.design.encoding_digest
         ):
             raise ValueError("Endpoint encoding projection must equal the verified HOP design.")
         if self.claim_boundary.method is not MethodResolutionStatus.RESOLVED:

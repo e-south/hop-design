@@ -25,6 +25,7 @@ from .foldback import (
     FoldbackFeasibilityProjection,
     FoldbackFeasibilityRow,
 )
+from .hairpin import HairpinPortraitProjection
 from .local import (
     LocalScientificProjection,
 )
@@ -46,6 +47,7 @@ type ConstructionScientificProjection = (
     | CompleteConstructionTrajectoryProjection
     | ConstructionNavigationProjection
     | SourcePartitionCertificateProjection
+    | HairpinPortraitProjection
 )
 type TabularConstructionProjection = (
     LocalScientificProjection
@@ -68,6 +70,7 @@ __all__ = [
     "ConstructionScientificProjection",
     "FoldbackFeasibilityProjection",
     "FoldbackFeasibilityRow",
+    "HairpinPortraitProjection",
     "LocalScientificProjection",
     "RetainedOverheadFrontierProjection",
     "RetainedOverheadLevelProjection",

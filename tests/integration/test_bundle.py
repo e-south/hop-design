@@ -74,7 +74,9 @@ def test_bundle_is_deterministic_and_content_addressed() -> None:
     assert len(first.bundle.manifest_digest.removeprefix("sha256:")) == 64
 
 
-def test_existing_member_bundle_identity_is_frozen_for_space_compilation() -> None:
+def test_existing_member_bundle_identity_is_frozen_for_space_compilation(
+    frozen_a8_artifact_producer,
+) -> None:
     compilation = hop.compile(sequence="ACGT", design_id="identity-tracer")
 
     assert compilation.bundle.bundle_id == "hop:bundle/identity-tracer/71c1d27113eab374"

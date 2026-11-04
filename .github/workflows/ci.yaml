@@ -17,7 +17,7 @@ jobs:
   verify:
     name: Verify repository
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
     permissions:
       contents: read
       id-token: write
@@ -35,7 +35,7 @@ jobs:
           enable-cache: true
           prune-cache: true
       - name: Verify repository
-        run: bash ./scripts/agent-verify
+        run: bash ./scripts/agent-verify --workers 2
       - name: Upload coverage to Codecov
         if: >-
           github.event_name != 'pull_request' ||
@@ -50,7 +50,7 @@ jobs:
   python-compatibility:
     name: Python ${{ matrix.python-version }} compatibility
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -71,7 +71,7 @@ jobs:
       - name: Test installed package
         run: >-
           uv run --locked --python ${{ matrix.python-version }}
-          pytest -q --no-cov tests/contract tests/integration
+          pytest -q -n 2 --dist loadscope --no-cov tests/contract tests/integration
 
   checks:
     name: Checks

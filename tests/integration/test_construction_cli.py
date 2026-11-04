@@ -224,7 +224,8 @@ def test_unknown_route_number_is_rejected_without_creating_output(
         ["construction", "select", str(bundle), "--ordinal", ordinal, "--out", str(destination)],
     )
     assert result.exit_code != 0
-    assert "No accepted route has ordinal" in result.output
+    expected = "nonnegative" if ordinal == "-1" else "No accepted route has ordinal"
+    assert expected in result.output
     assert not destination.exists()
 
 
@@ -347,11 +348,13 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
     assert result.exit_code == 0, result.output
     assert f"Realization: {realization_id}" in result.output
     assert "Source ssDNA:" in result.output
-    assert "Required external materials:" in result.output
+    assert "Distinct external oligos:" in result.output
+    assert "External material roles:" in result.output
     assert "Molecular states:" in result.output
     assert "Endpoint: hairpin_pcr_duplex · linear_duplex" in result.output
     assert "Physical construction, QC, and biological activity: not recorded" in result.output
     assert {item.name for item in output.iterdir()} == {
+        "enzyme-labels.json",
         "projection.json",
         "projection.svg",
         "report.md",

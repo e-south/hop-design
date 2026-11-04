@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from hop_design.models.construction import FoldbackTarget
@@ -36,11 +37,11 @@ class FoldbackProgramCandidate:
     terminus_orientation: SiteOrientation | None
 
 
-def iter_foldback_programs(
+def stream_foldback_programs(
     policy: EnzymeProvisioningPolicy,
     *,
     target: FoldbackTarget,
-) -> tuple[FoldbackProgramCandidate, ...]:
+) -> Iterator[FoldbackProgramCandidate]:
     """Enumerate single and sequential programs in policy-neutral canonical order."""
     nickases = tuple(
         sorted(
@@ -80,28 +81,30 @@ def iter_foldback_programs(
         if (Strand.TOP if orientation is SiteOrientation.FORWARD else Strand.BOTTOM)
         is target.nick_strand
     )
-    programs = [
-        FoldbackProgramCandidate(
+    for nickase, orientation in oriented_nickases:
+        yield FoldbackProgramCandidate(
             kind=FoldbackCleavageProgramKind.SINGLE_CLEAVAGE,
             nick_enzyme=nickase,
             nick_orientation=orientation,
             terminus_enzyme=None,
             terminus_orientation=None,
         )
-        for nickase, orientation in oriented_nickases
-    ]
-    programs.extend(
-        FoldbackProgramCandidate(
-            kind=FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK,
-            nick_enzyme=nickase,
-            nick_orientation=nick_orientation,
-            terminus_enzyme=terminus,
-            terminus_orientation=orientation,
-        )
-        for nickase, nick_orientation in oriented_nickases
-        for terminus, orientation in terminus_options
-    )
-    return tuple(programs)
+    for nickase, nick_orientation in oriented_nickases:
+        for terminus, orientation in terminus_options:
+            yield FoldbackProgramCandidate(
+                kind=FoldbackCleavageProgramKind.SEQUENTIAL_TERMINUS_PLUS_NICK,
+                nick_enzyme=nickase,
+                nick_orientation=nick_orientation,
+                terminus_enzyme=terminus,
+                terminus_orientation=orientation,
+            )
+
+
+def iter_foldback_programs(
+    policy: EnzymeProvisioningPolicy, *, target: FoldbackTarget
+) -> tuple[FoldbackProgramCandidate, ...]:
+    """Return the finite canonical enzyme-program roster for concrete discovery."""
+    return tuple(stream_foldback_programs(policy, target=target))
 
 
 __all__ = ["FoldbackProgramCandidate", "iter_foldback_programs"]

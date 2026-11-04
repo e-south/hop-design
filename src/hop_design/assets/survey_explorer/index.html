@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="hop-token" content="__SESSION_TOKEN__" />
+    <title>Hairpin Oligonucleotide Processing · Designs around your stem</title>
+    <link rel="stylesheet" href="/editor.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Designs around your stem</h1>
+        <button
+          id="sample"
+          title="Sample one complete matching preparation, using a recorded seed"
+        >
+          ⚄ <span>Sample a trace</span></button
+        ><button id="retrieve" disabled>Retrieve preparation</button
+        ><a id="download" hidden>Download</a>
+      </header>
+      <p id="notice" role="status" tabindex="0">Loading complete designs…</p>
+      <section aria-label="Molecular parameterization and conditional choices">
+        <div id="teaching" aria-label="Parameter teaching drawing"></div>
+        <div id="plot" aria-label="Conditional construction landscape"></div>
+        <div class="plot-foot">
+          <span><i class="legend available"></i> Available</span>
+          <span><i class="legend elsewhere"></i> Outside filter</span>
+          <span><i class="legend unknown"></i> Not resolved</span>
+          <span><i class="legend excluded"></i> Ruled out in scope</span>
+          <span><i class="legend selected"></i> Selected route</span>
+        </div>
+        <div class="choice-counts"><span id="counts"></span><button id="clear" disabled>Clear filters</button></div>
+        <p id="parameter" aria-live="polite" tabindex="0">
+          Point to a feature to locate it. Choose a value to filter; choose a path to inspect its route.
+        </p>
+        <dialog id="member-dialog" aria-labelledby="member-heading">
+          <header><h2 id="member-heading">Preparations on this path</h2><button id="member-close" aria-label="Close preparation choices">×</button></header>
+          <div id="members"></div>
+        </dialog>
+        <dialog id="domain">
+          <header>
+            <h2 id="domain-name"></h2>
+            <button id="domain-close" aria-label="Close parameter choices">
+              ×
+            </button>
+          </header>
+          <p id="domain-description"></p>
+          <div id="domain-values"></div>
+        </dialog>
+      </section>
+      <section aria-label="Selected complete molecular preparation">
+        <div class="atlas-heading">
+          <h2>Selected construction</h2>
+        </div>
+        <p id="molecule" tabindex="0">Choose a complete preparation above.</p>
+        <p id="preview-status" role="status" tabindex="0"></p>
+        <div
+          id="viewport"
+          tabindex="0"
+          aria-label="All processing steps. Scroll the page at fit scale. Pinch or control-wheel to zoom, then pan. Home or 0 fits the route. Tab enters a region; arrows inspect its bases."
+        >
+          <div id="atlas">
+            <p>
+              Select a complete path above, or sample one from the matching
+              pool.
+            </p>
+          </div>
+          <button id="fit">Fit route</button
+          ><span class="camera-help">Pinch to zoom · drag to pan · Home to fit</span>
+        </div>
+        <details class="supporting"><summary>Materials and construction details</summary><p id="construction-cost"></p></details>
+      </section>
+      <details class="supporting"><summary>Fixed properties, permissions and search coverage</summary><p id="plot-context"></p><p id="coverage"></p><p id="context" hidden></p><p id="guidance"></p></details>
+      <details id="code">
+        <summary>Query, exact selection and CLI</summary>
+        <div class="code-grid">
+          <label
+            >Filter the admitted pool
+            <textarea
+              id="query"
+              rows="7"
+              spellcheck="false"
+              aria-label="Typed survey query"
+            ></textarea>
+          </label>
+          <div>
+            <button id="apply">Apply query</button
+            ><button id="save-query">Save applied query.json</button
+            ><button id="reload">Reload checkpoint</button>
+            <p>
+              Browsing never evaluates new constructions or relaxes the request.
+              A seed samples exact recorded preparations, with duplicate records
+              counted once.
+            </p>
+            <pre id="commands"></pre>
+          </div>
+        </div>
+        <details>
+          <summary>Exact selection receipt</summary>
+          <pre id="selection"></pre>
+          <button id="save-selection" disabled>Save selection.json</button>
+        </details>
+      </details>
+    </main>
+    <script type="module" src="/editor.js"></script>
+  </body>
+</html>

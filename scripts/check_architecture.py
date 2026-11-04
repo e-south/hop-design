@@ -20,12 +20,12 @@ PACKAGE_ROOT = REPO_ROOT / "src" / "hop_design"
 
 PUBLIC_FACADE_MODULES = {"api", "construction", "discovery", "methods", "spaces", "views"}
 FORBIDDEN_BY_LAYER = {
-    "models": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export", "kernel"},
-    "kernel": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design", "export"},
-    "catalog": PUBLIC_FACADE_MODULES | {"cli", "design", "export"},
-    "export": PUBLIC_FACADE_MODULES | {"catalog", "cli", "design"},
-    "design": PUBLIC_FACADE_MODULES | {"cli"},
-    "api": {"cli"},
+    "models": PUBLIC_FACADE_MODULES | {"catalog", "cli", "commands", "design", "export", "kernel"},
+    "kernel": PUBLIC_FACADE_MODULES | {"catalog", "cli", "commands", "design", "export"},
+    "catalog": PUBLIC_FACADE_MODULES | {"cli", "commands", "design", "export"},
+    "export": PUBLIC_FACADE_MODULES | {"catalog", "cli", "commands", "design"},
+    "design": PUBLIC_FACADE_MODULES | {"cli", "commands"},
+    "api": {"cli", "commands"},
     "cli": {
         "catalog",
         "design",
@@ -53,6 +53,7 @@ FORBIDDEN_BY_LAYER = {
         "api",
         "catalog",
         "cli",
+        "commands",
         "construction",
         "design",
         "discovery",

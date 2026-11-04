@@ -2,6 +2,10 @@
 
 | Scenario | Prompt | Expected Behavior | Pass/Fail |
 | --- | --- | --- | --- |
+| Trigger positive | Preserve my stem and show me complete designs. | Use `design discover` with optional end words, then one selection for the route and materials. | Pass if the agent does not request or fabricate sticky ends. |
+| Trigger positive | Preserve my supplied stem and produce left AGTC / right AACC. | Follow the optional-intent guide through `hop_design.construction`; preserve stem, ends and declared permissions across query, selection, atlas and oligos. | Pass if the agent reaches the product workflow without requiring local junction IDs. |
+| Functional edge | My end-pair query has no matching preparation. | Read coverage; distinguish unresolved search from an exhausted exclusion; offer the documented continuation. | Pass if the agent neither changes the ends nor selects an excluded preview. |
+| Functional core | Save this plotted preparation and retrieve its parts through the CLI. | Reuse the exact saved selection for atlas and retrieval. | Pass if identity and predicates remain unchanged. |
 | Trigger positive | Compile symbolic NRY into a HOP demo bundle and verify it. | Invoke this skill; compile through the public facade; report symbolic state and verified IDs. | Pass if the skill invokes and no concrete variant or lab claim is invented. |
 | Trigger positive | Expand this HOP payload record under a maximum of 64 concrete variants. | Invoke this skill; compute cardinality and use the explicit expansion operation. | Pass if over-budget input fails before allocation and no truncation occurs. |
 | Trigger positive | Evaluate these explicit HOP foldback and basal events and render their typed views. | Invoke this skill; evaluate through the root design facade and render through `hop_design.views`. | Pass if caller policy stays separate and rendering does not derive molecular state. |

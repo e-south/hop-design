@@ -29,6 +29,7 @@ from hop_design.models.construction.projection import ProjectionReference
 from hop_design.models.construction.sequence_domain import SequenceDomainPartition
 from hop_design.models.construction.targets import BasalPairClass
 from hop_design.models.junction import Strand
+from hop_design.models.molecular_state import StrandEnd
 
 from .validation import (
     validate_feasibility_disposition,
@@ -36,10 +37,10 @@ from .validation import (
     validate_projection_reference,
 )
 
-BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/4"
-BASAL_PART_PROJECTION_RENDERER_VERSION = "basal-projections/5"
-BASAL_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/3"
-BASAL_PART_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/4"
+BASAL_PROJECTION_RENDERER_VERSION = "basal-projections/6"
+BASAL_PART_PROJECTION_RENDERER_VERSION = "basal-projections/7"
+BASAL_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/5"
+BASAL_PART_MATRIX_RENDERER_VERSION = "basal-minimum-overhead-matrix/6"
 
 
 class BasalFeasibilityRow(HopModel):
@@ -53,13 +54,21 @@ class BasalFeasibilityRow(HopModel):
     future_release_enzyme_id: str | None = None
     nick_strand: Strand
     nick_offset_nt: int = Field(ge=0)
+    nick_boundary_from_payload: int
+    payload_end_offset_bp: int | None = Field(ge=0)
+    future_reference_cut_from_payload: int | None
+    future_complementary_cut_from_payload: int | None
+    future_product_end: Literal["left", "right"] | None
+    future_overhang_end: StrandEnd | None
+    future_cohesive_end_sequence: str | None
+    pending_adapter_end_bases: tuple[tuple[int, str], ...]
     pairing_pattern: str | None
     pairing_classes: tuple[BasalPairClass, ...]
     literal_pairs: tuple[BasalPairRecord, ...]
     proximal_annealing_nt: int = Field(ge=1)
-    required_annealing_nt: int = Field(ge=1)
-    annealing_completion_nt: int = Field(ge=0)
-    mismatch_fraction: float = Field(ge=0.0, le=1.0)
+    required_annealing_nt: int | None = Field(ge=1)
+    annealing_completion_nt: int | None = Field(ge=0)
+    mismatch_fraction: float | None = Field(ge=0.0, le=1.0)
     warnings: tuple[Literal["mismatch-fraction-above-threshold"], ...] = ()
 
     @model_validator(mode="after")
@@ -68,6 +77,20 @@ class BasalFeasibilityRow(HopModel):
             raise ValueError("Basal pairing classes must replay every literal pair.")
         if (self.future_release_action_id is None) != (self.future_release_enzyme_id is None):
             raise ValueError("A future release action and enzyme must be present together.")
+        future_facts = (
+            self.payload_end_offset_bp,
+            self.future_reference_cut_from_payload,
+            self.future_complementary_cut_from_payload,
+            self.future_product_end,
+            self.future_overhang_end,
+            self.future_cohesive_end_sequence,
+        )
+        if any(
+            (value is None) != (self.future_release_action_id is None) for value in future_facts
+        ):
+            raise ValueError("Future release coordinates must accompany their exact obligation.")
+        if self.future_release_action_id is None and self.pending_adapter_end_bases:
+            raise ValueError("Pending end bases require a future release obligation.")
         return self
 
 
@@ -75,9 +98,9 @@ class BasalFeasibilityProjection(HopModel):
     """Neutral basal feasibility relation with explicit requested endpoint."""
 
     schema_id: Literal[
-        "hop.basal-feasibility-landscape/v4",
-        "hop.basal-feasibility-landscape/v5",
-    ] = Field(default="hop.basal-feasibility-landscape/v4", alias="schema")
+        "hop.basal-feasibility-landscape/v6",
+        "hop.basal-feasibility-landscape/v7",
+    ] = Field(default="hop.basal-feasibility-landscape/v6", alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
@@ -100,8 +123,8 @@ class BasalFeasibilityProjection(HopModel):
         validate_partition_schema(
             schema_id=self.schema_id,
             sequence_partition=self.sequence_partition,
-            unpartitioned_schema="hop.basal-feasibility-landscape/v4",
-            partitioned_schema="hop.basal-feasibility-landscape/v5",
+            unpartitioned_schema="hop.basal-feasibility-landscape/v6",
+            partitioned_schema="hop.basal-feasibility-landscape/v7",
         )
         validate_feasibility_disposition(
             disposition=self.disposition,
@@ -111,6 +134,7 @@ class BasalFeasibilityProjection(HopModel):
         )
         if self.endpoint not in {
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
             ConstructionEndpoint.CLONE_READY_DUPLEX,
         } or any(row.pairing_pattern is None or not row.literal_pairs for row in self.realizations):
             raise ValueError("Basal projections require a PCR-bearing local boundary.")
@@ -161,9 +185,9 @@ class BasalMinimumOverheadMatrixProjection(HopModel):
     """Local nickase by future-release action minimum-overhead relation."""
 
     schema_id: Literal[
-        "hop.basal-minimum-overhead-matrix/v1",
-        "hop.basal-minimum-overhead-matrix/v2",
-    ] = Field(default="hop.basal-minimum-overhead-matrix/v1", alias="schema")
+        "hop.basal-minimum-overhead-matrix/v3",
+        "hop.basal-minimum-overhead-matrix/v4",
+    ] = Field(default="hop.basal-minimum-overhead-matrix/v3", alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:basal-neighborhood-result/[0-9a-f]{64}@1$")
@@ -188,8 +212,8 @@ class BasalMinimumOverheadMatrixProjection(HopModel):
         validate_partition_schema(
             schema_id=self.schema_id,
             sequence_partition=self.sequence_partition,
-            unpartitioned_schema="hop.basal-minimum-overhead-matrix/v1",
-            partitioned_schema="hop.basal-minimum-overhead-matrix/v2",
+            unpartitioned_schema="hop.basal-minimum-overhead-matrix/v3",
+            partitioned_schema="hop.basal-minimum-overhead-matrix/v4",
         )
         if self.nick_enzyme_ids != tuple(sorted(set(self.nick_enzyme_ids))):
             raise ValueError("Matrix nickase axes must use unique canonical order.")

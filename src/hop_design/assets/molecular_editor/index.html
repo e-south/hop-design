@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="hop-editor-token" content="__SESSION_TOKEN__">
+  <title>Edit the scaffold · HOP</title><link rel="stylesheet" href="/editor.css">
+  <script src="/editor.js" defer></script>
+</head>
+<body>
+<header><a href="/" aria-label="HOP molecular editor">HOP <span>Hairpin Oligonucleotide Processing</span></a></header>
+<main>
+  <div class="intro"><p class="eyebrow">Molecular design</p><h1>Edit the scaffold</h1>
+  <p>Describe the sequence you want. Compare complete constructions, then choose what to prepare.</p></div>
+  <div class="workbench">
+    <section aria-labelledby="molecules-title">
+      <div class="section-title"><h2 id="molecules-title">Your molecular alternatives</h2><a id="pdf" hidden>Export PDF</a></div>
+      <p id="stage"></p>
+      <div id="initial" class="initial">
+        <svg viewBox="0 0 780 250" role="group" aria-labelledby="preview-title">
+          <title id="preview-title">Requested architecture, before construction evaluation</title>
+          <path d="M70 90 H590 C705 90 705 160 590 160 H70" fill="none" stroke="#68747d" stroke-width="3"/>
+          <path d="M160 90 V160 M185 90 V160 M210 90 V160 M235 90 V160 M260 90 V160 M285 90 V160 M310 90 V160 M335 90 V160 M360 90 V160 M385 90 V160 M410 90 V160 M435 90 V160 M460 90 V160 M485 90 V160 M510 90 V160" stroke="#bac3c8"/>
+          <text x="180" y="205">Supplied stem · unchanged by a loop edit</text>
+          <g id="initial-loop" role="button" tabindex="0" aria-label="Edit loop sequence">
+            <rect x="592" y="62" width="137" height="120" rx="14" fill="#e8f2ed" stroke="#258365"/>
+            <path d="M595 90 C690 90 690 160 595 160" fill="none" stroke="#258365" stroke-width="3"/>
+            <text x="610" y="54">Edit loop</text>
+          </g>
+        </svg>
+        <p>Requested architecture only. Evaluate to obtain a complete molecular record.</p>
+      </div>
+      <p id="result-status" role="status" aria-live="polite"></p>
+      <div id="molecules"></div>
+      <details id="diagnostics" hidden><summary>Examined failures and search coverage</summary><div id="diagnostic-content"></div></details>
+      <section id="retrieval" hidden aria-labelledby="retrieve-title">
+        <h2 id="retrieve-title">Retrieve your preparation</h2>
+        <p>Select members above. The reference controls the comparison; it is not a recommended design.</p>
+        <label for="baseline">Comparison reference</label><select id="baseline"><option value="">Choose a selected member</option></select>
+        <label class="checkbox"><input id="shared" type="checkbox" checked> Require identical sequence outside the loop</label>
+        <button id="select" disabled>Verify and retrieve selected preparations</button>
+        <p id="handoff"></p>
+      </section>
+    </section>
+    <aside aria-labelledby="edit-title">
+      <h2 id="edit-title">Loop sequence</h2>
+      <p>Exact DNA words, one per line. Include the original word to compare it with your edit.</p>
+      <label for="words">Required loop words, 5′ → 3′</label>
+      <textarea id="words" rows="4" spellcheck="false" autocomplete="off"></textarea>
+      <details id="end-controls"><summary>Released ends &amp; permitted methods</summary>
+        <p>Paired gaps between each end and the supplied stem, in the released insert.</p>
+        <label class="checkbox"><input id="edit-ends" type="checkbox"> Edit released-end requirements</label>
+        <label for="placements">Left:right gap pairs (bp), one per line</label><textarea id="placements" rows="3" spellcheck="false"></textarea>
+        <label for="left-end">Left end, protruding strand 5′ → 3′</label><input id="left-end" type="text" spellcheck="false">
+        <label for="right-end">Right end, protruding strand 5′ → 3′</label><input id="right-end" type="text" spellcheck="false">
+        <label for="nicks">Permitted basal nickases</label><select id="nicks" multiple size="3"></select>
+        <label for="releases">Permitted release methods</label><select id="releases" multiple size="3"></select>
+        <p class="hint">Polarity and strand orientation remain as authored. Selected methods explicitly replace the allowed list for that role; forbidden/reserved declarations remain active.</p>
+      </details>
+      <p class="hint">The paired stem remains derived. Other requirements and material permissions stay active.</p>
+      <button id="preview">Preview request</button>
+      <div id="preview-result" aria-live="polite"></div>
+      <button id="evaluate" disabled>Evaluate complete constructions</button>
+      <p class="hint">Preview does not search. Evaluation uses your recorded finite search budgets.</p>
+      <p id="error" role="alert"></p>
+      <details><summary>How to use this view</summary><p>Use the loop on the drawing or the keyboard to focus its sequence field. Preview the change, evaluate, then select explicit preparations. Purple positions show substitutions; green positions show additions.</p></details>
+    </aside>
+  </div>
+  <footer>Specified pairing architecture, not predicted conformation. Modeled preparation does not establish recovery, destination compatibility or biological performance.</footer>
+</main>
+</body></html>

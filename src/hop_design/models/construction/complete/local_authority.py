@@ -51,6 +51,13 @@ def validate_local_authority_compatibility(
         return
     basal_request = basal.discovery.request
     if (
+        isinstance(basal_request.geometry_domain, BasalGeometryDomain)
+        and basal_request.geometry_domain.minimum_adapter_annealing_nt is None
+    ):
+        raise ValueError(
+            "Complete construction requires an explicit adapter annealing requirement."
+        )
+    if (
         not payload_space_contains(
             authored=basal_request.payload.payload.sequence,
             exact=payload,
@@ -72,6 +79,7 @@ def validate_local_authority_compatibility(
             future.orientation is not required.orientation
             or not future.permits_sequence(required.cohesive_end_sequence)
             or future.overhang_end is not required.overhang_end
+            or future.payload_end_offset_bp != required.payload_end_offset_bp
         ):
             raise ValueError("Basal future release does not match the complete clone request.")
 

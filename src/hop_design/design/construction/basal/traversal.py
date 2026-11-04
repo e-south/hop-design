@@ -52,15 +52,13 @@ def iter_basal_work_units(
             else (geometry,)
         )
         for target in exact_targets:
-            programs = tuple(
-                program
-                for program in iter_basal_programs(
-                    request.enzyme_provisioning, target=target, endpoint=request.endpoint
-                )
-                if basal_retained_overhead_nt(
-                    target=target, endpoint=request.endpoint, program=program
-                )
-                == retained_overhead_nt
+            if (
+                basal_retained_overhead_nt(target=target, endpoint=request.endpoint)
+                != retained_overhead_nt
+            ):
+                continue
+            programs = iter_basal_programs(
+                request.enzyme_provisioning, target=target, endpoint=request.endpoint
             )
             if not programs:
                 continue

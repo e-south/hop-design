@@ -150,8 +150,49 @@ class BasalRealizationRecord(HopModel):
             or self.basal_nick.strand is not achieved.nick_strand
         ):
             raise ValueError("Basal nick must agree with the achieved geometry.")
+        self._validate_future_end(achieved)
         self._validate_route_states()
         return self
+
+    def _validate_future_end(self, achieved: BasalTarget) -> None:
+        action = self.future_release_action
+        pairing = self.projection.pairing_state
+        expected_positions = (
+            ()
+            if action is None
+            else action.paired_end_positions(
+                nick_offset_nt=achieved.nick_offset_nt, pairing_length_nt=len(pairing.pairs)
+            )
+        )
+        if (
+            tuple(
+                pair.position_from_ligation
+                for pair in pairing.pairs
+                if pair.participates_in_end_projection
+            )
+            != expected_positions
+        ):
+            raise ValueError("Basal pair membership must replay the future end footprint.")
+        if action is None:
+            return
+        placement = action.source_end_placement(
+            payload_boundary=self.payload_source_map.segments[0].source_span.start.offset,
+            nick_offset_nt=achieved.nick_offset_nt,
+        )
+        if placement is not None:
+            start, sequence = placement
+            if (
+                start < 0
+                or self.source_precursor_sequence[start : start + len(sequence)] != sequence
+            ):
+                raise ValueError("Source bases must satisfy the exact future end obligation.")
+        adapter = pairing.adapter_sequence_5prime
+        if any(
+            adapter[position] != base
+            for position, base in action.adapter_end_bases(nick_offset_nt=achieved.nick_offset_nt)
+            if position < len(adapter)
+        ):
+            raise ValueError("Adapter bases must satisfy the exact future end obligation.")
 
     def _validate_enzyme_replay(self) -> None:
         definitions = {item.enzyme_id: item.enzyme for item in self.enzyme_definitions}

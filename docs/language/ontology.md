@@ -7,7 +7,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-29
+last_verified: 2026-10-31
 doc_type: reference
 journey:
   - compile
@@ -17,6 +17,84 @@ journey:
 ---
 
 # HOP Design ontology
+
+## Describe the molecule before its construction role
+
+Start with the supplied stem. The foldback neighborhood closes one end; the
+basal neighborhood supports adapter association at the other. These are roles
+in the preparation, while stem, loop, tail and overhang describe physical
+features in a named molecular state.
+
+| Feature | Where to locate it | Construction interpretation |
+| --- | --- | --- |
+| Paired stem | Opposing positions on the folded strand | The supplied experimental sequence and its copied complement; added pairing is measured separately |
+| Loop | Unpaired bases joining the two stem arms | The closing sequence; its size follows its exact word |
+| Tail | Unpaired sequence at a strand terminus | May supply primer homology, be removed, or contribute to a later product; ancestry determines which |
+| Noncanonical contact | Two recorded interacting positions | An explicitly permitted mismatch or wobble; it is not an unpaired tail |
+| Overhang | Protruding sequence on the released duplex | A receiving interface, with its word read 5′→3′ on that strand |
+
+A nucleotide may have several construction roles across processing states.
+Primer homology upstream of the basal region is not synonymous with basal
+pairing. An annealing minimum is a requirement; the achieved paired span is a
+measurement. A nick is a strand boundary; a recognition footprint is an interval.
+The [parameter registry](../reference/molecular-parameters.md) supplies units,
+measurement boundaries and dependencies, including `R = A − D` and loop length
+from the loop word. Equivalent measurements are counted once.
+
+This separation of structural feature from contextual annotation follows the
+useful representational principle illustrated by
+[bpRNA](https://doi.org/10.1093/nar/gky285). HOP's contacts come from the modeled
+construction; they are not an RNA folding or activity prediction.
+
+The atlas descriptor `x` is a typed record of these measured features, retained
+regional sequences/contacts and receiving interfaces. Nominal contact codes
+identify base pairs and contact classes; their numerical differences have no
+meaning. A captured comparison policy supplies the scales and block weights
+used to calculate molecular dissimilarity. UMAP places its neighbors. The
+invariant stem, duplicated measurements and preparation identifiers do not
+create extra distance dimensions. Methods remain available as explanation and
+search choices. Neither a nearby point nor a visually separated cluster proves
+compatibility: each selectable point already has a complete construction witness.
+
+## Construction search and its molecular meaning
+
+One request defines a permitted molecular domain. Search derives necessary
+relations, proposes assignments and asks the complete compiler to verify their
+preparations. Conditional plots, stage-resolved sequence views and oligo handoff
+project those verified records; none introduces another molecular authority.
+
+| Term | Biological or computational meaning |
+| --- | --- |
+| Permitted domain | Authored stem, joint interface choices, geometry, methods and material permissions; a computing quota does not narrow it |
+| Necessary relation | Joint assignments that satisfy the translated constraints, retaining correlated bases; membership alone does not establish a complete route |
+| Local neighborhood | Foldback or basal construction region with its own sequence, geometry and processing constraints; local solutions are reusable inputs to complete construction checks |
+| Candidate assignment | A particular geometry, method and sequence choice to evaluate through the complete construction |
+| Auxiliary completion | A choice of additional material bases under explicit permissions; some may affect retained sequence and cannot be treated as interchangeable |
+| Product | The exact molecule at a named processing stage, with sequence, contacts and terminal chemistry |
+| Preparation | A verified modeled route and exact materials producing the requested product; different preparations can produce the same product |
+| Processing state | A recorded molecular state linked by copying, cleavage, association or joining; search traversal order is not a physical time course |
+| Selection | A bound reference to a verified preparation; a branch/page address alone is not molecular identity |
+
+For `paired_scaffold_completions`, consequential paired/retained sequence remains
+explicit while other permitted handle bases are completed as needed. This does
+not enumerate every exact unpaired hairpin or material variant. Unknown
+propagation frames retain ordinary evaluation rather than becoming exclusions.
+
+Material policies answer a separate question from the diversity objective:
+`fixed` requires the exact material; `constrain` permits assignments within the
+declared domain; `derive` constructs a material from the selected route and its
+requirements. A `constrain` sequence containing only A/C/G/T still fixes every
+base. IUPAC alternatives or a length range create an actual domain. These modes
+do not imply a primer-efficiency or folding prediction. Auxiliary completion
+remains subject to required homology, chemistry, recognition sites and whole-route
+checks. It cannot repair a contradiction by changing a fixed material.
+
+Foldback and basal domains are solved separately. Combining them still requires
+the complete compiler: local validity is distinct from verified composability.
+See [interface surveys](../guides/survey-interfaces.md) and
+[their contract](../architecture/decisions/0052-resumable-interface-surveys.md).
+
+## Design and method authorities
 
 Design and method products are sibling authorities:
 
@@ -38,6 +116,21 @@ independently compiled pair. It holds when the method request supplies
 digest comparison before associating the products.
 
 ## Payload-centered construction vocabulary
+
+A **basal association** is the recorded source–adapter contact region, with literal
+paired positions and permitted contact classes. Unpaired source-side and
+adapter-side handles lie beyond that association. Primer homology is a material
+function at a declared stage; it may overlap another function in the same bases.
+
+A **hairpin core** is the route-neutral design sequence and its supplied-stem,
+foldback and basal features. For a released-insert construction, its projection
+is anchored in the PCR parent. The **released insert** is the exact pair of strands
+retained by end-generating cuts. Its union need not equal that core: outer
+construction bases may be removed and other construction bases retained. The
+protected interval containing both supplied-stem copies and foldback remains
+intact on both strands. End words and paired end-to-stem distances describe this
+released state; they do not describe the hairpin handles.
+
 
 The accepted construction authority is the user-defined duplex payload in
 final-product coordinates. Its reference strand is authored 5-prime to
@@ -84,6 +177,22 @@ destination-associated. Compactness uses achieved endpoint geometry and
 retained non-payload sequence only. It is not a thermodynamic, yield, or
 global-optimum claim.
 
+## Conditional molecular choices
+
+A **neighborhood** names the region being explored: loop, loop-side closing stem,
+open/assembly side, supplied stem or stage-specific released interfaces.
+A **variant** is an observed sequence/contact/terminal choice in that neighborhood,
+supported by at least one complete preparation. It is not an independently
+composable part. A **preserved property** names both its molecular stage and fixed
+comparison reference. A **complete product** has a stage-qualified molecular
+identity; a **preparation** supplies the verified route and materials producing it.
+
+A conditional query narrows whole products through these choices. One variant
+may leave several products; one product may have several preparations. Product
+previews, fixed references and explicit selections remain distinct. Replacement
+of one neighborhood keeps every other pin and preserved requirement active.
+See [conditional exploration](../guides/explore-conditional-variants.md).
+
 ## Design inputs and hairpin structure
 
 `Payload` is the input sequence to be paired. `ExactPayload` uses only
@@ -103,6 +212,16 @@ It has declared left and right arms, a base-pair count, and ordered physical
 pair observations. Nicked and surviving strand roles belong to processing
 events and views, not to the junction itself.
 
+In a source–Y-adapter construction, distinguish that basal association from the
+whole upstream source flank. The flank can provide source-PCR primer homology
+and later a source-side hairpin-PCR handle. The association records the actual
+source–adapter contacts, including permitted noncanonical pairs. Beyond those
+contacts, the two handles are unpaired with each other and each binds its own
+hairpin-PCR primer. A nucleotide can serve different roles in different states.
+Later released-insert sticky ends have their own words, polarities and
+end-to-stem distances. Equal-length arms in an aligned paired-core representation
+do not require equal handle lengths or equal released-end distances.
+
 `PairedStemExtension` is optional non-payload paired context between the basal
 junction and payload stem. Its literal equal-length arms can contain
 Watson-Crick pairs, G:T wobbles, or hard mismatches. It is not part of the
@@ -116,7 +235,8 @@ defaults and evaluated noncanonical junctions use this same representation.
 the components in a `HairpinEncodingInsert`. It may record catalog junction
 resolution, component evaluation, or caller-asserted nick and release projection
 geometry. Those projections support encoding derivation; they are not an ordered
-laboratory history. Only a named `MethodPlan` owns temporal molecular-state history.
+laboratory history. Construction programs and named `MethodPlan` objects own their respective
+temporal molecular-state histories.
 
 `EvaluatedComponentDerivation` composes caller-supplied foldback and basal
 components with the authored payload without asserting an enzyme route. It

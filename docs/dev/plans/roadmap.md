@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-08
+last_verified: 2026-10-09
 doc_type: explanation
 journey:
   - maintain
@@ -21,7 +21,43 @@ HOP is a domain-specific language and compiler for sequence-encoded hairpins.
 Its public roadmap is organized by the claim each surface makes, not by a
 private consumer migration.
 
-## Released foundation
+## Candidate and published scope
+
+The source checkout is the unreleased `v0.1.0a9` candidate. Its implemented
+workflows include complete scaffold discovery, stage-specific comparisons,
+terminal hairpin requirements and explicit material reuse. Public publication
+remains pending; a version label alone does not identify a tested source tree.
+
+The candidate also includes [folded-sequence editing](../../guides/edit-folded-sequences.md):
+exact loops, finite released-end placements and explicit method alternatives,
+shared CLI/API retrieval, a local editor, and bounded exact expansion of a
+degenerate stem. These operate on modeled preparations. Unrestricted nucleotide
+editing, new chemistry, RNA prediction, destination validation, global optimization
+and pooled-library guarantees remain outside that increment.
+
+[Conditional variant exploration](../../guides/explore-conditional-variants.md)
+adds browsing over admitted complete results: neighborhood choices narrow whole
+products under fixed references and stage-qualified controls. The API, CLI and
+single-molecule viewport share the query model; retrieval rechecks its constraints.
+Repeated queries use immutable facts, while search expansion and control relaxation
+remain explicit, separate operations. This is a source-candidate capability.
+
+The construction-envelope navigator adds paged permitted domains, including words
+and geometries without completed preparations. Field-bound permission revisions
+are previewed before explicitly bounded evaluation; replay retains the original
+pool and the declared changes. The shared CLI/API/browser contract keeps the
+supplied stem, receiving ends, material policies and preservation controls fixed.
+The public open-domain example separates molecular permissions from computation
+quotas. This does not establish exhaustive satisfiability or a jointly optimized
+experimental family. See [ADR 0051](../../architecture/decisions/0051-explicit-envelope-revisions.md).
+
+Continuous molecular inspection keeps variant choice, processing state and camera
+movement independent. Stage-qualified surroundings controls narrow supported
+variants. Persistent recognition footprints and active cuts have separate
+projections; verified correspondence follows a position while retaining copying,
+material ancestry and ambiguity. Static SVG exports and the viewport consume the
+same scene. Motion depicts correspondence between recorded states, not reaction
+dynamics or predicted physical conformation.
 
 The published `v0.1.0a8` artifact provides:
 
@@ -35,7 +71,7 @@ The published `v0.1.0a8` artifact provides:
 - deterministic JSON, FASTA, GenBank, typed views, and SVG outputs;
 - clean wheel/sdist verification on Python 3.12–3.14.
 
-## Current pre-1.0 semantic line
+## Published design-language contract
 
 The published `v0.1.0a8` line deliberately breaks the preceding alpha schemas
 and public facade to close seven ontology and usability defects:
@@ -55,7 +91,7 @@ and public facade to close seven ontology and usability defects:
 
 No retired schema reader, field alias, or artifact fallback is retained.
 
-The current scientist surface is exhaustive or blocked. Sampled design sets,
+The published substrate-space surface is exhaustive or blocked. Sampled design sets,
 large-set storage, pool-level method assessment, QC attachments, assay data,
 and browser authoring remain outside this release until an experimental
 handoff requires them.
@@ -67,10 +103,10 @@ or change method resolution.
 
 ## Source capabilities
 
-The source checkout extends the published artifact. Its retained-overhead
-contracts and query checkpointing require a distinct release version before
-artifact consumers can adopt them. Use the tagged documentation with a released
-wheel; do not infer source capabilities from the shared alpha version string.
+The source checkout extends the published artifact under candidate version
+`0.1.0a9`. Retained-overhead contracts, query checkpointing and request execution
+require its matching artifact. Use tagged documentation with the published
+`0.1.0a8` wheel; a prepared candidate is not evidence of public availability.
 
 The [construction guide](../../guides/compile-construction.md) exposes:
 
@@ -97,8 +133,11 @@ The [construction guide](../../guides/compile-construction.md) exposes:
   The [construction guide](../../guides/compile-construction.md) defines orientation,
   limits, and exact-versus-truncated accounting.
 - Replay-verified portable results, lossless geometry grouping, tidy relations,
-  and typed molecular projections. CLI navigation selects existing results;
-  discovery and compilation use the public Python facade.
+  and typed molecular projections. Saved-route navigation selects existing
+  results; specialist local compilation uses the public Python facade, while
+  product-request workflows also have CLI entrypoints.
+  End-focused inspection shares one CLI/API reader for an exact released word,
+  optional base position, recorded material origins and release cuts.
 - Checkpointed collections of independent local queries. Batch size controls
   receipt retention without changing individual result identities.
 
@@ -110,19 +149,96 @@ chemistry, thermodynamic and enzyme-performance prediction, study history,
 experimental evidence, and manuscript assembly remain deferred or
 consumer-owned.
 
-The construction facade is not a second scientist quickstart. Its exact
-allowlist accepts strict files and a separately verified design authority. Raw
-construction models remain internal, and no compatibility alias exposes their
-former or current internal paths.
+The [construction journey](../../guides/design-a-construction.md) provides an
+end-to-end walkthrough for users seeking a molecular preparation. The facade accepts strict files and
+a separately verified design authority; raw construction models remain internal.
+The [usability priorities](construction-user-journey.md) distinguish current
+handoffs from remaining authoring work. The public-input walkthrough and
+opt-in bounded request executor are implemented in the candidate; a graphical
+freeform request authoring surface is outside these workflows. The local viewport
+chooses among supported complete designs through the same constrained API.
+
+## Implemented product workflows in the source candidate
+
+### Complete product options before selection
+
+[Complete scaffold exploration](../../guides/explore-scaffolds.md), controlled-set
+grouping and explicit label retrieval are implemented in the local candidate.
+The [delivery plan](scaffold-options.md) records acceptance and verification.
+The same comparison intent carries shared controls through selection. New
+molecular capabilities, joint search beyond the evaluated pool and persisted
+continuation resumption remain separate work.
+
+### Product-driven preparations
+
+[Desired scaffold dimensions](../../guides/discover-product-scaffolds.md) now drive
+explicitly permitted adapter and release-method branches in the local candidate.
+Exact stage grouping distinguishes hairpins from alternative preparations of one
+released product. [Acceptance and verification](product-first-discovery.md) remain
+with the delivery plan. This does not add joint molecular optimization or new chemistry.
+
+### Explicit comparative sets
+
+The [comparison brief](../../guides/specify-a-comparison.md) names required
+members, shared properties and permitted preparation changes. Its versioned
+grouped form requires identical stage products within scaffold groups and
+different products between groups. Verified prior-product references and exact
+loop words retain their molecular meaning through discovery and retrieval.
+The [grouped-comparison plan](grouped-comparisons.md) owns delivery verification.
+These operations do not establish experimental equivalence or public release.
+
+### Terminal forms, stage controls and prior-material reuse
+
+The [terminal-scaffold delivery plan](terminal-scaffold-comparisons.md) records
+high-level unpaired terminal requirements for the adapter-ligated hairpin,
+explicit permitted tail sequences, stage-qualified non-loop controls,
+required-member-first bounded scheduling and verified prior-material reuse.
+These compose existing molecular authorities. They do not infer arbitrary tail
+bases, certify assembly compatibility or make a stopped search exhaustive.
 
 ## Remaining product work
 
+### Molecular organization of conditional exploration
+
+The source implementation adds parameter roles and boundary semantics, explicit
+request-fixed versus observed-constant status, and source-primer failure diagrams
+shared by CLI/API exports and the explorer. Required primer footprints and
+available source flanks remain separate; zero extents retain boundary anchors.
+
+The preparation-bound `teaching` projection and `teaching.svg` now cover source/
+association, hairpin and insert frames. Browser and static exports share exact
+parameter locations; selected contacts expose source/adapter/class together.
+A connected short-wide plot replaces the five axis menus, with local detail from
+the molecular key and persistent receiving-interface context. Same-record agent
+comparison favored the connected plot over three repeated regional strips.
+
+Discovery v6 adds a finite joint receiving-end roster. Words, polarity, orientation
+and placements remain one permission, with no undeclared crossed combinations.
+Brushing existing evidence, changing permissions and requiring every member
+remain distinct actions. Agent-operated browser and CLI/API tasks cover primer
+failure, loop changes, zero-gap coverage and explicit end-pair retrieval. A fixed
+comparison reference, processing state and zoom survive preparation changes.
+Installed-wheel exports match source outputs for discovery, teaching, atlas and
+retrieval. The full repository verification endpoint remains the delivery gate;
+unfamiliar-user and laboratory evaluation remain separate evidence needs.
+
 ### Bounded scaffold completion
 
-Upstream completion searches one caller-authored fixed-length sequence domain.
-Source-partition search still evaluates a supplied exact source. Joint design
-of source length, cleanup-nick tiling, and a required fragment partition remains
-unimplemented; bounded upstream completion alone is not global scaffold design.
+Upstream completion searches a caller-authored fixed-length IUPAC pattern or
+an inclusive length range with an explicit base domain. Every examined length
+and sequence retains its own disposition; a stopped prefix remains truncated.
+Interface surveys additionally offer explicit `paired_scaffold_completions`:
+preserve context length and sequence dependencies of basal pairing and the
+released insert, then seek one exact handle completion per local group. Unknown
+coordinate frames retain all context positions. A bounded resumable queue
+interleaves unfinished completions with other local pairs and geometry; exact
+initial-source site predicates can exclude conditional subsets. This does not
+enumerate all unpaired hairpin sequences or all preparations, nor establish a
+compact complete relation over the entire coupled construction problem.
+Source-partition search still evaluates a supplied exact source. Constraint-directed
+joint design of source sequence, cleanup-nick tiling, and a required fragment
+partition remains unimplemented; bounded upstream enumeration alone is not
+global scaffold design.
 
 ### Resumption within one local query
 

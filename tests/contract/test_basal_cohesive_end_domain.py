@@ -28,6 +28,7 @@ from hop_design.models.physical import SiteOrientation, Strand
 def _release(sequence: str) -> BasalFutureReleaseRequirement:
     return BasalFutureReleaseRequirement.model_validate(
         {
+            "payload_end_offset_bp": 0,
             "product_end": "right",
             "orientation": SiteOrientation.REVERSE,
             "cohesive_end_sequence": sequence,

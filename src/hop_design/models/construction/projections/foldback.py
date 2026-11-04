@@ -33,8 +33,8 @@ from .validation import (
     validate_projection_reference,
 )
 
-FOLDBACK_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/3"
-FOLDBACK_PART_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/4"
+FOLDBACK_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/5"
+FOLDBACK_PART_FEASIBILITY_RENDERER_VERSION = "foldback-feasibility-projections/6"
 
 
 class FoldbackFeasibilityRow(HopModel):
@@ -48,6 +48,15 @@ class FoldbackFeasibilityRow(HopModel):
     junction_offset_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
+    post_nick_arm_length_bp: int = Field(ge=0)
+    exposed_tail_length_nt: int = Field(ge=1)
+    source_extension_length_nt: int = Field(ge=1)
+    retained_foldback_length_nt: int = Field(ge=1)
+    source_payload_boundary: int = Field(ge=0)
+    source_nick_boundary: int = Field(ge=0)
+    source_terminus_boundary: int = Field(ge=0)
+    retained_foldback_start: int = Field(ge=0)
+    retained_foldback_end: int = Field(ge=1)
     retained_overhead_nt: int = Field(ge=0)
     transient_construction_nt: int = Field(ge=0)
 
@@ -56,9 +65,9 @@ class FoldbackFeasibilityProjection(HopModel):
     """Neutral foldback feasibility relation over exact realization authorities."""
 
     schema_id: Literal[
-        "hop.foldback-feasibility-landscape/v3",
-        "hop.foldback-feasibility-landscape/v4",
-    ] = Field(default="hop.foldback-feasibility-landscape/v3", alias="schema")
+        "hop.foldback-feasibility-landscape/v5",
+        "hop.foldback-feasibility-landscape/v6",
+    ] = Field(default="hop.foldback-feasibility-landscape/v5", alias="schema")
     projection_reference: ProjectionReference
     projection_id: str = Field(pattern=r"^hop:projection/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
@@ -81,8 +90,8 @@ class FoldbackFeasibilityProjection(HopModel):
         validate_partition_schema(
             schema_id=self.schema_id,
             sequence_partition=self.sequence_partition,
-            unpartitioned_schema="hop.foldback-feasibility-landscape/v3",
-            partitioned_schema="hop.foldback-feasibility-landscape/v4",
+            unpartitioned_schema="hop.foldback-feasibility-landscape/v5",
+            partitioned_schema="hop.foldback-feasibility-landscape/v6",
         )
         validate_feasibility_disposition(
             disposition=self.disposition,

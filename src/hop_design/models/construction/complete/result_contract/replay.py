@@ -17,6 +17,7 @@ from hop_design.models.construction.accounting import SearchCompletionStatus
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 
+from ...hairpin_geometry import scaffold_mismatches
 from ..authority import (
     CompositionDisposition,
     CompositionDispositionStatus,
@@ -40,6 +41,7 @@ def validate_combination_evaluations(
     dispositions: tuple[CompositionDisposition, ...],
     realizations: tuple[Any, ...],
     source_partition_rejection_candidates: tuple[Any, ...] = (),
+    scaffold_rejection_candidates: tuple[Any, ...] = (),
     source_partition_plan: SourcePartitionPlan | None = None,
 ) -> frozenset[int]:
     """Replay every examined disposition from exact embedded upstream authorities."""
@@ -91,6 +93,10 @@ def validate_combination_evaluations(
         )
         if observed_metrics != expected_metrics:
             raise ValueError("Disposition metrics must equal exact combination evaluation.")
+        if disposition.preparation_constraint != evaluation.preparation_constraint:
+            raise ValueError(
+                "Preparation constraint diagnostic must equal exact combination evaluation."
+            )
         evaluated.append((disposition, evaluation))
 
     basal_count = (
@@ -105,6 +111,7 @@ def validate_combination_evaluations(
     has_intrinsic_failure = any(
         evaluation.rejection_reason is not None
         or disposition.rejection_reason in SOURCE_PARTITION_REJECTION_CODES
+        or disposition.rejection_reason is CompositionRejectionCode.HAIRPIN_SCAFFOLD_OUTSIDE_REQUEST
         for disposition, evaluation in evaluated
     )
     apply_require_all = (
@@ -133,6 +140,19 @@ def validate_combination_evaluations(
             strict=True,
         )
     }
+    scaffold_candidates = {
+        disposition.ordinal: candidate
+        for disposition, candidate in zip(
+            (
+                d
+                for d, e in evaluated
+                if d.rejection_reason is CompositionRejectionCode.HAIRPIN_SCAFFOLD_OUTSIDE_REQUEST
+                and e.rejection_reason is None
+            ),
+            scaffold_rejection_candidates,
+            strict=True,
+        )
+    }
     for disposition, evaluation in evaluated:
         expected_reason = evaluation.rejection_reason
         if evaluation.truncation_reason is not None:
@@ -141,6 +161,21 @@ def validate_combination_evaluations(
                 or disposition.truncation_reason != evaluation.truncation_reason
             ):
                 raise ValueError("Disposition truncation must equal exact combination evaluation.")
+            continue
+        if (
+            expected_reason is None
+            and disposition.rejection_reason
+            is CompositionRejectionCode.HAIRPIN_SCAFFOLD_OUTSIDE_REQUEST
+        ):
+            candidate = scaffold_candidates[disposition.ordinal]
+            validate_materialized_evaluation(
+                request=request, realization=candidate, evaluation=evaluation
+            )
+            mismatches = scaffold_mismatches(
+                request.whole_route_constraints.hairpin_scaffold, candidate
+            )
+            if not mismatches or mismatches != disposition.scaffold_mismatches:
+                raise ValueError("Scaffold rejection must replay its achieved-state dimensions.")
             continue
         if (
             expected_reason is None
@@ -177,6 +212,8 @@ def validate_combination_evaluations(
         realization = realizations_by_id.get(disposition.materialized_realization_id)
         if realization is None:
             raise ValueError("Accepted combination evaluation must bind its realization.")
+        if scaffold_mismatches(request.whole_route_constraints.hairpin_scaffold, realization):
+            raise ValueError("Accepted construction must satisfy the requested hairpin scaffold.")
         validate_materialized_evaluation(
             request=request,
             realization=realization,

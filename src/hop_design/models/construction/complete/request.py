@@ -31,10 +31,11 @@ from hop_design.models.construction.payload import (
     RouteFamily,
     _content_id,
 )
+from hop_design.models.construction.scaffold import HairpinScaffoldRequirements
 from hop_design.models.enzymes import EnzymeClass, EnzymeProvisioningPolicy, EnzymeRole
 from hop_design.models.molecular_state import StrandEnd
 from hop_design.models.physical import SiteOrientation
-from hop_design.models.plan import HopPlan
+from hop_design.models.plan import FeatureRole, HopPlan
 from hop_design.models.sequence import normalize_dna_sequence
 from hop_design.models.spec import DesignAuthoritySpec
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -51,6 +52,7 @@ class ReleaseSideRequirement(HopModel):
     orientation: SiteOrientation
     cohesive_end_sequence: str
     overhang_end: StrandEnd
+    payload_end_offset_bp: int = Field(ge=0)
 
     @field_validator("cohesive_end_sequence", mode="before")
     @classmethod
@@ -109,6 +111,16 @@ class DesignAuthorityReference(HopModel):
     encoding_sequence: str
     encoding_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
 
+    @property
+    def payload_boundaries(self) -> tuple[int, int]:
+        """Return the outer payload edges in the verified design encoding frame."""
+        features = self.plan.hairpin_encoding_insert.features
+        (payload,) = tuple(feature for feature in features if feature.role is FeatureRole.PAYLOAD)
+        (paired,) = tuple(
+            feature for feature in features if feature.role is FeatureRole.PAIRED_PAYLOAD
+        )
+        return payload.span.start.offset, paired.span.end.offset
+
     @field_validator("payload_sequence", "encoding_sequence", mode="before")
     @classmethod
     def normalize_sequence(cls, value: object) -> str:
@@ -157,13 +169,16 @@ class WholeRouteConstraints(HopModel):
     reject_unintended_actionable_sites: Literal[True] = True
     require_exact_materials: Literal[True] = True
     require_all_combinations_valid: bool = False
+    hairpin_scaffold: HairpinScaffoldRequirements | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class ConstructionDiscoveryRequest(HopModel):
     """Exact payload, local authorities, materials, endpoint, and design relation."""
 
-    schema_id: Literal["hop.construction-discovery-request/v6"] = Field(
-        default="hop.construction-discovery-request/v6", alias="schema"
+    schema_id: Literal["hop.construction-discovery-request/v7"] = Field(
+        default="hop.construction-discovery-request/v7", alias="schema"
     )
     payload: FinalPayloadReference
     route_family: RouteFamily
@@ -219,16 +234,23 @@ class ConstructionDiscoveryRequest(HopModel):
         if self.foldback_intermediate_endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
             raise ValueError("The foldback intermediate must be an ssDNA hairpin.")
         auxiliaries = self.materialization.endpoint_auxiliaries
+        adapter = self.materialization.adapter_ligation
+        adapter_endpoint = self.endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN
+        if (adapter is not None) != adapter_endpoint:
+            raise ValueError("Adapter-only material policy must match the requested endpoint.")
         if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             if self.basal_result_id is not None:
                 raise ValueError("A direct endpoint must omit basal authority.")
             if auxiliaries is not None or self.release is not None:
                 raise ValueError("A direct endpoint must omit endpoint auxiliaries.")
-        elif self.basal_result_id is None or auxiliaries is None:
+        elif self.basal_result_id is None or (auxiliaries is None and not adapter_endpoint):
             raise ValueError(
                 "PCR-bearing endpoints require endpoint auxiliary policies plus basal authority."
             )
-        elif self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        elif self.endpoint in {
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+        }:
             if self.release is not None:
                 raise ValueError("A hairpin PCR endpoint must omit clone release.")
         elif self.release is None:

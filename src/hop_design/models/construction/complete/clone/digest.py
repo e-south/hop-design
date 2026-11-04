@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 
 from hop_design.models.construction.enzyme_binding import (
@@ -30,6 +31,7 @@ from hop_design.models.physical import classify_literal_pair
 from hop_design.models.sequence import reverse_complement_iupac
 
 from ..state import ConstructionState, ConstructionStatePhase
+from .evidence import ReleasedInsertEvidence
 from .geometry import CloneEndGenerationError, derive_clone_cut_geometry
 
 
@@ -44,7 +46,8 @@ class CloneDigest:
     strands: tuple[MolecularStrand, MolecularStrand]
     pairings: tuple[StrandPairObservation, ...]
     cohesive_ends: tuple[CohesiveEnd, CohesiveEnd]
-    encoding_projection: SequenceProjection
+    release_evidence: ReleasedInsertEvidence
+    payload_boundaries: tuple[int, int]
 
 
 def _product_strand(
@@ -110,8 +113,10 @@ def derive_clone_digest(
     pcr_state: ConstructionState,
     design_sequence: str,
     design_digest: str,
+    design_parent_span: Span,
+    payload_boundaries: tuple[int, int],
 ) -> CloneDigest:
-    """Derive exact clone strands, pairings, ends, and design-union projection."""
+    """Derive exact retained strands, ends, parent-core and released-union evidence."""
     if (
         pcr_state.phase is not ConstructionStatePhase.HAIRPIN_PCR_DUPLEX
         or len(pcr_state.molecules) != 2
@@ -126,6 +131,8 @@ def derive_clone_digest(
         parent_length=parent_length,
         template_sequence=top_parent.sequence,
         design_sequence=design_sequence,
+        design_parent_span=design_parent_span,
+        payload_boundaries=payload_boundaries,
     )
     primary = _product_strand(
         strand_id="complete-clone-primary",
@@ -164,8 +171,24 @@ def derive_clone_digest(
     projection = SequenceProjection(
         sequence=design_sequence,
         sequence_digest=design_digest,
-        source_span=geometry.encoding_span,
+        source_span=geometry.design_parent_span,
         orientation=BindingOrientation.SAME_5TO3,
+    )
+    union = geometry.released_union_span
+    union_sequence = top_parent.sequence[union.start.offset : union.end.offset]
+    evidence = ReleasedInsertEvidence(
+        parent_state_id=pcr_state.state_id,
+        primary_parent_strand_id=top_parent.strand_id,
+        complementary_parent_strand_id=bottom_parent.strand_id,
+        design_parent_projection=projection,
+        released_union_projection=SequenceProjection(
+            sequence=union_sequence,
+            sequence_digest=f"sha256:{hashlib.sha256(union_sequence.encode()).hexdigest()}",
+            source_span=union,
+            orientation=BindingOrientation.SAME_5TO3,
+        ),
+        primary_parent_span=geometry.primary_parent_span,
+        complementary_parent_span=geometry.complementary_parent_span,
     )
     return CloneDigest(
         bindings=bindings,
@@ -175,7 +198,8 @@ def derive_clone_digest(
         strands=(primary, complementary),
         pairings=pairings,
         cohesive_ends=cohesive_ends,
-        encoding_projection=projection,
+        release_evidence=evidence,
+        payload_boundaries=payload_boundaries,
     )
 
 

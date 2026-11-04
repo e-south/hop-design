@@ -141,7 +141,7 @@ def _source(
     release: TypeIisReleaseRequest | None = None,
 ) -> ConstructionSource:
     return ConstructionSource(
-        schema="hop.construction-source/v7",
+        schema="hop.construction-source/v8",
         foldback=foldback,
         basal=basal,
         composition=ConstructionCompositionSource(
@@ -270,7 +270,10 @@ def test_file_source_compiles_direct_endpoint_from_separate_design_authority(
     assert compilation.design_bundle_id == design.bundle.bundle_id
 
 
-def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
+def test_file_source_compiles_pcr_and_clone_endpoints(
+    tmp_path: Path,
+    frozen_a8_artifact_producer,
+) -> None:
     payload = _payload()
     pcr_design = _verified_design(tmp_path / "pcr")
     pcr_foldback = _foldback(payload)
@@ -321,11 +324,13 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
         release=TypeIisReleaseRequest(
             enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
             left=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.FORWARD,
                 cohesive_end_sequence=complete_pcr_top[:4],
                 overhang_end=StrandEnd.FIVE_PRIME,
             ),
             right=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.REVERSE,
                 cohesive_end_sequence=reverse_complement_iupac(complete_pcr_top[-4:]),
                 overhang_end=StrandEnd.FIVE_PRIME,
@@ -340,7 +345,8 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/7d19f2c9ead2/5615f001d43090da"
+    # Independently frozen result v9 / foldback implementation 6 envelope identity.
+    assert pcr.bundle_id == "hop:construction-bundle/7bc00283497c/341add189ee446a3"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value

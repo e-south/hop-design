@@ -40,7 +40,9 @@ from hop_design.models.construction import (
 )
 from hop_design.models.construction.complete import (
     CompositionDispositionStatus,
+    FixedAdapterPolicy,
     FixedEndpointPrimerPolicy,
+    MaterialResolutionMode,
 )
 from hop_design.models.construction.projections import (
     CompleteConstructionSummaryProjection,
@@ -70,26 +72,29 @@ def _verified_result(
     if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
         request, foldback, basal, design, _, _ = _clone_request(tmp_path)
     else:
+        adapter_route = endpoint in (
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+        )
         payload = _payload()
         foldback = _foldback(payload)
         basal = _basal_result(
             payload,
             endpoint,
-            nick_strand=(
-                Strand.BOTTOM if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX else Strand.TOP
-            ),
+            nick_strand=(Strand.BOTTOM if adapter_route else Strand.TOP),
         )
         design = _verified_design(tmp_path)
         encoding = design.plan.hairpin_encoding_insert.sequence
         adapter = None
         forward = None
         reverse = None
-        if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if adapter_route:
             adapter_sequence = basal.realizations[0].proximal_adapter_sequence
             adapter = _material(
                 "ligation-adapter",
                 "CCCC" if incompatible else adapter_sequence,
             )
+        if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
             forward = _material("forward-primer", encoding[:4])
             reverse = _material(
                 "reverse-primer",
@@ -98,10 +103,15 @@ def _verified_result(
         request = _construction_request(
             payload=payload,
             foldback=foldback,
-            basal=(basal if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX else None),
+            basal=(basal if adapter_route else None),
             design=design,
             endpoint=endpoint,
-            adapter=adapter,
+            adapter=adapter if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX else None,
+            adapter_ligation=(
+                FixedAdapterPolicy(mode=MaterialResolutionMode.FIXED, material=adapter)
+                if endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN and adapter is not None
+                else None
+            ),
             forward_primer=forward,
             reverse_primer=reverse,
         )
@@ -146,13 +156,14 @@ def _projection_content(
 def test_complete_summary_preserves_exact_order_groups_and_authorities(
     tmp_path: Path,
     endpoint: ConstructionEndpoint,
+    frozen_a8_artifact_producer,
 ) -> None:
     source = _verified_result(tmp_path / endpoint.value, endpoint)
 
     projection = project_complete_construction_summary(source)
 
-    assert projection.schema_id == "hop.complete-construction-summary/v3"
-    assert projection.renderer_version == "complete-construction-projections/3"
+    assert projection.schema_id == "hop.complete-construction-summary/v5"
+    assert projection.renderer_version == "complete-construction-projections/5"
     assert projection.source_result_id == source.result.result_id
     assert projection.endpoint is endpoint
     assert projection.status is SearchCompletionStatus.COMPLETE
@@ -179,10 +190,10 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
     if endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
         assert projection.projection_id == (
             "hop:complete-construction-summary/"
-            "281a24a48d6c98e133f9d9b02a03bb0030fb6133a4da1061f3972d21e9016a8a@1"
+            "13b983a027429eb8d027e1f47c4eb9fe4c3cbb7b2e739010a64c72697f41a216@1"
         )
         assert sha256_digest(render_projection_json(projection)) == (
-            "sha256:dea1386a8b1e6806b3cfb259cb1f26eb0a758302154512c69b5cb353df415983"
+            "sha256:c3a1d28ca1adcdd04af553fb94d225fe7d2f01f6f893ab98496d89353ef19b12"
         )
 
     json_bytes = render_projection_json(projection)

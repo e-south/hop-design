@@ -29,6 +29,7 @@ from hop_design.api import (
     verify_bundle,
 )
 from hop_design.commands import construction_app, method_app
+from hop_design.commands.design import design_app
 from hop_design.spaces import (
     SubstrateSpacePreview,
     SubstrateSpaceSpec,
@@ -38,7 +39,7 @@ from hop_design.spaces import (
 )
 
 app = typer.Typer(
-    help="Define and compile exact HOP hairpin designs and bounded substrate spaces.",
+    help="Discover complete designs from a stem, inspect choices and retrieve preparations.",
     no_args_is_help=True,
     pretty_exceptions_enable=False,
 )
@@ -47,6 +48,7 @@ space_app = typer.Typer(
     no_args_is_help=True,
     pretty_exceptions_enable=False,
 )
+app.add_typer(design_app, name="design")
 app.add_typer(space_app, name="space")
 app.add_typer(construction_app, name="construction")
 app.add_typer(method_app, name="method")

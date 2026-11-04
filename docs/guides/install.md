@@ -48,6 +48,9 @@ with that package.
 
 ## Source checkout
 
+This checkout is the unreleased v0.1.0a9 candidate. The published download above
+remains v0.1.0a8; it does not contain the current request-execution workflow.
+
 The source checkout includes unreleased construction-search features. See
 [capabilities and limits](../dev/plans/roadmap.md#source-capabilities) before
 choosing it for your task.
@@ -63,6 +66,7 @@ Use `uv run hop-design` from this checkout for the source examples.
 
 ## Continue
 
-- [Compile a first design](quickstart.md).
+- [Design a construction](design-a-construction.md): product, materials and processing.
+- For anatomy only, [compile a payload design](quickstart.md).
 - [Define and preview a substrate space](substrate-spaces.md).
 - [Search junctions and compile a construction](compile-construction.md).

@@ -44,6 +44,10 @@ def construction_space_result_id(result: Any) -> str:
             item.materialized_realization_id
             for item in result.source_partition_rejection_candidates
         )
+    if result.scaffold_rejection_candidates:
+        content["scaffold_rejection_candidate_ids"] = tuple(
+            item.materialized_realization_id for item in result.scaffold_rejection_candidates
+        )
     return _content_id("construction-space-result", 1, content)
 
 

@@ -7,7 +7,7 @@ audience:
   - bundle consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-10-06
 doc_type: reference
 ---
 
@@ -53,6 +53,40 @@ grouping. Finally, it recompiles the expected construction bundle and requires
 exact artifact and manifest equality. Construction-bundle and projection
 writes are atomic and create-only.
 
+Within request execution, outcome and trajectory projections reuse the immutable
+compilation receipt after its construction-bundle write passes full staged-file
+verification. They do not reload that just-published directory. This reuse is
+limited to the invocation that compiled the authority; every independently loaded
+bundle still undergoes the complete checks above. A failed write returns no
+execution handoff. No process-wide or path-based verification cache is used.
+
+Source compilation packages the result just replayed by discovery without a
+second in-memory replay. Independently called bundle compilation still verifies
+its supplied receipt. Scaffold discovery projects branch facts from candidate
+receipts already admitted during the same invocation; the projection layer has
+no optional bundle-admission path. Candidate publication and file admission remain
+separate checks. Reopening a saved discovery replays its candidates afresh.
+Identical local foldback/basal proof inputs may reuse a successful replay within
+one saved-discovery admission or one bounded options evaluation. Each reuse
+reparses the strict model and compares the full
+canonical result bytes, including request, catalog and limits, under the current
+producer identity and replay policy. The scope retains at most 64 proofs and
+8 MiB, ends when that call returns or raises, and never bypasses file checks,
+complete-route replay or projection comparison. Failed proofs are not retained.
+A separate load or evaluation starts a new proof scope. Candidate quotas,
+enumeration order and completeness accounting do not depend on cache warmth.
+
+
+Comparison retrieval admits its captured discovery pool once, checks the saved
+assessment against that pool, and retrieves the explicit selection inside the
+same capture scope. Assessment and retrieval share those verified receipts;
+another public call captures and admits its input again. Membership, reference,
+material-reuse and selected-preparation checks remain unchanged.
+Selected-set assembly binds each saved selection to its admitted result and
+accepted realization before projecting or copying the immutable artifacts. It
+does not reread those authorities within the same capture. Standalone set requests
+still load and replay every referenced bundle; they have no receipt bypass option.
+
 A hairpin design set inventories its normalized per-position molecular domains,
 resolved hairpin defaults reference, and every byte of every unique member
 bundle below `bundle/`. Verification recomputes collection identity, replays
@@ -70,6 +104,89 @@ altered status literals. Human projections render this matrix from the verified
 manifest rather than maintaining a second claim authority.
 
 ## Limits
+
+Internal exact DNA sequence sets contain at most 256 independent nucleotide
+variables and 100,000 reduced decisions. A builder requires explicit positive
+decision and computation budgets, capped at 100,000 decisions and 1,000,000
+operations. An operation is a per-position domain step, imported decision,
+or uncached binary set subproblem. Projection also spends one operation per
+visited source decision or terminal, plus the union operations needed to remove
+positions before the retained window. Exhaustion raises and prevents that builder
+from publishing even a previously obtained handle as a completed set. These
+limits bound representation and computation, not molecular feasibility.
+
+Sequence-set serialization rejects cycles, forward references, decreasing
+positions, redundant or duplicate decisions, unreachable content, noncanonical
+ordering, and incorrect cardinality. Cardinality and member recovery account
+for unconstrained positions skipped by reduction. Exact A/C/G/T member rank
+can be recovered without enumerating earlier members. Nucleotide-set validity
+does not validate the molecular process that would admit those sequences.
+
+Basal source domains preserve recognition context outside the paired adapter
+and retained source window. Exact materialization validates placement masks,
+source-base restrictions, adapter pairing permissions, future-end bases, and
+fixed context before deriving pairing records. Canonical compact source masks
+require every pairing position to declare canonical pairing; unsupported pair
+permissions raise rather than silently narrowing the population. These internal
+domains establish neither molecular admission nor complete search coverage.
+
+Internal compact foldback admission requires a solved finite domain and explicit
+decision, set-operation, and recognition-window budgets. The recognition-window
+budget is at most 1,000,000 and counts every oriented motif window in every
+pre-stage duplex, including discarded terminus products and windows whose cuts
+would be unavailable. This inventory is checked before reaction-site scanning.
+Exceeding any computation budget raises; it cannot produce an empty completed
+set. Exact admission intersects required intended events and excludes every
+undeclared actionable event under the shared reaction rules. Substrate topology
+or assessment semantics outside the supported sequential single-operation
+programs raise instead of being silently classified as infeasible.
+
+A nickase recognition span must remain wholly present after terminus cleavage.
+Foldback placement excludes spans removed by that cut before sequence expansion,
+including mirrored bottom-strand routes. Cleavage at the recognition interval's
+edge or outside it still uses the characterized enzyme offsets and actual
+molecule boundaries.
+
+Complete foldback sequence-space requests separately bound retained overhead and
+computation. The current execution envelope permits retained overhead through
+256 nt, at most 100,000 exact payload/geometry/strand cases and 100,000 examined
+programs. Decision and set-operation limits apply separately to each program
+admission and each case union; recognition-window limits apply per program.
+An additional limit of at most 1,000,000 serialized decisions bounds all stored
+program and union sets together. Case cardinality is checked before symbolic
+payload expansion, and program traversal does not allocate the program product.
+Any exhausted limit raises without a complete result. These ceilings are
+computational capabilities, not biological thresholds.
+
+The raw population of one exact foldback case is `4**(A+C)`. Its compact union
+counts each admitted independent sequence once across all supporting enzyme
+programs. Cases remain distinct by exact payload, A, C, D, and nick strand.
+Result loading binds the full request, catalog, implementation versions, roster,
+placement exclusions, admitted sets, and totals by deterministic rediscovery.
+An empty case with no permitted program remains part of the raw denominator.
+An empty geometry envelope has zero cases and zero raw population.
+
+Foldback result v2 also retains each program's joint `source_assignments`: the
+independent retained word followed by variable bases in the source tail removed
+by terminus cleavage. Both joint and projected decisions count toward the
+serialized budget. Concrete partitions and survey continuation use all joint
+assignments; a failed source primer does not exclude the other completions of
+that retained word. Local admission still does not prove complete-route validity.
+The route version is `linear-source-foldback/6`; old result schemas and producer
+identities are rejected, rather than resumed with different enumeration addresses.
+
+Complete basal sequence-space requests use the same computational limit contract.
+One case fixes exact payload, nick coordinate and strand, and a canonical local
+pairing window. Its raw population is `4**(n+W)`; exact end identities and enzyme
+programs do not multiply that denominator. The local window must cover the
+future-end footprint. The retained-overhead ceiling filters n+W and does not
+claim to bound complete material cost. Placement domains may extend outside
+that window. Admission checks every oriented recognition window on the full
+source before projection removes outside context. Result limits count both
+source and local decisions; exhaustion never yields completed absence. Verified
+loading recomputes complete request coverage and supporting sets. Member recovery
+preserves full adapter recognition context and checks ordinary molecular
+realization, including unresolved association obligations.
 
 Every spec has an explicit positive candidate bound. The convenience route
 resolves exactly one generic design. Foldback enumeration reports `complete`,
@@ -108,6 +225,14 @@ accessible local work unit without claiming all exact realizations were
 enumerated. Projection verification rebuilds level membership and accounting
 from the exact source result, so a checksum-consistent subset, reordering, or
 extra row is rejected.
+
+Foldback discovery can exclude one enzyme program before expanding its variable
+sequence domain when an unintended actionable site lies wholly within the
+unchanged payload duplex. Recognition and cut availability come from the same
+reaction-state evaluator used by exact replay. Kernel placement failures retain
+their precedence. A proven program exclusion contributes one rejected evaluation;
+evaluation counts are not the cardinality of the raw sequence population.
+Programs without this proof retain their exact sequence enumeration and replay.
 
 Complete construction composition computes the nominal local Cartesian
 cardinality before evaluation, examines only its canonical bounded prefix, and
@@ -172,7 +297,7 @@ profile, route, source endpoint, or corrupted bundle. Construction sources are
 bounded regular nonsymlink JSON/YAML mappings read through one checked file
 descriptor. Duplicate keys and YAML aliases, anchors, and merge keys are
 rejected before model validation. Sources dispatch only the exact
-`hop.construction-source/v7` schema; the design authority is loaded from a
+`hop.construction-source/v8` schema; the design authority is loaded from a
 separate verified bundle path. Each accepted route replays its declared source
 ssDNA and two source-preparation primers into the exact duplex that seeds
 downstream construction. For PCR-bearing endpoints, a separate policy resolves
@@ -196,6 +321,10 @@ narrow its declared search or use every member of a deterministic, disjoint
 sequence-domain partition. Each part remains independently replayable and
 cannot claim whole-domain payload compatibility; the loader never treats an
 oversized result as a partial authority.
+Basal sequence partitions select canonical assignment ordinals before building
+molecular solutions. They preserve the unpartitioned outcome order, including
+pair-budget failures; a sole placement failure belongs to part zero. Partition
+selection changes neither the molecular constraints nor the selected outcomes.
 Source-partition result creation and replay enforce the same 64 MiB envelope before
 publication or semantic replay; authored requests retain the one-megabyte limit.
 External observations may be unavailable without invalidating a prospective

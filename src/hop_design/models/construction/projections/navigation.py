@@ -23,21 +23,21 @@ from .complete import CompleteConstructionSummaryProjection
 from .navigation_geometry import ConstructionNavigationGeometryGroup
 from .navigation_route import ConstructionNavigationAcceptedRoute
 
-CONSTRUCTION_NAVIGATION_RENDERER_VERSION: Literal["construction-navigation/1"] = (
-    "construction-navigation/1"
+CONSTRUCTION_NAVIGATION_RENDERER_VERSION: Literal["construction-navigation/2"] = (
+    "construction-navigation/2"
 )
 
 
 class ConstructionNavigationProjection(HopModel):
     """Additive browse facts over one unchanged complete construction summary."""
 
-    schema_id: Literal["hop.construction-navigation/v1"] = Field(
-        default="hop.construction-navigation/v1",
+    schema_id: Literal["hop.construction-navigation/v2"] = Field(
+        default="hop.construction-navigation/v2",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:construction-navigation/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
-    renderer_version: Literal["construction-navigation/1"] = (
+    renderer_version: Literal["construction-navigation/2"] = (
         CONSTRUCTION_NAVIGATION_RENDERER_VERSION
     )
     summary: CompleteConstructionSummaryProjection

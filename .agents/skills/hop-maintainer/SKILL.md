@@ -2,7 +2,7 @@
 name: hop-maintainer
 description: Change or review HOP code, schemas, APIs, docs, tests, packaging, CI, or releases. Do not use for routine compilation, lab protocols, or downstream applications.
 metadata:
-  version: 0.1.1
+  version: 0.1.2
   category: engineering
   tags: [hop-design, contract-first, test-driven-development]
 ---
@@ -22,7 +22,8 @@ outside HOP.
 
 - A failing test proves the missing behavior before implementation.
 - The smallest owning layer changes and all affected contracts remain explicit.
-- Targeted checks and the full deterministic verification endpoint pass.
+- Targeted checks and the verification scope appropriate to the changed responsibility pass.
+- Full source and installed-distribution verification passes before merge or release.
 - Documentation, schemas, and public/private boundaries agree with the code.
 
 ## Workflow
@@ -35,12 +36,20 @@ outside HOP.
 4. GREEN: implement the minimum behavior through the owning layer. Do not add
    speculative abstractions, hidden defaults, or compatibility aliases.
 5. REFACTOR: improve names and structure only while the focused test stays green.
-6. Run the smallest relevant suite, then:
+6. Run the smallest relevant suite, then the matching scope:
 
    ```bash
-   bash ./scripts/agent-preflight --strict
-   bash ./scripts/agent-verify
+   bash ./scripts/agent-verify --scope presentation  # molecular views and browser only
+   bash ./scripts/agent-verify --scope source        # molecular/API/search/handoff changes
+   bash ./scripts/agent-verify                      # source + installed distribution
    ```
+
+   Choose one boundary; these are not three commands to run in sequence. Each
+   includes strict preflight. Packaging, runtime dependencies, uncertain scope,
+   merge and release require the full gate. A presentation-only change requires
+   rendered review and conserved molecular content as well as its focused gate.
+   See `docs/dev/performance.md#choose-the-verification-boundary` for the
+   responsibility map and bounded worker option.
 
 7. Inspect the diff for generated paired inputs, unsafe paths, private data,
    dependency inversions, undocumented schema changes, and stale docs.
@@ -49,7 +58,9 @@ outside HOP.
 
 - RED evidence and focused GREEN verification.
 - Changed ownership boundary and contract surface.
-- Full `agent-verify` evidence, including source-versus-wheel parity.
+- The named scope, its result and exact changed responsibility. Include
+  source-versus-wheel parity for a full merge/release verification; do not imply
+  that a presentation or source pass established installed-package parity.
 - Updated owning docs or ADR for any semantic or architectural change.
 - Explicitly deferred downstream work and remaining roadmap phase.
 
@@ -79,7 +90,7 @@ cases before changing this skill's description.
 ## Output Contract
 
 Report the behavior changed, RED evidence, implementation boundary, focused and
-full verification evidence, remaining roadmap phase, and any downstream work
+verification scope and evidence, remaining roadmap phase, and any downstream work
 that was intentionally not touched.
 
 ## Progressive Disclosure Resources

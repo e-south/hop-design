@@ -38,11 +38,12 @@ from hop_design.models.construction.foldback import (
     FoldbackMaterialRequirement,
 )
 from hop_design.models.construction.foldback_replay import replay_foldback_route
+from hop_design.models.construction.foldback_space import FoldbackSequenceRequest
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.physical import Strand
 from hop_design.models.reaction_replay import assess_reaction_program
 
-_ROUTE_VERSION = "linear-source-foldback/3"
+_ROUTE_VERSION = "linear-source-foldback/6"
 
 
 def _failure_code(diagnostic_codes: tuple[str, ...]) -> str:
@@ -57,7 +58,7 @@ def _failure_code(diagnostic_codes: tuple[str, ...]) -> str:
 
 def _realization(
     *,
-    request: LocalNeighborhoodRequest,
+    request: LocalNeighborhoodRequest | FoldbackSequenceRequest,
     payload_sequence: str,
     target: FoldbackTarget,
     route: FoldbackProgramCandidate,
@@ -198,14 +199,14 @@ def _geometry_groups(
 
 def _projection_inventory(*, partitioned: bool) -> tuple[ProjectionInventoryItem, ...]:
     feasibility_schema = (
-        "hop.foldback-feasibility-landscape/v4"
+        "hop.foldback-feasibility-landscape/v6"
         if partitioned
-        else "hop.foldback-feasibility-landscape/v3"
+        else "hop.foldback-feasibility-landscape/v5"
     )
     feasibility_renderer = (
-        "foldback-feasibility-projections/4"
+        "foldback-feasibility-projections/6"
         if partitioned
-        else "foldback-feasibility-projections/3"
+        else "foldback-feasibility-projections/5"
     )
     overhead_schema = (
         "hop.foldback-overhead-frontier/v2" if partitioned else "hop.foldback-overhead-frontier/v1"

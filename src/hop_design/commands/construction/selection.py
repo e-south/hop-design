@@ -11,15 +11,25 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
 
 import hop_design.construction as construction
 
 from .common import load_receipt, navigation_content, require_output_outside_bundle
+
+
+def _validate_route_selector(
+    *, realization_id: str | None, selection_path: Path | None, ordinal: int | None
+) -> None:
+    if sum(value is not None for value in (realization_id, selection_path, ordinal)) != 1:
+        raise typer.BadParameter(
+            "Provide exactly one route selector.", param_hint="route selection"
+        )
+    if ordinal is not None and ordinal < 0:
+        raise typer.BadParameter("Route ordinal must be nonnegative.", param_hint="--ordinal")
 
 
 def _resolve_realization_id(
@@ -29,11 +39,9 @@ def _resolve_realization_id(
     selection_path: Path | None,
     ordinal: int | None,
 ) -> str:
-    if sum(value is not None for value in (realization_id, selection_path, ordinal)) != 1:
-        raise typer.BadParameter(
-            "Provide exactly one route selector.",
-            param_hint="route selection",
-        )
+    _validate_route_selector(
+        realization_id=realization_id, selection_path=selection_path, ordinal=ordinal
+    )
     if ordinal is not None:
         for row in navigation_content(receipt)["rows"]:
             if row["ordinal"] == ordinal and row["status"] == "accepted":
@@ -59,62 +67,6 @@ def _resolve_realization_id(
             param_hint="REALIZATION_ID",
         )
     return realization_id
-
-
-def _external_material_rows(
-    realization: dict[str, Any],
-) -> list[tuple[str, dict[str, Any]]]:
-    preparation = realization["source_preparation"]
-    rows = [
-        ("source_ssdna", preparation["source_ssdna"]),
-        ("source_materialization_forward_primer", preparation["forward_primer"]["oligo"]),
-        ("source_materialization_reverse_primer", preparation["reverse_primer"]["oligo"]),
-    ]
-    materials = {item["material_id"]: item for item in realization["materials"]}
-    rows.extend(
-        (use["role"], materials[use["material_id"]])
-        for use in realization["material_uses"]
-        if use["route_entry"] == "required_external"
-    )
-    return rows
-
-
-def _print_trajectory(content: dict[str, Any]) -> None:
-    realization = content["realization"]
-    reference = realization["final_product"]["reference"]
-    source = realization["source_preparation"]["source_ssdna"]
-    materials = _external_material_rows(realization)
-    program = realization["construction_program"]
-    typer.echo(f"Result: {content['source_result_id']}")
-    typer.echo(f"Realization: {realization['materialized_realization_id']}")
-    typer.echo(f"Source ssDNA: {source['sequence_5prime']}")
-    typer.echo(f"Required external materials: {len(materials)}")
-    for role, material in materials:
-        typer.echo(
-            f"  {role}: {material['sequence_5prime']} · "
-            f"5-prime {material['five_prime_end']} · "
-            f"3-prime {material['three_prime_end']}"
-        )
-    typer.echo(
-        f"Molecular states: {len(program['states'])} · transitions: {len(program['transitions'])}"
-    )
-    if content.get("source_partition_certificate") is None:
-        typer.echo("Source-fragment removal: unresolved (no bound removal program)")
-    else:
-        typer.echo("Source-fragment removal: specified and verified in the model")
-        typer.echo("Cleanup recovery: not predicted")
-    typer.echo(f"Endpoint: {reference['endpoint']} · {reference['topology']}")
-    typer.echo(f"Endpoint sequence: {reference['sequence']}")
-    if reference["endpoint"] == "clone_ready_duplex":
-        for end in realization["final_product"]["cohesive_ends"]:
-            typer.echo(
-                f"{end['product_end'].capitalize()} cohesive end: {end['sequence']} "
-                f"(5-prime to 3-prime) · {end['overhang_end'].replace('_', '-')} overhang"
-            )
-        typer.echo("Destination compatibility: not evaluated")
-    else:
-        typer.echo("Cohesive ends: not generated for this endpoint")
-    typer.echo("Physical construction, QC, and biological activity: not recorded")
 
 
 def construction_inspect_command(
@@ -144,10 +96,31 @@ def construction_inspect_command(
         str | None,
         typer.Option("--reason", help="Your reason for selecting this route, saved with --out."),
     ] = None,
+    product_end: Annotated[
+        str | None,
+        typer.Option(
+            "--end", help="Focus on the recorded origins of the left or right released end."
+        ),
+    ] = None,
+    base_index: Annotated[
+        int | None,
+        typer.Option(
+            "--base-index", help="Zero-based position in the --end word, read 5-prime first."
+        ),
+    ] = None,
 ) -> None:
     """Inspect the materials and molecular steps of one route."""
     if selection_reason is not None and output is None:
         raise typer.BadParameter("--reason requires --out.", param_hint="--reason")
+    if base_index is not None and product_end is None:
+        raise typer.BadParameter("--base-index requires --end.", param_hint="--base-index")
+    if product_end is not None and product_end not in {"left", "right"}:
+        raise typer.BadParameter("--end must be left or right.", param_hint="--end")
+    if base_index is not None and base_index < 0:
+        raise typer.BadParameter("Base index must be nonnegative.", param_hint="--base-index")
+    _validate_route_selector(
+        realization_id=realization_id, selection_path=selection_path, ordinal=ordinal
+    )
     protected_root = None if output is None else require_output_outside_bundle(bundle_path, output)
     receipt = load_receipt(bundle_path, protected_root=protected_root)
     selected_id = _resolve_realization_id(
@@ -161,14 +134,24 @@ def construction_inspect_command(
             receipt,
             materialized_realization_id=selected_id,
         )
-        content = json.loads(trajectory.json_bytes)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="REALIZATION_ID") from exc
+    try:
+        inspection = (
+            trajectory.inspection_text
+            if product_end is None
+            else trajectory.inspect_end(product_end, base_index=base_index)
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--end/--base-index") from exc
+    try:
         if output is not None:
             trajectory.write(
                 output, selection_reason=selection_reason, protected_root=protected_root
             )
     except (OSError, ValueError) as exc:
-        raise typer.BadParameter(str(exc), param_hint="REALIZATION_ID/--out") from exc
-    _print_trajectory(content)
+        raise typer.BadParameter(str(exc), param_hint="--out") from exc
+    typer.echo(inspection)
     if output is not None:
         typer.echo(f"Report: {output / 'report.md'}")
         typer.echo(f"Oligos: {output / 'oligos.csv'} · {output / 'oligos.fasta'}")
@@ -193,6 +176,7 @@ def construction_select_command(
     ] = None,
 ) -> None:
     """Save a selection referencing an existing route."""
+    _validate_route_selector(realization_id=realization_id, selection_path=None, ordinal=ordinal)
     protected_root = require_output_outside_bundle(bundle_path, output)
     receipt = load_receipt(bundle_path, protected_root=protected_root)
     selected_id = _resolve_realization_id(

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hop-design"
-version = "0.1.0a8"
+version = "0.1.0a9"
 description = "A domain-specific language and deterministic compiler for sequence-encoded hairpins"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -26,8 +26,14 @@ classifiers = [
 dependencies = [
   "pydantic>=2.12,<3",
   "pyyaml>=6.0.2,<7",
+  "reportlab>=4.4,<5",
+  "svglib>=2,<3",
   "typer>=0.16,<1",
 ]
+
+[project.optional-dependencies]
+# Coordinate fitting is an authoring step; frozen atlas browsing stays lightweight.
+atlas = ["umap-learn>=0.5.12,<0.6"]
 
 [project.urls]
 Documentation = "https://github.com/e-south/hop-design/tree/main/docs"
@@ -46,6 +52,7 @@ dev = [
   "pre-commit>=4.3,<5",
   "pytest>=8.4,<10",
   "pytest-cov>=6.2,<8",
+  "pytest-xdist>=3.8,<4",
   "ruff>=0.12,<1",
   "twine>=7,<8",
   "types-pyyaml>=6.0.12,<7",
@@ -53,6 +60,10 @@ dev = [
 
 [tool.uv]
 required-version = ">=0.12.3,<0.13"
+
+[tool.hatch.build]
+# Ignored scratch trees may link to public examples; never traverse those links.
+skip-excluded-dirs = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/hop_design"]
@@ -77,6 +88,8 @@ include = [
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers", "--import-mode=importlib"]
 testpaths = ["tests"]
+tmp_path_retention_policy = "failed"
+tmp_path_retention_count = 3
 
 [tool.coverage.run]
 branch = true

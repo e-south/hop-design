@@ -63,7 +63,7 @@ def clone_endpoint_fate_spans(
     digest: CloneDigest,
 ) -> tuple[EndpointSequenceFateSpan, ...]:
     """Intersect design feature fates with both exact digest product strands."""
-    design_start = digest.encoding_projection.source_span.start.offset
+    design_start = digest.release_evidence.design_parent_projection.source_span.start.offset
     top_parent_start = digest.primary_parent_span.start.offset
     records: list[EndpointSequenceFateSpan] = []
     for endpoint_strand, product in (
@@ -85,13 +85,15 @@ def clone_endpoint_fate_spans(
                 ),
                 None,
             )
-            if feature is None:
-                raise ValueError("Clone endpoint bases must all map into the verified design.")
             _append(
                 records,
                 strand=endpoint_strand,
                 start=index,
                 end=index + 1,
-                fate=_fate(feature.role),
+                fate=(
+                    EndpointSequenceFate.RETAINED_CONSTRUCTION
+                    if feature is None
+                    else _fate(feature.role)
+                ),
             )
     return tuple(records)

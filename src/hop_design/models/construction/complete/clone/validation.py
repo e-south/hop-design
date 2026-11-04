@@ -17,12 +17,13 @@ from hop_design.models.construction.enzyme_binding import ConstructionEnzymeBind
 from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.enzymes import EnzymeRole
 
+from ..material.functions import material_function_spans
 from ..pcr import DuplexFinalProductReference
-from ..pcr.products import material_function_spans
 from ..pcr.validation import validate_pcr_realization
 from ..state import ConstructionStatePhase
 from ..transition import ConstructionTransitionKind
 from .digest import derive_clone_digest
+from .geometry import clone_payload_end_offsets
 from .products import clone_endpoint_fate_spans
 from .reaction import derive_clone_end_program
 
@@ -70,7 +71,20 @@ def validate_clone_realization(realization: MaterializedConstructionRealization)
         pcr_state=pcr_state,
         design_sequence=item.design.encoding_sequence,
         design_digest=item.design.encoding_digest,
+        design_parent_span=item.final_product.design_projection.source_span,
+        payload_boundaries=item.design.payload_boundaries,
     )
+    action = basal.future_release_action
+    if action is None:
+        raise ValueError("Clone-ready routes require an exact future release action.")
+    offsets = clone_payload_end_offsets(
+        ends=digest.cohesive_ends,
+        encoding_start=digest.release_evidence.design_parent_projection.source_span.start.offset,
+        payload_boundaries=item.design.payload_boundaries,
+    )
+    side_index = 0 if action.requirement.product_end == "left" else 1
+    if offsets[side_index] != action.requirement.payload_end_offset_bp:
+        raise ValueError("Clone payload end offsets must satisfy the exact local obligation.")
     expected_program = derive_clone_end_program(pcr_state=pcr_state, digest=digest)
     if program.reaction_programs[-1] != expected_program:
         raise ValueError("Clone end-generation program must replay exact endpoint bindings.")
@@ -94,8 +108,10 @@ def validate_clone_realization(realization: MaterializedConstructionRealization)
         or product.cohesive_ends != digest.cohesive_ends
     ):
         raise ValueError("Clone endpoint must equal its exact staggered duplex graph.")
-    if product.encoding_projection != digest.encoding_projection:
-        raise ValueError("Clone design authority must equal the exact pre-digest cut union.")
+    if product.release_evidence != digest.release_evidence:
+        raise ValueError(
+            "Clone release evidence must replay parent-core, cut union and strand spans."
+        )
     expected_functions = material_function_spans(
         material_uses=item.material_uses,
         top=digest.strands[0],

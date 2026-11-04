@@ -19,7 +19,12 @@ from hop_design.models.molecular_state import EndChemistry
 from hop_design.models.sequence import reverse_complement_iupac
 
 from ..material import ExactConstructionMaterial, MaterialResolutionMode, PcrPrimer
-from .pairing import AdapterPairingPolicyError, resolve_adapter_pairing_sequence
+from ..preparation_diagnostics import PreparationConstraintDiagnostic
+from .pairing import (
+    AdapterPairingPolicyError,
+    FixedAdapterSequenceMismatch,
+    resolve_adapter_pairing_sequence,
+)
 from .policy import (
     ConstrainedAdapterPolicy,
     ConstrainedEndpointPrimerPolicy,
@@ -42,8 +47,15 @@ class EndpointAuxiliaryResolutionFailure(StrEnum):
 class EndpointAuxiliaryResolutionError(ValueError):
     """Raised when one exact endpoint auxiliary policy cannot be resolved."""
 
-    def __init__(self, failure: EndpointAuxiliaryResolutionFailure, message: str) -> None:
+    def __init__(
+        self,
+        failure: EndpointAuxiliaryResolutionFailure,
+        message: str,
+        *,
+        diagnostic: PreparationConstraintDiagnostic | None = None,
+    ) -> None:
         self.failure = failure
+        self.diagnostic = diagnostic
         super().__init__(message)
 
 
@@ -109,13 +121,17 @@ def _adapter_pairing_sequence(
         )
     except AdapterPairingPolicyError:
         raise
+    except FixedAdapterSequenceMismatch as exc:
+        raise EndpointAuxiliaryResolutionError(
+            EndpointAuxiliaryResolutionFailure.ADAPTER, str(exc), diagnostic=exc.diagnostic
+        ) from exc
     except ValueError as exc:
         raise EndpointAuxiliaryResolutionError(
             EndpointAuxiliaryResolutionFailure.ADAPTER, str(exc)
         ) from exc
 
 
-def _resolve_adapter(
+def resolve_adapter(
     policy: DerivedAdapterPolicy | ConstrainedAdapterPolicy | FixedAdapterPolicy,
     *,
     basal: BasalRealizationRecord,
@@ -143,6 +159,18 @@ def _resolve_adapter(
         raise EndpointAuxiliaryResolutionError(
             EndpointAuxiliaryResolutionFailure.ADAPTER,
             "Adapter must preserve complete basal annealing and ligation chemistry.",
+        )
+    action = basal.future_release_action
+    if action is not None and any(
+        position >= len(adapter.sequence_5prime) or adapter.sequence_5prime[position] != base
+        for position, base in action.adapter_end_bases(
+            nick_offset_nt=basal.payload_source_map.segments[0].source_span.start.offset
+            - basal.basal_nick.boundary.offset
+        )
+    ):
+        raise EndpointAuxiliaryResolutionError(
+            EndpointAuxiliaryResolutionFailure.ADAPTER,
+            "Complete adapter must satisfy every base of its future end obligation.",
         )
     return adapter
 
@@ -226,7 +254,7 @@ def resolve_endpoint_auxiliaries(
             EndpointAuxiliaryResolutionFailure.PRIMER,
             "Source primer region must be a nonempty prefix of the exact PCR core.",
         )
-    adapter = _resolve_adapter(
+    adapter = resolve_adapter(
         policy.adapter,
         basal=basal,
         source_prefix=pcr_core_sequence[:source_primer_region_length_nt],

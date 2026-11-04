@@ -222,6 +222,7 @@ def _request(
     if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
         enzymes.append(_type_iis())
         future_release = BasalFutureReleaseRequirement(
+            payload_end_offset_bp=0,
             product_end="right",
             orientation=SiteOrientation.REVERSE,
             cohesive_end_sequence="ATAA",
@@ -460,7 +461,7 @@ def test_future_release_action_cannot_encode_an_unresolved_end() -> None:
 
 @pytest.mark.parametrize(
     ("product_end", "orientation", "cohesive_end"),
-    (("left", SiteOrientation.FORWARD, "TTAT"), ("right", SiteOrientation.REVERSE, "ATAA")),
+    (("left", SiteOrientation.FORWARD, "ATAA"), ("right", SiteOrientation.REVERSE, "ATAA")),
 )
 def test_clone_ready_basal_source_encodes_the_future_release_recognition_site(
     product_end: str, orientation: SiteOrientation, cohesive_end: str
@@ -487,6 +488,10 @@ def test_clone_ready_basal_source_encodes_the_future_release_recognition_site(
         assert payload_start >= 10
         assert record.source_precursor_sequence[payload_start - 10 : payload_start - 4] == "GGTCTC"
         assert record.basal_nick.boundary.offset == payload_start
+        if product_end == "left":
+            assert (
+                record.source_precursor_sequence[payload_start - 4 : payload_start] == cohesive_end
+            )
         assert all(
             operation.role is EnzymeRole.BASAL_NICK
             for program in record.reaction_programs

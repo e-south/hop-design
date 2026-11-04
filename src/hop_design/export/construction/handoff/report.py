@@ -13,11 +13,13 @@ from __future__ import annotations
 
 from html import escape
 
+from hop_design.export.construction.labels import endpoint_label, enzyme_label, state_label
 from hop_design.models.construction.complete.pcr.authority import EndpointSequenceFate
 from hop_design.models.construction.complete.state import ConstructionState
 from hop_design.models.construction.projections import CompleteConstructionTrajectoryProjection
 
 from .materials import external_oligos
+from .outcome import product_outcome_lines
 
 
 def _text(value: str) -> str:
@@ -29,11 +31,14 @@ def _text(value: str) -> str:
 
 def _state(state: ConstructionState) -> str:
     lengths = ", ".join(str(len(strand.sequence)) for strand in state.molecules)
-    return f"{_text(state.phase.value.replace('_', ' '))}: strand lengths {lengths} nt"
+    return f"{_text(state_label(state.phase.value))}: strand lengths {lengths} nt"
 
 
 def render_construction_report(
-    projection: CompleteConstructionTrajectoryProjection, *, selection_reason: str | None
+    projection: CompleteConstructionTrajectoryProjection,
+    *,
+    selection_reason: str | None,
+    enzyme_names: tuple[tuple[str, str], ...] = (),
 ) -> bytes:
     """Describe the chosen route without adding experimental or ranking claims."""
     route = projection.realization
@@ -56,14 +61,18 @@ def render_construction_report(
     lines = [
         "# Selected construction",
         "",
+        *product_outcome_lines(projection),
+        "Changed oligos: compare this selection with an explicit reference; "
+        "a single preparation has no change baseline.",
+        "",
         f"Payload: `{route.design.payload_sequence}` ({len(route.design.payload_sequence)} nt). "
         "The paired arm is derived; the payload remains unchanged.",
-        f"Requested endpoint: {endpoint.reference.endpoint.value.replace('_', ' ')}.",
+        f"Requested endpoint: {endpoint_label(endpoint.reference.endpoint)}.",
         "",
         reason,
         "Enumeration order is not a ranking; this report does not establish an optimum.",
         "",
-        "## Materials to order",
+        "## Required oligonucleotides",
         "",
         f"[oligos.csv](oligos.csv) lists {len(external_oligos(route))} distinct external oligos "
         "with their roles, lengths, and required terminal chemistry. "
@@ -72,7 +81,9 @@ def render_construction_report(
         "FASTA does not encode modifications; retain the CSV when ordering. "
         "Modeled intermediates are not additional orders.",
         "",
-        f"Cleavage enzymes used: {', '.join(_text(enzyme) for enzyme in enzymes)}.",
+        "Cleavage enzymes used: "
+        + ", ".join(_text(enzyme_label(e, enzyme_names)) for e in enzymes)
+        + ".",
         "Copying and joining require polymerase and ligase capabilities; "
         "these are not oligo orders.",
         "",
@@ -118,7 +129,12 @@ def render_construction_report(
         if transition.reaction_program_id is not None:
             reaction = reactions[transition.reaction_program_id]
             stages = [
-                " + ".join(dict.fromkeys(_text(item.enzyme_id) for item in stage.operations))
+                " + ".join(
+                    dict.fromkeys(
+                        _text(enzyme_label(item.enzyme_id, enzyme_names))
+                        for item in stage.operations
+                    )
+                )
                 for stage in reaction.stages
             ]
             operation += f" ({'; then '.join(stages)})"
@@ -159,6 +175,11 @@ def render_construction_report(
             f"{end.product_end.capitalize()} cohesive end: `{end.sequence}` (5-prime to 3-prime), "
             f"{end.overhang_end.value.replace('_', ' ')} overhang on "
             f"{_text(end.protruding_strand_id)}."
+        )
+    if endpoint.cohesive_ends:
+        lines.append(
+            "Destination compatibility: not evaluated. Compare both oriented ends and "
+            "terminal chemistry with the intended receiving DNA before assembly."
         )
     lines.extend(
         [

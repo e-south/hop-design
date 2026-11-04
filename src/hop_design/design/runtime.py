@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 from importlib.metadata import distribution, version
 from pathlib import Path
@@ -11,13 +12,23 @@ from urllib.parse import urlsplit, urlunsplit
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 
+def _source_fingerprints(package: Path) -> dict[str, str]:
+    """Hash every source on every call; avoid repeated Path parsing for each file."""
+    base = os.fspath(package)
+    files = {}
+    for directory, folders, names in os.walk(base):
+        prefix = directory[len(base) + 1 :].replace(os.sep, "/")
+        for name in (*folders, *names):
+            if name.endswith(".py"):
+                relative = f"{prefix}/{name}" if prefix else name
+                with open(os.path.join(directory, name), "rb") as source:
+                    files[relative] = sha256_digest(source.read())
+    return files
+
+
 def producer_identity() -> dict[str, str]:
     """Bind producer Python source bytes and runtime dependency versions."""
-    package = Path(__file__).resolve().parents[1]
-    files = {
-        path.relative_to(package).as_posix(): sha256_digest(path.read_bytes())
-        for path in sorted(package.rglob("*.py"))
-    }
+    files = _source_fingerprints(Path(__file__).resolve().parents[1])
     return {
         "package_version": version("hop-design"),
         "package_content": sha256_digest(canonical_json_bytes(files)),

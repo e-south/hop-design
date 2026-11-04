@@ -25,6 +25,11 @@ HOP keeps four operations distinct:
 
 Discovery does not silently perform selection.
 
+The [two-region envelope example](../../examples/local-envelope/README.md)
+derives local contact lengths from geometry and varies independent basal and
+foldback budgets. It also explains how to project the results without turning
+an incomplete search or a union across variable sources into a stronger claim.
+
 ## Payload-centered local construction discovery
 
 A local construction request fixes the final payload, route family, requested
@@ -51,6 +56,13 @@ coverage is incomplete. A local construction projection renders the same typed
 result as neutral JSON, CSV, or SVG without selecting a realization or
 recomputing molecular state. Local feasibility does not establish physical
 construction, a complete route, quality control, or biological activity.
+
+An unchanged payload can itself exclude a foldback enzyme program: an extra
+actionable site wholly inside that duplex cannot be repaired by varying the
+construction region. HOP checks this using the same recognition, orientation,
+substrate, and cut rules as exact reaction replay. Such a whole-program exclusion
+counts as one rejected evaluation. Evaluation counts therefore do not supply a
+raw sequence-space denominator.
 
 ## Foldback geometry
 
@@ -83,6 +95,16 @@ and mismatches remain visible in each solution. The nickase must recognize
 the source when it acts; later cleavage must recognize the copied product
 when it acts. A permitted adapter mismatch does not waive either requirement.
 
+Local discovery can leave the full association requirement open by setting
+`minimum_adapter_annealing_nt` explicitly to `null`. The exact proximal pairs
+remain resolved; the full required length, distal completion count, and
+full-span mismatch fraction remain unknown. This is not a zero-length distal
+arm or a claim that the local segment supplies sufficient annealing. Complete
+construction requires an explicit association requirement and rejects an
+unresolved parent as an input error before evaluating combinations. Discovery
+can be repeated with a chosen requirement without changing its local sequence
+search; the resulting authority retains that requirement for composition.
+
 Each returned target and enzyme action has one exact end. Complete construction
 selects an exact endpoint from the allowed domain and rejects a selected local
 end that disagrees. Enumeration uses offset then A/C/G/T end order, not an
@@ -90,6 +112,22 @@ experimental ranking. The offset-by-end domain is limited to 100,000 exact
 targets before allocation; the request's evaluation limits still govern search
 completion. Minimum-overhead tables retain separate actions for different exact
 ends, even when the same enzyme realizes them.
+
+Every future release declares `payload_end_offset_bp`: the number of non-payload
+paired positions between the payload edge and the near edge of the protruding
+end. It is independent of `nick_offsets_nt`. Zero places the end beside the
+payload and still retains the declared overhang length. In the payload-forward
+source frame, an end of length `k` at offset `e` occupies `[-e-k, -e)` and a nick
+of displacement `n` has boundary `-n`. HOP transforms each oriented action's two
+cuts into that frame; the overhang sequence remains in its own protruding
+strand's 5-prime direction.
+
+Source-supplied end bases and adapter-supplied end bases follow their actual
+interval overlaps. Unspecified source bases remain searchable. End bases beyond
+the constrained local adapter span remain explicit completion obligations, not
+invented local sequence. Complete construction requires the same declared gap
+and checks it against both actual strand cuts. An omitted offset is invalid;
+current requests do not infer zero from an earlier schema.
 
 ### Preserve payload domains
 

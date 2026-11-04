@@ -59,10 +59,15 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
     normalized = " ".join(readme.split())
-    assert "HOP keeps that payload unchanged" in normalized
+    assert "preserve the authored payload's paired relationship" in normalized
     assert "not predictions of laboratory success" in normalized
-    assert "source oligo" in readme
-    assert "foldback" in readme and "basal" in readme
+    for route in (
+        "docs/guides/discover-product-scaffolds.md",
+        "docs/guides/specify-a-comparison.md",
+        "docs/guides/design-a-construction.md",
+    ):
+        assert route in readme
+    assert "source, adapter and primer specifications" in normalized
     assert "## Availability" not in readme
     assert "unreleased" not in readme
     assert not re.search(r"^\|", readme, flags=re.MULTILINE)
@@ -213,10 +218,10 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
     assert "searches both exact nick strands by default" in normalized_mental_model
     assert "local construction projection" in normalized
     for schema_id in (
-        "hop.foldback-feasibility-landscape/v4",
-        "hop.basal-feasibility-landscape/v5",
-        "hop.basal-minimum-overhead-matrix/v1",
-        "hop.basal-minimum-overhead-matrix/v2",
+        "hop.foldback-feasibility-landscape/v6",
+        "hop.basal-feasibility-landscape/v7",
+        "hop.basal-minimum-overhead-matrix/v3",
+        "hop.basal-minimum-overhead-matrix/v4",
         "hop.source-partition-certificate/v1",
         "hop.foldback-overhead-frontier/v2",
         "hop.basal-overhead-frontier/v2",
@@ -471,12 +476,20 @@ def test_docs_index_routes_from_first_use_to_tasks_and_reference() -> None:
     docs_index = (REPO_ROOT / "docs" / "index.md").read_text(encoding="utf-8")
     labels = (
         "## Start here",
-        "## Work on a construction",
+        "## Choose a lower-level task",
         "## Inputs and reference",
         "## Contribute",
     )
     positions = [docs_index.index(label) for label in labels]
     assert positions == sorted(positions)
+    first_use = docs_index[positions[0] : positions[1]]
+    for route in (
+        "guides/discover-product-scaffolds.md",
+        "guides/specify-a-comparison.md",
+        "guides/design-a-construction.md",
+    ):
+        assert route in first_use
+    assert "guides/compile-construction.md" in docs_index[positions[1] : positions[2]]
 
 
 def test_every_numbered_adr_is_indexed_once() -> None:
@@ -667,7 +680,7 @@ def test_schema_reference_distinguishes_release_and_source_generations() -> None
             assert source_version in text
             assert published_version in text
             assert "unreleased" in text
-        assert "release-wheel command above uses the a7 contract" in quickstart
+        assert f"`v{published_version}` contract" in quickstart
 
 
 def test_every_stable_operation_is_named_in_the_api_reference() -> None:

@@ -69,6 +69,40 @@ def test_allowed_edges_pass(path: str, source: str) -> None:
     assert violations_for_source(path, source) == []
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "models/bad.py",
+        "kernel/bad.py",
+        "catalog/bad.py",
+        "export/bad.py",
+        "design/bad.py",
+        "api.py",
+        "construction.py",
+        "serialization.py",
+    ],
+)
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import hop_design.commands.design",
+        "from hop_design import commands",
+        "from hop_design.commands.design import app",
+    ],
+)
+def test_lower_layers_cannot_depend_on_command_adapters(path: str, source: str) -> None:
+    assert violations_for_source(path, source)
+
+
+def test_relative_command_adapter_import_is_also_rejected() -> None:
+    assert violations_for_source("design/bad.py", "from ..commands.design import app")
+
+
+@pytest.mark.parametrize("path", ["cli.py", "commands/design/inspection.py"])
+def test_command_registration_and_adapter_composition_remain_allowed(path: str) -> None:
+    assert violations_for_source(path, "from hop_design.commands.design import app") == []
+
+
 def test_unknown_top_level_package_fails_closed() -> None:
     assert violations_for_source("new_layer/module.py", "") == [
         "new_layer/module.py: unknown first-party layer 'new_layer'"

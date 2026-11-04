@@ -132,6 +132,7 @@ def _clone_basal_result(
     nickase_pattern: str = "TTTT",
     nickase_cut_offset_reference: int = 0,
     requested_overhang: str,
+    payload_end_offset_bp: int = 0,
 ):
     nickase = CharacterizedEnzyme(
         enzyme_id="example:enzyme/clone-bottom-nick@1",
@@ -163,6 +164,7 @@ def _clone_basal_result(
                 minimum_adapter_annealing_nt=len(pairing_allowances),
                 pairing_constraints=_pairing_constraints(pairing_allowances),
                 future_release=BasalFutureReleaseRequirement(
+                    payload_end_offset_bp=payload_end_offset_bp,
                     product_end="right",
                     orientation=SiteOrientation.REVERSE,
                     cohesive_end_sequence=requested_overhang,
@@ -227,11 +229,13 @@ def _clone_request(tmp_path: Path, *, payload_sequence: str = "GACA"):
         release=TypeIisReleaseRequest(
             enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
             left=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.FORWARD,
                 cohesive_end_sequence=encoding[:4],
                 overhang_end=StrandEnd.FIVE_PRIME,
             ),
             right=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.REVERSE,
                 cohesive_end_sequence=reverse_complement_iupac(encoding[-4:]),
                 overhang_end=StrandEnd.FIVE_PRIME,
@@ -303,6 +307,139 @@ def _valid_clone_result(tmp_path: Path):
     assert result.status is SearchCompletionStatus.COMPLETE
     assert result.realizations
     return result, basal, complete_pcr_top, encoding
+
+
+def test_local_and_complete_release_displacements_must_agree(tmp_path: Path) -> None:
+    from hop_design.models.construction.complete.local_authority import (
+        validate_local_authority_compatibility,
+    )
+
+    request, foldback, basal, _, _, _ = _clone_request(tmp_path)
+    changed = request.model_copy(
+        update={
+            "release": request.release.model_copy(
+                update={
+                    "right": request.release.right.model_copy(update={"payload_end_offset_bp": 1})
+                }
+            )
+        }
+    )
+    with pytest.raises(ValueError, match="future release does not match"):
+        validate_local_authority_compatibility(changed, foldback=foldback, basal=basal)
+
+
+def test_materialized_endpoint_replay_checks_both_requested_payload_gaps(tmp_path: Path) -> None:
+    from hop_design.models.construction.complete.result_contract.materialized import (
+        validate_endpoint_evidence,
+    )
+
+    result, _, _, _ = _valid_clone_result(tmp_path)
+    for side in ("left", "right"):
+        request = result.request
+        changed = request.model_copy(
+            update={
+                "release": request.release.model_copy(
+                    update={
+                        side: getattr(request.release, side).model_copy(
+                            update={"payload_end_offset_bp": 1}
+                        )
+                    }
+                )
+            }
+        )
+        with pytest.raises(ValueError, match="payload end offsets"):
+            validate_endpoint_evidence(changed, result.realizations[0])
+
+
+def test_complete_release_retains_independent_paired_basal_gap(tmp_path: Path) -> None:
+    payload = _payload()
+    foldback = _foldback(payload)
+    basal = _clone_basal_result(
+        payload,
+        pairing_allowances=(BasalPairAllowance.MATCH,) * 6,
+        nickase_pattern="TTTTTT",
+        requested_overhang="AAAA",
+        payload_end_offset_bp=2,
+    )
+    foldback_path = tmp_path / "foldback.json"
+    basal_path = tmp_path / "basal.json"
+    foldback_path.write_text(foldback.model_dump_json(by_alias=True))
+    basal_path.write_text(basal.model_dump_json(by_alias=True))
+    compiled = construction.compile_design_from_local_realizations(
+        design_id="independent-basal-gap",
+        payload_sequence=payload.payload.sequence,
+        endpoint="clone_ready_duplex",
+        foldback=construction.load_verified_local_neighborhood(foldback_path),
+        foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+        basal=construction.load_verified_local_neighborhood(basal_path),
+        basal_realization_id=basal.realizations[0].basal_realization_id,
+    )
+    design = load_verified_bundle(compiled.write(tmp_path / "gap-design"))
+    encoding = design.plan.hairpin_encoding_insert.sequence
+    request = _construction_request(
+        payload=payload,
+        foldback=foldback,
+        basal=basal,
+        design=design,
+        endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX,
+        adapter=_material("ligation-adapter", "TTTTTT"),
+        forward_primer=PcrPrimer(
+            oligo=_material("forward-primer", "GGTCTCAAAA"), annealing_length_nt=4
+        ),
+        reverse_primer=PcrPrimer(
+            oligo=_material("reverse-primer", "GGTCTCAAAA"), annealing_length_nt=4
+        ),
+        release=TypeIisReleaseRequest(
+            enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
+            left=ReleaseSideRequirement(
+                orientation=SiteOrientation.FORWARD,
+                cohesive_end_sequence="AAAA",
+                overhang_end=StrandEnd.FIVE_PRIME,
+                payload_end_offset_bp=2,
+            ),
+            right=ReleaseSideRequirement(
+                orientation=SiteOrientation.REVERSE,
+                cohesive_end_sequence="AAAA",
+                overhang_end=StrandEnd.FIVE_PRIME,
+                payload_end_offset_bp=2,
+            ),
+            max_site_pairs=16,
+        ),
+    )
+    request = request.model_copy(
+        update={
+            "selected_foldback_realization_id": foldback.realizations[0].foldback_realization_id,
+            "selected_basal_realization_id": basal.realizations[0].basal_realization_id,
+        }
+    )
+    verified = discover_constructions(
+        request,
+        foldback=verify_foldback_neighborhood_result(foldback),
+        basal=verify_basal_neighborhood_result(basal),
+        design=design,
+    )
+    assert verified.result.status is SearchCompletionStatus.COMPLETE, (
+        verified.result.failure_reasons
+    )
+    (realization,) = verified.result.realizations
+    assert realization.final_product.design_projection.sequence == encoding
+    assert [end.sequence for end in realization.final_product.cohesive_ends] == ["AAAA", "AAAA"]
+    assert [len(strand.sequence) for strand in realization.final_product.strands] == [
+        len(encoding) - 4
+    ] * 2
+    assert len(realization.final_product.pairings) == len(encoding) - 8
+    assert realization.basal_authority.local_realization.achieved_geometry.nick_offset_nt == 0
+    assert realization.basal_authority.future_release_action.requirement.payload_end_offset_bp == 2
+    from hop_design.design.construction.projections.complete import (
+        project_complete_construction_summary,
+    )
+
+    (row,) = project_complete_construction_summary(verified).rows
+    assert (row.left_payload_end_offset_bp, row.right_payload_end_offset_bp) == (2, 2)
+    assert row.endpoint_strand_lengths_nt == (len(encoding) - 4,) * 2
+    assert row.endpoint_paired_positions_bp == len(encoding) - 8
+    bundle = compile_construction_bundle(verified).write(tmp_path / "complete")
+    assert load_verified_construction_bundle(bundle).result_id == verified.result.result_id
 
 
 def _realization_content(realization: MaterializedConstructionRealization) -> dict[str, object]:
@@ -381,7 +518,7 @@ def test_clone_endpoint_preserves_selected_source_partition_through_bundle_repla
     assert realization.source_partition_plan is not None
     assert realization.source_partition_plan.realization == selected
     assert realization.source_partition_binding is not None
-    assert realization.final_product.encoding_projection.sequence == encoding
+    assert realization.final_product.design_projection.sequence == encoding
     compilation = compile_construction_bundle(verified)
     loaded = load_verified_construction_bundle(compilation.write(tmp_path / "construction"))
     assert loaded.result_id == result.result_id
@@ -439,7 +576,7 @@ def test_clone_ready_endpoint_extends_exact_pcr_route_through_end_generation(
         encoding[:4],
         reverse_complement_iupac(encoding[-4:]),
     )
-    projection = realization.final_product.encoding_projection
+    projection = realization.final_product.design_projection
     assert projection.sequence == encoding
     assert projection.source_span.start.offset == 6
     assert projection.source_span.end.offset == 6 + len(encoding)
@@ -584,7 +721,7 @@ def test_clone_ready_accepts_both_duplex_foldback_orientations(
             for strand in state.molecules
             for lineage in strand.lineage
         } <= material_use_ids
-        assert item.final_product.encoding_projection.sequence == request.design.encoding_sequence
+        assert item.final_product.design_projection.sequence == request.design.encoding_sequence
 
 
 def test_clone_endpoint_does_not_infer_release_ends_from_basal_pairing_mismatch(
@@ -634,11 +771,13 @@ def test_clone_endpoint_does_not_infer_release_ends_from_basal_pairing_mismatch(
         release=TypeIisReleaseRequest(
             enzyme_provisioning=_provisioning(_type_iis(), max_operations=2),
             left=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.FORWARD,
                 cohesive_end_sequence=encoding[:4],
                 overhang_end=StrandEnd.FIVE_PRIME,
             ),
             right=ReleaseSideRequirement(
+                payload_end_offset_bp=0,
                 orientation=SiteOrientation.REVERSE,
                 cohesive_end_sequence=reverse_complement_iupac(encoding[-4:]),
                 overhang_end=StrandEnd.FIVE_PRIME,
@@ -931,7 +1070,7 @@ def test_clone_rejects_resealed_endpoint_binding_forgeries(
 
         with pytest.raises(
             ValidationError,
-            match=r"exact verified design encoding|exact endpoint bindings",
+            match=r"exact verified design encoding|exact endpoint bindings|payload end offsets",
         ):
             MaterializedConstructionRealization.create(
                 **content,
@@ -1042,10 +1181,15 @@ def test_clone_replay_rejects_terminal_pairing_and_design_union_forgeries(
             "pairings": reversed_pairings,
         }
     )
+    evidence = product.release_evidence
+    assert evidence is not None
+    changed_union = evidence.released_union_projection.model_copy(
+        update={"orientation": BindingOrientation.REVERSE_COMPLEMENT_5TO3}
+    )
     changed_projection_product = product.model_copy(
         update={
-            "encoding_projection": product.encoding_projection.model_copy(
-                update={"orientation": BindingOrientation.REVERSE_COMPLEMENT_5TO3}
+            "release_evidence": evidence.model_copy(
+                update={"released_union_projection": changed_union}
             )
         }
     )
@@ -1054,7 +1198,7 @@ def test_clone_replay_rejects_terminal_pairing_and_design_union_forgeries(
         validate_clone_realization(
             realization.model_copy(update={"final_product": changed_pairing_product})
         )
-    with pytest.raises(ValueError, match="exact pre-digest cut union"):
+    with pytest.raises(ValueError, match="Clone release evidence"):
         validate_clone_realization(
             realization.model_copy(update={"final_product": changed_projection_product})
         )

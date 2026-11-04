@@ -17,24 +17,43 @@ from math import prod
 
 from hop_design.models.sequence import iupac_bases
 
-from .source_preparation.policy import ConstrainedSourceSsdnaPolicy, SourceSsdnaPolicy
+from .source_preparation.policy import (
+    ConstrainedSourceSsdnaPolicy,
+    SourceSsdnaPolicy,
+    UpstreamSequenceLengthRange,
+)
 
 
 def source_context_count(policy: SourceSsdnaPolicy) -> int:
     """Count upstream assignments without allocating their sequence strings."""
     if isinstance(policy, ConstrainedSourceSsdnaPolicy):
-        return prod(len(iupac_bases(symbol)) for symbol in policy.upstream_sequence_spec)
+        specification = policy.upstream_sequence_spec
+        if isinstance(specification, UpstreamSequenceLengthRange):
+            base_count = len(iupac_bases(specification.base_spec))
+            if base_count == 1:
+                return specification.max_length_nt - specification.min_length_nt + 1
+            count: int = (
+                base_count ** (specification.max_length_nt + 1)
+                - base_count**specification.min_length_nt
+            ) // (base_count - 1)
+            return count
+        return prod(len(iupac_bases(symbol)) for symbol in specification)
     return 1
 
 
 def source_contexts(policy: SourceSsdnaPolicy) -> Iterator[str | None]:
-    """Yield exact upstream assignments in A/C/G/T positional order."""
+    """Yield exact upstream assignments by length, then A/C/G/T positional order."""
     if isinstance(policy, ConstrainedSourceSsdnaPolicy):
-        domains = tuple(
-            tuple(sorted(iupac_bases(symbol))) for symbol in policy.upstream_sequence_spec
-        )
-        for assignment in product(*domains):
-            yield "".join(assignment)
+        specification = policy.upstream_sequence_spec
+        if isinstance(specification, UpstreamSequenceLengthRange):
+            bases = tuple(sorted(iupac_bases(specification.base_spec)))
+            for length in range(specification.min_length_nt, specification.max_length_nt + 1):
+                for assignment in product(bases, repeat=length):
+                    yield "".join(assignment)
+        else:
+            domains = tuple(tuple(sorted(iupac_bases(symbol))) for symbol in specification)
+            for assignment in product(*domains):
+                yield "".join(assignment)
     else:
         yield None
 
@@ -54,10 +73,19 @@ def validate_source_context(policy: SourceSsdnaPolicy, sequence: str | None) -> 
         if sequence is not None:
             raise ValueError("An upstream assignment requires a constrained source policy.")
         return
-    if sequence is None or len(sequence) != len(policy.upstream_sequence_spec):
+    specification = policy.upstream_sequence_spec
+    if sequence is None:
+        raise ValueError("A constrained source requires one exact upstream assignment.")
+    if isinstance(specification, UpstreamSequenceLengthRange):
+        if not specification.min_length_nt <= len(sequence) <= specification.max_length_nt:
+            raise ValueError("A constrained source requires one exact upstream assignment.")
+        if any(base not in iupac_bases(specification.base_spec) for base in sequence):
+            raise ValueError("Upstream assignment must belong to its declared sequence domain.")
+        return
+    if len(sequence) != len(specification):
         raise ValueError("A constrained source requires one exact upstream assignment.")
     if any(
         base not in iupac_bases(symbol)
-        for base, symbol in zip(sequence, policy.upstream_sequence_spec, strict=True)
+        for base, symbol in zip(sequence, specification, strict=True)
     ):
         raise ValueError("Upstream assignment must belong to its declared sequence domain.")

@@ -55,6 +55,14 @@ class PartitionBindingOutcome:
     rejection_reason: CompositionRejectionCode | None
     rejection_candidate: MaterializedConstructionRealization | None
 
+    def resolved(self) -> MaterializedConstructionRealization | CompositionRejectionCode:
+        """Return the exact accepted route or reason, rejecting inconsistent outcomes."""
+        if self.rejection_reason is not None and self.realization is None:
+            return self.rejection_reason
+        if self.realization is not None and self.rejection_reason is None:
+            return self.realization
+        raise AssertionError("Partition binding must return one exact outcome.")
+
 
 def resolve_partition_plan(
     request: ConstructionDiscoveryRequest,

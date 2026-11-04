@@ -46,6 +46,7 @@ def write_complete_projection(
         "basal_realization_id",
         "disposition",
         "rejection_reason",
+        "preparation_constraint_json",
         "truncation_reason",
         "materialized_realization_id",
         "achieved_geometry_group_key",
@@ -55,6 +56,10 @@ def write_complete_projection(
         "source_material_nt",
         "auxiliary_material_nt",
         "endpoint_product_nt",
+        "endpoint_strand_lengths_nt",
+        "endpoint_paired_positions_bp",
+        "left_payload_end_offset_bp",
+        "right_payload_end_offset_bp",
         "candidate_enzyme_programs",
         "recognition_placements_attempted",
         "constraint_systems_attempted",
@@ -116,6 +121,15 @@ def write_complete_projection(
                 "rejection_reason": (
                     "" if row.rejection_reason is None else row.rejection_reason.value
                 ),
+                "preparation_constraint_json": (
+                    ""
+                    if row.preparation_constraint is None
+                    else json.dumps(
+                        row.preparation_constraint.model_dump(mode="json"),
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    )
+                ),
                 "truncation_reason": row.truncation_reason or "",
                 "materialized_realization_id": row.materialized_realization_id or "",
                 "achieved_geometry_group_key": row.achieved_geometry_group_key or "",
@@ -129,6 +143,12 @@ def write_complete_projection(
                 "source_material_nt": row.source_material_nt,
                 "auxiliary_material_nt": row.auxiliary_material_nt,
                 "endpoint_product_nt": row.endpoint_product_nt,
+                "endpoint_strand_lengths_nt": ";".join(
+                    str(length) for length in row.endpoint_strand_lengths_nt
+                ),
+                "endpoint_paired_positions_bp": row.endpoint_paired_positions_bp,
+                "left_payload_end_offset_bp": row.left_payload_end_offset_bp,
+                "right_payload_end_offset_bp": row.right_payload_end_offset_bp,
                 "candidate_enzyme_programs": row.candidate_enzyme_programs,
                 "recognition_placements_attempted": row.recognition_placements_attempted,
                 "constraint_systems_attempted": row.constraint_systems_attempted,

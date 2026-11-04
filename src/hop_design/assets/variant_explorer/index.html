@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="hop-editor-token" content="__SESSION_TOKEN__" />
+    <title>Hairpin Oligonucleotide Processing · Conditional molecular choices</title>
+    <link rel="stylesheet" href="/editor.css" />
+    <script src="/editor.js" type="module"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="eyebrow">Hairpin Oligonucleotide Processing / Complete molecular designs</span>
+        <h1>Explore a complete preparation</h1>
+        <p id="design-answer" role="status"></p>
+      </header>
+      <section aria-label="Molecular exploration">
+        <details id="choice-space" open>
+          <summary>Explore available choices</summary>
+          <p id="choice-count" aria-live="polite"></p>
+          <div id="parameter-key" aria-label="Molecular parameter definitions"></div>
+          <div id="choice-plot"></div>
+          <p id="choice-detail" class="hint" aria-live="polite">Hover or focus a value or path for its molecular meaning.</p>
+          <p id="choice-empty" role="status"></p>
+          <details class="choice-configuration">
+            <summary>Parameters, comparisons and further evaluation</summary>
+            <p id="status" aria-live="polite"></p>
+        <div id="design-envelope" class="hint" aria-label="Generating constraints and achieved dimensions"></div>
+
+            <p class="hint">Select axis values to narrow complete paths. Arrows move within an axis; Enter applies a value. Choices on one axis mean either; choices across axes apply together.</p>
+          <div id="choice-axis-controls" class="axis-controls"></div>
+          <p class="hint choice-legend"><span>Solid: complete preparation</span> · <span>Dashed: local molecular support only</span> · Faint: excluded by these axis selections. Gaps in a local trace remain unassessed.</p>
+          <p id="choice-color-legend" class="choice-color-legend"></p>
+          <div id="primer-boundary" aria-label="Examined primer boundary"></div>
+          <details><summary>Shared coordinates in the evaluated pool</summary><p id="choice-fixed" class="hint"></p></details>
+          <div class="choice-actions">
+            <button id="clear-choice-filters" class="quiet" hidden>Clear parameter selections</button>
+            <label>Preview preparation<select id="choice-preparation"></select></label>
+            <button id="choice-to-comparison" class="quiet">Define a required set…</button>
+          </div>
+          <p id="choice-preview-context" class="hint"></p>
+          <p class="hint">Brushing filters complete preparations immediately and saves the same CLI/API query. It never expands the generating permissions. Requiring every member remains a separate comparison.</p>
+          <p class="hint">The evaluated pool retains earlier preparations and their original requests. Revised permissions govern future evaluation; selections determine which recorded paths are currently eligible.</p>
+          <button id="revise-envelope" class="quiet">Revise generating permissions…</button>
+          <details id="parameter-evaluation">
+            <summary>Coverage and further bounded evaluation</summary>
+            <p id="choice-coverage-summary"></p>
+            <div class="choice-actions">
+              <label>Maximum new branches<select id="evaluation-branches"><option>1</option><option selected>4</option><option>16</option><option>64</option></select></label>
+              <label>Continuations per branch<select id="evaluation-continuations"><option>1</option><option selected>4</option><option>16</option><option>64</option></select></label>
+              <button id="evaluate-parameters" disabled>Evaluate selected region</button>
+            </div>
+            <p class="hint">Explicit evaluation adds verified preparations under the active generating permissions. The selection, reference and axis order remain fixed. It does not prove that an unsupported value is impossible.</p>
+            <div id="choice-coverage"></div>
+          </details>
+          </details>
+        </details>
+        <dialog id="domain-dialog" aria-labelledby="domain-title">
+          <div class="domain-header"><h2 id="domain-title">Explore parameter domain</h2><button id="close-domain" class="quiet" aria-label="Close parameter exploration">Close</button></div>
+          <p id="domain-error" role="alert"></p>
+          <div id="domain-body"></div>
+        </dialog>
+        <div class="toolbar" aria-label="Molecular choice and processing">
+          <label class="global-choice">Neighborhood<select id="neighborhood"></select></label>
+          <label class="global-choice"
+            ><span id="variant-label">Variant</span
+            ><select
+              id="variant-choice"
+              aria-labelledby="variant-label"
+            ></select
+            ><button id="fixed-variant" hidden></button
+          ></label>
+          <label id="realization-label" hidden
+            >Background<select id="realization"></select
+          ></label>
+          <label>Processing step<select id="inspect-state"></select></label>
+        </div>
+        <p id="achieved" class="hint"></p>
+        <div
+          id="viewport"
+          tabindex="0"
+          aria-label="Complete molecular preview. Scroll the page at fit scale; pinch to zoom, then pan. Home or 0 fits the route. Tab enters a region; arrows inspect bases."
+        ></div>
+        <p id="molecule-stage" class="hint"></p>
+        <p id="construction-cost" class="hint" aria-live="polite"></p>
+        <p id="inspection-detail" class="hint"></p>
+        <p id="inspection-notices" class="hint" aria-live="polite"></p>
+        <button id="clear-focus" class="quiet">Clear inspected position</button>
+        <div class="preview-nav">
+          <span id="position"></span><a id="svg" download>SVG</a
+          ><a id="record" target="_blank" rel="noopener">Exact record</a>
+        </div>
+        <p id="molecular-changes"></p>
+        <p id="material-changes" class="hint"></p>
+        <p id="interface-facts" class="hint"></p>
+        <p id="readiness" class="hint"></p>
+      </section>
+      <details id="permissions">
+        <summary>Edit allowed choices and preserved properties</summary>
+        <section class="controls" aria-label="Preserved properties">
+          <p id="pins" class="hint"></p>
+          <p id="neighborhood-facts" class="hint"></p>
+          <p>
+            These actions change the conditional query. Previewing above leaves
+            these requirements unchanged.
+          </p>
+          <fieldset>
+            <legend>Allowed variants in the active neighborhood</legend>
+            <div id="allowed-variants"></div>
+          </fieldset>
+          <button id="apply-allowed">Apply allowed choices</button>
+          <button id="allow-all" class="quiet">Allow all here</button>
+          <label
+            >Assess choices at
+            <select id="stage">
+              <option value="hairpin">Hairpin</option>
+              <option value="endpoint">Preparation endpoint</option>
+            </select></label
+          >
+          <div>
+            <label
+              >Fixed comparison reference
+              <select id="reference">
+                <option value="">No reference</option>
+              </select></label
+            ><button id="use-reference" class="quiet">
+              Use preview as reference
+            </button>
+          </div>
+          <fieldset>
+            <legend>
+              Preserve relative to that reference, at the comparison stage
+            </legend>
+            <div id="control-options"></div>
+          </fieldset>
+          <button id="keep-surroundings">
+            Keep surroundings of the current neighborhood
+          </button>
+          <p id="surroundings-context" class="hint"></p>
+          <button id="clear-surroundings" class="quiet" hidden>
+            Remove regional preservation
+          </button>
+          <p id="active-controls" class="hint"></p>
+        </section>
+      </details>
+      <details id="required-comparison">
+        <summary>Define a required comparative set</summary>
+        <section aria-label="Required comparison">
+          <h2>Require a comparison</h2>
+          <p>
+            Include every chosen loop on a compatible scaffold background.
+            Shared released interfaces remain required.
+          </p>
+          <div
+            id="required-loops"
+            role="group"
+            aria-label="Required loop members"
+          ></div>
+          <label
+            ><input id="set-surroundings" type="checkbox" /> Require identical
+            sequence outside the loop at the assessment stage</label
+          >
+          <button id="assess-required">Find compatible sets</button>
+          <p id="comparison-status" aria-live="polite"></p>
+          <label
+            >Compatible set
+            <select id="compatible-set"></select
+          ></label>
+          <div id="comparison-preview"></div>
+          <label
+            >Presentation baseline
+            <select id="set-baseline"></select
+          ></label>
+          <button id="retrieve-required" disabled>
+            Retrieve this required set
+          </button>
+          <p id="comparison-handoff" aria-live="polite"></p>
+        </section>
+      </details>
+      <details>
+        <summary>Retrieve explicitly chosen preparations</summary>
+        <section aria-label="Explicit preparation selection">
+          <p>
+            Previewing a molecule does not select it. Include the preparations
+            you intend to retrieve.
+          </p>
+          <button id="include">Include previewed preparation</button>
+          <ul id="members"></ul>
+          <label
+            >Selected baseline
+            <select id="baseline">
+              <option value="">Choose a member</option>
+            </select></label
+          >
+          <button id="retrieve" disabled>Retrieve verified preparations</button>
+          <p id="handoff" aria-live="polite"></p>
+        </section>
+      </details>
+      <details>
+        <summary>Excluded options, failures and coverage</summary>
+        <div id="diagnostics"></div>
+      </details>
+      <p id="error" role="alert"></p>
+      <footer>
+        Specified pairing architecture, not predicted conformation. Browsing
+        does not expand the search or relax preserved properties. Exact requests
+        and the same bounded evaluation are also available through CLI/API. Modeled
+        preparation does not establish recovery, destination compatibility or
+        biological performance.
+      </footer>
+    </main>
+  </body>
+</html>

@@ -123,6 +123,8 @@ def reject_accepted_dispositions(
                 if item.status is CompositionDispositionStatus.ACCEPTED
                 else item.rejection_reason
             ),
+            preparation_constraint=item.preparation_constraint,
+            scaffold_mismatches=item.scaffold_mismatches,
             candidate_enzyme_programs=item.candidate_enzyme_programs,
             recognition_placements_attempted=item.recognition_placements_attempted,
             constraint_systems_attempted=item.constraint_systems_attempted,
@@ -148,6 +150,7 @@ def build_result(
     basal_authority: BasalNeighborhoodDiscoveryResult | None,
     source_partition_authority: SourcePartitionDiscoveryResult | None,
     source_partition_rejection_candidates: tuple[MaterializedConstructionRealization, ...],
+    scaffold_rejection_candidates: tuple[MaterializedConstructionRealization, ...],
     design_bundle_id: str,
     dispositions: tuple[CompositionDisposition, ...],
 ) -> ConstructionSpaceResult:
@@ -191,6 +194,7 @@ def build_result(
         basal_authority=basal_authority,
         source_partition_authority=source_partition_authority,
         source_partition_rejection_candidates=source_partition_rejection_candidates,
+        scaffold_rejection_candidates=scaffold_rejection_candidates,
         realizations=realizations,
         geometry_groups=geometry_groups,
         final_product_groups=product_groups,
@@ -241,8 +245,8 @@ def build_result(
         ),
         projection_inventory=(
             ProjectionInventoryItem(
-                projection_schema="hop.complete-construction-summary/v3",
-                renderer_version="complete-construction-projections/3",
+                projection_schema="hop.complete-construction-summary/v5",
+                renderer_version="complete-construction-projections/5",
                 status=ProjectionInventoryStatus.NOT_GENERATED,
             ),
         ),
