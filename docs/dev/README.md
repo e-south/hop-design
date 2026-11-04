@@ -19,6 +19,8 @@ journey:
   search, comparison, verification and presentation, with focused test seams.
 - [Measure performance](performance.md) separates search, verification and display
   costs, with disposable benchmark outputs and bounded proof reuse.
+- [Reduce duplicate verification](plans/verification-cost.md) plans a small
+  clean-install gate and shared fidelity checks; runner changes remain proposed.
 - [GitHub governance](github-governance.md) defines repository settings,
   required checks, and the evidence unavailable when hosted CI cannot run.
 - [Release process](releasing.md) separates GitHub artifacts from PyPI
