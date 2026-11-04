@@ -5,7 +5,7 @@ intent: Count bounded local configurations and recover exact molecular members.
 audience: [Python users, integrators]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-20
+last_verified: 2026-11-03
 doc_type: how-to
 journey: [discover, verify]
 ---
@@ -64,6 +64,15 @@ alternatives and distinct sequence configurations separate; adding enzyme
 names does not necessarily add molecular diversity. A caller-supplied cut
 definition also does not establish that all necessary biochemical conditions
 have been represented or satisfied.
+
+HOP models sequence assignments, geometry, site placement, pairing and ordered
+processing. Recognition and cut checks use the intermediate at the step where
+the enzyme acts. It does not predict enzyme efficacy or optimize reaction
+conditions; users remain responsible for enzyme handling. The v1 enzyme
+contract's `substrate_requirement` describes strand state, not modified bases.
+Known exceptions such as methylation-dependent recognition should be explicit
+in the caller's catalog documentation; descriptive metadata does not add a
+modeled constraint.
 
 ## What is counted
 
