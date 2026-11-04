@@ -86,11 +86,19 @@ def evaluate_clone_endpoint(
         auxiliaries.forward_primer,
         auxiliaries.reverse_primer,
     )
+    if endpoint.design_parent_span is None:
+        return CombinationEvaluation(
+            rejection_reason=CompositionRejectionCode.DESIGN_ENCODING_MISMATCH,
+            candidate_enzyme_programs=combination.candidate_enzyme_programs,
+            recognition_placements_attempted=combination.recognition_placements_attempted,
+            constraint_systems_attempted=combination.constraint_systems_attempted,
+        )
     release = discover_endpoint_release(
         request=release_request,
         pcr_top=pcr_product,
         design_sequence=request.design.encoding_sequence,
         payload_boundaries=request.design.payload_boundaries,
+        design_parent_span=endpoint.design_parent_span,
     )
     if release.bindings is None:
         return CombinationEvaluation(
@@ -125,6 +133,8 @@ def evaluate_clone_endpoint(
             pcr_top=pcr_product,
             design_sequence=request.design.encoding_sequence,
             bindings=release.bindings,
+            design_parent_span=endpoint.design_parent_span,
+            payload_boundaries=request.design.payload_boundaries,
         )
     except CloneEndGenerationError:
         return CombinationEvaluation(

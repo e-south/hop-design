@@ -1,0 +1,124 @@
+{
+  "schema": "hop.product-request/v1",
+  "name": "public scaffold repertoire",
+  "stem_arm": "ATAACTTCGTATAGCATACATTATACGAAGTTAT",
+  "endpoint": "ssdna_hairpin",
+  "ends": null,
+  "foldback": {
+    "geometry": {
+      "family": "foldback",
+      "nick_strand": "top",
+      "junction_offsets_nt": [
+        2
+      ],
+      "minimum_loop_length_nt": 3,
+      "minimum_annealing_arm_length_bp": 3,
+      "loop_lengths_nt": [
+        3,
+        4,
+        6,
+        8
+      ],
+      "annealing_arm_lengths_bp": [
+        6,
+        9,
+        12
+      ]
+    },
+    "search": {
+      "max_retained_overhead_nt": 32,
+      "max_search_nodes": 100000,
+      "max_realizations": 32,
+      "scope": "existence",
+      "stop": "result_quota",
+      "result_quota": 32
+    },
+    "enzymes": {
+      "allowed_enzyme_ids": [
+        "example:enzyme/nt.bpu10i@1"
+      ],
+      "forbidden_enzyme_ids": [],
+      "reserved_enzyme_ids": [],
+      "max_operations": 2,
+      "role_restrictions": [
+        {
+          "role": "foldback_nick",
+          "allowed_enzyme_ids": [
+            "example:enzyme/nt.bpu10i@1"
+          ]
+        }
+      ]
+    }
+  },
+  "basal": null,
+  "release": null,
+  "enzyme_catalog": {
+    "schema": "hop/characterized-enzyme-catalog/v1",
+    "catalog_id": "example:catalog/public-product@1",
+    "enzymes": [
+      {
+        "schema": "hop/characterized-enzyme/v1",
+        "enzyme_id": "example:enzyme/nt.bpu10i@1",
+        "canonical_name": "Nt.Bpu10I",
+        "enzyme_class": "nickase",
+        "target_molecule": "dna",
+        "recognition_pattern": "CCTNAGC",
+        "recognition_orientation_semantics": "both_orientations",
+        "recognition_length": 7,
+        "substrate_requirement": "duplex_dna",
+        "cut_offset_reference_strand": 2,
+        "cut_offset_complement_strand": null,
+        "resulting_end_model": "nick",
+        "characterization_source": {
+          "system": "manufacturer",
+          "kind": "recognition-and-cleavage-definition",
+          "id": "https://www.thermofisher.cn/order/catalog/product/hk/en/ER2011"
+        },
+        "vendor_metadata": []
+      }
+    ]
+  },
+  "materialization": {
+    "source_preparation": {
+      "source_ssdna": {
+        "mode": "derive",
+        "five_prime_end": "hydroxyl",
+        "three_prime_end": "hydroxyl"
+      },
+      "forward_primer": {
+        "mode": "derive",
+        "annealing_length_nt": 10
+      },
+      "reverse_primer": {
+        "mode": "derive",
+        "annealing_length_nt": 14
+      }
+    }
+  },
+  "local_constraints": {
+    "preserve_payload": true,
+    "forbid_unintended_actionable_sites": true,
+    "require_all_members_compatible": false
+  },
+  "preferences": {
+    "retained_construction": "compact",
+    "payload_compatibility": "report",
+    "ranking": "none",
+    "preferred_enzyme_ids": []
+  },
+  "whole_route_constraints": {
+    "preserve_payload": true,
+    "reject_unintended_actionable_sites": true,
+    "require_exact_materials": true,
+    "require_all_combinations_valid": false
+  },
+  "enumeration": {
+    "pruning": "disabled",
+    "max_combinations": 1,
+    "max_realizations": 1
+  },
+  "hairpin_basal_component": {
+    "left_arm": "AGTCGCAATG",
+    "right_arm": "CATTGCGACT"
+  }
+}

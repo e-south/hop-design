@@ -18,6 +18,7 @@ from hop_design.models.construction.enzyme_binding import (
     ConstructionEnzymeBinding,
     derive_cohesive_end,
 )
+from hop_design.models.coordinates import Span
 from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.reaction_replay import scan_actionable_sites
 from hop_design.models.reactions import ActionableEnzymeBinding, ReactionMolecule, ReactionState
@@ -55,6 +56,7 @@ def discover_endpoint_release(
     pcr_top: str,
     design_sequence: str,
     payload_boundaries: tuple[int, int],
+    design_parent_span: Span,
 ) -> EndpointReleaseDiscovery:
     """Return one unique exact site pair after bounded exhaustive assessment."""
     state = ReactionState(
@@ -96,6 +98,8 @@ def discover_endpoint_release(
                 parent_length=len(pcr_top),
                 template_sequence=pcr_top,
                 design_sequence=design_sequence,
+                design_parent_span=design_parent_span,
+                payload_boundaries=payload_boundaries,
             )
             left_end = derive_cohesive_end(
                 side="left",
@@ -113,7 +117,7 @@ def discover_endpoint_release(
             )
             if clone_payload_end_offsets(
                 ends=(left_end, right_end),
-                encoding_start=geometry.encoding_span.start.offset,
+                encoding_start=geometry.design_parent_span.start.offset,
                 payload_boundaries=payload_boundaries,
             ) != (request.left.payload_end_offset_bp, request.right.payload_end_offset_bp):
                 continue

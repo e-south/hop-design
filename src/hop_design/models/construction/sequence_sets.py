@@ -146,3 +146,21 @@ class SequenceSet(HopModel):
                     break
                 rank -= count
         return "".join(sequence)
+
+    def rank_of(self, sequence: str) -> int:
+        """Locate an exact member without enumerating its lexicographic predecessors."""
+        if not self.contains(sequence):
+            raise ValueError("Sequence is not a member of this sequence set.")
+        rank, current = 0, self.root
+        for position, selected in enumerate(sequence):
+            branches = (
+                self.decisions[current - 2].branches
+                if self._position(current) == position
+                else (current,) * 4
+            )
+            for base, child in zip(BASE_ORDER, branches, strict=True):
+                if base == selected:
+                    current = child
+                    break
+                rank += self._suffix_counts[child] * 4 ** (self._position(child) - position - 1)
+        return rank

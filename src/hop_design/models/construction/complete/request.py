@@ -31,6 +31,7 @@ from hop_design.models.construction.payload import (
     RouteFamily,
     _content_id,
 )
+from hop_design.models.construction.scaffold import HairpinScaffoldRequirements
 from hop_design.models.enzymes import EnzymeClass, EnzymeProvisioningPolicy, EnzymeRole
 from hop_design.models.molecular_state import StrandEnd
 from hop_design.models.physical import SiteOrientation
@@ -168,6 +169,9 @@ class WholeRouteConstraints(HopModel):
     reject_unintended_actionable_sites: Literal[True] = True
     require_exact_materials: Literal[True] = True
     require_all_combinations_valid: bool = False
+    hairpin_scaffold: HairpinScaffoldRequirements | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class ConstructionDiscoveryRequest(HopModel):
@@ -230,16 +234,23 @@ class ConstructionDiscoveryRequest(HopModel):
         if self.foldback_intermediate_endpoint is not ConstructionEndpoint.SSDNA_HAIRPIN:
             raise ValueError("The foldback intermediate must be an ssDNA hairpin.")
         auxiliaries = self.materialization.endpoint_auxiliaries
+        adapter = self.materialization.adapter_ligation
+        adapter_endpoint = self.endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN
+        if (adapter is not None) != adapter_endpoint:
+            raise ValueError("Adapter-only material policy must match the requested endpoint.")
         if self.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             if self.basal_result_id is not None:
                 raise ValueError("A direct endpoint must omit basal authority.")
             if auxiliaries is not None or self.release is not None:
                 raise ValueError("A direct endpoint must omit endpoint auxiliaries.")
-        elif self.basal_result_id is None or auxiliaries is None:
+        elif self.basal_result_id is None or (auxiliaries is None and not adapter_endpoint):
             raise ValueError(
                 "PCR-bearing endpoints require endpoint auxiliary policies plus basal authority."
             )
-        elif self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        elif self.endpoint in {
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+        }:
             if self.release is not None:
                 raise ValueError("A hairpin PCR endpoint must omit clone release.")
         elif self.release is None:

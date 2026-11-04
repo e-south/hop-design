@@ -191,7 +191,7 @@ def test_route_design_supports_non_four_base_basal_arms() -> None:
 
 
 @pytest.mark.parametrize(("local_pair_count", "end_offset"), ((6, 0), (4, 2)))
-def test_clone_design_uses_release_span_independently_of_local_pair_count(
+def test_clone_design_preserves_association_independently_of_release_span(
     local_pair_count: int, end_offset: int
 ) -> None:
     payload = _payload()
@@ -215,12 +215,12 @@ def test_clone_design_uses_release_span_independently_of_local_pair_count(
         basal_realization_id=selected.basal_realization_id,
     )
     junction = compilation.spec.basal_junction
-    assert junction.left_arm == "A" * (end_offset + 4)
-    assert junction.right_arm == "T" * (end_offset + 4)
+    assert junction.left_arm == "A" * local_pair_count
+    assert junction.right_arm == "T" * local_pair_count
     assert len(selected.projection.pairing_state.pairs) == local_pair_count
 
 
-def test_clone_design_requires_exact_bases_across_the_declared_release_span() -> None:
+def test_clone_design_does_not_invent_adapter_bases_for_a_later_release_span() -> None:
     payload = _payload()
     foldback = _foldback(payload)
     basal = _clone_basal_result(
@@ -231,16 +231,22 @@ def test_clone_design_requires_exact_bases_across_the_declared_release_span() ->
         payload_end_offset_bp=6,
     )
     assert basal.realizations
-    with pytest.raises(ValueError, match="undetermined adapter bases"):
-        construction.compile_design_from_local_realizations(
-            design_id="undetermined-release-gap",
-            payload_sequence=payload.payload.sequence,
-            endpoint="clone_ready_duplex",
-            foldback=_receipt(foldback),
-            foldback_realization_id=foldback.realizations[0].foldback_realization_id,
-            basal=_receipt(basal),
-            basal_realization_id=basal.realizations[0].basal_realization_id,
-        )
+    compilation = construction.compile_design_from_local_realizations(
+        design_id="separate-release-gap",
+        payload_sequence=payload.payload.sequence,
+        endpoint="clone_ready_duplex",
+        foldback=_receipt(foldback),
+        foldback_realization_id=foldback.realizations[0].foldback_realization_id,
+        basal=_receipt(basal),
+        basal_realization_id=basal.realizations[0].basal_realization_id,
+    )
+    # This authority describes the exact four-position paired core. A requested
+    # later 6-bp gap plus 4-nt end cannot create ten bases in either core arm.
+    # Completing the release still requires exact materials and cut evidence.
+    junction = compilation.spec.basal_junction
+    assert junction.left_arm == "AAAA"
+    assert junction.right_arm == "TTTT"
+    assert junction.pair_count.value == 4
 
 
 def test_route_design_reuses_receipt_verification_without_discovery_replay(

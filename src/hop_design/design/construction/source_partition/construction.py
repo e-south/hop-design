@@ -19,7 +19,11 @@ from hop_design.design.construction.complete.bundle import (
     VerifiedConstructionBundle,
 )
 from hop_design.design.source_documents import load_source_mapping
+from hop_design.models.construction.complete import ConstructionSpaceResult
 from hop_design.models.construction.complete.source_partition.facts import route_fragment_fact
+from hop_design.models.construction.complete.source_preparation import (
+    SourceDuplexPreparationAuthority,
+)
 from hop_design.models.construction.complete.state import ConstructionStatePhase
 from hop_design.models.construction.payload import PayloadSourceMap, PayloadSourceSegment
 from hop_design.models.construction.source_partition.request import (
@@ -30,10 +34,15 @@ from hop_design.models.construction.source_partition.request import (
     SourcePartitionSurvivor,
 )
 from hop_design.models.coordinates import Boundary, Span
+from hop_design.models.molecular_state import MolecularStrand
 
 from .candidate import prepare_combination_source
 from .discovery import discover_source_partitions
 from .public import SourcePartitionDiscovery
+
+_SelectedSource = tuple[
+    SourceDuplexPreparationAuthority, PayloadSourceMap, tuple[MolecularStrand, ...]
+]
 
 
 def discover_construction_source_partition(
@@ -49,6 +58,46 @@ def discover_construction_source_partition(
     if (materialized_realization_id is None) == (combination_ordinal is None):
         raise ValueError("Select exactly one materialized realization or combination ordinal.")
     result = receipt._verified_source().result
+    selected = _selected_source(
+        result,
+        materialized_realization_id=materialized_realization_id,
+        combination_ordinal=combination_ordinal,
+    )
+    mapping = load_source_mapping(policy_path, source_label="HOP source-partition policy")
+    if mapping.get("schema") != "hop.source-partition-policy/v1":
+        raise ValueError(
+            f"Unsupported HOP source-partition policy schema: {mapping.get('schema')!r}."
+        )
+    policy = ConstructionSourcePartitionPolicy.model_validate_json(json.dumps(mapping))
+    request = _partition_request(result, policy, selected)
+    return SourcePartitionDiscovery._create(discover_source_partitions(request))
+
+
+def construction_partition_request(
+    result: ConstructionSpaceResult,
+    policy: ConstructionSourcePartitionPolicy,
+    *,
+    materialized_realization_id: str | None = None,
+    combination_ordinal: int | None = None,
+) -> SourcePartitionDiscoveryRequest:
+    """Derive the same exact survivor request for file and in-memory callers."""
+    selected = _selected_source(
+        result,
+        materialized_realization_id=materialized_realization_id,
+        combination_ordinal=combination_ordinal,
+    )
+    return _partition_request(result, policy, selected)
+
+
+def _selected_source(
+    result: ConstructionSpaceResult,
+    *,
+    materialized_realization_id: str | None,
+    combination_ordinal: int | None,
+) -> _SelectedSource:
+    """Validate molecular selection before reading an unrelated policy file."""
+    if (materialized_realization_id is None) == (combination_ordinal is None):
+        raise ValueError("Select exactly one materialized realization or combination ordinal.")
     if combination_ordinal is not None:
         preparation, payload_source_map, selected_strands = prepare_combination_source(
             result, combination_ordinal
@@ -73,12 +122,15 @@ def discover_construction_source_partition(
             for state in realization.construction_program.states
             if state.phase is ConstructionStatePhase.SELECTED_FRAGMENTS
         )
-    mapping = load_source_mapping(policy_path, source_label="HOP source-partition policy")
-    if mapping.get("schema") != "hop.source-partition-policy/v1":
-        raise ValueError(
-            f"Unsupported HOP source-partition policy schema: {mapping.get('schema')!r}."
-        )
-    policy = ConstructionSourcePartitionPolicy.model_validate_json(json.dumps(mapping))
+    return preparation, payload_source_map, selected_strands
+
+
+def _partition_request(
+    result: ConstructionSpaceResult,
+    policy: ConstructionSourcePartitionPolicy,
+    selected: _SelectedSource,
+) -> SourcePartitionDiscoveryRequest:
+    preparation, payload_source_map, selected_strands = selected
     top, bottom = (item.material for item in preparation.produced_material_bindings)
     facts = tuple(
         route_fragment_fact(
@@ -90,7 +142,7 @@ def discover_construction_source_partition(
         for strand in selected_strands
     )
     source_id = "source-duplex"
-    request = SourcePartitionDiscoveryRequest(
+    return SourcePartitionDiscoveryRequest(
         payload=result.request.payload,
         source=SourceDuplexMaterial(
             material_id=source_id,
@@ -128,7 +180,6 @@ def discover_construction_source_partition(
         ),
         enumeration=policy.enumeration,
     )
-    return SourcePartitionDiscovery._create(discover_source_partitions(request))
 
 
 __all__ = ["discover_construction_source_partition"]

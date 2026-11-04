@@ -16,32 +16,13 @@ import io
 from hop_design.export.construction.csv_common import writer
 from hop_design.export.fasta import render_fasta_records
 from hop_design.models.construction.complete import MaterializedConstructionRealization
-from hop_design.models.construction.complete.material import (
-    ExactConstructionMaterial,
-    MaterialRouteEntry,
-    MaterialUse,
+from hop_design.models.construction.projections.materials import (
+    external_material_uses as external_material_uses,
+)
+from hop_design.models.construction.projections.materials import (
+    external_oligos as external_oligos,
 )
 from hop_design.models.plan import SequenceRecord
-
-
-def external_oligos(
-    realization: MaterializedConstructionRealization,
-) -> tuple[tuple[ExactConstructionMaterial, tuple[MaterialUse, ...]], ...]:
-    """Group external uses by molecular identity, preserving first-use order."""
-    preparation = realization.source_preparation
-    entries = (
-        (preparation.source_ssdna, preparation.source_ssdna_use),
-        (preparation.forward_primer.oligo, preparation.forward_primer_use),
-        (preparation.reverse_primer.oligo, preparation.reverse_primer_use),
-        *zip(realization.materials, realization.material_uses, strict=True),
-    )
-    materials: dict[str, ExactConstructionMaterial] = {}
-    uses: dict[str, list[MaterialUse]] = {}
-    for material, use in entries:
-        if use.route_entry is MaterialRouteEntry.REQUIRED_EXTERNAL:
-            materials[material.material_id] = material
-            uses.setdefault(material.material_id, []).append(use)
-    return tuple((material, tuple(uses[key])) for key, material in materials.items())
 
 
 def render_oligos_csv(realization: MaterializedConstructionRealization) -> bytes:

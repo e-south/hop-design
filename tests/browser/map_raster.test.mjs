@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const source=await readFile(new URL('../../src/hop_design/assets/design_explorer/map_raster.js',import.meta.url),'utf8').catch(()=> '');
+const uri=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+test('canvas transform uses uniform SVG meet geometry and bounded pixel density',async()=>{
+  assert.ok(source,'map_raster.js exists');const {mapTransform}=await import(uri(source));
+  assert.deepEqual(mapTransform([10,20,100,200],400,200,3),{ratio:2,scale:2,x:280,y:-40,width:800,height:400});
+});
+test('canvas lifecycle paints cloud once, highlights separately, and restores SVG on close',async t=>{
+  assert.ok(source,'map_raster.js exists');
+  const saved={document:globalThis.document,MutationObserver:globalThis.MutationObserver,ResizeObserver:globalThis.ResizeObserver,requestAnimationFrame:globalThis.requestAnimationFrame,cancelAnimationFrame:globalThis.cancelAnimationFrame,Path2D:globalThis.Path2D,devicePixelRatio:globalThis.devicePixelRatio};
+  t.after(()=>Object.assign(globalThis,saved));
+  const observers=[],frames=new Map(),contexts=[];let serial=0;
+  globalThis.requestAnimationFrame=fn=>{frames.set(++serial,fn);return serial;};globalThis.cancelAnimationFrame=id=>frames.delete(id);
+  const flush=()=>{const values=[...frames.values()];frames.clear();values.forEach(fn=>fn());};
+  globalThis.MutationObserver=class{constructor(fn){this.fn=fn;observers.push(this);}observe(target,options){this.options=options;}disconnect(){this.closed=true;}};
+  globalThis.ResizeObserver=class{constructor(fn){this.fn=fn;}observe(){}disconnect(){this.closed=true;}};
+  globalThis.Path2D=class{};globalThis.devicePixelRatio=3;
+  const canvas=()=>{const ctx={clears:0,arcs:0,fills:[],strokes:0,setTransform(){},clearRect(){this.clears++;},beginPath(){},arc(){this.arcs++;},fill(){this.fills.push({color:this.fillStyle,alpha:this.globalAlpha});},stroke(){this.strokes++;},setLineDash(){}};contexts.push(ctx);return {style:{},dataset:{},setAttribute(){},addEventListener(){},removeEventListener(){},getContext:()=>ctx,remove(){this.removed=true;}};};
+  globalThis.document={createElement:canvas};
+  const group={dataset:{selected:'false'},getAttribute(){return null;}};
+  const circle={parentElement:group,closest:()=>group,getAttribute:key=>({cx:'10',cy:'20',r:'2',fill:'#216e72',stroke:'#216e72','stroke-width':'1','stroke-dasharray':'none'}[key]??null)};
+  const excluded={...circle,getAttribute:key=>key==='fill'?'white':circle.getAttribute(key)};
+  const svg={style:{},getAttribute:key=>key==='viewBox'?'0 0 100 100':null,querySelectorAll:query=>query==='[data-preparations]'?Array(1024).fill(group):query==='circle'?[...Array(1023).fill(circle),excluded]:[],contains:()=>true};
+  const host={children:[],querySelector:()=>svg,append(...els){this.children.push(...els);},getBoundingClientRect:()=>({width:400,height:200})};
+  const {mapRaster}=await import(uri(source));const raster=mapRaster(host);raster.attach('similarity');flush();
+  assert.equal(svg.style.opacity,'0');assert.equal(contexts[0].arcs,1024);assert.equal(host.children[0].width,800);
+  assert.equal(contexts[0].fills.length,1023,'Hollow SVG marks must not wash out neighboring cloud points');
+  assert.ok(contexts[0].fills.every(p=>p.alpha>0&&p.alpha<1),'Raster fallback preserves translucent density');
+  assert.equal(contexts[0].strokes,1,'Only the hollow mark has a cloud outline');
+  const cloudClears=contexts[0].clears;group.dataset.linkedCount='1';
+  // Dispatch directly to the observer subscribed to selected/linked attributes.
+  const changes=observers.find(o=>o.options?.attributeFilter);
+  changes.fn([{type:'attributes',target:group,attributeName:'data-linked-count'}]);flush();
+  assert.equal(contexts[0].clears,cloudClears,'Point focus does not repaint dense cloud');assert.ok(contexts[1].arcs>0);
+  changes.fn([{type:'attributes',target:svg,attributeName:'viewBox'}]);flush();
+  assert.equal(contexts[0].clears,cloudClears+1,'Camera changes repaint the cloud');
+  raster.attach('families');assert.equal(svg.style.opacity,'');
+  raster.close();assert.equal(frames.size,0);assert.ok(observers.every(o=>o.closed));
+});

@@ -52,10 +52,14 @@ def derive_clone_end_program(
     program, projection = derive_clone_end_program_for_template(
         pcr_top=top.sequence,
         bindings=digest.bindings,
-        design_sequence=digest.encoding_projection.sequence,
+        design_sequence=digest.release_evidence.design_parent_projection.sequence,
+        design_parent_span=digest.release_evidence.design_parent_projection.source_span,
+        payload_boundaries=digest.payload_boundaries,
     )
-    if projection != digest.encoding_projection.source_span:
-        raise CloneEndGenerationError("Clone program must preserve the exact design union.")
+    if projection != digest.release_evidence.design_parent_projection.source_span:
+        raise CloneEndGenerationError(
+            "Clone program must preserve the exact parent-core projection."
+        )
     expected_post = tuple(item.reference_sequence_5prime for item in program.states[-1].molecules)
     if expected_post != tuple(strand.sequence for strand in digest.strands):
         raise CloneEndGenerationError("Clone program must preserve exact digest products.")
@@ -67,6 +71,8 @@ def derive_clone_end_program_for_template(
     pcr_top: str,
     design_sequence: str,
     bindings: tuple[ConstructionEnzymeBinding, ConstructionEnzymeBinding],
+    design_parent_span: Span,
+    payload_boundaries: tuple[int, int],
 ) -> tuple[ReactionProgram, Span]:
     """Derive exact end-generation reaction bytes from one complete PCR template."""
     geometry = derive_clone_cut_geometry(
@@ -74,6 +80,8 @@ def derive_clone_end_program_for_template(
         parent_length=len(pcr_top),
         template_sequence=pcr_top,
         design_sequence=design_sequence,
+        design_parent_span=design_parent_span,
+        payload_boundaries=payload_boundaries,
     )
     pcr_bottom = reverse_complement_iupac(pcr_top)
     primary_sequence = pcr_top[
@@ -142,7 +150,7 @@ def derive_clone_end_program_for_template(
             states=(pre, post),
             stages=(stage,),
         ),
-        geometry.encoding_span,
+        geometry.design_parent_span,
     )
 
 

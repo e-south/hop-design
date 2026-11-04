@@ -92,12 +92,14 @@ class LocalNeighborhoodRequest(HopModel):
     def _validate_basal_endpoint(self, domain: BasalGeometryDomain) -> None:
         if self.endpoint not in {
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
             ConstructionEndpoint.CLONE_READY_DUPLEX,
         }:
             raise ValueError("Basal local discovery requires a PCR-bearing construction endpoint.")
-        if self.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and (
-            domain.future_release is not None
-        ):
+        if self.endpoint in {
+            ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+        } and (domain.future_release is not None):
             raise ValueError("A hairpin PCR basal search must omit future end generation.")
         if self.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX and (
             domain.future_release is None

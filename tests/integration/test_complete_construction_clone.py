@@ -422,7 +422,7 @@ def test_complete_release_retains_independent_paired_basal_gap(tmp_path: Path) -
         verified.result.failure_reasons
     )
     (realization,) = verified.result.realizations
-    assert realization.final_product.encoding_projection.sequence == encoding
+    assert realization.final_product.design_projection.sequence == encoding
     assert [end.sequence for end in realization.final_product.cohesive_ends] == ["AAAA", "AAAA"]
     assert [len(strand.sequence) for strand in realization.final_product.strands] == [
         len(encoding) - 4
@@ -518,7 +518,7 @@ def test_clone_endpoint_preserves_selected_source_partition_through_bundle_repla
     assert realization.source_partition_plan is not None
     assert realization.source_partition_plan.realization == selected
     assert realization.source_partition_binding is not None
-    assert realization.final_product.encoding_projection.sequence == encoding
+    assert realization.final_product.design_projection.sequence == encoding
     compilation = compile_construction_bundle(verified)
     loaded = load_verified_construction_bundle(compilation.write(tmp_path / "construction"))
     assert loaded.result_id == result.result_id
@@ -576,7 +576,7 @@ def test_clone_ready_endpoint_extends_exact_pcr_route_through_end_generation(
         encoding[:4],
         reverse_complement_iupac(encoding[-4:]),
     )
-    projection = realization.final_product.encoding_projection
+    projection = realization.final_product.design_projection
     assert projection.sequence == encoding
     assert projection.source_span.start.offset == 6
     assert projection.source_span.end.offset == 6 + len(encoding)
@@ -721,7 +721,7 @@ def test_clone_ready_accepts_both_duplex_foldback_orientations(
             for strand in state.molecules
             for lineage in strand.lineage
         } <= material_use_ids
-        assert item.final_product.encoding_projection.sequence == request.design.encoding_sequence
+        assert item.final_product.design_projection.sequence == request.design.encoding_sequence
 
 
 def test_clone_endpoint_does_not_infer_release_ends_from_basal_pairing_mismatch(
@@ -1181,10 +1181,15 @@ def test_clone_replay_rejects_terminal_pairing_and_design_union_forgeries(
             "pairings": reversed_pairings,
         }
     )
+    evidence = product.release_evidence
+    assert evidence is not None
+    changed_union = evidence.released_union_projection.model_copy(
+        update={"orientation": BindingOrientation.REVERSE_COMPLEMENT_5TO3}
+    )
     changed_projection_product = product.model_copy(
         update={
-            "encoding_projection": product.encoding_projection.model_copy(
-                update={"orientation": BindingOrientation.REVERSE_COMPLEMENT_5TO3}
+            "release_evidence": evidence.model_copy(
+                update={"released_union_projection": changed_union}
             )
         }
     )
@@ -1193,7 +1198,7 @@ def test_clone_replay_rejects_terminal_pairing_and_design_union_forgeries(
         validate_clone_realization(
             realization.model_copy(update={"final_product": changed_pairing_product})
         )
-    with pytest.raises(ValueError, match="exact pre-digest cut union"):
+    with pytest.raises(ValueError, match="Clone release evidence"):
         validate_clone_realization(
             realization.model_copy(update={"final_product": changed_projection_product})
         )

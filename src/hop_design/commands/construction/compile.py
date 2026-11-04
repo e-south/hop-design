@@ -25,9 +25,32 @@ def compile_local_design_command(
     output: Annotated[Path, typer.Option("--out")],
     basal: Annotated[Path | None, typer.Option("--basal")] = None,
     basal_realization_id: Annotated[str | None, typer.Option("--basal-realization-id")] = None,
+    hairpin_left_arm: Annotated[
+        str | None,
+        typer.Option(
+            "--hairpin-left-arm", help="Exact left basal arm, 5'-to-3', for ssdna_hairpin."
+        ),
+    ] = None,
+    hairpin_right_arm: Annotated[
+        str | None,
+        typer.Option(
+            "--hairpin-right-arm", help="Exact right basal arm, 5'-to-3', for ssdna_hairpin."
+        ),
+    ] = None,
 ) -> None:
     """Publish one exact design from selected replay-verified local result files."""
     try:
+        hairpin_basal_arms = None
+        if endpoint == "ssdna_hairpin":
+            if hairpin_left_arm is None or hairpin_right_arm is None:
+                raise ValueError(
+                    "ssdna_hairpin requires both --hairpin-left-arm and --hairpin-right-arm."
+                )
+            if basal is not None or basal_realization_id is not None:
+                raise ValueError("ssdna_hairpin must omit basal discovery selection.")
+            hairpin_basal_arms = (hairpin_left_arm, hairpin_right_arm)
+        elif hairpin_left_arm is not None or hairpin_right_arm is not None:
+            raise ValueError("Hairpin arm options are only for --endpoint ssdna_hairpin.")
         compiled = construction.compile_design_from_local_realizations(
             design_id=design_id,
             payload_sequence=payload,
@@ -38,6 +61,7 @@ def compile_local_design_command(
             if basal is not None
             else None,
             basal_realization_id=basal_realization_id,
+            hairpin_basal_arms=hairpin_basal_arms,
         )
         compiled.write(output)
         typer.echo(design_report(compiled))

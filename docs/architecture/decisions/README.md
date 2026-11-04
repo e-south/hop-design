@@ -15,9 +15,13 @@ journey:
 
 # Architecture decision index
 
+- [0048: Stage controls, required-member search and prior-material reuse](0048-stage-controlled-required-panels.md)
+
 Decision records preserve historical context. Active product contracts live in
 the language, method, provenance, and reference sections; when a later decision
 amends an earlier one, the earlier frontmatter names the current decision.
+
+- [0054: Resolve optional construction intent before discovery](0054-optional-construction-intent.md)
 
 ## Package and product boundary
 
@@ -32,6 +36,8 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0027: Compile construction from strict files behind a narrow facade](0027-file-oriented-construction-facade.md)
 
 ## Payload-centered construction
+
+- [0053: Separate hairpin-core geometry from insert-release boundaries](0053-separate-hairpin-core-and-insert-release.md) — amends 0031
 
 - [0025: Center construction discovery on final payload geometry](0025-payload-centered-construction-discovery.md) — amended by 0028
 - [0026: Compose complete construction chronology around enzyme phases](0026-compose-complete-construction-chronology.md) — amends 0020
@@ -57,6 +63,10 @@ amends an earlier one, the earlier frontmatter names the current decision.
 
 ## States, discovery, and views
 
+- [0055: Discovery objectives and permission revisions](0055-discovery-objectives-and-permission-revisions.md)
+
+- [0052: Resumable complete-interface surveys](0052-resumable-interface-surveys.md)
+
 - [0036: Command and artifact handoffs](0036-external-command-artifact-boundary.md)
 
 - [0004: Route state and sequence orientation](0004-route-state-and-sequence-orientation.md)
@@ -67,3 +77,28 @@ amends an earlier one, the earlier frontmatter names the current decision.
 - [0017: Materialize released-foldback precursors inside caller domains](0017-materialize-released-foldback-precursors-inside-caller-domains.md) — amended by 0023
 - [0018: Join hairpin-junction processing on one strand](0018-join-hairpin-junction-processing-on-one-strand.md) — amended by 0023
 - [0019: Project junction-route views from the route](0019-project-junction-route-views-from-the-route.md) — amended by 0023
+
+- [0037: Product request authoring](0037-product-request-authoring.md).
+- [0038: Bounded request execution](0038-bounded-request-execution.md).
+
+- [0039: scaffold comparison intent and explicit family revision](0039-scaffold-comparison-and-revision.md)
+- [0040: explicit molecular comparison controls](0040-explicit-comparison-controls.md)
+- [0041: reference-bound family matching](0041-reference-bound-family-matching.md)
+
+- [0042: complete scaffold options](0042-complete-scaffold-options.md)
+
+- [0043: product-driven scaffold discovery](0043-product-driven-scaffold-discovery.md)
+
+- [0044: molecular comparison briefs](0044-molecular-comparison-briefs.md)
+- [0045: Adapter-ligated hairpin endpoint](0045-adapter-ligated-hairpin-endpoint.md)
+
+- [0046: Grouped scaffold comparisons](0046-grouped-scaffold-comparisons.md)
+- [0047: Terminal scaffold specification](0047-terminal-scaffold-specification.md)
+
+- [0049: Conditional variant exploration](0049-conditional-variant-exploration.md)
+
+- [0050: Intent-preserving inspection and comparison](0050-intent-preserving-inspection-and-comparison.md)
+
+- [0051: Explicit construction envelope revisions](0051-explicit-envelope-revisions.md)
+
+- [0056: Inspectable atlas editions](0056-inspectable-atlas-editions.md)

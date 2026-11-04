@@ -19,6 +19,7 @@ from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
 from hop_design.models.junction import Strand
+from hop_design.models.sequence import normalize_dna_sequence
 
 from .basal_release import BasalFutureReleaseRequirement
 from .sequence_domain import SequenceDomainPartition
@@ -75,6 +76,19 @@ class FoldbackGeometryDomain(HopModel):
     minimum_annealing_arm_length_bp: int = Field(default=3, ge=3)
     loop_lengths_nt: tuple[int, ...] = ()
     annealing_arm_lengths_bp: tuple[int, ...] = ()
+    loop_sequences: tuple[str, ...] | None = Field(
+        default=None, min_length=1, max_length=64, exclude_if=lambda value: value is None
+    )
+
+    @field_validator("loop_sequences")
+    @classmethod
+    def exact_loop_words(cls, values: tuple[str, ...] | None) -> tuple[str, ...] | None:
+        if values is None:
+            return None
+        words = tuple(normalize_dna_sequence(v, allow_degenerate=False) for v in values)
+        if len(words) != len(set(words)):
+            raise ValueError("Exact loop sequences must not repeat.")
+        return tuple(sorted(words))
 
     @field_validator(
         "junction_offsets_nt",
@@ -92,6 +106,12 @@ class FoldbackGeometryDomain(HopModel):
 
     @model_validator(mode="after")
     def validate_domain(self) -> FoldbackGeometryDomain:
+        if self.loop_sequences is not None and any(
+            len(word) < self.minimum_loop_length_nt
+            or (self.loop_lengths_nt and len(word) not in self.loop_lengths_nt)
+            for word in self.loop_sequences
+        ):
+            raise ValueError("Exact loop sequence lengths must lie within the permitted geometry.")
         if not self.junction_offsets_nt:
             raise ValueError("Foldback discovery requires a finite junction-offset domain.")
         if self.loop_lengths_nt and min(self.loop_lengths_nt) < self.minimum_loop_length_nt:

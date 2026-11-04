@@ -5,6 +5,9 @@ from __future__ import annotations
 from hop_design.design.basal import evaluate_basal_pairing
 from hop_design.design.bundle import design_report, load_verified_bundle, verify_bundle
 from hop_design.design.compile import check_spec, compile_spec, create_catalog_spec
+from hop_design.design.construction.navigation.inspection_projection import (
+    _InspectionProjection as _InspectionProjection,
+)
 from hop_design.design.design_space import plan_design_space
 from hop_design.design.foldback import evaluate_foldback
 from hop_design.design.loading import load_spec

@@ -18,9 +18,14 @@ from pydantic import Field
 
 from hop_design.models.base import HopModel
 from hop_design.models.construction.payload import _content_id
+from hop_design.models.construction.scaffold import ScaffoldMismatch
 
 from .accounting import CompositionEnumerationPolicy
 from .evaluation import CompositionRejectionCode
+from .preparation_diagnostics import (
+    PreparationConstraintDiagnostic,
+    validate_preparation_constraint,
+)
 
 
 class ConstructionCompositionExecution(HopModel):
@@ -28,7 +33,7 @@ class ConstructionCompositionExecution(HopModel):
 
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")
     hop_version: str
-    route_implementation_version: Literal["complete-construction/9"] = "complete-construction/9"
+    route_implementation_version: Literal["complete-construction/11"] = "complete-construction/11"
     enumeration: CompositionEnumerationPolicy
     environment: dict[str, str] = Field(default_factory=dict)
 
@@ -42,7 +47,7 @@ class ConstructionCompositionProvenance(HopModel):
     """Exact upstream authorities and implementation identity for composition."""
 
     hop_version: str
-    route_implementation_version: Literal["complete-construction/9"] = "complete-construction/9"
+    route_implementation_version: Literal["complete-construction/11"] = "complete-construction/11"
     foldback_result_id: str = Field(pattern=r"^hop:foldback-neighborhood-result/[0-9a-f]{64}@1$")
     basal_result_id: str | None = Field(
         default=None,
@@ -97,12 +102,21 @@ class CompositionDisposition(HopModel):
         pattern=r"^hop:materialized-construction/[0-9a-f]{64}@1$",
     )
     rejection_reason: CompositionRejectionCode | None = None
+    preparation_constraint: PreparationConstraintDiagnostic | None = None
+    scaffold_mismatches: tuple[ScaffoldMismatch, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
     truncation_reason: str | None = None
     candidate_enzyme_programs: int = Field(ge=0)
     recognition_placements_attempted: int = Field(ge=0)
     constraint_systems_attempted: int = Field(ge=0)
 
     def model_post_init(self, __context: object) -> None:
+        validate_preparation_constraint(self.rejection_reason, self.preparation_constraint)
+        if bool(self.scaffold_mismatches) != (
+            self.rejection_reason is CompositionRejectionCode.HAIRPIN_SCAFFOLD_OUTSIDE_REQUEST
+        ):
+            raise ValueError("Scaffold rejection requires its exact dimension mismatches.")
         accepted = self.materialized_realization_id is not None
         rejected = self.rejection_reason is not None
         truncated = self.truncation_reason is not None

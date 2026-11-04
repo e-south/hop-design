@@ -1,8 +1,8 @@
 ---
 name: hop-design-user
-description: Use HOP to preview spaces, compile designs or construction routes, run discovery or methods, render views, and verify handoffs. Do not use for code changes, lab protocols, private biology, or generic sequence analysis.
+description: Discover complete HOP hairpins or inserts from a stem and optional constraints; inspect routes, retrieve oligos, compile designs and verify bundles. Do not use for code changes or lab protocols.
 metadata:
-  version: 0.8.2
+  version: 0.8.3
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation, construction]
 ---
@@ -11,16 +11,18 @@ metadata:
 
 ## Scope
 
-Use HOP as the authority for hairpin meaning. Never invent a paired arm,
-junction, route, or destination constraint outside a typed contract.
+Use HOP's public requests to specify molecules and retrieve their preparations.
+HOP derives paired arms, junctions and processing states from those requests.
 
-## Choose one competency
+## Start with the user's task
 
 Read the matching reference before acting. Route code changes to the maintainer
 skill and wet-lab or interpretive work outside HOP.
 
 | Question | Public surface | Skill reference |
 | --- | --- | --- |
+| Preserve my stem and discover complete designs, with optional ends | `hop_design.construction.discover_designs` / `hop-design design` | [discovery guide](../../../docs/guides/discover-designs.md) |
+| Author advanced scaffold discovery with explicit method catalogs | `hop_design.construction` discovery | [scaffold guide](../../../docs/guides/discover-product-scaffolds.md) |
 | What exact designs are in this bounded substrate space? | `hop_design.spaces` | [design](references/design.md) |
 | What design does this payload encode? | `hop_design` | [design](references/design.md) |
 | What exact construction routes follow from one strict source and verified design? | `hop_design.construction` | [construction](references/construction.md) |
@@ -34,9 +36,9 @@ Read `docs/start/mental-model.md` when a request crosses competencies. Read
 
 ## Workflow
 
-1. Name the competency, product, and input kind; use its documented facade and smallest strict request.
-2. Stop on validation errors, infeasibility, unavailability, truncation, or corruption.
-3. Before writing, name the bundle type and require a new path; verify again at handoff.
+1. Identify the supplied stem and intended product. End words are optional; do not ask for them unless the user needs a particular interface. Inspect the effective permissions, then follow the discovery guide.
+2. Use `choices.explain()` or `design query --format text` to distinguish available choices, an empty filter and a scoped exclusion. Offer continuation only when the answer identifies remaining search. Use `--format json` in automation. Stop on invalid inputs or corruption; never relax a requirement silently.
+3. Select a complete preparation explicitly, or sample only when requested. Reuse its selection for the route and parts; write exports to new paths and verify at handoff.
 
 ## Guardrails
 

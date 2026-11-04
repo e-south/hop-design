@@ -21,9 +21,7 @@ from hop_design.design.construction.verification import (
     VerifiedFoldbackNeighborhoodResult,
 )
 from hop_design.models.construction import SearchCompletionStatus
-from hop_design.models.construction.basal import (
-    BasalNeighborhoodDiscoveryResult,
-)
+from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.complete import (
     CompositionDisposition,
     CompositionDispositionStatus,
@@ -46,6 +44,8 @@ from hop_design.models.construction.complete.source_authority import (
     expected_upstream_truncation_reasons,
 )
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
+from hop_design.models.construction.hairpin_geometry import scaffold_mismatches
+from hop_design.models.construction.scaffold import ScaffoldMismatch
 from hop_design.models.construction.source_partition import SourcePartitionDiscoveryResult
 from hop_design.serialization import canonical_json_bytes
 
@@ -97,11 +97,7 @@ def _discover_constructions_raw(
     validate_detailed_authority_ids(request, foldback=foldback, basal=basal)
     partition_plan = resolve_partition_plan(request, source_partition)
     enzyme_policies = source_partition_enzyme_policies(foldback, basal)
-    foldback_records, basal_records = select_local_domains(
-        request,
-        foldback=foldback,
-        basal=basal,
-    )
+    foldback_records, basal_records = select_local_domains(request, foldback=foldback, basal=basal)
     source_policy = request.materialization.source_preparation.source_ssdna
     nominal = len(foldback_records) * len(basal_records) * source_context_count(source_policy)
     records: list[MaterializedConstructionRealization] = []
@@ -110,6 +106,7 @@ def _discover_constructions_raw(
     examined = 0
     truncation: str | None = None
     dispositions: list[CompositionDisposition] = []
+    scaffold_rejection_candidates: list[MaterializedConstructionRealization] = []
     for ordinal, (foldback_record, basal_record, source_context_sequence) in enumerate(
         islice(
             composition_domain(foldback_records, basal_records, source_policy),
@@ -164,12 +161,15 @@ def _discover_constructions_raw(
             )
             if partition_outcome.rejection_candidate is not None:
                 partition_rejection_candidates.append(partition_outcome.rejection_candidate)
-            if partition_outcome.rejection_reason is not None:
-                resolved_record = partition_outcome.rejection_reason
-            elif partition_outcome.realization is not None:
-                resolved_record = partition_outcome.realization
-            else:
-                raise AssertionError("Partition binding must return one exact outcome.")
+            resolved_record = partition_outcome.resolved()
+        mismatches: tuple[ScaffoldMismatch, ...] = ()
+        if not isinstance(resolved_record, CompositionRejectionCode):
+            mismatches = scaffold_mismatches(
+                request.whole_route_constraints.hairpin_scaffold, resolved_record
+            )
+            if mismatches:
+                scaffold_rejection_candidates.append(resolved_record)
+                resolved_record = CompositionRejectionCode.HAIRPIN_SCAFFOLD_OUTSIDE_REQUEST
         if isinstance(resolved_record, CompositionRejectionCode):
             failures[resolved_record] += 1
             dispositions.append(
@@ -182,6 +182,8 @@ def _discover_constructions_raw(
                     ),
                     status=CompositionDispositionStatus.REJECTED,
                     rejection_reason=resolved_record,
+                    preparation_constraint=evaluation.preparation_constraint,
+                    scaffold_mismatches=mismatches,
                     candidate_enzyme_programs=evaluation.candidate_enzyme_programs,
                     recognition_placements_attempted=(evaluation.recognition_placements_attempted),
                     constraint_systems_attempted=evaluation.constraint_systems_attempted,
@@ -230,9 +232,7 @@ def _discover_constructions_raw(
         )
         exact = ()
     upstream_truncation_reasons = expected_upstream_truncation_reasons(
-        request=request,
-        foldback=foldback,
-        basal=basal,
+        request=request, foldback=foldback, basal=basal
     )
     status = composition_status(
         realizations=exact,
@@ -256,6 +256,7 @@ def _discover_constructions_raw(
         basal_authority=basal,
         source_partition_authority=source_partition,
         source_partition_rejection_candidates=tuple(partition_rejection_candidates),
+        scaffold_rejection_candidates=tuple(scaffold_rejection_candidates),
         design_bundle_id=design.bundle.bundle_id,
         dispositions=tuple(dispositions),
     )

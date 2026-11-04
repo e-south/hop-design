@@ -10,6 +10,8 @@ Module Author(s): Eric J. South
 """
 
 from hop_design.kernel.construction.basal.domains import BasalSequenceDomain
+from hop_design.kernel.construction.basal.programs import BasalSequenceSolution
+from hop_design.kernel.construction.basal.sequence_index import BasalSequenceIndex
 from hop_design.kernel.construction.sequence_sets import SequenceSetBuilder, SequenceSetLimitError
 from hop_design.models.construction.sequence_sets import SequenceSet, SequenceSpaceLimits
 from hop_design.models.enzymes import EnzymeProvisioningPolicy
@@ -28,7 +30,31 @@ def admit_basal_sources(
     *, domain: BasalSequenceDomain, policy: EnzymeProvisioningPolicy, limits: SequenceSpaceLimits
 ) -> SequenceSet:
     """Check the whole source before projecting away surrounding construction context."""
-    domains = tuple(set(bases) for bases in domain.canonical_source_domains())
+    return _admit_source_domains(
+        domain=domain, domains=domain.canonical_source_domains(), policy=policy, limits=limits
+    )
+
+
+def admit_basal_source_assignments(
+    *, domain: BasalSequenceDomain, policy: EnzymeProvisioningPolicy, limits: SequenceSpaceLimits
+) -> SequenceSet:
+    """Retain full-source site constraints before joint adapter/pair-budget admission."""
+    return _admit_source_domains(
+        domain=domain,
+        domains=BasalSequenceIndex.create(domain).source_domains(),
+        policy=policy,
+        limits=limits,
+    )
+
+
+def _admit_source_domains(
+    *,
+    domain: BasalSequenceDomain,
+    domains: tuple[tuple[str, ...], ...],
+    policy: EnzymeProvisioningPolicy,
+    limits: SequenceSpaceLimits,
+) -> SequenceSet:
+    masks = tuple(set(bases) for bases in domains)
     builder = SequenceSetBuilder(
         length_nt=len(domains),
         max_nodes=limits.max_decisions,
@@ -45,7 +71,15 @@ def admit_basal_sources(
     if windows > limits.max_site_checks:
         raise SequenceSetLimitError("Basal recognition-window budget exhausted.")
     source = "".join(next(base for base in "ACGT" if base in bases) for bases in domains)
-    solution = domain.materialize_canonical_source(source)
+    # Nick admission depends on the source only. Adapter choices and their global
+    # pair cap are retained jointly by the population, not guessed from one member.
+    solution = BasalSequenceSolution(
+        source_precursor_sequence=source,
+        adapter_sequence=None,
+        payload_span=domain.payload_span,
+        pairing_state=None,
+        enzyme_bindings=domain.enzyme_bindings,
+    )
     program = _nick_program(solution, domain.program)
     if len(program.stages) != 1 or len(program.stages[0].operations) != 1:
         raise ValueError("Compact basal admission requires one molecular nicking operation.")
@@ -57,14 +91,14 @@ def admit_basal_sources(
     if codes & constant_rejections:
         return builder.freeze(0)
     operation = program.stages[0].operations[0]
-    admitted = builder.from_domains(domains)
+    admitted = builder.from_domains(masks)
     intended = 0
     for orientation, pattern in patterns:
         for start in range(len(domains) - len(pattern) + 1):
-            masks = list(domains)
+            matching_domains = list(masks)
             for offset, symbol in enumerate(pattern):
-                masks[start + offset] = domains[start + offset] & iupac_bases(symbol)
-            if any(not mask for mask in masks):
+                matching_domains[start + offset] = masks[start + offset] & iupac_bases(symbol)
+            if any(not mask for mask in matching_domains):
                 continue
             binding = _binding_at(
                 enzyme=enzyme,
@@ -75,7 +109,7 @@ def admit_basal_sources(
             )
             if binding is None:
                 continue
-            matching = builder.from_domains(masks)
+            matching = builder.from_domains(matching_domains)
             if _matches_declaration(binding, operation=operation):
                 intended = builder.union(intended, matching)
             else:

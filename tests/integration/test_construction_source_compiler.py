@@ -270,7 +270,10 @@ def test_file_source_compiles_direct_endpoint_from_separate_design_authority(
     assert compilation.design_bundle_id == design.bundle.bundle_id
 
 
-def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
+def test_file_source_compiles_pcr_and_clone_endpoints(
+    tmp_path: Path,
+    frozen_a8_artifact_producer,
+) -> None:
     payload = _payload()
     pcr_design = _verified_design(tmp_path / "pcr")
     pcr_foldback = _foldback(payload)
@@ -342,7 +345,8 @@ def test_file_source_compiles_pcr_and_clone_endpoints(tmp_path: Path) -> None:
 
     assert pcr.status == SearchCompletionStatus.COMPLETE.value
     assert pcr.endpoint == ConstructionEndpoint.HAIRPIN_PCR_DUPLEX.value
-    assert pcr.bundle_id == "hop:construction-bundle/61b92a80c4db/01b466e1500182fe"
+    # Independently frozen result v9 / foldback implementation 6 envelope identity.
+    assert pcr.bundle_id == "hop:construction-bundle/7bc00283497c/341add189ee446a3"
     assert clone_payload == payload
     assert clone.status == SearchCompletionStatus.COMPLETE.value
     assert clone.endpoint == ConstructionEndpoint.CLONE_READY_DUPLEX.value

@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 
+from ._publication_files import _write_directory_files_at, _write_file_at
+
 
 @dataclass(frozen=True)
 class ProtectedRoot:
@@ -47,7 +49,7 @@ class ProtectedRoot:
             raise ValueError("Protected input root changed during verification.")
 
 
-type ProtectedRootInput = str | Path | ProtectedRoot
+type ProtectedRootInput = str | Path | ProtectedRoot | tuple[ProtectedRoot, ...]
 
 
 def _raise_publication_error(result: int, destination: Path) -> None:
@@ -119,8 +121,10 @@ def publish_directory_create_only(
 ) -> None:
     """Atomically publish one sibling directory without replacing any destination."""
     if parent_fd is None:
-        staging = staging.absolute()
-        destination = destination.absolute()
+        # tempfile normalizes its parent, while Path.absolute retains '..'.
+        # Canonicalize parents only: the final destination must never follow a link.
+        staging = staging.parent.resolve(strict=True) / staging.name
+        destination = destination.parent.resolve(strict=True) / destination.name
     elif any(
         path.parent != Path(".") or path.name in {"", ".", ".."} for path in (staging, destination)
     ):
@@ -162,10 +166,11 @@ def _require_outside_root(descriptor: int, protected: ProtectedRoot) -> None:
 
 def _open_publication_parent(destination: Path, protected_root: ProtectedRootInput) -> int:
     """Bind the nearest existing parent before checking exclusion and creating children."""
-    protected = (
-        protected_root
-        if isinstance(protected_root, ProtectedRoot)
-        else ProtectedRoot.capture(protected_root)
+    roots = protected_root if isinstance(protected_root, tuple) else (protected_root,)
+    if not roots:
+        raise ValueError("Protected publication requires at least one input root.")
+    protected_roots = tuple(
+        r if isinstance(r, ProtectedRoot) else ProtectedRoot.capture(r) for r in roots
     )
     parent = destination.absolute().parent
     missing = []
@@ -182,48 +187,24 @@ def _open_publication_parent(destination: Path, protected_root: ProtectedRootInp
         if (opened.st_dev, opened.st_ino) != (named.st_dev, named.st_ino):
             raise ValueError("Publication parent changed while it was being opened.")
         target = Path(os.path.normpath(canonical.joinpath(*reversed(missing), destination.name)))
-        if target == protected.canonical_path or target.is_relative_to(protected.canonical_path):
-            raise ValueError("Output must be outside the verified input bundle.")
-        _require_outside_root(descriptor, protected)
+        for protected in protected_roots:
+            if target == protected.canonical_path or target.is_relative_to(
+                protected.canonical_path
+            ):
+                raise ValueError("Output must be outside the verified input bundle.")
+            _require_outside_root(descriptor, protected)
         for component in reversed(missing):
             with suppress(FileExistsError):
                 os.mkdir(component, mode=0o755, dir_fd=descriptor)
             child = os.open(component, flags | os.O_NOFOLLOW, dir_fd=descriptor)
             os.close(descriptor)
             descriptor = child
-            _require_outside_root(descriptor, protected)
+            for protected in protected_roots:
+                _require_outside_root(descriptor, protected)
         return descriptor
     except BaseException:
         os.close(descriptor)
         raise
-
-
-def _write_file_at(content: bytes, name: str, parent_fd: int) -> None:
-    descriptor = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=parent_fd)
-    with os.fdopen(descriptor, "wb") as handle:
-        handle.write(content)
-        handle.flush()
-        os.fsync(handle.fileno())
-
-
-def _write_directory_files_at(files: Mapping[str, bytes], staging_fd: int) -> None:
-    directories = {Path("."): staging_fd}
-    with ExitStack() as descriptors:
-        for name, content in files.items():
-            parent = Path(".")
-            for component in Path(name).parts[:-1]:
-                child = parent / component
-                if child not in directories:
-                    os.mkdir(component, mode=0o755, dir_fd=directories[parent])
-                    descriptor = os.open(
-                        component,
-                        os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-                        dir_fd=directories[parent],
-                    )
-                    descriptors.callback(os.close, descriptor)
-                    directories[child] = descriptor
-                parent = child
-            _write_file_at(content, Path(name).name, directories[parent])
 
 
 def _require_staging_directory(staging: Path, staging_fd: int) -> None:

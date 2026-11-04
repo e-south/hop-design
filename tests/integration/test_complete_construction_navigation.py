@@ -107,7 +107,7 @@ def test_navigation_adds_route_facts_without_resealing_or_repeating_summary(
     assert rendered["renderer_version"] == "construction-navigation/2"
     assert rendered["source_result_id"] == result_id
     summary = rendered["summary"]
-    assert summary["schema"] == "hop.complete-construction-summary/v4"
+    assert summary["schema"] == "hop.complete-construction-summary/v5"
     assert summary["source_result_id"] == result_id
     assert summary["status"] == "complete"
 

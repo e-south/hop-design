@@ -72,23 +72,10 @@ class BasalFutureReleaseRequirement(HopModel):
             for base, symbol in zip(exact, self.cohesive_end_sequence, strict=True)
         )
 
-
-class BasalFutureReleaseAction(HopModel):
-    """One enzyme action positioned relative to a future endpoint boundary."""
-
-    action_id: str = Field(pattern=r"^hop:basal-future-release-action/[0-9a-f]{64}@1$")
-    enzyme_id: str
-    enzyme_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
-    requirement: BasalFutureReleaseRequirement
-    recognition_pattern_5prime: str
-    recognition_start_from_release_boundary: int
-    reference_cut_from_release_boundary: int
-    complement_cut_from_release_boundary: int
-
     @property
     def endpoint_reference_sequence(self) -> str:
         """Return the end footprint on the endpoint's reference strand, 5-prime first."""
-        requirement = self.requirement
+        requirement = self
         reverse = (
             requirement.overhang_end is StrandEnd.FIVE_PRIME and requirement.product_end == "right"
         ) or (
@@ -104,14 +91,60 @@ class BasalFutureReleaseAction(HopModel):
         self, *, payload_boundary: int, nick_offset_nt: int
     ) -> tuple[int, str] | None:
         """Constrain end bases supplied by the payload-forward source strand."""
-        offset = self.requirement.payload_end_offset_bp
+        offset = self.payload_end_offset_bp
         sequence = self.endpoint_reference_sequence
-        if self.requirement.product_end == "left":
+        if self.product_end == "left":
             return payload_boundary - offset - len(sequence), sequence
         end = min(offset + len(sequence), nick_offset_nt)
         if end <= offset:
             return None
         return payload_boundary - end, reverse_complement_iupac(sequence[: end - offset])
+
+    def source_contact_bases(self, *, nick_offset_nt: int) -> tuple[tuple[int, str], ...]:
+        """Map exact source-supplied bases to contacts counted away from ligation."""
+        if type(nick_offset_nt) is not int or nick_offset_nt < 0:
+            raise ValueError("A nick offset must be a nonnegative integer.")
+        if self.cardinality != 1:
+            raise ValueError("Source contact projection requires an exact end.")
+        boundary = nick_offset_nt + self.payload_end_offset_bp + len(self.cohesive_end_sequence)
+        placement = self.source_end_placement(
+            payload_boundary=boundary, nick_offset_nt=nick_offset_nt
+        )
+        if placement is None:
+            return ()
+        start, sequence = placement
+        origin = boundary - nick_offset_nt
+        return tuple(
+            (position, base)
+            for index, base in enumerate(sequence)
+            if (position := origin - 1 - (start + index)) >= 0
+        )
+
+
+class BasalFutureReleaseAction(HopModel):
+    """One enzyme action positioned relative to a future endpoint boundary."""
+
+    action_id: str = Field(pattern=r"^hop:basal-future-release-action/[0-9a-f]{64}@1$")
+    enzyme_id: str
+    enzyme_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    requirement: BasalFutureReleaseRequirement
+    recognition_pattern_5prime: str
+    recognition_start_from_release_boundary: int
+    reference_cut_from_release_boundary: int
+    complement_cut_from_release_boundary: int
+
+    @property
+    def endpoint_reference_sequence(self) -> str:
+        """Delegate strand coordinates to the shared end requirement."""
+        return self.requirement.endpoint_reference_sequence
+
+    def source_end_placement(
+        self, *, payload_boundary: int, nick_offset_nt: int
+    ) -> tuple[int, str] | None:
+        """Delegate source coordinates to the shared end requirement."""
+        return self.requirement.source_end_placement(
+            payload_boundary=payload_boundary, nick_offset_nt=nick_offset_nt
+        )
 
     def adapter_end_bases(self, *, nick_offset_nt: int) -> tuple[tuple[int, str], ...]:
         """Map adapter-supplied endpoint bases to positions from the ligation bond."""

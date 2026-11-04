@@ -5,26 +5,44 @@ intent: Choose a design task, then open its guide or API reference.
 audience: [users]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-10
+last_verified: 2026-10-13
 doc_type: index
 journey: [install, compile, discover, method, verify, integrate]
 ---
 
 # HOP documentation
 
-Start with an example, then choose a task. The CLI previews and compiles designs
-and inspects saved constructions; Python also searches junctions and compiles routes.
+Start with the molecule or comparison you want. The current source candidate
+supports these workflows through CLI and Python. Check the installation guide
+for the distinction between that candidate and the published wheel.
 
 ## Start here
 
-1. [Install HOP](guides/install.md).
-2. [Compile a first design](guides/quickstart.md).
-3. [Define and preview a substrate space](guides/substrate-spaces.md).
-4. [Understand the construction](start/mental-model.md): payload, local junctions,
-   materials, and processing steps. [Why HOP](start/why-hop.md) explains the design question.
+[Install HOP](guides/install.md), then choose the task that matches your input:
 
-## Work on a construction
+| I want to… | Guide |
+| --- | --- |
+| Preserve my stem and see complete designs | [Discover designs](guides/discover-designs.md), optionally constrain ends or scaffold properties, then retrieve a preparation |
+| Discover complete hairpin or insert options | [Specify desired scaffolds](guides/discover-product-scaffolds.md) by dimensions, terminal form and permitted methods |
+| Make a controlled set of molecules | [Specify a molecular comparison](guides/specify-a-comparison.md) with required members and shared properties |
+| Work through one preparation request | [Design one construction](guides/design-a-construction.md), from materials to endpoint |
 
+For the molecular concepts, read [Understand the construction](start/mental-model.md).
+For sequence anatomy without a preparation route, [compile a payload design](guides/quickstart.md)
+or [preview a substrate space](guides/substrate-spaces.md).
+
+## Choose a lower-level task
+
+- [Explore conditional variants](guides/explore-conditional-variants.md): preserve
+  explicit properties while browsing supported complete molecules and preparations.
+- [Edit folded sequences](guides/edit-folded-sequences.md): loop words, finite
+  released-end placements, retained-base changes and a bounded exact stem family.
+
+- [Explore complete scaffolds](guides/explore-scaffolds.md): obtain whole-molecule
+  options from one strict product request, without preparation branching.
+- [Author an explicit family roster](guides/compare-scaffold-families.md): bind
+  member requests and selections, assess a reference and reconcile alternatives.
+  Use the comparison brief above when starting from desired membership.
 - [Search junctions and compile a construction](guides/compile-construction.md):
   payload, enzymes, local constraints, required materials, and endpoint.
 - [Search compatible basal candidates](guides/discover-compatible-basal-candidates.md):
@@ -49,6 +67,8 @@ and inspects saved constructions; Python also searches junctions and compiles ro
   [pairing rules](language/relationships-and-invariants.md).
 - [CLI](reference/cli.md), [Python API](reference/python-api.md), and
   [component calculations](reference/mechanics-api.md).
+- Interface surveys: [request and search limits](reference/interface-survey-search.md)
+  and [queries, selections and exports](reference/interface-survey-results.md).
 - [Material requirements](reference/linear-source-method-materials.md) and
   [view formats](reference/view-contracts.md).
 - [Design files](reference/bundle-layout.md),

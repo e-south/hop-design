@@ -98,6 +98,7 @@ class BasalBoundaryProjection(HopModel):
 
     endpoint: Literal[
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     ]
     pairing_state: BasalPairingState

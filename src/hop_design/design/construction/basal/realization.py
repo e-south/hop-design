@@ -68,6 +68,7 @@ def _realization(
 ) -> BasalRealizationRecord | str:
     if request.endpoint not in {
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }:
         raise ValueError("Basal realization requires a PCR-bearing endpoint.")

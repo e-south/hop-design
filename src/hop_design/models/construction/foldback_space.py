@@ -48,7 +48,7 @@ class FoldbackSequenceRequest(HopModel):
 
 
 class FoldbackProgramSupport(HopModel):
-    """One examined enzyme program and the exact independent sequences it admits."""
+    """Retained words and their joint source-tail completions for one examined program."""
 
     kind: FoldbackCleavageProgramKind
     nick_enzyme_id: ReferenceId
@@ -58,6 +58,7 @@ class FoldbackProgramSupport(HopModel):
     placement_failure: str | None
     placement_count: int = Field(ge=0)
     sequences: SequenceSet
+    source_assignments: SequenceSet
 
     @model_validator(mode="after")
     def validate_support(self) -> FoldbackProgramSupport:
@@ -70,6 +71,12 @@ class FoldbackProgramSupport(HopModel):
             raise ValueError("Foldback admission must be contained within placement choices.")
         if self.placement_failure is not None and self.placement_count != 0:
             raise ValueError("Excluded foldback placement cannot contain sequence choices.")
+        if (
+            self.source_assignments.length_nt < self.sequences.length_nt
+            or self.source_assignments.cardinality < self.sequences.cardinality
+            or bool(self.source_assignments.cardinality) != bool(self.sequences.cardinality)
+        ):
+            raise ValueError("Foldback precursor completions must support the retained words.")
         return self
 
 
@@ -122,14 +129,14 @@ class FoldbackSequenceCase(HopModel):
 class FoldbackSequenceResult(HopModel):
     """Complete local sequence membership; no full-material or experimental claim."""
 
-    schema_id: Literal["hop.foldback-sequence-result/v1"] = Field(
-        default="hop.foldback-sequence-result/v1", alias="schema"
+    schema_id: Literal["hop.foldback-sequence-result/v2"] = Field(
+        default="hop.foldback-sequence-result/v2", alias="schema"
     )
     request: FoldbackSequenceRequest
     hop_version: str
     route_implementation_version: str
-    admission_implementation_version: Literal["foldback-sequence-space/1"] = (
-        "foldback-sequence-space/1"
+    admission_implementation_version: Literal["foldback-sequence-space/2"] = (
+        "foldback-sequence-space/2"
     )
     completion: Literal["complete"] = "complete"
     claim_scope: Literal["local_molecular_admission"] = "local_molecular_admission"
@@ -155,7 +162,10 @@ class FoldbackSequenceResult(HopModel):
             sum(
                 len(s.decisions)
                 for case in self.cases
-                for s in (case.sequences, *(p.sequences for p in case.programs))
+                for s in (
+                    case.sequences,
+                    *(s for p in case.programs for s in (p.sequences, p.source_assignments)),
+                )
             )
             > limits.max_result_decisions
         ):

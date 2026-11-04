@@ -134,6 +134,7 @@ class BasalFeasibilityProjection(HopModel):
         )
         if self.endpoint not in {
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
             ConstructionEndpoint.CLONE_READY_DUPLEX,
         } or any(row.pairing_pattern is None or not row.literal_pairs for row in self.realizations):
             raise ValueError("Basal projections require a PCR-bearing local boundary.")

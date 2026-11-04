@@ -989,7 +989,10 @@ def test_hairpin_pcr_reports_incompatible_primer_as_infeasible(
         }
 
 
-def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_path: Path) -> None:
+def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(
+    tmp_path: Path,
+    frozen_a8_artifact_producer,
+) -> None:
     payload = _payload()
     foldback = _foldback(payload)
     design = _verified_design(tmp_path)
@@ -1002,14 +1005,16 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
 
     result = _discover_raw(request, foldback=foldback, basal=None, design=design)
 
+    # Foldback implementation 6 changes only the execution/provenance envelope
+    # here. Material, program, product and realization bytes remain pinned below.
     assert result.result_id == (
         "hop:construction-space-result/"
-        "cb3961a7891b2a7d6fb686376d448189a15793e7c1da759b6208efac7aade197@1"
+        "29a2c28d80dec91427241c7b2ed5b8233e658dd16105e9e560226e33bf5b246c@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "f170033074dd7999ad241539343988287f216dda50f391d469dd4fc49a24b4c4"  # pragma: allowlist secret  # noqa: E501
+            "7287cc143075641c375360b1e10838b1e22a08d0a177ca25413e9fd38b2f17ef"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (
@@ -1039,17 +1044,22 @@ def test_direct_result_identity_is_stable_with_endpoint_auxiliary_policies(tmp_p
     )
 
 
-def test_pcr_result_identity_is_stable_with_clone_endpoint_support(tmp_path: Path) -> None:
+def test_pcr_result_identity_is_stable_with_clone_endpoint_support(
+    tmp_path: Path,
+    frozen_a8_artifact_producer,
+) -> None:
     result, _, _ = _valid_pcr_result(tmp_path)
 
+    # Foldback implementation 6 changes only the execution/provenance envelope
+    # here. Material, program, product and realization bytes remain pinned below.
     assert result.result_id == (
         "hop:construction-space-result/"
-        "099e69e6389adf07d40eca7ef1e150805383bc6b65c9653217e396bb86607f19@1"
+        "9c6354c825a549e78bc6e196678baa590f698d760bbf59b63a588c9c66921881@1"
     )
     assert (
         hashlib.sha256(canonical_json_bytes(result)).hexdigest()
         == (
-            "cec378d0cd98889c58984aa5e3006b799b239455dd7f4cb8497d13f765ad4ca9"  # pragma: allowlist secret  # noqa: E501
+            "9acebbf08f14068ebaf72527134872fd8e64b1403534bd5f001e5180e9680fe7"  # pragma: allowlist secret  # noqa: E501
         )
     )
     assert tuple(item.materialized_realization_id for item in result.realizations) == (

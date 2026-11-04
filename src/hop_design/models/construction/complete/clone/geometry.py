@@ -28,7 +28,8 @@ class CloneCutGeometry:
 
     primary_parent_span: Span
     complementary_parent_span: Span
-    encoding_span: Span
+    design_parent_span: Span
+    released_union_span: Span
 
 
 def clone_payload_end_offsets(
@@ -57,8 +58,10 @@ def derive_clone_cut_geometry(
     parent_length: int,
     template_sequence: str,
     design_sequence: str,
+    design_parent_span: Span,
+    payload_boundaries: tuple[int, int],
 ) -> CloneCutGeometry:
-    """Derive exact retained-strand and design-union spans from two bindings."""
+    """Derive retained strands and released union around an anchored parent core."""
     left, right = bindings
     cuts = (
         left.reference_cut,
@@ -91,18 +94,37 @@ def derive_clone_cut_geometry(
         or complementary_span.start.offset >= complementary_span.end.offset
     ):
         raise CloneEndGenerationError("Clone digest cuts must retain nonempty exact strands.")
-    encoding_span = Span(
+    released_union_span = Span(
         start=Boundary(offset=min(left_reference.offset, left_complement.offset)),
         end=Boundary(offset=max(right_reference.offset, right_complement.offset)),
     )
-    if template_sequence[encoding_span.start.offset : encoding_span.end.offset] != design_sequence:
+    if (
+        parent_length != len(template_sequence)
+        or design_parent_span.end.offset > parent_length
+        or design_parent_span.length.value != len(design_sequence)
+        or template_sequence[design_parent_span.start.offset : design_parent_span.end.offset]
+        != design_sequence
+    ):
+        raise CloneEndGenerationError("Clone design core must equal its anchored PCR-parent span.")
+    start, end = payload_boundaries
+    if not 0 <= start < end <= len(design_sequence):
         raise CloneEndGenerationError(
-            "Clone digest cut union must equal the exact verified design encoding."
+            "Clone protected payload boundaries must lie inside the core."
+        )
+    paired_start = max(left_reference.offset, left_complement.offset)
+    paired_end = min(right_reference.offset, right_complement.offset)
+    if (
+        paired_start > design_parent_span.start.offset + start
+        or paired_end < design_parent_span.start.offset + end
+    ):
+        raise CloneEndGenerationError(
+            "Clone cuts must preserve the payload-foldback spine on both strands."
         )
     return CloneCutGeometry(
         primary_parent_span=primary_span,
         complementary_parent_span=complementary_span,
-        encoding_span=encoding_span,
+        design_parent_span=design_parent_span,
+        released_union_span=released_union_span,
     )
 
 

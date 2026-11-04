@@ -29,6 +29,7 @@ from hop_design.models.construction.foldback import (
     FoldbackNeighborhoodDiscoveryResult,
 )
 
+from .adapter_endpoint import adapter_realization
 from .clone_endpoint import clone_realization
 from .direct import direct_realization
 from .pcr_endpoint import pcr_realization
@@ -55,6 +56,15 @@ def materialize_endpoint(
         )
     if basal is None or basal_result is None:
         raise ValueError("A duplex endpoint requires one exact basal authority.")
+    if request.endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN:
+        return adapter_realization(
+            request,
+            foldback=foldback,
+            basal=basal,
+            foldback_result=foldback_result,
+            basal_result=basal_result,
+            evaluation=evaluation,
+        )
     if request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
         return pcr_realization(
             request,

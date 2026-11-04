@@ -29,6 +29,7 @@ from ..evaluation_inputs import (
     replay_linear_source_embedding,
 )
 from ..material import ExactConstructionMaterial
+from ..preparation_diagnostics import PreparationConstraintDiagnostic
 from ..provisioning import merge_provisioning_policies
 from ..request import ConstructionDiscoveryRequest
 from ..source_partition.plan import SourcePartitionPlan
@@ -125,9 +126,17 @@ def prepare_context(
                 complement_sequence=reverse_complement_iupac(sequence),
             )
             basal_source_offset(basal, prefix)
-        except ValueError:
+        except ValueError as exc:
             return CombinationEvaluation(
                 rejection_reason=CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE,
+                preparation_constraint=PreparationConstraintDiagnostic(
+                    code="fixed-source-route-mismatch",
+                    field="materialization.source_preparation.source_ssdna.material.sequence_5prime",
+                    requirement="matches-route",
+                    requested=sequence,
+                    available=None,
+                    message=str(exc),
+                ),
                 candidate_enzyme_programs=context.candidate_enzyme_programs,
                 recognition_placements_attempted=context.recognition_placements_attempted,
                 constraint_systems_attempted=context.constraint_systems_attempted,
@@ -150,9 +159,10 @@ def prepare_context(
             payload_source_span=payload_source_span,
             material_requirements=foldback.material_requirements,
         )
-    except SourcePreparationResolutionError:
+    except SourcePreparationResolutionError as exc:
         return CombinationEvaluation(
             rejection_reason=CompositionRejectionCode.SOURCE_PREPARATION_INCOMPATIBLE,
+            preparation_constraint=exc.diagnostic,
             prefix=prefix,
             source_return_arm=source_return_arm,
             candidate_enzyme_programs=context.candidate_enzyme_programs,
@@ -164,6 +174,7 @@ def prepare_context(
     )
     pcr_bearing = request.endpoint in {
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }
     retained_source = (

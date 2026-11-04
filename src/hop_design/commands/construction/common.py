@@ -75,7 +75,9 @@ def navigation_content(
     for summary_row in summary["rows"]:
         realization_id = summary_row["materialized_realization_id"]
         route = None if realization_id is None else routes[realization_id]
-        material_ids = summary_row["material_ids"]
+        # Summary membership preserves material uses; ordering groups by molecular
+        # identity, which already includes sequence and terminal chemistry.
+        material_ids = set(summary_row["material_ids"])
         rows.append(
             {
                 **summary_row,

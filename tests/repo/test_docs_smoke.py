@@ -12,6 +12,7 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 import json
+import os
 import runpy
 import subprocess
 import sys
@@ -95,7 +96,8 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     assert '"$smoke_root/source-basal/$relative"' in wheel_smoke
     assert '"$smoke_root/wheel-basal/$relative"' in wheel_smoke
 
-    assert "uv run --locked python scripts/docs-smoke" in agent_verify
+    assert "uv run --locked pytest" in agent_verify
+    assert "uv run --locked python scripts/docs-smoke" not in agent_verify
     assert '"$smoke_root/venv/bin/python" scripts/docs-smoke' in wheel_smoke
     assert "'examples/fixed-site-three-base-context.yaml'" in wheel_smoke
     assert "'docs/guides/install.md'" in wheel_smoke
@@ -129,3 +131,51 @@ def test_docs_smoke_bounds_child_execution_time() -> None:
             content_root=REPO_ROOT,
             timeout_seconds=0.01,
         )
+
+
+@pytest.mark.parametrize("pytest_exit,node_exit", [(0, 0), (17, 0), (0, 19)])
+def test_gate_runs_one_source_journey_and_propagates_tool_failure(tmp_path, pytest_exit, node_exit):
+    """Exercise the shell gate without rerunning tools whose behavior has separate tests."""
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "agent-verify").write_bytes((REPO_ROOT / "scripts/agent-verify").read_bytes())
+    for name in ("agent-preflight", "precommit-all", "wheel-smoke"):
+        (scripts / name).write_text(f'echo "{name}" >> "$GATE_LOG"\n')
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    uv = binary / "uv"
+    uv.write_text(
+        "#!/usr/bin/env bash\n"
+        'echo "uv $*" >> "$GATE_LOG"\n'
+        'if [[ "$*" == "run --locked pytest "* ]]; then exit "$PYTEST_EXIT"; fi\n'
+    )
+    uv.chmod(0o755)
+    node = binary / "node"
+    node.write_text('#!/usr/bin/env bash\necho "node $*" >> "$GATE_LOG"\nexit "$NODE_EXIT"\n')
+    node.chmod(0o755)
+    browser = tmp_path / "tests/browser"
+    browser.mkdir(parents=True)
+    (browser / "seam.test.mjs").touch()
+    log = tmp_path / "commands.log"
+    result = subprocess.run(
+        ["bash", str(scripts / "agent-verify")],
+        env={
+            **os.environ,
+            "PATH": f"{binary}{os.pathsep}{os.environ['PATH']}",
+            "GATE_LOG": str(log),
+            "PYTEST_EXIT": str(pytest_exit),
+            "NODE_EXIT": str(node_exit),
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    commands = log.read_text().splitlines()
+    assert result.returncode == (node_exit or pytest_exit), result.stderr
+    assert sum(command.startswith("uv run --locked pytest ") for command in commands) == (
+        0 if node_exit else 1
+    )
+    assert sum(command.startswith("node --test tests/browser/") for command in commands) == 1
+    assert not any("scripts/docs-smoke" in command for command in commands)
+    assert commands.count("wheel-smoke") == (1 if pytest_exit == node_exit == 0 else 0)
+    assert ("Agent verification: ok" in result.stdout) == (pytest_exit == node_exit == 0)

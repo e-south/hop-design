@@ -7,11 +7,20 @@ audience:
   - security reviewers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-10-04
 doc_type: reference
 ---
 
 # HOP Design security and public-data boundary
+
+## Local molecular editor
+
+`construction edit-view` binds only to `127.0.0.1`. Mutations require the exact
+local Host/Origin and a per-instance token; JSON bodies are bounded and duplicate
+keys rejected. Only packaged interface assets and normalized, non-symlink files
+inside the newly generated output directory are served. There are no external
+scripts or network design services. This is a local workstation interface, not a
+multi-user or internet-facing deployment. Stop it with Ctrl+C when finished.
 
 ## Public by construction
 
@@ -38,6 +47,31 @@ The distribution carries `Private :: Do Not Upload` as an accidental PyPI
 publication brake. A public GitHub repository and a PyPI package are separate
 distribution channels. Removing the brake or adding a publishing identity
 requires a separate release change.
+
+## Verification surfaces
+
+The source check, `python scripts/check_public_safety.py`, inventories tracked
+and nonignored untracked files through Git. Ignored runtime outputs stay outside
+that inventory; tracked files remain in scope even when an ignore rule matches
+them. The check requires the repository root, rejects linked paths and files
+larger than 2 MB, and scans UTF-8 text for private identifiers and credential
+patterns. Only the exact source policy file is exempt because it defines those
+patterns. A matching basename elsewhere grants no exemption.
+
+`bash scripts/wheel-smoke [distribution-directory]` independently checks the
+actual wheel and source-distribution members before extraction or installation.
+Archive scanning uses the same content policy without repository exclusions;
+it also rejects unsafe paths, duplicate members, links and special files.
+To inspect distributions directly, repeat `--distribution` for each archive:
+
+```bash
+uv run --locked python scripts/check_public_safety.py \
+  --distribution dist/package.whl --distribution dist/package.tar.gz
+```
+
+A clean source scan does not attest to a built archive. Ignoring a local output
+does not make it safe to package. Non-UTF-8 content and arbitrary DNA sequences
+still require manual privacy review; neither automated check authorizes release.
 
 ## Untrusted inputs and paths
 

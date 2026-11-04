@@ -1,5 +1,11 @@
 # Payload-centered construction
 
+For a supplied stem and intended product, start with the
+[design discovery guide](../../../../docs/guides/discover-designs.md). End words
+are optional. It discovers
+complete preparations and carries one selection through views and oligo retrieval.
+The lower-level workflow below is for an already authored construction source.
+
 Use this reference when one strict construction source and one separately
 verified design bundle must produce exact, bounded construction-route
 authorities and neutral scientific projections.
@@ -24,11 +30,20 @@ summary = project_complete_construction_summary(verified)
 summary.write("build/construction-summary")
 ```
 
-The source must use exact schema `hop.construction-source/v7`. It owns local
+The source must use exact schema `hop.construction-source/v8`. It owns local
 foldback and optional basal requests, the endpoint-specific materialization,
 whole-route constraints, and finite enumeration policy. It cannot embed or
 author the separate design authority, result IDs, realization IDs, projection
 choices, output paths, timestamps, or environment records.
+
+For an explicitly selected direct hairpin, `construction compile-local-design`
+accepts `--endpoint ssdna_hairpin` together with both `--hairpin-left-arm` and
+`--hairpin-right-arm`. Each arm is exact DNA written in its own 5'-to-3'
+direction; HOP validates their pairing. Supply the chosen foldback result and
+realization ID and omit basal discovery options. These arm options are rejected
+for PCR-bearing endpoints, which retain their basal discovery selection. The
+resulting design bundle can be passed to `construction compile-selected` with
+the same exact foldback selection and direct-hairpin construction source.
 
 - Inspect `status`, `valid_realizations`, `examined_combinations`, and
   `nominal_combinations` before interpreting a receipt.

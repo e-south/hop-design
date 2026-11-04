@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-07
+last_verified: 2026-10-31
 doc_type: how-to
 journey:
   - discover
@@ -23,6 +23,35 @@ Use source-partition discovery when the question is:
 This is a route-level question. It is not a basal-junction subtype and it does
 not select a preferred enzyme program.
 
+## Permit cleanup during design discovery
+
+For complete designs using the already permitted source nickases, add this
+optional field to the construction context (or an explicit product request):
+
+```json
+"source_cleanup": {
+  "preferred_maximum_nt": 10,
+  "absolute_maximum_nt": 15
+}
+```
+
+The numbers are inclusive lengths of discarded fragments, in nucleotides.
+Discovery evaluates every cut made by the candidate's selected source nickases,
+checks that the required strands remain intact, and recompiles the full route
+with that certificate. It adds no new enzyme choice and does not waive unwanted
+sites. Omitting this permission retains the ordinary site rejection.
+
+Released-insert discovery evaluates source contexts separately. An explicit
+request continuation with cleanup must specify one exact source context; it
+cannot apply one molecule's certificate to several source sequences. Prepared
+`construction.json` is only the expanded molecular input: the request executor
+owns cleanup discovery, and the low-level compiler requires an explicit verified
+partition. The resulting selection, route, figures and oligos use the same
+complete-preparation identity.
+
+To search additional removal enzymes or inspect the partition itself, use the
+explicit contract below.
+
 ## Author the request
 
 Create a regular, nonsymlink JSON or YAML file with schema
@@ -37,8 +66,12 @@ Create a regular, nonsymlink JSON or YAML file with schema
 - the maximum enzymes per program; and
 - explicit search-node and realization bounds.
 
-Because this route maps the authored payload onto the source top strand, at least one
-required top-strand survivor must fully contain that mapped payload span.
+The payload mapping may be forward or reverse-complemented. A required survivor
+must contain the complete mapped payload on the top strand for a forward mapping,
+or on the bottom strand for a reverse-complement mapping. Both mapping and survivor
+spans use the source duplex's top-strand coordinate frame; bottom-strand spans are
+not reindexed from that strand's 5′ end. HOP checks the encoded payload sequence
+in its declared orientation before searching partitions.
 
 HOP filters the catalog to nickases provisioned for `strand_exposure`. It
 enumerates every nonempty subset in width-first lexical order. Selecting an

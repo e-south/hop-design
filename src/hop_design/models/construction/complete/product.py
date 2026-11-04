@@ -23,6 +23,7 @@ from hop_design.models.molecular_state import (
     StrandPairObservation,
 )
 
+from .clone.evidence import ReleasedInsertEvidence
 from .pcr import (
     DuplexFinalProductReference,
     EndpointSequenceFateSpan,
@@ -35,7 +36,12 @@ class MaterializedFinalProduct(HopModel):
 
     reference: FinalProductReference | DuplexFinalProductReference
     strands: tuple[MolecularStrand, ...] = Field(min_length=1)
-    encoding_projection: SequenceProjection
+    encoding_projection: SequenceProjection | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    release_evidence: ReleasedInsertEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     pairings: tuple[StrandPairObservation, ...] = Field(
         default=(), exclude_if=lambda value: not value
     )
@@ -49,6 +55,14 @@ class MaterializedFinalProduct(HopModel):
 
     @model_validator(mode="after")
     def validate_product(self) -> MaterializedFinalProduct:
+        released = self.reference.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX
+        if released:
+            if self.encoding_projection is not None or self.release_evidence is None:
+                raise ValueError(
+                    "Released inserts require separate parent-core and cut-union evidence."
+                )
+        elif self.encoding_projection is None or self.release_evidence is not None:
+            raise ValueError("Unreleased products require their endpoint encoding projection only.")
         if self.reference.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
             if self.reference.topology != "single_stranded_hairpin" or len(self.strands) != 1:
                 raise ValueError(
@@ -63,6 +77,17 @@ class MaterializedFinalProduct(HopModel):
                 )
             ):
                 raise ValueError("Direct ssDNA endpoint cannot contain PCR-only evidence.")
+        elif self.reference.endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN:
+            if (
+                self.reference.topology != "single_stranded_hairpin"
+                or len(self.strands) != 1
+                or not self.pairings
+                or self.cohesive_ends
+                or self.endpoint_sequence_fate_spans
+            ):
+                raise ValueError(
+                    "Adapter hairpin requires one paired strand and no downstream ends."
+                )
         elif self.reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and not isinstance(
             self.reference, DuplexFinalProductReference
         ):
@@ -87,6 +112,14 @@ class MaterializedFinalProduct(HopModel):
         ):
             raise ValueError("Duplex final product must equal its exact reference graph.")
         return self
+
+    @property
+    def design_projection(self) -> SequenceProjection:
+        """Return the core projection in its declared endpoint or pre-release parent."""
+        if self.release_evidence is not None:
+            return self.release_evidence.design_parent_projection
+        assert self.encoding_projection is not None
+        return self.encoding_projection
 
 
 __all__ = ["MaterializedFinalProduct"]

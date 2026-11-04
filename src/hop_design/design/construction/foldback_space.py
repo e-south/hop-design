@@ -15,7 +15,10 @@ from importlib.metadata import version
 from itertools import product
 from math import prod
 
-from hop_design.kernel.construction.foldback.admission import admit_foldback_sequences
+from hop_design.kernel.construction.foldback.admission import (
+    admit_foldback_precursors,
+    retained_sequences,
+)
 from hop_design.kernel.construction.foldback.domains import solve_foldback_sequence_domain
 from hop_design.kernel.construction.foldback.programs import stream_foldback_programs
 from hop_design.kernel.construction.foldback.solutions import FoldbackPlacementFailure
@@ -89,10 +92,11 @@ def discover_sequence_space(request: FoldbackSequenceRequest) -> FoldbackSequenc
                     placement_count = 0
                     placement_failure = domain.code
                     sequences = SequenceSet(length_nt=length, decisions=(), root=0, cardinality=0)
+                    precursors = sequences
                 else:
                     placement_count = domain.cardinality
                     placement_failure = None
-                    sequences = admit_foldback_sequences(
+                    precursors = admit_foldback_precursors(
                         domain=domain,
                         target=target,
                         program_kind=program.kind,
@@ -101,7 +105,13 @@ def discover_sequence_space(request: FoldbackSequenceRequest) -> FoldbackSequenc
                         max_operations=limits.max_set_operations,
                         max_site_checks=limits.max_site_checks,
                     )
-                decision_count += len(sequences.decisions)
+                    sequences = retained_sequences(
+                        precursors,
+                        retained_length_nt=length,
+                        max_nodes=limits.max_decisions,
+                        max_operations=limits.max_set_operations,
+                    )
+                decision_count += len(sequences.decisions) + len(precursors.decisions)
                 if decision_count > limits.max_result_decisions:
                     raise SequenceSetLimitError("Foldback result decision budget exhausted.")
                 supports.append(
@@ -118,6 +128,7 @@ def discover_sequence_space(request: FoldbackSequenceRequest) -> FoldbackSequenc
                         placement_count=placement_count,
                         placement_failure=placement_failure,
                         sequences=sequences,
+                        source_assignments=precursors,
                     )
                 )
                 union = builder.union(union, builder.import_set(sequences))

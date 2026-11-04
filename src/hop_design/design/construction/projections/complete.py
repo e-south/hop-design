@@ -73,6 +73,8 @@ def project_complete_construction_summary(
                 basal_realization_id=disposition.basal_realization_id,
                 status=disposition.status,
                 rejection_reason=disposition.rejection_reason,
+                preparation_constraint=disposition.preparation_constraint,
+                scaffold_mismatches=disposition.scaffold_mismatches,
                 truncation_reason=disposition.truncation_reason,
                 materialized_realization_id=disposition.materialized_realization_id,
                 achieved_geometry_group_key=(
@@ -160,7 +162,7 @@ def _end_offsets(
     left, right = realization.final_product.cohesive_ends
     return clone_payload_end_offsets(
         ends=(left, right),
-        encoding_start=realization.final_product.encoding_projection.source_span.start.offset,
+        encoding_start=realization.final_product.design_projection.source_span.start.offset,
         payload_boundaries=realization.design.payload_boundaries,
     )
 

@@ -37,6 +37,7 @@ class ConstructionEndpoint(StrEnum):
     """Requested molecular endpoint of a construction route."""
 
     SSDNA_HAIRPIN = "ssdna_hairpin"
+    ADAPTER_LIGATED_HAIRPIN = "adapter_ligated_hairpin"
     HAIRPIN_PCR_DUPLEX = "hairpin_pcr_duplex"
     CLONE_READY_DUPLEX = "clone_ready_duplex"
 

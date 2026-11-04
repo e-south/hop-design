@@ -26,7 +26,7 @@ from hop_design.models.plan import FeatureRole
 from hop_design.models.sequence import reverse_complement_iupac
 
 from .material import PcrPrimer
-from .request import ConstructionDiscoveryRequest
+from .request import ConstructionDiscoveryRequest, DesignAuthorityReference
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,8 +142,8 @@ def replay_linear_source_embedding(
     return prefix, source_return_arm, embedding
 
 
-def _design_context(request: ConstructionDiscoveryRequest) -> tuple[str, str, str]:
-    features = request.design.plan.hairpin_encoding_insert.features
+def _design_context(design: DesignAuthorityReference) -> tuple[str, str, str]:
+    features = design.plan.hairpin_encoding_insert.features
     payload_index = next(
         (index for index, feature in enumerate(features) if feature.role is FeatureRole.PAYLOAD),
         None,
@@ -174,7 +174,7 @@ def derive_route_prefix(
     payload: str,
 ) -> str | None:
     """Return the exact prefix when the local source map agrees with the design."""
-    design_prefix, _, basal_left = _design_context(request)
+    design_prefix, _, basal_left = _design_context(request.design)
     if basal is None:
         return design_prefix
     if len(basal.payload_source_map.segments) != 1:
@@ -209,12 +209,44 @@ def derive_pcr_design_parent_span(
     forward_primer: PcrPrimer,
 ) -> Span | None:
     """Locate the exact HOP design within one route-bearing PCR product."""
-    design_prefix, _, _ = _design_context(request)
+    return derive_joined_design_parent_span(
+        request,
+        prefix=prefix,
+        sequence=top_sequence,
+        initial_extension_nt=len(forward_primer.five_prime_handle),
+    )
+
+
+def derive_joined_design_parent_span(
+    request: ConstructionDiscoveryRequest,
+    *,
+    prefix: str,
+    sequence: str,
+    initial_extension_nt: int = 0,
+) -> Span | None:
+    """Locate the exact design in a joined hairpin or its explicitly copied strand."""
+    return derive_design_parent_span(
+        design=request.design,
+        prefix=prefix,
+        sequence=sequence,
+        initial_extension_nt=initial_extension_nt,
+    )
+
+
+def derive_design_parent_span(
+    *,
+    design: DesignAuthorityReference,
+    prefix: str,
+    sequence: str,
+    initial_extension_nt: int = 0,
+) -> Span | None:
+    """Anchor the paired core to its source occurrence, independently of release."""
+    design_prefix, _, _ = _design_context(design)
     if not prefix.endswith(design_prefix):
         return None
-    start = len(forward_primer.five_prime_handle) + len(prefix) - len(design_prefix)
-    end = start + len(request.design.encoding_sequence)
-    if top_sequence[start:end] != request.design.encoding_sequence:
+    start = initial_extension_nt + len(prefix) - len(design_prefix)
+    end = start + len(design.encoding_sequence)
+    if sequence[start:end] != design.encoding_sequence:
         return None
     return Span(start=Boundary(offset=start), end=Boundary(offset=end))
 
@@ -231,7 +263,7 @@ def derive_endpoint_source_return_arm(
 ) -> str:
     """Derive the exact source-return arm required by the requested endpoint."""
     if request.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
-        _, design_return_arm, _ = _design_context(request)
+        _, design_return_arm, _ = _design_context(request.design)
         return design_return_arm
     return derive_source_return_arm(prefix)
 

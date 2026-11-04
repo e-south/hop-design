@@ -55,6 +55,7 @@ from .local_public import (
     discover_local_neighborhood,
     load_verified_local_neighborhood,
 )
+from .projection_labels import trajectory_enzyme_labels
 from .projection_packet import ConstructionProjection
 from .selection_reference import (
     ConstructionSelection,
@@ -207,11 +208,12 @@ def project_construction_trajectory(
     materialized_realization_id: str,
 ) -> ConstructionProjection:
     """Project one explicitly selected accepted construction chronology."""
-    return _packet(
-        _project_complete_construction_trajectory(
-            _source(receipt),
-            materialized_realization_id=materialized_realization_id,
-        )
+    source = _source(receipt)
+    projection = _project_complete_construction_trajectory(
+        source, materialized_realization_id=materialized_realization_id
+    )
+    return ConstructionProjection._create(
+        projection, enzyme_names=trajectory_enzyme_labels(source, projection)
     )
 
 
@@ -223,18 +225,36 @@ def compare_constructions(
     right_realization_id: str,
 ) -> str:
     """Compare two selected accepted routes as a read-only Markdown report."""
-    from hop_design.export.construction.handoff.comparison import render_construction_comparison
+    from .comparison import project_construction_comparison
 
-    left_source, right_source = _source(left), _source(right)
-    return render_construction_comparison(
-        _project_complete_construction_trajectory(
-            left_source, materialized_realization_id=left_realization_id
+    return project_construction_comparison(
+        left,
+        right,
+        left_realization_id=left_realization_id,
+        right_realization_id=right_realization_id,
+    ).report_text
+
+
+def project_hairpin_portrait(
+    receipt: ConstructionCompilation | VerifiedConstructionBundle,
+    *,
+    materialized_realization_id: str,
+) -> ConstructionProjection:
+    """Show the exact joined hairpin in one explicitly selected complete route."""
+    from .projections.hairpin import project_hairpin_portrait as project
+
+    source = _source(receipt)
+    trajectory = _project_complete_construction_trajectory(
+        source, materialized_realization_id=materialized_realization_id
+    )
+    return ConstructionProjection._create(
+        project(trajectory),
+        preparation=ConstructionProjection._create(
+            trajectory, enzyme_names=trajectory_enzyme_labels(source, trajectory)
         ),
-        _project_complete_construction_trajectory(
-            right_source, materialized_realization_id=right_realization_id
+        selection=select_construction_realization(
+            receipt, materialized_realization_id=materialized_realization_id
         ),
-        left_status=left_source.result.status.value,
-        right_status=right_source.result.status.value,
     )
 
 
@@ -296,6 +316,7 @@ __all__ = [
     "project_construction_navigation",
     "project_construction_trajectory",
     "project_foldback_feasibility",
+    "project_hairpin_portrait",
     "project_retained_overhead_frontier",
     "project_source_partition_certificate",
     "select_construction_realization",

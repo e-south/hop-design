@@ -34,11 +34,16 @@ from hop_design.models.construction.complete.evaluation import CompositionReject
 from hop_design.models.construction.complete.material_disposition import (
     RouteMaterialDispositionSpan,
 )
+from hop_design.models.construction.complete.preparation_diagnostics import (
+    PreparationConstraintDiagnostic,
+    validate_preparation_constraint,
+)
 from hop_design.models.construction.payload import ConstructionEndpoint, _content_id
+from hop_design.models.construction.scaffold import ScaffoldMismatch
 
 COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION: Literal[
-    "complete-construction-projections/4"
-] = "complete-construction-projections/4"
+    "complete-construction-projections/5"
+] = "complete-construction-projections/5"
 
 
 class CompleteConstructionSummaryRow(HopModel):
@@ -55,6 +60,10 @@ class CompleteConstructionSummaryRow(HopModel):
     )
     status: CompositionDispositionStatus
     rejection_reason: CompositionRejectionCode | None = None
+    preparation_constraint: PreparationConstraintDiagnostic | None = None
+    scaffold_mismatches: tuple[ScaffoldMismatch, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
     truncation_reason: str | None = None
     materialized_realization_id: str | None = Field(
         default=None,
@@ -84,6 +93,11 @@ class CompleteConstructionSummaryRow(HopModel):
 
     @model_validator(mode="after")
     def validate_disposition(self) -> CompleteConstructionSummaryRow:
+        validate_preparation_constraint(self.rejection_reason, self.preparation_constraint)
+        if bool(self.scaffold_mismatches) != (
+            self.rejection_reason is CompositionRejectionCode.HAIRPIN_SCAFFOLD_OUTSIDE_REQUEST
+        ):
+            raise ValueError("Scaffold rejection rows require exact dimension mismatches.")
         accepted_facts = (
             self.materialized_realization_id,
             self.achieved_geometry_group_key,
@@ -148,13 +162,13 @@ class CompleteConstructionSummaryRow(HopModel):
 class CompleteConstructionSummaryProjection(HopModel):
     """Lossless presentation relation over one verified construction-space result."""
 
-    schema_id: Literal["hop.complete-construction-summary/v4"] = Field(
-        default="hop.complete-construction-summary/v4",
+    schema_id: Literal["hop.complete-construction-summary/v5"] = Field(
+        default="hop.complete-construction-summary/v5",
         alias="schema",
     )
     projection_id: str = Field(pattern=r"^hop:complete-construction-summary/[0-9a-f]{64}@1$")
     source_result_id: str = Field(pattern=r"^hop:construction-space-result/[0-9a-f]{64}@1$")
-    renderer_version: Literal["complete-construction-projections/4"] = (
+    renderer_version: Literal["complete-construction-projections/5"] = (
         COMPLETE_CONSTRUCTION_PROJECTION_RENDERER_VERSION
     )
     problem_id: str = Field(pattern=r"^hop:construction-problem/[0-9a-f]{64}@1$")

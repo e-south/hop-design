@@ -39,9 +39,17 @@ class FoldbackTarget(HopModel):
     junction_offset_nt: int = Field(ge=0)
     loop_length_nt: int = Field(ge=1)
     annealing_arm_length_bp: int = Field(ge=1)
+    loop_sequence: str | None = Field(default=None, exclude_if=lambda value: value is None)
+
+    @field_validator("loop_sequence")
+    @classmethod
+    def exact_loop(cls, value: str | None) -> str | None:
+        return None if value is None else normalize_dna_sequence(value, allow_degenerate=False)
 
     @model_validator(mode="after")
     def validate_nick_offset(self) -> FoldbackTarget:
+        if self.loop_sequence is not None and len(self.loop_sequence) != self.loop_length_nt:
+            raise ValueError("Exact loop sequence must agree with loop length.")
         if self.junction_offset_nt > self.annealing_arm_length_bp:
             raise ValueError("The foldback nick must lie within the first annealing arm.")
         return self

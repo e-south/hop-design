@@ -31,6 +31,7 @@ from hop_design.models.construction.complete import (
 )
 from hop_design.models.construction.complete.clone import discover_endpoint_release
 from hop_design.models.construction.complete.pcr.products import pcr_products
+from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.enzymes import (
     CharacterizedEnzyme,
     CharacterizedEnzymeCatalog,
@@ -344,7 +345,7 @@ def test_complete_construction_execution_identifies_route_contract() -> None:
         ),
     )
 
-    assert execution.route_implementation_version == "complete-construction/9"
+    assert execution.route_implementation_version == "complete-construction/11"
     with pytest.raises(ValidationError, match="route_implementation_version"):
         ConstructionCompositionExecution.model_validate(
             {**execution.model_dump(), "route_implementation_version": "complete-construction/6"}
@@ -368,7 +369,7 @@ def test_basal_target_rejects_endpoint_release_fields() -> None:
 
 
 def test_release_search_recovers_the_oriented_pair_that_retains_the_design_union() -> None:
-    design = "AACCGGTT"
+    design = "AACCAAAAGGTT"
     pcr_top = f"GGTCTCA{design}AGAGACC"
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
@@ -392,6 +393,7 @@ def test_release_search_recovers_the_oriented_pair_that_retains_the_design_union
         request=request,
         pcr_top=pcr_top,
         design_sequence=design,
+        design_parent_span=Span(start=Boundary(offset=7), end=Boundary(offset=7 + len(design))),
     )
 
     assert result.bindings is not None
@@ -426,6 +428,7 @@ def test_release_search_checks_payload_gap_against_both_actual_strand_cuts(
         request=request,
         pcr_top=f"GGTCTCA{design}AGAGACC",
         design_sequence=design,
+        design_parent_span=Span(start=Boundary(offset=7), end=Boundary(offset=7 + len(design))),
         payload_boundaries=(6, 10),
     )
     assert (result.bindings is not None) is feasible
@@ -433,7 +436,7 @@ def test_release_search_checks_payload_gap_against_both_actual_strand_cuts(
 
 
 def test_release_search_reports_truncation_before_unique_pair_is_established() -> None:
-    design = "AACCGGTT"
+    design = "AACCAAAAGGTT"
     pcr_top = f"GGTCTCA{design}AGAGACCAGAGACC"
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
@@ -457,6 +460,7 @@ def test_release_search_reports_truncation_before_unique_pair_is_established() -
         request=request,
         pcr_top=pcr_top,
         design_sequence=design,
+        design_parent_span=Span(start=Boundary(offset=7), end=Boundary(offset=7 + len(design))),
     )
 
     assert result.bindings is None
@@ -465,7 +469,7 @@ def test_release_search_reports_truncation_before_unique_pair_is_established() -
 
 
 def test_release_search_consumes_only_the_bounded_cartesian_prefix() -> None:
-    design = "AACCGGTT"
+    design = "AACCAAAAGGTT"
     repeated_sites = 1_024
     pcr_top = "GGTCTC" * repeated_sites + "A" + design + "A" + "GAGACC" * repeated_sites
     request = TypeIisReleaseRequest(
@@ -491,6 +495,10 @@ def test_release_search_consumes_only_the_bounded_cartesian_prefix() -> None:
         request=request,
         pcr_top=pcr_top,
         design_sequence=design,
+        design_parent_span=Span(
+            start=Boundary(offset=6 * repeated_sites + 1),
+            end=Boundary(offset=6 * repeated_sites + 1 + len(design)),
+        ),
     )
     _, peak_bytes = tracemalloc.get_traced_memory()
     tracemalloc.stop()
@@ -500,8 +508,8 @@ def test_release_search_consumes_only_the_bounded_cartesian_prefix() -> None:
     assert peak_bytes < 20_000_000
 
 
-def test_release_search_reports_ambiguous_and_zero_match_outcomes() -> None:
-    design = "AACCGGTT"
+def test_release_search_anchors_repeated_core_and_reports_zero_match() -> None:
+    design = "AACCAAAAGGTT"
     request = TypeIisReleaseRequest(
         enzyme_provisioning=_release_policy(),
         left=ReleaseSideRequirement(
@@ -519,23 +527,25 @@ def test_release_search_reports_ambiguous_and_zero_match_outcomes() -> None:
         max_site_pairs=4,
     )
 
-    ambiguous = discover_endpoint_release(
+    anchored = discover_endpoint_release(
         payload_boundaries=(4, len(design) - 4),
         request=request,
         pcr_top=f"GGTCTCA{design}AGAGACCGGTCTCA{design}AGAGACC",
         design_sequence=design,
+        design_parent_span=Span(start=Boundary(offset=7), end=Boundary(offset=7 + len(design))),
     )
     zero = discover_endpoint_release(
         payload_boundaries=(4, len(design) - 4),
         request=request,
         pcr_top="A" * 32,
         design_sequence=design,
+        design_parent_span=Span(start=Boundary(offset=7), end=Boundary(offset=7 + len(design))),
     )
 
-    assert ambiguous.bindings is None
-    assert ambiguous.examined_site_pairs == 4
-    assert ambiguous.truncated is False
-    assert ambiguous.ambiguous is True
+    assert anchored.bindings is not None
+    assert anchored.examined_site_pairs == 4
+    assert anchored.truncated is False
+    assert anchored.ambiguous is False
     assert zero.bindings is None
     assert zero.examined_site_pairs == 0
     assert zero.truncated is False

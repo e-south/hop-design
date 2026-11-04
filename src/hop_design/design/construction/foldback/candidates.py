@@ -16,6 +16,7 @@ from hop_design.kernel.construction.foldback import (
     FoldbackSequenceSolution,
     iter_foldback_program_solutions,
 )
+from hop_design.models.construction.sequence_domain import SequenceDomainPartition
 from hop_design.models.physical import Strand
 from hop_design.models.reaction_replay import scan_actionable_sites
 from hop_design.models.reactions import ReactionMolecule, ReactionState
@@ -49,18 +50,22 @@ def _payload_has_actionable_site(unit: FoldbackWorkUnit) -> bool:
 
 def iter_foldback_candidates(
     unit: FoldbackWorkUnit,
+    *,
+    sequence_partition: SequenceDomainPartition | None = None,
 ) -> Iterator[FoldbackSequenceSolution | FoldbackPlacementFailure]:
     """Preserve placement failures and prune a program with an immutable extra site."""
     solutions = iter_foldback_program_solutions(
         payload_sequence=unit.payload_sequence,
         target=unit.target,
         program=unit.program,
+        sequence_partition=sequence_partition,
     )
     first = next(solutions, None)
     if first is None:
         return
     if not isinstance(first, FoldbackPlacementFailure) and _payload_has_actionable_site(unit):
-        yield FoldbackPlacementFailure(code="unintended-actionable-site")
+        if sequence_partition is None or sequence_partition.part_index == 0:
+            yield FoldbackPlacementFailure(code="unintended-actionable-site")
         return
     yield first
     yield from solutions

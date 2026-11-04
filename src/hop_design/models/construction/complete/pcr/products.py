@@ -11,10 +11,9 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from itertools import pairwise
 
 from hop_design.models.coordinates import Boundary, Span
-from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_state import (
     EndChemistry,
     LineageStrand,
@@ -24,13 +23,11 @@ from hop_design.models.molecular_state import (
 from hop_design.models.plan import FeatureRole, SequenceFeature
 from hop_design.models.sequence import reverse_complement_iupac
 
-from ..material import MaterialUse, PcrPrimer
+from ..material import PcrPrimer
 from .authority import (
     EndpointSequenceFate,
     EndpointSequenceFateSpan,
     EndpointStrand,
-    MaterialFunction,
-    MaterialFunctionSpan,
 )
 
 
@@ -167,103 +164,6 @@ def pcr_products(
     return top, bottom
 
 
-def _runs(lineage: tuple[MaterialBaseLineage, ...]) -> Iterable[tuple[int, int]]:
-    start = 0
-    for index in range(1, len(lineage)):
-        previous = lineage[index - 1]
-        current = lineage[index]
-        if (
-            current.origin_id != previous.origin_id
-            or abs(current.origin_index - previous.origin_index) != 1
-        ):
-            yield start, index
-            start = index
-    yield start, len(lineage)
-
-
-def _material_function_spans(
-    use_by_id: dict[str, MaterialUse],
-    function_by_use: dict[str, MaterialFunction],
-    *,
-    top: MolecularStrand,
-    bottom: MolecularStrand,
-) -> tuple[MaterialFunctionSpan, ...]:
-    records: list[MaterialFunctionSpan] = []
-    for endpoint_strand, product in (
-        (EndpointStrand.TOP, top),
-        (EndpointStrand.BOTTOM, bottom),
-    ):
-        for start, end in _runs(product.lineage):
-            run = product.lineage[start:end]
-            function = function_by_use.get(run[0].origin_id)
-            material_use = use_by_id.get(run[0].origin_id)
-            if function is None or material_use is None:
-                raise ValueError("PCR product lineage must resolve to an exact route material.")
-            minimum = min(item.origin_index for item in run)
-            maximum = max(item.origin_index for item in run) + 1
-            orientation = (
-                BindingOrientation.SAME_5TO3
-                if len(run) == 1 or run[-1].origin_index > run[0].origin_index
-                else BindingOrientation.REVERSE_COMPLEMENT_5TO3
-            )
-            records.append(
-                MaterialFunctionSpan(
-                    material_use_id=material_use.use_id,
-                    material_id=material_use.material_id,
-                    function=function,
-                    material_span=_span(minimum, maximum),
-                    endpoint_strand=endpoint_strand,
-                    endpoint_span=_span(start, end),
-                    orientation=orientation,
-                )
-            )
-    return tuple(records)
-
-
-def material_function_spans(
-    *,
-    material_uses: tuple[MaterialUse, ...],
-    top: MolecularStrand,
-    bottom: MolecularStrand,
-) -> tuple[MaterialFunctionSpan, ...]:
-    """Map every retained input-material run to its exact endpoint occurrence."""
-    return _material_function_spans(
-        {material_use.use_id: material_use for material_use in material_uses},
-        {
-            material_use.use_id: function
-            for material_use, function in zip(material_uses, MaterialFunction, strict=True)
-        },
-        top=top,
-        bottom=bottom,
-    )
-
-
-def validate_material_function_spans(
-    *,
-    records: tuple[MaterialFunctionSpan, ...],
-    material_uses: tuple[MaterialUse, ...],
-    function_by_use: dict[str, MaterialFunction],
-    top: MolecularStrand,
-    bottom: MolecularStrand,
-) -> None:
-    """Require material functions to replay their exact endpoint lineage spans."""
-    use_by_id = {item.use_id: item for item in material_uses}
-    if set(function_by_use.values()) != set(MaterialFunction) or any(
-        function_by_use.get(record.material_use_id) is not record.function
-        or use_by_id.get(record.material_use_id) is None
-        or use_by_id[record.material_use_id].material_id != record.material_id
-        for record in records
-    ):
-        raise ValueError("PCR material-function spans must bind exact route material roles.")
-    if records != _material_function_spans(
-        use_by_id,
-        function_by_use,
-        top=top,
-        bottom=bottom,
-    ):
-        raise ValueError("PCR material-function spans must replay exact endpoint lineage.")
-
-
 def _fate(role: FeatureRole) -> EndpointSequenceFate:
     if role in {FeatureRole.PAYLOAD, FeatureRole.PAIRED_PAYLOAD}:
         return EndpointSequenceFate.PAYLOAD
@@ -275,6 +175,7 @@ def endpoint_fate_spans(
     length: int,
     *,
     design_source_span: Span | None = None,
+    retained_parent_spans: tuple[Span, Span] | None = None,
 ) -> tuple[EndpointSequenceFateSpan, ...]:
     """Project exact plan-feature fates across both ordered endpoint strands."""
     source_span = design_source_span or _span(0, length)
@@ -305,7 +206,11 @@ def endpoint_fate_spans(
             )
         )
     records: list[EndpointSequenceFateSpan] = []
-    for endpoint_strand in EndpointStrand:
+    if retained_parent_spans is not None and any(
+        span.length.value == 0 or span.end.offset > length for span in retained_parent_spans
+    ):
+        raise ValueError("Endpoint retention must name nonempty spans within both PCR strands.")
+    for strand_index, endpoint_strand in enumerate(EndpointStrand):
         ordered = (
             tuple(top_segments)
             if endpoint_strand is EndpointStrand.TOP
@@ -317,34 +222,69 @@ def endpoint_fate_spans(
                 if endpoint_strand is EndpointStrand.TOP
                 else _span(length - source.end.offset, length - source.start.offset)
             )
-            if (
-                records
-                and records[-1].endpoint_strand is endpoint_strand
-                and records[-1].fate is fate
-                and records[-1].endpoint_span.end.offset == span.start.offset
-            ):
-                records[-1] = records[-1].model_copy(
-                    update={
-                        "endpoint_span": _span(
-                            records[-1].endpoint_span.start.offset, span.end.offset
-                        )
-                    }
-                )
-            else:
-                records.append(
-                    EndpointSequenceFateSpan(
-                        endpoint_strand=endpoint_strand,
-                        endpoint_span=span,
-                        fate=fate,
+            pieces = (
+                ((span, fate),)
+                if retained_parent_spans is None
+                else _retained_fates(span, fate, retained_parent_spans[strand_index])
+            )
+            for piece, final_fate in pieces:
+                if (
+                    records
+                    and records[-1].endpoint_strand is endpoint_strand
+                    and records[-1].fate is final_fate
+                    and records[-1].endpoint_span.end.offset == piece.start.offset
+                ):
+                    records[-1] = records[-1].model_copy(
+                        update={
+                            "endpoint_span": _span(
+                                records[-1].endpoint_span.start.offset, piece.end.offset
+                            )
+                        }
                     )
-                )
+                else:
+                    records.append(
+                        EndpointSequenceFateSpan(
+                            endpoint_strand=endpoint_strand,
+                            endpoint_span=piece,
+                            fate=final_fate,
+                        )
+                    )
     return tuple(records)
+
+
+def _retained_fates(
+    span: Span,
+    fate: EndpointSequenceFate,
+    retained: Span,
+) -> tuple[tuple[Span, EndpointSequenceFate], ...]:
+    boundaries = sorted(
+        {
+            span.start.offset,
+            span.end.offset,
+            *(
+                boundary
+                for boundary in (retained.start.offset, retained.end.offset)
+                if span.start.offset < boundary < span.end.offset
+            ),
+        }
+    )
+    pieces = []
+    for start, end in pairwise(boundaries):
+        final_fate = (
+            (
+                EndpointSequenceFate.PAYLOAD
+                if fate is EndpointSequenceFate.PAYLOAD
+                else EndpointSequenceFate.RETAINED_CONSTRUCTION
+            )
+            if retained.start.offset <= start < retained.end.offset
+            else EndpointSequenceFate.TRANSIENT_CONSTRUCTION
+        )
+        pieces.append((_span(start, end), final_fate))
+    return tuple(pieces)
 
 
 __all__ = [
     "endpoint_fate_spans",
-    "material_function_spans",
     "pcr_products",
-    "validate_material_function_spans",
     "validate_pcr_annealing_spans",
 ]

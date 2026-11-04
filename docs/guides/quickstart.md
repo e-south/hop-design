@@ -1,6 +1,6 @@
 ---
 doc_id: hop-quickstart
-title: Compile a first HOP design
+title: Compile payload anatomy
 intent: Compile a public duplex substrate and preview a realistic variable-spacer family.
 audience:
   - new users
@@ -13,11 +13,19 @@ journey:
   - verify
 ---
 
-# Quickstart
+# Compile payload anatomy
+
+For the ssDNA-to-hairpin service, start with the
+[construction journey](design-a-construction.md). This tutorial compiles sequence
+anatomy; it does not produce a processing route or an orderable construction.
 
 [Install HOP](install.md), then compile one exact payload. The installation
 guide distinguishes the released package from the source checkout. Commands
 beginning with `uv run` below assume you are in that checkout.
+
+The source checkout is the unreleased `v0.1.0a9` candidate. The released wheel
+uses the `v0.1.0a8` contract and its tagged guides; the construction execution
+workflow requires the candidate source or a matching verified artifact.
 
 ## Compile an exact payload
 

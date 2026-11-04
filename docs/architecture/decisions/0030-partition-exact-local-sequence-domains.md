@@ -7,7 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-30
+last_verified: 2026-10-09
 doc_type: decision
 journey:
   - discover
@@ -30,8 +30,10 @@ request must continue to examine both physically valid nick orientations.
 
 ## Decision
 
-`NeighborhoodSearchPlan.sequence_partition` may select one of 2 through 256
-deterministic parts using `part_count` and zero-based `part_index`. For each
+`NeighborhoodSearchPlan.sequence_partition` may select one of a finite number
+of deterministic parts, with `part_count` at least 2 and a zero-based
+`part_index`. The number of parts is independent of the per-invocation node,
+realization and document limits. For each
 canonical exact solution stream, solution ordinal `n` belongs to the part for
 which:
 
@@ -43,6 +45,12 @@ Filtering occurs after canonical molecular sequence placement and before
 realization replay. The partition therefore changes execution and result
 identity, but not construction-problem identity or any accepted realization
 identity.
+
+Implementations may address the selected canonical ordinals directly. They need
+not materialize preceding assignments to reach a later part. Foldback independent
+base domains and basal source/adapter domains retain their original enumeration
+order; basal addressing accounts for the number of permitted adapter assignments
+for each source prefix.
 
 Each result reports completion and feasibility separately for its declared
 part. A single part cannot establish whole-domain payload compatibility, so its
@@ -70,6 +78,10 @@ exhaustive aggregate coverage only when it records:
 
 Presence of every part proves gap-free canonical candidate coverage. Replay and
 disjoint realization identities preserve accepted-member integrity.
+
+Resumable survey bookkeeping may index these parts, complete construction
+witnesses and pending work. The index does not replace molecular replay or the
+aggregate checks above. Empty declared parts remain accounted for.
 
 ## Consequences
 

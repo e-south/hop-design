@@ -13,44 +13,32 @@ from __future__ import annotations
 
 from hop_design.models.construction.basal import BasalRealizationRecord
 from hop_design.models.construction.complete import (
-    AdapterAnnealingAuthority,
-    AdapterLigationAuthority,
-    ConstructionBondState,
     ConstructionProgram,
     ConstructionState,
     ConstructionStatePhase,
+    ConstructionTransition,
+    ConstructionTransitionKind,
     ExactConstructionMaterial,
     MaterialUse,
     PcrPrimer,
     PrimerExtensionAuthority,
 )
 from hop_design.models.construction.complete.evaluation import CombinationEvaluation
-from hop_design.models.construction.complete.evaluation_inputs import (
-    derive_linear_source_embedding,
-)
-from hop_design.models.construction.complete.pcr.pairing import complete_adapter_pairing
+from hop_design.models.construction.complete.material.functions import material_function_spans
 from hop_design.models.construction.complete.pcr.products import (
     endpoint_fate_spans,
-    material_function_spans,
     pcr_products,
 )
-from hop_design.models.construction.complete.pcr.source import derive_pcr_source
 from hop_design.models.construction.foldback import FoldbackLocalRealization
 from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.method import BindingOrientation
 from hop_design.models.molecular_replay import observe_pair
 from hop_design.models.molecular_state import (
-    CovalentBond,
-    LineageStrand,
-    MolecularStrand,
     PrimerBinding,
-    StrandEnd,
 )
 from hop_design.models.plan import SequenceFeature
 
-from .associations import annealed_pairings, duplex_pairings, product_pairings
-from .lineage import material_strand
-from .pcr_program import pcr_program
+from .adapter import materialize_adapter_program
 
 
 def _span(start: int, end: int) -> Span:
@@ -72,173 +60,26 @@ def materialize_pcr_program(
     evaluation: CombinationEvaluation,
     encoding_features: tuple[SequenceFeature, ...],
     design_endpoint_span: Span,
+    endpoint_retained_spans: tuple[Span, Span] | None = None,
 ) -> tuple[ConstructionProgram, PrimerExtensionAuthority]:
     """Materialize the exact basal-open intermediate through the PCR duplex."""
-    if evaluation.reaction_program is None or evaluation.rejection_reason is not None:
-        raise ValueError("PCR materialization requires one exact compatible direct spine.")
-    if evaluation.source_preparation is None or tuple(
-        binding.material for binding in evaluation.source_preparation.produced_material_bindings
-    ) != (source, source_complement):
-        raise ValueError("PCR materialization requires the exact prepared source duplex.")
-    reaction = evaluation.reaction_program
-    source_use, source_complement_use, adapter_use, forward_use, reverse_use = material_uses
-    initial = evaluation.source_preparation.product_state
-    source_result = derive_pcr_source(
+    if evaluation.pcr_template_sequence is None:
+        raise ValueError("PCR materialization requires the exact joined template.")
+    prefix_program = materialize_adapter_program(
         foldback=foldback,
         basal=basal,
-        preparation=evaluation.source_preparation,
-        partition=evaluation.source_partition_plan,
-    )
-    if source_result.reaction != reaction:
-        raise ValueError("PCR source reaction must equal the evaluated program.")
-    product_strands = source_result.cleaved
-    cleaved = ConstructionState.create(
-        molecules=product_strands,
-        phase=ConstructionStatePhase.CLEAVED_DUPLEX,
-        pairings=duplex_pairings(
-            product_strands,
-            source_id=source_use.use_id,
-            complement_id=source_complement_use.use_id,
-            source_length=len(source.sequence_5prime),
-        ),
-    )
-    selected_fragments = source_result.selected
-    denatured_molecules = cleaved.molecules
-    denatured = ConstructionState.create(
-        molecules=denatured_molecules,
-        phase=ConstructionStatePhase.DENATURED_FRAGMENTS,
-    )
-    selected = ConstructionState.create(
-        molecules=selected_fragments,
-        phase=ConstructionStatePhase.SELECTED_FRAGMENTS,
-    )
-    embedding = derive_linear_source_embedding(
-        foldback=foldback,
         prefix=prefix,
         source_return_arm=source_return_arm,
-    )
-    foldback_pairs = annealed_pairings(
-        selected.molecules,
-        foldback=foldback,
-        embedding=embedding,
-        source_id=source_use.use_id,
-        complement_id=source_complement_use.use_id,
-        source_length=len(source.sequence_5prime),
-    )
-    annealed = ConstructionState.create(
-        molecules=selected.molecules,
-        phase=ConstructionStatePhase.ANNEALED_COMPLEX,
-        pairings=foldback_pairs,
-    )
-    if evaluation.pcr_template_sequence is None:
-        raise ValueError("PCR materialization requires one exact PCR template sequence.")
-    if not evaluation.pcr_template_sequence.endswith(adapter.sequence_5prime):
-        raise ValueError("PCR template must terminate in the exact ligation adapter.")
-    closed_sequence = evaluation.pcr_template_sequence[: -len(adapter.sequence_5prime)]
-    closed_lineage = tuple(
-        item.model_copy(update={"product_index": index})
-        for index, item in enumerate(
-            lineage for strand in selected.molecules for lineage in strand.lineage
-        )
-    )
-    closed = MolecularStrand(
-        strand_id="complete-foldback-closed-hairpin",
-        sequence=closed_sequence,
-        five_prime_end=selected.molecules[0].five_prime_end,
-        three_prime_end=selected_fragments[1].three_prime_end,
-        lineage=closed_lineage,
-    )
-    foldback_bond = CovalentBond(
-        upstream_strand_id=selected_fragments[0].strand_id,
-        upstream_end=StrandEnd.THREE_PRIME,
-        downstream_strand_id=selected_fragments[1].strand_id,
-        downstream_end=StrandEnd.FIVE_PRIME,
-    )
-    closed_state = ConstructionState.create(
-        molecules=(closed,),
-        phase=ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
-        pairings=product_pairings(
-            foldback_pairs, precursor_strands=selected.molecules, product=closed
-        ),
-        formed_bonds=(
-            ConstructionBondState(bond=foldback_bond, product_strand_id=closed.strand_id),
-        ),
-    )
-    adapter_strand = material_strand(
-        "complete-ligation-adapter",
-        adapter,
-        lineage_strand=LineageStrand.PRIMARY,
-        material_use_id=adapter_use.use_id,
-    )
-    pairing_state = complete_adapter_pairing(
-        basal, source_prefix=prefix, adapter_sequence=adapter.sequence_5prime
-    )
-    adapter_pairs = tuple(
-        observe_pair(
-            left_strand_id=closed.strand_id,
-            right_strand_id=adapter_strand.strand_id,
-            left_index=pair.source_index + pairing_state.source_span.start.offset,
-            right_index=pair.adapter_index,
-            left_base=pair.source_base,
-            right_base=pair.adapter_base,
-        )
-        for pair in pairing_state.pairs
-    )
-    adapter_annealed = ConstructionState.create(
-        molecules=(closed, adapter_strand),
-        phase=ConstructionStatePhase.ADAPTER_ANNEALED,
-        pairings=(*closed_state.pairings, *adapter_pairs),
-        formed_bonds=closed_state.formed_bonds,
-    )
-    annealing_authority = AdapterAnnealingAuthority.create(
-        pre_state_id=closed_state.state_id,
-        post_state_id=adapter_annealed.state_id,
+        source=source,
+        source_complement=source_complement,
         adapter=adapter,
-        adapter_use=adapter_use,
-        hairpin_span=pairing_state.source_span,
-        adapter_span=pairing_state.adapter_span,
-        pairings=adapter_pairs,
+        material_uses=(material_uses[0], material_uses[1], material_uses[2]),
+        evaluation=evaluation,
+        joined_sequence=evaluation.pcr_template_sequence,
     )
-    adapter_bond = CovalentBond(
-        upstream_strand_id=closed.strand_id,
-        upstream_end=StrandEnd.THREE_PRIME,
-        downstream_strand_id=adapter_strand.strand_id,
-        downstream_end=StrandEnd.FIVE_PRIME,
-    )
-    ligated = MolecularStrand(
-        strand_id="complete-adapter-ligated-hairpin",
-        sequence=closed.sequence + adapter.sequence_5prime,
-        five_prime_end=closed.five_prime_end,
-        three_prime_end=adapter.three_prime_end,
-        lineage=tuple(
-            item.model_copy(update={"product_index": index})
-            for index, item in enumerate((*closed.lineage, *adapter_strand.lineage))
-        ),
-    )
-    ligated_pairs = product_pairings(
-        adapter_annealed.pairings,
-        precursor_strands=adapter_annealed.molecules,
-        product=ligated,
-    )
-    adapter_ligated = ConstructionState.create(
-        molecules=(ligated,),
-        phase=ConstructionStatePhase.ADAPTER_LIGATED,
-        pairings=ligated_pairs,
-        formed_bonds=(
-            closed_state.formed_bonds[0].model_copy(
-                update={"product_strand_id": ligated.strand_id}
-            ),
-            ConstructionBondState(bond=adapter_bond, product_strand_id=ligated.strand_id),
-        ),
-    )
-    ligation_authority = AdapterLigationAuthority.create(
-        pre_state_id=adapter_annealed.state_id,
-        post_state_id=adapter_ligated.state_id,
-        adapter=adapter,
-        adapter_use=adapter_use,
-        bond=adapter_bond,
-        product=ligated,
-    )
+    adapter_ligated = prefix_program.states[-1]
+    ligated = adapter_ligated.molecules[0]
+    forward_use, reverse_use = material_uses[3:]
     top, bottom = pcr_products(
         ligated,
         forward_primer,
@@ -293,6 +134,7 @@ def materialize_pcr_program(
         encoding_features,
         len(top.sequence),
         design_source_span=design_endpoint_span,
+        retained_parent_spans=endpoint_retained_spans,
     )
     extension = PrimerExtensionAuthority.create(
         pre_state_id=adapter_ligated.state_id,
@@ -308,24 +150,19 @@ def materialize_pcr_program(
         material_function_spans=functions,
         endpoint_sequence_fate_spans=fates,
     )
-    states = (
-        initial,
-        cleaved,
-        denatured,
-        selected,
-        annealed,
-        closed_state,
-        adapter_annealed,
-        adapter_ligated,
-        pcr_state,
-    )
-    return pcr_program(
-        states=states,
-        reaction=reaction,
-        assessments=evaluation.stage_assessments,
-        annealing=annealing_authority,
-        ligation=ligation_authority,
-        extension=extension,
+    return ConstructionProgram.create(
+        states=(*prefix_program.states, pcr_state),
+        transitions=(
+            *prefix_program.transitions,
+            ConstructionTransition.create(
+                kind=ConstructionTransitionKind.PRIMER_EXTENSION,
+                pre_state_id=adapter_ligated.state_id,
+                post_state_id=pcr_state.state_id,
+                pcr_authority=extension,
+            ),
+        ),
+        reaction_programs=prefix_program.reaction_programs,
+        stage_assessments=prefix_program.stage_assessments,
     ), extension
 
 

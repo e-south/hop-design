@@ -5,7 +5,7 @@ intent: Count bounded local configurations and recover exact molecular members.
 audience: [Python users, integrators]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-11-03
+last_verified: 2026-11-04
 doc_type: how-to
 journey: [discover, verify]
 ---
@@ -84,6 +84,27 @@ set for every program. Their union counts a configuration once even when
 several enzymes support it. No permitted program means an exhausted empty
 admitted set, with the raw population still present.
 
+A terminus-defining cut can remove a source tail whose bases nevertheless
+affect recognition sites before or after cleavage, and source-primer binding.
+HOP therefore solves its permitted bases alongside the retained arm/cap word.
+A retained word enters the local set when at least one such source completion
+passes every local processing check. HOP keeps the other valid completions
+available for subsequent material and complete-route checks. Failure of the
+first completion does not establish that the retained word is impossible.
+
+Result v2 records two sets per examined program:
+
+| Field | Variables and count |
+| --- | --- |
+| `sequences` | Independent retained arm then cap; each admitted word counts once |
+| `source_assignments` | The retained word followed by the variable positions in the cleaved source tail; source alternatives remain distinct |
+
+`source_assignments` is an assignment vector, not the literal source oligo.
+Molecular placement reconstructs fixed bases and complemented copies. Its
+cardinality may exceed the retained count; that difference is material
+flexibility, not additional retained-hairpin diversity. Empty and excluded
+programs remain in the result. Neither set proves a complete preparation.
+
 `sequences` is a canonical decision diagram, not a sample or an independence
 approximation. Each decision has A/C/G/T branches; shared downstream decisions
 compactly retain correlations. The program sets and their union can recover
@@ -95,8 +116,9 @@ An embedded `hop.sequence-set/v1` object records `length_nt`, `decisions`,
 remaining suffix. Decision rows have implicit IDs starting at 2 and contain
 `position_nt` plus four `branches` in A/C/G/T order. Child decisions appear
 before their parents; positions increase along every path. Positions skipped
-by a path are unconstrained. These sets encode the independent arm-then-cap
-word, never a second independently authored complementary arm. Structural
+by a path are unconstrained. The retained sets encode the independent arm-then-cap
+word; joint sets append variable source-tail positions. Neither authors a second
+independent complementary arm. Structural
 validity and cardinality alone do not establish molecular admission; use the
 public result loader for that verification.
 
@@ -133,12 +155,16 @@ member = json.loads(
         case_id=case["case_id"],
         rank=0,
         program_index=0,
+        completion_rank=0,
     )
 )
 ```
 
 `member_json` repeats ordinary molecular realization for that source and
-program. An unsupported member/program combination raises. Rank is an address,
+program. `rank` selects the retained word, and `completion_rank` selects one
+of its locally admitted source completions. The report includes
+`source_completion_count`; requesting an out-of-range completion raises.
+An unsupported member/program combination also raises. Rank is an address,
 not an optimization score. The returned local realization retains recognition
 spans, cut coordinates, fragment and strand states, pairing, ligation, and
 material obligations. Complete material selection and experimental success

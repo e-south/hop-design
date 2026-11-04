@@ -34,6 +34,58 @@ def test_directory_publication_moves_a_complete_staging_directory(tmp_path: Path
     assert (destination / "artifact.txt").read_text(encoding="utf-8") == "complete\n"
 
 
+@pytest.mark.parametrize("reject", [False, True])
+def test_many_member_directories_fit_a_bounded_descriptor_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reject: bool
+) -> None:
+    protected = tmp_path / "input"
+    protected.mkdir()
+    parent = tmp_path / "exports"
+    parent.mkdir()
+    destination = parent / "published"
+    files = {
+        f"members/{member:04d}/nested/{name}": f"{member}:{name}".encode()
+        for name in ("last.json", "first.json")
+        for member in reversed(range(128))
+    }
+    opened: set[int] = set()
+    original_open, original_close = os.open, os.close
+
+    def bounded_open(path, flags, *args, **kwargs):
+        directory = bool(flags & os.O_DIRECTORY)
+        if directory and len(opened) >= 12:
+            raise OSError(errno.EMFILE, "publication directory descriptor budget exceeded")
+        descriptor = original_open(path, flags, *args, **kwargs)
+        if directory:
+            opened.add(descriptor)
+        return descriptor
+
+    def tracked_close(descriptor):
+        original_close(descriptor)
+        opened.discard(descriptor)
+
+    def verify(staging):
+        assert {name: (staging / name).read_bytes() for name in files} == files
+        if reject:
+            raise ValueError("reject complete publication")
+
+    monkeypatch.setattr(publication.os, "open", bounded_open)
+    monkeypatch.setattr(publication.os, "close", tracked_close)
+    if reject:
+        with pytest.raises(ValueError, match="reject complete publication"):
+            publication.publish_directory_files_create_only(
+                files, destination, protected_root=protected, verifier=verify
+            )
+        assert list(parent.iterdir()) == []
+    else:
+        publication.publish_directory_files_create_only(
+            files, destination, protected_root=protected, verifier=verify
+        )
+        assert {name: (destination / name).read_bytes() for name in files} == files
+    assert not opened
+    assert list(protected.iterdir()) == []
+
+
 def test_directory_publication_never_replaces_a_racing_destination(tmp_path: Path) -> None:
     staging = tmp_path / ".staging"
     staging.mkdir()

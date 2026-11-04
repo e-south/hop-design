@@ -24,8 +24,9 @@ from hop_design.models.sequence import reverse_complement_iupac
 
 from ..basal_embedding import basal_nick_boundary
 from ..evaluation.result import CompositionRejectionCode
-from ..evaluation_inputs import replay_linear_source_embedding
+from ..evaluation_inputs import derive_design_parent_span, replay_linear_source_embedding
 from ..material import ExactConstructionMaterial, PcrPrimer
+from ..material.functions import material_function_spans
 from ..state import ConstructionStatePhase
 from ..transition import ConstructionTransitionKind
 from .authority import (
@@ -34,7 +35,7 @@ from .authority import (
     PrimerExtensionAuthority,
 )
 from .pairing import complete_adapter_pairing
-from .products import endpoint_fate_spans, material_function_spans
+from .products import endpoint_fate_spans
 from .source import derive_pcr_source
 
 if TYPE_CHECKING:
@@ -136,6 +137,129 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     """Require the exact PCR phases, authority, duplex, and design subspan."""
     item = realization
     program = item.construction_program
+    pcr_indexes = tuple(
+        index
+        for index, state in enumerate(program.states)
+        if state.phase is ConstructionStatePhase.HAIRPIN_PCR_DUPLEX
+    )
+    if len(pcr_indexes) != 1:
+        raise ValueError("PCR-bearing routes require one exact PCR duplex state.")
+    pcr_index = pcr_indexes[0]
+    expected_tail = (
+        ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
+        ConstructionStatePhase.ADAPTER_ANNEALED,
+        ConstructionStatePhase.ADAPTER_LIGATED,
+        ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
+    )
+    actual_tail = tuple(state.phase for state in program.states[pcr_index - 3 : pcr_index + 1])
+    if actual_tail != expected_tail:
+        raise ValueError("PCR route must preserve exact foldback, adapter, and duplex phases.")
+    _, source_prefix = validate_adapter_prefix(item)
+    if item.final_product.reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and any(
+        transition.kind is ConstructionTransitionKind.END_GENERATION
+        for transition in program.transitions
+    ):
+        raise ValueError("A PCR endpoint cannot contain end-generation evidence.")
+    terminal_transition = program.transitions[pcr_index - 1]
+    if not isinstance(terminal_transition.pcr_authority, PrimerExtensionAuthority):
+        raise ValueError("PCR endpoint requires one exact primer-extension authority.")
+    product = item.final_product
+    reference = product.reference
+    pcr_state = program.states[pcr_index]
+    if reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if (
+            not isinstance(reference, DuplexFinalProductReference)
+            or reference.topology != "linear_duplex"
+            or product.strands != pcr_state.molecules
+            or product.pairings != pcr_state.pairings
+            or product.cohesive_ends
+        ):
+            raise ValueError("PCR endpoint must equal its exact terminal duplex graph.")
+        projection = product.design_projection
+        if (
+            projection.orientation is not BindingOrientation.SAME_5TO3
+            or projection.source_span.end.offset > len(product.strands[0].sequence)
+            or product.strands[0].sequence[
+                projection.source_span.start.offset : projection.source_span.end.offset
+            ]
+            != projection.sequence
+        ):
+            raise ValueError("PCR design encoding must be an exact top-strand subspan.")
+        if (
+            projection.sequence != item.design.encoding_sequence
+            or projection.sequence_digest != item.design.encoding_digest
+        ):
+            raise ValueError("PCR endpoint encoding projection must equal the verified design.")
+    extension = terminal_transition.pcr_authority
+    anchored_span = derive_design_parent_span(
+        design=item.design,
+        prefix=source_prefix,
+        sequence=pcr_state.molecules[0].sequence,
+        initial_extension_nt=len(extension.forward_primer.five_prime_handle),
+    )
+    projection = product.design_projection
+    if (
+        anchored_span is None
+        or projection.source_span != anchored_span
+        or projection.sequence != item.design.encoding_sequence
+        or projection.sequence_digest != item.design.encoding_digest
+        or projection.orientation is not BindingOrientation.SAME_5TO3
+    ):
+        raise ValueError("PCR design projection must retain its source-anchored core occurrence.")
+    expected_functions = material_function_spans(
+        material_uses=item.material_uses,
+        top=pcr_state.molecules[0],
+        bottom=pcr_state.molecules[1],
+    )
+    if extension.material_function_spans != expected_functions:
+        raise ValueError("PCR material-function spans must replay exact retained lineage.")
+    expected_fates = endpoint_fate_spans(
+        item.design.plan.hairpin_encoding_insert.features,
+        len(pcr_state.molecules[0].sequence),
+        design_source_span=product.design_projection.source_span,
+        retained_parent_spans=(
+            None
+            if product.release_evidence is None
+            else (
+                product.release_evidence.primary_parent_span,
+                product.release_evidence.complementary_parent_span,
+            )
+        ),
+    )
+    if extension.endpoint_sequence_fate_spans != expected_fates:
+        raise ValueError("PCR sequence-fate spans must replay exact design features.")
+    if reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+        if product.material_function_spans != expected_functions:
+            raise ValueError("PCR material-function spans must replay exact retained lineage.")
+        if product.endpoint_sequence_fate_spans != expected_fates:
+            raise ValueError("PCR sequence-fate spans must replay exact design features.")
+
+
+__all__ = [
+    "evaluate_pcr_compatibility",
+    "validate_adapter_pairing_state",
+    "validate_pcr_realization",
+]
+
+
+def validate_adapter_prefix(
+    realization: MaterializedConstructionRealization,
+) -> tuple[BasalRealizationRecord, str]:
+    """Replay the common molecular prefix independently of copying and release."""
+    item = realization
+    program = item.construction_program
+    expected_phases = (
+        ConstructionStatePhase.DUPLEX,
+        ConstructionStatePhase.CLEAVED_DUPLEX,
+        ConstructionStatePhase.DENATURED_FRAGMENTS,
+        ConstructionStatePhase.SELECTED_FRAGMENTS,
+        ConstructionStatePhase.ANNEALED_COMPLEX,
+        ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
+        ConstructionStatePhase.ADAPTER_ANNEALED,
+        ConstructionStatePhase.ADAPTER_LIGATED,
+    )
+    if tuple(state.phase for state in program.states[:8]) != expected_phases:
+        raise ValueError("Adapter route must preserve its exact source-to-ligation phases.")
     basal = item.basal_authority
     if basal is None or basal.basal_nick.strand is not Strand.BOTTOM:
         raise ValueError("PCR route requires one exact bottom-strand basal nick authority.")
@@ -170,95 +294,16 @@ def validate_pcr_realization(realization: MaterializedConstructionRealization) -
     expected_selected = source_result.selected
     if program.states[3].molecules != expected_selected:
         raise ValueError("PCR selection must retain the exact source and foldback fragments.")
-    pcr_indexes = tuple(
-        index
-        for index, state in enumerate(program.states)
-        if state.phase is ConstructionStatePhase.HAIRPIN_PCR_DUPLEX
-    )
-    if len(pcr_indexes) != 1:
-        raise ValueError("PCR-bearing routes require one exact PCR duplex state.")
-    pcr_index = pcr_indexes[0]
-    expected_tail = (
-        ConstructionStatePhase.FOLDBACK_CLOSED_HAIRPIN,
-        ConstructionStatePhase.ADAPTER_ANNEALED,
-        ConstructionStatePhase.ADAPTER_LIGATED,
-        ConstructionStatePhase.HAIRPIN_PCR_DUPLEX,
-    )
-    actual_tail = tuple(state.phase for state in program.states[pcr_index - 3 : pcr_index + 1])
-    if actual_tail != expected_tail:
-        raise ValueError("PCR route must preserve exact foldback, adapter, and duplex phases.")
-    if item.final_product.reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX and any(
-        transition.kind is ConstructionTransitionKind.END_GENERATION
-        for transition in program.transitions
-    ):
-        raise ValueError("A PCR endpoint cannot contain end-generation evidence.")
-    adapter_transition = program.transitions[pcr_index - 3]
-    adapter_authority = adapter_transition.pcr_authority
-    if not isinstance(adapter_authority, AdapterAnnealingAuthority):
-        raise ValueError("PCR route requires the exact basal adapter-pairing authority.")
-    closed, adapter_strand = program.states[pcr_index - 2].molecules
+    authority = program.transitions[5].pcr_authority
+    if not isinstance(authority, AdapterAnnealingAuthority):
+        raise ValueError("Route requires the exact basal adapter-pairing authority.")
+    closed, adapter = program.states[6].molecules
     validate_adapter_pairing_state(
-        adapter_authority,
+        authority,
         basal=basal,
         source_prefix=prefix,
         closed_strand_id=closed.strand_id,
-        adapter_strand_id=adapter_strand.strand_id,
-        adapter_sequence=adapter_strand.sequence,
+        adapter_strand_id=adapter.strand_id,
+        adapter_sequence=adapter.sequence,
     )
-    terminal_transition = program.transitions[pcr_index - 1]
-    if not isinstance(terminal_transition.pcr_authority, PrimerExtensionAuthority):
-        raise ValueError("PCR endpoint requires one exact primer-extension authority.")
-    product = item.final_product
-    reference = product.reference
-    pcr_state = program.states[pcr_index]
-    if reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-        if (
-            not isinstance(reference, DuplexFinalProductReference)
-            or reference.topology != "linear_duplex"
-            or product.strands != pcr_state.molecules
-            or product.pairings != pcr_state.pairings
-            or product.cohesive_ends
-        ):
-            raise ValueError("PCR endpoint must equal its exact terminal duplex graph.")
-        projection = product.encoding_projection
-        if (
-            projection.orientation is not BindingOrientation.SAME_5TO3
-            or projection.source_span.end.offset > len(product.strands[0].sequence)
-            or product.strands[0].sequence[
-                projection.source_span.start.offset : projection.source_span.end.offset
-            ]
-            != projection.sequence
-        ):
-            raise ValueError("PCR design encoding must be an exact top-strand subspan.")
-        if (
-            projection.sequence != item.design.encoding_sequence
-            or projection.sequence_digest != item.design.encoding_digest
-        ):
-            raise ValueError("PCR endpoint encoding projection must equal the verified design.")
-    extension = terminal_transition.pcr_authority
-    expected_functions = material_function_spans(
-        material_uses=item.material_uses,
-        top=pcr_state.molecules[0],
-        bottom=pcr_state.molecules[1],
-    )
-    if extension.material_function_spans != expected_functions:
-        raise ValueError("PCR material-function spans must replay exact retained lineage.")
-    expected_fates = endpoint_fate_spans(
-        item.design.plan.hairpin_encoding_insert.features,
-        len(pcr_state.molecules[0].sequence),
-        design_source_span=product.encoding_projection.source_span,
-    )
-    if extension.endpoint_sequence_fate_spans != expected_fates:
-        raise ValueError("PCR sequence-fate spans must replay exact design features.")
-    if reference.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
-        if product.material_function_spans != expected_functions:
-            raise ValueError("PCR material-function spans must replay exact retained lineage.")
-        if product.endpoint_sequence_fate_spans != expected_fates:
-            raise ValueError("PCR sequence-fate spans must replay exact design features.")
-
-
-__all__ = [
-    "evaluate_pcr_compatibility",
-    "validate_adapter_pairing_state",
-    "validate_pcr_realization",
-]
+    return basal, prefix

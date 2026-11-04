@@ -42,12 +42,19 @@ def iter_foldback_geometries(
                     continue
                 if allowed_arms and arm_length not in allowed_arms:
                     continue
-                yield FoldbackTarget(
-                    nick_strand=domain.nick_strand,
-                    junction_offset_nt=junction_offset,
-                    loop_length_nt=loop_length,
-                    annealing_arm_length_bp=arm_length,
+                words = (
+                    tuple(word for word in domain.loop_sequences if len(word) == loop_length)
+                    if domain.loop_sequences is not None
+                    else (None,)
                 )
+                for word in words:
+                    yield FoldbackTarget(
+                        nick_strand=domain.nick_strand,
+                        junction_offset_nt=junction_offset,
+                        loop_length_nt=loop_length,
+                        annealing_arm_length_bp=arm_length,
+                        loop_sequence=word,
+                    )
 
 
 def foldback_overhead_levels(

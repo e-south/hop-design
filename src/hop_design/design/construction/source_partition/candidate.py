@@ -39,6 +39,7 @@ def prepare_combination_source(
         result.request.endpoint
         not in {
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
             ConstructionEndpoint.CLONE_READY_DUPLEX,
         }
         or result.basal_authority is None

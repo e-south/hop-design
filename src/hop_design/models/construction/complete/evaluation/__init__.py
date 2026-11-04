@@ -9,6 +9,7 @@ from hop_design.models.enzymes import EnzymeProvisioningPolicy
 
 from ..request import ConstructionDiscoveryRequest
 from ..source_partition.plan import SourcePartitionPlan
+from .adapter import evaluate_adapter_endpoint
 from .clone import evaluate_clone_endpoint
 from .context import PreparedContext, build_combination_context, prepare_context
 from .direct import evaluate_direct_endpoint
@@ -32,6 +33,7 @@ def _materialize_evaluation(
         source_preparation=context.source_preparation,
         source_partition_plan=combination.source_partition_plan if context.pcr_bearing else None,
         endpoint_auxiliaries=endpoint.endpoint_auxiliaries,
+        adapter=endpoint.adapter,
         reaction_program=endpoint.reaction_program,
         stage_assessments=endpoint.stage_assessments,
         end_generation_program=endpoint.end_generation_program,
@@ -70,9 +72,13 @@ def evaluate_combination(
     if isinstance(prepared, CombinationEvaluation):
         return prepared
     endpoint = (
-        evaluate_pcr_endpoint(prepared)
-        if prepared.pcr_bearing
-        else evaluate_direct_endpoint(prepared)
+        evaluate_adapter_endpoint(prepared)
+        if (request.endpoint is ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN)
+        else (
+            evaluate_pcr_endpoint(prepared)
+            if prepared.pcr_bearing
+            else evaluate_direct_endpoint(prepared)
+        )
     )
     if isinstance(endpoint, CombinationEvaluation):
         return endpoint
@@ -88,7 +94,10 @@ def evaluate_combination(
         )
     if request.endpoint is ConstructionEndpoint.SSDNA_HAIRPIN:
         design_encoding_matches = endpoint.final_sequence == request.design.encoding_sequence
-    elif request.endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+    elif request.endpoint in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+    }:
         design_encoding_matches = endpoint.design_parent_span is not None
     else:
         design_encoding_matches = True

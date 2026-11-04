@@ -193,15 +193,20 @@ class EnzymeRoleRestriction(HopModel):
         return values
 
 
-class EnzymeProvisioningPolicy(HopModel):
-    """Caller-owned enzyme availability and route-role constraints."""
+class EnzymePermissions(HopModel):
+    """Authored permissions; validate their meaning by binding one characterized catalog."""
 
-    catalog: CharacterizedEnzymeCatalog
     allowed_enzyme_ids: tuple[ReferenceId, ...]
     forbidden_enzyme_ids: tuple[ReferenceId, ...]
     reserved_enzyme_ids: tuple[ReferenceId, ...]
     max_operations: int | None = Field(default=None, ge=1)
     role_restrictions: tuple[EnzymeRoleRestriction, ...]
+
+
+class EnzymeProvisioningPolicy(EnzymePermissions):
+    """Caller-owned enzyme availability and route-role constraints."""
+
+    catalog: CharacterizedEnzymeCatalog
 
     @model_validator(mode="after")
     def validate_policy(self) -> EnzymeProvisioningPolicy:
@@ -267,6 +272,7 @@ __all__ = [
     "CharacterizedEnzyme",
     "CharacterizedEnzymeCatalog",
     "EnzymeClass",
+    "EnzymePermissions",
     "EnzymeProvisioningPolicy",
     "EnzymeRole",
     "EnzymeRoleRestriction",

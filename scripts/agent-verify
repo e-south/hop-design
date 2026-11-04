@@ -4,19 +4,58 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+gate_scope=full
+gate_workers=1
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --scope) [[ $# -ge 2 ]] || exit 2; gate_scope="$2"; shift 2 ;;
+    --workers) [[ $# -ge 2 ]] || exit 2; gate_workers="$2"; shift 2 ;;
+    *) echo 'usage: scripts/agent-verify [--scope presentation|source|full] [--workers 1|2]' >&2; exit 2 ;;
+  esac
+done
+case "$gate_scope" in presentation|source|full) ;; *) echo "unknown verification scope: $gate_scope" >&2; exit 2 ;; esac
+case "$gate_workers" in 1|2) ;; *) echo 'verification workers must be 1 or 2' >&2; exit 2 ;; esac
+gate_parallel=(-n 0)
+if [[ "$gate_workers" == 2 ]]; then gate_parallel=(-n 2 --dist loadscope); fi
+gate_started=$SECONDS
+echo "Verification scope: $gate_scope; Python workers: $gate_workers"
+
 bash ./scripts/agent-preflight --strict
 bash ./scripts/precommit-all
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy src
 uv run --locked python -m compileall -q src/hop_design
+node --test tests/browser/*.test.mjs
 mkdir -p .artifacts
-uv run --locked pytest \
+mkdir -p .artifacts/verification
+if [[ "$gate_scope" == presentation ]]; then
+  # Capture first: process substitution would hide selector failures and an
+  # empty pytest argument list would accidentally run the complete suite.
+  gate_selection="$(uv run --locked python scripts/verification_tests.py)"
+  gate_tests=()
+  while IFS= read -r path; do
+    [[ -n "$path" ]] && gate_tests+=("$path")
+  done <<< "$gate_selection"
+  if [[ ${#gate_tests[@]} -eq 0 ]]; then echo 'empty presentation test selection' >&2; exit 2; fi
+  uv run --locked pytest "${gate_parallel[@]}" "${gate_tests[@]}" \
+    --durations=20 --junitxml=.artifacts/verification/presentation.xml -q
+  echo "Presentation verification: ok ($((SECONDS - gate_started))s); source/release verification is separate"
+  exit 0
+fi
+# Pytest owns the source docs journey and its summary assertions; wheel-smoke
+# independently exercises the installed distribution below.
+uv run --locked pytest "${gate_parallel[@]}" \
+  --durations=20 \
+  --junitxml=".artifacts/verification/$gate_scope.xml" \
   --cov=hop_design \
   --cov-report=term-missing \
   --cov-report=xml:.artifacts/coverage.xml \
   -q
-uv run --locked python scripts/docs-smoke
+if [[ "$gate_scope" == source ]]; then
+  echo "Source verification: ok ($((SECONDS - gate_started))s); installed-distribution verification is separate"
+  exit 0
+fi
 uv export --locked --no-dev --no-emit-project \
   --format requirements-txt \
   --output-file .artifacts/operational-requirements.txt >/dev/null
@@ -26,4 +65,4 @@ uv run --locked pip-audit \
   --disable-pip
 bash ./scripts/wheel-smoke
 
-echo "Agent verification: ok"
+echo "Agent verification: ok ($((SECONDS - gate_started))s; full source and distribution)"

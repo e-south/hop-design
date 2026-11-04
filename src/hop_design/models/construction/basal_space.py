@@ -52,6 +52,7 @@ class BasalSequenceRequest(HopModel):
         validate_linear_source_payload(self.payload)
         if self.endpoint not in {
             ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+            ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
             ConstructionEndpoint.CLONE_READY_DUPLEX,
         }:
             raise ValueError("Basal sequence populations require a PCR-bearing endpoint.")

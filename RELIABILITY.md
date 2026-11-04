@@ -7,7 +7,7 @@ audience:
   - bundle consumers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-31
+last_verified: 2026-10-06
 doc_type: reference
 ---
 
@@ -52,6 +52,40 @@ assessment, endpoint products, disposition accounting, rejection reasons, and
 grouping. Finally, it recompiles the expected construction bundle and requires
 exact artifact and manifest equality. Construction-bundle and projection
 writes are atomic and create-only.
+
+Within request execution, outcome and trajectory projections reuse the immutable
+compilation receipt after its construction-bundle write passes full staged-file
+verification. They do not reload that just-published directory. This reuse is
+limited to the invocation that compiled the authority; every independently loaded
+bundle still undergoes the complete checks above. A failed write returns no
+execution handoff. No process-wide or path-based verification cache is used.
+
+Source compilation packages the result just replayed by discovery without a
+second in-memory replay. Independently called bundle compilation still verifies
+its supplied receipt. Scaffold discovery projects branch facts from candidate
+receipts already admitted during the same invocation; the projection layer has
+no optional bundle-admission path. Candidate publication and file admission remain
+separate checks. Reopening a saved discovery replays its candidates afresh.
+Identical local foldback/basal proof inputs may reuse a successful replay within
+one saved-discovery admission or one bounded options evaluation. Each reuse
+reparses the strict model and compares the full
+canonical result bytes, including request, catalog and limits, under the current
+producer identity and replay policy. The scope retains at most 64 proofs and
+8 MiB, ends when that call returns or raises, and never bypasses file checks,
+complete-route replay or projection comparison. Failed proofs are not retained.
+A separate load or evaluation starts a new proof scope. Candidate quotas,
+enumeration order and completeness accounting do not depend on cache warmth.
+
+
+Comparison retrieval admits its captured discovery pool once, checks the saved
+assessment against that pool, and retrieves the explicit selection inside the
+same capture scope. Assessment and retrieval share those verified receipts;
+another public call captures and admits its input again. Membership, reference,
+material-reuse and selected-preparation checks remain unchanged.
+Selected-set assembly binds each saved selection to its admitted result and
+accepted realization before projecting or copying the immutable artifacts. It
+does not reread those authorities within the same capture. Standalone set requests
+still load and replay every referenced bundle; they have no receipt bypass option.
 
 A hairpin design set inventories its normalized per-position molecular domains,
 resolved hairpin defaults reference, and every byte of every unique member
@@ -131,6 +165,15 @@ Result loading binds the full request, catalog, implementation versions, roster,
 placement exclusions, admitted sets, and totals by deterministic rediscovery.
 An empty case with no permitted program remains part of the raw denominator.
 An empty geometry envelope has zero cases and zero raw population.
+
+Foldback result v2 also retains each program's joint `source_assignments`: the
+independent retained word followed by variable bases in the source tail removed
+by terminus cleavage. Both joint and projected decisions count toward the
+serialized budget. Concrete partitions and survey continuation use all joint
+assignments; a failed source primer does not exclude the other completions of
+that retained word. Local admission still does not prove complete-route validity.
+The route version is `linear-source-foldback/6`; old result schemas and producer
+identities are rejected, rather than resumed with different enumeration addresses.
 
 Complete basal sequence-space requests use the same computational limit contract.
 One case fixes exact payload, nick coordinate and strand, and a canonical local

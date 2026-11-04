@@ -39,6 +39,7 @@ from hop_design.models.construction.complete.clone import (
     derive_clone_digest,
     derive_clone_end_program,
 )
+from hop_design.models.construction.complete.clone.geometry import derive_clone_cut_geometry
 from hop_design.models.construction.complete.evaluation import (
     CombinationEvaluation,
     CompositionRejectionCode,
@@ -47,18 +48,16 @@ from hop_design.models.construction.complete.evaluation_inputs import (
     derive_complete_payload_source_map,
     derive_linear_source_embedding,
 )
+from hop_design.models.construction.complete.material.functions import material_function_spans
 from hop_design.models.construction.complete.material_disposition import (
     derive_route_material_dispositions,
 )
-from hop_design.models.construction.complete.pcr.products import material_function_spans
 from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
     FoldbackNeighborhoodDiscoveryResult,
 )
 from hop_design.models.construction.payload import _content_id
-from hop_design.models.coordinates import Boundary, Span
 from hop_design.models.junction import Strand
-from hop_design.models.molecular_state import SequenceProjection
 
 from .material_uses import pcr_material_uses
 from .pcr import materialize_pcr_program
@@ -122,12 +121,15 @@ def clone_realization(
     encoding = request.design.plan.hairpin_encoding_insert
     template_sequence = evaluation.pcr_template_sequence
     assert template_sequence is not None
-    template_design_start = template_sequence.find(encoding.sequence)
-    if (
-        template_design_start < 0
-        or template_sequence.find(encoding.sequence, template_design_start + 1) >= 0
-    ):
-        return CompositionRejectionCode.CLONE_END_GENERATION_INCOMPATIBLE
+    pcr_top = end_generation_program.states[0].molecules[0].reference_sequence_5prime
+    retention = derive_clone_cut_geometry(
+        bindings=end_generation_bindings,
+        parent_length=len(pcr_top),
+        template_sequence=pcr_top,
+        design_sequence=encoding.sequence,
+        design_parent_span=design_parent_span,
+        payload_boundaries=request.design.payload_boundaries,
+    )
     pcr_program, _ = materialize_pcr_program(
         foldback=foldback,
         basal=basal,
@@ -141,13 +143,10 @@ def clone_realization(
         material_uses=material_uses,
         evaluation=evaluation,
         encoding_features=encoding.features,
-        design_endpoint_span=Span(
-            start=Boundary(offset=template_design_start + len(forward.five_prime_handle)),
-            end=Boundary(
-                offset=(
-                    template_design_start + len(forward.five_prime_handle) + len(encoding.sequence)
-                )
-            ),
+        design_endpoint_span=design_parent_span,
+        endpoint_retained_spans=(
+            retention.primary_parent_span,
+            retention.complementary_parent_span,
         ),
     )
     pcr_state = pcr_program.states[-1]
@@ -157,6 +156,8 @@ def clone_realization(
             pcr_state=pcr_state,
             design_sequence=request.design.encoding_sequence,
             design_digest=request.design.encoding_digest,
+            design_parent_span=design_parent_span,
+            payload_boundaries=request.design.payload_boundaries,
         )
         replayed_end_program = derive_clone_end_program(
             pcr_state=pcr_state,
@@ -220,12 +221,7 @@ def clone_realization(
     product = MaterializedFinalProduct(
         reference=reference,
         strands=terminal.molecules,
-        encoding_projection=SequenceProjection(
-            sequence=encoding.sequence,
-            sequence_digest=encoding.sequence_digest,
-            source_span=digest.encoding_projection.source_span,
-            orientation=digest.encoding_projection.orientation,
-        ),
+        release_evidence=digest.release_evidence,
         pairings=terminal.pairings,
         cohesive_ends=digest.cohesive_ends,
         material_function_spans=functions,

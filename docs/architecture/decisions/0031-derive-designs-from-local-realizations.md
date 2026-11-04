@@ -7,6 +7,7 @@ audience:
   - integrators
 owner: HOP Design maintainers
 status: accepted
+amended_by: hop-adr-0053
 last_verified: 2026-08-30
 doc_type: decision
 ---
@@ -36,7 +37,9 @@ and route-neutral. Local result ids, realization ids, search bounds, relaxation
 radii, enzymes, and reaction programs remain construction provenance and do not
 enter design authority.
 
-The schema accepts arbitrary equal nonzero basal-arm lengths. It does not reuse
+The schema accepts arbitrary equal nonzero basal-arm lengths. These describe
+paired core geometry; [ADR 0053](0053-separate-hairpin-core-and-insert-release.md)
+separates that core from the boundaries of a later released insert. It does not reuse
 the four-position basal policy model, because that model answers a different
 component-assessment question.
 

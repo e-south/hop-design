@@ -139,7 +139,9 @@ def derive_route_material_dispositions(
     """Derive a gap-free material partition from endpoint lineage and route states."""
     functions = {
         material_use.use_id: function
-        for material_use, function in zip(material_uses, MaterialFunction, strict=True)
+        for material_use, function in zip(
+            material_uses, tuple(MaterialFunction)[: len(material_uses)], strict=True
+        )
     }
     mappings: dict[str, list[MaterialFunctionSpan]] = defaultdict(list)
     for record in material_function_spans:

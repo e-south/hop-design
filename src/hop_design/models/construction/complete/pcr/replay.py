@@ -21,6 +21,7 @@ from hop_design.models.molecular_state import (
 from hop_design.models.physical import classify_literal_pair
 from hop_design.models.sequence import reverse_complement_iupac
 
+from ..material.functions import validate_material_function_spans
 from ..state import ConstructionState
 from .authority import (
     AdapterAnnealingAuthority,
@@ -29,7 +30,7 @@ from .authority import (
     MaterialFunction,
     PrimerExtensionAuthority,
 )
-from .products import pcr_products, validate_material_function_spans
+from .products import pcr_products
 
 
 def _route_material_functions(

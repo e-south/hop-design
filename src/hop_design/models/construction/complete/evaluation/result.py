@@ -21,6 +21,7 @@ from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
 from ..auxiliary.resolution import EndpointAuxiliaryResolution
 from ..material import ExactConstructionMaterial
+from ..preparation_diagnostics import PreparationConstraintDiagnostic
 from ..source_preparation import SourceDuplexPreparationAuthority
 
 if TYPE_CHECKING:
@@ -33,6 +34,7 @@ class CompositionRejectionCode(StrEnum):
     BASAL_SOURCE_MAP_INCOMPATIBLE = "basal-source-map-incompatible"
     SOURCE_END_CHEMISTRY_MISMATCH = "source-end-chemistry-mismatch"
     SOURCE_PREPARATION_INCOMPATIBLE = "source-preparation-incompatible"
+    HAIRPIN_SCAFFOLD_OUTSIDE_REQUEST = "hairpin-scaffold-outside-request"
     SOURCE_PARTITION_SOURCE_INCOMPATIBLE = "source-partition-source-incompatible"
     SOURCE_PARTITION_STAGE_INCOMPATIBLE = "source-partition-stage-incompatible"
     SOURCE_PARTITION_CUT_INCOMPATIBLE = "source-partition-cut-incompatible"
@@ -67,6 +69,7 @@ class CombinationEvaluation:
     candidate_enzyme_programs: int
     recognition_placements_attempted: int
     constraint_systems_attempted: int
+    preparation_constraint: PreparationConstraintDiagnostic | None = None
     truncation_reason: str | None = None
     prefix: str | None = None
     source_return_arm: str | None = None
@@ -75,6 +78,7 @@ class CombinationEvaluation:
     source_preparation: SourceDuplexPreparationAuthority | None = None
     source_partition_plan: SourcePartitionPlan | None = None
     endpoint_auxiliaries: EndpointAuxiliaryResolution | None = None
+    adapter: ExactConstructionMaterial | None = None
     reaction_program: ReactionProgram | None = None
     stage_assessments: tuple[ReactionStageAssessment, ...] = ()
     end_generation_program: ReactionProgram | None = None
@@ -98,6 +102,7 @@ class EndpointEvaluation:
     pcr_template_sequence: str | None
     design_parent_span: Span | None
     final_sequence: str
+    adapter: ExactConstructionMaterial | None = None
     end_generation_program: ReactionProgram | None = None
     end_generation_stage_assessments: tuple[ReactionStageAssessment, ...] = ()
     end_generation_report_has_errors: bool = False

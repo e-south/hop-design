@@ -1,0 +1,9 @@
+{
+  "schema": "hop.construction-family-intent/v1",
+  "stem_arm": "NTAACTTCGTATAGCATACATTATACGAAGTTAT",
+  "product": "released_insert",
+  "max_members": 4,
+  "max_total_evaluations": 256,
+  "shared_properties": ["non_stem_sequences"],
+  "shared_material_roles": ["source_materialization_forward_primer"]
+}

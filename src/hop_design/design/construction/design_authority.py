@@ -20,6 +20,7 @@ from hop_design.models.construction.basal import (
     BasalNeighborhoodDiscoveryResult,
     BasalRealizationRecord,
 )
+from hop_design.models.construction.components import ExactBasalArms
 from hop_design.models.construction.foldback import (
     FoldbackLocalRealization,
     FoldbackNeighborhoodDiscoveryResult,
@@ -47,6 +48,7 @@ from .verification import (
 _RouteDesignEndpoint = Literal[
     "ssdna_hairpin",
     "hairpin_pcr_duplex",
+    "adapter_ligated_hairpin",
     "clone_ready_duplex",
 ]
 
@@ -147,9 +149,7 @@ def _foldback_junction(
     )
 
 
-def _basal_junction(
-    realization: BasalRealizationRecord, *, endpoint: _RouteDesignEndpoint
-) -> BasalJunction:
+def _basal_junction(realization: BasalRealizationRecord) -> BasalJunction:
     pairing_state = realization.projection.pairing_state
     if pairing_state is None:
         raise ValueError("Selected basal realization does not contain an exact pairing state.")
@@ -161,22 +161,11 @@ def _basal_junction(
     right = (
         reverse_complement_iupac(retained_source) if retained_source else ""
     ) + pairing_state.adapter_sequence_5prime
-    if endpoint == "clone_ready_duplex":
-        action = realization.future_release_action
-        if action is None:
-            raise ValueError("A clone-ready design requires an exact future release action.")
-        requirement = action.requirement
-        arm_length = requirement.payload_end_offset_bp + len(requirement.cohesive_end_sequence)
-        if payload_start < arm_length:
-            raise ValueError("The release span extends beyond the exact local source sequence.")
-        left = realization.source_precursor_sequence[payload_start - arm_length : payload_start]
-        end_bases = dict(action.adapter_end_bases(nick_offset_nt=len(retained_source)))
-        while len(right) < arm_length:
-            base = end_bases.get(len(right) - len(retained_source))
-            if base is None:
-                raise ValueError("The release span contains undetermined adapter bases.")
-            right += base
-        right = right[:arm_length]
+    return _exact_basal_junction(ExactBasalArms(left_arm=left, right_arm=right))
+
+
+def _exact_basal_junction(arms: ExactBasalArms) -> BasalJunction:
+    left, right = arms.left_arm, arms.right_arm
     pairs = tuple(
         JunctionPairObservation(
             left_index=index,
@@ -210,30 +199,43 @@ def compile_design_from_local_realizations(
     endpoint: _RouteDesignEndpoint,
     foldback: LocalNeighborhoodDiscovery,
     foldback_realization_id: str,
-    basal: LocalNeighborhoodDiscovery | None,
-    basal_realization_id: str | None,
+    basal: LocalNeighborhoodDiscovery | None = None,
+    basal_realization_id: str | None = None,
+    hairpin_basal_arms: tuple[str, str] | None = None,
 ) -> Compilation:
     """Compile one exact design from explicitly selected verified local realizations."""
     if endpoint == "ssdna_hairpin":
-        raise ValueError(
-            "Route-realization design compilation does not support the direct endpoint "
-            "without a separately declared exact basal component."
+        if hairpin_basal_arms is None:
+            raise ValueError(
+                "Route-realization design compilation does not support the direct endpoint "
+                "without a separately declared exact basal component."
+            )
+        if basal is not None or basal_realization_id is not None:
+            raise ValueError("A direct hairpin endpoint must omit basal discovery selection.")
+        if type(hairpin_basal_arms) is not tuple or len(hairpin_basal_arms) != 2:
+            raise ValueError("hairpin_basal_arms requires exactly two arm strings.")
+        junction = _exact_basal_junction(
+            ExactBasalArms(left_arm=hairpin_basal_arms[0], right_arm=hairpin_basal_arms[1])
         )
-    if endpoint not in {"hairpin_pcr_duplex", "clone_ready_duplex"}:
+    elif endpoint not in {"hairpin_pcr_duplex", "clone_ready_duplex", "adapter_ligated_hairpin"}:
         raise ValueError("Route-realization design endpoint must be PCR-bearing.")
-    if basal is None or basal_realization_id is None:
+    elif hairpin_basal_arms is not None:
+        raise ValueError("A PCR-bearing endpoint must derive its basal component from discovery.")
+    elif basal is None or basal_realization_id is None:
         raise ValueError("A PCR-bearing endpoint requires one basal realization selection.")
     payload = ExactPayload(sequence=payload_sequence)
     foldback_record = _select_foldback(
         _foldback_result(foldback),
         foldback_realization_id,
     )
-    basal_record = _select_basal(_basal_result(basal), basal_realization_id)
-    if (
-        foldback_record.payload_sequence != payload.sequence
-        or basal_record.payload_sequence != payload.sequence
-    ):
+    if foldback_record.payload_sequence != payload.sequence:
         raise ValueError("Local realization payload does not match the selected payload.")
+    if endpoint != "ssdna_hairpin":
+        assert basal is not None and basal_realization_id is not None
+        basal_record = _select_basal(_basal_result(basal), basal_realization_id)
+        if basal_record.payload_sequence != payload.sequence:
+            raise ValueError("Local realization payload does not match the selected payload.")
+        junction = _basal_junction(basal_record)
     return compile_spec(
         ExactJunctionDesignSpec(
             design_id=design_id,
@@ -242,7 +244,7 @@ def compile_design_from_local_realizations(
                 foldback_record,
                 payload_sequence=payload.sequence,
             ),
-            basal_junction=_basal_junction(basal_record, endpoint=endpoint),
+            basal_junction=junction,
         )
     )
 

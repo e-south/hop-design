@@ -1,0 +1,40 @@
+{
+  "schema": "hop.scaffold-comparison/v1",
+  "members": [
+    {
+      "name": "loop3",
+      "dimensions": {
+        "loop_nt": 3
+      }
+    },
+    {
+      "name": "loop4",
+      "dimensions": {
+        "loop_nt": 4
+      }
+    },
+    {
+      "name": "loop6",
+      "dimensions": {
+        "loop_nt": 6
+      }
+    },
+    {
+      "name": "loop8",
+      "dimensions": {
+        "loop_nt": 8
+      }
+    }
+  ],
+  "shared_properties": [
+    "stem_sequence",
+    "endpoint",
+    "release_interfaces",
+    "open_side_paired_positions",
+    "loop_side_paired_bp",
+    "terminal_chemistry",
+    "non_loop_sequences",
+    "regional_contacts",
+    "regional_joins"
+  ]
+}

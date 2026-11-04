@@ -39,6 +39,7 @@ class LocalRealizationChoice:
     required_annealing_nt: int | None
     annealing_completion_nt: int | None
     material_requirements: tuple[str, ...]
+    nick_enzyme_id: str | None = None
 
     @property
     def noncanonical_pairs(self) -> int | None:
@@ -71,6 +72,7 @@ def _choices(
                 required_annealing_nt=None,
                 annealing_completion_nt=None,
                 material_requirements=tuple(value.value for value in item.material_requirements),
+                nick_enzyme_id=str(item.foldback_nick.enzyme_id),
             )
             for item in result.realizations
         )
@@ -94,6 +96,7 @@ def _choices(
             required_annealing_nt=item.projection.annealing_obligation.required_annealing_nt,
             annealing_completion_nt=item.projection.annealing_obligation.annealing_completion_nt,
             material_requirements=(),
+            nick_enzyme_id=str(item.basal_nick.enzyme_id),
         )
         for item in result.realizations
     )

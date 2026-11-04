@@ -120,6 +120,15 @@ class SourceDuplexPreparationPolicy(HopModel):
     reverse_primer: PrimerResolutionPolicy
 
 
+def primer_required_length(policy: PrimerResolutionPolicy) -> int:
+    """Shortest permitted binding footprint, independently of available source geometry."""
+    if isinstance(policy, FixedPrimerPolicy):
+        return policy.primer.annealing_length_nt
+    if isinstance(policy, DerivedPrimerPolicy):
+        return policy.annealing_length_nt
+    return policy.min_annealing_length_nt
+
+
 __all__ = [
     "ConstrainedPrimerPolicy",
     "ConstrainedSourceSsdnaPolicy",
@@ -131,4 +140,5 @@ __all__ = [
     "SourceDuplexPreparationPolicy",
     "SourceSsdnaPolicy",
     "UpstreamSequenceLengthRange",
+    "primer_required_length",
 ]

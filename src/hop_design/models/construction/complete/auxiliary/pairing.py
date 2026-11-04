@@ -14,6 +14,24 @@ from hop_design.models.construction.basal.pairing import derive_basal_pair_class
 from hop_design.models.construction.targets import BasalPairAllowance, BasalPairConstraint
 
 from ..pcr.pairing import complete_adapter_pairing
+from ..preparation_diagnostics import PreparationConstraintDiagnostic
+
+
+class FixedAdapterSequenceMismatch(ValueError):
+    """An exact fixed adapter fails the already resolved annealing requirement."""
+
+    def __init__(self, *, requested: str, available: str) -> None:
+        message = "Fixed adapter sequence must start with the required pairing prefix."
+        super().__init__(message)
+        self.diagnostic = PreparationConstraintDiagnostic(
+            code="fixed-adapter-sequence-mismatch",
+            stage="endpoint-auxiliary-preparation",
+            field="materialization.endpoint_auxiliaries.adapter.material.sequence_5prime",
+            requirement="starts-with",
+            requested=requested,
+            available=available,
+            message=message,
+        )
 
 
 class AdapterPairingPolicyError(ValueError):
@@ -87,7 +105,5 @@ def resolve_adapter_pairing_sequence(
             )
     sequence = "".join(adapter)
     if fixed_sequence is not None and not fixed_sequence.startswith(sequence):
-        raise ValueError(
-            "Fixed adapter must preserve local pairs and canonical undeclared distal pairs."
-        )
+        raise FixedAdapterSequenceMismatch(requested=fixed_sequence, available=sequence)
     return sequence

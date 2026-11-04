@@ -1,0 +1,46 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const uri=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
+const source=name=>readFile(new URL(`../../src/hop_design/assets/design_explorer/${name}.js`,import.meta.url),'utf8');
+
+test('color repaints existing points without changing the camera, exact picking or eligibility',async t=>{
+ const saved={document:globalThis.document,MutationObserver:globalThis.MutationObserver,ResizeObserver:globalThis.ResizeObserver,requestAnimationFrame:globalThis.requestAnimationFrame,cancelAnimationFrame:globalThis.cancelAnimationFrame};
+ t.after(()=>Object.assign(globalThis,saved));
+ const frames=new Map(),observers=[];let serial=0;
+ globalThis.requestAnimationFrame=fn=>{frames.set(++serial,fn);return serial;};globalThis.cancelAnimationFrame=id=>frames.delete(id);
+ globalThis.MutationObserver=globalThis.ResizeObserver=class{constructor(fn){this.fn=fn;observers.push(this);}observe(){}disconnect(){this.closed=true;}};
+ const contexts=[];
+ function element(tag){const attrs=new Map();return{tag,dataset:{},style:{},children:[],handlers:new Map(),className:'',setAttribute(k,v){attrs.set(k,String(v));},getAttribute:k=>attrs.get(k)??null,removeAttribute:k=>attrs.delete(k),replaceChildren(...children){this.children=children;},remove(){this.removed=true;},addEventListener(k,v){this.handlers.set(k,v);},removeEventListener(k){this.handlers.delete(k);},getBoundingClientRect:()=>({left:0,top:0,width:400,height:200}),getContext(){const ctx={fills:[],alphas:[],radii:[],strokes:[],setTransform(){},clearRect(){},beginPath(){},closePath(){},arc(x,y,r){this.radii.push(r);},moveTo(){},lineTo(){},fillText(){},fill(){this.fills.push(this.fillStyle);this.alphas.push(this.globalAlpha);},stroke(){this.strokes.push(this.globalAlpha);},setLineDash(){}};contexts.push(ctx);return ctx;}};}
+ globalThis.document={createElement:element,createElementNS:(ns,tag)=>element(tag)};
+ let text=await source('indexed_map');for(const name of ['map_index','map_raster'])text=text.replace(`'./${name}.js'`,JSON.stringify(uri(await source(name))));
+ const {indexedMap}=await import(uri(text)),host=element('div'),selected=[],inspected=[];
+ const map=indexedMap(host,ids=>inspected.push(ids),ids=>selected.push(ids));
+ const rows=[{materialized_realization_id:'A',matches:true,values:{left_gap:0,loop_word:'AAAA'}},{materialized_realization_id:'B',matches:false,values:{left_gap:6,loop_word:'AAAC'}}];
+ map.update({schema:'hop.inspection-map/v1',digest:'edition',frame:[0,0,100,100],radius:2,points:[[0,0,0],[1,100,100]]},rows,'A');
+ const flush=()=>{const f=[...frames.values()];frames.clear();f.forEach(run=>run());};flush();
+ const svg=host.children[0],frame=svg.getAttribute('viewBox');
+ map.color({label:'Left end gap',unit:'bp',key:'left_gap',color:row=>row.values.left_gap===0?'#112233':'#aabbcc'});flush();
+ assert.equal(host.children[0],svg);assert.equal(svg.getAttribute('viewBox'),frame);
+ assert.deepEqual(contexts.at(-2).fills,['#112233'],'Excluded preparations stay transparent instead of erasing nearby density');
+ assert.ok(contexts.at(-2).alphas.every(alpha=>alpha>0&&alpha<1),'Cloud marks accumulate translucent overlap');
+ assert.equal(contexts.at(-2).strokes.length,1,'Only excluded cloud marks need a hollow outline');
+ assert.ok(contexts.at(-1).alphas.every(alpha=>alpha===1),'Pinned marks retain full contrast');
+ host.handlers.get('click')({clientX:100,clientY:0});assert.deepEqual(selected,[['A']]);
+ host.handlers.get('keydown')({target:host,key:'End',preventDefault(){}});assert.deepEqual(inspected.at(-1),['B']);
+ assert.match(host.children.at(-1).textContent,/Left end gap.*6.*bp/);assert.equal(host.children.at(-1).getAttribute('aria-selected'),'false');
+ const together=[rows[0],rows[1],{materialized_realization_id:'C',matches:true,values:{left_gap:0,loop_word:'AAAA'}}];
+ map.update({schema:'hop.inspection-map/v1',digest:'together',frame:[0,0,100,100],radius:7,points:[[0,0,0],[1,100,100],[2,0,0]]},together,'C');flush();
+ assert.ok(contexts.at(-2).radii[0]<=.75,'overview marks stay within 1.5 CSS pixels in radius');
+ assert.equal(contexts.at(-2).fills.length,2,'Coincident complete preparations both contribute to density');
+ host.handlers.get('pointermove')({clientX:100,clientY:0,buttons:0});
+ assert.deepEqual(inspected.at(-1),['C'],'hover keeps the pinned member when its coordinates coincide');
+ const beforeFocus=contexts.length;flush();
+ assert.equal(contexts.length,beforeFocus+1,'Hover redraws only the overlay, not the density cloud');
+ host.handlers.get('click')({clientX:100,clientY:0});
+ assert.deepEqual(selected.at(-1),['A','C'],'click exposes every coincident member instead of silently choosing the first');
+ host.handlers.get('keydown')({target:host,key:'Home',preventDefault(){}});
+ host.handlers.get('keydown')({target:host,key:'Enter',preventDefault(){}});
+ assert.deepEqual(selected.at(-1),['A'],'keyboard traversal still selects individual exact preparations');
+ map.close();assert.equal(frames.size,0);assert.ok(observers.every(o=>o.closed));assert.equal(host.handlers.size,0);
+});

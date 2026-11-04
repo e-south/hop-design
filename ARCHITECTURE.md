@@ -77,6 +77,19 @@ strict construction source + matching HopBundle + selected local ids
   -> the same opaque receipt and portable authority
 ```
 
+Product-first exploration adds a bounded orchestration path from the same product
+request to complete scaffold options, comparative groups and explicit preparation
+sets. It reuses local discovery, candidate continuation, verified portrait facts
+and set admission. Packet capture/publication is shared infrastructure; family
+reference policy and options grouping remain separate. See [ADR 0042](docs/architecture/decisions/0042-complete-scaffold-options.md).
+Product-driven preparation branching and exact stage grouping are owned by
+`design.construction.discovery`; [ADR 0043](docs/architecture/decisions/0043-product-driven-scaffold-discovery.md)
+records its permission, identity and replay boundaries.
+Within discovery, `branches.py` compiles permitted strict requests without file
+I/O; `prepare.py` owns source loading and the preview packet. The
+[construction module map](docs/dev/construction-map.md) locates the remaining
+workflow responsibilities and focused test seams.
+
 The source owns requests, exact materials, constraints, and bounds. The design
 bundle owns design identity and encoding. The construction bundle embeds the
 unchanged design authority needed for replay and owns only the complete-route
@@ -85,14 +98,37 @@ result and its inventory.
 The local-to-design bridge admits only explicit selections from replay-verified
 receipts. Its exact-junction design schema contains molecular components, not
 search result ids, bounds, relaxation history, enzyme programs, or construction
-chronology. The bridge supports PCR-bearing endpoints, whose basal component is
-present in local evidence; it does not invent a basal component for a direct
-single-stranded endpoint.
+chronology. PCR-bearing endpoints derive their basal component from local
+evidence. Direct hairpin endpoints require explicit exact basal arms; the bridge
+never invents that component. The bounded request executor composes existing
+authorities under an explicit sole-witness policy and returns either a
+preparation or a scoped handoff. Its summary is not a molecular authority.
 
 Final-payload coordinates are shared authority. Source coordinates and source
 segmentation belong to the selected route family. The current linear-source
 family may use one contiguous source interval without making that layout a
 global payload invariant.
+
+## Product answers
+
+Recorded edition capture lives in `design/construction/editions`. Ordinary
+capture retains exact producer admission. The explicit `freeze_design_choices`
+source contract admits a read-only checkpoint under its recorded producer,
+reuses one reader across complete-witness retrieval, and returns only an immutable
+edition. Molecular verification stays with the existing survey retrieval owner.
+The original generator and current exporter have separate provenance; this
+boundary grants no permission to continue or replay a foreign-producer search.
+
+`DesignChoices.explain()` describes an admitted query without selecting a molecule
+or starting search. Shared projection code in `variants/explanation.py` owns
+product/preparation counts, scoped outcomes and applicable next actions. Native
+scaffold queries use the same projection while retaining their full preservation
+and neighborhood controls. CLI and browser adapters render these facts.
+
+Parameter applicability lives beside the parameter definitions. It depends on the
+supported route, including intermediate measurements, rather than on whether a
+witness happens to contain a value. The optional-intent boundary rejects
+inapplicable predicates; the lower-level query schemas remain unchanged.
 
 ## Layer direction
 
@@ -157,10 +193,12 @@ The foldback kernel solves finite independent arm/cap base domains and a
 correlated source expression before materializing exact sequence solutions.
 Both source orientations use that same domain; reverse complementation changes
 the source expression and binding coordinates while preserving final-product
-variables. Domain cardinality counts placement-compatible assignments before
-reaction-stage admission. It is not an admitted construction count. Concrete
-enumeration materializes those assignments in canonical base order and retains
-the same placement-exclusion diagnostics.
+variables. The source tail removed by terminus cleavage retains its free base
+variables instead of being fixed to the first permitted bases. `cardinality`
+counts retained arm/cap assignments; `precursor_cardinality` counts joint retained
+and variable-tail assignments before reaction-stage admission. Concrete
+enumeration and partitions address the joint assignments. Neither count is an
+admitted construction count.
 
 The basal kernel likewise solves source and adapter placement domains before
 concrete sequence enumeration. `kernel/construction/basal/domains.py` owns the
@@ -184,7 +222,10 @@ These sets describe nucleotide membership only. Construction authority requires
 the molecular admission and complete request coverage layers below.
 
 `kernel/construction/foldback/admission.py` applies ordered molecular admission
-to one solved foldback domain and returns its exact independent-base set.
+to one solved foldback domain and retains its exact joint source assignments.
+Projection onto the arm/cap variables counts each retained word once if at least
+one source completion passes. The joint relation remains available for later
+primer, processing and complete-route checks; projection does not select a witness.
 Concrete replay supplies the stage topology; shared source-span mappings retain
 both duplex products after terminus cleavage. Shared recognition orientations,
 cut availability, intended-binding matching, and operation-policy assessment

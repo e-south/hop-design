@@ -47,7 +47,7 @@ from ..neighborhood_accounting import (
     reject_partial_payload_routes,
     search_disposition,
 )
-from ..sequence_domain import partition_payload_accounting, partition_sequence_domain
+from ..sequence_domain import partition_payload_accounting
 from .candidates import iter_foldback_candidates
 from .realization import (
     _ROUTE_VERSION,
@@ -84,9 +84,9 @@ def discover_foldback_neighborhood(
         level_failures: Counter[str] = Counter()
         level_rejected = 0
         for unit in iter_foldback_work_units(request, level=level):
-            solutions = partition_sequence_domain(
-                iter_foldback_candidates(unit),
-                request.search.sequence_partition,
+            solutions = iter_foldback_candidates(
+                unit,
+                sequence_partition=request.search.sequence_partition,
             )
             for solution in solutions:
                 if examined_nodes >= request.search.max_search_nodes:

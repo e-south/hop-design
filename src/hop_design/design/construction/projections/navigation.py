@@ -58,6 +58,12 @@ def _project_accepted_route(
     realization: MaterializedConstructionRealization,
 ) -> ConstructionNavigationAcceptedRoute:
     basal_authority = realization.basal_authority
+    release = realization.final_product.release_evidence
+    retained_sequence = (
+        realization.design.encoding_sequence
+        if release is None
+        else release.released_union_projection.sequence
+    )
     return ConstructionNavigationAcceptedRoute(
         materialized_realization_id=realization.materialized_realization_id,
         foldback_geometry=cast(
@@ -79,7 +85,7 @@ def _project_accepted_route(
         ),
         cleavage_enzyme_ids=_route_cleavage_enzyme_ids(realization),
         retained_non_payload_nt=(
-            len(realization.design.encoding_sequence) - 2 * len(realization.design.payload_sequence)
+            len(retained_sequence) - 2 * len(realization.design.payload_sequence)
         ),
         final_product_topology=cast(
             Literal["single_stranded_hairpin", "linear_duplex"],

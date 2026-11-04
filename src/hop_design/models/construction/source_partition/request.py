@@ -38,6 +38,7 @@ from hop_design.models.sequence import (
     SequenceValidationError,
     iupac_bases,
     normalize_dna_sequence,
+    reverse_complement_iupac,
 )
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
@@ -91,7 +92,7 @@ class SourceDuplexMaterial(HopModel):
 
 
 class SourcePartitionSurvivor(HopModel):
-    """One exact strand fragment that must survive the declared length selection."""
+    """Required strand fragment in the source duplex's top-strand coordinate frame."""
 
     survivor_id: str = Field(pattern=r"^[a-z][a-z0-9._-]{0,63}$")
     precursor_strand: Strand
@@ -180,7 +181,11 @@ class SourcePartitionDiscoveryRequest(HopModel):
     @model_validator(mode="after")
     def validate_request(self) -> SourcePartitionDiscoveryRequest:
         validate_linear_source_payload(self.payload)
-        validate_linear_source_map(self.payload, self.payload_source_map)
+        validate_linear_source_map(
+            self.payload,
+            self.payload_source_map,
+            allowed_orientations=(SourceOrientation.FORWARD, SourceOrientation.REVERSE_COMPLEMENT),
+        )
         sequence_nt = len(self.source.top_sequence_5prime)
         segment = self.payload_source_map.segments[0]
         if segment.source_material_id != self.source.material_id:
@@ -190,8 +195,17 @@ class SourcePartitionDiscoveryRequest(HopModel):
         source_payload = self.source.top_sequence_5prime[
             segment.source_span.start.offset : segment.source_span.end.offset
         ]
+        payload_strand = Strand.TOP
+        payload_start, payload_end = (
+            segment.source_span.start.offset,
+            segment.source_span.end.offset,
+        )
+        if segment.orientation is SourceOrientation.REVERSE_COMPLEMENT:
+            source_payload = reverse_complement_iupac(source_payload)
+            payload_strand = Strand.BOTTOM
+        # Both payload mapping and survivor spans use the source-duplex frame.
         authored_payload = self.payload.payload.sequence
-        if segment.orientation is not SourceOrientation.FORWARD or any(
+        if any(
             base not in iupac_bases(symbol)
             for base, symbol in zip(source_payload, authored_payload, strict=True)
         ):
@@ -202,13 +216,14 @@ class SourcePartitionDiscoveryRequest(HopModel):
         ):
             raise ValueError("Required survivor spans must stay inside the source duplex.")
         if not any(
-            survivor.precursor_strand is Strand.TOP
-            and survivor.source_span.start.offset <= segment.source_span.start.offset
-            and survivor.source_span.end.offset >= segment.source_span.end.offset
+            survivor.precursor_strand is payload_strand
+            and survivor.source_span.start.offset <= payload_start
+            and survivor.source_span.end.offset >= payload_end
             for survivor in self.constraints.required_survivors
         ):
             raise ValueError(
-                "The mapped payload source span must be retained by a top-strand survivor."
+                "The mapped payload source span must be retained by a "
+                f"{payload_strand.value}-strand survivor."
             )
         candidate_ids = self.candidate_enzyme_ids
         if not candidate_ids:

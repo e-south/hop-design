@@ -50,6 +50,7 @@ class BasalSequenceDomain:
     unresolved_indexes: tuple[int, ...]
     adapter_end_bases: tuple[tuple[int, str], ...]
     enzyme_bindings: tuple[ConstructionEnzymeBinding, ...]
+    deferred_end_sequence: bool = False
 
     @property
     def variable_indexes(self) -> tuple[int, ...]:
@@ -110,6 +111,8 @@ class BasalSequenceDomain:
         self, source: str, adapter: str | None
     ) -> BasalSequenceSolution | BasalPlacementFailure:
         """Recover one placement-compatible molecular solution with exact pairing records."""
+        if self.deferred_end_sequence:
+            raise ValueError("A deferred end domain is not a materializable molecular candidate.")
         if len(source) != self.adapter_span.start.offset or any(
             base not in domain
             for base, domain in zip(
@@ -195,6 +198,7 @@ def solve_basal_sequence_domain(
     target: BasalTarget,
     endpoint: ConstructionEndpoint,
     program: BasalProgramCandidate,
+    defer_end_sequence: bool = False,
 ) -> BasalSequenceDomain | BasalPlacementFailure:
     """Place source and adapter constraints without expanding exact sequence choices."""
     if not isinstance(target.nick_strand, Strand):
@@ -236,8 +240,12 @@ def solve_basal_sequence_domain(
             payload_boundary=payload_start, nick_offset_nt=target.nick_offset_nt
         )
         if end_placement is not None:
-            placements.append(end_placement)
-        adapter_end_bases = release_action.adapter_end_bases(nick_offset_nt=target.nick_offset_nt)
+            start, word = end_placement
+            placements.append((start, "N" * len(word) if defer_end_sequence else word))
+        if not defer_end_sequence:
+            adapter_end_bases = release_action.adapter_end_bases(
+                nick_offset_nt=target.nick_offset_nt
+            )
     if (
         release_action is not None
         and release_action.requirement.recognition_material == "source_duplex"
@@ -307,6 +315,7 @@ def solve_basal_sequence_domain(
         source_arm_domains=source_domains,
         unresolved_indexes=unresolved_indexes,
         adapter_end_bases=adapter_end_bases,
+        deferred_end_sequence=defer_end_sequence,
         enzyme_bindings=(
             _binding(
                 enzyme=program.nick_enzyme,

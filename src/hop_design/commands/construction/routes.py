@@ -11,7 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from shlex import quote
 from typing import Annotated, Any
@@ -154,7 +154,7 @@ def _route_line(row: dict[str, Any], *, full_ids: bool = False) -> str:
         f"foldback overhead={row['foldback_retained_overhead_nt']} nt · "
         f"basal overhead={basal_overhead_text}\n    "
         f"{row['retained_non_payload_nt']} retained non-payload nt · "
-        f"{row['auxiliary_material_count']} auxiliary oligos\n    Enzymes: {enzymes}"
+        f"{row['auxiliary_material_count']} distinct auxiliary oligos\n    Enzymes: {enzymes}"
     )
     if full_ids:
         line += f"\n    ID: {row['materialized_realization_id']}"
@@ -259,7 +259,6 @@ def construction_list_command(
             f"Unknown route enzyme(s): {', '.join(unknown_enzymes)}",
             param_hint="--enzyme",
         )
-    group_field = _group_field(group_by)
     if group is not None:
         group_collection = (
             content["geometry_groups"]
@@ -279,8 +278,8 @@ def construction_list_command(
     rows = _sort_rows(rows, sort=sort, descending=descending)
     order = "descending" if descending else "ascending"
     typer.echo(f"Query: status={status} · group_by={group_by} · sort={sort} · order={order}")
-    if group_field is not None and not rows:
-        typer.echo("No accepted geometry or product groups matched the explicit filters.")
+    if not rows:
+        _explain_empty_listing(content, bundle_path=bundle_path)
     _render_list(rows, group_by=group_by, limit=limit, full_ids=full_ids)
     if any(row["status"] == "accepted" for row in rows[:limit]):
         typer.echo(
@@ -289,6 +288,39 @@ def construction_list_command(
         )
     if not full_ids:
         typer.echo("Use --full-ids for complete identities and group-filter keys.")
+
+
+def _explain_empty_listing(content: dict[str, Any], *, bundle_path: Path) -> None:
+    rows = content["rows"]
+    counts = Counter(row["status"] for row in rows)
+    typer.echo(
+        "No accepted route in this result."
+        if not counts["accepted"]
+        else "No routes matched the explicit filters; accepted routes exist in this result."
+    )
+    accounting = content["accounting"]
+    typer.echo(
+        f"Search status: {content['status']} · "
+        f"{accounting['examined_combinations']}/{accounting['nominal_combinations']} examined"
+    )
+    typer.echo(
+        f"Result dispositions: {counts['accepted']} accepted · "
+        f"{counts['rejected']} rejected · {counts['truncated']} truncated"
+    )
+    reasons = Counter(
+        reason
+        for row in rows
+        if (reason := row.get("rejection_reason") or row.get("truncation_reason")) is not None
+    )
+    for reason, count in sorted(reasons.items()):
+        typer.echo(f"Recorded reason: {reason} ({count})")
+    path = quote(str(bundle_path))
+    typer.echo(
+        f"Inspect dispositions: hop-design construction list {path} --status all --group-by none"
+    )
+    typer.echo(f"Inspect coverage: hop-design construction summary {path}")
+    if reasons:
+        typer.echo("A recorded rejection does not identify a necessary or minimal repair.")
 
 
 __all__ = ["construction_list_command"]

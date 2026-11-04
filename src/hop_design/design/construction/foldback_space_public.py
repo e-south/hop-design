@@ -29,6 +29,7 @@ from hop_design.kernel.construction.foldback.domains import (
     solve_foldback_sequence_domain,
 )
 from hop_design.kernel.construction.foldback.programs import FoldbackProgramCandidate
+from hop_design.kernel.construction.sequence_sets import SequenceSetBuilder
 from hop_design.models.construction.foldback_space import (
     FoldbackSequenceRequest,
     FoldbackSequenceResult,
@@ -103,8 +104,10 @@ class FoldbackSequenceSpace:
             raise
         return output
 
-    def member_json(self, *, case_id: str, rank: int, program_index: int) -> str:
-        """Recover one lexicographic member through an explicitly selected supporting program."""
+    def member_json(
+        self, *, case_id: str, rank: int, program_index: int, completion_rank: int = 0
+    ) -> str:
+        """Recover a retained word and indexed locally valid source-tail completion."""
         result = self._verified_source()
         case = next((item for item in result.cases if item.case_id == case_id), None)
         if case is None:
@@ -134,23 +137,41 @@ class FoldbackSequenceSpace:
         )
         if not isinstance(domain, FoldbackSequenceDomain):
             raise ValueError("Admitted foldback member has no molecular placement.")
+        limits = result.request.limits
+        builder = SequenceSetBuilder(
+            length_nt=support.source_assignments.length_nt,
+            max_nodes=limits.max_decisions,
+            max_operations=limits.max_set_operations,
+        )
+        completions = builder.freeze(
+            builder.intersection(
+                builder.import_set(support.source_assignments),
+                builder.from_domains(
+                    (*(tuple(base) for base in word), *domain.independent_domains[len(word) :])
+                ),
+            )
+        )
+        if type(completion_rank) is not int or not 0 <= completion_rank < completions.cardinality:
+            raise ValueError("Source completion rank must lie within this member's admitted set.")
         record = _realization(
             request=result.request,
             payload_sequence=case.payload_sequence,
             target=case.target,
             route=program,
-            solution=domain.materialize(word),
+            solution=domain.materialize(completions.member_at(completion_rank)),
         )
         if isinstance(record, str):
             raise ValueError(f"Admitted foldback member failed molecular replay: {record}.")
         return canonical_json_bytes(
             {
-                "schema": "hop.foldback-sequence-member/v1",
+                "schema": "hop.foldback-sequence-member/v2",
                 "result_id": result.result_id,
                 "case_id": case_id,
                 "rank": rank,
                 "program_index": program_index,
                 "independent_sequence": word,
+                "source_completion_count": completions.cardinality,
+                "completion_rank": completion_rank,
                 "realization": record.model_dump(mode="json", by_alias=True),
             }
         ).decode("utf-8")
@@ -172,7 +193,7 @@ def load_verified_foldback_sequence_space(result_path: str | Path) -> FoldbackSe
     mapping = load_source_mapping(
         result_path, max_bytes=DEFAULT_RESULT_MAX_BYTES, source_label="HOP foldback sequence result"
     )
-    if mapping.get("schema") != "hop.foldback-sequence-result/v1":
+    if mapping.get("schema") != "hop.foldback-sequence-result/v2":
         raise ValueError(f"Unsupported foldback sequence result schema: {mapping.get('schema')!r}.")
     return FoldbackSequenceSpace._create(
         FoldbackSequenceResult.model_validate_json(json.dumps(mapping))

@@ -19,12 +19,12 @@ from hop_design.models.construction.foldback import (
     FoldbackCleavageProgramKind,
     FoldbackEnzymeBinding,
 )
-from hop_design.models.coordinates import Boundary, Span
-from hop_design.models.enzymes import CharacterizedEnzyme, EnzymeClass, EnzymeRole
+from hop_design.models.coordinates import Boundary
+from hop_design.models.enzymes import EnzymeRole
 from hop_design.models.physical import SiteOrientation, Strand
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 
-from .orientation import mirror_binding, opposite_orientation
+from .orientation import mirror_binding, opposite_orientation, oriented_pattern, place_binding
 from .programs import FoldbackProgramCandidate
 from .solutions import FoldbackPlacementFailure, FoldbackSequenceSolution
 
@@ -54,10 +54,11 @@ def reverse_complement_expression(expression: SequenceExpression) -> SequenceExp
 
 @dataclass(frozen=True, slots=True)
 class FoldbackSequenceDomain:
-    """Finite independent arm/cap bases and the exact source they determine."""
+    """Retained arm/cap variables followed by variable bases in the cleaved source tail."""
 
     payload_sequence: str
     arm_length_bp: int
+    retained_length_nt: int
     independent_domains: tuple[tuple[str, ...], ...]
     source_expression: SequenceExpression
     junction_boundary: int
@@ -66,11 +67,16 @@ class FoldbackSequenceDomain:
 
     @property
     def cardinality(self) -> int:
-        """Count assignments before reaction-stage admission."""
+        """Count retained arm/cap assignments before reaction-stage admission."""
+        return prod(len(domain) for domain in self.independent_domains[: self.retained_length_nt])
+
+    @property
+    def precursor_cardinality(self) -> int:
+        """Count complete source assignments, including the tail removed by cleavage."""
         return prod(len(domain) for domain in self.independent_domains)
 
     def materialize(self, sequence: str) -> FoldbackSequenceSolution:
-        """Recover one exact source and hairpin from independent arm/cap bases."""
+        """Recover one exact source from all retained and cleaved-tail variables."""
         if len(sequence) != len(self.independent_domains):
             raise ValueError("Independent sequence length differs from the foldback domain.")
         if any(
@@ -90,10 +96,10 @@ class FoldbackSequenceDomain:
         return FoldbackSequenceSolution(
             source_reference_sequence=source,
             retained_sequence=self.payload_sequence
-            + sequence
+            + sequence[: self.retained_length_nt]
             + reverse_complement_iupac(arm)
             + reverse_complement_iupac(self.payload_sequence),
-            loop_sequence=sequence[self.arm_length_bp :],
+            loop_sequence=sequence[self.arm_length_bp : self.retained_length_nt],
             foldback_arm_sequence=reverse_complement_iupac(arm),
             junction_boundary=self.junction_boundary,
             terminus_boundary=self.terminus_boundary,
@@ -113,86 +119,25 @@ class FoldbackSequenceDomain:
             ),
         )
 
-
-def _oriented_pattern(enzyme: CharacterizedEnzyme, orientation: SiteOrientation) -> str:
-    if orientation is SiteOrientation.FORWARD:
-        return enzyme.recognition_pattern
-    return reverse_complement_iupac(enzyme.recognition_pattern)
-
-
-def _oriented_cuts(
-    enzyme: CharacterizedEnzyme,
-    *,
-    orientation: SiteOrientation,
-    site_start: int,
-) -> tuple[int | None, int | None]:
-    if orientation is SiteOrientation.FORWARD:
-        reference_offset = enzyme.cut_offset_reference_strand
-        complement_offset = enzyme.cut_offset_complement_strand
-    elif enzyme.enzyme_class is EnzymeClass.NICKASE:
-        reference_offset = None
-        complement_offset = enzyme.recognition_length - enzyme.cut_offset_reference_strand
-    else:
-        complement_native = enzyme.cut_offset_complement_strand
-        if complement_native is None:
-            raise ValueError("Duplex restriction enzymes require both strand cuts.")
-        reference_offset = enzyme.recognition_length - complement_native
-        complement_offset = enzyme.recognition_length - enzyme.cut_offset_reference_strand
-    return (
-        site_start + reference_offset if reference_offset is not None else None,
-        site_start + complement_offset if complement_offset is not None else None,
-    )
-
-
-def _place_binding(
-    enzyme: CharacterizedEnzyme,
-    *,
-    role: EnzymeRole,
-    orientation: SiteOrientation,
-    controlled_strand: Strand,
-    controlled_boundary: int,
-) -> FoldbackEnzymeBinding | None:
-    if orientation is SiteOrientation.FORWARD:
-        controlled_offset = (
-            enzyme.cut_offset_reference_strand
-            if controlled_strand is Strand.TOP
-            else enzyme.cut_offset_complement_strand
-        )
-    elif enzyme.enzyme_class is EnzymeClass.NICKASE:
-        controlled_offset = (
-            None
-            if controlled_strand is Strand.TOP
-            else enzyme.recognition_length - enzyme.cut_offset_reference_strand
-        )
-    else:
-        complement_native = enzyme.cut_offset_complement_strand
-        if complement_native is None:
-            return None
-        controlled_offset = (
-            enzyme.recognition_length - complement_native
-            if controlled_strand is Strand.TOP
-            else enzyme.recognition_length - enzyme.cut_offset_reference_strand
-        )
-    if controlled_offset is None:
-        return None
-    site_start = controlled_boundary - controlled_offset
-    reference_cut, complement_cut = _oriented_cuts(
-        enzyme,
-        orientation=orientation,
-        site_start=site_start,
-    )
-    return FoldbackEnzymeBinding.create(
-        enzyme_id=enzyme.enzyme_id,
-        role=role,
-        strand=controlled_strand,
-        recognition_span=Span(
-            start=Boundary(offset=site_start),
-            end=Boundary(offset=site_start + enzyme.recognition_length),
-        ),
-        orientation=orientation,
-        reference_cut=(Boundary(offset=reference_cut) if reference_cut is not None else None),
-        complement_cut=(Boundary(offset=complement_cut) if complement_cut is not None else None),
-    )
+    def assignment_of(self, solution: FoldbackSequenceSolution) -> str:
+        """Recover retained and cleaved-tail variables from an exact matching source."""
+        if len(solution.source_reference_sequence) != len(self.source_expression):
+            raise ValueError("Source length differs from the foldback domain.")
+        core = reverse_complement_iupac(solution.foldback_arm_sequence) + solution.loop_sequence
+        if len(core) != self.retained_length_nt:
+            raise ValueError("Retained word length differs from the foldback domain.")
+        bases = list(core) + [""] * (len(self.independent_domains) - len(core))
+        for expression, base in zip(
+            self.source_expression, solution.source_reference_sequence, strict=True
+        ):
+            if isinstance(expression, SequenceVariable) and expression.index >= len(core):
+                bases[expression.index] = (
+                    reverse_complement_iupac(base) if expression.complemented else base
+                )
+        assignment = "".join(bases)
+        if self.materialize(assignment) != solution:
+            raise ValueError("Source and molecular bindings differ from the foldback domain.")
+        return assignment
 
 
 def solve_foldback_sequence_domain(
@@ -234,7 +179,7 @@ def solve_foldback_sequence_domain(
     foldback_nt = 2 * arm_nt + target.loop_length_nt
     terminus = junction + foldback_nt - target.junction_offset_nt
 
-    nick_binding = _place_binding(
+    nick_binding = place_binding(
         program.nick_enzyme,
         role=EnzymeRole.FOLDBACK_NICK,
         orientation=program.nick_orientation,
@@ -243,6 +188,8 @@ def solve_foldback_sequence_domain(
     )
     if nick_binding is None:
         return FoldbackPlacementFailure(code="foldback-nick-orientation-unavailable")
+    if isinstance(nick_binding, FoldbackPlacementFailure):
+        return nick_binding
     bindings = [nick_binding]
     if nick_binding.recognition_span.end.offset > terminus:
         return FoldbackPlacementFailure(
@@ -255,7 +202,7 @@ def solve_foldback_sequence_domain(
     if program.terminus_enzyme is not None:
         if program.terminus_orientation is None:
             raise ValueError("A sequential foldback program requires a terminus orientation.")
-        terminus_binding = _place_binding(
+        terminus_binding = place_binding(
             program.terminus_enzyme,
             role=EnzymeRole.TERMINUS_DEFINITION,
             orientation=program.terminus_orientation,
@@ -264,6 +211,8 @@ def solve_foldback_sequence_domain(
         )
         if terminus_binding is None:
             return FoldbackPlacementFailure(code="terminus-orientation-unavailable")
+        if isinstance(terminus_binding, FoldbackPlacementFailure):
+            return terminus_binding
         if terminus_binding.reference_cut != Boundary(
             offset=terminus
         ) or terminus_binding.complement_cut != Boundary(offset=terminus):
@@ -298,7 +247,7 @@ def solve_foldback_sequence_domain(
         )
         if enzyme is None:
             raise RuntimeError("A foldback binding lost its enzyme authority.")
-        pattern = _oriented_pattern(enzyme, binding.orientation)
+        pattern = oriented_pattern(enzyme, binding.orientation)
         for offset, symbol in enumerate(pattern):
             coordinate = binding.recognition_span.start.offset + offset
             domains[coordinate] &= iupac_bases(symbol)
@@ -306,6 +255,9 @@ def solve_foldback_sequence_domain(
         return FoldbackPlacementFailure(code="overlapping-sequence-conflict")
     arm_domain_sets = [set(_BASES) for _ in range(arm_nt)]
     loop_domain_sets = [set(_BASES) for _ in range(target.loop_length_nt)]
+    if target.loop_sequence is not None:
+        for allowed, base in zip(loop_domain_sets, target.loop_sequence, strict=True):
+            allowed.intersection_update({base})
     for source_offset in range(foldback_nt - target.junction_offset_nt):
         final_index = foldback_nt - 1 - source_offset
         source_domain = domains[junction + source_offset]
@@ -329,19 +281,28 @@ def solve_foldback_sequence_domain(
     )
     if any(not domain for domain in (*arm_domains, *loop_domains)):
         return FoldbackPlacementFailure(code="foldback-pairing-conflict")
-    canonical_source = tuple(next(base for base in _BASES if base in domain) for domain in domains)
+    independent_domains = [*arm_domains, *loop_domains]
+    tail_expression: list[str | SequenceVariable] = []
+    for allowed in domains[terminus:]:
+        choices = tuple(base for base in _BASES if base in allowed)
+        if len(choices) == 1:
+            tail_expression.append(choices[0])
+        else:
+            tail_expression.append(SequenceVariable(len(independent_domains)))
+            independent_domains.append(choices)
     foldback_expression: SequenceExpression = tuple(
         SequenceVariable(index) for index in range(arm_nt + target.loop_length_nt)
     ) + tuple(SequenceVariable(index, True) for index in reversed(range(arm_nt)))
     expression = (
-        canonical_source[:junction]
+        tuple(payload_sequence)
         + reverse_complement_expression(foldback_expression[target.junction_offset_nt :])
-        + canonical_source[terminus:]
+        + tuple(tail_expression)
     )
     return FoldbackSequenceDomain(
         payload_sequence=payload_sequence,
         arm_length_bp=arm_nt,
-        independent_domains=(*arm_domains, *loop_domains),
+        retained_length_nt=arm_nt + target.loop_length_nt,
+        independent_domains=tuple(independent_domains),
         source_expression=expression,
         junction_boundary=junction,
         terminus_boundary=terminus,

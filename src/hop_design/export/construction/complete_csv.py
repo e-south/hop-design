@@ -46,6 +46,7 @@ def write_complete_projection(
         "basal_realization_id",
         "disposition",
         "rejection_reason",
+        "preparation_constraint_json",
         "truncation_reason",
         "materialized_realization_id",
         "achieved_geometry_group_key",
@@ -119,6 +120,15 @@ def write_complete_projection(
                 "disposition": row.status.value,
                 "rejection_reason": (
                     "" if row.rejection_reason is None else row.rejection_reason.value
+                ),
+                "preparation_constraint_json": (
+                    ""
+                    if row.preparation_constraint is None
+                    else json.dumps(
+                        row.preparation_constraint.model_dump(mode="json"),
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    )
                 ),
                 "truncation_reason": row.truncation_reason or "",
                 "materialized_realization_id": row.materialized_realization_id or "",

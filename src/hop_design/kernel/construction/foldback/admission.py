@@ -52,7 +52,7 @@ def _recognition_set(
     return builder.from_domains(domains)
 
 
-def admit_foldback_sequences(
+def admit_foldback_precursors(
     *,
     domain: FoldbackSequenceDomain,
     target: FoldbackTarget,
@@ -62,7 +62,7 @@ def admit_foldback_sequences(
     max_operations: int,
     max_site_checks: int,
 ) -> SequenceSet:
-    """Apply molecular admission to one solved domain without expanding its members."""
+    """Admit joint retained and cleaved-tail assignments through every local stage."""
     if type(max_site_checks) is not int or not 1 <= max_site_checks <= 1_000_000:
         raise ValueError("max_site_checks must be an integer between 1 and 1000000.")
     if not isinstance(target.nick_strand, Strand):
@@ -152,3 +152,47 @@ def admit_foldback_sequences(
                         admitted = builder.difference(admitted, matching)
         admitted = builder.intersection(admitted, intended)
     return builder.freeze(admitted)
+
+
+def retained_sequences(
+    precursors: SequenceSet,
+    *,
+    retained_length_nt: int,
+    max_nodes: int,
+    max_operations: int,
+) -> SequenceSet:
+    """Project admitted precursors onto retained bases without counting tail multiplicity."""
+    if precursors.length_nt == retained_length_nt:
+        return precursors
+    builder = SequenceSetBuilder(
+        length_nt=retained_length_nt, max_nodes=max_nodes, max_operations=max_operations
+    )
+    return builder.freeze(builder.project_window(precursors, start=0, end=retained_length_nt))
+
+
+def admit_foldback_sequences(
+    *,
+    domain: FoldbackSequenceDomain,
+    target: FoldbackTarget,
+    program_kind: FoldbackCleavageProgramKind,
+    policy: EnzymeProvisioningPolicy,
+    max_nodes: int,
+    max_operations: int,
+    max_site_checks: int,
+) -> SequenceSet:
+    """Keep each retained word with at least one locally admitted source completion."""
+    precursors = admit_foldback_precursors(
+        domain=domain,
+        target=target,
+        program_kind=program_kind,
+        policy=policy,
+        max_nodes=max_nodes,
+        max_operations=max_operations,
+        max_site_checks=max_site_checks,
+    )
+    return retained_sequences(
+        precursors,
+        retained_length_nt=domain.retained_length_nt,
+        max_nodes=max_nodes,
+        max_operations=max_operations,
+    )

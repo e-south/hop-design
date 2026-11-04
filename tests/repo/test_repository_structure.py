@@ -79,13 +79,16 @@ def test_public_documentation_tracks_the_published_source_release() -> None:
     assert release_match is not None
     release_version = release_match.group(1)
     wheel_name = release_match.group(0)
-    assert release_version == version
     assert f"[v{release_version}]" in install
     assert f"tree/v{release_version}" in install
-    assert f"unreleased v{version} candidate" not in install
     assert wheel_name in install
     assert f"published `v{release_version}` artifact" in roadmap
-    assert f"unreleased `v{version}` candidate" not in roadmap
+    if release_version != version:
+        assert f"unreleased v{version} candidate" in install
+        assert f"unreleased `v{version}` candidate" in roadmap
+    else:
+        assert f"unreleased v{version} candidate" not in install
+        assert f"unreleased `v{version}` candidate" not in roadmap
     assert "Research" + " Studies" not in roadmap
     assert "billing" not in roadmap.lower()
 

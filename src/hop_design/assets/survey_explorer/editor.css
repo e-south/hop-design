@@ -1,0 +1,360 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #23363d;
+  background: #fff;
+  font-size: 16px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  padding: 20px 28px;
+  max-width: 1176px; /* 1,120-px content column plus side margins. */
+  margin: auto;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+h1 {
+  font-size: 22px;
+  letter-spacing: -0.4px;
+  margin: 0 auto 0 0;
+  font-weight: 600;
+}
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+button,
+a {
+  font: inherit;
+}
+button {
+  border: 1px solid #b9c5c9;
+  border-radius: 5px;
+  background: #fff;
+  color: #23444e;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+button:hover {
+  background: #edf3f4;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #087d99;
+  outline-offset: 3px;
+}
+a {
+  color: #14687d;
+}
+#coverage,
+#counts {
+  color: #596e77;
+  font-size: 16px;
+}
+#notice {
+  height: 3em;
+  line-height: 1.5;
+  overflow: auto;
+  margin: 12px 0 4px;
+  color: #53656b;
+}
+#notice.error {
+  color: #9d3333;
+}
+#teaching,
+#plot {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+}
+#teaching svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.teaching-window {
+  /* Keep the structural key in normal page flow: no nested camera or scroll box. */
+  height: auto;
+  overflow-anchor: none;
+}
+section[aria-label="Molecular parameterization and conditional choices"] { position: relative; isolation: isolate; }
+#teaching, #plot { position: relative; z-index: 1; }
+.teaching-links { z-index: 0; position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.teaching-links polygon { fill:#679a9c; fill-opacity:.07; stroke:#679a9c; stroke-opacity:.28; stroke-width:.8; }
+.teaching-links polygon.parameter-highlight { fill-opacity:.17; stroke-opacity:.8; stroke-width:1.4; }
+#plot > svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+#plot text {
+  user-select: none;
+}
+#plot [role="button"] { cursor: pointer; }
+#plot [data-brush-axis] { cursor: crosshair; }
+#plot [data-members]:hover,
+#plot [data-members]:focus { stroke-width: 3; opacity: 1; }
+#plot [data-node-value]:hover > rect,
+#plot [data-node-value]:focus > rect { stroke: #0b7386; stroke-width: 2; }
+.plot-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 16px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+}
+.plot-foot, .choice-counts, #parameter {
+  max-width: 1120px;
+  margin-inline: auto;
+}
+.choice-counts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+.legend.selected { background: #a55236; border-color: #a55236; }
+.legend {
+  display: inline-block;
+  width: 10px;
+  height: 8px;
+  border-radius: 2px;
+  border: 1px solid #76989d;
+  margin: 0 4px 0 10px;
+}
+.legend.available {
+  background: #deefed;
+}
+.legend.elsewhere {
+  background: white;
+}
+.legend.unknown {
+  border-style: dotted;
+}
+.legend.excluded {
+  background: #dedede;
+  border-color: #995f5f;
+}
+#parameter {
+  font-size: 16px;
+  color: #4e6870;
+  height: 4.5em;
+  line-height: 1.5;
+  overflow: auto;
+  margin-block: 6px 12px;
+}
+.atlas-heading {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  border-top: 1px solid #dbe1e2;
+  padding: 18px 0 8px;
+}
+#preview-status {
+  height: 1.5em;
+  line-height: 1.5;
+  margin: 0 0 8px;
+  overflow: auto;
+  color: #9d5535;
+  font-size: 16px;
+}
+#viewport {
+  height: max(680px, 80vh);
+  position: relative;
+  border: 1px solid #d5dedf;
+  border-radius: 4px;
+  overflow: hidden;
+  touch-action: none;
+}
+#atlas {
+  height: 100%;
+  width: 100%;
+}
+#atlas > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+#atlas > p {
+  text-align: center;
+  padding: 70px;
+  color: #6a7c82;
+}
+#atlas [data-inspected] > rect {
+  stroke: #176b63;
+  stroke-width: 2;
+}
+#fit {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: #fffffff0;
+}
+.camera-help {
+  position: absolute;
+  bottom: 16px;
+  right: 14px;
+  font-size: 16px;
+  color: #53666c;
+  pointer-events: none;
+}
+.parameter-highlight rect,
+.parameter-highlight path {
+  stroke: #dc865c !important;
+  stroke-width: 2 !important;
+}
+.parameter-highlight > text {
+  fill: #a64b21 !important;
+}
+#code {
+  border-top: 1px solid #dbe1e2;
+  margin-top: 18px;
+  padding: 12px 0;
+  font-size: 16px;
+}
+summary {
+  cursor: pointer;
+}
+.code-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 12px;
+}
+textarea {
+  width: 100%;
+  display: block;
+  font: 14px/1.5 monospace;
+  border: 1px solid #bccbd0;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 6px;
+}
+pre {
+  font: 14px/1.5 monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+#members {
+  padding: 8px;
+  border-left: 2px solid #809f9c;
+  font-size: 16px;
+}
+#members button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-block: 12px;
+  padding: 12px;
+  line-height: 1.5;
+}
+#molecule {
+  height: 1.5em;
+  overflow: auto;
+  margin: 0;
+  font: 16px/1.5 Arial, Helvetica, sans-serif;
+  color: #48616b;
+}
+body.busy {
+  cursor: progress;
+}
+body.busy button {
+  pointer-events: none;
+}
+@media print {
+  main {
+    padding: 0;
+  }
+  header button,
+  header a,
+  #code,
+  #fit,
+  .camera-help,
+  #parameter,
+  #members {
+    display: none;
+  }
+  #viewport {
+    height: auto;
+    border: 0;
+  }
+  #atlas > svg {
+    height: auto;
+  }
+  #notice {
+    font-size: 14px;
+  }
+}
+
+dialog {
+  width: min(760px, 92vw);
+  border: 1px solid #9cb2b8;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 8px 40px #283d4025;
+}
+dialog::backdrop {
+  background: #20384018;
+}
+dialog h2 {
+  margin-right: auto;
+}
+dialog p {
+  font-size: 16px;
+  color: #536b74;
+}
+#domain-values {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 3px;
+}
+#domain-values button {
+  padding: 5px 2px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+#domain-values .supported {
+  background: #e0eeeb;
+  border-color: #91afa7;
+}
+#domain-values .supported_elsewhere {
+  background: white;
+  border-color: #739194;
+}
+#domain-values .unresolved {
+  border-style: dotted;
+  color: #697d83;
+}
+#domain-values .excluded_in_scope {
+  text-decoration: line-through;
+  color: #986464;
+}
+
+#domain-values.wide-values {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+/* Reveal long records deliberately; transient feedback never moves either figure. */
+.supporting { padding-block: 12px; line-height: 1.5; }
+#download[hidden] { display: inline-block; visibility: hidden; }
+#download { min-width: 5em; }
+#construction-cost { max-width: 80ch; }

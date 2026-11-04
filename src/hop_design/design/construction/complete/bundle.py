@@ -31,10 +31,9 @@ from hop_design.export.bundle import (
 from hop_design.export.publication import ProtectedRootInput
 from hop_design.kernel.bundle_identity import (
     construction_bundle_id,
-    construction_manifest_seed,
     manifest_digest_for_construction_bundle,
 )
-from hop_design.models.bundle import ArtifactManifestEntry, HopBundle
+from hop_design.models.bundle import HopBundle
 from hop_design.models.construction import ConstructionBundle
 from hop_design.models.construction.complete import ConstructionSpaceResult
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -43,8 +42,8 @@ from .authority_content import (
     DESIGN_MANIFEST_PATH,
     DESIGN_ROOT,
     RESULT_PATH,
-    artifact_media_types,
     construction_artifacts,
+    construction_manifest,
     expected_artifact_paths,
 )
 from .discovery import (
@@ -191,6 +190,26 @@ class VerifiedConstructionBundle(_ConstructionReceipt):
     _artifacts: Mapping[str, bytes]
 
 
+def bind_published_compilation(
+    root: Path, compilation: ConstructionCompilation
+) -> VerifiedConstructionBundle:
+    """Bind actual published bytes to this invocation's verified compilation.
+
+    This is not a persisted admission cache: callers must already own the fresh
+    compilation. Independent readers continue through full molecular replay.
+    """
+    if not isinstance(compilation, ConstructionCompilation):
+        raise TypeError("Publication binding requires a verified compilation.")
+    bundle, artifacts = verify_manifested_bundle_contents(
+        root, manifest_name=_MANIFEST_NAME, manifest_model=ConstructionBundle
+    )
+    if bundle != compilation._bundle or artifacts != compilation._artifacts:
+        raise BundleIntegrityError("Published construction differs from its compilation.")
+    return VerifiedConstructionBundle._create(
+        construction=compilation._verified_source(), bundle=bundle, artifacts=artifacts
+    )
+
+
 def compile_construction_bundle(
     construction: VerifiedConstructionSpaceResult,
 ) -> ConstructionCompilation:
@@ -203,36 +222,15 @@ def compile_construction_bundle(
         basal=construction.basal,
         design=construction.design,
     )
+    return _package_replayed_construction(construction)
+
+
+def _package_replayed_construction(
+    construction: VerifiedConstructionSpaceResult,
+) -> ConstructionCompilation:
+    """Package the fresh replay result owned by this call, without replaying again."""
     artifacts = construction_artifacts(construction)
-    media_types = artifact_media_types(construction)
-    entries = tuple(
-        ArtifactManifestEntry(
-            path=path,
-            media_type=media_types[path],
-            digest=sha256_digest(content),
-            size_bytes=len(content),
-        )
-        for path, content in sorted(artifacts.items())
-    )
-    result_digest = sha256_digest(artifacts[RESULT_PATH])
-    seed = construction_manifest_seed(
-        result_id=construction.result.result_id,
-        design_bundle_id=construction.design.bundle.bundle_id,
-        result_digest=result_digest,
-        artifacts=entries,
-    )
-    manifest_digest = sha256_digest(canonical_json_bytes(seed))
-    bundle = ConstructionBundle(
-        bundle_id=construction_bundle_id(
-            result_id=construction.result.result_id,
-            manifest_digest=manifest_digest,
-        ),
-        result_id=construction.result.result_id,
-        design_bundle_id=construction.design.bundle.bundle_id,
-        result_digest=result_digest,
-        manifest_digest=manifest_digest,
-        artifacts=entries,
-    )
+    bundle = construction_manifest(construction, artifacts)
     return ConstructionCompilation._create(
         construction=construction,
         bundle=bundle,
@@ -301,7 +299,7 @@ def load_verified_construction_bundle(
         )
     except Exception as exc:
         raise BundleIntegrityError(f"Construction result cannot be replayed: {exc}") from exc
-    expected = compile_construction_bundle(construction)
+    expected = _package_replayed_construction(construction)
     if dict(expected._artifacts) != artifacts:
         raise BundleIntegrityError("Construction artifacts disagree with deterministic replay.")
     if expected._bundle != bundle:

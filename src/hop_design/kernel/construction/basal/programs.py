@@ -129,13 +129,17 @@ def stream_basal_programs(
     )
     if endpoint not in {
         ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
         ConstructionEndpoint.CLONE_READY_DUPLEX,
     }:
         raise ValueError("Basal local discovery requires a PCR-bearing endpoint.")
     release_actions: tuple[
         tuple[CharacterizedEnzyme, BasalFutureReleaseAction] | tuple[None, None], ...
     ]
-    if endpoint is ConstructionEndpoint.HAIRPIN_PCR_DUPLEX:
+    if endpoint in {
+        ConstructionEndpoint.HAIRPIN_PCR_DUPLEX,
+        ConstructionEndpoint.ADAPTER_LIGATED_HAIRPIN,
+    }:
         if target.future_release is not None:
             raise ValueError("A hairpin PCR basal target must omit future end generation.")
         release_actions = ((None, None),)
@@ -146,7 +150,7 @@ def stream_basal_programs(
             (enzyme, action)
             for enzyme in sorted(policy.catalog.enzymes, key=lambda item: item.enzyme_id)
             if policy.permits(enzyme.enzyme_id, role=EnzymeRole.END_GENERATION)
-            for action in (_future_release_action(enzyme, target.future_release),)
+            for action in (resolve_future_release_action(enzyme, target.future_release),)
             if action is not None
         )
     for nickase in nickases:
@@ -170,7 +174,7 @@ def stream_basal_programs(
             )
 
 
-def _future_release_action(
+def resolve_future_release_action(
     enzyme: CharacterizedEnzyme,
     requirement: BasalFutureReleaseRequirement,
 ) -> BasalFutureReleaseAction | None:

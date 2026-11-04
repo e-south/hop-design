@@ -258,6 +258,8 @@ def replay_foldback_route(
     loop_start = arm_nt
     loop_end = loop_start + target.loop_length_nt
     loop = foldback[loop_start:loop_end]
+    if target.loop_sequence is not None and loop != target.loop_sequence:
+        raise ValueError("Replayed foldback loop differs from the exact requested sequence.")
     arm_start = loop_end
     arm_end = arm_start + arm_nt
     arm = foldback[arm_start:arm_end]

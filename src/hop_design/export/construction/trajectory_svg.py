@@ -19,6 +19,7 @@ from hop_design.models.coordinates import Boundary
 from hop_design.models.molecular_state import StrandPairObservation
 from hop_design.models.reactions import ReactionProgram
 
+from .labels import state_label
 from .source_preparation_svg import render_source_preparation_rows
 from .svg_common import escape, render_document, short_id
 from .trajectory_partition_svg import render_trajectory_partition_rows
@@ -221,7 +222,7 @@ def render_complete_trajectory_svg(
         cursor += partition_height
     for index, state in enumerate(program.states):
         y = cursor
-        phase = state.phase.value.replace("_", " ")
+        phase = state_label(state.phase.value)
         strand_ids = " ".join(item.strand_id for item in state.molecules)
         strand_rows, strand_row_count = _visible_strand_rows(
             state,
