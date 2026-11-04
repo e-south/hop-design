@@ -87,6 +87,53 @@ requirements merely because another endpoint needs them. For material and
 request examples, use the [construction guide](../guides/compile-construction.md)
 or [check a named method](../guides/resolve-production-method.md).
 
+## How does a preparation enter the atlas?
+
+Discovery asks whether an assignment can satisfy the requested construction.
+For a complete preparation, **satisfiable** means there is an exact choice of
+sequences, materials and ordered operations that passes the modeled constraints
+through the requested endpoint. A valid local basal or foldback arrangement is
+only one part of that proof. It must still compose with the other neighborhood,
+primer bindings, sites, cuts and joins. This is sequence/geometry validity, not
+a prediction of experimental performance.
+
+Keep these decisions separate:
+
+| Decision | What it changes |
+| --- | --- |
+| Molecular permissions | Which stems, ends, lengths, sequences, contacts, methods and materials are allowed; a violation rejects that assignment |
+| Compactness | Length ceilings restrict the domain; traversal favors compact alternatives without proving a global minimum |
+| Diversity objective | Which permitted alternatives receive search effort earlier; it does not waive constraints or award admission points |
+| Computing limits | How much of the domain is explored now; unfinished work remains unresolved |
+| Atlas capture and query | Which recorded complete preparations are included or visible; an explicit query or identity list may select a subset |
+
+There is no hidden preparation-quality score. The current construction
+preference contract has `ranking: none`. A longer construction inside the
+declared bounds remains eligible; being longer is not itself a rejection or an
+experimental penalty. Search order can affect which preparations are found in a
+bounded run, even when there is no ranking of the resulting preparations.
+
+"Added stem" and "added DNA" also answer different questions. Added stem counts
+paired positions beyond the supplied invariant stem at a named molecular stage.
+The loop is unpaired DNA; disposable processing flanks and primer handles have
+their own roles. Construction cost reports the exact non-payload nucleotides
+retained on each endpoint strand. It does not add the two local search ceilings
+or equate a transient basal contact span with retained stem extension. Keep the
+loop, added pairing, end-to-stem gaps and auxiliary materials separately visible.
+
+By default, freezing an atlas includes all matching recorded preparations,
+deduplicated by preparation identity. It does not choose only shortest designs
+or best-scoring molecules. A captured subset must retain its explicit selection
+scope. UMAP then arranges molecular descriptors for navigation; its distances,
+clusters and point density neither admit preparations nor measure how uniformly
+the permitted space was searched. Different preparation methods can produce the
+same product, and many valid preparations may remain undiscovered.
+
+Use [survey scope and search](../reference/interface-survey-search.md) for
+request bounds, traversal and completion semantics, and
+[atlas capture](../guides/share-atlas-edition.md) for saved membership. The API,
+CLI and browser use these same request, choice and selection authorities.
+
 ## What can you conclude?
 
 Choose against your requirements first: available enzymes, permitted product
