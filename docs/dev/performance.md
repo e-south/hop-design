@@ -205,6 +205,11 @@ byte parity, `test_local_replay_scope.py` for cache lifetime and limits, and
 
 ## Scale comparison without expanding molecular permissions
 
+Enzyme permission checks reject explicit allow-list, forbidden, reserved and role
+restrictions before scanning catalog membership. Remaining candidates still require
+a catalog entry. This avoids rebuilding a catalog-sized set per check, without a
+new cache or changes to enzyme eligibility, catalog validation or search order.
+
 Hairpin continuation writes immutable pages of new candidate outcomes. It does
 not copy prior preparations into each new snapshot. Independent admission still
 verifies the selected history; page storage and restart time are distinct costs.
