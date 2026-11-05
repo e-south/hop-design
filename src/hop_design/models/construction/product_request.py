@@ -8,24 +8,34 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from hop_design.models.base import HopModel
-from hop_design.models.enzymes import CharacterizedEnzymeCatalog, EnzymePermissions
+from hop_design.models.enzymes import (
+    CharacterizedEnzymeCatalog,
+    EnzymePermissions,
+    EnzymeProvisioningPolicy,
+)
 from hop_design.models.physical import Strand
 from hop_design.models.sequence import normalize_dna_sequence
 
 from .basal_release import BasalFutureReleaseRequirement
 from .complete.accounting import CompositionEnumerationPolicy
-from .complete.request import ReleaseSideRequirement, WholeRouteConstraints
+from .complete.request import ReleaseSideRequirement, TypeIisReleaseRequest, WholeRouteConstraints
 from .complete.source_preparation import LinearSourceMaterializationSpec
 from .components import ExactBasalArms
-from .payload import ConstructionEndpoint
+from .payload import (
+    ConstructionEndpoint,
+    FinalPayloadReference,
+    LocalNeighborhoodFamily,
+    RouteFamily,
+)
 from .product_pairing import (
     EndFootprintPairing,
     ProductConstraintConflict,
     require_proximal_match,
 )
+from .request import LocalNeighborhoodRequest
 from .scaffold import constrain_foldback_geometry
 from .search import BasalGeometryDomain, FoldbackGeometryDomain, NeighborhoodSearchPlan
-from .source import ConstructionSource
+from .source import ConstructionCompositionSource, ConstructionSource
 from .source_partition.policy import SacrificialFragmentPolicy
 from .targets import BasalPairConstraint, ConstructionConstraints, ConstructionPreferences
 
@@ -176,62 +186,60 @@ class ProductRequest(HopModel):
         declared = {item.position_from_ligation for item in self.expanded_pairing_constraints()}
         return tuple((p, base) for p, base in self.source_end_footprint() if p in declared)
 
-    def _foldback_geometry(self) -> dict[str, object]:
+    def _foldback_geometry(self) -> FoldbackGeometryDomain:
         return constrain_foldback_geometry(
             self.foldback.geometry,
             maximum=self.foldback.search.max_retained_overhead_nt,
             requirements=self.whole_route_constraints.hairpin_scaffold,
-        ).model_dump(mode="json")
+        )
 
     def construction_source(self) -> ConstructionSource:
         """Translate declarations without discovering, ranking, or relaxing requirements."""
-        catalog = self.enzyme_catalog.model_dump(mode="json", by_alias=True)
-        payload: dict[str, object] = {
-            "schema": "hop.final-payload/v1",
-            "display_name": self.name,
-            "payload": {"kind": "exact", "sequence": self.stem_arm},
-            "basal_boundary": {"offset": 0},
-            "foldback_boundary": {"offset": len(self.stem_arm)},
-            "pair_state_exceptions": [],
-        }
-
-        def local(job: ProductFoldbackJob | ProductBasalJob, family: str) -> dict[str, object]:
-            return {
-                "schema": "hop.local-neighborhood-request/v7",
-                "name": None if self.name is None else f"{self.name}/{family}",
-                "payload": payload,
-                "family": family,
-                "route_family": "linear_source/v1",
-                "endpoint": "ssdna_hairpin" if family == "foldback" else self.endpoint.value,
-                "geometry_domain": (
-                    self._foldback_geometry()
-                    if family == "foldback"
-                    else job.geometry.model_dump(mode="json")
-                ),
-                "enzyme_provisioning": {**job.enzymes.model_dump(mode="json"), "catalog": catalog},
-                "search": job.search.model_dump(mode="json"),
-                "hard_constraints": self.local_constraints.model_dump(mode="json"),
-                "preferences": self.preferences.model_dump(mode="json"),
+        payload = FinalPayloadReference.model_validate(
+            {
+                "display_name": self.name,
+                "payload": {"kind": "exact", "sequence": self.stem_arm},
+                "basal_boundary": {"offset": 0},
+                "foldback_boundary": {"offset": len(self.stem_arm)},
             }
+        )
 
-        basal = None if self.basal is None else local(self.basal, "basal")
+        def provision(permissions: EnzymePermissions) -> EnzymeProvisioningPolicy:
+            return EnzymeProvisioningPolicy(**permissions.model_dump(), catalog=self.enzyme_catalog)
+
+        def local(
+            job: ProductFoldbackJob | ProductBasalJob,
+            family: LocalNeighborhoodFamily,
+            geometry: FoldbackGeometryDomain | BasalGeometryDomain,
+        ) -> LocalNeighborhoodRequest:
+            return LocalNeighborhoodRequest(
+                name=None if self.name is None else f"{self.name}/{family.value}",
+                payload=payload,
+                family=family,
+                route_family=RouteFamily.LINEAR_SOURCE_V1,
+                endpoint=(
+                    ConstructionEndpoint.SSDNA_HAIRPIN
+                    if family is LocalNeighborhoodFamily.FOLDBACK
+                    else self.endpoint
+                ),
+                geometry_domain=geometry,
+                enzyme_provisioning=provision(job.enzymes),
+                search=job.search,
+                hard_constraints=self.local_constraints,
+                preferences=self.preferences,
+            )
+
+        geometry = None
         release = None
-        if basal is not None:
-            assert self.basal is not None
-            basal["geometry_domain"] = {
-                **self.basal.geometry.model_dump(mode="json"),
-                "pairing_constraints": [
-                    item.model_dump(mode="json") for item in self.expanded_pairing_constraints()
-                ],
+        if self.basal is not None:
+            geometry = {
+                **self.basal.geometry.model_dump(),
+                "pairing_constraints": tuple(
+                    item.model_dump() for item in self.expanded_pairing_constraints()
+                ),
             }
         if self.release is not None and self.ends is not None:
-            assert basal is not None and self.basal is not None
-            ends = self.ends.model_dump(mode="json")
-            projection = self.release.basal_projection.model_dump(mode="json")
-            geometry = dict(self.basal.geometry.model_dump(mode="json"))
-            geometry["pairing_constraints"] = [
-                item.model_dump(mode="json") for item in self.expanded_pairing_constraints()
-            ]
+            assert geometry is not None
             implied = dict(self.implied_source_contact_bases())
             for contact in geometry["pairing_constraints"]:
                 position = contact["position_from_ligation"]
@@ -244,32 +252,39 @@ class ProductRequest(HopModel):
                             code="end_source_base_conflict",
                             position_from_ligation=position,
                         )
-                    contact["allowed_source_bases"] = [base]
+                    contact["allowed_source_bases"] = (base,)
             geometry["future_release"] = {
-                **ends[self.release.basal_projection.product_end],
-                **projection,
+                **getattr(self.ends, self.release.basal_projection.product_end).model_dump(),
+                **self.release.basal_projection.model_dump(),
             }
-            basal["geometry_domain"] = geometry
-            release = {
-                **ends,
-                "enzyme_provisioning": {
-                    **self.release.enzymes.model_dump(mode="json"),
-                    "catalog": catalog,
-                },
-                "max_site_pairs": self.release.max_site_pairs,
+            release = TypeIisReleaseRequest(
+                left=self.ends.left,
+                right=self.ends.right,
+                enzyme_provisioning=provision(self.release.enzymes),
+                max_site_pairs=self.release.max_site_pairs,
+            )
+        basal = None
+        if self.basal is not None:
+            basal = local(
+                self.basal,
+                LocalNeighborhoodFamily.BASAL,
+                BasalGeometryDomain.model_validate(geometry),
+            )
+        # Reuse immutable inputs; validate every newly derived contract and the
+        # complete route. External JSON admission still parses the full catalog.
+        return ConstructionSource.model_validate(
+            {
+                "schema": "hop.construction-source/v8",
+                "foldback": local(
+                    self.foldback, LocalNeighborhoodFamily.FOLDBACK, self._foldback_geometry()
+                ),
+                "basal": basal,
+                "composition": ConstructionCompositionSource(
+                    endpoint=self.endpoint,
+                    materialization=self.materialization,
+                    release=release,
+                    whole_route_constraints=self.whole_route_constraints,
+                    enumeration=self.enumeration,
+                ),
             }
-        source = {
-            "schema": "hop.construction-source/v8",
-            "foldback": local(self.foldback, "foldback"),
-            "basal": basal,
-            "composition": {
-                "endpoint": self.endpoint.value,
-                "materialization": self.materialization.model_dump(mode="json"),
-                "release": release,
-                "whole_route_constraints": self.whole_route_constraints.model_dump(mode="json"),
-                "enumeration": self.enumeration.model_dump(mode="json"),
-            },
-        }
-        # Existing contracts remain the authority for role permissions, endpoint
-        # obligations, material chemistry, geometry and bounded execution.
-        return ConstructionSource.model_validate_json(json.dumps(source))
+        )

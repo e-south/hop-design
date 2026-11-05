@@ -922,6 +922,16 @@ The `hop_design.construction` facade exposes these file-oriented operations:
   drawing and physical-size contract as `ScaffoldAtlas`; browser previews omit them.
 - `verify_interface_survey(request_path, index_path) -> dict` recomputes all
   recorded evaluations and returns replay-derived coverage.
+- `upgrade_interface_survey(request_path, index_path, *, source_producer,
+  destination, max_checkpoint_bytes=1073741824, on_replayed=None) -> dict` replays
+  a stopped checkpoint into a new directory under the current producer.
+  `source_producer` is the exact original producer mapping or its JSON/YAML path, not a compatibility
+  override. Every saved result and continuation must match. Only freshly
+  regenerated exclusion certificates may change producer identity. The original
+  is preserved; the new directory contains `request.json`, `survey.sqlite`, and
+  `transition.json`. The optional callback receives the completed replay count.
+  A failed or interrupted replay publishes no destination. Keep the old runtime
+  and checkpoint until the new checkpoint has been qualified for continuation.
 - `retrieve_interface_survey_witness(request_path, index_path, *, selection,
   destination) -> VerifiedConstructionBundle` replays one exact witness and
   writes its portable construction, request and preparation into a new directory.

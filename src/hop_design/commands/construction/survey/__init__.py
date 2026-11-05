@@ -100,6 +100,34 @@ def verify(request: Path, index: Annotated[Path, typer.Option()]) -> None:
     typer.echo(json.dumps(result, sort_keys=True))
 
 
+@survey_app.command("upgrade")
+def upgrade(
+    request: Path,
+    index: Annotated[Path, typer.Option(help="Stopped source checkpoint; preserved unchanged.")],
+    source_producer: Annotated[Path, typer.Option(help="Exact original producer mapping JSON.")],
+    output: Annotated[Path, typer.Option("--out", help="New replayed checkpoint directory.")],
+    max_checkpoint_bytes: Annotated[int, typer.Option(min=1_048_576)] = 1_073_741_824,
+) -> None:
+    """Replay all saved work under this build; fail if results or continuations change."""
+
+    def progress(count: int) -> None:
+        if count == 1 or count % 64 == 0:
+            typer.echo(f"Replayed {count} evaluations; source checkpoint unchanged.", err=True)
+
+    try:
+        result = construction.upgrade_interface_survey(
+            request,
+            index,
+            source_producer=source_producer,
+            destination=output,
+            max_checkpoint_bytes=max_checkpoint_bytes,
+            on_replayed=progress,
+        )
+    except (OSError, ValueError) as error:
+        raise typer.BadParameter(str(error)) from error
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
 @survey_app.command("query")
 def query_choices(
     request: Path,
