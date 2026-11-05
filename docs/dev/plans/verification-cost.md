@@ -12,16 +12,15 @@ journey: [maintain]
 
 # Remove duplicate verification work
 
-Status: the candidate includes routine/extended installation gates, the approved
-banner and both pending dependency updates. The latest hosted gate passed 3,798
-tests but failed the public-export allowlist after 85 minutes. That omission is
-fixed. API exports, documentation and CI contracts now run during strict preflight.
-The full hosted gate remains required before merge; the run was not green.
-The lock also updates the development dependencies behind the remaining
-Dependabot advisories. Full verification audits the hashed lock, including
-optional and development dependencies, before starting scientific tests.
+Status: adopted in [PR 50](https://github.com/e-south/hop-design/pull/50), with
+extended installation qualification. The subsequent routine gate for
+[PR 51](https://github.com/e-south/hop-design/pull/51) passed 3,809 source tests,
+browser checks and clean-install verification, with 90.87% source coverage.
+API exports, documentation and CI contracts now run during strict preflight.
+Full verification audits the hashed lock, including optional and development
+dependencies, before starting scientific tests.
 
-The same candidate removes duplicate lint and post-merge source-suite execution,
+The adopted workflow removes duplicate lint and post-merge source-suite execution,
 uses Python 3.14's lower-overhead branch-coverage core, and exposes per-stage
 timings. Python 3.12/3.13 compatibility still gates release. Four-worker admission
 is bounded and measured separately from coverage instrumentation; see the
@@ -51,8 +50,8 @@ outside the tool. Do not change molecular rules, search permissions, runtime
 validators, public API/CLI behavior, supported Python versions or coverage floors.
 The previously running gate completed before this implementation began.
 
-The local Python-matrix and README/artwork changes are included in this candidate.
-Neither policy is deployed until the candidate passes protected CI and merges.
+Python-matrix and README/artwork routing are part of the adopted workflow.
+Future changes still require the appropriate protected gate before merging.
 
 ## Verification responsibilities
 
@@ -107,7 +106,7 @@ installation gate. The exact triggers must be explicit and tested before rollout
   required checks, exact release-file custody and failure propagation. Split or
   group CI stages so users can see which part is running. Test all routing paths,
   including mixed, unknown and verification-file changes.
-- [ ] **6. Qualify once and adopt.** Run focused checks during development. Once
+- [x] **6. Qualify once and adopt.** Run focused checks during development. Once
   the patch settles, run the main source suite once and the extended installed
   suite once, including the small cases without executing them twice. Compare
   identities, sequences, oligo chemistry and deterministic artifact bytes to

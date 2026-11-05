@@ -319,6 +319,16 @@ complete continuation records and memory as well as the isolated kernel timing;
 the lower bound does not establish complete-route feasibility.
 Compare complete fresh and resumed discovery records when measuring this path.
 
+The invocation-owned basal-frame index retains at most 32,768 established
+relations and 16 MiB of canonical relation content; Python object overhead is
+additional. This allows a recurring placement set to survive between requested
+end pairs instead of being evicted on every sweep. Target membership is checked
+on each access, unsupported translations are not reusable rejection facts, and
+the request and sequence limits remain bound to the index. Entry or byte pressure
+evicts the least recently used frame without changing its answer. Nothing persists
+between invocations. Measure cold construction, repeated access and whole-process
+memory separately; a cache-hit improvement does not establish campaign throughput.
+
 Survey scheduling retains each examined target's continuation cursor, rather than
 its complete latest record. Resume reads every committed step once to restore
 proofs, observed classes and progress; only the latest cursor survives that pass.

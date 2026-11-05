@@ -1,6 +1,7 @@
 """Shared frame reasoning preserves target-specific joint membership."""
 
 import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -128,3 +129,33 @@ def test_admission_rejects_an_engine_with_different_sequence_limits():
     limits = LIMITS.model_copy(update={"sequence_decisions": LIMITS.sequence_decisions + 1})
     with pytest.raises(ValueError, match="limits"):
         module.BasalAdmissions(branches, limits, relations)
+
+
+def test_bounded_working_set_survives_another_target_sweep(monkeypatch):
+    branches, relations, _ = scope()
+    rank = coordinate_rank(branches.geometry_sizes, (0, 0, 0, 0, 0, 0))
+    candidate = branches.product(0, branch=rank, limits=LIMITS)
+    relation = relations.relation(candidate)
+    assert relation is not None and relation.cardinality == 0
+    calls = []
+
+    def counted(product):
+        calls.append(product)
+        return relation
+
+    monkeypatch.setattr(relations, "relation", counted)
+    # Isolate entry capacity from molecular generation and byte pressure.
+    # Empty necessary relations are small, reusable proofs of rejection.
+    frames = SimpleNamespace(
+        request=branches.request,
+        geometry_sizes=(5000, 1, 1, 1, 1, 1),
+        product=lambda *args, **kwargs: candidate,
+    )
+    admission = module.BasalAdmissions(frames, LIMITS, relations)
+    for target in (0, 1, 257):
+        for placement in range(5000):
+            result = admission.assess(target, (placement, 0, 0, 0, 0, 0))
+            assert not result.requested_pair_admitted
+    assert len(calls) == 5000
+    assert len(admission._frames) <= module.MAX_FRAME_ENTRIES
+    assert admission._bytes <= module.MAX_FRAME_BYTES
