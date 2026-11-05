@@ -13,8 +13,11 @@ journey: [maintain]
 # Remove duplicate verification work
 
 Status: the local candidate implements routine and extended installation gates.
-Focused checks and the isolated routine workflow pass. Hosted qualification of
-the complete patch remains required before merge.
+The first hosted candidate passed 3,784 Python tests but failed four stale
+banner/router assertions after 91 minutes. Those assertions now follow the
+approved artwork, and documentation contracts run in strict preflight (about
+three seconds locally), before expensive molecular checks. Hosted qualification
+of the complete patch remains required before merge.
 
 The goal is to run each scientific responsibility once in the main suite and
 retain a small, independent check of the actual installed distribution. Success
@@ -173,6 +176,9 @@ The extended script now labels each workflow group and reports elapsed time and
 failure stage. The release build deadline is thirty minutes, correcting the old
 fifteen-minute limit that was shorter than the observed distribution workload.
 Routine CI retains timing/failure logs without uploading temporary environments.
+The main verification deadline is four hours: the previous two-hour limit
+terminated an actual full run. This is a finite failure ceiling for extended
+qualification, not a runtime target or a reason to repeat successful checks.
 
 Remaining: qualify this complete candidate once on hosted Linux, including the
 full source suite and extended distribution gate. This CI-policy change selects

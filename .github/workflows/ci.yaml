@@ -17,7 +17,9 @@ jobs:
   verify:
     name: Verify repository
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # Extended qualification has exceeded two hours on this runner. Keep a
+    # finite ceiling without discarding a completed source suite at that point.
+    timeout-minutes: 240
     env:
       UV_PYTHON: "3.12"
     permissions:

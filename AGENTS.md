@@ -4,7 +4,6 @@ Load one skill for the task:
 
 - Use HOP: `.agents/skills/hop-design-user/SKILL.md`.
 - Change or review HOP: `.agents/skills/hop-maintainer/SKILL.md`.
-
 Load the other only for a repository defect or public-use verification.
 ## Find the contract
 - Product meaning or terminology: `docs/start/mental-model.md` and
@@ -25,8 +24,7 @@ Run targeted checks while editing, then use the scope in
   `bash ./scripts/agent-verify --scope source`.
 - Packaging, runtime dependencies, publication, CI routing, or an uncertain boundary:
   `bash ./scripts/agent-verify` (full). CI keeps the source suite before merge and selects routine or extended
-  installation by the changed paths; exact README/artwork exceptions are
-  documented in the verification guide. Local full defaults to extended.
+  installation by changed paths; see the guide for README/artwork exceptions. Local full defaults to extended.
 
 Each scope includes strict preflight. Report the scope actually passed; presentation
 is not whole-package verification. Use `--workers 2` when useful; never duplicate gates.
