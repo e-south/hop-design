@@ -17,6 +17,9 @@ banner and both pending dependency updates. The latest hosted gate passed 3,798
 tests but failed the public-export allowlist after 85 minutes. That omission is
 fixed. API exports, documentation and CI contracts now run during strict preflight.
 The full hosted gate remains required before merge; the run was not green.
+The lock also updates the development dependencies behind the remaining
+Dependabot advisories. Full verification audits the hashed lock, including
+optional and development dependencies, before starting scientific tests.
 
 The same candidate removes duplicate lint and post-merge source-suite execution,
 uses Python 3.14's lower-overhead branch-coverage core, and exposes per-stage

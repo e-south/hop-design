@@ -665,6 +665,10 @@ and print their slowest tests. Every gate stage reports its start, duration and
 exit status in the log and `stages.tsv`, retained by CI even on failure. Strict
 preflight checks API exports and CI/documentation contracts before the expensive
 source suite. Lint and formatting run once through the repository hooks.
+The full gate audits hashed locked requirements, including development and
+optional dependencies, before scientific tests. This catches dependency failures
+early instead of running the source suite first. The isolated installation still
+contains only the declared runtime dependencies.
 Compare setup with call cost: constructing a broad
 fixture is different from repeatedly reopening its authorities. Profile a slow
 case with `python -m cProfile -o ... -m pytest path::test` and measure ordinary

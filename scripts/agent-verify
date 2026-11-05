@@ -44,6 +44,16 @@ gate_stage() {
 }
 
 gate_stage preflight bash ./scripts/agent-preflight --strict
+if [[ "$gate_scope" == full ]]; then
+  gate_requirements() {
+    uv export --locked --all-extras --no-emit-project --format requirements-txt \
+      --output-file .artifacts/verification/locked-requirements.txt >/dev/null
+  }
+  gate_stage dependency-export gate_requirements
+  gate_stage dependency-audit uv run --locked pip-audit \
+    --requirement .artifacts/verification/locked-requirements.txt \
+    --require-hashes --disable-pip
+fi
 # The repository hooks already run both Ruff checks over every tracked/untracked file.
 gate_stage repository-hooks bash ./scripts/precommit-all
 gate_stage types uv run --locked mypy src
@@ -76,13 +86,6 @@ if [[ "$gate_scope" == source ]]; then
   echo "Source verification: ok ($((SECONDS - gate_started))s); installed-distribution verification is separate"
   exit 0
 fi
-gate_stage dependency-export uv export --locked --no-dev --no-emit-project \
-  --format requirements-txt \
-  --output-file .artifacts/operational-requirements.txt
-gate_stage dependency-audit uv run --locked pip-audit \
-  --requirement .artifacts/operational-requirements.txt \
-  --no-deps \
-  --disable-pip
 if [[ "$gate_distribution" == routine ]]; then
   # Create-only output prevents a previous result from posing as this invocation.
   gate_receipt="$(mktemp -d "$repo_root/.artifacts/verification/install-XXXXXX")"

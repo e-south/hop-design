@@ -26,7 +26,7 @@ def test_presentation_map_names_real_tests_and_rejects_stale_patterns(tmp_path):
         select(tmp_path)
 
 
-def run_gate(tmp_path, *args, pytest_exit=0, installation_exit=0, selection=True):
+def run_gate(tmp_path, *args, pytest_exit=0, installation_exit=0, audit_exit=0, selection=True):
     scripts = tmp_path / "scripts"
     scripts.mkdir()
     (scripts / "agent-verify").write_bytes((ROOT / "scripts/agent-verify").read_bytes())
@@ -40,6 +40,7 @@ def run_gate(tmp_path, *args, pytest_exit=0, installation_exit=0, selection=True
         'if [[ "$*" == *"verification_tests.py"* ]]; then\n'
         + ("echo tests/unit/test_recognition_ribbon.py\n" if selection else ":\n")
         + 'elif [[ "$*" == "run --locked pytest "* ]]; then exit "$PYTEST_EXIT";\n'
+        + 'elif [[ "$*" == "run --locked pip-audit "* ]]; then exit "$AUDIT_EXIT";\n'
         + 'elif [[ "$*" == *"distribution/smoke.py"* ]]; then exit "$INSTALLATION_EXIT"; fi\n'
     )
     uv.chmod(0o755)
@@ -55,6 +56,7 @@ def run_gate(tmp_path, *args, pytest_exit=0, installation_exit=0, selection=True
             "GATE_LOG": str(log),
             "PYTEST_EXIT": str(pytest_exit),
             "INSTALLATION_EXIT": str(installation_exit),
+            "AUDIT_EXIT": str(audit_exit),
         },
         capture_output=True,
         text=True,
@@ -121,6 +123,16 @@ def test_default_remains_the_complete_release_gate(tmp_path):
     result, log = run_gate(tmp_path)
     assert result.returncode == 0, result.stderr
     assert "wheel-smoke" in log and "pip-audit" in log
+
+
+def test_dependency_failure_stops_before_expensive_source_suite(tmp_path):
+    result, log = run_gate(tmp_path, audit_exit=19)
+    assert result.returncode == 19, result.stderr
+    assert "pip-audit" in log
+    assert "uv run --locked pytest" not in log and "wheel-smoke" not in log
+    assert "--no-dev" not in log
+    assert "--all-extras" in log and "--require-hashes" in log
+    assert "FAILED verification: dependency-audit" in result.stdout
 
 
 @pytest.mark.parametrize("exit_code", [0, 23])
