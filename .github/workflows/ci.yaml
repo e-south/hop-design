@@ -41,10 +41,15 @@ jobs:
       - name: Require a known verification scope
         env:
           CI_SCOPE: ${{ steps.scope.outputs.scope }}
+          CI_DISTRIBUTION: ${{ steps.scope.outputs.distribution }}
         run: |
           case "$CI_SCOPE" in
             artwork|full) ;;
             *) echo "Missing or invalid verification scope" >&2; exit 1 ;;
+          esac
+          case "$CI_DISTRIBUTION" in
+            routine|extended) ;;
+            *) echo "Missing or invalid distribution mode" >&2; exit 1 ;;
           esac
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -53,7 +58,9 @@ jobs:
           prune-cache: true
       - name: Verify repository
         if: steps.scope.outputs.scope == 'full'
-        run: bash ./scripts/agent-verify --workers 2
+        env:
+          CI_DISTRIBUTION: ${{ steps.scope.outputs.distribution }}
+        run: bash ./scripts/agent-verify --workers 2 --distribution "$CI_DISTRIBUTION"
       - name: Verify README artwork
         if: steps.scope.outputs.scope == 'artwork'
         run: |
@@ -73,6 +80,18 @@ jobs:
           use_oidc: true
           files: .artifacts/coverage.xml
           fail_ci_if_error: true
+      - name: Retain verification diagnostics
+        if: always() && steps.scope.outputs.scope == 'full'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verification-diagnostics
+          path: |
+            .artifacts/verification/*.xml
+            .artifacts/verification/install-*/result/*.json
+            .artifacts/verification/install-*/result/*.log
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 3
 
   checks:
     name: Checks

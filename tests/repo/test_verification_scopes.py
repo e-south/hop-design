@@ -26,7 +26,7 @@ def test_presentation_map_names_real_tests_and_rejects_stale_patterns(tmp_path):
         select(tmp_path)
 
 
-def run_gate(tmp_path, *args, pytest_exit=0, selection=True):
+def run_gate(tmp_path, *args, pytest_exit=0, installation_exit=0, selection=True):
     scripts = tmp_path / "scripts"
     scripts.mkdir()
     (scripts / "agent-verify").write_bytes((ROOT / "scripts/agent-verify").read_bytes())
@@ -39,7 +39,8 @@ def run_gate(tmp_path, *args, pytest_exit=0, selection=True):
         '#!/usr/bin/env bash\necho "uv $*" >> "$GATE_LOG"\n'
         'if [[ "$*" == *"verification_tests.py"* ]]; then\n'
         + ("echo tests/unit/test_recognition_ribbon.py\n" if selection else ":\n")
-        + 'elif [[ "$*" == "run --locked pytest "* ]]; then exit "$PYTEST_EXIT"; fi\n'
+        + 'elif [[ "$*" == "run --locked pytest "* ]]; then exit "$PYTEST_EXIT";\n'
+        + 'elif [[ "$*" == *"distribution/smoke.py"* ]]; then exit "$INSTALLATION_EXIT"; fi\n'
     )
     uv.chmod(0o755)
     node = binary / "node"
@@ -53,6 +54,7 @@ def run_gate(tmp_path, *args, pytest_exit=0, selection=True):
             "PATH": f"{binary}{os.pathsep}{os.environ['PATH']}",
             "GATE_LOG": str(log),
             "PYTEST_EXIT": str(pytest_exit),
+            "INSTALLATION_EXIT": str(installation_exit),
         },
         capture_output=True,
         text=True,
@@ -84,8 +86,26 @@ def test_default_remains_the_complete_release_gate(tmp_path):
     assert "wheel-smoke" in log and "pip-audit" in log
 
 
+@pytest.mark.parametrize("exit_code", [0, 23])
+def test_routine_installation_runs_once_and_propagates_failure(tmp_path, exit_code):
+    result, log = run_gate(tmp_path, "--distribution", "routine", installation_exit=exit_code)
+    assert result.returncode == exit_code, result.stderr
+    assert "--cov=hop_design" in log and "pip-audit" in log
+    assert log.count("scripts/distribution/smoke.py") == 1
+    assert "wheel-smoke" not in log
+    assert ("Agent verification: ok" in result.stdout) == (exit_code == 0)
+
+
 @pytest.mark.parametrize(
-    "args", [("--scope", "typo"), ("--workers", "0"), ("--workers", "auto"), ("--unknown",)]
+    "args",
+    [
+        ("--scope", "typo"),
+        ("--workers", "0"),
+        ("--workers", "auto"),
+        ("--distribution", "typo"),
+        ("--scope", "source", "--distribution", "routine"),
+        ("--unknown",),
+    ],
 )
 def test_invalid_scope_or_unbounded_workers_fail_before_execution(tmp_path, args):
     result, log = run_gate(tmp_path, *args)

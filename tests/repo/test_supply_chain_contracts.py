@@ -79,10 +79,14 @@ def test_artwork_gate_is_explicit_and_cannot_upload_nonexistent_coverage() -> No
     guard = next(step for step in steps if step.get("name") == "Require a known verification scope")
     assert guard["env"]["CI_SCOPE"] == "${{ steps.scope.outputs.scope }}"
     assert '*) echo "Missing or invalid verification scope" >&2; exit 1 ;;' in guard["run"]
+    assert guard["env"]["CI_DISTRIBUTION"] == "${{ steps.scope.outputs.distribution }}"
+    assert '*) echo "Missing or invalid distribution mode" >&2; exit 1 ;;' in guard["run"]
     assert "continue-on-error" not in scope and "continue-on-error" not in guard
     full = next(step for step in steps if step.get("name") == "Verify repository")
     assert full["if"] == "steps.scope.outputs.scope == 'full'"
     assert "scripts/agent-verify --workers 2" in full["run"]
+    assert '--distribution "$CI_DISTRIBUTION"' in full["run"]
+    assert full["env"]["CI_DISTRIBUTION"] == "${{ steps.scope.outputs.distribution }}"
     artwork = next(step for step in steps if step.get("name") == "Verify README artwork")
     assert artwork["if"] == "steps.scope.outputs.scope == 'artwork'"
     for check in (
@@ -94,6 +98,16 @@ def test_artwork_gate_is_explicit_and_cannot_upload_nonexistent_coverage() -> No
         assert check in artwork["run"]
     upload = next(step for step in steps if step.get("name") == "Upload coverage to Codecov")
     assert "steps.scope.outputs.scope == 'full' &&" in upload["if"]
+    diagnostics = next(
+        step for step in steps if step.get("name") == "Retain verification diagnostics"
+    )
+    assert diagnostics["if"].startswith("always() &&")
+    assert diagnostics["with"]["include-hidden-files"] == "true"
+    assert diagnostics["with"]["path"].splitlines() == [
+        ".artifacts/verification/*.xml",
+        ".artifacts/verification/install-*/result/*.json",
+        ".artifacts/verification/install-*/result/*.log",
+    ]
 
 
 def test_extra_python_versions_run_only_on_request_or_as_a_release_dependency() -> None:
@@ -197,6 +211,7 @@ def test_release_workflow_verifies_before_publishing_and_cannot_publish_to_pypi(
     assert "git merge-base --is-ancestor" in text
     assert "uv build --no-sources" in text
     assert "scripts/wheel-smoke dist" in text
+    assert int(jobs["build"]["timeout-minutes"]) >= 30
     assert "sha256sum *.whl *.tar.gz > SHA256SUMS" in text
     assert "actions/upload-artifact" in text
     assert "retention-days: 1" in text

@@ -24,9 +24,30 @@ def classify_paths(paths: Sequence[str]) -> str:
     return "artwork" if paths and set(paths) <= ARTWORK_PATHS else "full"
 
 
-def changed_scope(event: str, base: str) -> str:
+def distribution_mode(paths: Sequence[str]) -> str:
+    """Only known non-packaging changes can use the representative installation."""
+    if not paths:
+        return "extended"
+    for name in paths:
+        if name.startswith(("src/hop_design/assets/", "src/hop_design/cli/")) or name in {
+            "src/hop_design/cli.py",
+            "src/hop_design/__main__.py",
+        }:
+            return "extended"
+        ordinary = (
+            name in ARTWORK_PATHS
+            or (name.startswith("src/hop_design/") and name.endswith(".py"))
+            or (name.startswith("tests/") and name.endswith((".py", ".mjs")))
+            or (name.startswith("docs/") and name.endswith(".md"))
+        )
+        if not ordinary:
+            return "extended"
+    return "routine"
+
+
+def changed_scope(event: str, base: str) -> tuple[str, str]:
     if event not in {"pull_request", "push"} or not base or base == "0" * 40:
-        return "full"
+        return "full", "extended"
     if not re.fullmatch(r"[0-9a-f]{40}", base):
         raise ValueError("CI base must be a complete commit SHA")
     exists = subprocess.run(
@@ -36,7 +57,7 @@ def changed_scope(event: str, base: str) -> str:
     )
     if exists.returncode:
         # An unavailable comparison cannot establish a restricted change scope.
-        return "full"
+        return "full", "extended"
     result = subprocess.run(
         [
             "git",
@@ -55,16 +76,19 @@ def changed_scope(event: str, base: str) -> str:
     )
     paths = [os.fsdecode(name) for name in result.stdout.split(b"\0") if name]
     if any(Path(name).is_symlink() for name in paths):
-        return "full"
-    return classify_paths(paths)
+        return "full", "extended"
+    return classify_paths(paths), distribution_mode(paths)
 
 
 def main() -> None:
-    scope = changed_scope(os.environ.get("CI_EVENT", ""), os.environ.get("CI_BASE_SHA", ""))
-    print(f"CI scope: {scope}")
+    scope, distribution = changed_scope(
+        os.environ.get("CI_EVENT", ""), os.environ.get("CI_BASE_SHA", "")
+    )
+    print(f"CI scope: {scope}; distribution: {distribution}")
     if output := os.environ.get("GITHUB_OUTPUT"):
         with Path(output).open("a", encoding="utf-8") as handle:
             handle.write(f"scope={scope}\n")
+            handle.write(f"distribution={distribution}\n")
 
 
 if __name__ == "__main__":

@@ -19,8 +19,8 @@ journey:
   search, comparison, verification and presentation, with focused test seams.
 - [Measure performance](performance.md) separates search, verification and display
   costs, with disposable benchmark outputs and bounded proof reuse.
-- [Reduce duplicate verification](plans/verification-cost.md) plans a small
-  clean-install gate and shared fidelity checks; runner changes remain proposed.
+- [Reduce duplicate verification](plans/verification-cost.md) tracks the small
+  clean-install gate and shared fidelity checks; hosted adoption remains pending.
 - [GitHub governance](github-governance.md) defines repository settings,
   required checks, and the evidence unavailable when hosted CI cannot run.
 - [Release process](releasing.md) separates GitHub artifacts from PyPI
@@ -40,7 +40,9 @@ Run `bash ./scripts/agent-preflight --strict` before editing. For review, choose
 the [verification boundary](performance.md#choose-the-verification-boundary):
 `scripts/agent-verify --scope presentation` for molecular views, `--scope source`
 for molecular/API behavior, and the default full gate for merge, release,
-packaging or uncertain scope. Each scope includes strict preflight and browser
+packaging or uncertain scope. Full defaults to extended installation; CI may
+select `--distribution routine` for documented non-packaging changes. Each scope
+includes strict preflight and browser
 checks. Strict preflight runs the existing
 source-layout limit test before the expensive molecular replay suite, so package
 sprawl fails early. A local pass does not substitute

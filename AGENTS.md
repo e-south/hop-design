@@ -24,8 +24,9 @@ Run targeted checks while editing, then use the scope in
 - Molecular rules, requests, discovery, identity, admission or handoff behavior:
   `bash ./scripts/agent-verify --scope source`.
 - Packaging, runtime dependencies, publication, CI routing, or an uncertain boundary:
-  `bash ./scripts/agent-verify` (full). CI keeps this endpoint before merge,
-  except for the exact README/artwork paths documented in the verification guide.
+  `bash ./scripts/agent-verify` (full). CI keeps the source suite before merge and selects routine or extended
+  installation by the changed paths; exact README/artwork exceptions are
+  documented in the verification guide. Local full defaults to extended.
 
 Each scope includes strict preflight. Report the scope actually passed; presentation
 is not whole-package verification. Use `--workers 2` when useful; never duplicate gates.

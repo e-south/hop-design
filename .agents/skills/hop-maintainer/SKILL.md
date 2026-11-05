@@ -23,8 +23,9 @@ outside HOP.
 - A failing test proves the missing behavior before implementation.
 - The smallest owning layer changes and all affected contracts remain explicit.
 - Targeted checks and the verification scope appropriate to the changed responsibility pass.
-- Full source and installed-distribution verification passes before merge or release,
-  except for the documented README/artwork-only merge gate.
+- Full source and the selected installed-distribution verification passes before merge;
+  the documented README/artwork-only merge gate is the narrow exception.
+  Extended distribution verification passes before every release.
 - Documentation, schemas, and public/private boundaries agree with the code.
 
 ## Workflow
@@ -47,7 +48,10 @@ outside HOP.
 
    Choose one boundary; these are not three commands to run in sequence. Each
    includes strict preflight. Packaging, runtime dependencies, uncertain scope,
-   CI routing and release require the full gate. Merge uses that gate except for
+   CI routing and release require the full gate with extended distribution
+   qualification (the default). Routine CI keeps the full source suite and uses
+   `--distribution routine` for known non-packaging changes. Merge uses the
+   selected gate except for
    the exact README/artwork paths documented in the verification guide.
    A presentation-only change requires
    rendered review and conserved molecular content as well as its focused gate.
@@ -61,9 +65,9 @@ outside HOP.
 
 - RED evidence and focused GREEN verification.
 - Changed ownership boundary and contract surface.
-- The named scope, its result and exact changed responsibility. Include
-  source-versus-wheel parity for a full merge/release verification; do not imply
-  that a presentation or source pass established installed-package parity.
+- The named scope, result and changed responsibility. Name routine installation
+  or extended source-versus-wheel parity explicitly; do not imply that a
+  presentation or source pass established installed-package parity.
 - Updated owning docs or ADR for any semantic or architectural change.
 - Explicitly deferred downstream work and remaining roadmap phase.
 

@@ -29,14 +29,16 @@ does not imply PyPI publication.
    starts the release workflow; do not create an empty Release first.
 4. The workflow verifies tag/version and
    main ancestry, builds wheel and sdist with `uv build --no-sources`, performs
-   clean-wheel smoke tests on those exact files, records their SHA-256 checksums,
+   extended clean-install qualification (`scripts/wheel-smoke dist`) on those exact files, records their SHA-256 checksums,
    and runs Python 3.13/3.14 compatibility at the tagged commit. Publication
    waits for both jobs, then creates the versioned GitHub Release with the
    distributions and `SHA256SUMS` in one publish operation. A one-day Actions artifact only
    transfers the verified bytes between the read-only build job and the narrowly
    privileged publish job.
 
-The build job has read-only contents permission. Only the publish job has
+The build job allows thirty minutes for the extended gate; its last completed
+distribution stage took approximately eighteen minutes. It has read-only contents
+permission. Only the publish job has
 `contents: write`, and it receives no checkout. The GitHub CLI creates a draft,
 uploads the verified assets, and publishes only after upload succeeds. No job
 receives an OIDC token or can publish to PyPI. A rerun refuses to replace an

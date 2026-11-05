@@ -524,10 +524,11 @@ selections. The complete source gate still collects every test.
 ```bash
 bash scripts/agent-verify --scope presentation
 bash scripts/agent-verify --scope source --workers 2
-bash scripts/agent-verify --workers 2
+bash scripts/agent-verify --workers 2 --distribution routine
+bash scripts/agent-verify --workers 2  # extended distribution qualification
 ```
 
-Choose one command for the task; do not run all three as a ritual.
+Choose one command for the task; do not run these gates in sequence.
 
 - **Repository-only maintenance:** for documentation and repository checks when
   runtime source, packaged assets, dependencies, build rules and verification
@@ -549,14 +550,30 @@ Choose one command for the task; do not run all three as a ritual.
   persistence, identity, admission or handoff changes. It runs the entire Python
   suite with the existing 90% coverage floor, all browser checks and repository
   checks. Uncertain change impact also requires the full gate below.
-- **Full (default):** source verification plus dependency audit, build, clean
-  installation and source/wheel parity. Required before merge (except for the
-  README/artwork gate below) or release, and
-  for packaging, asset-inclusion rules or runtime-dependency changes. Editing an
-  already packaged view's appearance uses presentation verification; changing
-  which assets ship requires the full gate. CI retains
-  this endpoint. A manuscript caption or figure composition change in a consumer
-  repository does not itself require rebuilding and replaying HOP.
+- **Full:** source verification plus dependency audit and installed-distribution
+  verification. `--distribution routine` builds and scans the wheel/sdist,
+  compares every packaged source/asset byte with the checkout, installs only
+  runtime dependencies in an isolated environment, and exercises discovery,
+  reopening, a complete preparation, exact API/CLI oligos and PDF/SVG output.
+  It reuses the existing public example. `--distribution extended` (the default)
+  retains the complete source/wheel workflow comparisons. Use extended for
+  packaging, dependencies, CLI wiring, asset inclusion, verification changes,
+  releases or uncertain impact. CI selects the mode below. A manuscript-only
+  change in a consumer repository uses that owner's checks.
+
+The routine installation emits stage names, elapsed times and separate logs into
+one create-only directory below `.artifacts/verification/`. Each stage has a
+five-minute deadline; failure or timeout stops qualification and cleans its
+process group. Successful temporary environments and molecular outputs are
+removed. The small gate took about 44 seconds locally with cached dependencies;
+this is not a full-suite timing or a hosted performance guarantee. The source
+suite remains the larger cost.
+
+The extended runner labels its workflow groups and reports elapsed time and the
+failed group. Its expensive parity cases run only in extended mode. We keep
+those reference executions self-contained rather than introducing cross-run
+pytest evidence caches; small archive/asset assertions and the public design
+case are shared by both modes. No scientific source tests were removed.
 
 Verification-runner changes need the routing/failure tests in
 `tests/repo/test_verification_scopes.py` and the affected real scope. A stubbed
@@ -566,7 +583,7 @@ as a full gate.
 
 ### Hosted CI policy
 
-Routine pull requests and main-branch pushes run the full gate once on Python
+Routine pull requests and main-branch pushes run the complete source suite once on Python
 3.12, the minimum supported runtime. Python 3.13 and 3.14 remain supported;
 their contract and integration suites run through the separate
 `python-compatibility.yaml` workflow on explicit dispatch and during release.
@@ -577,9 +594,13 @@ changes. Choosing a new primary runtime is a separate support-policy change.
 `scripts/ci_scope.py` limits the smaller merge gate to its exact README/banner
 path allowlist. It checks the complete changed-path set, including both sides of
 renames. Empty, mixed, unknown, or unavailable comparisons require the full gate;
-invalid revisions or a failed diff stop verification. A manual
-CI run always selects full verification. Workflow and selector changes also
-require the full gate.
+invalid revisions or a failed diff stop verification. For full verification,
+ordinary Python source, tests and Markdown guides use routine installation.
+Packaging/dependencies, CLI entry points, browser assets, scripts, workflows,
+examples, unknown paths or missing comparison evidence use extended installation.
+Mixed changes take the stronger mode. Manual CI always uses extended. Both
+outputs are checked before execution; a missing mode fails. The selector itself
+therefore receives extended qualification before this policy can be merged.
 
 The README/artwork gate runs strict preflight, repository lint and workflow
 validation, CI contract tests, distribution builds and metadata checks. Review

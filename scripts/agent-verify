@@ -6,19 +6,25 @@ cd "$repo_root"
 
 gate_scope=full
 gate_workers=1
+gate_distribution=extended
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --scope) [[ $# -ge 2 ]] || exit 2; gate_scope="$2"; shift 2 ;;
     --workers) [[ $# -ge 2 ]] || exit 2; gate_workers="$2"; shift 2 ;;
-    *) echo 'usage: scripts/agent-verify [--scope presentation|source|full] [--workers 1|2]' >&2; exit 2 ;;
+    --distribution) [[ $# -ge 2 ]] || exit 2; gate_distribution="$2"; shift 2 ;;
+    *) echo 'usage: scripts/agent-verify [--scope presentation|source|full] [--workers 1|2] [--distribution routine|extended]' >&2; exit 2 ;;
   esac
 done
 case "$gate_scope" in presentation|source|full) ;; *) echo "unknown verification scope: $gate_scope" >&2; exit 2 ;; esac
 case "$gate_workers" in 1|2) ;; *) echo 'verification workers must be 1 or 2' >&2; exit 2 ;; esac
+case "$gate_distribution" in routine|extended) ;; *) echo 'unknown distribution mode' >&2; exit 2 ;; esac
+if [[ "$gate_scope" != full && "$gate_distribution" != extended ]]; then
+  echo 'distribution selection requires the full scope' >&2; exit 2
+fi
 gate_parallel=(-n 0)
 if [[ "$gate_workers" == 2 ]]; then gate_parallel=(-n 2 --dist loadscope); fi
 gate_started=$SECONDS
-echo "Verification scope: $gate_scope; Python workers: $gate_workers"
+echo "Verification scope: $gate_scope; Python workers: $gate_workers; distribution: $gate_distribution"
 
 bash ./scripts/agent-preflight --strict
 bash ./scripts/precommit-all
@@ -63,6 +69,12 @@ uv run --locked pip-audit \
   --requirement .artifacts/operational-requirements.txt \
   --no-deps \
   --disable-pip
-bash ./scripts/wheel-smoke
+if [[ "$gate_distribution" == routine ]]; then
+  # Create-only output prevents a previous result from posing as this invocation.
+  gate_receipt="$(mktemp -d "$repo_root/.artifacts/verification/install-XXXXXX")"
+  uv run --locked python scripts/distribution/smoke.py --out "$gate_receipt/result"
+else
+  bash ./scripts/wheel-smoke
+fi
 
-echo "Agent verification: ok ($((SECONDS - gate_started))s; full source and distribution)"
+echo "Agent verification: ok ($((SECONDS - gate_started))s; full source and $gate_distribution distribution)"

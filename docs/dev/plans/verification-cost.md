@@ -12,7 +12,9 @@ journey: [maintain]
 
 # Remove duplicate verification work
 
-Status: planned; no verification runner changes are implemented by this plan.
+Status: the local candidate implements routine and extended installation gates.
+Focused checks and the isolated routine workflow pass. Hosted qualification of
+the complete patch remains required before merge.
 
 The goal is to run each scientific responsibility once in the main suite and
 retain a small, independent check of the actual installed distribution. Success
@@ -35,11 +37,10 @@ Work belongs in HOP's verification scripts, existing tests, workflows and
 maintainer guidance. Keep private application inputs and campaign operations
 outside the tool. Do not change molecular rules, search permissions, runtime
 validators, public API/CLI behavior, supported Python versions or coverage floors.
-Do not cancel, restart or change the gate already running to adopt this plan.
+The previously running gate completed before this implementation began.
 
-The local Python-matrix and README/artwork policy is a separate, not-yet-hosted
-change. Reconcile with it before promotion; this plan does not imply that either
-policy is already deployed.
+The local Python-matrix and README/artwork changes are included in this candidate.
+Neither policy is deployed until the candidate passes protected CI and merges.
 
 ## Verification responsibilities
 
@@ -56,13 +57,13 @@ installation gate. The exact triggers must be explicit and tested before rollout
 
 ## Ordered implementation
 
-- [ ] **1. Account for the work.** Map each current distribution command to the
+- [x] **1. Account for the work.** Map each current distribution command to the
   invariant it checks, its existing pytest owner and its installation-specific
   risk. Use completed logs and existing test timings first. Add start/end labels,
   elapsed time, selected scope and failure stage to the next necessary run;
   do not start another full suite just to collect a baseline. Capture quiet
   subprocess failures without dumping successful reports into the CI log.
-- [ ] **2. Prove one small installed workflow.** Build the actual wheel and sdist,
+- [x] **2. Prove one small installed workflow.** Build the actual wheel and sdist,
   install into an isolated environment with only declared runtime dependencies,
   and run from outside the checkout with import-path overrides removed. Assert
   that HOP imports from that environment. Exercise a small bounded discovery,
@@ -70,7 +71,7 @@ installation gate. The exact triggers must be explicit and tested before rollout
   one figure. Check packaged browser resources and sdist example availability.
   Reuse existing requests and assertions; keep pytest and its dependencies out
   of the isolated application environment.
-- [ ] **3. Reuse source evidence only where it pays.** For selected exact-parity
+- [x] **3. Reuse source evidence only where it pays.** For selected exact-parity
   cases, retain the output already produced by the successful source test.
   Bind it to source-content identity, input, runtime/dependency context and
   output hashes. Isolate parallel-worker writes and retain only the required
@@ -79,14 +80,15 @@ installation gate. The exact triggers must be explicit and tested before rollout
   cache. A standalone release qualification may explicitly produce its own
   reference once. If reuse adds more machinery than it saves, keep that case
   small or in extended qualification instead.
-- [ ] **4. Migrate checks before deleting duplicates.** Make the main tests and
+- [x] **4. Migrate checks before deleting duplicates.** Make the main tests and
   distribution checks consume shared cases/assertions. Replace script-text
   assertions with behavior and failure-propagation checks where possible;
   retain workflow/permission assertions that protect real orchestration rules.
   Map every removed command to retained evidence. Migrate one responsibility
   group at a time, then remove superseded source reruns and helper code.
-- [ ] **5. Wire routine and extended qualification.** Use one distribution
-  runner with a small default and an explicit extended mode. Keep the existing
+- [x] **5. Wire routine and extended qualification.** Use the existing verification
+  entrypoint with an explicit distribution mode. Local unknown scope defaults to
+  extended; CI selects routine only for known non-packaging changes. Keep the existing
   presentation/source scope meanings. Document that the routine full gate is
   the complete source suite plus the declared installation suite, while release
   invokes extended distribution qualification. Preserve dependency audit,
@@ -101,19 +103,81 @@ installation gate. The exact triggers must be explicit and tested before rollout
   routing and release dependencies. Remove obsolete guidance and update
   `AGENTS.md`, the maintainer skill, performance guide and release guide together.
 
-## Next-slice contract
+## Implementation and retained responsibilities
 
-Implement steps 1 and 2 on the existing local CI/banner branch after reconciling
-the source base. Produce the responsibility map and a representative isolated
-installation check using the existing test owners. Keep the old gate callable
-and its CI routing unchanged during this slice; the new check is qualified
-explicitly, not appended permanently to an already expensive routine gate.
+The completed hosted gate spent 3,427.79 seconds in pytest and approximately
+eighteen more minutes in distribution verification. The new local command is:
 
-Done means the installed check passes, emits useful timing/failure information,
-and demonstrates that missing assets, an import from the checkout, altered
-handoff data and a failed subprocess are rejected. Report selected test cases,
-runtime, isolation evidence and remaining unmapped checks. No remote launch or
-release action belongs to this slice. No user decision is blocking it.
+```bash
+uv run --locked python scripts/distribution/smoke.py \
+  --out .artifacts/installation-check
+```
+
+The destination must be new. It retains distribution bytes/hashes and a short
+log and elapsed time per stage; its temporary environment and molecular outputs
+are removed after success or failure. Timeout/interrupt cleanup stops the process
+group. The installed probe runs outside the checkout with isolated Python,
+checks the actual import location and installs only declared runtime dependencies.
+The existing public design example supplies the finite 64-evaluation discovery,
+reopening, complete route and frozen-edition handoff. API and CLI retrieval must
+match every handoff byte. One PDF/SVG, symbolic compilation and the existing
+browser asset list are checked separately. Both gates use one archive inventory: all prior public sdist
+requirements, exact wheel membership, and package bytes compared with source.
+This is installation evidence, not visual acceptance.
+
+On 4 November, the first check passed in 41.48 seconds with cached dependencies;
+its case result matched the original 64-evaluation example exactly. An initial
+eight-evaluation probe correctly failed without a complete preparation; no retry
+or relaxation was introduced. Thirty-eight focused checks passed, including
+import leakage, missing assets, changed handoff contents/membership, nonzero exit
+and timeout. After archive-byte checks were added, the final local installation
+passed in 43.95 seconds; 75 focused checks passed. Hosted timing and full
+qualification remain pending.
+
+The scientific command groups below remain in `scripts/wheel-smoke` for extended
+qualification. Routine installation uses the representative case plus shared
+archive checks; the main source suite still runs all its tests. The decision for
+step 3 is to keep extended reference runs self-contained: caching selected pytest
+outputs would add provenance and worker-coordination machinery without reducing
+routine cost further. No persistent source-evidence cache was introduced.
+
+| Existing command group | Source test owner under `tests/` | Installation responsibility / intended destination |
+| --- | --- | --- |
+| Build, archive inventory, public-safety scan, metadata, runtime install | `repo/test_distribution_safety.py`, `repo/test_supply_chain_contracts.py` | Shared exact inventory in both modes; metadata/safety retained |
+| Documentation journey and exact/symbolic compilation | `repo/test_docs_smoke.py` | Packaged examples/CLI; representative compile in routine, remaining journey in extended |
+| Public facade and producer digests | `contract/test_construction_public_facade.py` | Preserve import/identity agreement in installation checks |
+| Local neighborhood, resumable collection, foldback/basal sequence populations | `contract/test_local_neighborhood_public.py`, `repo/test_construction_dogfood.py` | Exact public local results and population/member parity in extended |
+| Basal junction example and candidate discovery | `repo/test_basal_junction_example.py`, `repo/test_construction_dogfood.py` | Example/rendered inventory parity in extended |
+| Insert/hairpin families and continuation | `repo/test_public_scaffold_family.py` | Shared family assertions; additional installed examples in extended |
+| Options, product-first discovery and terminal forms | `integration/test_construction_options.py`, `integration/test_scaffold_discovery.py`, `integration/test_terminal_scaffold.py` | Distinct workflow branches in extended |
+| Five comparison cases and controlled panel | `integration/test_grouped_comparison.py`, `integration/test_comparison_loop_sequences.py`, `integration/test_stage_comparison_controls.py` | Exact comparison artifacts in extended |
+| Complete journey and four compilation outcomes | `repo/test_complete_public_journey.py`, `repo/test_construction_dogfood.py` | One complete preparation in routine; additional outcomes in extended |
+| Navigation and construction comparison | `integration/test_complete_construction_navigation.py`, `integration/test_construction_comparison_projection.py` | Public command/resource wiring in extended; retrieval in routine |
+| Method bundles, authoring, version and CLI compilation | `integration/test_method_bundle.py`, `contract/test_linear_source_method.py` | Entry point in routine; method-bundle variants in extended |
+| Molecular edit, parameter queries and envelope revision | `integration/test_molecular_edits.py`, `integration/test_parameter_exploration.py`, `integration/test_envelope_revision.py` | Saved/editable records and packaged contexts in extended |
+| Browser asset checks and survey help | `repo/test_construction_dogfood.py` | Retain inexpensive resource checks in routine |
+| Interface-survey continuation, replay and retrieval | `integration/test_interface_survey_public.py`, `integration/test_interface_survey_integrity.py` | Extended persistence case; routine check reopens saved discovery |
+| Optional intent, figure, atlas, edition and materials | Existing `scripts/design-discovery-smoke.py`; `integration/test_design_hairpin.py`, `integration/test_design_progressive.py` | One shared case now drives the isolated probe; no duplicate implementation |
+
+## Routing and remaining qualification
+
+`agent-verify --distribution routine` runs the complete source gate, dependency
+audit and representative isolated installation. The default extended mode runs
+the full workflow parity catalog. Packaging, dependencies, CLI wiring, assets,
+scripts, workflows, examples, unknown paths and manual dispatch retain extended
+checks; mixed changes use the stronger mode. Routine selection covers ordinary
+Python implementation/tests and Markdown guides. Missing outputs fail closed.
+Release still checks the exact release wheel/sdist with the extended gate.
+
+The extended script now labels each workflow group and reports elapsed time and
+failure stage. The release build deadline is thirty minutes, correcting the old
+fifteen-minute limit that was shorter than the observed distribution workload.
+Routine CI retains timing/failure logs without uploading temporary environments.
+
+Remaining: qualify this complete candidate once on hosted Linux, including the
+full source suite and extended distribution gate. This CI-policy change selects
+extended automatically. Confirm branch protection and the exact qualified commit
+before merge. The small gate's local timing does not predict total CI duration.
 
 ## Acceptance and rollout safeguards
 

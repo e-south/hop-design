@@ -48,6 +48,26 @@ def test_empty_changes_do_not_establish_an_artwork_only_change():
     assert select([]) == "full"
 
 
+@pytest.mark.parametrize(
+    "paths,expected",
+    [
+        (["src/hop_design/kernel/base.py", "tests/unit/test_base.py"], "routine"),
+        (["docs/guides/quickstart.md"], "routine"),
+        (["src/hop_design/cli.py"], "extended"),
+        (["src/hop_design/cli/commands.py"], "extended"),
+        (["src/hop_design/assets/editor.js"], "extended"),
+        (["pyproject.toml"], "extended"),
+        (["uv.lock"], "extended"),
+        (["scripts/distribution/smoke.py"], "extended"),
+        ([".github/workflows/ci.yaml"], "extended"),
+        (["src/hop_design/kernel/base.py", "unknown"], "extended"),
+        ([], "extended"),
+    ],
+)
+def test_distribution_mode_keeps_sensitive_and_unknown_changes_extended(paths, expected):
+    assert runpy.run_path(str(SCRIPT))["distribution_mode"](paths) == expected
+
+
 def git(repo, *args):
     return subprocess.run(
         ["git", "-C", str(repo), *args], check=True, capture_output=True, text=True
@@ -85,7 +105,19 @@ def test_real_readme_diff_is_classified_and_reported(repo, tmp_path):
     git(path, "commit", "-qm", "readme")
     result, output = execute(path, "pull_request", base, tmp_path)
     assert result.returncode == 0, result.stderr
-    assert output == "scope=artwork\n"
+    assert output == "scope=artwork\ndistribution=routine\n"
+
+
+def test_real_source_diff_preserves_full_suite_with_routine_installation(repo, tmp_path):
+    path, base = repo
+    source = path / "src/hop_design/kernel/base.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("VALUE = 1\n")
+    git(path, "add", ".")
+    git(path, "commit", "-qm", "ordinary source")
+    result, output = execute(path, "pull_request", base, tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert output == "scope=full\ndistribution=routine\n"
 
 
 def test_code_renamed_to_readme_cannot_hide_a_source_deletion(repo, tmp_path):
@@ -94,7 +126,7 @@ def test_code_renamed_to_readme_cannot_hide_a_source_deletion(repo, tmp_path):
     git(path, "commit", "-qm", "rename")
     result, output = execute(path, "push", base, tmp_path)
     assert result.returncode == 0
-    assert output == "scope=full\n"
+    assert output == "scope=full\ndistribution=extended\n"
 
 
 @pytest.mark.parametrize(
@@ -103,7 +135,7 @@ def test_code_renamed_to_readme_cannot_hide_a_source_deletion(repo, tmp_path):
 def test_manual_and_missing_base_use_full_verification(repo, tmp_path, event, base):
     result, output = execute(repo[0], event, base, tmp_path)
     assert result.returncode == 0
-    assert output == "scope=full\n"
+    assert output == "scope=full\ndistribution=extended\n"
 
 
 def test_invalid_revision_fails_before_emitting_a_successful_scope(repo, tmp_path):
@@ -120,4 +152,4 @@ def test_symlink_in_artwork_path_requires_full_verification(repo, tmp_path):
     git(path, "commit", "-qm", "symlink")
     result, output = execute(path, "pull_request", base, tmp_path)
     assert result.returncode == 0
-    assert output == "scope=full\n"
+    assert output == "scope=full\ndistribution=extended\n"
