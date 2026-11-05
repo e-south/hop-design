@@ -30,6 +30,17 @@ JSON and saved-bundle admission still validate their complete contents.
 
 ## Bundle integrity
 
+Survey checkpoints remain bound to their exact producer. Ordinary resume and
+verification never accept another producer. An explicit `survey upgrade` replays
+every saved evaluation into a new checkpoint under the current producer. Results,
+continuations, exclusion scope and molecular authorities must match; only
+regenerated exclusion certificates may change their producer digest and resulting
+references. The original checkpoint remains unchanged. The transition receipt
+binds both producers and checkpoint hashes. It establishes replay equivalence of
+the saved prefix, not universal compatibility or validity of unseen results.
+Writers must be stopped during this operation. Failed or interrupted upgrades
+publish no destination; resume the preserved original with its original runtime.
+
 `hop-bundle.json` inventories every content artifact except itself. Each entry
 records a normalized relative path, media type, byte count, and SHA-256 digest.
 Verification rejects missing, symlinked, modified, unmanifested, path-traversing,
