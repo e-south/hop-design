@@ -10,9 +10,9 @@ from ..branches import SurveyBranches
 from ..coordinates import coordinate_rank
 from .interfaces import EndPairAdmission, EndPairRelations
 
-MAX_FRAME_ENTRIES = 4096
+MAX_FRAME_ENTRIES = 32768
 # This additional invocation index charges canonical bytes; Python overhead is extra.
-MAX_FRAME_BYTES = 2 * 1024 * 1024
+MAX_FRAME_BYTES = 16 * 1024 * 1024
 
 
 class BasalAdmissions:
