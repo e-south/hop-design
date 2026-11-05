@@ -255,16 +255,19 @@ class EnzymeProvisioningPolicy(EnzymePermissions):
 
     def permits(self, enzyme_id: str, *, role: EnzymeRole) -> bool:
         """Return whether the caller provisioned one enzyme for one route role."""
-        catalog_ids = {enzyme.enzyme_id for enzyme in self.catalog.enzymes}
-        if enzyme_id not in catalog_ids:
-            return False
+        # Reject explicit restrictions before inspecting the catalog. Discovery
+        # asks this for many unavailable entries in the same immutable catalog.
         if self.allowed_enzyme_ids and enzyme_id not in self.allowed_enzyme_ids:
             return False
         if enzyme_id in self.forbidden_enzyme_ids or enzyme_id in self.reserved_enzyme_ids:
             return False
         for restriction in self.role_restrictions:
-            if restriction.role is role:
-                return enzyme_id in restriction.allowed_enzyme_ids
+            if restriction.role is role and enzyme_id not in restriction.allowed_enzyme_ids:
+                return False
+        try:
+            self.catalog.by_id(enzyme_id)
+        except KeyError:
+            return False
         return True
 
 
