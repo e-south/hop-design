@@ -367,6 +367,13 @@ every exact hairpin or preparation. Both objective and execution limits bind the
 checkpoint; see the [scope definitions](interface-survey-search.md#complete-handles-without-enumerating-every-interchangeable-word).
 
 `construction survey verify REQUEST --index FILE` replays all recorded outcomes.
+`construction survey upgrade REQUEST --index FILE --source-producer PRODUCER_JSON
+--out NEW` replays a **stopped** checkpoint under the installed build. Supply the
+exact original producer mapping. It preserves the source, rejects changed results
+or continuations, and publishes a new checkpoint plus transition receipt only
+after every recorded evaluation matches. `--max-checkpoint-bytes` bounds the new
+database. Progress goes to stderr and the final receipt to stdout. This can cost
+as much as repeating the saved search; retain the old runtime for rollback.
 `construction survey query REQUEST --index FILE [--query PREDICATES]` returns
 conditional complete paths and declared values without adding evaluations.
 `construction survey select REQUEST --index FILE --target N --step N

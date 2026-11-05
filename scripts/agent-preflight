@@ -26,7 +26,13 @@ uv sync --locked
 if [[ "$strict" == true ]]; then
   # Fail on package sprawl before the expensive molecular replay suite.
   uv run --locked pytest -q \
-    tests/repo/test_repository_structure.py::test_source_layout_has_explicit_sprawl_limits
+    tests/repo/test_repository_structure.py::test_source_layout_has_explicit_sprawl_limits \
+    tests/repo/test_documentation_contracts.py \
+    tests/repo/test_supply_chain_contracts.py \
+    tests/repo/test_ci_scope.py \
+    tests/repo/test_verification_scopes.py \
+    tests/contract/test_construction_public_facade.py::test_construction_facade_is_an_exact_allowlist \
+    tests/contract/test_construction_public_facade.py::test_construction_facade_decision_records_the_exact_allowlist
   uv run --locked python scripts/check_architecture.py
   uv run --locked python scripts/check_docs.py
   uv run --locked python scripts/check_public_safety.py

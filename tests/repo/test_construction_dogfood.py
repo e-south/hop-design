@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 import json
+import runpy
 import subprocess
 import sys
 from pathlib import Path
@@ -189,8 +190,9 @@ def test_docs_and_wheel_smoke_share_the_construction_example() -> None:
     assert '"navigation"' in docs_smoke
     assert 'summary.get("selection_sha256")' in docs_smoke
     assert '"construction": construction.__all__' in wheel_smoke
+    inventory = runpy.run_path(str(REPO_ROOT / "scripts/distribution/inventory.py"))
     for path in (EXAMPLE, DESIGN, *SOURCES.values()):
-        assert f"'{path.relative_to(REPO_ROOT)}'" in wheel_smoke
+        assert str(path.relative_to(REPO_ROOT)) in inventory["REQUIRED_SOURCE_PATHS"]
     assert "source_construction" in wheel_smoke
     assert "wheel_construction" in wheel_smoke
     for command in (

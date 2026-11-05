@@ -5,7 +5,26 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 smoke_root="$(mktemp -d)"
-trap 'rm -rf "$smoke_root"' EXIT
+smoke_name=packaging
+smoke_started=$SECONDS
+echo "START distribution: $smoke_name"
+smoke_stage() {
+  echo "PASSED distribution: $smoke_name ($((SECONDS - smoke_started))s)"
+  smoke_name="$1"
+  smoke_started=$SECONDS
+  echo "START distribution: $smoke_name"
+}
+smoke_finish() {
+  smoke_status=$?
+  if [[ "$smoke_status" == 0 ]]; then
+    echo "PASSED distribution: $smoke_name ($((SECONDS - smoke_started))s)"
+  else
+    echo "FAILED distribution: $smoke_name ($((SECONDS - smoke_started))s; exit $smoke_status)" >&2
+  fi
+  rm -rf "$smoke_root"
+  exit "$smoke_status"
+}
+trap smoke_finish EXIT
 
 if [[ $# -gt 1 ]]; then
   echo "usage: scripts/wheel-smoke [distribution-directory]" >&2
@@ -49,86 +68,10 @@ fi
 sdist_root="${sdist_roots[0]}"
 
 uv run --locked twine check "$wheel_path" "$sdist_path"
-sdist_contents="$(tar -tzf "$sdist_path")"
-for forbidden in '/.agents/' '/.github/' '/scripts/' '/tests/'; do
-  if grep -Fq "$forbidden" <<<"$sdist_contents"; then
-    echo "sdist contains repository-only path: $forbidden" >&2
-    exit 1
-  fi
-done
-for required in \
-  'LICENSE' \
-  'README.md' \
-  'CONTRIBUTING.md' \
-  'SECURITY.md' \
-  'ARCHITECTURE.md' \
-  'DESIGN.md' \
-  'RELIABILITY.md' \
-  'assets/hop-design-banner.svg' \
-  'assets/examples/basal-junction.svg' \
-  'assets/examples/foldback-junction.svg' \
-  'docs/index.md' \
-  'docs/guides/install.md' \
-  'docs/guides/quickstart.md' \
-  'examples/author_linear_source_method.py' \
-  'examples/compile_payload_records.py' \
-  'examples/compile_construction.py' \
-  'examples/complete-construction/README.md' \
-  'examples/complete-construction/product-request.json' \
-  'examples/complete-construction/run.py' \
-  'examples/complete-construction/family.py' \
-  'examples/scaffold-options/run.py' \
-  'examples/scaffold-options/insert.json' \
-  'examples/scaffold-options/hairpin.json' \
-  'examples/scaffold-options/comparison.json' \
-  'examples/scaffold-discovery/request.json' \
-  'examples/scaffold-discovery/run.py' \
-  'examples/scaffold-discovery/terminal-form.json' \
-  'examples/scaffold-discovery/terminal_forms.py' \
-  'examples/scaffold-comparison/run.py' \
-  'examples/scaffold-comparison/controlled_panel.py' \
-  'examples/scaffold-comparison/crossed.json' \
-  'examples/scaffold-comparison/methods.json' \
-  'examples/scaffold-comparison/hairpin.json' \
-  'examples/scaffold-comparison/grouped.json' \
-  'examples/scaffold-comparison/loop-sequences.json' \
-  'examples/molecular-editing/README.md' \
-  'examples/molecular-editing/request.json' \
-  'examples/molecular-editing/sequence-family.json' \
-  'examples/molecular-editing/run.py' \
-  'examples/molecular-editing/conditional.py' \
-  'examples/molecular-editing/parameters.py' \
-  'examples/molecular-editing/envelope.py' \
-  'examples/molecular-editing/construction-envelope.json' \
-  'docs/guides/explore-conditional-variants.md' \
-  'docs/guides/edit-folded-sequences.md' \
-  'examples/construction-composed-pcr.yaml' \
-  'examples/compile_linear_source_method.py' \
-  'examples/construction-exact-design.yaml' \
-  'examples/construction-exact.yaml' \
-  'examples/construction-infeasible.yaml' \
-  'examples/construction-expanded-domain.yaml' \
-  'examples/discover_basal_candidates.py' \
-  'examples/fixed-site-three-base-context.yaml' \
-  'examples/loxp-spacer.yaml' \
-  'examples/loxp-spacer-base-classes.yaml' \
-  'examples/basal-junction/README.md' \
-  'examples/basal-junction/request.yaml' \
-  'examples/basal-junction/search.py' \
-  'examples/foldback-local-partition.yaml' \
-  'examples/foldback-sequence-space.yaml' \
-  'examples/basal-sequence-space.yaml' \
-  'examples/generic-symbolic.yaml' \
-  'examples/linear-source-matched-design.yaml' \
-  'examples/linear-source-method.json' \
-  'examples/render_component_views.py' \
-  'examples/verify_design_method_handoff.py'; do
-  if ! grep -Fq "/$required" <<<"$sdist_contents"; then
-    echo "sdist omits README-routed content: $required" >&2
-    exit 1
-  fi
-done
+uv run --locked python scripts/distribution/inventory.py \
+  --source "$repo_root" --wheel "$wheel_path" --sdist "$sdist_path"
 
+smoke_stage runtime-installation
 # Byte parity includes the declared runtime producer, so hold that context equal.
 # A fresh wheel environment must not silently choose a newer Python patch release.
 source_python="$(uv run --locked python -c 'import sys; print(sys.executable)')"
@@ -138,8 +81,10 @@ uv venv --python "$source_python" "$smoke_root/venv"
 uv pip install --python "$smoke_root/venv/bin/python" \
   --constraint "$smoke_root/runtime-constraints.txt" "$wheel_path"
 uv pip check --python "$smoke_root/venv/bin/python"
+smoke_stage installed-documentation
 "$smoke_root/venv/bin/python" scripts/docs-smoke --content-root "$sdist_root"
 
+smoke_stage facades-and-symbolic-compilation
 source_digest="$(uv run --locked python -c 'import hop_design as hop; print(hop.compile(sequence="NRY", design_id="wheel-parity").bundle.manifest_digest)')"
 wheel_digest="$("$smoke_root/venv/bin/python" -c 'import hop_design as hop; print(hop.compile(sequence="NRY", design_id="wheel-parity").bundle.manifest_digest)')"
 if [[ "$source_digest" != "$wheel_digest" ]]; then
@@ -192,6 +137,7 @@ if [[ "$source_facades" != "$wheel_facades" ]]; then
   exit 1
 fi
 
+smoke_stage local-neighborhoods
 local_foldback_request='examples/foldback-local-partition.yaml'
 run_local_neighborhood_smoke() {
   local output="$1"
@@ -281,6 +227,7 @@ for relative in sequence-space/result.json sequence-member.json basal-sequence-s
   fi
 done
 
+smoke_stage basal-junction
 uv run --locked python examples/basal-junction/search.py --out "$smoke_root/source-basal"
 "$smoke_root/venv/bin/python" examples/basal-junction/search.py --out "$smoke_root/wheel-basal"
 for relative in result/result.json matrix/projection.json matrix/projection.csv matrix/projection.svg; do
@@ -290,6 +237,7 @@ for relative in result/result.json matrix/projection.json matrix/projection.csv 
   fi
 done
 
+smoke_stage scaffold-families
 uv run --locked python examples/complete-construction/family.py --out "$smoke_root/source-family"
 "$smoke_root/venv/bin/python" "$sdist_root/examples/complete-construction/family.py" --out "$smoke_root/wheel-family"
 if ! diff -qr "$smoke_root/source-family" "$smoke_root/wheel-family"; then
@@ -313,6 +261,7 @@ fi
 options_args=(--endpoint insert --max-continuations 12
   --option option-0005-01 --option option-0006-01
   --option option-0007-01 --option option-0008-01 --baseline option-0005-01)
+smoke_stage product-options-and-terminals
 uv run --locked python examples/scaffold-options/run.py \
   "${options_args[@]}" --out "$smoke_root/source-options"
 "$smoke_root/venv/bin/python" "$sdist_root/examples/scaffold-options/run.py" \
@@ -336,6 +285,7 @@ if ! diff -qr "$smoke_root/source-terminals" "$smoke_root/wheel-terminals"; then
   exit 1
 fi
 
+smoke_stage comparisons
 for comparison_case in crossed methods hairpin grouped loop-sequences; do
   case "$comparison_case" in
     crossed) comparison_baseline=loop3-open17 ;;
@@ -364,6 +314,7 @@ if ! diff -qr "$smoke_root/source-controlled-panel" "$smoke_root/wheel-controlle
 fi
 
 composed_construction=''
+smoke_stage complete-preparation-and-compilation
 uv run --locked python examples/complete-construction/run.py --out "$smoke_root/source-journey"
 "$smoke_root/venv/bin/python" "$sdist_root/examples/complete-construction/run.py" --out "$smoke_root/wheel-journey"
 for journey_case in released hairpin fixed-source-edit redesigned-source-edit; do
@@ -412,6 +363,7 @@ for construction_case in composed-pcr exact infeasible expanded-domain; do
   fi
 done
 
+smoke_stage navigation-and-methods
 wheel_navigation_bundle="$smoke_root/wheel-construction-composed-pcr/construction"
 wheel_navigation_id="$(
   printf '%s' "$composed_construction" \
@@ -471,6 +423,7 @@ installed_version="$("$smoke_root/venv/bin/python" -c \
   'from importlib.metadata import version; print(version("hop-design"))')"
 test "$("$smoke_root/venv/bin/hop-design" --version)" = "hop-design $installed_version"
 
+smoke_stage editing-and-browser-assets
 source_edit="$(uv run --locked python examples/molecular-editing/run.py "$smoke_root/source-molecular-edit")"
 wheel_edit="$("$smoke_root/venv/bin/python" examples/molecular-editing/run.py "$smoke_root/wheel-molecular-edit")"
 if [[ "$source_edit" != "$wheel_edit" ]]; then
@@ -483,6 +436,7 @@ fi
 "$smoke_root/venv/bin/python" -c 'from importlib.resources import files; assets = files("hop_design").joinpath("assets/survey_explorer"); assert all(assets.joinpath(n).is_file() for n in ("index.html", "editor.js", "editor.css", "model.js", "plot.js", "atlas.js"))'
 "$smoke_root/venv/bin/hop-design" construction survey view --help >/dev/null
 
+smoke_stage parameter-and-envelope-revisions
 source_parameters="$(uv run --locked python examples/molecular-editing/parameters.py "$smoke_root/source-molecular-edit/alternatives" "$smoke_root/source-parameters")"
 wheel_parameters="$("$smoke_root/venv/bin/python" examples/molecular-editing/parameters.py "$smoke_root/wheel-molecular-edit/alternatives" "$smoke_root/wheel-parameters")"
 if [[ "$source_parameters" != "$wheel_parameters" ]]; then
@@ -497,6 +451,7 @@ if [[ "$source_envelope" != "$wheel_envelope" ]]; then
   exit 1
 fi
 
+smoke_stage interface-survey
 source_survey="$(uv run --locked python scripts/interface-survey-smoke.py)"
 wheel_survey="$("$smoke_root/venv/bin/python" scripts/interface-survey-smoke.py --content-root "$sdist_root")"
 if [[ "$source_survey" != "$wheel_survey" ]]; then
@@ -504,6 +459,7 @@ if [[ "$source_survey" != "$wheel_survey" ]]; then
   exit 1
 fi
 
+smoke_stage optional-intent-and-edition
 source_design="$(uv run --locked python scripts/design-discovery-smoke.py)"
 wheel_design="$("$smoke_root/venv/bin/python" scripts/design-discovery-smoke.py)"
 if [[ "$source_design" != "$wheel_design" ]]; then

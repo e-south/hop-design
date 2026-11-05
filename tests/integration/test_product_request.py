@@ -12,6 +12,7 @@ from hop_design.cli import app
 from hop_design.models.construction.complete.source_preparation import (
     LinearSourceMaterializationSpec,
 )
+from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.source import ConstructionSource
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,6 +26,33 @@ def _write(tmp_path, authored):
     path = tmp_path / "request.json"
     path.write_text(json.dumps(authored))
     return path
+
+
+def test_product_lowering_reuses_the_validated_catalog_without_changing_serialization():
+    product = ProductRequest.model_validate_json(json.dumps(_request()))
+    before = product.model_dump_json(by_alias=True)
+    source = product.construction_source()
+    assert source.foldback.enzyme_provisioning.catalog is product.enzyme_catalog
+    assert source.basal.enzyme_provisioning.catalog is product.enzyme_catalog
+    assert source.composition.release.enzyme_provisioning.catalog is product.enzyme_catalog
+    assert product.model_dump_json(by_alias=True) == before
+    assert ConstructionSource.model_validate_json(source.model_dump_json(by_alias=True)) == source
+
+
+@pytest.mark.parametrize("endpoint", ["hairpin", "adapter_ligated_hairpin"])
+def test_earlier_endpoint_lowering_reuses_catalog_without_adding_release(endpoint):
+    resolved = construction.resolve_design_request(
+        {"stem_arm": _request()["stem_arm"], "product": endpoint}
+    )
+    product = ProductRequest.model_validate_json(
+        json.dumps(json.loads(resolved.json_bytes)["effective_request"])
+    )
+    source = product.construction_source()
+    assert source.foldback.enzyme_provisioning.catalog is product.enzyme_catalog
+    if source.basal is not None:
+        assert source.basal.enzyme_provisioning.catalog is product.enzyme_catalog
+    assert source.composition.release is None
+    assert ConstructionSource.model_validate_json(source.model_dump_json(by_alias=True)) == source
 
 
 def test_product_request_cli_and_api_expand_identical_intent(tmp_path):

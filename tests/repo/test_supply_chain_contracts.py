@@ -52,21 +52,82 @@ def test_distribution_requires_pydantic_with_exclude_if_support() -> None:
     assert "pydantic>=2.12,<3" in dependencies
 
 
-def test_ci_has_one_stable_required_context_and_supported_python_probe() -> None:
+def test_ci_has_one_stable_required_context_and_one_primary_runtime() -> None:
     workflow, text = _workflow("ci.yaml")
+    # Protected main admits only current, green PRs; do not replay that suite
+    # again solely because the same tree was squash-merged.
+    assert workflow["on"] == {"pull_request": "", "workflow_dispatch": ""}
     jobs = workflow["jobs"]
     assert isinstance(jobs, dict)
 
-    assert set(jobs) == {"verify", "python-compatibility", "checks"}
+    assert set(jobs) == {"verify", "checks"}
     assert jobs["checks"]["name"] == "Checks"
-    assert set(jobs["checks"]["needs"]) == {"verify", "python-compatibility"}
-    assert jobs["python-compatibility"]["strategy"]["matrix"]["python-version"] == [
-        "3.12",
-        "3.13",
-        "3.14",
-    ]
+    assert jobs["checks"]["needs"] == "verify"
+    assert jobs["checks"]["if"] == "always()"
+    assert 'test "${{ needs.verify.result }}" = "success"' in text
+    assert jobs["verify"]["env"]["UV_PYTHON"] == "3.14"
+    assert jobs["verify"]["env"]["COVERAGE_CORE"] == "sysmon"
+    assert "strategy:" not in text
+    # Always emit the required context; path-skipping the workflow blocks merges.
+    assert "paths-ignore:" not in text and "paths:" not in text
     assert workflow["permissions"] == {"contents": "read"}
     assert "pull_request_target" not in text
+
+
+def test_artwork_gate_is_explicit_and_cannot_upload_nonexistent_coverage() -> None:
+    workflow, _ = _workflow("ci.yaml")
+    steps = workflow["jobs"]["verify"]["steps"]
+    scope = next(step for step in steps if step.get("id") == "scope")
+    assert scope["run"] == "python scripts/ci_scope.py"
+    assert scope["env"]["CI_EVENT"] == "${{ github.event_name }}"
+    guard = next(step for step in steps if step.get("name") == "Require a known verification scope")
+    assert guard["env"]["CI_SCOPE"] == "${{ steps.scope.outputs.scope }}"
+    assert '*) echo "Missing or invalid verification scope" >&2; exit 1 ;;' in guard["run"]
+    assert guard["env"]["CI_DISTRIBUTION"] == "${{ steps.scope.outputs.distribution }}"
+    assert '*) echo "Missing or invalid distribution mode" >&2; exit 1 ;;' in guard["run"]
+    assert "continue-on-error" not in scope and "continue-on-error" not in guard
+    full = next(step for step in steps if step.get("name") == "Verify repository")
+    assert full["if"] == "steps.scope.outputs.scope == 'full'"
+    assert "scripts/agent-verify --workers 4" in full["run"]
+    assert '--distribution "$CI_DISTRIBUTION"' in full["run"]
+    assert full["env"]["CI_DISTRIBUTION"] == "${{ steps.scope.outputs.distribution }}"
+    artwork = next(step for step in steps if step.get("name") == "Verify README artwork")
+    assert artwork["if"] == "steps.scope.outputs.scope == 'artwork'"
+    for check in (
+        "agent-preflight --strict",
+        "precommit-all",
+        "uv build --no-sources",
+        "twine check",
+    ):
+        assert check in artwork["run"]
+    upload = next(step for step in steps if step.get("name") == "Upload coverage to Codecov")
+    assert "steps.scope.outputs.scope == 'full' &&" in upload["if"]
+    diagnostics = next(
+        step for step in steps if step.get("name") == "Retain verification diagnostics"
+    )
+    assert diagnostics["if"].startswith("always() &&")
+    assert diagnostics["with"]["include-hidden-files"] == "true"
+    assert diagnostics["with"]["path"].splitlines() == [
+        ".artifacts/verification/*.xml",
+        ".artifacts/verification/stages.tsv",
+        ".artifacts/verification/install-*/result/*.json",
+        ".artifacts/verification/install-*/result/*.log",
+    ]
+
+
+def test_extra_python_versions_run_only_on_request_or_as_a_release_dependency() -> None:
+    workflow, text = _workflow("python-compatibility.yaml")
+    assert workflow["on"] == {"workflow_dispatch": "", "workflow_call": ""}
+    assert workflow["permissions"] == {"contents": "read"}
+    job = workflow["jobs"]["compatibility"]
+    assert job["strategy"]["matrix"]["python-version"] == ["3.12", "3.13"]
+    assert "tests/contract tests/integration" in text
+    assert "continue-on-error" not in text
+    release, _ = _workflow("release.yaml")
+    assert (
+        release["jobs"]["compatibility"]["uses"] == "./.github/workflows/python-compatibility.yaml"
+    )
+    assert set(release["jobs"]["publish"]["needs"]) == {"build", "compatibility"}
 
 
 def test_ci_publishes_the_coverage_report_used_by_the_readme_badge() -> None:
@@ -91,7 +152,13 @@ def test_workflows_use_immutable_actions_and_bounded_permissions() -> None:
         text = path.read_text(encoding="utf-8")
         action_lines = ANY_ACTION.findall(text)
         assert action_lines, f"{path.name} must use at least one action"
-        assert len(FULL_SHA_ACTION.findall(text)) == len(action_lines), (
+        local_workflows = re.findall(
+            r"^\s*uses:\s*(\./\.github/workflows/[a-z-]+\.yaml)\s*$", text, re.MULTILINE
+        )
+        for workflow_path in local_workflows:
+            assert (REPO_ROOT / workflow_path).is_file()
+        # A local reusable workflow is bound to the caller's exact commit.
+        assert len(FULL_SHA_ACTION.findall(text)) + len(local_workflows) == len(action_lines), (
             f"{path.name} contains an action that is not pinned to a full commit SHA"
         )
         assert "permissions:" in text
@@ -136,8 +203,8 @@ def test_release_workflow_verifies_before_publishing_and_cannot_publish_to_pypi(
     assert workflow["on"] == {"push": {"tags": ["v*"]}}
     assert workflow["permissions"] == {"contents": "read"}
     jobs = workflow["jobs"]
-    assert set(jobs) == {"build", "publish"}
-    assert jobs["publish"]["needs"] == "build"
+    assert set(jobs) == {"build", "compatibility", "publish"}
+    assert set(jobs["publish"]["needs"]) == {"build", "compatibility"}
     assert jobs["publish"]["permissions"] == {
         "actions": "read",
         "contents": "write",
@@ -149,6 +216,7 @@ def test_release_workflow_verifies_before_publishing_and_cannot_publish_to_pypi(
     assert "git merge-base --is-ancestor" in text
     assert "uv build --no-sources" in text
     assert "scripts/wheel-smoke dist" in text
+    assert int(jobs["build"]["timeout-minutes"]) >= 30
     assert "sha256sum *.whl *.tar.gz > SHA256SUMS" in text
     assert "actions/upload-artifact" in text
     assert "retention-days: 1" in text

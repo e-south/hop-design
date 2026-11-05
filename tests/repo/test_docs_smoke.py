@@ -99,20 +99,10 @@ def test_verification_endpoints_share_the_docs_smoke_contract() -> None:
     assert "uv run --locked pytest" in agent_verify
     assert "uv run --locked python scripts/docs-smoke" not in agent_verify
     assert '"$smoke_root/venv/bin/python" scripts/docs-smoke' in wheel_smoke
-    assert "'examples/fixed-site-three-base-context.yaml'" in wheel_smoke
-    assert "'docs/guides/install.md'" in wheel_smoke
-    assert "'docs/guides/quickstart.md'" in wheel_smoke
-    assert "'examples/foldback-local-partition.yaml'" in wheel_smoke
-    assert "'examples/compile_payload_records.py'" in wheel_smoke
-    assert "'examples/compile_construction.py'" in wheel_smoke
-    assert "'examples/construction-exact-design.yaml'" in wheel_smoke
-    assert "'examples/construction-composed-pcr.yaml'" in wheel_smoke
-    assert "'examples/construction-exact.yaml'" in wheel_smoke
-    assert "'examples/construction-infeasible.yaml'" in wheel_smoke
-    assert "'examples/construction-expanded-domain.yaml'" in wheel_smoke
-    assert "'examples/linear-source-matched-design.yaml'" in wheel_smoke
-    assert "'examples/author_linear_source_method.py'" in wheel_smoke
-    assert "'examples/verify_design_method_handoff.py'" in wheel_smoke
+    assert "scripts/distribution/inventory.py" in wheel_smoke
+    inventory = runpy.run_path(str(REPO_ROOT / "scripts/distribution/inventory.py"))
+    assert "examples/fixed-site-three-base-context.yaml" in inventory["REQUIRED_SOURCE_PATHS"]
+    assert "examples/verify_design_method_handoff.py" in inventory["REQUIRED_SOURCE_PATHS"]
     assert 'tar -xzf "$sdist_path" -C "$sdist_extract_root"' in wheel_smoke
     assert '--content-root "$sdist_root"' in wheel_smoke
     assert wheel_smoke.count("import hop_design.spaces as spaces") == 2

@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-11-01
+last_verified: 2026-11-05
 doc_type: decision
 amended_by: hop-adr-0028
 ---
@@ -334,12 +334,16 @@ preview/evaluation separation and replayed original evidence; see
 [ADR 0051](0051-explicit-envelope-revisions.md).
 
 Resumable interface surveys add `evaluate_interface_survey`,
-`inspect_interface_survey`, `query_interface_survey`, `verify_interface_survey` and
-`retrieve_interface_survey_witness`. These accept strict files and explicit
-execution budgets, return versioned JSON summaries, and rehydrate selected
+`inspect_interface_survey`, `query_interface_survey`, `verify_interface_survey`,
+`upgrade_interface_survey` and `retrieve_interface_survey_witness`. These accept
+strict files and explicit execution budgets, return versioned JSON summaries, and rehydrate selected
 ordinary construction receipts on demand. The checkpoint index remains derived
 bookkeeping; aggregate molecular coverage requires replay. See
 [ADR 0052](0052-resumable-interface-surveys.md).
+An upgrade requires an explicit source producer and replays every saved
+evaluation into a new checkpoint. It preserves the source and rejects changed
+molecular results or continuation state; ordinary resume retains exact producer
+matching. It does not merely relabel an older checkpoint as current.
 
 Survey inspection also exposes `InterfaceSurveyAtlas` and
 `inspect_interface_survey_atlas`. The exact target, step and materialized identity

@@ -7,7 +7,7 @@ audience:
   - release operators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-08-20
+last_verified: 2026-11-05
 doc_type: how-to
 journey:
   - maintain
@@ -23,24 +23,33 @@ does not imply PyPI publication.
 ## GitHub release artifacts
 
 1. Merge a narrow version change through a green pull request.
-2. Confirm `bash ./scripts/agent-verify`, Python 3.12/3.13/3.14 compatibility,
+2. Confirm the full Python 3.14 gate
+   (`UV_PYTHON=3.14 COVERAGE_CORE=sysmon bash ./scripts/agent-verify`),
    `twine check`, dependency review, CodeQL, and public-safety checks.
 3. Push the exact protected-main commit as tag `v<project-version>`. The tag
    starts the release workflow; do not create an empty Release first.
 4. The workflow verifies tag/version and
    main ancestry, builds wheel and sdist with `uv build --no-sources`, performs
-   clean-wheel smoke tests on those exact files, records their SHA-256 checksums,
-   then creates the versioned GitHub Release with the distributions and
-   `SHA256SUMS` in one publish operation. A one-day Actions artifact only
+   extended clean-install qualification (`scripts/wheel-smoke dist`) on those exact files, records their SHA-256 checksums,
+   and runs Python 3.12/3.13 compatibility at the tagged commit. Publication
+   waits for both jobs, then creates the versioned GitHub Release with the
+   distributions and `SHA256SUMS` in one publish operation. A one-day Actions artifact only
    transfers the verified bytes between the read-only build job and the narrowly
    privileged publish job.
 
-The build job has read-only contents permission. Only the publish job has
+The build job allows thirty minutes for the extended gate; its last completed
+distribution stage took approximately eighteen minutes. It has read-only contents
+permission. Only the publish job has
 `contents: write`, and it receives no checkout. The GitHub CLI creates a draft,
-uploads the verified assets, and publishes only after upload succeeds. Neither
-job receives an OIDC token or can publish to PyPI. A rerun refuses to replace an
+uploads the verified assets, and publishes only after upload succeeds. No job
+receives an OIDC token or can publish to PyPI. A rerun refuses to replace an
 existing release or incomplete draft. Inspect and remove an incomplete draft
 explicitly before retrying the same tag.
+
+For Python-version-sensitive changes, request earlier compatibility evidence with
+`gh workflow run python-compatibility.yaml --ref <candidate-ref>`. This is optional
+for ordinary changes; release compatibility is already mandatory and need not be
+run manually as a routine prerequisite.
 
 ## Future PyPI gate
 

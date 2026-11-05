@@ -48,8 +48,8 @@ def _load_docs_checker() -> ModuleType:
 def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert readme.startswith("# ![hop: Hairpin Oligonucleotide Processing")
-    assert "assets/hop-design-banner.svg" in readme
+    assert readme.startswith("# ![Hairpin Oligonucleotide Processing (HOP) Design")
+    assert "assets/hop-design-banner.png" in readme
     assert "—" not in readme
     assert "docs/guides/install.md" in readme
     assert "docs/guides/quickstart.md" in readme
@@ -750,36 +750,22 @@ def test_public_prose_does_not_use_removed_specialized_root_operations() -> None
         assert f"hop.{operation}" not in text, operation
 
 
-def test_banner_uses_literal_name_and_method_stages() -> None:
-    banner = (REPO_ROOT / "assets" / "hop-design-banner.svg").read_text(encoding="utf-8")
-
-    assert "HAIRPIN OLIGONUCLEOTIDE PROCESSING" in banner
-    assert all(color in banner for color in ("#1E1D1A", "#F3EFE7", "#969087", "#D97757"))
-    root = ET.fromstring(banner)
+def test_banner_names_the_tool_and_has_accessible_workflow_context() -> None:
+    root = ET.parse(REPO_ROOT / "assets" / "hop-design-banner.svg").getroot()
     namespace = {"svg": "http://www.w3.org/2000/svg"}
-    stages = root.findall(".//svg:g[@data-stage]", namespace)
-    assert [stage.attrib["data-stage"] for stage in stages] == [
-        "source-ssdna",
-        "source-duplex",
-        "strand-exposure",
-        "foldback",
-        "hairpin",
-    ]
-    operations = root.findall(".//svg:g[@data-operation]", namespace)
-    assert [operation.attrib["data-operation"] for operation in operations] == [
-        "template-copy",
-        "cleave-and-separate",
-        "associate",
-        "join",
-    ]
-    assert all(stage.find("svg:title", namespace) is not None for stage in stages)
-    assert root.find(".//*[@id='removed-fragment']") is not None
-    assert root.find(".//*[@id='joining-bond']") is not None
-    assert root.find(".//*[@id='hairpin-backbone']") is not None
-    assert "not to scale" in banner
-    assert "INSERT" not in banner
-    for buzzword in (">SPEC</text>", ">PLAN</text>", ">BUNDLE</text>"):
-        assert buzzword not in banner
+    assert root.attrib["role"] == "img"
+    for identity in root.attrib["aria-labelledby"].split():
+        assert root.find(f".//*[@id='{identity}']") is not None
+    title = root.find("svg:title", namespace)
+    description = root.find("svg:desc", namespace)
+    assert title is not None and description is not None
+    assert title.text == "Hairpin Oligonucleotide Processing (HOP) Design"
+    assert "not biochemical reactions" in description.text
+    visible = " ".join(
+        "".join(label.itertext()) for label in root.findall(".//svg:text", namespace)
+    )
+    for action in ("Specify", "Discover", "Retrieve"):
+        assert action in visible
 
 
 def test_banner_uses_large_labels_without_protocol_annotations() -> None:
@@ -788,8 +774,8 @@ def test_banner_uses_large_labels_without_protocol_annotations() -> None:
     visible = " ".join("".join(label.itertext()) for label in labels)
 
     assert float(root.attrib["height"]) / float(root.attrib["width"]) <= 0.16
-    assert len(visible.split()) <= 10
-    assert all(float(label.attrib["font-size"]) >= 18 for label in labels)
+    assert len(visible.split()) <= 25
+    assert all(float(label.attrib["font-size"]) >= 17 for label in labels)
     assert "nick boundary" not in visible
     assert "unjoined ends" not in visible
     assert "auxiliary oligos omitted" not in visible

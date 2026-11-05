@@ -136,6 +136,7 @@ from .design.construction.surveys.choices import (
     query_interface_survey,
 )
 from .design.construction.surveys.public import evaluate_interface_survey, inspect_interface_survey
+from .design.construction.surveys.replay.upgrade import upgrade_interface_survey
 from .design.construction.surveys.retrieve import retrieve_interface_survey_witness
 from .design.construction.surveys.verify import verify_interface_survey
 from .design.construction.variants.atlas import ScaffoldAtlas, inspect_scaffold_atlas
@@ -319,5 +320,6 @@ __all__ = [
     "select_scaffold_variant_comparison",
     "select_scaffold_variants",
     "select_sequence_family",
+    "upgrade_interface_survey",
     "verify_interface_survey",
 ]

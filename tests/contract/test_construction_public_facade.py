@@ -161,6 +161,7 @@ PUBLIC_NAMES = [
     "select_scaffold_variant_comparison",
     "select_scaffold_variants",
     "select_sequence_family",
+    "upgrade_interface_survey",
     "verify_interface_survey",
 ]
 

@@ -4,7 +4,6 @@ Load one skill for the task:
 
 - Use HOP: `.agents/skills/hop-design-user/SKILL.md`.
 - Change or review HOP: `.agents/skills/hop-maintainer/SKILL.md`.
-
 Load the other only for a repository defect or public-use verification.
 ## Find the contract
 - Product meaning or terminology: `docs/start/mental-model.md` and
@@ -23,11 +22,12 @@ Run targeted checks while editing, then use the scope in
   `bash ./scripts/agent-verify --scope presentation` plus visual and molecular-inventory review.
 - Molecular rules, requests, discovery, identity, admission or handoff behavior:
   `bash ./scripts/agent-verify --scope source`.
-- Packaging, runtime dependencies, publication, or an uncertain boundary:
-  `bash ./scripts/agent-verify` (full). CI keeps this full endpoint before merge.
+- Packaging, runtime dependencies, publication, CI routing, or an uncertain boundary:
+  `bash ./scripts/agent-verify` (full). CI keeps the source suite before merge and selects routine or extended
+  installation by changed paths; see the guide for README/artwork exceptions. Local full defaults to extended.
 
-Each scope includes strict preflight. Report the scope actually passed; presentation
-is not whole-package verification. Use `--workers 2` when useful; never duplicate gates.
+Each scope includes strict preflight. Report its boundary; presentation is not whole-package verification.
+Use `--workers 2` or `--workers 4` when resources permit; never duplicate local and hosted gates.
 Manuscript-only edits use their owning study's document and artifact checks.
 
 ## Repository boundary
