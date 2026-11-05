@@ -57,6 +57,8 @@ outside HOP.
    rendered review and conserved molecular content as well as its focused gate.
    See `docs/dev/performance.md#choose-the-verification-boundary` for the
    responsibility map and bounded worker option.
+   Use the hosted gate once for final qualification; do not duplicate it locally.
+   Protected main does not rerun the source suite after a green, current PR merge.
 
 7. Inspect the diff for generated paired inputs, unsafe paths, private data,
    dependency inversions, undocumented schema changes, and stale docs.

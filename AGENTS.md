@@ -26,8 +26,8 @@ Run targeted checks while editing, then use the scope in
   `bash ./scripts/agent-verify` (full). CI keeps the source suite before merge and selects routine or extended
   installation by changed paths; see the guide for README/artwork exceptions. Local full defaults to extended.
 
-Each scope includes strict preflight. Report the scope actually passed; presentation
-is not whole-package verification. Use `--workers 2` when useful; never duplicate gates.
+Each scope includes strict preflight. Report its boundary; presentation is not whole-package verification.
+Use `--workers 2` or `--workers 4` when resources permit; never duplicate local and hosted gates.
 Manuscript-only edits use their owning study's document and artifact checks.
 
 ## Repository boundary

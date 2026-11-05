@@ -7,7 +7,7 @@ audience:
   - release operators
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-11-04
+last_verified: 2026-11-05
 doc_type: how-to
 journey:
   - maintain
@@ -23,14 +23,15 @@ does not imply PyPI publication.
 ## GitHub release artifacts
 
 1. Merge a narrow version change through a green pull request.
-2. Confirm the full Python 3.12 gate (`bash ./scripts/agent-verify`),
+2. Confirm the full Python 3.14 gate
+   (`UV_PYTHON=3.14 COVERAGE_CORE=sysmon bash ./scripts/agent-verify`),
    `twine check`, dependency review, CodeQL, and public-safety checks.
 3. Push the exact protected-main commit as tag `v<project-version>`. The tag
    starts the release workflow; do not create an empty Release first.
 4. The workflow verifies tag/version and
    main ancestry, builds wheel and sdist with `uv build --no-sources`, performs
    extended clean-install qualification (`scripts/wheel-smoke dist`) on those exact files, records their SHA-256 checksums,
-   and runs Python 3.13/3.14 compatibility at the tagged commit. Publication
+   and runs Python 3.12/3.13 compatibility at the tagged commit. Publication
    waits for both jobs, then creates the versioned GitHub Release with the
    distributions and `SHA256SUMS` in one publish operation. A one-day Actions artifact only
    transfers the verified bytes between the read-only build job and the narrowly

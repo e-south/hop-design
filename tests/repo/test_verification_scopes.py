@@ -80,6 +80,43 @@ def test_source_scope_keeps_all_source_tests_and_coverage(tmp_path):
     assert "wheel-smoke" not in log
 
 
+def test_verification_labels_stages_without_repeating_lint(tmp_path):
+    result, log = run_gate(tmp_path, "--scope", "source")
+    assert result.returncode == 0, result.stderr
+    assert log.count("precommit-all") == 1
+    assert "ruff check" not in log and "ruff format" not in log
+    assert "START verification: source-tests" in result.stdout
+    assert "PASSED verification: source-tests" in result.stdout
+    timings = (tmp_path / ".artifacts/verification/stages.tsv").read_text().splitlines()
+    assert timings[0] == "stage\tseconds\texit_code"
+    assert [line.split("\t")[0] for line in timings[1:]] == [
+        "preflight",
+        "repository-hooks",
+        "types",
+        "compilation",
+        "browser-tests",
+        "source-tests",
+    ]
+    assert all(line.split("\t")[2] == "0" for line in timings[1:])
+
+
+def test_failed_stage_retains_timing_and_exit_code(tmp_path):
+    result, log = run_gate(tmp_path, "--scope", "source", pytest_exit=17)
+    assert result.returncode == 17, result.stderr
+    assert "FAILED verification: source-tests" in result.stdout
+    timings = (tmp_path / ".artifacts/verification/stages.tsv").read_text().splitlines()
+    assert timings[-1].split("\t")[::2] == ["source-tests", "17"]
+    assert "wheel-smoke" not in log
+
+
+def test_four_workers_use_the_same_tests_coverage_and_fixture_grouping(tmp_path):
+    result, log = run_gate(tmp_path, "--scope", "source", "--workers", "4")
+    assert result.returncode == 0, result.stderr
+    assert "-n 4 --dist loadscope" in log
+    assert "--cov=hop_design" in log and "--cov-report=xml:.artifacts/coverage.xml" in log
+    assert "--junitxml=.artifacts/verification/source.xml" in log
+
+
 def test_default_remains_the_complete_release_gate(tmp_path):
     result, log = run_gate(tmp_path)
     assert result.returncode == 0, result.stderr
@@ -101,6 +138,7 @@ def test_routine_installation_runs_once_and_propagates_failure(tmp_path, exit_co
     [
         ("--scope", "typo"),
         ("--workers", "0"),
+        ("--workers", "8"),
         ("--workers", "auto"),
         ("--distribution", "typo"),
         ("--scope", "source", "--distribution", "routine"),

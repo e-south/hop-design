@@ -54,6 +54,9 @@ def test_distribution_requires_pydantic_with_exclude_if_support() -> None:
 
 def test_ci_has_one_stable_required_context_and_one_primary_runtime() -> None:
     workflow, text = _workflow("ci.yaml")
+    # Protected main admits only current, green PRs; do not replay that suite
+    # again solely because the same tree was squash-merged.
+    assert workflow["on"] == {"pull_request": "", "workflow_dispatch": ""}
     jobs = workflow["jobs"]
     assert isinstance(jobs, dict)
 
@@ -62,7 +65,8 @@ def test_ci_has_one_stable_required_context_and_one_primary_runtime() -> None:
     assert jobs["checks"]["needs"] == "verify"
     assert jobs["checks"]["if"] == "always()"
     assert 'test "${{ needs.verify.result }}" = "success"' in text
-    assert jobs["verify"]["env"]["UV_PYTHON"] == "3.12"
+    assert jobs["verify"]["env"]["UV_PYTHON"] == "3.14"
+    assert jobs["verify"]["env"]["COVERAGE_CORE"] == "sysmon"
     assert "strategy:" not in text
     # Always emit the required context; path-skipping the workflow blocks merges.
     assert "paths-ignore:" not in text and "paths:" not in text
@@ -84,7 +88,7 @@ def test_artwork_gate_is_explicit_and_cannot_upload_nonexistent_coverage() -> No
     assert "continue-on-error" not in scope and "continue-on-error" not in guard
     full = next(step for step in steps if step.get("name") == "Verify repository")
     assert full["if"] == "steps.scope.outputs.scope == 'full'"
-    assert "scripts/agent-verify --workers 2" in full["run"]
+    assert "scripts/agent-verify --workers 4" in full["run"]
     assert '--distribution "$CI_DISTRIBUTION"' in full["run"]
     assert full["env"]["CI_DISTRIBUTION"] == "${{ steps.scope.outputs.distribution }}"
     artwork = next(step for step in steps if step.get("name") == "Verify README artwork")
@@ -105,6 +109,7 @@ def test_artwork_gate_is_explicit_and_cannot_upload_nonexistent_coverage() -> No
     assert diagnostics["with"]["include-hidden-files"] == "true"
     assert diagnostics["with"]["path"].splitlines() == [
         ".artifacts/verification/*.xml",
+        ".artifacts/verification/stages.tsv",
         ".artifacts/verification/install-*/result/*.json",
         ".artifacts/verification/install-*/result/*.log",
     ]
@@ -115,7 +120,7 @@ def test_extra_python_versions_run_only_on_request_or_as_a_release_dependency() 
     assert workflow["on"] == {"workflow_dispatch": "", "workflow_call": ""}
     assert workflow["permissions"] == {"contents": "read"}
     job = workflow["jobs"]["compatibility"]
-    assert job["strategy"]["matrix"]["python-version"] == ["3.13", "3.14"]
+    assert job["strategy"]["matrix"]["python-version"] == ["3.12", "3.13"]
     assert "tests/contract tests/integration" in text
     assert "continue-on-error" not in text
     release, _ = _workflow("release.yaml")

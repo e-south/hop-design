@@ -12,29 +12,43 @@ while [[ $# -gt 0 ]]; do
     --scope) [[ $# -ge 2 ]] || exit 2; gate_scope="$2"; shift 2 ;;
     --workers) [[ $# -ge 2 ]] || exit 2; gate_workers="$2"; shift 2 ;;
     --distribution) [[ $# -ge 2 ]] || exit 2; gate_distribution="$2"; shift 2 ;;
-    *) echo 'usage: scripts/agent-verify [--scope presentation|source|full] [--workers 1|2] [--distribution routine|extended]' >&2; exit 2 ;;
+    *) echo 'usage: scripts/agent-verify [--scope presentation|source|full] [--workers 1|2|4] [--distribution routine|extended]' >&2; exit 2 ;;
   esac
 done
 case "$gate_scope" in presentation|source|full) ;; *) echo "unknown verification scope: $gate_scope" >&2; exit 2 ;; esac
-case "$gate_workers" in 1|2) ;; *) echo 'verification workers must be 1 or 2' >&2; exit 2 ;; esac
+case "$gate_workers" in 1|2|4) ;; *) echo 'verification workers must be 1, 2 or 4' >&2; exit 2 ;; esac
 case "$gate_distribution" in routine|extended) ;; *) echo 'unknown distribution mode' >&2; exit 2 ;; esac
 if [[ "$gate_scope" != full && "$gate_distribution" != extended ]]; then
   echo 'distribution selection requires the full scope' >&2; exit 2
 fi
 gate_parallel=(-n 0)
-if [[ "$gate_workers" == 2 ]]; then gate_parallel=(-n 2 --dist loadscope); fi
+if [[ "$gate_workers" != 1 ]]; then gate_parallel=(-n "$gate_workers" --dist loadscope); fi
 gate_started=$SECONDS
 echo "Verification scope: $gate_scope; Python workers: $gate_workers; distribution: $gate_distribution"
-
-bash ./scripts/agent-preflight --strict
-bash ./scripts/precommit-all
-uv run --locked ruff check .
-uv run --locked ruff format --check .
-uv run --locked mypy src
-uv run --locked python -m compileall -q src/hop_design
-node --test tests/browser/*.test.mjs
-mkdir -p .artifacts
 mkdir -p .artifacts/verification
+printf 'stage\tseconds\texit_code\n' > .artifacts/verification/stages.tsv
+gate_stage() {
+  local name="$1" started=$SECONDS status=0
+  shift
+  if [[ "${GITHUB_ACTIONS:-}" == true ]]; then echo "::group::$name"; fi
+  echo "START verification: $name"
+  "$@" || status=$?
+  printf '%s\t%s\t%s\n' "$name" "$((SECONDS - started))" "$status" >> .artifacts/verification/stages.tsv
+  if [[ "$status" == 0 ]]; then
+    echo "PASSED verification: $name ($((SECONDS - started))s)"
+  else
+    echo "FAILED verification: $name ($((SECONDS - started))s; exit $status)"
+  fi
+  if [[ "${GITHUB_ACTIONS:-}" == true ]]; then echo '::endgroup::'; fi
+  return "$status"
+}
+
+gate_stage preflight bash ./scripts/agent-preflight --strict
+# The repository hooks already run both Ruff checks over every tracked/untracked file.
+gate_stage repository-hooks bash ./scripts/precommit-all
+gate_stage types uv run --locked mypy src
+gate_stage compilation uv run --locked python -m compileall -q src/hop_design
+gate_stage browser-tests node --test tests/browser/*.test.mjs
 if [[ "$gate_scope" == presentation ]]; then
   # Capture first: process substitution would hide selector failures and an
   # empty pytest argument list would accidentally run the complete suite.
@@ -44,14 +58,14 @@ if [[ "$gate_scope" == presentation ]]; then
     [[ -n "$path" ]] && gate_tests+=("$path")
   done <<< "$gate_selection"
   if [[ ${#gate_tests[@]} -eq 0 ]]; then echo 'empty presentation test selection' >&2; exit 2; fi
-  uv run --locked pytest "${gate_parallel[@]}" "${gate_tests[@]}" \
+  gate_stage presentation-tests uv run --locked pytest "${gate_parallel[@]}" "${gate_tests[@]}" \
     --durations=20 --junitxml=.artifacts/verification/presentation.xml -q
   echo "Presentation verification: ok ($((SECONDS - gate_started))s); source/release verification is separate"
   exit 0
 fi
 # Pytest owns the source docs journey and its summary assertions; wheel-smoke
 # independently exercises the installed distribution below.
-uv run --locked pytest "${gate_parallel[@]}" \
+gate_stage source-tests uv run --locked pytest "${gate_parallel[@]}" \
   --durations=20 \
   --junitxml=".artifacts/verification/$gate_scope.xml" \
   --cov=hop_design \
@@ -62,19 +76,19 @@ if [[ "$gate_scope" == source ]]; then
   echo "Source verification: ok ($((SECONDS - gate_started))s); installed-distribution verification is separate"
   exit 0
 fi
-uv export --locked --no-dev --no-emit-project \
+gate_stage dependency-export uv export --locked --no-dev --no-emit-project \
   --format requirements-txt \
-  --output-file .artifacts/operational-requirements.txt >/dev/null
-uv run --locked pip-audit \
+  --output-file .artifacts/operational-requirements.txt
+gate_stage dependency-audit uv run --locked pip-audit \
   --requirement .artifacts/operational-requirements.txt \
   --no-deps \
   --disable-pip
 if [[ "$gate_distribution" == routine ]]; then
   # Create-only output prevents a previous result from posing as this invocation.
   gate_receipt="$(mktemp -d "$repo_root/.artifacts/verification/install-XXXXXX")"
-  uv run --locked python scripts/distribution/smoke.py --out "$gate_receipt/result"
+  gate_stage routine-installation uv run --locked python scripts/distribution/smoke.py --out "$gate_receipt/result"
 else
-  bash ./scripts/wheel-smoke
+  gate_stage extended-distribution bash ./scripts/wheel-smoke
 fi
 
 echo "Agent verification: ok ($((SECONDS - gate_started))s; full source and $gate_distribution distribution)"

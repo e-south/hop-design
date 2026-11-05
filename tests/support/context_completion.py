@@ -3,6 +3,7 @@
 import json
 import sqlite3
 import zlib
+from contextlib import closing
 
 from hop_design.design.construction.surveys.completion.domains import ContextCompletionPlan
 from hop_design.models.construction.complete.source_preparation.policy import (
@@ -31,7 +32,7 @@ def request(tmp_path, name, *, completion):
 
 
 def records(index):
-    with sqlite3.connect(index) as db:
+    with closing(sqlite3.connect(index)) as db:
         return [
             json.loads(zlib.decompress(content))
             for (content,) in db.execute(

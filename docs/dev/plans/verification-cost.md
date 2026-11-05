@@ -5,19 +5,25 @@ intent: Preserve scientific and installation checks while reducing repeated disc
 audience: [maintainers, agent executors]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-11-04
+last_verified: 2026-11-05
 doc_type: explanation
 journey: [maintain]
 ---
 
 # Remove duplicate verification work
 
-Status: the local candidate implements routine and extended installation gates.
-The first hosted candidate passed 3,784 Python tests but failed four stale
-banner/router assertions after 91 minutes. Those assertions now follow the
-approved artwork, and documentation contracts run in strict preflight (about
-three seconds locally), before expensive molecular checks. Hosted qualification
-of the complete patch remains required before merge.
+Status: the candidate includes routine/extended installation gates, the approved
+banner and both pending dependency updates. The latest hosted gate passed 3,798
+tests but failed the public-export allowlist after 85 minutes. That omission is
+fixed. API exports, documentation and CI contracts now run during strict preflight.
+The full hosted gate remains required before merge; the run was not green.
+
+The same candidate removes duplicate lint and post-merge source-suite execution,
+uses Python 3.14's lower-overhead branch-coverage core, and exposes per-stage
+timings. Python 3.12/3.13 compatibility still gates release. Four-worker admission
+is bounded and measured separately from coverage instrumentation; see the
+[verification guide](../performance.md#use-bounded-parallelism). Scientific test
+membership and the 90% coverage floor remain unchanged.
 
 The goal is to run each scientific responsibility once in the main suite and
 retain a small, independent check of the actual installed distribution. Success
@@ -179,6 +185,12 @@ Routine CI retains timing/failure logs without uploading temporary environments.
 The main verification deadline is four hours: the previous two-hour limit
 terminated an actual full run. This is a finite failure ceiling for extended
 qualification, not a runtime target or a reason to repeat successful checks.
+
+Protected main now avoids a second full CI run after squash merge. This requires
+strict up-to-date PR checks and administrator enforcement, verified through the
+GitHub API before adoption. Manual dispatch remains available. No cross-run
+artifact cache or trust bypass was added. The exact source and selected
+distribution gate still run before merging the candidate.
 
 Remaining: qualify this complete candidate once on hosted Linux, including the
 full source suite and extended distribution gate. This CI-policy change selects

@@ -2,8 +2,6 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -21,7 +19,8 @@ jobs:
     # finite ceiling without discarding a completed source suite at that point.
     timeout-minutes: 240
     env:
-      UV_PYTHON: "3.12"
+      UV_PYTHON: "3.14"
+      COVERAGE_CORE: sysmon
     permissions:
       contents: read
       id-token: write
@@ -33,7 +32,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
+      - name: Report verification resources
+        run: |
+          python --version
+          nproc
+          free -h
       - name: Select verification scope
         id: scope
         env:
@@ -62,7 +66,7 @@ jobs:
         if: steps.scope.outputs.scope == 'full'
         env:
           CI_DISTRIBUTION: ${{ steps.scope.outputs.distribution }}
-        run: bash ./scripts/agent-verify --workers 2 --distribution "$CI_DISTRIBUTION"
+        run: bash ./scripts/agent-verify --workers 4 --distribution "$CI_DISTRIBUTION"
       - name: Verify README artwork
         if: steps.scope.outputs.scope == 'artwork'
         run: |
@@ -89,6 +93,7 @@ jobs:
           name: verification-diagnostics
           path: |
             .artifacts/verification/*.xml
+            .artifacts/verification/stages.tsv
             .artifacts/verification/install-*/result/*.json
             .artifacts/verification/install-*/result/*.log
           if-no-files-found: warn
