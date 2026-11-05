@@ -22,6 +22,12 @@ with one newline. FASTA uses deterministic headers, 80-column sequence lines,
 and one trailing newline. Host paths, timestamps, usernames, and environment
 ordering do not enter content identity.
 
+Product-to-construction lowering reuses the request's immutable characterized
+catalog when binding foldback, basal and release permissions. It validates the
+newly derived geometry and complete route through their normal models. This is
+object reuse within a translation, not a persistent admission cache; external
+JSON and saved-bundle admission still validate their complete contents.
+
 ## Bundle integrity
 
 `hop-bundle.json` inventories every content artifact except itself. Each entry
