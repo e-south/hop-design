@@ -1,5 +1,6 @@
 """Share necessary endpoint reasoning across exact receiving-end requests."""
 
+from collections.abc import Callable
 from functools import cache
 from typing import Literal
 
@@ -33,6 +34,7 @@ def _program_relation(
     builder: SequenceSetBuilder,
     limits: SequenceSpaceLimits,
     actions: tuple[BasalFutureReleaseAction | None, ...],
+    local_masks: Callable[[], tuple[tuple[str, ...], ...]],
 ) -> int | None:
     d = domain
     assert product.release is not None and product.ends is not None and product.basal is not None
@@ -65,11 +67,7 @@ def _program_relation(
     )
     if flanks is None:
         return None
-    masks = (
-        BasalSequenceIndex.create(d).source_domains()
-        + d.base_domains[d.adapter_span.start.offset :]
-        + tuple(tuple(sorted(iupac_bases(c))) for c in pattern)
-    )
+    masks = local_masks() + tuple(tuple(sorted(iupac_bases(c))) for c in pattern)
     # Validate frame length and limit values without allocating an intermediate
     # graph. The joint output projection still enforces its own resource budget.
     SequenceSetBuilder(
@@ -143,8 +141,19 @@ def necessary_end_pairs(
     result = 0
     for domain in domains:
         program_actions = actions(domain.program.future_release_enzyme)
+
+        @cache
+        def local_masks(d: BasalSequenceDomain = domain) -> tuple[tuple[str, ...], ...]:
+            # One immutable result per domain, obtained only after frame checks.
+            return (
+                BasalSequenceIndex.create(d).source_domains()
+                + d.base_domains[d.adapter_span.start.offset :]
+            )
+
         for pattern in patterns:
-            relation = _program_relation(product, domain, pattern, builder, limits, program_actions)
+            relation = _program_relation(
+                product, domain, pattern, builder, limits, program_actions, local_masks
+            )
             if relation is None:
                 return None
             result = builder.union(result, relation)

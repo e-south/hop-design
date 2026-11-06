@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import pytest
 
+from hop_design.kernel.construction.basal.sequence_index import BasalSequenceIndex
 from hop_design.kernel.construction.release_pair_relation import necessary_end_pairs
 from hop_design.models.construction.basal_release import BasalFutureReleaseAction
 from hop_design.models.construction.surveys.execution import DEFAULT_SEQUENCE_LIMITS
@@ -80,3 +81,27 @@ def test_length_union_preserves_individual_recognition_placements(bases):
         DEFAULT_SEQUENCE_LIMITS,
     )
     assert {combined.member_at(i) for i in range(combined.cardinality)} == expected
+
+
+def test_source_index_is_reused_across_lengths_but_not_local_domains(monkeypatch):
+    p, d = product(), domain()
+    upstream = policy({"min_length_nt": 14, "max_length_nt": 24, "base_spec": "N"})
+    original = BasalSequenceIndex.create.__func__
+    calls = []
+
+    def counted(cls, value):
+        calls.append(value)
+        return original(cls, value)
+
+    monkeypatch.setattr(BasalSequenceIndex, "create", classmethod(counted))
+    result = necessary_end_pairs(p, (d, d), upstream, DEFAULT_SEQUENCE_LIMITS)
+    assert result.cardinality == 1
+    assert len(calls) == 2
+    # An impossible association span still rejects before building an index.
+    assert (
+        necessary_end_pairs(
+            product(anneal=100), (d,), upstream, DEFAULT_SEQUENCE_LIMITS
+        ).cardinality
+        == 0
+    )
+    assert len(calls) == 2

@@ -335,6 +335,10 @@ resolves its cut program once. Different source lengths still derive and check
 their own recognition and end placements. Reuse is keyed by the full immutable
 enzyme definition, ends with the call, and leaves sequence-set budgets and
 saved-record admission unchanged.
+Source/adapter base permissions are also derived once per local domain, lazily
+after the first compatible frame. Every handle pattern still supplies its own
+base domains and receives the same placement and pairing checks; only one local
+permission tuple is retained at a time.
 
 The invocation-owned basal-frame index retains at most 32,768 established
 relations and 16 MiB of canonical relation content; Python object overhead is
