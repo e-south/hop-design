@@ -325,11 +325,22 @@ assignments and their noncanonical costs. A contact with no assignment, or a sum
 of unavoidable costs above the declared budget, proves the projection empty.
 Hidden bases and G:T wobble contribute to that bound. Passing it still requires
 the exact dependency-preserving DP. Staging retains at most sixteen assignments
-per contact for one call and does not introduce a persistent cache. Output-frame
+per distinct combination of base masks and contact permissions within one call.
+Identical options are derived once, but every position retains its own factor
+and consumes its own mismatch budget. This does not introduce a persistent cache. Output-frame
 validation and the builder's computation-limit checks remain in force. Compare
 complete continuation records and memory as well as the isolated kernel timing;
 the lower bound does not establish complete-route feasibility.
 Compare complete fresh and resumed discovery records when measuring this path.
+Within one end-pair projection, each distinct enzyme definition and end requirement
+resolves its cut program once. Different source lengths still derive and check
+their own recognition and end placements. Reuse is keyed by the full immutable
+enzyme definition, ends with the call, and leaves sequence-set budgets and
+saved-record admission unchanged.
+Source/adapter base permissions are also derived once per local domain, lazily
+after the first compatible frame. Every handle pattern still supplies its own
+base domains and receives the same placement and pairing checks; only one local
+permission tuple is retained at a time.
 
 The invocation-owned basal-frame index retains at most 32,768 established
 relations and 16 MiB of canonical relation content; Python object overhead is

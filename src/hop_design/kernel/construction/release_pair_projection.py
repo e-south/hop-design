@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from hop_design.models.construction import BasalPairClass
+from hop_design.models.construction import BasalPairAllowance, BasalPairClass
 from hop_design.models.construction.basal import derive_basal_pair_class
 from hop_design.models.sequence import reverse_complement_iupac
 
@@ -43,20 +43,38 @@ def project_end_pairs(
     # Contact minima are a necessary lower bound, including hidden bases.
     # Passing it does not resolve correlations: the exact DP still follows.
     contacts = []
+    pair_options: dict[
+        tuple[
+            tuple[str, ...], tuple[str, ...], BasalPairAllowance, tuple[str, ...], tuple[str, ...]
+        ],
+        tuple[tuple[str, str, int], ...],
+    ] = {}
     minimum_cost = 0
     for position, constraint in enumerate(domain.target.pairing_constraints):
         source_index = domain.source_span.end.offset - 1 - position
         adapter_index = domain.adapter_span.start.offset + position
-        pairs = tuple(
-            (
-                source,
-                adapter,
-                int(derive_basal_pair_class(source, adapter) is not BasalPairClass.MATCH),
-            )
-            for source in masks[source_index]
-            for adapter in masks[adapter_index]
-            if adapter in _adapter_domains(source, constraint=constraint)
+        # Positions retain their own factors and costs. Only the literal choices
+        # for identical masks and contact permissions can be shared.
+        key = (
+            masks[source_index],
+            masks[adapter_index],
+            constraint.allowed_class,
+            constraint.allowed_source_bases,
+            constraint.allowed_adapter_bases,
         )
+        pairs = pair_options.get(key)
+        if pairs is None:
+            pairs = tuple(
+                (
+                    source,
+                    adapter,
+                    int(derive_basal_pair_class(source, adapter) is not BasalPairClass.MATCH),
+                )
+                for source in masks[source_index]
+                for adapter in masks[adapter_index]
+                if adapter in _adapter_domains(source, constraint=constraint)
+            )
+            pair_options[key] = pairs
         if not pairs:
             return 0
         minimum_cost += min(cost for _, _, cost in pairs)
