@@ -10,6 +10,7 @@ from hop_design.kernel.construction.basal.domains import (
     BasalSequenceDomain,
     solve_basal_sequence_domain,
 )
+from hop_design.kernel.construction.foldback.domains import SequenceVariable
 from hop_design.kernel.construction.release_pair_projection import project_end_pairs
 from hop_design.kernel.construction.sequence_sets import SequenceSetBuilder
 from hop_design.models.construction import BasalPairAllowance
@@ -123,7 +124,10 @@ def test_impossible_contact_rejects_before_output_factors(monkeypatch):
 
 
 @pytest.mark.parametrize("budget", [1, 2, None])
-def test_contact_minimum_sums_hidden_wobble_and_mismatch_without_rejecting_allowed_budget(budget):
+@pytest.mark.parametrize("first_pair", [("G", "T"), ("A", "A")])
+def test_contact_minimum_sums_hidden_wobble_and_mismatch_without_rejecting_allowed_budget(
+    budget, first_pair
+):
     d = domain()
     d = replace(
         d,
@@ -138,9 +142,96 @@ def test_contact_minimum_sums_hidden_wobble_and_mismatch_without_rejecting_allow
         ),
     )
     masks = [tuple("ACGT")] * len(d.base_domains)
-    for position, (source, adapter) in enumerate((("G", "T"), ("A", "A"))):
+    for position, (source, adapter) in enumerate((first_pair, ("A", "A"))):
         masks[d.source_span.end.offset - 1 - position] = (source,)
         masks[d.adapter_span.start.offset + position] = (adapter,)
     builder = SequenceSetBuilder(length_nt=8, max_nodes=1000, max_operations=10000)
     root = project_end_pairs(d, tuple(masks), tuple("ACGTACGT"), builder)
     assert builder.freeze(root).cardinality == (0 if budget == 1 else 1)
+
+
+def test_identical_contact_options_are_derived_once_without_merging_positions(monkeypatch):
+    from hop_design.kernel.construction import release_pair_projection as module
+
+    d = domain()
+    d = replace(
+        d,
+        target=d.target.model_copy(
+            update={
+                "pairing_constraints": tuple(
+                    c.model_copy(
+                        update={
+                            "allowed_class": BasalPairAllowance.ANY,
+                            "allowed_source_bases": tuple("ACGT"),
+                            "allowed_adapter_bases": tuple("ACGT"),
+                        }
+                    )
+                    for c in d.target.pairing_constraints
+                ),
+                "max_noncanonical_pairs": None,
+            }
+        ),
+    )
+    masks = (tuple("ACGT"),) * len(d.base_domains)
+    original = module._adapter_domains
+    calls = 0
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "_adapter_domains", counted)
+    for attempt in range(2):
+        builder = SequenceSetBuilder(length_nt=8, max_nodes=1000, max_operations=10000)
+        result = project_end_pairs(d, masks, tuple("ACGTACGT"), builder)
+        assert builder.freeze(result).cardinality == 1
+        if attempt == 0:
+            initial_calls = calls
+            assert 0 < initial_calls <= 16
+        else:
+            assert calls == 2 * initial_calls
+
+
+@pytest.mark.parametrize(
+    ("allowance", "adapters", "expected"),
+    [
+        (BasalPairAllowance.MATCH, tuple("ACGT"), {"AT", "CG", "GC", "TA"}),
+        (BasalPairAllowance.WOBBLE, tuple("ACGT"), {"GT", "TG"}),
+        (BasalPairAllowance.MISMATCH, ("A",), {"AA", "CA", "GA"}),
+        (BasalPairAllowance.ANY, ("A",), {"AA", "CA", "GA", "TA"}),
+    ],
+)
+def test_contact_options_keep_distinct_class_and_adapter_permissions(allowance, adapters, expected):
+    d = domain()
+    contacts = tuple(
+        c.model_copy(update={"allowed_class": BasalPairAllowance.ANY})
+        for c in d.target.pairing_constraints
+    )
+    contacts = (
+        contacts[0],
+        contacts[1].model_copy(
+            update={
+                "allowed_class": allowance,
+                "allowed_adapter_bases": adapters,
+            }
+        ),
+        *contacts[2:],
+    )
+    d = replace(
+        d,
+        target=d.target.model_copy(
+            update={
+                "pairing_constraints": contacts,
+                "max_noncanonical_pairs": None,
+            }
+        ),
+    )
+    masks = (tuple("ACGT"),) * len(d.base_domains)
+    ends = (
+        SequenceVariable(d.source_span.end.offset - 2),
+        SequenceVariable(d.adapter_span.start.offset + 1),
+    )
+    builder = SequenceSetBuilder(length_nt=2, max_nodes=1000, max_operations=10000)
+    result = builder.freeze(project_end_pairs(d, masks, ends, builder))
+    assert {result.member_at(i) for i in range(result.cardinality)} == expected

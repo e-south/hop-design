@@ -325,7 +325,9 @@ assignments and their noncanonical costs. A contact with no assignment, or a sum
 of unavoidable costs above the declared budget, proves the projection empty.
 Hidden bases and G:T wobble contribute to that bound. Passing it still requires
 the exact dependency-preserving DP. Staging retains at most sixteen assignments
-per contact for one call and does not introduce a persistent cache. Output-frame
+per distinct combination of base masks and contact permissions within one call.
+Identical options are derived once, but every position retains its own factor
+and consumes its own mismatch budget. This does not introduce a persistent cache. Output-frame
 validation and the builder's computation-limit checks remain in force. Compare
 complete continuation records and memory as well as the isolated kernel timing;
 the lower bound does not establish complete-route feasibility.
