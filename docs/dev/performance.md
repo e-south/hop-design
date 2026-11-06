@@ -5,7 +5,7 @@ intent: Choose checks by responsibility and profile construction costs with disp
 audience: [maintainers, agent executors]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 doc_type: how-to
 journey: [maintain]
 ---
@@ -209,6 +209,13 @@ Enzyme permission checks reject explicit allow-list, forbidden, reserved and rol
 restrictions before scanning catalog membership. Remaining candidates still require
 a catalog entry. This avoids rebuilding a catalog-sized set per check, without a
 new cache or changes to enzyme eligibility, catalog validation or search order.
+
+Survey branch translation reuses the request's admitted, immutable enzyme catalog
+instead of serializing and reparsing every entry at each new grid address. Derived
+fields and the complete product still pass strict validation with typed tuples and
+enums. Independent JSON admission continues to validate the full catalog. Branch
+addresses, enumeration, canonical product bytes and the bounded product cache
+retain their existing contracts.
 
 Hairpin continuation writes immutable pages of new candidate outcomes. It does
 not copy prior preparations into each new snapshot. Independent admission still

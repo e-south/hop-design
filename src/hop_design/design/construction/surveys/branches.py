@@ -7,14 +7,20 @@ from functools import cached_property
 from math import prod
 from typing import Any
 
+from hop_design.models.construction.complete.accounting import (
+    CompositionEnumerationPolicy,
+    CompositionPruningMode,
+)
 from hop_design.models.construction.complete.composition_domain import source_context_count
 from hop_design.models.construction.complete.source_preparation.policy import primer_required_length
 from hop_design.models.construction.discovery.placement import EndPlacement
+from hop_design.models.construction.payload import ConstructionEndpoint
 from hop_design.models.construction.product_request import (
     ProductBasalReleaseProjection,
     ProductRequest,
 )
 from hop_design.models.construction.scaffold import constrain_foldback_geometry
+from hop_design.models.construction.search import SearchScope, SearchStopMode
 from hop_design.models.construction.surveys.execution import SurveyEvaluationLimits
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
 from hop_design.models.construction.targets import FoldbackTarget, NickStrandSelection
@@ -51,10 +57,11 @@ def _policy(
 
 def _release_permission(permissions: EnzymePermissions, method: str) -> dict[str, Any]:
     """Restrict an already permitted role; never add to caller permissions."""
-    data = permissions.model_dump(mode="json")
-    data["role_restrictions"] = [
-        role for role in data["role_restrictions"] if role["role"] != "end_generation"
-    ] + [{"role": "end_generation", "allowed_enzyme_ids": [method]}]
+    data = permissions.model_dump()
+    data["role_restrictions"] = (
+        *(role for role in data["role_restrictions"] if role["role"] != "end_generation"),
+        {"role": EnzymeRole.END_GENERATION, "allowed_enzyme_ids": (method,)},
+    )
     return data
 
 
@@ -221,16 +228,25 @@ class SurveyBranches:
         placement = self.placements[placement_i]
         method = methods[method_i]
         foldback = self.foldback_cases[foldback_i]
-        data = request.model_dump(mode="json", by_alias=True, exclude={"preferred_preparation"})
+        # This input was already admitted. Keep its immutable catalog instead of
+        # serializing and reparsing every enzyme for every new grid address.
+        # Python-mode values retain strict tuples/enums; all derived fields and
+        # the complete ProductRequest still pass their ordinary validators.
+        data = request.model_dump(
+            by_alias=True, exclude={"preferred_preparation", "enzyme_catalog"}
+        )
+        data["enzyme_catalog"] = request.enzyme_catalog
         data.pop("source_context_objective", None)
         data.pop("preferred_source_contexts", None)
         data.pop("source_handle_seed", None)
         for key in ("targets", "interfaces", "placements"):
             del data[key]
-        data.update(schema="hop.product-request/v1", endpoint="clone_ready_duplex")
+        data.update(
+            schema="hop.product-request/v1", endpoint=ConstructionEndpoint.CLONE_READY_DUPLEX
+        )
         data["ends"] = {
             side: {
-                **getattr(request.interfaces, side).model_dump(mode="json"),
+                **getattr(request.interfaces, side).model_dump(),
                 "cohesive_end_sequence": word,
                 "payload_end_offset_bp": gap,
             }
@@ -243,29 +259,27 @@ class SurveyBranches:
                 "max_retained_overhead_nt": data[family].pop("max_retained_overhead_nt"),
                 "max_search_nodes": limits.local_nodes,
                 "max_realizations": limits.local_realizations,
-                "scope": "all_realizations",
-                "stop": "exhaustive",
+                "scope": SearchScope.ALL_REALIZATIONS,
+                "stop": SearchStopMode.EXHAUSTIVE,
                 "result_quota": None,
             }
         data["foldback"]["geometry"].update(
-            annealing_arm_lengths_bp=[foldback.annealing_arm_length_bp],
-            junction_offsets_nt=[foldback.junction_offset_nt],
-            loop_lengths_nt=[foldback.loop_length_nt],
-            nick_strand=foldback.nick_strand.value,
+            annealing_arm_lengths_bp=(foldback.annealing_arm_length_bp,),
+            junction_offsets_nt=(foldback.junction_offset_nt,),
+            loop_lengths_nt=(foldback.loop_length_nt,),
+            nick_strand=foldback.nick_strand,
         )
         if foldback.loop_sequence is not None:
-            data["foldback"]["geometry"]["loop_sequences"] = [foldback.loop_sequence]
+            data["foldback"]["geometry"]["loop_sequences"] = (foldback.loop_sequence,)
         data["basal"].pop("annealing_lengths_nt")
         data["basal"]["geometry"].update(
-            nick_offsets_nt=[request.basal.geometry.nick_offsets_nt[nick_i]],
+            nick_offsets_nt=(request.basal.geometry.nick_offsets_nt[nick_i],),
             minimum_adapter_annealing_nt=request.basal.annealing_lengths_nt[association_i],
         )
         data["basal"]["enzymes"] = _release_permission(request.basal.enzymes, method)
         data["release"]["enzymes"] = _release_permission(request.release.enzymes, method)
         data["release"].pop("basal_projections")
-        data["release"]["basal_projection"] = self.release_projection(branch).model_dump(
-            mode="json"
-        )
+        data["release"]["basal_projection"] = self.release_projection(branch)
         data["release"]["max_site_pairs"] = limits.release_site_pairs
         context = source_context_at(
             request.materialization.source_preparation.source_ssdna, context_i
@@ -274,8 +288,10 @@ class SurveyBranches:
             data["materialization"]["source_preparation"]["source_ssdna"][
                 "upstream_sequence_spec"
             ] = context
-        data["enumeration"] = {"pruning": "disabled", "max_combinations": 1, "max_realizations": 1}
-        product = ProductRequest.model_validate_json(json.dumps(data))
+        data["enumeration"] = CompositionEnumerationPolicy(
+            pruning=CompositionPruningMode.DISABLED, max_combinations=1, max_realizations=1
+        )
+        product = ProductRequest.model_validate(data)
         size = len(canonical_json_bytes(product))
         if _PRODUCT_CACHE_ENTRIES > 0 and size <= _PRODUCT_CACHE_BYTES:
             self._products[cache_key] = product, size
