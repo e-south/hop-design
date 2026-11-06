@@ -2,7 +2,10 @@
 
 from typing import Literal, cast
 
-from hop_design.models.construction.basal_release import BasalFutureReleaseRequirement
+from hop_design.models.construction.basal_release import (
+    BasalFutureReleaseAction,
+    BasalFutureReleaseRequirement,
+)
 from hop_design.models.construction.complete.auxiliary.policy import (
     ConstrainedAdapterPolicy,
     ConstrainedEndpointPrimerPolicy,
@@ -124,8 +127,17 @@ def required_release_windows(
 ) -> tuple[tuple[int, str], tuple[int, str]] | None:
     """Recognition and end windows in one PCR flank; None means unproved frame."""
     action = resolve_future_release_action(enzyme, requirement)
+    return release_action_windows(action, expression)
+
+
+def release_action_windows(
+    action: BasalFutureReleaseAction | None,
+    expression: SequenceExpression,
+) -> tuple[tuple[int, str], tuple[int, str]] | None:
+    """Place a resolved cut program without deriving it again for each flank."""
     if action is None:
         return None
+    requirement = action.requirement
     side = requirement.product_end
     width = len(requirement.cohesive_end_sequence)
     start = (

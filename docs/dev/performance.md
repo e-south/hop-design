@@ -330,6 +330,11 @@ validation and the builder's computation-limit checks remain in force. Compare
 complete continuation records and memory as well as the isolated kernel timing;
 the lower bound does not establish complete-route feasibility.
 Compare complete fresh and resumed discovery records when measuring this path.
+Within one end-pair projection, each distinct enzyme definition and end requirement
+resolves its cut program once. Different source lengths still derive and check
+their own recognition and end placements. Reuse is keyed by the full immutable
+enzyme definition, ends with the call, and leaves sequence-set budgets and
+saved-record admission unchanged.
 
 The invocation-owned basal-frame index retains at most 32,768 established
 relations and 16 MiB of canonical relation content; Python object overhead is
