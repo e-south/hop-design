@@ -11,6 +11,29 @@ from tests.support.context_completion import policy
 from tests.unit.test_survey_completion_binding import product
 
 
+def test_local_projection_reuses_catalog_and_validates_derived_constraints(monkeypatch):
+    from hop_design.design.construction.surveys.completion import interfaces as module
+    from hop_design.models.construction.request import LocalNeighborhoodRequest
+    from hop_design.serialization import canonical_json_bytes
+
+    p = product()
+    original = module.iter_basal_work_units
+    seen = []
+
+    def checked(local, **kwargs):
+        assert local.enzyme_provisioning.catalog is p.enzyme_catalog
+        assert local.geometry_domain.pairing_constraints == p.expanded_pairing_constraints()
+        assert local.search.sequence_partition is None
+        assert LocalNeighborhoodRequest.model_validate_json(canonical_json_bytes(local)) == local
+        seen.append(local)
+        yield from original(local, **kwargs)
+
+    monkeypatch.setattr(module, "iter_basal_work_units", checked)
+    relation = EndPairRelations(policy("N" * 14), DEFAULT_SEQUENCE_LIMITS).relation(p)
+    assert seen
+    assert relation.cardinality == 256
+
+
 def test_canonical_contacts_permit_all_matching_words_but_not_arbitrary_cross_pairs():
     cache = EndPairRelations(policy("N" * 24), DEFAULT_SEQUENCE_LIMITS)
     p = product()

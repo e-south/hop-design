@@ -217,6 +217,11 @@ enums. Independent JSON admission continues to validate the full catalog. Branch
 addresses, enumeration, canonical product bytes and the bounded product cache
 retain their existing contracts.
 
+The necessary end-pair projection uses the same boundary: it retains admitted
+enzyme provisioning while validating the derived local pairing constraints and
+unpartitioned search request. Relation cache keys, molecular solving and resource
+limits are unchanged.
+
 Hairpin continuation writes immutable pages of new candidate outcomes. It does
 not copy prior preparations into each new snapshot. Independent admission still
 verifies the selected history; page storage and restart time are distinct costs.

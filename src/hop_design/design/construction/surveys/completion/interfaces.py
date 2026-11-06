@@ -1,6 +1,5 @@
 """Invocation-owned, bounded reuse of necessary end-pair relations."""
 
-import json
 from collections import OrderedDict
 from dataclasses import dataclass
 
@@ -108,12 +107,11 @@ class EndPairRelations:
         try:
             local = product.construction_source().basal
             assert local is not None
-            data = local.model_dump(mode="json", by_alias=True)
-            data["geometry_domain"]["pairing_constraints"] = [
-                c.model_dump(mode="json") for c in product.expanded_pairing_constraints()
-            ]
+            data = local.model_dump(by_alias=True, exclude={"enzyme_provisioning"})
+            data["enzyme_provisioning"] = local.enzyme_provisioning
+            data["geometry_domain"]["pairing_constraints"] = product.expanded_pairing_constraints()
             data["search"]["sequence_partition"] = None
-            local = LocalNeighborhoodRequest.model_validate_json(json.dumps(data))
+            local = LocalNeighborhoodRequest.model_validate(data)
         except ProductConstraintConflict:
             return None  # Ordinary admission owns exact request contradictions.
         domains = []
