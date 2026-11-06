@@ -21,14 +21,14 @@ def branches():
 
 
 def count_parses(monkeypatch):
-    original = ProductRequest.model_validate_json
+    original = ProductRequest.model_validate
     calls = []
 
     def counted(cls, *args, **kwargs):
         calls.append(args[0])
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(ProductRequest, "model_validate_json", classmethod(counted))
+    monkeypatch.setattr(ProductRequest, "model_validate", classmethod(counted))
     return calls
 
 
@@ -41,6 +41,20 @@ def test_repeated_address_reuses_validation_only_within_its_invocation(monkeypat
     assert len(calls) == 1
     assert second.product(0, branch=0, limits=LIMITS) == original
     assert len(calls) == 2
+
+
+def test_new_branch_reuses_its_validated_catalog_and_keeps_external_admission():
+    first, second = branches(), branches()
+    product = first.product(27, branch=1, limits=LIMITS)
+    assert product.enzyme_catalog is first.request.enzyme_catalog
+    assert product.enzyme_catalog is not second.request.enzyme_catalog
+    assert canonical_json_bytes(
+        ProductRequest.model_validate_json(canonical_json_bytes(product))
+    ) == (canonical_json_bytes(product))
+    damaged = product.model_dump(mode="json", by_alias=True)
+    damaged["enzyme_catalog"]["enzymes"][0]["recognition_pattern"] = "INVALID"
+    with pytest.raises(ValueError):
+        ProductRequest.model_validate_json(json.dumps(damaged))
 
 
 def test_target_branch_and_every_limit_remain_separate_cache_dependencies(monkeypatch):
