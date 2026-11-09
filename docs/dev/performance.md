@@ -358,6 +358,16 @@ after the first compatible frame. Every handle pattern still supplies its own
 base domains and receives the same placement and pairing checks; only one local
 permission tuple is retained at a time.
 
+After placement checks, equivalent end-pair problems within one local domain
+share a projection. The key keeps every local base mask and every observed
+upstream mask, copy relation and complement orientation. Independent upstream
+bases absent from the exposed ends are omitted; all original frame-length and
+recognition checks run before that reduction. At most 128 projections are retained
+for that domain and builder, then discarded. Eviction recomputes the same problem.
+This reuses a necessary-condition calculation, never a complete construction or
+an externally supplied proof. Distinct source lengths and exact material
+completion remain available to ordinary discovery.
+
 The invocation-owned basal-frame index retains at most 32,768 established
 relations and 16 MiB of canonical relation content; Python object overhead is
 additional. This allows a recurring placement set to survive between requested
