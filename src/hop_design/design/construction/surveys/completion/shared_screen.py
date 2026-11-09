@@ -1,7 +1,8 @@
 """Bounded request-wide necessary relations, inverted into candidate basal frames."""
 
+from collections import OrderedDict
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import product
 from math import prod
 
@@ -18,6 +19,7 @@ from .frame_admission import BasalAdmissions
 # Computation/storage bounds only. Larger requests retain ordinary discovery.
 MAX_SCREEN_FRAMES = 32768
 MAX_SCREEN_BYTES = 16 * 1024 * 1024
+MAX_CANDIDATE_LISTS = 8
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,9 @@ class BasalScreen:
     unknown: tuple[Geometry, ...]
     digest: str
     frame_count: int
+    _candidate_lists: OrderedDict[tuple[int, tuple[tuple[int, ...], ...]], tuple[Geometry, ...]] = (
+        field(default_factory=OrderedDict, init=False, repr=False, compare=False)
+    )
 
     @classmethod
     def build(
@@ -90,9 +95,17 @@ class BasalScreen:
         words = "".join(self.admissions.branches.request.targets.pair_at(target))
         if tuple(map(len, order.costs)) != self.admissions.branches.geometry_sizes:
             raise ValueError("Shared screen order differs from its request dimensions.")
+        key = target, order.costs
+        if key in self._candidate_lists:
+            self._candidate_lists.move_to_end(key)
+            return self._candidate_lists[key]
         frames = list(self.unknown)
         for relation, group in self.groups:
             if relation.contains(words):
                 frames.extend(group)
         # The fixed foldback coordinate contributes the same cost to every key.
-        return tuple(sorted(frames, key=lambda g: (order.cost(g), g)))
+        candidates = tuple(sorted(frames, key=lambda g: (order.cost(g), g)))
+        self._candidate_lists[key] = candidates
+        while len(self._candidate_lists) > MAX_CANDIDATE_LISTS:
+            self._candidate_lists.popitem(last=False)
+        return candidates

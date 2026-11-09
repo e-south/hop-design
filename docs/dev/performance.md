@@ -405,6 +405,13 @@ rejects duplicate addresses and decreasing keys while retaining every domain che
 The complete compiler, local sequence choices and all foldback alternatives
 remain unchanged. Navigation records bind the full frame-to-relation digest;
 replay rebuilds it independently. No study roster or private data enters this path.
+Within that screen, at most eight target/cost-order candidate lists are reused
+across continuation steps. They hold references to existing frame coordinates;
+eviction recomputes the same list. Target and dimension checks still run on
+every lookup, and the navigator still validates the returned roster and checks
+basal admission. This avoids repeated membership scans and sorting without
+caching a complete-construction claim. Lists end with the discovery invocation;
+profile their cold construction, reuse and memory separately from molecular solving.
 
 Screen construction is invocation-owned and checks cooperative cancellation
 between frames. It handles at most 32,768 frames and 16 MiB of distinct relation
