@@ -22,7 +22,12 @@ from .basal.domains import BasalSequenceDomain
 from .basal.programs import resolve_future_release_action
 from .basal.sequence_index import BasalSequenceIndex
 from .foldback.domains import SequenceExpression, SequenceVariable, reverse_complement_expression
-from .release_constraints import _window_masks, release_action_windows, release_flanks
+from .release_constraints import (
+    _primer_handle,
+    _window_masks,
+    release_action_windows,
+    release_flanks,
+)
 from .release_pair_projection import project_end_pairs
 from .sequence_sets import SequenceSetBuilder
 
@@ -141,11 +146,23 @@ def necessary_end_pairs(
     resource exhaustion raises and cannot certify any absence.
     """
     spec = policy.upstream_sequence_spec
-    patterns = (
-        tuple(spec.base_spec * n for n in range(spec.min_length_nt, spec.max_length_nt + 1))
-        if isinstance(spec, UpstreamSequenceLengthRange)
-        else (spec,)
-    )
+    if isinstance(spec, UpstreamSequenceLengthRange):
+        auxiliary = product.materialization.endpoint_auxiliaries
+        # With no added forward handle, extending a uniform upstream domain
+        # embeds every shorter frame by preserving its suffix. Release windows
+        # and copied adapter bases remain anchored to the payload. Extra bases
+        # are independent existential variables, so the longest frame equals
+        # the union. This reduces only a necessary condition; full construction
+        # still visits every permitted length. A fixed added handle can break
+        # that inclusion and retains the explicit union.
+        lengths = (
+            (spec.max_length_nt,)
+            if auxiliary is not None and not _primer_handle(auxiliary.forward_primer)
+            else range(spec.min_length_nt, spec.max_length_nt + 1)
+        )
+        patterns = tuple(spec.base_spec * n for n in lengths)
+    else:
+        patterns = (spec,)
     assert product.ends is not None
     sides: tuple[Literal["left", "right"], ...] = ("left", "right")
     requirements = tuple(

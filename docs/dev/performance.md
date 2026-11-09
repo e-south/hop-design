@@ -365,9 +365,20 @@ their own recognition and end placements. Reuse is keyed by the full immutable
 enzyme definition, ends with the call, and leaves sequence-set budgets and
 saved-record admission unchanged.
 Source/adapter base permissions are also derived once per local domain, lazily
-after the first compatible frame. Every handle pattern still supplies its own
+after the first compatible frame. Each evaluated handle pattern supplies its own
 base domains and receives the same placement and pairing checks; only one local
 permission tuple is retained at a time.
+
+For a uniform upstream length range, necessary end-pair projection uses its
+longest length when the endpoint forward primer adds no handle. With release
+windows anchored to the payload, every shorter frame embeds in that longer
+frame by preserving its suffix; the extra bases are independent existential
+variables. The longest relation therefore equals the union over all lengths.
+This reduction applies to the necessary relation only. Complete source-context
+and material discovery still enumerate every permitted length. Added forward
+primer handles retain the explicit length union: their fixed bases can supply
+a recognition site available only in a shorter frame. Compare against explicit
+per-length unions and preserve that counterexample when changing the reduction.
 
 After placement checks, equivalent end-pair problems within one local domain
 share a projection. The key keeps every local base mask and every observed

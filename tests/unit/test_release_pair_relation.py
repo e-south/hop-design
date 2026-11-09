@@ -7,6 +7,7 @@ import pytest
 from hop_design.kernel.construction.basal.sequence_index import BasalSequenceIndex
 from hop_design.kernel.construction.release_pair_relation import necessary_end_pairs
 from hop_design.models.construction.basal_release import BasalFutureReleaseAction
+from hop_design.models.construction.complete.auxiliary.policy import ConstrainedEndpointPrimerPolicy
 from hop_design.models.construction.surveys.execution import DEFAULT_SEQUENCE_LIMITS
 from hop_design.models.enzymes import CharacterizedEnzyme
 from tests.support.context_completion import policy
@@ -18,6 +19,25 @@ def test_equivalent_upstream_frames_share_projection_only_within_one_domain(monk
     from hop_design.kernel.construction import release_pair_relation as module
 
     p, d = product(), domain()
+    auxiliary = p.materialization.endpoint_auxiliaries
+    p = p.model_copy(
+        update={
+            "materialization": p.materialization.model_copy(
+                update={
+                    "endpoint_auxiliaries": auxiliary.model_copy(
+                        update={
+                            "forward_primer": ConstrainedEndpointPrimerPolicy(
+                                mode="constrain",
+                                min_annealing_length_nt=14,
+                                max_annealing_length_nt=14,
+                                five_prime_handle_sequence="G",
+                            )
+                        }
+                    )
+                }
+            )
+        }
+    )
     upstream = policy({"min_length_nt": 14, "max_length_nt": 24, "base_spec": "N"})
     original, calls = module.project_end_pairs, []
     windows, placements = module.release_action_windows, []
