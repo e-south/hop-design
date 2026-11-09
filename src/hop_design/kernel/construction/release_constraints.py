@@ -14,6 +14,9 @@ from hop_design.models.construction.complete.auxiliary.policy import (
     EndpointPrimerResolutionPolicy,
     FixedEndpointPrimerPolicy,
 )
+from hop_design.models.construction.complete.source_preparation.policy import (
+    UpstreamSequenceLengthRange,
+)
 from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.sequence_sets import SequenceSet, SequenceSpaceLimits
 from hop_design.models.enzymes import CharacterizedEnzyme, EnzymeProvisioningPolicy, EnzymeRole
@@ -31,6 +34,28 @@ def _primer_handle(policy: EndpointPrimerResolutionPolicy) -> str:
         return policy.five_prime_handle_sequence
     assert isinstance(policy, FixedEndpointPrimerPolicy)
     return policy.primer.five_prime_handle
+
+
+def necessary_upstream_patterns(
+    product: ProductRequest, specification: str | UpstreamSequenceLengthRange
+) -> tuple[str, ...]:
+    """Return an exact length envelope for existential release projections only.
+
+    Without an added forward handle, longer uniform domains embed every shorter
+    one by preserving the suffix anchored to the payload. Added upstream bases
+    are independent existential variables, so the maximum equals the full union.
+    A forward handle can break that inclusion and retains every length. This
+    does not select a material length or change source-context enumeration.
+    """
+    if isinstance(specification, str):
+        return (specification,)
+    auxiliary = product.materialization.endpoint_auxiliaries
+    lengths = (
+        (specification.max_length_nt,)
+        if auxiliary is not None and not _primer_handle(auxiliary.forward_primer)
+        else range(specification.min_length_nt, specification.max_length_nt + 1)
+    )
+    return tuple(specification.base_spec * length for length in lengths)
 
 
 def release_frame_supported(product: ProductRequest) -> bool:

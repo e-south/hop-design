@@ -3,7 +3,6 @@
 from hop_design.models.construction.complete.source_preparation.policy import (
     ConstrainedSourceSsdnaPolicy,
     SourceSsdnaPolicy,
-    UpstreamSequenceLengthRange,
 )
 from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.sequence_sets import SequenceSet, SequenceSpaceLimits
@@ -12,7 +11,11 @@ from hop_design.models.sequence import iupac_bases
 
 from .basal.sequence_population import BasalSequencePopulation
 from .foldback.domains import SequenceVariable
-from .release_constraints import admit_release_flanks, release_flanks
+from .release_constraints import (
+    admit_release_flanks,
+    necessary_upstream_patterns,
+    release_flanks,
+)
 from .sequence_sets import SequenceSetBuilder
 
 
@@ -47,12 +50,7 @@ def admit_release_population(
     builder = SequenceSetBuilder(
         length_nt=k, max_nodes=limits.max_decisions, max_operations=limits.max_set_operations
     )
-    spec = policy.upstream_sequence_spec
-    patterns = (
-        tuple(spec.base_spec * n for n in range(spec.min_length_nt, spec.max_length_nt + 1))
-        if isinstance(spec, UpstreamSequenceLengthRange)
-        else (spec,)
-    )
+    patterns = necessary_upstream_patterns(product, policy.upstream_sequence_spec)
     masks = support.index.source_domains() + d.base_domains[d.adapter_span.start.offset :]
     local = tuple(
         SequenceVariable(i) for i in range(d.adapter_span.start.offset, d.adapter_span.end.offset)

@@ -10,7 +10,6 @@ from hop_design.models.construction.basal_release import (
 )
 from hop_design.models.construction.complete.source_preparation.policy import (
     ConstrainedSourceSsdnaPolicy,
-    UpstreamSequenceLengthRange,
 )
 from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.sequence_sets import SequenceSet, SequenceSpaceLimits
@@ -23,8 +22,8 @@ from .basal.programs import resolve_future_release_action
 from .basal.sequence_index import BasalSequenceIndex
 from .foldback.domains import SequenceExpression, SequenceVariable, reverse_complement_expression
 from .release_constraints import (
-    _primer_handle,
     _window_masks,
+    necessary_upstream_patterns,
     release_action_windows,
     release_flanks,
 )
@@ -145,24 +144,7 @@ def necessary_end_pairs(
     compatibility or a complete construction. Unsupported frames return None;
     resource exhaustion raises and cannot certify any absence.
     """
-    spec = policy.upstream_sequence_spec
-    if isinstance(spec, UpstreamSequenceLengthRange):
-        auxiliary = product.materialization.endpoint_auxiliaries
-        # With no added forward handle, extending a uniform upstream domain
-        # embeds every shorter frame by preserving its suffix. Release windows
-        # and copied adapter bases remain anchored to the payload. Extra bases
-        # are independent existential variables, so the longest frame equals
-        # the union. This reduces only a necessary condition; full construction
-        # still visits every permitted length. A fixed added handle can break
-        # that inclusion and retains the explicit union.
-        lengths = (
-            (spec.max_length_nt,)
-            if auxiliary is not None and not _primer_handle(auxiliary.forward_primer)
-            else range(spec.min_length_nt, spec.max_length_nt + 1)
-        )
-        patterns = tuple(spec.base_spec * n for n in lengths)
-    else:
-        patterns = (spec,)
+    patterns = necessary_upstream_patterns(product, policy.upstream_sequence_spec)
     assert product.ends is not None
     sides: tuple[Literal["left", "right"], ...] = ("left", "right")
     requirements = tuple(

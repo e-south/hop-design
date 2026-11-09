@@ -376,12 +376,14 @@ after the first compatible frame. Each evaluated handle pattern supplies its own
 base domains and receives the same placement and pairing checks; only one local
 permission tuple is retained at a time.
 
-For a uniform upstream length range, necessary end-pair projection uses its
-longest length when the endpoint forward primer adds no handle. With release
+For a uniform upstream length range, necessary end-pair projection and endpoint
+filtering of local source/adapter populations share the same longest-length
+envelope when the endpoint forward primer adds no handle. With release
 windows anchored to the payload, every shorter frame embeds in that longer
 frame by preserving its suffix; the extra bases are independent existential
 variables. The longest relation therefore equals the union over all lengths.
-This reduction applies to the necessary relation only. Complete source-context
+Both projections retain their original output variables and exact relations.
+This reduction applies to necessary constraints only. Complete source-context
 and material discovery still enumerate every permitted length. Added forward
 primer handles retain the explicit length union: their fixed bases can supply
 a recognition site available only in a shorter frame. Compare against explicit
