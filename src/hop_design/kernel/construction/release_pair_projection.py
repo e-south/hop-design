@@ -1,4 +1,13 @@
-"""Existentially project coupled contacts onto the two exposed end words."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/kernel/construction/release_pair_projection.py
+
+Projects coupled contact assignments onto the two exposed end words.
+
+Maintainer(s): HOP Design contributors
+--------------------------------------------------------------------------------
+"""
 
 from collections import defaultdict
 
@@ -33,6 +42,10 @@ def project_end_pairs(
             output_masks[position] = (base,)
         else:
             groups[base.index].append((position, base.complemented))
+            output_masks[position] = tuple(
+                reverse_complement_iupac(value) if base.complemented else value
+                for value in masks[base.index]
+            )
     admitted = builder.from_domains(output_masks)
     budget = domain.target.max_noncanonical_pairs
     budget = (
@@ -106,7 +119,11 @@ def project_end_pairs(
             assignment_roots[key] = builder.from_domains(domains)
         return assignment_roots[key]
 
-    for variable in groups:
+    for variable, positions in groups.items():
+        # Independent masks are already present. Repeated observations still
+        # need one shared assignment to preserve copies and complements.
+        if len(positions) == 1:
+            continue
         permitted = 0
         for base in masks[variable]:
             permitted = builder.union(permitted, assignments({variable: base}))

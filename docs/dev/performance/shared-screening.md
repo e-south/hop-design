@@ -15,6 +15,12 @@ keep their existing behavior; no search permission or resource ceiling changes.
 
 ## Project contact assignments
 
+Initialize exposed positions with their placed base masks, complementing each
+mask when the output observes the opposite orientation. A variable observed
+once needs no separate unary factor. Repeated observations still share an exact
+assignment factor, so copies and complements remain correlated. Contact factors
+and their combined noncanonical allowance are applied afterward.
+
 Necessary end-pair projection reuses output assignment masks within one placement
 and sequence-set builder. Bases absent from the exposed ends share an output
 mask, but still undergo pairing checks and consume the noncanonical-contact
