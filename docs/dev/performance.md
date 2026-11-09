@@ -397,7 +397,8 @@ and canonical-address order. Indexed navigation jumps directly to the next
 candidate instead of traversing rejected basal coordinates and empty cost waves.
 Cursor lookup uses binary search over the admitted ordered candidates without
 materializing every candidate's cost key again. Candidate validation, cost ties,
-foldback offsets and traversal order remain unchanged.
+foldback offsets and traversal order remain unchanged. The navigator derives
+its fixed dimension sizes once when validating the candidate roster.
 The complete compiler, local sequence choices and all foldback alternatives
 remain unchanged. Navigation records bind the full frame-to-relation digest;
 replay rebuilds it independently. No study roster or private data enters this path.

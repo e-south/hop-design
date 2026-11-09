@@ -85,7 +85,7 @@ class GeometryIntroductions:
         if entry.kind == "basal" and entry.geometry[4] != 0:
             raise ValueError("A basal stream cannot bind a foldback case.")
         if entry.kind == "basal" and self.basal_candidates is not None:
-            key = (entry.wave, entry.geometry)
+            key: tuple[int, Geometry] = (entry.wave, entry.geometry)
             position = bisect_left(self.basal_candidates, key, key=self._candidate_key)
             if (
                 position == len(self.basal_candidates)
@@ -123,7 +123,8 @@ class GeometryIntroductions:
         found: Geometry | None
         following: Geometry | None
         if factored and self.basal_candidates is not None:
-            position = bisect_left(self.basal_candidates, (entry.wave, g), key=self._candidate_key)
+            key: tuple[int, Geometry] = (entry.wave, g)
+            position = bisect_left(self.basal_candidates, key, key=self._candidate_key)
             found = (
                 None if position == len(self.basal_candidates) else self.basal_candidates[position]
             )

@@ -3,8 +3,28 @@
 from itertools import product
 
 from hop_design.design.construction.surveys.completion.geometry import GeometryIntroductions
+from hop_design.design.construction.surveys.completion.navigation import CompletionNavigator
 from hop_design.design.construction.surveys.geometry_order import GeometryOrder
 from hop_design.models.construction.surveys.completion import CompletionFrontierEntry
+
+
+def test_candidate_validation_derives_dimension_sizes_once(monkeypatch):
+    original = CompletionNavigator.sizes.fget
+    calls = []
+
+    def measured(self):
+        calls.append(None)
+        return original(self)
+
+    monkeypatch.setattr(CompletionNavigator, "sizes", property(measured))
+    CompletionNavigator(
+        GeometryOrder((tuple(range(256)), (0,), (0,), (0,), (0,), (0,))),
+        lambda *args: iter(()),
+        lambda *args: 0,
+        admit_basal=lambda _: True,
+        basal_candidates=tuple((i, 0, 0, 0, 0, 0) for i in range(256)),
+    )
+    assert len(calls) == 1
 
 
 def test_resumed_lookup_does_not_rebuild_every_candidate_key(monkeypatch):

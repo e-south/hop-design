@@ -58,13 +58,14 @@ class CompletionNavigator:
         if self.basal_candidates is not None:
             if self.admit_basal is None:
                 raise ValueError("Indexed geometry requires necessary basal admission.")
+            sizes = self.sizes
             for geometry in self.basal_candidates:
                 if (
                     len(geometry) != 6
                     or geometry[4] != 0
                     or any(
                         type(v) is not int or not 0 <= v < n
-                        for v, n in zip(geometry, self.sizes, strict=True)
+                        for v, n in zip(geometry, sizes, strict=True)
                     )
                 ):
                     raise ValueError("Indexed basal geometry lies outside the declared domain.")
