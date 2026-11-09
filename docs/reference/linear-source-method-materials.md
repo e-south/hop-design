@@ -1,16 +1,3 @@
----
-doc_id: hop-linear-source-method-materials
-title: Linear-source hairpin-PCR materials
-intent: Explain the six-oligo input, terminal checks, and ownership boundary for the linear-source method.
-audience:
-  - users
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-22
-doc_type: reference
----
-
 # Linear-source hairpin-PCR materials
 
 `linear-source-multinick-size-selection-hairpin-pcr@1` consumes six
@@ -18,6 +5,7 @@ vendor-neutral sequence materials. The material resolver checks terminal
 relationships before the method compiler derives physical states.
 
 ```python
+# Resolve the method with its explicit oligos and terminal chemistry.
 import hop_design.methods as methods
 
 phosphate = (methods.OligoModification.FIVE_PRIME_PHOSPHATE,)

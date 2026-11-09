@@ -1,18 +1,3 @@
----
-doc_id: hop-guide-discover-compatible-basal-candidates
-title: Discover compatible basal candidates
-intent: Run one bounded basal-candidate query and interpret complete, infeasible, and truncated outcomes.
-audience:
-  - Python users
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: how-to
-journey:
-  - discover
----
-
 # Discover compatible basal candidates
 
 Use this search when the question is “which exact basal arm pairs satisfy these
@@ -23,6 +8,7 @@ should be tested.
 Run the public example from a contributor checkout:
 
 ```bash
+# Run the bounded basal-junction example from a source checkout.
 uv run python examples/discover_basal_candidates.py
 ```
 
@@ -30,6 +16,7 @@ The example constructs a strict `BasalCandidateSearchRequest` and supplies both
 budgets:
 
 ```python
+# Search the same local problem through Python.
 import hop_design.discovery as discovery
 
 result = discovery.search_basal_candidates(

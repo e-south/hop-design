@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0006
-title: ADR 0006 - Discovery, compilation, and assessment boundaries
-intent: Separate catalog geometry search, molecular compilation, and optional artifact assessment.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-23
-doc_type: decision
-amended_by: hop-adr-0022
----
-
 # ADR 0006: Discovery, compilation, and assessment boundaries
+
+Updated by [ADR 0022](0022-make-boundaries-order-and-cohesive-ends-explicit.md).
 
 ## Context
 

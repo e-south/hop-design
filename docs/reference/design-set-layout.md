@@ -1,20 +1,3 @@
----
-doc_id: hop-design-set-layout
-title: Hairpin design-set package and verification
-intent: Define the canonical collection authority and regenerable scientist-facing projections.
-audience:
-  - bundle consumers
-  - users
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-27
-doc_type: reference
-journey:
-  - compile
-  - verify
----
-
 # Hairpin design-set package and verification
 
 ## Question answered

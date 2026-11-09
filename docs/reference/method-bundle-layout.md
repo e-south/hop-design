@@ -1,16 +1,3 @@
----
-doc_id: hop-method-bundle-layout
-title: Method bundle layout and verification
-intent: Define the persisted artifacts for one complete hairpin-processing method plan.
-audience:
-  - bundle consumers
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-22
-doc_type: reference
----
-
 # Method bundle layout and verification
 
 A method bundle records how one strict request resolves into modeled molecular

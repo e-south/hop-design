@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0009
-title: ADR 0009 - Paired stem extensions
-intent: Represent variable non-payload stem context without weakening payload or basal-junction contracts.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-21
-doc_type: decision
----
-
 # ADR 0009: Paired stem extensions
 
 ## Context

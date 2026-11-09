@@ -1,19 +1,3 @@
----
-doc_id: hop-adr-0030
-title: ADR 0030 - Partition exact local sequence domains without changing molecular identity
-intent: Keep large exhaustive local searches portable while preserving the complete declared sequence space.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-10-09
-doc_type: decision
-journey:
-  - discover
-  - verify
----
-
 # ADR 0030: Partition exact local sequence domains without changing molecular identity
 
 ## Context

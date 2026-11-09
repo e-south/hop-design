@@ -1,14 +1,3 @@
----
-doc_id: hop-reference-interface-survey-results
-title: Interface survey queries, selections and exports
-intent: Explain conditional support, exact selection, comparison and file exports from a survey checkpoint.
-audience: [integrators, maintainers]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-15
-doc_type: reference
----
-
 # Interface survey queries, selections and exports
 
 Use the [construction guide](../guides/survey-interfaces.md) for the runnable

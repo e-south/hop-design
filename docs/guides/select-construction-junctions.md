@@ -1,15 +1,3 @@
----
-doc_id: hop-select-construction-junctions
-title: Select local junctions for a complete construction
-intent: Bind verified local receipts and optional fragment-removal evidence to one explicit construction.
-audience: [Python users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: how-to
-journey: [discover, compile]
----
-
 # Select local junctions for a complete construction
 
 Use this lower-level path when you need to choose exact local realization identities.
@@ -32,6 +20,7 @@ selected witness fails completion, inspect that reason before choosing another;
 the failure does not invalidate every alternative in the local search.
 
 ```python
+# Inspect the recorded local realization addresses before choosing.
 choices = construction.list_local_realizations(
     verified_basal_receipt,
     cohesive_end="CTCA",  # An exact end required by this example, not a default.
@@ -65,6 +54,7 @@ adapter requirement, not a physical success estimate.
 Pass the explicitly chosen family realization ids to design compilation:
 
 ```python
+# Derive a design from the exact selected local realizations.
 import hop_design.construction as construction
 
 design = construction.compile_design_from_local_realizations(
@@ -91,6 +81,7 @@ design when the scientific question concerns an explicit route rather than the
 complete local Cartesian product:
 
 ```python
+# Compile the complete construction using the explicit selected addresses.
 selected = construction.compile_construction_from_local_realizations(
     "construction.yaml",
     design_bundle_path="design-bundle",
@@ -111,6 +102,7 @@ choose it or reinterpret its deterministic ordinal as a score.
 One replay-verified source partition may be bound to either endpoint form:
 
 ```python
+# Use the alternative explicit local selections in the same construction API.
 selected = construction.compile_construction_from_local_realizations(
     "construction.yaml",
     design_bundle_path="design-bundle",
@@ -143,6 +135,7 @@ source fragments will be removed. After selecting a construction, ask HOP to
 search removal programs on its exact prepared source:
 
 ```python
+# Check fragment removal for the selected exact source.
 partition = construction.discover_construction_source_partition(
     selected,
     "removal-policy.yaml",
@@ -182,6 +175,7 @@ For a PCR-bearing candidate rejected before an endpoint is materialized, select
 its zero-based `ordinal` from the summary's combination dispositions instead:
 
 ```python
+# Check the alternative source with its own partition requirements.
 partition = construction.discover_construction_source_partition(
     examined,
     "removal-policy.yaml",

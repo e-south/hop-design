@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0010
-title: ADR 0010 - Linear-source hairpin-PCR materials
-intent: Define the vendor-neutral oligo handoff for the linear-source multi-nick method.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
----
-
 # ADR 0010: Linear-source hairpin-PCR materials
 
 ## Context

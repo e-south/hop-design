@@ -1,19 +1,6 @@
----
-doc_id: hop-adr-0027
-title: ADR 0027 - Compile construction from strict files behind a narrow facade
-intent: Give external callers one replayable construction entrypoint without exporting the internal molecular ontology.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-11-05
-doc_type: decision
-amended_by: hop-adr-0028
----
-
 # ADR 0027: Compile construction from strict files behind a narrow facade
+
+Updated by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md).
 
 The external artifact interface adds `project_basal_source_panel` to this
 allowlist. It returns the existing basal molecular panel as canonical JSON

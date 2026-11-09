@@ -1,15 +1,3 @@
----
-doc_id: hop-adr-0054
-title: Resolve optional construction intent before discovery
-intent: Separate the user's desired molecule from construction permissions and execution effort.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-10-13
-doc_type: decision
-journey: [maintain, integrate]
----
-
 # Resolve optional construction intent before discovery
 
 ## Context

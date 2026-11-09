@@ -1,20 +1,3 @@
----
-doc_id: hop-plans-artifacts-bundles
-title: Plans, artifacts, and bundles
-intent: Explain the separate derivation and verification boundaries for design and method products.
-audience:
-  - users
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: explanation
-journey:
-  - verify
-  - integrate
----
-
 # Plans, artifacts, and bundles
 
 HOP has two plan types because declarative design derivation and temporal

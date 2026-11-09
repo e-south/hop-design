@@ -1,18 +1,3 @@
----
-doc_id: hop-campaign-orchestration
-title: HOP in a campaign orchestration stack
-intent: Position HOP as a hairpin-specific semantic backend for broader biological design systems.
-audience:
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: explanation
-journey:
-  - integrate
----
-
 # HOP in a campaign orchestration stack
 
 A campaign system can generate sequences, combine objectives, and select which

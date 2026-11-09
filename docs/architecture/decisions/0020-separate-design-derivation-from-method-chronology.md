@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0020
-title: ADR 0020 - Separate design derivation from method chronology
-intent: Make design plans declarative and reserve temporal molecular history for method plans.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-30
-doc_type: decision
-amended_by: hop-adr-0026
----
-
 # ADR 0020: Separate design derivation from method chronology
+
+Updated by [ADR 0026](0026-compose-complete-construction-chronology.md).
 
 > Amended by [ADR 0026](0026-compose-complete-construction-chronology.md):
 > design derivation still owns no chronology; a complete construction route or

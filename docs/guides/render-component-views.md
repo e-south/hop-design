@@ -1,18 +1,3 @@
----
-doc_id: hop-guide-render-component-views
-title: Render foldback and basal component views
-intent: Render two route-neutral hairpin components without inventing a processing claim.
-audience:
-  - users
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-24
-doc_type: how-to
-journey:
-  - verify
----
-
 # Render foldback and basal component views
 
 Use this journey to inspect two evaluated hairpin components. It renders only
@@ -24,6 +9,7 @@ the relationships already present in the typed evaluations:
 Run the example from a contributor checkout:
 
 ```bash
+# Render the repository foldback and basal examples to a new directory.
 uv run python examples/render_component_views.py --out build/component-views
 ```
 

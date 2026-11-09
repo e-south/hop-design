@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0053
-title: Separate hairpin-core geometry from insert-release boundaries
-intent: Preserve basal association while deriving exact retained insert strands independently.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-10-09
-doc_type: decision
----
-
 # Separate hairpin-core geometry from insert-release boundaries
 
 The design compiler describes paired basal arms around the supplied stem and

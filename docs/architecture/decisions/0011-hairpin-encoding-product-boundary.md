@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0011
-title: ADR 0011 - Typed hairpin-encoding product boundary
-intent: Define HOP's current product and the persisted consumer seam without claiming an unmodeled physical duplex.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-21
-doc_type: decision
-amended_by: hop-adr-0020
----
-
 # ADR 0011: Typed hairpin-encoding product boundary
+
+Updated by [ADR 0020](0020-separate-design-derivation-from-method-chronology.md).
 
 ## Context
 

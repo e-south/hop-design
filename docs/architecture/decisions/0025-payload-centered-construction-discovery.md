@@ -1,19 +1,6 @@
----
-doc_id: hop-adr-0025
-title: ADR 0025 - Center construction discovery on final payload geometry
-intent: Fix the coordinate, route, discovery, validation, identity, and ownership semantics for payload-centered construction discovery.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-29
-doc_type: decision
-amended_by: hop-adr-0028
----
-
 # ADR 0025: Center construction discovery on final payload geometry
+
+Updated by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md).
 
 > Amended by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md):
 > the payload/foldback boundary remains fixed while the nick may lie within the

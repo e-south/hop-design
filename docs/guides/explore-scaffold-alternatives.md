@@ -1,15 +1,3 @@
----
-doc_id: hop-guide-explore-scaffold-alternatives
-title: Explore scaffold alternatives and revise permissions
-intent: Find useful contrasts without changing the supplied stem or silently relaxing requirements.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-27
-doc_type: how-to
-journey: [discover, integrate]
----
-
 # Explore scaffold alternatives and revise permissions
 
 Start with the [stem-first workflow](discover-designs.md). Use these operations
@@ -22,6 +10,7 @@ your supplied sequence.
 Ask for contrasts when another preparation with the same geometry would not help:
 
 ```bash
+# Prioritize permitted scaffold alternatives while preserving the stem.
 hop-design design discover \
   --stem ATAACTTCGTATAGCATACATTATACGAAGTTAT \
   --product released_insert --diversify loop_nt \
@@ -36,6 +25,7 @@ when finding any complete preparation matters more than finding contrasts.
 The Python equivalent is:
 
 ```python
+# Discover from the same intent through Python.
 choices = construction.discover_designs(
     {"stem_arm": stem, "product": "released_insert"},
     "loop-options",
@@ -97,6 +87,7 @@ A stopped search also cannot establish that an unobserved class is impossible.
 For a broader set of cloning interfaces, use:
 
 ```python
+# Name the molecular features whose diversity should guide allocation.
 objective = {
     "kind": "diversity",
     "parameters": ["left_end_word", "right_end_word", "left_gap", "right_gap"],
@@ -126,6 +117,7 @@ comparison. Save this as `changes.json`:
 ```
 
 ```bash
+# Preview an explicit permission change in a new result directory.
 hop-design design revise designs --changes changes.json --out revised-permissions
 hop-design design discover --revision revised-permissions \
   --diversify foldback_arm_bp --evaluations 16 --out revised-designs

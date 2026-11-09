@@ -1,15 +1,3 @@
----
-doc_id: hop-adr-0001
-title: ADR 0001 - Standalone package boundary
-intent: Record why HOP Design is an independent package with no caller dependency.
-audience:
-  - maintainers
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-20
-doc_type: decision
----
-
 # ADR 0001: Standalone package boundary
 
 ## Context

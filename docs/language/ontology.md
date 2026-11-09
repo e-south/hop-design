@@ -1,21 +1,3 @@
----
-doc_id: hop-ontology
-title: HOP Design ontology
-intent: Define the canonical public molecular and compiler vocabulary.
-audience:
-  - users
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-31
-doc_type: reference
-journey:
-  - compile
-  - discover
-  - method
-  - verify
----
-
 # HOP Design ontology
 
 ## Describe the molecule before its construction role

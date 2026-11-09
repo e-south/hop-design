@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0041
-title: Match bounded preparations against an explicit family reference
-intent: Recover a controlled comparison without changing requirements or inventing global coverage.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-04
-doc_type: explanation
----
-
 # Reference-bound family matching
 
 Two individually complete preparations can disagree on required scaffold

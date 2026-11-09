@@ -1,16 +1,3 @@
----
-doc_id: hop-molecular-comparison
-title: Molecular comparison
-intent: Explain typed molecular descriptors, versioned distances and frozen atlas comparisons.
-audience:
-  - API consumers
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-28
-doc_type: reference
----
-
 # Molecular comparison
 
 A comparison describes proximity between recorded preparations. It does not
@@ -70,6 +57,7 @@ does not automatically change that descriptor scope or any preparation identity.
 ## Capture an explicit comparison
 
 ```python
+# Declare how molecular descriptors contribute to dissimilarity.
 from hop_design.models.construction.variants.similarity import MolecularDistancePolicy
 
 policy = MolecularDistancePolicy(
@@ -87,6 +75,7 @@ edition = choices.freeze(
 The same policy JSON is accepted by the existing CLI:
 
 ```bash
+# Capture the edition with its explicit molecular comparison definition.
 hop-design design freeze designs --include-landscape \
   --distance-policy distance.json --comparison-weights 1 1 1 \
   --out candidate-edition

@@ -1,20 +1,3 @@
----
-doc_id: hop-contract-table
-title: HOP Design contract table
-intent: Summarize boundary preconditions and guaranteed postconditions.
-audience:
-  - API consumers
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-31
-doc_type: reference
-journey:
-  - compile
-  - discover
-  - method
----
-
 # HOP Design contract table
 
 ## Accepted construction-discovery contracts

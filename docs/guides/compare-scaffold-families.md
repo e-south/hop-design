@@ -1,15 +1,3 @@
----
-doc_id: hop-compare-scaffold-families
-title: Specify and retrieve a comparative scaffold set
-intent: Preview finite whole-hairpin variations, compare complete members and retrieve their individual preparations.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-03
-doc_type: tutorial
-journey: [discover, verify]
----
-
 # Specify and retrieve a comparative scaffold set
 
 To discover required comparisons before selecting construction details, start with
@@ -60,6 +48,7 @@ complete materialization policy, not a partial patch. The portable authoring
 packet preserves the original base alongside the brief.
 
 ```bash
+# Turn the comparison into an explicit family request.
 hop-design construction author-family build/scaffold-family/comparison.json --out build/authored-family
 ```
 
@@ -103,6 +92,7 @@ not a new independently editable member dimension.
 ## Preview, execute, inspect
 
 ```bash
+# Preview the family before executing and inspecting its members.
 hop-design construction prepare-family build/scaffold-family/family.json --out build/family-preview
 hop-design construction execute-family build/scaffold-family/family.json --continuation sole-witness --out build/family-outcomes
 ```
@@ -136,6 +126,7 @@ but between-member agreement remains unassessed. If a selection renames a family
 member, the report explicitly connects both names.
 
 ```bash
+# Retrieve the explicitly selected comparison set.
 hop-design construction select-set build/scaffold-family/set.json --out build/comparative-preparations
 ```
 
@@ -175,6 +166,7 @@ Python exposes the same workflow through `prepare_construction_family`,
 ## Open one portable comparison
 
 ```bash
+# Write one portable report for the recorded selection.
 hop-design construction report-family build/scaffold-family/executed --selection build/scaffold-family/set.json --baseline loop3 --edit short-primer:loop3 --out build/family-report
 ```
 
@@ -221,6 +213,7 @@ If complete members disagree on a required property, hold one explicit complete
 reference fixed and evaluate a bounded set of alternative preparations:
 
 ```bash
+# Find preparations that preserve the named reference properties.
 hop-design construction match-family build/family-outcomes --reference-member loop3 --reference-choice 0 --max-continuations 8 --out build/matching
 ```
 
@@ -249,6 +242,7 @@ This runnable example begins with 7- and 8-bp complete preparations, declares
 7 bp as the reference, and retrieves a matched loop series:
 
 ```bash
+# Run the repository example of matching a family.
 uv run --locked python examples/complete-construction/match_family.py --out build/matched-family
 ```
 
@@ -272,6 +266,7 @@ missing local result, inspect the choices, then use `construction continue` with
 explicit result-bound witness IDs. Admit that complete outcome into a new family:
 
 ```bash
+# Reconcile the new continuation with the original family outcomes.
 hop-design construction reconcile-family build/family-outcomes --source-member choices --outcome build/continued --preferred-loop-nt 4 --out build/revised-family
 hop-design construction report-family build/revised-family --baseline choices --out build/revised-report
 ```
@@ -297,6 +292,7 @@ The public demonstration declares a 4-nt loop preference, explicitly selects
 that local witness, reconciles it and retrieves its preparation:
 
 ```bash
+# Run the repository example of interruption and family recovery.
 uv run --locked python examples/complete-construction/continue_family.py --out build/family-recovery
 ```
 

@@ -1,15 +1,3 @@
----
-doc_id: hop-construction-source-reference
-title: Construction source and material policies
-intent: Define the low-level composition inputs, material policies and endpoint obligations.
-audience: [Python users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: reference
-journey: [compile]
----
-
 # Construction source and material policies
 
 This reference describes low-level inputs to [construction compilation](../guides/compile-construction.md).

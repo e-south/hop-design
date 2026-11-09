@@ -1,15 +1,3 @@
----
-doc_id: hop-docs-index
-title: HOP documentation
-intent: Choose a design task, then open its guide or API reference.
-audience: [users]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-09
-doc_type: index
-journey: [install, compile, discover, method, verify, integrate]
----
-
 # HOP documentation
 
 Choose a task, then follow its guide through the CLI or Python API. The

@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0014
-title: ADR 0014 - Separate basal pairing from processing geometry
-intent: Keep four-base pair classification independent from release and terminal-nick feasibility.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
----
-
 # ADR 0014: Separate basal pairing from processing geometry
 
 ## Context

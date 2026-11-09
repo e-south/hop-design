@@ -1,15 +1,3 @@
----
-doc_id: hop-guide-edit-folded-sequences
-title: Edit a folded sequence and retrieve its preparation
-intent: Control loop words and released-end placement while exposing accompanying molecular changes.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: tutorial
-journey: [discover, integrate]
----
-
 # Edit the molecule, then choose its preparation
 
 Start from an ordinary [scaffold request](discover-product-scaffolds.md). Use the
@@ -34,6 +22,7 @@ correspondence. Pairing relationships and paired-base identities are distinct.
 ## Author exact requests through CLI/API
 
 ```bash
+# Prepare the named loop alternatives as explicit molecular edits.
 hop-design construction prepare-edit examples/molecular-editing/request.json --loop GAAA --loop TTTC --out /tmp/hop-edit
 hop-design construction evaluate-edit /tmp/hop-edit/edit.json --out /tmp/hop-alternatives
 ```
@@ -59,6 +48,7 @@ as authored. These are ends of the **released duplex insert**, not exposed ends
 on the hairpin intermediate.
 
 ```bash
+# Compare end placements under the stated basal-nick permissions.
 hop-design construction prepare-edit examples/molecular-editing/request.json --placement 6:6 --basal-nick example:enzyme/nb.bsrdi@1 --basal-nick example:enzyme/nb.btsi@1 --out /tmp/hop-method-edit
 ```
 
@@ -80,6 +70,7 @@ the resulting substrate identical.
 ## Expand a small degenerate stem into an exact family
 
 ```bash
+# Preview a finite exact expansion of the degenerate stem.
 hop-design construction preview-sequence-family examples/molecular-editing/sequence-family.json --out /tmp/hop-sequence-preview
 hop-design construction evaluate-sequence-family examples/molecular-editing/sequence-family.json --out /tmp/hop-sequence-family
 ```

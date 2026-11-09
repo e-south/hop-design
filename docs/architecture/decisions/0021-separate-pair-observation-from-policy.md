@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0021
-title: ADR 0021 - Separate pair observation from acceptance policy
-intent: Make physical pair kind invariant across all HOP operations.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-23
-doc_type: decision
----
-
 # ADR 0021: Separate pair observation from acceptance policy
 
 ## Context

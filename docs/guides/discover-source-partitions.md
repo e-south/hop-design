@@ -1,18 +1,3 @@
----
-doc_id: hop-discover-source-partitions-guide
-title: Discover an exact source partition
-intent: Search bounded nickase subsets for a declared full-span fragment partition.
-audience:
-  - Python users
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-31
-doc_type: how-to
-journey:
-  - discover
----
-
 # Discover an exact source partition
 
 Use source-partition discovery when the question is:
@@ -83,6 +68,7 @@ candidates rather than aborting the remaining search.
 ## Run and inspect
 
 ```python
+# Inspect the fragment-removal program for the requested source.
 from pathlib import Path
 
 import hop_design.construction as construction

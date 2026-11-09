@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0052
-title: Resumable complete-interface surveys
-intent: Separate the molecular target domain from incremental evaluation and indexed storage.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-10-10
-doc_type: explanation
----
-
 # Resumable complete-interface surveys
 
 The small-roster discovery packet is useful for inspecting a few requests. Its

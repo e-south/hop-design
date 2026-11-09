@@ -1,75 +1,57 @@
----
-doc_id: hop-install
-title: Install HOP
-intent: Choose a released wheel or source checkout and set up HOP for use.
-audience: [new users]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-09
-doc_type: how-to
-journey: [install]
----
-
 # Install HOP
 
-Use Python 3.12–3.14. The commands below use
-[uv](https://docs.astral.sh/uv/getting-started/installation/).
-For stem-based discovery and atlas inspection, use the source checkout below.
-Use the released wheel with its tagged documentation for earlier workflows.
-
-HOP is alpha software; APIs and file formats may change before 1.0.
-
-## Released package
-
-Download the wheel and `SHA256SUMS` from
-[v0.1.0a8](https://github.com/e-south/hop-design/releases/tag/v0.1.0a8).
-HOP is not published on PyPI. Run these commands from the download directory,
-using the checksum command for your operating system:
+Use [uv](https://docs.astral.sh/uv/getting-started/installation/) with Python
+3.12–3.14. It gives HOP its own environment.
 
 ```bash
-# macOS
-grep 'hop_design-0.1.0a8-py3-none-any.whl$' SHA256SUMS | shasum -a 256 -c -
-# Linux
-grep 'hop_design-0.1.0a8-py3-none-any.whl$' SHA256SUMS | sha256sum -c -
+# Install the current HOP command without cloning a repository.
+uv tool install "git+https://github.com/e-south/hop-design.git"
+
+# Check which version is installed.
+hop-design --version
+# hop-design 0.1.0a9
 ```
 
-Continue only if the checksum matches:
+PyPI publication is being prepared. This command installs the current source
+version directly. HOP is alpha software, so record the version used for your work.
+
+## Start designing
+
+Follow [Discover designs around your stem](discover-designs.md) to find choices,
+inspect a molecule and retrieve its oligos. Run `hop-design --help` to see the
+available commands.
+
+## Use Python
+
+Add HOP to your own uv project, then open Python in that environment.
 
 ```bash
-uv venv --python 3.12
-source .venv/bin/activate
-uv pip install ./hop_design-0.1.0a8-py3-none-any.whl
-hop-design --help
+# Add the same package as a project dependency.
+uv add "git+https://github.com/e-south/hop-design.git"
+uv run python
 ```
 
-Use the release's
-[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8)
-with that package.
+```pycon
+>>> # Confirm the package in this Python environment.
+>>> from importlib.metadata import version
+>>> version("hop-design")
+'0.1.0a9'
+```
 
-## Source checkout
+## Work from source
 
-This checkout is the unreleased v0.1.0a9 candidate. The published download above
-remains v0.1.0a8; it does not contain the current request-execution workflow.
-
-The source checkout includes unreleased construction-search features. See
-[capabilities and limits](../dev/plans/roadmap.md#source-capabilities) before
-choosing it for your task.
+Use a checkout to run the repository's `examples/` files or contribute changes.
 
 ```bash
+# Create a checkout with its locked development environment.
 git clone https://github.com/e-south/hop-design.git
 cd hop-design
 uv sync --locked
-uv run hop-design --help
+
+# Run this checkout rather than a separately installed command.
+uv run hop-design --version
+# hop-design 0.1.0a9
 ```
 
-Use `uv run hop-design` from this checkout for the source examples.
-
-## Continue
-
-- [Discover designs around your stem](discover-designs.md): inspect complete
-  preparations and retrieve oligos.
-- [Author an explicit construction](design-a-construction.md): product,
-  materials and processing requirements.
-- For anatomy only, [compile a payload design](quickstart.md).
-- [Define and preview a substrate space](substrate-spaces.md).
-- [Search junctions and compile a construction](compile-construction.md).
+For the earlier GitHub-only package, use its
+[v0.1.0a8 documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8).

@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0031
-title: ADR 0031 - Derive exact designs from selected local realizations
-intent: Close the route-to-design authority relation without coupling design identity to search execution.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-amended_by: hop-adr-0053
-last_verified: 2026-08-30
-doc_type: decision
----
-
 # ADR 0031: Derive exact designs from selected local realizations
+
+Updated by [ADR 0053](0053-separate-hairpin-core-and-insert-release.md).
 
 ## Context
 

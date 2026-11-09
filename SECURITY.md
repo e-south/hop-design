@@ -1,16 +1,3 @@
----
-doc_id: hop-security
-title: HOP Design security and public-data boundary
-intent: Define safe inputs, output paths, repository content, and release gates.
-audience:
-  - maintainers
-  - security reviewers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-04
-doc_type: reference
----
-
 # HOP Design security and public-data boundary
 
 ## Local molecular editor

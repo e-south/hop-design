@@ -1,16 +1,3 @@
----
-doc_id: hop-reliability
-title: HOP Design reliability contract
-intent: Define determinism, integrity, limits, and degraded behavior.
-audience:
-  - maintainers
-  - bundle consumers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: reference
----
-
 # HOP Design reliability contract
 
 ## Determinism

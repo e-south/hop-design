@@ -1,15 +1,3 @@
----
-doc_id: hop-construction-user-journey
-title: Construction usability principles
-intent: Preserve designer intent across scaffold discovery, comparison and exact preparation handoff.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-08
-doc_type: explanation
-journey: [maintain]
----
-
 # Construction usability principles
 
 Help a scientist describe the hairpin or released insert they need, discover

@@ -1,21 +1,3 @@
----
-doc_id: hop-guide-resolve-production-method
-title: Resolve and verify a production method
-intent: Compile the public linear-source request into a verified MethodBundle and inspect its destination-neutral product.
-audience:
-  - Python users
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: how-to
-journey:
-  - method
-  - verify
-  - integrate
----
-
 # Resolve and verify a production method
 
 The linear-source method requires exact materials. It resolves every named
@@ -28,6 +10,7 @@ Use the readable authoring example when constructing a request for the first
 time:
 
 ```bash
+# Author the complete method request using the public example.
 uv run python examples/author_linear_source_method.py \
   --out build/authored-linear-source-method
 ```
@@ -43,6 +26,7 @@ missing field.
 Use the compact JSON fixture when testing serialization and replay:
 
 ```bash
+# Resolve and verify the canonical method fixture.
 uv run python examples/compile_linear_source_method.py \
   --out build/linear-source-method
 ```
@@ -50,6 +34,7 @@ uv run python examples/compile_linear_source_method.py \
 The example performs the complete public path:
 
 ```python
+# Resolve the same named method through Python.
 import hop_design.methods as methods
 
 request = methods.LinearSourceMultinickHairpinPcrRequest.model_validate_json(

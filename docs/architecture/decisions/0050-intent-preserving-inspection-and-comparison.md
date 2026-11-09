@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0050
-title: Inspect a preparation without editing molecular intention
-intent: Separate displayed states, conditional permissions and required membership while retaining one molecular authority.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-16
-doc_type: explanation
----
-
 # Inspection and required comparisons
 
 An experimentalist may inspect the insert produced from a pinned hairpin without

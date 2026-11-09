@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0036
-title: ADR 0036 - Expose command and artifact handoffs
-intent: Let independent consumers use existing HOP authorities without Python dependency coupling.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-09-12
-doc_type: decision
----
-
 # ADR 0036: Expose command and artifact handoffs
 
 Consumers need HOP's exact derivations and rendered material handoffs while

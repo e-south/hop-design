@@ -1,15 +1,3 @@
----
-doc_id: hop-guide-explore-scaffolds
-title: Explore complete scaffolds before choosing a preparation
-intent: Discover obtainable whole molecules and explicitly retrieve a controlled comparison.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: tutorial
-journey: [discover, integrate]
----
-
 # Explore complete scaffolds
 
 When desired open-side dimensions should drive preparation changes, start with
@@ -27,6 +15,7 @@ loop-side extensions of 6, 9 and 12 bp. It retains the existing insert interface
 and preparation permissions. From the repository root:
 
 ```bash
+# Explore complete scaffolds from the repository request.
 uv run hop-design construction explore examples/scaffold-options/insert.json \
   --max-continuations 12 --out /tmp/hop-options
 ```
@@ -46,6 +35,7 @@ extensions and product interfaces shared. It requests a molecular comparison,
 not a causal biological conclusion.
 
 ```bash
+# Assess which recorded options can satisfy the comparison.
 uv run hop-design construction option-sets /tmp/hop-options \
   examples/scaffold-options/comparison.json --out /tmp/hop-option-sets
 ```
@@ -70,6 +60,7 @@ whole-molecule figures, comparisons and consolidated oligo specifications.
 Reuse the comparison intent instead of entering its controls again:
 
 ```bash
+# Retrieve only the explicitly selected options.
 uv run hop-design construction select-options /tmp/hop-options \
   --comparison examples/scaffold-options/comparison.json \
   --option option-0005-01 --option option-0006-01 \

@@ -1,20 +1,3 @@
----
-doc_id: hop-processing-and-assembly
-title: Method language overview
-intent: Route readers through named molecular methods without conflating design, production, or destination assembly.
-audience:
-  - users
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: explanation
-journey:
-  - method
-  - integrate
----
-
 # Method language overview
 
 The method language answers one question: what exact molecular states follow

@@ -1,16 +1,3 @@
----
-doc_id: hop-external-artifacts
-title: External command and artifact interface
-intent: Separate producer execution from consumer installation while preserving exact authorities.
-audience:
-  - integrators
-  - CLI users
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-09-12
-doc_type: reference
----
-
 # External command and artifact interface
 
 ## Question answered and meaning

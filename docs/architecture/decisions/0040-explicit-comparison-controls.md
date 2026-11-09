@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0040
-title: Require molecular agreement separately from manufacturing agreement
-intent: Make scaffold control enforceable while keeping outcomes and retrieval inspectable.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-04
-doc_type: explanation
----
-
 # Explicit comparison controls
 
 A scaffold family can require `non_loop_sequences`, `regional_contacts` and

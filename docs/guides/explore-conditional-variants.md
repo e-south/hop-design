@@ -1,15 +1,3 @@
----
-doc_id: hop-guide-conditional-variants
-title: Explore supported molecular variants
-intent: Discover conditional neighborhood choices and retrieve a controlled set of complete preparations.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-15
-doc_type: tutorial
-journey: [discover, integrate]
----
-
 # What can vary while these properties stay fixed?
 
 Explore complete molecular designs already supported by a saved discovery or
@@ -21,6 +9,7 @@ product; several products can remain compatible with one neighborhood choice.
 Run the [public example](../../examples/molecular-editing/conditional.py):
 
 ```bash
+# Generate the saved result used by this conditional-exploration example.
 uv run --locked python examples/molecular-editing/conditional.py /tmp/hop-conditional
 hop-design construction edit-view /tmp/hop-conditional/alternatives --evaluated --out /tmp/hop-conditional-view
 ```
@@ -45,6 +34,7 @@ route. Crossings never authorize recombination.
 Run the broader, bounded [construction-envelope request](../../examples/molecular-editing/construction-envelope.json):
 
 ```bash
+# Discover scaffolds under the explicit construction envelope.
 hop-design construction discover-scaffolds examples/molecular-editing/construction-envelope.json --out /tmp/hop-envelope
 hop-design construction edit-view /tmp/hop-envelope --evaluated --out /tmp/hop-envelope-view
 ```
@@ -190,6 +180,7 @@ targets a new word and a derived arm length, previews explicit changes and saves
 the refreshed choices for an explicit retrieval. Run it against the saved pool:
 
 ```bash
+# Run the example that inspects unobserved values and a revised envelope.
 uv run --locked python examples/molecular-editing/envelope.py /tmp/hop-envelope /tmp/hop-envelope-jump
 ```
 
@@ -318,6 +309,7 @@ unmapped parts. Reduced-motion preferences show the same static endpoints.
 Run the public browsing example against the same saved result:
 
 ```bash
+# Preview one alternative without committing a new selection.
 uv run --locked python examples/molecular-editing/browsing.py /tmp/hop-conditional/alternatives /tmp/hop-browsing --word AAAC --state cleaved_duplex
 ```
 
@@ -397,12 +389,14 @@ control and material requirement against freshly admitted sources.
 Run the equivalent public API example against the result above:
 
 ```bash
+# Assess the requested controlled comparison.
 uv run --locked python examples/molecular-editing/navigation.py /tmp/hop-conditional/alternatives /tmp/hop-navigation
 ```
 
 Read `comparison/summary.json`. Then name a displayed set explicitly in a new output:
 
 ```bash
+# Run the same comparison with the alternative example inputs.
 uv run --locked python examples/molecular-editing/navigation.py /tmp/hop-conditional/alternatives /tmp/hop-navigation-selected --select-set set-0001
 ```
 
@@ -420,6 +414,7 @@ pool, not that the molecule cannot be made.
 ## The same choice model through CLI and Python
 
 ```bash
+# Query conditional choices from the recorded result.
 hop-design construction variants /tmp/hop-conditional/alternatives --stage hairpin --focus loop --out /tmp/hop-choices
 ```
 
@@ -438,6 +433,7 @@ all hold together. A replacement query omits **only the focused pin** when listi
 its alternatives. `compatible_options` still enforces every active pin.
 
 ```python
+# Use the same recorded result and choice model through Python.
 import json
 from hop_design import construction
 

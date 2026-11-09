@@ -1,21 +1,3 @@
----
-doc_id: hop-schema-reference
-title: Current schema identifiers
-intent: Identify supported source-checkout document types, their purpose, and their input limits.
-audience:
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-09
-doc_type: reference
-journey:
-  - compile
-  - discover
-  - method
-  - verify
----
-
 # Current schema identifiers
 
 ## Molecular comparisons

@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0042
-title: Discover complete scaffold options before choosing construction details
-intent: Separate bounded product exploration, comparative grouping and explicit preparation retrieval.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: explanation
----
-
 # Complete scaffold options
 
 A product request may permit many local witnesses without providing a complete

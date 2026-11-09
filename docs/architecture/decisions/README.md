@@ -1,25 +1,10 @@
----
-doc_id: hop-architecture-decision-index
-title: Architecture decision index
-intent: Route maintainers through accepted HOP decisions and their amendments.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-30
-doc_type: index
-journey:
-  - maintain
----
-
 # Architecture decision index
 
 - [0048: Stage controls, required-member search and prior-material reuse](0048-stage-controlled-required-panels.md)
 
 Decision records preserve historical context. Active product contracts live in
 the language, method, provenance, and reference sections; when a later decision
-amends an earlier one, the earlier frontmatter names the current decision.
+amends an earlier one, the earlier record links to the current decision.
 
 - [0054: Resolve optional construction intent before discovery](0054-optional-construction-intent.md)
 

@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0047
-title: Terminal scaffold specification
-intent: Translate explicit terminal requirements while retaining molecular authority and permissions.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: explanation
----
-
 # Terminal scaffold specification
 
 An experimentalist can request the terminal form of a complete hairpin without

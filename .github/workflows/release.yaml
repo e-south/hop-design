@@ -81,3 +81,29 @@ jobs:
             --generate-notes \
             "${release_flags[@]}"
           gh release edit "${GITHUB_REF_NAME}" --draft=false
+
+  pypi:
+    name: Publish verified package to PyPI
+    needs: [build, compatibility, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/hop-design
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download the verified distributions from this run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "${GITHUB_RUN_ID}" --name hop-design-distributions --dir dist
+      - name: Confirm the exact verified bytes before upload
+        run: |
+          mv dist/SHA256SUMS SHA256SUMS
+          (cd dist && sha256sum -c ../SHA256SUMS)
+      - name: Publish with a short-lived PyPI identity
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3

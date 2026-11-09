@@ -1,19 +1,3 @@
----
-doc_id: hop-compile-construction-guide
-title: Compile a payload-centered construction
-intent: Search peripheral junctions, compile a construction, and inspect its required materials and molecular steps.
-audience:
-  - Python users
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: how-to
-journey:
-  - discover
-  - verify
----
-
 # Compile a payload-centered construction
 
 Keep the payload fixed while checking whether selected foldback and basal
@@ -36,6 +20,7 @@ hairpin and released-insert example, start with the [construction journey](desig
 From the repository root, with Python 3.12–3.14 and `uv` installed:
 
 ```bash
+# Run the public junction example in the locked source environment.
 uv sync --locked
 uv run python examples/basal-junction/search.py --out build/basal-junction
 ```
@@ -55,6 +40,7 @@ exhaustive alternative coverage before choosing an exemplar.
 Once you have compiled a complete construction bundle, list and inspect it:
 
 ```bash
+# List exact local choices before selecting their route addresses.
 uv run hop-design construction list CONSTRUCTION_BUNDLE
 uv run hop-design construction inspect CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBER
 ```
@@ -82,6 +68,7 @@ After changing a constraint and compiling another result, compare the selected
 routes before deciding which materials to use:
 
 ```bash
+# Compare two saved constructions without changing either bundle.
 uv run hop-design construction compare LEFT_BUNDLE RIGHT_BUNDLE \
   --left-ordinal LEFT_ROUTE_NUMBER --right-ordinal RIGHT_ROUTE_NUMBER
 ```
@@ -100,6 +87,7 @@ For loaded receipts and explicitly selected realization identities, the Python
 equivalent is:
 
 ```python
+# Make the same comparison through the Python API.
 report = construction.compare_constructions(
     left_receipt,
     right_receipt,
@@ -135,6 +123,7 @@ source document; HOP verifies their agreement during compilation.
 ## Compile and write the authority
 
 ```python
+# Compile the request against its verified design and save the construction.
 from pathlib import Path
 
 import hop_design.construction as construction
@@ -171,6 +160,7 @@ Truncation is not infeasibility, and canonical order is not a score.
 ## Reopen and project
 
 ```python
+# Reopen the saved construction before projecting its molecular views.
 verified = construction.load_verified_construction_bundle(bundle_path)
 
 summary = construction.project_complete_construction_summary(verified)
@@ -199,6 +189,7 @@ operations. A basal projection rejects a construction with no basal authority.
 The same verified authority is navigable without importing Python:
 
 ```bash
+# Read the saved construction summary.
 hop-design construction summary construction-bundle
 hop-design construction list construction-bundle --group-by geometry
 hop-design construction inspect construction-bundle REALIZATION_ID \
@@ -232,6 +223,7 @@ adapters consume this text without reconstructing material policy from JSON.
 For a released duplex, ask where a requested end comes from:
 
 ```bash
+# Inspect the exact selected route from the admitted bundle.
 hop-design construction inspect construction-bundle \
   --selection selected-route.json --end right --base-index 0
 ```

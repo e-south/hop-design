@@ -1,15 +1,3 @@
----
-doc_id: hop-construction-maintainer-map
-title: Construction workflow module map
-intent: Locate change owners and focused verification seams without loading every construction implementation.
-audience: [maintainers, agent executors]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-01
-doc_type: explanation
-journey: [maintain]
----
-
 # Construction workflow module map
 
 Start from the user operation in [the documentation index](../index.md), then

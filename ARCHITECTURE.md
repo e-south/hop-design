@@ -1,16 +1,3 @@
----
-doc_id: hop-architecture
-title: HOP Design architecture
-intent: Define ownership, dependency direction, and module boundaries.
-audience:
-  - maintainers
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-30
-doc_type: explanation
----
-
 # HOP Design architecture
 
 HOP Design is a standalone modular monolith: one repository, one Python

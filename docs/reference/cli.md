@@ -1,25 +1,20 @@
----
-doc_id: hop-cli-reference
-title: HOP Design CLI reference
-intent: Document current commands, options, output, and exit behavior.
-audience:
-  - CLI users
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-09
-doc_type: reference
----
-
 # CLI reference
+
+Start with the [worked discovery example](../guides/discover-designs.md). The
+signatures below use placeholders such as `DNA`, `DESIGNS` and `NEW`. Replace
+them with your sequence and paths; output directories must be new.
 
 ## Discover complete designs
 
 ```text
+# Inspect effective permissions, then discover complete preparations.
 hop-design design resolve --stem DNA --product released_insert --out NEW
 hop-design design discover --stem DNA --product released_insert --out NEW
 hop-design design discover --request INTENT.json --out NEW --evaluations 64
+# Continue the saved search or filter its recorded results.
 hop-design design continue DESIGNS --evaluations 64 --progress
 hop-design design query DESIGNS --query FILTERS.json
+# Record a selection before exporting its figures and materials.
 hop-design design sample DESIGNS --seed 1 --out SELECTION.json
 hop-design design select DESIGNS --preparation ID --out SELECTION.json
 hop-design design preserve DESIGNS --reference SELECTION.json --stage hairpin --except-neighborhood loop --out REFINEMENT.json
@@ -81,6 +76,7 @@ defines the request fields. These operations do not start a search.
 ## Conditional variants
 
 ```text
+# Inspect or evaluate conditional alternatives from a saved result.
 hop-design construction variants RESULT --stage hairpin --focus loop --out NEW
 hop-design construction variants RESULT --query QUERY.json --out NEW
 hop-design construction evaluate-parameters RESULT CHOICES --max-branches 4 --max-continuations 1 --out NEW
@@ -111,6 +107,7 @@ All outputs are create-only. See the
 The [folded-sequence guide](../guides/edit-folded-sequences.md) connects these commands:
 
 ```text
+# Preview a specific molecular edit before evaluating it.
 hop-design construction prepare-edit REQUEST --loop WORD --out NEW
 hop-design construction prepare-edit REQUEST --placement LEFT_BP:RIGHT_BP --out NEW
 hop-design construction preview-edit EDIT.json --out NEW
@@ -136,6 +133,7 @@ selected-local construction without requiring Python model imports.
 ## Substrate spaces
 
 ```text
+# Preview the finite payload space, compile it and verify saved records.
 hop-design space preview SPEC_PATH
 hop-design space compile SPEC_PATH --out NEW_DIRECTORY
 hop-design verify BUNDLE_DIRECTORY

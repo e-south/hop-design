@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0008
-title: ADR 0008 - Inherited component assembly
-intent: Separate component composition from processing-route discovery and provenance.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-20
-doc_type: decision
-amended_by: hop-adr-0020
----
-
 # ADR 0008: Inherited component assembly
+
+Updated by [ADR 0020](0020-separate-design-derivation-from-method-chronology.md).
 
 > Amended by [ADR 0020](0020-separate-design-derivation-from-method-chronology.md):
 > the historical `resolved_events` and `component_assembly` variants were

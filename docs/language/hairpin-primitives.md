@@ -1,19 +1,3 @@
----
-doc_id: hop-hairpin-components
-title: Hairpin components
-intent: Explain the sequence regions and modeled molecular products owned by HOP.
-audience:
-  - users
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: explanation
-journey:
-  - compile
----
-
 # Hairpin components
 
 HOP uses sequence regions with one physical meaning each. Historical labels can

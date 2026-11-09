@@ -1,14 +1,3 @@
----
-doc_id: hop-reference-interface-survey-search
-title: Interface survey scope and search
-intent: Define the molecular request, search objectives, execution limits and coverage of an interface survey.
-audience: [integrators, maintainers]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-04
-doc_type: reference
----
-
 # Interface survey scope and search
 
 For commands from a stem and desired ends to exact oligos, use the
@@ -291,6 +280,7 @@ For an authored `survey.json`, provide explicit per-evaluation limits and a batc
 size. This command creates a new checkpoint; it refuses an existing file.
 
 ```bash
+# Evaluate or continue the same checkpoint under the declared limits.
 hop-design construction survey evaluate survey.json --index survey.sqlite \
   --max-evaluations 256 --local-nodes 1000 --local-realizations 1000 \
   --release-site-pairs 1000
@@ -376,6 +366,7 @@ same molecular request. Neither condition is an exclusion of the target.
 To inspect saved attempts without replaying the molecular route:
 
 ```bash
+# Inspect checkpoint progress without replaying the molecular search.
 hop-design construction survey inspect survey.json --index survey.sqlite \
   --offset 0 --limit 100
 ```

@@ -1,18 +1,3 @@
----
-doc_id: hop-roadmap
-title: HOP product roadmap
-intent: Distinguish released capabilities, source capabilities, and remaining product work.
-audience:
-  - maintainers
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-09
-doc_type: explanation
-journey:
-  - maintain
----
-
 # HOP product roadmap
 
 ## Product direction

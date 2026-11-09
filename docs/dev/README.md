@@ -1,18 +1,3 @@
----
-doc_id: hop-dev-index
-title: HOP Design maintainer map
-intent: Route maintainers to product contracts, capabilities, verification, and releases.
-audience:
-  - maintainers
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-09
-doc_type: index
-journey:
-  - maintain
----
-
 # HOP Design maintainer map
 
 - [Construction module map](construction-map.md) locates request compilation,
@@ -24,16 +9,15 @@ journey:
   performance guide above defines the current gate selection.
 - [GitHub governance](github-governance.md) defines repository settings,
   required checks, and the evidence unavailable when hosted CI cannot run.
-- [Release process](releasing.md) separates GitHub artifacts from PyPI
-  publication.
+- [Release HOP](releasing.md) publishes verified files to GitHub and PyPI.
 - [Product roadmap](plans/roadmap.md) separates released capabilities, source
   capabilities, and remaining work.
 - [Construction usability principles](plans/construction-user-journey.md) define
   intent preservation, progressive detail and molecular handoff expectations.
 - [Construction implementation inventory](plans/retained-overhead-construction-inventory.md)
   locates molecular responsibilities and reproducible allocation measurements.
-- [Public concept documentation contract](documentation-contract.md) defines
-  the claim and non-claim template for new product surfaces.
+- [Write useful documentation](documentation-contract.md) covers task flow,
+  examples, references and readable navigation.
 - [Architecture decisions](../architecture/decisions/) record public contract
   and ownership changes.
 

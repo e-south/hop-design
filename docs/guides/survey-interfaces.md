@@ -1,15 +1,3 @@
----
-doc_id: hop-guide-survey-interfaces
-title: Keep your stem and obtain requested sticky ends
-intent: Find complete constructions for a supplied stem and desired ends, inspect their molecular routes, and retrieve exact oligos.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-11
-doc_type: how-to
-journey: [discover, verify, integrate]
----
-
 # Keep your stem and obtain requested sticky ends
 
 > Preserve my supplied stem and produce left AGTC / right AACC. Which permitted
@@ -28,6 +16,7 @@ After [installing HOP](install.md), copy the
 From a source checkout:
 
 ```bash
+# Copy the example so the stem and molecular permissions can be edited explicitly.
 cp examples/complete-construction/interface-survey.json survey.json
 ```
 
@@ -56,6 +45,7 @@ scaffold requests, use [scaffold discovery](discover-product-scaffolds.md).
 ## 2. Evaluate complete preparations
 
 ```bash
+# Evaluate a bounded batch into a resumable checkpoint.
 hop-design construction survey evaluate survey.json --index survey.sqlite \
   --max-evaluations 4 --local-nodes 1000 --local-realizations 1000 \
   --release-site-pairs 1000
@@ -79,6 +69,7 @@ for resource stops and larger surveys.
 ## 3. Explore the same results visually or programmatically
 
 ```bash
+# Open the recorded interface survey in the local viewer.
 hop-design construction survey view survey.json --index survey.sqlite --out survey-view
 ```
 
@@ -115,6 +106,7 @@ For CLI or Python use, save your filter as `predicates.json`:
 ```
 
 ```bash
+# Filter recorded preparations using the saved predicates.
 hop-design construction survey query survey.json --index survey.sqlite --query predicates.json
 ```
 
@@ -130,6 +122,7 @@ Use the browser's saved selection, or select a returned path by its `target`,
 `step` and `materialized_realization_id`:
 
 ```bash
+# Record one selection for both the molecular route and material handoff.
 hop-design construction survey select survey.json --index survey.sqlite \
   --query predicates.json --target TARGET --step STEP --identity MATERIALIZED_ID > selected.json
 ```
@@ -139,6 +132,7 @@ To try one matching preparation without copying its address, use a reproducible
 sample instead:
 
 ```bash
+# Choose reproducibly from the supported recorded preparations.
 hop-design construction survey sample survey.json --index survey.sqlite \
   --query predicates.json --seed 23 > selected.json
 ```
@@ -150,6 +144,7 @@ empty file, so proceed only after a successful command.
 The same selection drives the figure, route and preparation:
 
 ```bash
+# Inspect the recorded support for the requested parameter values.
 hop-design construction survey query survey.json --index survey.sqlite \
   --selection selected.json --out selected-figure
 hop-design construction survey atlas survey.json --index survey.sqlite \
@@ -175,6 +170,7 @@ fragment recovery and reaction performance still require experimental assessment
 ## Use the same query and selection in Python
 
 ```python
+# Apply the same query and selection through Python.
 import json
 from pathlib import Path
 
@@ -195,6 +191,7 @@ also covers explicit selection, atlas inspection and retrieval.
 ## Verify or compare a result
 
 ```bash
+# Replay the recorded evaluations when aggregate verification is required.
 hop-design construction survey verify survey.json --index survey.sqlite
 hop-design construction survey atlas survey.json --index survey.sqlite \
   --selection selected.json --reference-selection reference.json --out compared-atlas

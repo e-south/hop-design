@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0003
-title: ADR 0003 - Physical mechanics and caller policy
-intent: Record the separation of molecular derivation, caller policy, and rendering.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-20
-doc_type: decision
----
-
 # ADR 0003: Physical mechanics and caller policy
 
 ## Context

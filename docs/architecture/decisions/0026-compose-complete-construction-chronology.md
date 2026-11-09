@@ -1,17 +1,3 @@
----
-doc_id: hop-adr-0026
-title: ADR 0026 - Compose complete construction chronology around enzyme phases
-intent: Preserve exact non-enzyme route transitions without weakening ReactionProgram semantics.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-11-09
-doc_type: decision
----
-
 # ADR 0026: Compose complete construction chronology around enzyme phases
 
 ## Context

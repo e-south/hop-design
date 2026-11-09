@@ -1,15 +1,3 @@
----
-doc_id: hop-molecular-parameter-coverage
-title: Molecular parameter and teaching-glyph coverage
-intent: Specify the molecular meaning and drawing responsibility of each exploration coordinate.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-15
-doc_type: reference
-journey: [discover, integrate]
----
-
 # Molecular parameter and teaching-glyph coverage
 
 The registry in `models/construction/variants/parameters.py` owns parameter names.

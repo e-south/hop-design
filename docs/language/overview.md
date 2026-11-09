@@ -1,19 +1,3 @@
----
-doc_id: hop-design-language-overview
-title: Design language
-intent: Introduce the specialist vocabulary for declaring and compiling one hairpin design.
-audience:
-  - users
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-29
-doc_type: explanation
-journey:
-  - compile
----
-
 # Design language
 
 The design language answers one question: **what hairpin is being requested?**

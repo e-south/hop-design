@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0032
-title: ADR 0032 - Compose explicit endpoint-local selections
-intent: Evaluate caller-selected local realizations without replaying their full Cartesian product.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-30
-doc_type: decision
----
-
 # ADR 0032: Compose explicit endpoint-local selections
 
 ## Context

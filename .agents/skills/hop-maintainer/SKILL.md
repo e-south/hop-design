@@ -88,8 +88,8 @@ outside HOP.
 - No runtime import from a caller repository and no workspace, run, observation,
   evidence, assay, or larger-construct ownership in the core.
 - A private parity translator stays outside this repository and is temporary.
-- Do not create a remote, remove the publication brake, publish, or add
-  credentials without explicit release authorization.
+- Do not create a remote, publish, or add credentials without explicit release
+  authorization.
 
 ## Trigger Tests
 

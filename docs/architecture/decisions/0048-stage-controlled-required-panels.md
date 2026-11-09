@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0048-stage-controlled-required-panels
-title: Stage-qualified controls, required search and prior-material bindings
-intent: Preserve comparison intent through bounded discovery and portable retrieval.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: decision
----
-
 # Stage-qualified controls, required search and prior-material bindings
 
 An experimental comparison can preserve a released product despite changes in its

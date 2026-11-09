@@ -1,18 +1,3 @@
----
-doc_id: hop-github-governance
-title: GitHub governance contract
-intent: Define public repository settings, required checks, and review boundaries.
-audience:
-  - maintainers
-  - security reviewers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-05
-doc_type: how-to
-journey:
-  - maintain
----
-
 # GitHub governance contract
 
 ## Main-branch rule

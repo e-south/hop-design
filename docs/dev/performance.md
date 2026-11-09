@@ -1,15 +1,3 @@
----
-doc_id: hop-dev-performance
-title: Performance and verification boundaries
-intent: Choose checks by responsibility and profile construction costs with disposable outputs.
-audience: [maintainers, agent executors]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-06
-doc_type: how-to
-journey: [maintain]
----
-
 # Performance and verification boundaries
 
 Start with a request that returns a complete preparation. Measure discovery,

@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0045
-title: Independently validated adapter-ligated hairpin endpoint
-intent: Separate the shared source-to-ligation prefix from optional downstream copying and release.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: explanation
----
-
 # Independently validated adapter-ligated hairpin
 
 `adapter_ligated_hairpin` requests the existing basal-open processing prefix as

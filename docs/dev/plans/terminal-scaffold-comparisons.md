@@ -1,14 +1,3 @@
----
-doc_id: hop-terminal-scaffold-comparisons-plan
-title: Terminal scaffold specification and stage-qualified comparisons
-intent: Deliver complete scaffold choices from molecular requirements.
-audience: [maintainers]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: explanation
----
-
 # Terminal scaffold specification and stage-qualified comparisons
 
 Let users specify terminal hairpin architecture, discover complete alternatives,
