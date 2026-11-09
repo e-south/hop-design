@@ -236,6 +236,13 @@ enzyme provisioning while validating the derived local pairing constraints and
 unpartitioned search request. Relation cache keys, molecular solving and resource
 limits are unchanged.
 
+Recognition-window conjunction normalizes each distinct base-choice tuple once
+per call and replaces only positions touched by a site. Unchanged positions
+share immutable tuples. Empty domains anywhere still reject the assignment;
+overlapping windows and complemented copies constrain the same variable.
+This avoids rebuilding mutable sets across the entire source for each short
+site, without a persistent cache or changes to admitted sequences.
+
 Hairpin continuation writes immutable pages of new candidate outcomes. It does
 not copy prior preparations into each new snapshot. Independent admission still
 verifies the selected history; page storage and restart time are distinct costs.
