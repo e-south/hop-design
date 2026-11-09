@@ -21,6 +21,12 @@ removes repeated discovery and rendering from routine CI without losing exact
 molecular, material, asset or command-line checks. Measure installation
 verification separately from the main test suite.
 
+The sections below retain the implementation sequence and its measurements,
+including checks that were pending at that point. The adoption status above
+records the completed qualification; use the
+[verification guide](../performance.md#choose-the-verification-boundary) for current
+commands and scope selection.
+
 ## Evidence and scope
 
 `tests/repo/test_public_scaffold_family.py` already executes the family and
@@ -163,9 +169,12 @@ routine cost further. No persistent source-evidence cache was introduced.
 `agent-verify --distribution routine` runs the complete source gate, dependency
 audit and representative isolated installation. The default extended mode runs
 the full workflow parity catalog. Packaging, dependencies, CLI wiring, assets,
-scripts, workflows, examples, unknown paths and manual dispatch retain extended
-checks; mixed changes use the stronger mode. Routine selection covers ordinary
-Python implementation/tests and Markdown guides. Missing outputs fail closed.
+scripts, workflows, non-Markdown examples, unknown paths and manual dispatch
+retain extended checks; mixed changes use the stronger mode. Routine selection covers ordinary
+Python implementation/tests and documentation Markdown: guides, known root
+contracts, `.agents/` and `examples/` Markdown, and `.github/pull_request_template.md`.
+Packaged assets, including Markdown assets, and non-Markdown `.agents/` files
+retain extended qualification. Missing outputs fail closed.
 Release still checks the exact release wheel/sdist with the extended gate.
 
 The extended script now labels each workflow group and reports elapsed time and

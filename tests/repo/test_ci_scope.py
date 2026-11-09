@@ -53,6 +53,15 @@ def test_empty_changes_do_not_establish_an_artwork_only_change():
     [
         (["src/hop_design/kernel/base.py", "tests/unit/test_base.py"], "routine"),
         (["docs/guides/quickstart.md"], "routine"),
+        (["AGENTS.md", "CONTRIBUTING.md", "ARCHITECTURE.md"], "routine"),
+        (["DESIGN.md", "RELIABILITY.md", "SECURITY.md", "CODE_OF_CONDUCT.md"], "routine"),
+        ([".agents/skills/hop-design-user/SKILL.md"], "routine"),
+        (["examples/local-envelope/README.md"], "routine"),
+        ([".github/pull_request_template.md"], "routine"),
+        (["src/hop_design/assets/fonts/README.md"], "extended"),
+        ([".agents/skills/hop-design-user/SKILL.md", "pyproject.toml"], "extended"),
+        ([".agents/skills/hop-design-user/runtime.py"], "extended"),
+        (["unrecognized.md"], "extended"),
         (["src/hop_design/cli.py"], "extended"),
         (["src/hop_design/cli/commands.py"], "extended"),
         (["src/hop_design/assets/editor.js"], "extended"),
@@ -115,6 +124,20 @@ def test_real_source_diff_preserves_full_suite_with_routine_installation(repo, t
     source.write_text("VALUE = 1\n")
     git(path, "add", ".")
     git(path, "commit", "-qm", "ordinary source")
+    result, output = execute(path, "pull_request", base, tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert output == "scope=full\ndistribution=routine\n"
+
+
+def test_real_documentation_diff_preserves_full_suite_with_routine_installation(repo, tmp_path):
+    path, base = repo
+    files = ("AGENTS.md", "CONTRIBUTING.md", ".agents/skills/example/SKILL.md")
+    for name in files:
+        target = path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("# Use the example\n")
+    git(path, "add", *files)
+    git(path, "commit", "-qm", "documentation")
     result, output = execute(path, "pull_request", base, tmp_path)
     assert result.returncode == 0, result.stderr
     assert output == "scope=full\ndistribution=routine\n"

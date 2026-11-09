@@ -1,12 +1,20 @@
 # Performance and verification boundaries
 
 Start with a request that returns a complete preparation. Measure discovery,
-reopening, retained queries, the molecular atlas and retrieval separately. A fast
-filter says little about the cost of finding or verifying its input molecules.
+reopening, queries over loaded results, the molecular atlas and retrieval
+separately. A fast filter says little about the cost of finding or verifying its
+input molecules. In this guide, admission means checking a result before using
+it; reopening a saved result requires file checks and deterministic replay. A warm
+query reuses an already loaded result.
 
 [Measure a workload](#run-the-public-lifecycle),
 [choose checks](#choose-the-verification-boundary), or read the
-[browser implementation details](#browser-inspection).
+[browser implementation details](#browser-inspection). For a measured bottleneck,
+use [search allocation](#discovery-and-allocation),
+[shared constraint screening](#shared-constraint-screening),
+[checkpointing](#checkpointing-and-resume),
+[distance fitting](#molecular-distance-and-fitting), or
+[atlas storage and export](#atlas-storage-and-export).
 
 ## Run the public lifecycle
 
@@ -166,9 +174,13 @@ retains 90%. Coverage.py documents the
 path allowlist. It checks the complete changed-path set, including both sides of
 renames. Empty, mixed, unknown, or unavailable comparisons require the full gate;
 invalid revisions or a failed diff stop verification. For full verification,
-ordinary Python source, tests and Markdown guides use routine installation.
-Packaging/dependencies, CLI entry points, browser assets, scripts, workflows,
-examples, unknown paths or missing comparison evidence use extended installation.
+ordinary Python source, tests and documentation Markdown use routine installation.
+Documentation includes guides, known root Markdown contracts, Markdown below
+`.agents/` and `examples/`, and `.github/pull_request_template.md`. This changes
+the installed-distribution check only; the complete source suite still runs.
+Packaging/dependencies, CLI entry points, packaged assets (including their
+Markdown), scripts, workflows, non-Markdown files under `examples/` or `.agents/`,
+unknown paths or missing comparison evidence use extended installation.
 Mixed changes take the stronger mode. Manual CI always uses extended. Both
 outputs are checked before execution; a missing mode fails. The selector itself
 therefore receives extended qualification before this policy can be merged.
@@ -445,9 +457,9 @@ option for bypassing verification. Compare canonical records, stored objects,
 coverage and cold continuation when changing this boundary. Measure discovery
 separately from publication and reopening, which deliberately retain replay.
 
-The necessary end-pair projection uses the same boundary: it retains admitted
-enzyme provisioning while validating the derived local pairing constraints and
-unpartitioned search request. Relation cache keys, molecular solving and resource
+The necessary end-pair projection uses the same boundary: it reuses already
+validated enzyme provisioning while checking the derived local pairing
+constraints and unpartitioned search request. Relation cache keys, molecular solving and resource
 limits are unchanged.
 
 Recognition-window conjunction normalizes each distinct base-choice tuple once
@@ -658,16 +670,16 @@ name, identifier and source/vendor metadata, while retaining every other field.
 Named programs, preparation identities and complete-route verification remain
 distinct. Reuse applies only to the sequence constraint.
 
-Screen construction is invocation-owned and checks cooperative cancellation
+The screen is built once per discovery call and checks cooperative cancellation
 between frames. It handles at most 32,768 frames and 16 MiB of distinct relation
 content; larger requests retain full ordinary navigation. Unsupported or
 resource-stopped translations are explicitly unknown candidates, never empty
 sets. A single-target request avoids the shared setup. A cold invocation pays
-setup again; measure that cost separately from warm navigation. Choose call
-allowances that amortize setup: checkpoint transactions still occur per evaluated
-step. A cold call can stop during screening before committing a new evaluation.
-This change
-reduces navigation work per target, so equal evaluation counts are no longer
+setup again; measure that cost separately from warm navigation. Allow enough
+evaluations per call to measure whether setup costs outweigh the navigation
+savings. Checkpoint transactions still occur per evaluated step. A cold call can
+stop during screening before committing a new evaluation. This change reduces
+navigation work per target, so equal evaluation counts are no longer
 an equal-work comparison: compare exhausted finite requests, molecular outcomes,
 CPU cost and useful preparations. It does not migrate old producer checkpoints.
 
