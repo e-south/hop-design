@@ -44,10 +44,8 @@ class GeometryIntroductions:
     admit_basal: Callable[[Geometry], bool] | None = None
     basal_candidates: tuple[Geometry, ...] | None = None
 
-    @cached_property
-    def candidate_keys(self) -> tuple[tuple[int, Geometry], ...]:
-        offset = min(self.order.costs[4])
-        return tuple((self.basal_order.cost(g) + offset, g) for g in self.basal_candidates or ())
+    def _candidate_key(self, geometry: Geometry) -> tuple[int, Geometry]:
+        return self.basal_order.cost(geometry) + min(self.order.costs[4]), geometry
 
     @cached_property
     def basal_order(self) -> GeometryOrder:
@@ -65,9 +63,9 @@ class GeometryIntroductions:
     @property
     def first(self) -> CompletionFrontierEntry | None:
         if self.basal_candidates is not None:
-            if not self.candidate_keys:
+            if not self.basal_candidates:
                 return None
-            wave, geometry = self.candidate_keys[0]
+            wave, geometry = self._candidate_key(self.basal_candidates[0])
             return CompletionFrontierEntry(
                 kind="basal",
                 wave=wave,
@@ -87,9 +85,12 @@ class GeometryIntroductions:
         if entry.kind == "basal" and entry.geometry[4] != 0:
             raise ValueError("A basal stream cannot bind a foldback case.")
         if entry.kind == "basal" and self.basal_candidates is not None:
-            key = (entry.wave, entry.geometry)
-            position = bisect_left(self.candidate_keys, key)
-            if position == len(self.candidate_keys) or self.candidate_keys[position] != key:
+            key: tuple[int, Geometry] = (entry.wave, entry.geometry)
+            position = bisect_left(self.basal_candidates, key, key=self._candidate_key)
+            if (
+                position == len(self.basal_candidates)
+                or self._candidate_key(self.basal_candidates[position]) != key
+            ):
                 raise ValueError("Indexed basal cursor differs from its candidate and cost.")
         if entry.kind in {"basal", "geometry"}:
             if not sum(min(f) for f in self.order.costs) <= entry.wave <= self.order.maximum:
@@ -122,12 +123,13 @@ class GeometryIntroductions:
         found: Geometry | None
         following: Geometry | None
         if factored and self.basal_candidates is not None:
-            position = bisect_left(self.candidate_keys, (entry.wave, g))
+            key: tuple[int, Geometry] = (entry.wave, g)
+            position = bisect_left(self.basal_candidates, key, key=self._candidate_key)
             found = (
-                None if position == len(self.candidate_keys) else self.candidate_keys[position][1]
+                None if position == len(self.basal_candidates) else self.basal_candidates[position]
             )
-            if position + 1 < len(self.candidate_keys):
-                wave, following = self.candidate_keys[position + 1]
+            if position + 1 < len(self.basal_candidates):
+                wave, following = self._candidate_key(self.basal_candidates[position + 1])
                 yield entry.model_copy(update={"geometry": following, "wave": wave})
         else:
             found = next(at_cost(order, entry.wave - offset, g), None)

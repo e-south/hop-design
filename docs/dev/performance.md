@@ -395,6 +395,10 @@ groups identical relations, and maps each requested end pair to the matching
 frames plus all unknown frames. Candidate coordinates retain the ordinary cost
 and canonical-address order. Indexed navigation jumps directly to the next
 candidate instead of traversing rejected basal coordinates and empty cost waves.
+Cursor lookup uses binary search over the admitted ordered candidates without
+materializing every candidate's cost key again. Candidate validation, cost ties,
+foldback offsets and traversal order remain unchanged. The navigator derives
+its fixed dimension sizes once when validating the candidate roster.
 The complete compiler, local sequence choices and all foldback alternatives
 remain unchanged. Navigation records bind the full frame-to-relation digest;
 replay rebuilds it independently. No study roster or private data enters this path.
@@ -416,6 +420,13 @@ Full records remain in the checkpoint for replay and retrieval. Each new step
 commits before progress is emitted, so a larger invocation budget does not defer
 all persistence until the call returns. Measure retained scheduler state and
 whole-process memory separately; other admission and proof state still consume memory.
+
+Checkpoint append reads the latest step through the existing `(ordinal, step)`
+index, inside the write transaction. It does not recount or scan a target's
+growing history for each evaluation. Opening still checks every record and step
+for integrity and continuity; append rejects stale steps and exhausted targets.
+This adds no cached cursor or schema change. Measure append cost separately from
+checkpoint admission and molecular search, including deep single-target histories.
 
 The numerical comparison view validates its cohort once and caches regional edit
 distances within the call. Its cache is bounded and cleared on normal exit or
