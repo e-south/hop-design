@@ -1,16 +1,7 @@
----
-doc_id: hop-guide-conditional-variants
-title: Explore supported molecular variants
-intent: Discover conditional neighborhood choices and retrieve a controlled set of complete preparations.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-15
-doc_type: tutorial
-journey: [discover, integrate]
----
-
 # What can vary while these properties stay fixed?
+
+Run these repository examples from a [source checkout](install.md#work-from-source).
+The commands use its locked environment throughout.
 
 Explore complete molecular designs already supported by a saved discovery or
 molecular-edit result. Choose a neighborhood, inspect its supported variants,
@@ -21,8 +12,9 @@ product; several products can remain compatible with one neighborhood choice.
 Run the [public example](../../examples/molecular-editing/conditional.py):
 
 ```bash
+# Generate the saved result used by this conditional-exploration example.
 uv run --locked python examples/molecular-editing/conditional.py /tmp/hop-conditional
-hop-design construction edit-view /tmp/hop-conditional/alternatives --evaluated --out /tmp/hop-conditional-view
+uv run --locked hop-design construction edit-view /tmp/hop-conditional/alternatives --evaluated --out /tmp/hop-conditional-view
 ```
 
 The example explicitly permits two basal nickases, two end placements and bounded
@@ -31,7 +23,7 @@ preparations and incomplete coverage. Inspect `all-choices/summary.json`,
 `bsrdi-background/summary.json`, `btsi-comparison/summary.json` and
 `selected/report.md`. The last directory includes exact oligos and portable
 construction authorities. `preview/projection.svg` is a static molecular comparison.
-These are source-candidate operations; see [installation](install.md).
+
 
 ## Explore the construction envelope
 
@@ -45,8 +37,9 @@ route. Crossings never authorize recombination.
 Run the broader, bounded [construction-envelope request](../../examples/molecular-editing/construction-envelope.json):
 
 ```bash
-hop-design construction discover-scaffolds examples/molecular-editing/construction-envelope.json --out /tmp/hop-envelope
-hop-design construction edit-view /tmp/hop-envelope --evaluated --out /tmp/hop-envelope-view
+# Discover scaffolds under the explicit construction envelope.
+uv run --locked hop-design construction discover-scaffolds examples/molecular-editing/construction-envelope.json --out /tmp/hop-envelope
+uv run --locked hop-design construction edit-view /tmp/hop-envelope --evaluated --out /tmp/hop-envelope-view
 ```
 
 This public synthetic request fixes the receiving end words, permits paired
@@ -146,8 +139,8 @@ the query; coverage counts evaluation records, which can overlap across rounds.
 The equivalent file-oriented operation is:
 
 ```text
-hop-design construction variants RESULT --query QUERY.json --out CHOICES
-hop-design construction evaluate-parameters RESULT CHOICES --max-branches 4 --max-continuations 1 --out EXTENDED
+uv run --locked hop-design construction variants RESULT --query QUERY.json --out CHOICES
+uv run --locked hop-design construction evaluate-parameters RESULT CHOICES --max-branches 4 --max-continuations 1 --out EXTENDED
 ```
 
 The query needs the current `result_digest`, ordinary stage/focus fields and, for
@@ -180,9 +173,9 @@ and 12/3 when those D values are permitted. Arithmetic compatibility does not im
 molecular completion. This is an explicit revision, not a hidden relaxation.
 
 ```text
-hop-design construction parameter-values RESULT CHOICES --parameter loop_word --length 4 --prefix AA --out VALUES
-hop-design construction revise-envelope RESULT CHOICES REVISION.json --out PREVIEW
-hop-design construction evaluate-envelope RESULT PREVIEW --max-branches 4 --max-continuations 4 --out EXTENDED
+uv run --locked hop-design construction parameter-values RESULT CHOICES --parameter loop_word --length 4 --prefix AA --out VALUES
+uv run --locked hop-design construction revise-envelope RESULT CHOICES REVISION.json --out PREVIEW
+uv run --locked hop-design construction evaluate-envelope RESULT PREVIEW --max-branches 4 --max-continuations 4 --out EXTENDED
 ```
 
 The executable [envelope example](../../examples/molecular-editing/envelope.py)
@@ -190,6 +183,7 @@ targets a new word and a derived arm length, previews explicit changes and saves
 the refreshed choices for an explicit retrieval. Run it against the saved pool:
 
 ```bash
+# Run the example that inspects unobserved values and a revised envelope.
 uv run --locked python examples/molecular-editing/envelope.py /tmp/hop-envelope /tmp/hop-envelope-jump
 ```
 
@@ -318,6 +312,7 @@ unmapped parts. Reduced-motion preferences show the same static endpoints.
 Run the public browsing example against the same saved result:
 
 ```bash
+# Preview one alternative without committing a new selection.
 uv run --locked python examples/molecular-editing/browsing.py /tmp/hop-conditional/alternatives /tmp/hop-browsing --word AAAC --state cleaved_duplex
 ```
 
@@ -328,7 +323,7 @@ semantic phase, `all`, `hairpin`, `endpoint`, `source_material`, or an exact sta
 A missing or ambiguous phase returns a named outcome with no substitute drawing.
 
 ```text
-hop-design construction preview-variant RESULT CHOICES --variant VARIANT_ID --state cleaved_duplex --out NEW
+uv run --locked hop-design construction preview-variant RESULT CHOICES --variant VARIANT_ID --state cleaved_duplex --out NEW
 ```
 
 Add `--option OPTION` to resolve a preparation explicitly. Optional `--focus`
@@ -360,7 +355,7 @@ sites. None of these views implies a predicted conformation.
 ## Export the complete atlas
 
 ```text
-hop-design construction atlas RESULT CHOICES --option OPTION --out NEW
+uv run --locked hop-design construction atlas RESULT CHOICES --option OPTION --out NEW
 ```
 
 The browser and `preview-variant` CLI default to `all`; Python preview requests
@@ -397,12 +392,14 @@ control and material requirement against freshly admitted sources.
 Run the equivalent public API example against the result above:
 
 ```bash
+# Assess the requested controlled comparison.
 uv run --locked python examples/molecular-editing/navigation.py /tmp/hop-conditional/alternatives /tmp/hop-navigation
 ```
 
 Read `comparison/summary.json`. Then name a displayed set explicitly in a new output:
 
 ```bash
+# Run the same comparison with the alternative example inputs.
 uv run --locked python examples/molecular-editing/navigation.py /tmp/hop-conditional/alternatives /tmp/hop-navigation-selected --select-set set-0001
 ```
 
@@ -420,7 +417,8 @@ pool, not that the molecule cannot be made.
 ## The same choice model through CLI and Python
 
 ```bash
-hop-design construction variants /tmp/hop-conditional/alternatives --stage hairpin --focus loop --out /tmp/hop-choices
+# Query conditional choices from the recorded result.
+uv run --locked hop-design construction variants /tmp/hop-conditional/alternatives --stage hairpin --focus loop --out /tmp/hop-choices
 ```
 
 The packet contains `query.json`, `summary.json` and a short report. A query has
@@ -438,6 +436,7 @@ all hold together. A replacement query omits **only the focused pin** when listi
 its alternatives. `compatible_options` still enforces every active pin.
 
 ```python
+# Use the same recorded result and choice model through Python.
 import json
 from hop_design import construction
 
@@ -459,7 +458,7 @@ Reports are created on export; molecular drawings are separate projections.
 Retrieval re-admits the source and re-derives the query before selecting:
 
 ```text
-hop-design construction select-variants RESULT CHOICES --member NAME=OPTION --baseline NAME --out NEW
+uv run --locked hop-design construction select-variants RESULT CHOICES --member NAME=OPTION --baseline NAME --out NEW
 ```
 
 Repeat `--member` to specify the set. Python uses

@@ -1,17 +1,132 @@
----
-doc_id: hop-python-api
-title: HOP Design Python API
-intent: Document the stable public Python facade and its failure contracts.
-audience:
-  - Python users
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-24
-doc_type: reference
----
-
 # Python API
+
+Use `hop_design.construction` to discover complete preparations and retrieve
+materials. Follow the [worked tutorial](../guides/discover-designs.md) for runnable
+CLI and Python examples, then use this reference for field and operation details.
+
+- [Discover complete designs](#discover-complete-designs)
+- [Inspect and share an atlas](#frozen-atlas-editions-and-guided-exploration)
+- [Compile sequence anatomy](#compile-and-integrity)
+- [Search local construction regions](#payload-centered-construction)
+
+## Discover complete designs
+
+Use `hop_design.construction.discover_designs(intent, destination,
+max_evaluations=64)` to find complete preparations around an exact stem. The
+intended product is required; end words are optional. A named or supplied context
+declares geometry, methods and materials. `resolve_design_request(intent)` returns
+the authored intention and effective permissions without searching.
+
+The returned `DesignChoices` connects `query`, `explain`, `select`, `sample`, `figure`,
+`atlas` and `retrieve`. Pass one selection to both figures and retrieval.
+`select` accepts a returned path or exact preparation identity. Filtering a
+retained pool performs no search. `load_design_choices(directory)` reopens a
+portable result and validates its request binding. `find_more` or
+`continue_design_discovery` explicitly resumes discovery under the same permissions.
+
+For a released insert, an intent can also name a verified preparation to try
+first: `"prefer_preparation": {"bundle_path": "known/construction",
+"selection_path": "known-selection.json"}`. Paths are relative to the intent
+file, or to the working directory for a mapping. This orders discovery; it does
+not fix materials, narrow the molecular envelope or import an existing result.
+HOP captures the reference, locates its admitted sequence assignments, and runs
+them through the ordinary complete compiler before continuing the broader search.
+An incompatible reference is reported explicitly. The captured request and
+checkpoint remain portable after the original reference moves. This preference
+uses the `paired_scaffold_completions` search mode.
+
+Exact-stem discovery also accepts `on_progress=observer` and
+`should_stop=stop_check`, including on `choices.find_more(...)`. The observer
+receives immutable `DiscoveryProgress` values (`hop.discovery-progress/v1`):
+product, phase, committed evaluation count, count added by this call, execution
+budget and final termination reason. These counts describe examined work, not a
+percentage of the molecular space or a count of valid preparations.
+
+The stop check returns a Boolean. Cancellation finishes the current molecular
+evaluation and preserves the verified prefix for continuation. Inserts commit
+each evaluation; hairpins publish a contiguous snapshot before reporting its
+counts as checkpointed. If hairpin discovery stops before its first snapshot,
+`DiscoveryCancelled` reports that outcome; the saved intent can still be passed
+to `continue_design_discovery`. Observer errors propagate, with already committed
+records retained. Feedback is invocation-local and does not change permissions,
+saved search order or molecular identity. Callbacks should be brief; rendering
+and network work belong outside them. Family allocation and staged permission
+revision do not currently expose these callbacks.
+
+An optional `objective={"kind": "diversity", "parameters": ["loop_nt"]}` prioritizes
+contrasts within those permissions. The same contract supports insert, direct
+hairpin and adapter-ligated hairpin discovery. `query()["search_objective"]` reports
+the stage-specific dimensions and observed classes; continuation retains the
+objective. See [scaffold alternatives](../guides/explore-scaffold-alternatives.md)
+for supported dimensions and how search limits differ from molecular permissions.
+
+`preview_design_revision(intent, changes)` and `choices.revise(changes)` return a
+`DesignRevisionPreview` with explicit before/after declarations and conflicts.
+Arm ranges, characterized methods, joint end placements and retained-length limits
+can be revised without replacing the authored stem or hard requirements.
+`load_design_revision(directory)` verifies and replays a saved preview. Calling
+`preview.execute(new_directory, ...)` explicitly discovers under the captured
+revision, keeping the original result untouched. `preview.write(directory)` only
+saves the preview; it performs no search.
+
+`explain(query=None)` returns a `hop.design-explanation/v1` value: requested
+product, distinct product and preparation counts, up to five identified
+preparations, scoped coverage, applicable parameters and next actions. It neither
+selects a preparation nor runs a search. Parameter entries retain their stage,
+units, dependencies, equivalent measurements, declared domain and observed values.
+A missing observation is not an applicability decision.
+
+The design boundary rejects release-only predicates for hairpin endpoints before
+selection or export. Native survey and scaffold query formats remain supported;
+`ScaffoldVariantChoices.explain()` describes the exact native query, including
+its preservation controls. Its context identity names the admitted request digest.
+
+Products are `released_insert`, `hairpin` (direct ssDNA hairpin), and
+`adapter_ligated_hairpin`. Hairpin discovery delegates to the scaffold backend;
+it resumes a verified prefix of up to 64 continuations. For these two endpoints,
+`first_choices=N` on `discover_designs`, `continue_design_discovery` or `find_more`
+returns after N new complete choices or the evaluation limit. `query()["execution"]`
+records the requested effort, stopping policy and examined prefix. Failed attempts
+remain in coverage. Each continuation writes an immutable snapshot; retrieval and
+atlas export resolve earlier explicit selections against their original snapshot.
+The insert backend retains its existing resumable evaluation batches and does not
+accept `first_choices`. See the [introductory workflow](../guides/discover-designs.md).
+
+For hairpin and insert choices, `preserve(reference, stage=..., except_neighborhood=...)`
+returns a `hop.design-refinement/v1` query bound to the exact saved reference and
+snapshot. It holds the other molecular neighborhoods at the named `hairpin` or
+`endpoint` stage. It creates a new query rather than inheriting the filters used
+to locate the reference; the original intent and selection remain unchanged.
+Pass it to `query`, `explain`, `sample`, `select` or `figure`. The query reports
+molecular and material changes separately. Preserved selections use
+`hop.hairpin-design-selection/v2`; ordinary v1 selections retain their meaning.
+Insert preservation uses `hop.insert-design-selection/v1`, wrapping the native
+survey record and reference. Insert set selections use `hop.design-set-selection/v2`.
+Both remain retrievable after continuation; exact membership and requirements are
+reassessed instead of selecting a newly ranked set. Existing native survey and
+hairpin selections keep their original contracts.
+
+The atlas's `construction_cost` projection reports stage-specific added nucleotide
+spans, exact order identities, shared roles and required terminal chemistry.
+`construction-cost.json`, its report and CLI summary expose the same values.
+
+`compare(request, query=None)` assesses explicit required members within the
+admitted choices, using the existing comparison engine. A
+`hop.design-comparison-request/v1` declares `stage`, `required_members` and
+`max_group_evaluations`, with optional shared properties, material roles and
+stage controls. It returns available sets, missing members and assessment
+coverage without searching or selecting. A preservation query and comparison
+must name the same stage.
+
+`select_set(comparison, set_label=..., baseline=...)` re-assesses the saved
+comparison and returns a `hop.design-set-selection/v1` value. Its named `members`
+are ordinary exact selections usable with `figure` and `atlas`. Pass the whole
+selection to `retrieve` for the verified set, oligos, chemistry and comparison
+records. Retrieval validates membership and controls again. These operations
+reject unsupported discovery backends explicitly; they do not relax controls or
+convert missing members into optional ones. The
+[loop comparison example](../guides/discover-designs.md#compare-loops-while-holding-the-scaffold)
+shows the complete public lifecycle.
 
 ## Conditional variant exploration
 
@@ -217,6 +332,7 @@ The package root is the single-design language. Five sibling facades make
 scientist workflow and specialized competency questions explicit:
 
 ```python
+# Prepare molecular edits through the public construction API.
 import hop_design as hop
 import hop_design.construction as construction
 import hop_design.discovery as discovery
@@ -232,125 +348,6 @@ catalog queries, `methods` for named production methods and molecular states,
 `spaces` for the minimal scientist-facing substrate-space journey, and `views`
 for state projections and rendering. Internal `hop_design.design.*` modules are
 not public facades.
-
-## Discover complete designs
-
-Use `hop_design.construction.discover_designs(intent, destination,
-max_evaluations=64)` to find complete preparations around an exact stem. The
-intended product is required; end words are optional. A named or supplied context
-declares geometry, methods and materials. `resolve_design_request(intent)` returns
-the authored intention and effective permissions without searching.
-
-The returned `DesignChoices` connects `query`, `explain`, `select`, `sample`, `figure`,
-`atlas` and `retrieve`. Pass one selection to both figures and retrieval.
-`select` accepts a returned path or exact preparation identity. Filtering a
-retained pool performs no search. `load_design_choices(directory)` reopens a
-portable result and validates its request binding. `find_more` or
-`continue_design_discovery` explicitly resumes discovery under the same permissions.
-
-For a released insert, an intent can also name a verified preparation to try
-first: `"prefer_preparation": {"bundle_path": "known/construction",
-"selection_path": "known-selection.json"}`. Paths are relative to the intent
-file, or to the working directory for a mapping. This orders discovery; it does
-not fix materials, narrow the molecular envelope or import an existing result.
-HOP captures the reference, locates its admitted sequence assignments, and runs
-them through the ordinary complete compiler before continuing the broader search.
-An incompatible reference is reported explicitly. The captured request and
-checkpoint remain portable after the original reference moves. This preference
-uses the `paired_scaffold_completions` search mode.
-
-Exact-stem discovery also accepts `on_progress=observer` and
-`should_stop=stop_check`, including on `choices.find_more(...)`. The observer
-receives immutable `DiscoveryProgress` values (`hop.discovery-progress/v1`):
-product, phase, committed evaluation count, count added by this call, execution
-budget and final termination reason. These counts describe examined work, not a
-percentage of the molecular space or a count of valid preparations.
-
-The stop check returns a Boolean. Cancellation finishes the current molecular
-evaluation and preserves the verified prefix for continuation. Inserts commit
-each evaluation; hairpins publish a contiguous snapshot before reporting its
-counts as checkpointed. If hairpin discovery stops before its first snapshot,
-`DiscoveryCancelled` reports that outcome; the saved intent can still be passed
-to `continue_design_discovery`. Observer errors propagate, with already committed
-records retained. Feedback is invocation-local and does not change permissions,
-saved search order or molecular identity. Callbacks should be brief; rendering
-and network work belong outside them. Family allocation and staged permission
-revision do not currently expose these callbacks.
-
-An optional `objective={"kind": "diversity", "parameters": ["loop_nt"]}` prioritizes
-contrasts within those permissions. The same contract supports insert, direct
-hairpin and adapter-ligated hairpin discovery. `query()["search_objective"]` reports
-the stage-specific dimensions and observed classes; continuation retains the
-objective. See [scaffold alternatives](../guides/explore-scaffold-alternatives.md)
-for supported dimensions and how search limits differ from molecular permissions.
-
-`preview_design_revision(intent, changes)` and `choices.revise(changes)` return a
-`DesignRevisionPreview` with explicit before/after declarations and conflicts.
-Arm ranges, characterized methods, joint end placements and retained-length limits
-can be revised without replacing the authored stem or hard requirements.
-`load_design_revision(directory)` verifies and replays a saved preview. Calling
-`preview.execute(new_directory, ...)` explicitly discovers under the captured
-revision, keeping the original result untouched. `preview.write(directory)` only
-saves the preview; it performs no search.
-
-`explain(query=None)` returns a `hop.design-explanation/v1` value: requested
-product, distinct product and preparation counts, up to five identified
-preparations, scoped coverage, applicable parameters and next actions. It neither
-selects a preparation nor runs a search. Parameter entries retain their stage,
-units, dependencies, equivalent measurements, declared domain and observed values.
-A missing observation is not an applicability decision.
-
-The design boundary rejects release-only predicates for hairpin endpoints before
-selection or export. Native survey and scaffold query formats remain supported;
-`ScaffoldVariantChoices.explain()` describes the exact native query, including
-its preservation controls. Its context identity names the admitted request digest.
-
-Products are `released_insert`, `hairpin` (direct ssDNA hairpin), and
-`adapter_ligated_hairpin`. Hairpin discovery delegates to the scaffold backend;
-it resumes a verified prefix of up to 64 continuations. For these two endpoints,
-`first_choices=N` on `discover_designs`, `continue_design_discovery` or `find_more`
-returns after N new complete choices or the evaluation limit. `query()["execution"]`
-records the requested effort, stopping policy and examined prefix. Failed attempts
-remain in coverage. Each continuation writes an immutable snapshot; retrieval and
-atlas export resolve earlier explicit selections against their original snapshot.
-The insert backend retains its existing resumable evaluation batches and does not
-accept `first_choices`. See the [introductory workflow](../guides/discover-designs.md).
-
-For hairpin and insert choices, `preserve(reference, stage=..., except_neighborhood=...)`
-returns a `hop.design-refinement/v1` query bound to the exact saved reference and
-snapshot. It holds the other molecular neighborhoods at the named `hairpin` or
-`endpoint` stage. It creates a new query rather than inheriting the filters used
-to locate the reference; the original intent and selection remain unchanged.
-Pass it to `query`, `explain`, `sample`, `select` or `figure`. The query reports
-molecular and material changes separately. Preserved selections use
-`hop.hairpin-design-selection/v2`; ordinary v1 selections retain their meaning.
-Insert preservation uses `hop.insert-design-selection/v1`, wrapping the native
-survey record and reference. Insert set selections use `hop.design-set-selection/v2`.
-Both remain retrievable after continuation; exact membership and requirements are
-reassessed instead of selecting a newly ranked set. Existing native survey and
-hairpin selections keep their original contracts.
-
-The atlas's `construction_cost` projection reports stage-specific added nucleotide
-spans, exact order identities, shared roles and required terminal chemistry.
-`construction-cost.json`, its report and CLI summary expose the same values.
-
-`compare(request, query=None)` assesses explicit required members within the
-admitted choices, using the existing comparison engine. A
-`hop.design-comparison-request/v1` declares `stage`, `required_members` and
-`max_group_evaluations`, with optional shared properties, material roles and
-stage controls. It returns available sets, missing members and assessment
-coverage without searching or selecting. A preservation query and comparison
-must name the same stage.
-
-`select_set(comparison, set_label=..., baseline=...)` re-assesses the saved
-comparison and returns a `hop.design-set-selection/v1` value. Its named `members`
-are ordinary exact selections usable with `figure` and `atlas`. Pass the whole
-selection to `retrieve` for the verified set, oligos, chemistry and comparison
-records. Retrieval validates membership and controls again. These operations
-reject unsupported discovery backends explicitly; they do not relax controls or
-convert missing members into optional ones. The
-[loop comparison example](../guides/discover-designs.md#compare-loops-while-holding-the-scaffold)
-shows the complete public lifecycle.
 
 ## Payload-centered construction
 
@@ -385,6 +382,7 @@ All operations and receipts in this section use `hop_design.construction`.
 For repeated questions, load one verified construction receipt and reuse it:
 
 ```python
+# Re-admit the construction before projecting its atlas.
 receipt = construction.load_verified_construction_bundle("saved/construction")
 trajectory = construction.project_construction_trajectory(
     receipt, materialized_realization_id=receipt.materialized_realization_ids[0]

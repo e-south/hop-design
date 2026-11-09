@@ -1,21 +1,3 @@
----
-doc_id: hop-schema-reference
-title: Current schema identifiers
-intent: Identify supported source-checkout document types, their purpose, and their input limits.
-audience:
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-09
-doc_type: reference
-journey:
-  - compile
-  - discover
-  - method
-  - verify
----
-
 # Current schema identifiers
 
 ## Molecular comparisons
@@ -180,8 +162,7 @@ boundaries and runnable examples.
 
 ## Schema inventory
 
-This table describes the unreleased `v0.1.0a9` candidate, including construction
-schemas. For the published `v0.1.0a8` wheel, use its
+This inventory covers `v0.1.0a9`. For the earlier `v0.1.0a8` package, use its
 [tagged reference](https://github.com/e-south/hop-design/blob/v0.1.0a8/docs/reference/schemas.md).
 The package version alone does not distinguish post-release source changes.
 

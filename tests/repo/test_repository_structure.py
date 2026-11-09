@@ -11,7 +11,6 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-import re
 import tomllib
 from pathlib import Path
 
@@ -34,22 +33,17 @@ def test_installation_and_quickstart_separate_setup_from_compilation() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     install = (REPO_ROOT / "docs" / "guides" / "install.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
-    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", install)
-    assert release_match is not None
-    wheel_name = release_match.group(0)
-
     assert "```" not in readme
     assert "hop-design compile" not in readme
-    assert "uv pip install" not in readme
     assert "--spec FILE" in quickstart
     assert "--sequence ATAACTTCGTATAGCATACATTATACGAAGTTAT" in quickstart
     assert 'compilation.write("build/symbolic-python")' in quickstart
     assert "install.md" in quickstart
-    assert "uv pip install" not in quickstart
-    assert "doc_type: how-to" in install
-    assert "doc_id: hop-install" in install
-    checksum_command = f"grep '{wheel_name}$' SHA256SUMS | shasum -a 256 -c -"
-    assert checksum_command in install
+    assert "uv tool install" in install
+    assert "uv add" in install
+    assert "hop-design --version" in install
+    assert "grep " not in install and "SHA256SUMS" not in install
+    assert install.startswith("# Install HOP")
 
 
 def test_governance_and_release_routes_exist() -> None:
@@ -69,28 +63,15 @@ def test_governance_and_release_routes_exist() -> None:
         assert (REPO_ROOT / relative_path).is_file(), relative_path
 
 
-def test_public_documentation_tracks_the_published_source_release() -> None:
+def test_installation_examples_report_the_current_package_version() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         version = tomllib.load(handle)["project"]["version"]
-    install = (REPO_ROOT / "docs" / "guides" / "install.md").read_text(encoding="utf-8")
-    roadmap = (REPO_ROOT / "docs" / "dev" / "plans" / "roadmap.md").read_text(encoding="utf-8")
-
-    release_match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", install)
-    assert release_match is not None
-    release_version = release_match.group(1)
-    wheel_name = release_match.group(0)
-    assert f"[v{release_version}]" in install
-    assert f"tree/v{release_version}" in install
-    assert wheel_name in install
-    assert f"published `v{release_version}` artifact" in roadmap
-    if release_version != version:
-        assert f"unreleased v{version} candidate" in install
-        assert f"unreleased `v{version}` candidate" in roadmap
-    else:
-        assert f"unreleased v{version} candidate" not in install
-        assert f"unreleased `v{version}` candidate" not in roadmap
-    assert "Research" + " Studies" not in roadmap
-    assert "billing" not in roadmap.lower()
+    install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
+    assert f"# hop-design {version}" in install
+    assert f"'{version}'" in install
+    assert "tree/v0.1.0a8" in install  # Older APIs retain their matching documentation.
+    assert f'uv tool install "hop-design=={version}"' in install
+    assert f'uv add "hop-design=={version}"' in install
 
 
 def test_source_layout_has_explicit_sprawl_limits() -> None:

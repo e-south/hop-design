@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0035
-title: ADR 0035 - Bound noncanonical basal pairing
-intent: Keep an aggregate pairing constraint separate from molecular classification.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-09-08
-doc_type: decision
----
-
 # ADR 0035: Bound noncanonical basal pairing
 
 `BasalGeometryDomain.max_noncanonical_pairs` optionally limits the number of

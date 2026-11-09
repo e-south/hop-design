@@ -21,12 +21,12 @@ def _workflow(name: str) -> tuple[dict[str, object], str]:
     return parsed, text
 
 
-def test_distribution_metadata_keeps_pypi_brake_but_names_public_home() -> None:
+def test_distribution_metadata_allows_pypi_and_names_public_home() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         config = tomllib.load(handle)
 
     project = config["project"]
-    assert "Private :: Do Not Upload" in project["classifiers"]
+    assert "Private :: Do Not Upload" not in project["classifiers"]
     assert project["urls"] == {
         "Documentation": "https://github.com/e-south/hop-design/tree/main/docs",
         "Issues": "https://github.com/e-south/hop-design/issues",
@@ -197,21 +197,33 @@ def test_codeql_is_a_reproducible_required_signal() -> None:
     assert "queries: security-extended" in text
 
 
-def test_release_workflow_verifies_before_publishing_and_cannot_publish_to_pypi() -> None:
+def test_release_workflow_publishes_verified_bytes_with_scoped_pypi_identity() -> None:
     workflow, text = _workflow("release.yaml")
 
     assert workflow["on"] == {"push": {"tags": ["v*"]}}
     assert workflow["permissions"] == {"contents": "read"}
     jobs = workflow["jobs"]
-    assert set(jobs) == {"build", "compatibility", "publish"}
+    assert set(jobs) == {"build", "compatibility", "publish", "pypi"}
     assert set(jobs["publish"]["needs"]) == {"build", "compatibility"}
     assert jobs["publish"]["permissions"] == {
         "actions": "read",
         "contents": "write",
     }
     assert jobs["publish"]["env"] == {"GH_REPO": "${{ github.repository }}"}
-    assert "id-token: write" not in text
-    assert "gh-action-pypi-publish" not in text
+    assert set(jobs["pypi"]["needs"]) == {"build", "compatibility", "publish"}
+    assert jobs["pypi"]["environment"] == {"name": "pypi", "url": "https://pypi.org/p/hop-design"}
+    assert jobs["pypi"]["permissions"] == {
+        "actions": "read",
+        "contents": "read",
+        "id-token": "write",
+    }
+    assert "pypa/gh-action-pypi-publish@" in text
+    assert "sha256sum -c ../SHA256SUMS" in text
+    for name, job in jobs.items():
+        if name != "pypi":
+            assert "id-token" not in job.get("permissions", {})
+    assert not any("actions/checkout" in str(step) for step in jobs["pypi"]["steps"])
+    assert "password:" not in text and "TWINE_PASSWORD" not in text
     assert "release:" not in text
     assert "git merge-base --is-ancestor" in text
     assert "uv build --no-sources" in text

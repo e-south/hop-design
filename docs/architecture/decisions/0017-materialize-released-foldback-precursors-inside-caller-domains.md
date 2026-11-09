@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0017
-title: ADR 0017 - Materialize released-foldback precursors inside caller domains
-intent: Define the exact-sequence handoff after geometry discovery without inventing sequence or ranking policy.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
-amended_by: hop-adr-0023
----
-
 # ADR 0017: Materialize released-foldback precursors inside caller domains
+
+Updated by [ADR 0023](0023-separate-public-facades-by-competency-question.md).
 
 ## Context
 

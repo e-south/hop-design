@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0039
-title: Scaffold comparison intent and explicit family revision
-intent: Separate molecular facts from preparation consequences and preserve authority through family recovery.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-03
-doc_type: explanation
----
-
 # Scaffold comparison intent and explicit family revision
 
 [ADR 0040](0040-explicit-comparison-controls.md) extends the current property

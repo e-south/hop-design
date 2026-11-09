@@ -1,15 +1,3 @@
----
-doc_id: hop-adr-0055
-title: Direct discovery toward contrasts and revise permissions explicitly
-intent: Keep search priorities separate from molecular intent and replayable permission changes.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-10-14
-doc_type: decision
-journey: [maintain, integrate]
----
-
 # Direct discovery toward contrasts and revise permissions explicitly
 
 Finding another complete preparation does not necessarily reveal another scaffold

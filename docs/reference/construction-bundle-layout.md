@@ -1,19 +1,3 @@
----
-doc_id: hop-construction-bundle-layout
-title: Construction bundle layout and verification
-intent: Define the portable authority for one payload-centered complete-construction result.
-audience:
-  - bundle consumers
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-30
-doc_type: reference
-journey:
-  - verify
-  - integrate
----
-
 # Construction bundle layout and verification
 
 A construction bundle records one replay-verified complete-construction result
@@ -45,6 +29,7 @@ separately.
 ## Verification
 
 ```python
+# Admit the saved construction through its semantic verifier.
 import hop_design.construction as construction
 
 verified = construction.load_verified_construction_bundle("construction-bundle")

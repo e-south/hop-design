@@ -1,16 +1,3 @@
----
-doc_id: hop-architecture
-title: HOP Design architecture
-intent: Define ownership, dependency direction, and module boundaries.
-audience:
-  - maintainers
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-30
-doc_type: explanation
----
-
 # HOP Design architecture
 
 HOP Design is a standalone modular monolith: one repository, one Python
@@ -268,12 +255,14 @@ consumer makes the seam necessary.
 
 ## Current product slices
 
-The public product has four internal semantic surfaces and one first-use
-workflow:
+Start with [complete-design discovery](docs/guides/discover-designs.md) around a
+supplied stem. [Substrate spaces](docs/guides/substrate-spaces.md) provide a
+separate workflow for compiling sequence anatomy. These journeys compose the
+following surfaces.
 
-0. **Scientist surface.** One bounded substrate-space specification, symbolic
-   preview, complete digital design set, and offline review. It composes the
-   design and verification surfaces without making method or experiment claims.
+0. **Construction interface.** Resolve optional molecular intent, discover
+   complete preparations, inspect and select a result, then retrieve exact
+   materials through the same CLI/API objects.
 
 1. **Design language.** Exact and symbolic payloads, foldback and basal
    junctions, optional paired stem context, deterministic design derivation,

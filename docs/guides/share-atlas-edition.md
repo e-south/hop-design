@@ -1,21 +1,59 @@
----
-doc_id: hop-guide-share-atlas-edition
-title: Share an inspectable molecular atlas
-intent: Capture complete choices, explore distinct products and retrieve the same preparations elsewhere.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-01
-doc_type: how-to
-journey: [discover, verify, integrate]
----
-
 # Share an inspectable molecular atlas
 
 An atlas edition captures complete preparations from a saved discovery. It carries
 their exact material handoffs and original producer identity. It can retain the
 original drawings or draw the selected molecule when inspected.
 You can move the directory and inspect it without rerunning the search.
+
+## Capture the choices you want to share
+
+Start with a saved [discovery](discover-designs.md) containing at least one
+complete preparation.
+
+```bash
+# Capture and query the currently recorded preparations.
+hop-design design freeze designs --out atlas-edition
+hop-design design query atlas-edition --format text
+
+# Inspect its molecules and material handoffs in the local viewer.
+hop-design design view atlas-edition --out atlas-view
+```
+
+Open the printed local address to explore the saved edition.
+
+Freezing includes all matching recorded preparations. Use `--query query.json` to
+capture a filtered set, or repeat `--identity ID` to name particular preparations.
+The destination must be new and outside the discovery directory. The edition
+records how many preparations it captures and how many matched in its source.
+
+Ordinary capture uses the producer that can admit the discovery. Once captured,
+an edition can be viewed independently of changes to that producer. A changed
+renderer does not make an old live checkpoint compatible with a new compiler.
+
+For larger collections, use compact capture. To fit the map, first
+[install the atlas extra](install.md#fit-a-new-molecular-map). Viewing saved
+coordinates does not require this extra.
+
+```bash
+# Keep exact materials and a lightweight landscape in one compact edition.
+hop-design design freeze designs --compact --include-landscape --out compact-edition
+```
+
+The Python equivalent is `choices.freeze("compact-edition", compact=True,
+include_landscape=True)`. This keeps exact materials in a lossless archive per
+preparation and records lightweight molecular descriptors. Opening the map reads
+the descriptors; inspecting a point draws its hairpin, and opening the preparation
+draws its route. Retrieving materials restores the original files byte for byte.
+The original producer and current renderer remain separately identified.
+
+Compact editions check metadata when opened and each authority archive when
+accessed. `edition.integrity` reports that distinction. They do not capture the
+original artwork: the requested `captured` policy therefore reports `current`
+rendering with an explanation. Use ordinary capture when preserving the exact
+original SVGs is the priority. Existing editions keep their full opening checks.
+Call `edition.verify_integrity()` to check every captured file and archive in a
+compact edition. Capture performs this complete byte check before publication;
+neither operation repeats molecular compilation.
 
 ## Combine independent discovery jobs
 
@@ -28,6 +66,7 @@ supervision belong to the caller; HOP does not start a background campaign.
 After stopping the writers, capture their union against the original full intent:
 
 ```bash
+# Combine the independent jobs against their original full request.
 hop-design design combine job-a job-b --request full-intent.json --out combined-edition
 hop-design design query combined-edition --format text
 ```
@@ -48,46 +87,6 @@ is independent within each job, so a fixed compute budget need not discover the
 same prefix as one unpartitioned search. Record the partition recipe with the
 study's computation costs and coverage.
 
-## Capture the choices you want to share
-
-Start with an admitted result from [design discovery](discover-designs.md):
-
-```bash
-hop-design design freeze designs --out atlas-edition
-hop-design design query atlas-edition --format text
-```
-
-Freezing includes all matching recorded preparations. Use `--query query.json` to
-capture a filtered set, or repeat `--identity ID` to name particular preparations.
-The destination must be new and outside the discovery directory. The edition
-records how many preparations it captures and how many matched in its source.
-
-Ordinary capture uses the producer that can admit the discovery. Once captured,
-an edition can be viewed independently of changes to that producer. A changed
-renderer does not make an old live checkpoint compatible with a new compiler.
-
-For larger collections, use compact capture:
-
-```bash
-hop-design design freeze designs --compact --include-landscape --out compact-edition
-```
-
-The Python equivalent is `choices.freeze("compact-edition", compact=True,
-include_landscape=True)`. This keeps exact materials in a lossless archive per
-preparation and records lightweight molecular descriptors. Opening the map reads
-the descriptors; inspecting a point draws its hairpin, and opening the preparation
-draws its route. Retrieving materials restores the original files byte for byte.
-The original producer and current renderer remain separately identified.
-
-Compact editions check metadata when opened and each authority archive when
-accessed. `edition.integrity` reports that distinction. They do not capture the
-original artwork: the requested `captured` policy therefore reports `current`
-rendering with an explanation. Use ordinary capture when preserving the exact
-original SVGs is the priority. Existing editions keep their full opening checks.
-Call `edition.verify_integrity()` to check every captured file and archive in a
-compact edition. Capture performs this complete byte check before publication;
-neither operation repeats molecular compilation.
-
 ## Capture a recorded discovery with an updated exporter
 
 To package an existing released-insert discovery after updating HOP, supply an
@@ -95,6 +94,7 @@ explicit source contract. This operation reads recorded preparations; it does
 not resume the search or authorize execution under a different generator.
 
 ```bash
+# Bind the original producer when an updated exporter captures old records.
 hop-design design freeze designs --compact --source-contract source.json --out recorded-edition
 ```
 
@@ -125,10 +125,11 @@ use the original producer for family or preservation-query capture.
 
 ## Explore molecules, then their preparations
 
-For proximity-based navigation, capture coordinates once using an installation
-with `hop-design[atlas]`:
+For proximity-based navigation, capture coordinates once using the
+[atlas-enabled installation](install.md#fit-a-new-molecular-map).
 
 ```bash
+# Capture the molecular landscape for point-by-point inspection.
 hop-design design freeze designs --compact --include-landscape --out molecular-edition
 hop-design design view molecular-edition --out inspection
 ```
@@ -195,12 +196,14 @@ Editions without coordinates open the structural-group view and remain inspectab
 The same inspection operations are available programmatically:
 
 ```python
+# Draw only the requested preparation preview.
 edition.preview(preparation_id).write("hairpin-preview")
 edition.neighbors(preparation_id, query=query, limit=5)
 edition.figure(selection=selected, view="similarity").write("molecular-figure")
 ```
 
 ```bash
+# Inspect one preparation and its materials from the captured edition.
 hop-design design preview molecular-edition --preparation ID --out hairpin-preview
 hop-design design neighbors molecular-edition --preparation ID
 hop-design design figure molecular-edition --selection choice.json \
@@ -256,6 +259,7 @@ comparison cannot be inferred merely by deleting columns from an old map.
 ### Structural groups and guided sampling
 
 ```bash
+# Sample across the recorded structural groups with an explicit seed.
 hop-design design sample atlas-edition --strategy families --stage hairpin \
   --seed 7 --out choice.json
 hop-design design figure atlas-edition --selection choice.json \
@@ -279,6 +283,7 @@ the filters or go Back to explore another group.
 The same exact restriction is available in Python:
 
 ```python
+# Read the structural groups through the Python API.
 families = edition.families(stage="hairpin")
 family_query = families["families"][0]["query"]
 matching = edition.query(family_query)
@@ -305,6 +310,7 @@ Guided sampling first seeks unvisited structural families, then different produc
 then preparation alternatives. To continue the same exploration:
 
 ```bash
+# Apply the additional grouping controls to the recorded pool.
 hop-design design sample atlas-edition --strategy families \
   --after choice.json --seed 8 --out next-choice.json
 ```
@@ -324,12 +330,14 @@ remain in force. A fixed loop filter can therefore leave no alternative.
 Use the same operation from a saved view:
 
 ```bash
+# Seek a loop alternative while preserving its verified surroundings.
 hop-design design sample atlas-edition --strategy loop \
   --after hop-view.json --seed 8 --out loop-choice.json
 hop-design design retrieve atlas-edition --selection loop-choice.json --out materials
 ```
 
 ```python
+# Sample the same kind of alternative through Python.
 alternative = edition.sample(after=saved_view, strategy="loop", seed=8)
 edition.atlas(alternative).write("loop-route")
 edition.retrieve(alternative, "loop-materials")
@@ -362,6 +370,7 @@ these public objects instead of importing internal models or renderers.
 ## Use the same objects from Python
 
 ```python
+# Open and query the frozen edition through Python.
 from hop_design import construction
 
 choices = construction.load_design_choices("designs")
@@ -388,6 +397,7 @@ The frozen edition is a reusable viewing and retrieval surface.
 ## Inspect without changing the request
 
 ```bash
+# Open the saved edition without starting new discovery.
 hop-design design view atlas-edition --out inspection
 hop-design design parameters atlas-edition
 ```
@@ -422,6 +432,7 @@ policy. It does not migrate molecular authority.
 The same choice belongs to the saved inspection:
 
 ```python
+# Save a view tied to the current preparation and query.
 view = edition.view(
     selected,
     render_policy="current",
@@ -457,6 +468,7 @@ Color views use `hop.atlas-view/v5`. They retain the same selection and optional
 axis recipe, with an explicit numeric property, exact sequence word, or no grouping:
 
 ```python
+# Keep the alternative presentation in its own saved view.
 view = edition.view(
     selected,
     presentation={

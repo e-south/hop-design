@@ -1,19 +1,3 @@
----
-doc_id: hop-design-language-overview
-title: Design language
-intent: Introduce the specialist vocabulary for declaring and compiling one hairpin design.
-audience:
-  - users
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-29
-doc_type: explanation
-journey:
-  - compile
----
-
 # Design language
 
 The design language answers one question: **what hairpin is being requested?**
@@ -75,8 +59,8 @@ authored intent
 
 `HopPlan` records deterministic design derivation, not an ordered production
 plan. A resolved design may preserve caller-asserted nick or release projection
-geometry needed for the encoding. Named molecular chronology belongs only to a
-method plan.
+geometry needed for the encoding. Ordered processing belongs to construction
+programs and named method plans.
 
 See [hairpin primitives](hairpin-primitives.md), the
 [formal ontology](ontology.md), and [relationships and invariants](relationships-and-invariants.md).

@@ -1,22 +1,6 @@
----
-doc_id: hop-adr-0033
-title: ADR 0033 - Close linear-source material dependencies
-intent: Make source preparation, partitioning, auxiliary materials, and endpoint navigation one portable HOP result.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-09-08
-doc_type: decision
-amends:
-  - hop-adr-0010
-  - hop-adr-0026
-  - hop-adr-0029
----
-
 # ADR 0033: Close linear-source material dependencies
+
+Updates [ADR 0010](0010-linear-source-method-materials.md), [ADR 0026](0026-compose-complete-construction-chronology.md), [ADR 0029](0029-separate-source-partition-from-junction-geometry.md).
 
 ## Context
 

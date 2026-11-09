@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Check documentation frontmatter, links, fences, freshness, and skills."""
+"""Check readable documentation, local links, code fences, and skill metadata."""
 
 from __future__ import annotations
 
 import re
-from datetime import date, timedelta
 from pathlib import Path
 
 import yaml
@@ -16,33 +15,6 @@ DOC_ROOTS = [
     REPO_ROOT / "RELIABILITY.md",
     REPO_ROOT / "SECURITY.md",
 ]
-DOC_REQUIRED_KEYS = {
-    "doc_id",
-    "title",
-    "intent",
-    "audience",
-    "owner",
-    "status",
-    "last_verified",
-    "doc_type",
-}
-DOC_TYPES = {"tutorial", "how-to", "reference", "explanation", "decision", "index"}
-DOC_STATUSES = {"active", "accepted"}
-JOURNEYS = {"install", "compile", "discover", "method", "verify", "integrate", "maintain"}
-JOURNEY_REQUIRED_DOC_TYPES = {"tutorial", "how-to", "index"}
-DOC_AUDIENCES = {
-    "API consumers",
-    "CLI users",
-    "Python users",
-    "agent executors",
-    "bundle consumers",
-    "integrators",
-    "maintainers",
-    "new users",
-    "release operators",
-    "security reviewers",
-    "users",
-}
 SKILL_REQUIRED_KEYS = {"name", "description", "metadata"}
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 INLINE_ROUTE_PATTERN = re.compile(
@@ -70,6 +42,7 @@ def frontmatter(path: Path) -> tuple[dict[str, object], str]:
 
 def heading_anchors(text: str) -> set[str]:
     """Return the GitHub-style anchors for Markdown ATX headings."""
+    text = re.sub(r"^```.*?^```[ \t]*$", "", text, flags=re.MULTILINE | re.DOTALL)
     anchors: set[str] = set()
     counts: dict[str, int] = {}
     for raw in re.findall(r"^#{1,6}\s+(.+?)\s*#*\s*$", text, flags=re.MULTILINE):
@@ -86,10 +59,20 @@ def check_markdown_links(path: Path, text: str) -> list[str]:
     errors: list[str] = []
     for raw_target in LINK_PATTERN.findall(text):
         target_with_fragment = raw_target.strip().strip("<>")
-        if "://" in target_with_fragment or target_with_fragment.startswith("mailto:"):
-            continue
+        for prefix in (
+            "https://github.com/e-south/hop-design/blob/main/",
+            "https://raw.githubusercontent.com/e-south/hop-design/main/",
+        ):
+            if target_with_fragment.startswith(prefix):
+                target_with_fragment = target_with_fragment.removeprefix(prefix)
+                base = REPO_ROOT
+                break
+        else:
+            if "://" in target_with_fragment or target_with_fragment.startswith("mailto:"):
+                continue
+            base = path.parent
         target, _, fragment = target_with_fragment.partition("#")
-        resolved = path if not target else (path.parent / target).resolve()
+        resolved = path if not target else (base / target).resolve()
         if not resolved.exists():
             errors.append(f"{path.relative_to(REPO_ROOT)}: broken link {raw_target!r}")
         elif (
@@ -147,106 +130,26 @@ def check_skill_metadata(path: Path, metadata: dict[str, object]) -> list[str]:
     return errors
 
 
-def check_document_metadata(path: Path, metadata: dict[str, object]) -> list[str]:
-    """Validate controlled document routing fields."""
+def check_document_page(path: Path, text: str) -> list[str]:
+    """Keep reader pages title-first and their fenced examples balanced."""
     relative = path.relative_to(REPO_ROOT)
     errors: list[str] = []
-    audience = metadata.get("audience")
-    if (
-        not isinstance(audience, list)
-        or not audience
-        or not all(isinstance(item, str) and item in DOC_AUDIENCES for item in audience)
-    ):
-        errors.append(f"{relative}: audience must use controlled reader roles")
-    status = metadata.get("status")
-    if status not in DOC_STATUSES:
-        errors.append(f"{relative}: invalid status {status!r}")
-    doc_type = metadata.get("doc_type")
-    if doc_type not in DOC_TYPES:
-        errors.append(f"{relative}: invalid doc_type {doc_type!r}")
-    journey = metadata.get("journey")
-    if journey is not None and (
-        not isinstance(journey, list)
-        or not journey
-        or not all(isinstance(item, str) and item in JOURNEYS for item in journey)
-    ):
-        errors.append(f"{relative}: invalid journey list")
-    if doc_type in JOURNEY_REQUIRED_DOC_TYPES and journey is None:
-        errors.append(f"{relative}: {doc_type} documents require journey routing")
+    if not re.match(r"^# [^\n]+(?:\n|$)", text):
+        errors.append(f"{relative}: begin with a page title, not metadata")
+    if text.count("```") % 2:
+        errors.append(f"{relative}: unbalanced fenced code blocks")
     return errors
 
 
 def main() -> int:
     """Run knowledge-integrity and skill-legibility checks."""
     errors: list[str] = []
-    doc_ids: dict[str, Path] = {}
-    amendment_refs: list[tuple[Path, str]] = []
     docs = DOC_ROOTS + sorted((REPO_ROOT / "docs").rglob("*.md"))
-    oldest_allowed = date.today() - timedelta(days=180)
-
     for path in docs:
-        try:
-            metadata, text = frontmatter(path)
-        except ValueError as exc:
-            errors.append(f"{path.relative_to(REPO_ROOT)}: {exc}")
-            continue
-        missing = sorted(DOC_REQUIRED_KEYS - metadata.keys())
-        if missing:
-            errors.append(
-                f"{path.relative_to(REPO_ROOT)}: missing frontmatter keys {', '.join(missing)}"
-            )
-        for scalar_key in ("doc_id", "title", "intent", "owner"):
-            value = metadata.get(scalar_key)
-            if not isinstance(value, str) or not value.strip():
-                errors.append(
-                    f"{path.relative_to(REPO_ROOT)}: {scalar_key} must be a nonempty string"
-                )
-        errors.extend(check_document_metadata(path, metadata))
-        doc_id = metadata.get("doc_id")
-        if isinstance(doc_id, str) and doc_id:
-            if doc_id in doc_ids:
-                errors.append(
-                    f"{path.relative_to(REPO_ROOT)}: duplicate doc_id {doc_id!r} also in "
-                    f"{doc_ids[doc_id].relative_to(REPO_ROOT)}"
-                )
-            doc_ids[doc_id] = path
-        amended_by = metadata.get("amended_by")
-        if amended_by is not None:
-            if not isinstance(amended_by, str) or not amended_by.strip():
-                errors.append(
-                    f"{path.relative_to(REPO_ROOT)}: amended_by must be one nonempty doc_id"
-                )
-            else:
-                amendment_refs.append((path, amended_by))
-        verified = metadata.get("last_verified")
-        if isinstance(verified, date):
-            verified_date = verified
-        elif isinstance(verified, str):
-            try:
-                verified_date = date.fromisoformat(verified)
-            except ValueError:
-                verified_date = None
-        else:
-            verified_date = None
-        if verified_date is None:
-            errors.append(f"{path.relative_to(REPO_ROOT)}: invalid last_verified date")
-        else:
-            if verified_date > date.today():
-                errors.append(f"{path.relative_to(REPO_ROOT)}: last_verified is in the future")
-            if verified_date < oldest_allowed:
-                errors.append(
-                    f"{path.relative_to(REPO_ROOT)}: last_verified is older than 180 days"
-                )
-        if text.count("```") % 2:
-            errors.append(f"{path.relative_to(REPO_ROOT)}: unbalanced fenced code blocks")
+        text = path.read_text(encoding="utf-8")
+        errors.extend(check_document_page(path, text))
         errors.extend(check_markdown_links(path, text))
         errors.extend(check_inline_route_targets(path, text))
-
-    for path, amended_by in amendment_refs:
-        if amended_by not in doc_ids:
-            errors.append(
-                f"{path.relative_to(REPO_ROOT)}: amended_by target {amended_by!r} does not exist"
-            )
 
     skill_root = REPO_ROOT / ".agents" / "skills"
     for skill_path in sorted(skill_root.glob("*/SKILL.md")):
@@ -290,7 +193,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print(f"Documentation integrity: ok ({len(docs)} docs, {len(doc_ids)} unique IDs)")
+    print(f"Documentation integrity: ok ({len(docs)} pages)")
     return 0
 
 

@@ -1,16 +1,3 @@
----
-doc_id: hop-released-foldback-routes-reference
-title: Released-foldback geometry and route composition
-intent: Define bounded release geometry, exact precursor materialization, and cross-junction continuity.
-audience:
-  - API consumers
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-24
-doc_type: reference
----
-
 # Released-foldback geometry and route composition
 
 ## Discover geometry before sequence

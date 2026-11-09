@@ -1,20 +1,3 @@
----
-doc_id: hop-processing-method-boundary
-title: Hairpin-processing method boundary
-intent: Define HOP's implemented molecular transformations without absorbing laboratory execution or destination assembly.
-audience:
-  - users
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: explanation
-journey:
-  - method
-  - integrate
----
-
 # Hairpin-processing method boundary
 
 HOP compiles hairpin designs and bounded sequence transformations. It is not a

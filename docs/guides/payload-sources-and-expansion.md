@@ -1,18 +1,3 @@
----
-doc_id: hop-payload-sources-guide
-title: Payload sources and explicit expansion
-intent: Show how to compose typed payload records without one monolithic recipe.
-audience:
-  - users
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-27
-doc_type: how-to
-journey:
-  - compile
----
-
 # Payload sources and explicit expansion
 
 Use `PayloadRecord` as the small interoperability unit. Inline iterables,
@@ -22,6 +7,7 @@ stays separate from design compilation.
 ## Inline records and duplicate policy
 
 ```python
+# Load inline payload records with an explicit duplicate policy.
 import hop_design as hop
 
 records = (
@@ -41,6 +27,7 @@ decision for downstream provenance.
 ## FASTA and CSV
 
 ```python
+# Read the same payload records from FASTA and CSV.
 fasta_records = hop.load_fasta_payloads("payloads.fasta")
 csv_records = hop.load_csv_payloads(
     "payloads.csv",
@@ -59,6 +46,7 @@ caller has a smaller budget.
 ## Explicit concrete expansion
 
 ```python
+# Expand this DNA IUPAC record into exact members within the stated bound.
 record = hop.PayloadRecord(
     record_id="variants",
     payload=hop.DegeneratePayload(sequence="NR"),
@@ -80,6 +68,7 @@ explicit `ReleaseOption` records. A no-release case is a named option with
 `request=None`; it is not a hidden fallback.
 
 ```python
+# Compose the payload records with the chosen design context.
 space = hop.ResolvedDesignSpace(
     space_id="example-space",
     payloads=collection,
@@ -114,6 +103,7 @@ space, writes one bundle per design, and independently replay-verifies every
 bundle:
 
 ```bash
+# Run the repository example and write its verified payload bundles.
 uv run python examples/compile_payload_records.py \
   --out build/payload-records
 ```

@@ -1,19 +1,3 @@
----
-doc_id: hop-ecosystem-ownership-boundaries
-title: Ecosystem ownership boundaries
-intent: Define HOP's narrow-waist role and the responsibilities of adjacent systems.
-audience:
-  - users
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-23
-doc_type: explanation
-journey:
-  - integrate
----
-
 # Ecosystem ownership boundaries
 
 HOP is the narrow waist between many sources of design intent and many forms of

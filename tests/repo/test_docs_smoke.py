@@ -36,17 +36,16 @@ def test_release_routing_names_published_and_current_contracts() -> None:
     ).read_text(encoding="utf-8")
 
     assert "docs/guides/install.md" in readme
-    assert "[v0.1.0a8](https://github.com/e-south/hop-design/releases/tag/v0.1.0a8)" in install
+    assert "https://github.com/e-south/hop-design/tree/v0.1.0a8" in install
     assert "HOP is alpha software" in install
-    assert "unreleased construction-search features" in install
-    assert "tagged documentation" in install
+    assert "uv tool install" in install
+    assert "hop-design --version" in install
     assert "unreleased v0.1.0a8" not in readme
-    assert "hop_design-0.1.0a8-py3-none-any.whl" in install
     assert "install.md" in quickstart
     assert "published `v0.1.0a8`" in roadmap
     assert "Historical construction realignment audit" not in maintainer_index
     assert "Linear-source product closure audit" not in maintainer_index
-    assert "status: accepted" in material_closure_adr
+    assert material_closure_adr.startswith("# ADR 0033")
     assert "Source preparation" in material_closure_adr
     assert "Source partition" in material_closure_adr
 

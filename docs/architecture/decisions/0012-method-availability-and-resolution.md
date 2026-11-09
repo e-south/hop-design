@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0012
-title: ADR 0012 - Method availability and resolution
-intent: Separate sequence identity, method implementation, method feasibility, and destination readiness.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
----
-
 # ADR 0012: Method availability and resolution
 
 ## Context

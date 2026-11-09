@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0044
-title: Molecular comparison briefs and bounded set assessment
-intent: Separate desired comparative membership from discovery permissions and explicit selection.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: explanation
----
-
 # Molecular comparison briefs
 
 An allowed scaffold interval does not require all its values to be represented.

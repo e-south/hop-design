@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0019
-title: ADR 0019 - Project junction-route views from the selected route
-intent: Keep routed QA views bound to the exact precursor and molecular state they describe.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
-amended_by: hop-adr-0023
----
-
 # ADR 0019: Project junction-route views from the selected route
+
+Updated by [ADR 0023](0023-separate-public-facades-by-competency-question.md).
 
 ## Context
 

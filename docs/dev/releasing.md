@@ -1,64 +1,57 @@
----
-doc_id: hop-releasing
-title: Release process
-intent: Separate GitHub artifact creation, PyPI authorization, and downstream adoption.
-audience:
-  - maintainers
-  - release operators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-05
-doc_type: how-to
-journey:
-  - maintain
----
+# Release HOP
 
-# Release process
+A release publishes the same verified wheel and source archive to GitHub and
+PyPI. The workflow checks the package version, protected-main ancestry,
+Python compatibility and clean-install behavior before publication.
 
-HOP has two distribution gates. A public GitHub repository provides source,
-pull-request review, tags, releases, and downloadable wheel/sdist artifacts.
-PyPI is a separate package index and authorization boundary. GitHub publication
-does not imply PyPI publication.
+## First PyPI setup
 
-## GitHub release artifacts
+Create a pending [Trusted Publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+in the owner's PyPI account with these values.
 
-1. Merge a narrow version change through a green pull request.
-2. Confirm the full Python 3.14 gate
-   (`UV_PYTHON=3.14 COVERAGE_CORE=sysmon bash ./scripts/agent-verify`),
-   `twine check`, dependency review, CodeQL, and public-safety checks.
-3. Push the exact protected-main commit as tag `v<project-version>`. The tag
-   starts the release workflow; do not create an empty Release first.
-4. The workflow verifies tag/version and
-   main ancestry, builds wheel and sdist with `uv build --no-sources`, performs
-   extended clean-install qualification (`scripts/wheel-smoke dist`) on those exact files, records their SHA-256 checksums,
-   and runs Python 3.12/3.13 compatibility at the tagged commit. Publication
-   waits for both jobs, then creates the versioned GitHub Release with the
-   distributions and `SHA256SUMS` in one publish operation. A one-day Actions artifact only
-   transfers the verified bytes between the read-only build job and the narrowly
-   privileged publish job.
+| Setting | Value |
+| --- | --- |
+| Project | `hop-design` |
+| GitHub owner | `e-south` |
+| Repository | `hop-design` |
+| Workflow | `release.yaml` |
+| Environment | `pypi` |
 
-The build job allows thirty minutes for the extended gate; its last completed
-distribution stage took approximately eighteen minutes. It has read-only contents
-permission. Only the publish job has
-`contents: write`, and it receives no checkout. The GitHub CLI creates a draft,
-uploads the verified assets, and publishes only after upload succeeds. No job
-receives an OIDC token or can publish to PyPI. A rerun refuses to replace an
-existing release or incomplete draft. Inspect and remove an incomplete draft
-explicitly before retrying the same tag.
+The matching GitHub `pypi` environment permits only `v*` release tags. The PyPI
+job receives a short-lived OIDC identity and verified files, with no checkout or
+stored API token. Build and GitHub publication jobs cannot publish to PyPI.
 
-For Python-version-sensitive changes, request earlier compatibility evidence with
-`gh workflow run python-compatibility.yaml --ref <candidate-ref>`. This is optional
-for ordinary changes; release compatibility is already mandatory and need not be
-run manually as a routine prerequisite.
+## Publish a version
 
-## Future PyPI gate
+1. Merge the version and documentation through a green pull request.
+2. Tag that exact main commit. This starts the release workflow.
+3. Confirm both the GitHub release and PyPI files before announcing availability.
+4. Test `uv tool install "hop-design==0.1.0a9"` outside the checkout. Confirm the
+   installed version and the Python import before announcing availability.
 
-PyPI remains disabled while `Private :: Do Not Upload` appears in package
-classifiers. Opening the gate requires a separate pull request that records the
-package name, production PyPI project, trusted publisher, protected `pypi`
-environment, rollback owner, and first successful hosted build evidence.
-Trusted Publishing should use short-lived OIDC credentials; no long-lived PyPI
-token belongs in GitHub secrets.
+```bash
+# Tag a version only after its protected-main checks pass.
+git switch main
+git pull --ff-only
+git tag v0.1.0a9
+git push origin v0.1.0a9
 
-Downstream migration may use a versioned GitHub release artifact before PyPI
-exists. Editable sibling paths are suitable only for local probes.
+# Watch publication and inspect the uploaded files.
+gh run list --workflow release.yaml --limit 1
+gh release view v0.1.0a9
+```
+
+The release build runs extended qualification on the exact distributions and
+records their checksums. Python 3.12/3.13 compatibility runs alongside it. The
+GitHub job attaches those files before publishing; the PyPI job downloads the
+same files and verifies their checksums again before upload.
+
+## Recover a failed publication
+
+Inspect the failed stage before retrying. A GitHub rerun refuses to replace an
+existing release or incomplete draft. Resume a failed PyPI job with **Re-run
+failed jobs** after correcting its setup, preserving the already verified files.
+PyPI does not permit replacement of uploaded distributions. Correct a bad package
+with a new version; retain the original release and its provenance.
+
+Keep exploratory inputs and downstream migration policy outside this repository.

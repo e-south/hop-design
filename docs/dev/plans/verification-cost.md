@@ -1,15 +1,3 @@
----
-doc_id: hop-verification-cost-plan
-title: Remove duplicate verification work
-intent: Preserve scientific and installation checks while reducing repeated discovery and rendering in CI.
-audience: [maintainers, agent executors]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-05
-doc_type: explanation
-journey: [maintain]
----
-
 # Remove duplicate verification work
 
 Status: adopted in [PR 50](https://github.com/e-south/hop-design/pull/50), with

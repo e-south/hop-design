@@ -56,8 +56,8 @@ the same exact foldback selection and direct-hairpin construction source.
 - A selected source partition supplies concurrent cleanup nicks to PCR-bearing
   routes. It must preserve the same prepared source and exact joining strands.
 - Write a `ConstructionCompilation` only to a new destination. Load it through
-  `load_verified_construction_bundle()` at a later handoff boundary; there is
-  no separate public construction verify verb.
+  `load_verified_construction_bundle()` at a later handoff boundary, or use
+  `hop-design construction verify-complete BUNDLE` for the same replay in the CLI.
 - Use `project_foldback_feasibility()` for the verified foldback authority.
   Use `project_basal_feasibility()` only when the route contains a basal
   authority.

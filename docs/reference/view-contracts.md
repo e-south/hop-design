@@ -1,16 +1,3 @@
----
-doc_id: hop-view-contracts
-title: Workflow view contracts
-intent: Define renderer-independent scientific views and their generated artifacts.
-audience:
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-09-19
-doc_type: reference
----
-
 # Workflow view contracts
 
 `WorkflowView` (`hop.workflow-view/v1`) is the scientific authority for a
@@ -35,12 +22,14 @@ state.
 Run the complete component example:
 
 ```bash
+# Render the repository examples using the shared view implementation.
 uv run python examples/render_component_views.py --out build/component-views
 ```
 
 Or build views from already-derived mechanics:
 
 ```python
+# Use the same view contracts from Python.
 import hop_design as hop
 import hop_design.views as views
 

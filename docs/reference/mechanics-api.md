@@ -1,19 +1,3 @@
----
-doc_id: hop-mechanics-api
-title: Molecular mechanics reference map
-intent: Route each physical competency question to one authoritative reference.
-audience:
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-30
-doc_type: index
-journey:
-  - compile
-  - discover
----
-
 # Molecular mechanics reference map
 
 HOP separates component evaluation, processing geometry, route composition,

@@ -1,14 +1,3 @@
----
-doc_id: hop-reference-interface-survey-results
-title: Interface survey queries, selections and exports
-intent: Explain conditional support, exact selection, comparison and file exports from a survey checkpoint.
-audience: [integrators, maintainers]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-15
-doc_type: reference
----
-
 # Interface survey queries, selections and exports
 
 Use the [construction guide](../guides/survey-interfaces.md) for the runnable
@@ -41,9 +30,11 @@ placements, geometry and methods even where no complete witness exists.
 | `unresolved` | No witness or complete exclusion in the recorded search |
 | Excluded within scope | Exhaustion establishes absence under the declared molecular permissions |
 
-Axis states currently use whole-survey exhaustion for exclusions. A target can
-already be excluded in its evaluation record while its axis value still reads
-`unresolved`. Use `inspect` for that target-specific outcome.
+An end word can be excluded before the whole survey is finished: every declared
+partner pair for that word must have a scoped exhaustion proof, with none
+supported. Other axis values require whole-survey exhaustion to establish
+exclusion. One excluded pair alone does not exclude either end word. Use
+`inspect` for that individual pair's outcome.
 
 Preparation counts deduplicate exact identities; record counts retain repeated
 evaluations. Two preparations producing the same exact product remain separate

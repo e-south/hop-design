@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0046
-title: Grouped scaffold comparisons and selected product references
-intent: Express within-group equality and between-group differences without merging preparation identity.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: explanation
----
-
 # Grouped scaffold comparisons
 
 `hop.comparison-brief/v2` introduces an explicit partition of required members

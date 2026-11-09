@@ -1,15 +1,3 @@
----
-doc_id: hop-family-report
-title: Saved scaffold family report contract
-intent: Explain admission, static comparison and portable retrieval without changing saved requests.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-03
-doc_type: reference
-journey: [verify]
----
-
 # Saved scaffold family report
 
 `project_construction_family_report(path, selection=None, baseline=None, edits=())`

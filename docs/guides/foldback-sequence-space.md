@@ -1,15 +1,3 @@
----
-doc_id: hop-foldback-sequence-space
-title: Enumerate exact foldback sequence populations
-intent: Count bounded local configurations and recover exact molecular members.
-audience: [Python users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-11-04
-doc_type: how-to
-journey: [discover, verify]
----
-
 # Enumerate exact foldback sequence populations
 
 For a fixed payload, ask which local foldback configurations satisfy the modeled
@@ -22,6 +10,7 @@ Use [the synthetic request](../../examples/foldback-sequence-space.yaml) to sear
 both nick strands, D = 0–3, and every supported geometry through H = 10 nt:
 
 ```python
+# Count exact foldback assignments under the declared local constraints.
 import json
 from hop_design import construction
 
@@ -150,6 +139,7 @@ and coordinates. Use that identifier and a zero-based lexicographic rank, then
 choose an examined program that supports that sequence:
 
 ```python
+# Recover a selected exact member from its compact sequence set.
 member = json.loads(
     verified.member_json(
         case_id=case["case_id"],

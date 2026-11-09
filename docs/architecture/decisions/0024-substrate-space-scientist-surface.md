@@ -1,17 +1,3 @@
----
-doc_id: hop-adr-0024
-title: ADR 0024 - Center first use on bounded substrate spaces
-intent: Expose one authored duplex space, one preview, and one verified digital design package without flattening backend competencies.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-27
-doc_type: decision
----
-
 # ADR 0024: Center first use on bounded substrate spaces
 
 ## Context

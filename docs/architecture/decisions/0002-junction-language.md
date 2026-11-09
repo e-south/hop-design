@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0002
-title: ADR 0002 - Canonical junction language
-intent: Record the public molecular terms and migration-only vocabulary.
-audience:
-  - users
-  - maintainers
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-30
-doc_type: decision
-amended_by: hop-adr-0026
----
-
 # ADR 0002: Canonical junction language
+
+Updated by [ADR 0026](0026-compose-complete-construction-chronology.md).
 
 > Amended by [ADR 0020](0020-separate-design-derivation-from-method-chronology.md)
 > and [ADR 0026](0026-compose-complete-construction-chronology.md): design

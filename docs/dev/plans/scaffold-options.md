@@ -1,15 +1,3 @@
----
-doc_id: hop-scaffold-options-plan
-title: Discover complete scaffold options before choosing a preparation
-intent: Deliver bounded product exploration, explicit retrieval and controlled-set discovery through the CLI and API.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: explanation
-journey: [maintain]
----
-
 # Discover complete scaffold options before choosing a preparation
 
 A user supplies a stem, intended product, permitted scaffold dimensions and

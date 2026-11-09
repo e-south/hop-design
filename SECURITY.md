@@ -1,16 +1,3 @@
----
-doc_id: hop-security
-title: HOP Design security and public-data boundary
-intent: Define safe inputs, output paths, repository content, and release gates.
-audience:
-  - maintainers
-  - security reviewers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-04
-doc_type: reference
----
-
 # HOP Design security and public-data boundary
 
 ## Local molecular editor
@@ -43,10 +30,10 @@ its Git history are public. Content removal from the current tree is not
 history erasure. The public-safety and secret checks supplement manual content
 review; they cannot determine whether an arbitrary DNA sequence is private.
 
-The distribution carries `Private :: Do Not Upload` as an accidental PyPI
-publication brake. A public GitHub repository and a PyPI package are separate
-distribution channels. Removing the brake or adding a publishing identity
-requires a separate release change.
+PyPI publication uses the approved trusted publisher for `release.yaml` and the
+`pypi` environment. That environment permits only `v*` tags. Publication follows
+protected-main ancestry, compatibility and exact-distribution checks. See the
+[release process](docs/dev/releasing.md).
 
 ## Verification surfaces
 
@@ -65,6 +52,7 @@ it also rejects unsafe paths, duplicate members, links and special files.
 To inspect distributions directly, repeat `--distribution` for each archive:
 
 ```bash
+# Scan both built distributions before publication.
 uv run --locked python scripts/check_public_safety.py \
   --distribution dist/package.whl --distribution dist/package.tar.gz
 ```
@@ -136,7 +124,10 @@ Before any GitHub release, run `bash ./scripts/agent-verify`, inspect wheel and
 sdist contents, review dependency and secret scans, and verify the wheel in a
 clean environment. The release workflow smoke-tests the exact distributions it
 attaches to the GitHub release. Only the attachment job receives
-`contents: write`; no job receives OIDC permission or can publish to PyPI.
+`contents: write`. Within that release workflow, only the PyPI job receives
+`id-token: write`. It has no checkout,
+uses the scoped trusted publisher and checks the verified distribution bytes
+before upload.
 
 Report vulnerabilities with a private GitHub Security Advisory. Do not include
 sensitive sequences or credentials in public issues. PyPI publication requires

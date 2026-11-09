@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0043
-title: Product-driven preparation discovery and stage identity
-intent: Preserve strict inner molecular evaluation while expanding explicit preparation permissions.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: explanation
----
-
 # Product-driven scaffold discovery
 
 Desired open-side dimensions must be expressible without requiring callers to

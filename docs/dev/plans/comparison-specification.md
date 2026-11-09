@@ -1,14 +1,3 @@
----
-doc_id: hop-comparison-specification-plan
-title: Molecular comparison specifications
-intent: Track the request-to-comparison implementation and its acceptance boundaries.
-audience: [maintainers]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: explanation
----
-
 # Molecular comparison specifications
 
 Help users obtain meaningful substrate sets or alternative preparations of one

@@ -1,16 +1,3 @@
----
-doc_id: hop-processing-discovery-reference
-title: Processing and basal discovery
-intent: Define bounded nicking, precursor, basal, and terminal-route searches.
-audience:
-  - API consumers
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-24
-doc_type: reference
----
-
 # Processing and basal discovery
 
 All contracts and operations on this page come from `hop_design.discovery`.

@@ -1,15 +1,3 @@
----
-doc_id: hop-basal-sequence-space
-title: Enumerate exact basal sequence populations
-intent: Count canonical local configurations while retaining full-source molecular support.
-audience: [Python users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-09-20
-doc_type: how-to
-journey: [discover, verify]
----
-
 # Enumerate exact basal sequence populations
 
 HOP evaluates the complete source before counting distinct sequences in a local
@@ -24,6 +12,7 @@ complete adapter length or a stability threshold. Full association remains
 explicitly unresolved.
 
 ```python
+# Count exact basal assignments under the requested geometry and pairing constraints.
 import json
 from hop_design import construction
 
@@ -86,6 +75,7 @@ Select a case, a zero-based lexicographic word rank, and an examined program tha
 supports that word. For the example:
 
 ```python
+# Recover one exact assignment from a nonempty sequence set.
 case = next(case for case in result["cases"] if case["sequences"]["cardinality"])
 program_index = next(i for i, p in enumerate(case["programs"]) if p["sequences"]["cardinality"])
 member = json.loads(

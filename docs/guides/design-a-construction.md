@@ -1,15 +1,3 @@
----
-doc_id: hop-design-a-construction
-title: From ssDNA to a hairpin and released insert
-intent: Start with the required product, declare material permissions, and inspect a complete construction.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-09-27
-doc_type: tutorial
-journey: [compile, discover, verify]
----
-
 # From ssDNA to a hairpin and released insert
 
 HOP helps you specify a source ssDNA, its conversion into a hairpin, and, when
@@ -18,11 +6,11 @@ The deliverable is a checked molecular route with exact oligos and expected
 products. Compatibility with receiving DNA and performance in the laboratory
 require separate evidence.
 
-This journey uses the current source checkout. [Install HOP](install.md) first;
-use tagged documentation with a released wheel. The construction workflow uses
-Python for search and compilation and the CLI for inspection and selection.
-The CLI and Python share one product-request translator; there is no graphical
-request editor or automatic design wizard.
+[Install HOP](install.md), then run the repository examples below from a
+[source checkout](install.md#work-from-source). The CLI and Python API share the
+same request translation, search and construction checks. The
+[stem-first guide](discover-designs.md) starts from optional molecular constraints;
+this walkthrough authors a more detailed product request.
 
 ## 1. Describe the product you need
 
@@ -63,6 +51,7 @@ product end is projected onto which local recognition material. The translator
 copies that end requirement; do not repeat `future_release` in basal geometry.
 
 ```bash
+# Preview the product request and its permitted construction choices.
 uv run --locked hop-design construction prepare examples/complete-construction/product-request.json --out build/prepared-request
 ```
 
@@ -102,6 +91,7 @@ To execute your authored request directly, explicitly permit continuation of
 the sole recorded witness from each bounded local search:
 
 ```bash
+# Execute the request to obtain complete preparations.
 uv run --locked hop-design construction execute examples/complete-construction/product-request.json --design-id my-preparation --continuation sole-witness --out build/my-preparation
 ```
 
@@ -136,6 +126,7 @@ Run the [complete public example](../../examples/complete-construction/README.md
 with the source version that ships it:
 
 ```bash
+# Run the repository walkthrough from request to material handoff.
 uv run --locked python examples/complete-construction/run.py --out build/public-journey
 uv run --locked hop-design construction inspect build/public-journey/released/construction --ordinal 0 --end left
 ```
@@ -152,6 +143,7 @@ When more than one witness is recorded, inspect `construction local-choices`
 and continue from the preserved request with explicit IDs:
 
 ```bash
+# Continue the recorded request without changing its permissions.
 uv run --locked hop-design construction continue build/my-preparation/inputs/request.json --design-id my-selected-preparation --foldback build/my-preparation/foldback/result.json --foldback-realization-id "$FOLDBACK_ID" --basal build/my-basal/result.json --basal-realization-id "$BASAL_ID" --out build/my-selected-preparation
 ```
 
@@ -184,6 +176,7 @@ program leaves that preparation condition unresolved.
 To see the whole hairpin before reading the processing trace, use:
 
 ```bash
+# Export a portrait of the selected construction.
 uv run --locked hop-design construction portrait build/public-journey/hairpin/construction \
   --selection build/public-journey/hairpin/portrait/selection.json --out build/hairpin-choice
 ```

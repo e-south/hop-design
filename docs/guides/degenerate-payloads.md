@@ -1,18 +1,3 @@
----
-doc_id: hop-degenerate-payloads
-title: Symbolic DNA IUPAC payloads
-intent: Explain exact versus degenerate semantics and expansion safety.
-audience:
-  - users
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-20
-doc_type: how-to
-journey:
-  - compile
----
-
 # Symbolic DNA IUPAC payloads
 
 The supported alphabet is `ACGTRYSWKMBDHVN`. Lowercase and formatting
@@ -27,6 +12,7 @@ Compilation does not expand a symbolic payload. Concrete variants require the
 separate explicit operation:
 
 ```python
+# Keep DNA IUPAC positions symbolic while deriving the paired payload arm.
 import hop_design as hop
 
 record = hop.PayloadRecord(

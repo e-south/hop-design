@@ -1,15 +1,3 @@
----
-doc_id: hop-adr-0056
-title: Inspect recorded choices independently of their producer
-intent: Preserve molecular authority while sharing frozen views, product families and guided selections.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-10-26
-doc_type: decision
-journey: [maintain, integrate]
----
-
 # Inspect recorded choices independently of their producer
 
 A saved live discovery requires its producing implementation for admission. A

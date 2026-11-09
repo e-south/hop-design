@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0018
-title: ADR 0018 - Join hairpin-junction processing on one strand
-intent: Define the bounded physical handoff between an exact released foldback and an exact basal-processing route.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
-amended_by: hop-adr-0023
----
-
 # ADR 0018: Join hairpin-junction processing on one strand
+
+Updated by [ADR 0023](0023-separate-public-facades-by-competency-question.md).
 
 ## Context
 

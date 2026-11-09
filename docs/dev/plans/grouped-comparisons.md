@@ -1,14 +1,3 @@
----
-doc_id: hop-grouped-comparisons-plan
-title: Grouped scaffold comparisons
-intent: Deliver explicit molecular relationships and retrievable preparation sets.
-audience: [maintainers]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: explanation
----
-
 # Grouped scaffold comparisons
 
 Let users require different scaffold products, each made through several methods,

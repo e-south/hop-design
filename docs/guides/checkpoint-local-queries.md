@@ -1,15 +1,3 @@
----
-doc_id: hop-checkpoint-local-queries
-title: Checkpoint independent local queries
-intent: Persist and resume a finite collection without changing individual request authorities.
-audience: [Python users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: how-to
-journey: [discover, verify]
----
-
 # Checkpoint independent local queries
 
 Use this optional batching path after authoring independent local queries.
@@ -22,6 +10,7 @@ batch operation. Each request retains its own geometry, enzyme domain, search
 limits, status, canonical result bytes, and realization identities.
 
 ```python
+# Resume the same bounded collection rather than repeating its completed queries.
 import hop_design.construction as construction
 
 sources = ["foldback-top.yaml", "foldback-bottom.yaml"]

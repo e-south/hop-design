@@ -1,21 +1,12 @@
----
-doc_id: hop-guide-edit-folded-sequences
-title: Edit a folded sequence and retrieve its preparation
-intent: Control loop words and released-end placement while exposing accompanying molecular changes.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: tutorial
-journey: [discover, integrate]
----
-
 # Edit the molecule, then choose its preparation
+
+Run these repository examples from a [source checkout](install.md#work-from-source).
+The commands use its locked environment throughout.
 
 Start from an ordinary [scaffold request](discover-product-scaffolds.md). Use the
 [public example](../../examples/molecular-editing/README.md) to compare GAAA and
 TTTC loops, inspect every exact base in its folded architecture, and retrieve
-explicit preparations. This is a source-candidate feature; see [installation](install.md).
+explicit preparations.
 
 For exploration among complete supported options, use the
 [conditional variant view](explore-conditional-variants.md). It shows one molecule,
@@ -34,8 +25,9 @@ correspondence. Pairing relationships and paired-base identities are distinct.
 ## Author exact requests through CLI/API
 
 ```bash
-hop-design construction prepare-edit examples/molecular-editing/request.json --loop GAAA --loop TTTC --out /tmp/hop-edit
-hop-design construction evaluate-edit /tmp/hop-edit/edit.json --out /tmp/hop-alternatives
+# Prepare the named loop alternatives as explicit molecular edits.
+uv run --locked hop-design construction prepare-edit examples/molecular-editing/request.json --loop GAAA --loop TTTC --out /tmp/hop-edit
+uv run --locked hop-design construction evaluate-edit /tmp/hop-edit/edit.json --out /tmp/hop-alternatives
 ```
 
 The report names complete options. Pass the recorded edit digest, explicit
@@ -59,7 +51,8 @@ as authored. These are ends of the **released duplex insert**, not exposed ends
 on the hairpin intermediate.
 
 ```bash
-hop-design construction prepare-edit examples/molecular-editing/request.json --placement 6:6 --basal-nick example:enzyme/nb.bsrdi@1 --basal-nick example:enzyme/nb.btsi@1 --out /tmp/hop-method-edit
+# Compare end placements under the stated basal-nick permissions.
+uv run --locked hop-design construction prepare-edit examples/molecular-editing/request.json --placement 6:6 --basal-nick example:enzyme/nb.bsrdi@1 --basal-nick example:enzyme/nb.btsi@1 --out /tmp/hop-method-edit
 ```
 
 Repeat `--placement` for finite comparisons, such as `0:0`, `3:3` and `6:6`.
@@ -80,8 +73,9 @@ the resulting substrate identical.
 ## Expand a small degenerate stem into an exact family
 
 ```bash
-hop-design construction preview-sequence-family examples/molecular-editing/sequence-family.json --out /tmp/hop-sequence-preview
-hop-design construction evaluate-sequence-family examples/molecular-editing/sequence-family.json --out /tmp/hop-sequence-family
+# Preview a finite exact expansion of the degenerate stem.
+uv run --locked hop-design construction preview-sequence-family examples/molecular-editing/sequence-family.json --out /tmp/hop-sequence-preview
+uv run --locked hop-design construction evaluate-sequence-family examples/molecular-editing/sequence-family.json --out /tmp/hop-sequence-family
 ```
 
 The family request holds one exact base preparation request and a same-length

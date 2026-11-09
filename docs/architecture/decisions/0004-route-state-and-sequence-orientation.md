@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0004
-title: ADR 0004 - Route state continuity and sequence orientation
-intent: Record route-input identity and one molecular sequence orientation convention.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-20
-doc_type: decision
----
-
 # ADR 0004: Route state continuity and sequence orientation
 
 ## Context

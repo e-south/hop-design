@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0022
-title: ADR 0022 - Make boundaries, neutral order, and cohesive ends explicit
-intent: Replace inferred boundary facts with strict coordinate and product contracts.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-23
-doc_type: decision
----
-
 # ADR 0022: Make boundaries, neutral order, and cohesive ends explicit
 
 ## Context

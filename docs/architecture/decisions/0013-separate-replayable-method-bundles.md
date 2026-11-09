@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0013
-title: ADR 0013 - Separate replayable method bundles
-intent: Keep production-method evidence distinct from hairpin-design identity.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
----
-
 # ADR 0013: Separate replayable method bundles
 
 ## Context

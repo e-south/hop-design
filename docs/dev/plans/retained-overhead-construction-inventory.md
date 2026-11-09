@@ -1,18 +1,3 @@
----
-doc_id: retained-overhead-construction-inventory
-title: Retained-overhead construction implementation inventory
-intent: Locate construction responsibilities, remaining capabilities, and measured allocation costs.
-audience:
-  - maintainers
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-09-07
-doc_type: explanation
-journey:
-  - maintain
----
-
 # Retained-overhead construction implementation inventory
 
 This public inventory locates construction behavior, incomplete capabilities,

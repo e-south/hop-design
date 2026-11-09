@@ -1,19 +1,6 @@
----
-doc_id: hop-adr-0034
-title: ADR 0034 - Couple source-encoded recognition sites
-intent: Distinguish source recognition constraints from later cleavage operations.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-09-08
-doc_type: decision
-amends:
-  - hop-adr-0033
----
-
 # ADR 0034: Couple source-encoded recognition sites
+
+Updates [ADR 0033](0033-close-linear-source-material-dependencies.md).
 
 ## Decision
 

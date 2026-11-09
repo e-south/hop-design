@@ -1,15 +1,3 @@
----
-doc_id: hop-specify-a-comparison
-title: Specify and retrieve a molecular comparison
-intent: Obtain required molecular variants or alternative preparations without choosing local construction identifiers.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-06
-doc_type: tutorial
-journey: [discover, integrate]
----
-
 # Specify and retrieve a molecular comparison
 
 Describe the molecular differences you need, which properties must agree, and
@@ -63,6 +51,7 @@ expand them or remove an obligation.
 ## Preview, execute, select
 
 ```bash
+# Preview the brief, execute it, then select from its recorded comparison.
 hop-design construction preview-comparison brief.json --out preview
 hop-design construction execute-comparison brief.json --out comparison
 hop-design construction select-comparison comparison \
@@ -95,6 +84,7 @@ The baseline controls pairwise presentation; it does not make a member optimal.
 To reuse an existing discovery with unchanged molecular permissions and bounds:
 
 ```bash
+# Assess the requested comparison against the saved discovery.
 hop-design construction assess-comparison brief.json discovery --out comparison
 ```
 
@@ -128,6 +118,7 @@ released products. Changing the comparison stage to `hairpin` reassesses equalit
 it does not transfer the endpoint conclusion to the intermediates.
 
 ```bash
+# Execute the comparison across the declared scaffold and method alternatives.
 hop-design construction execute-comparison \
   examples/scaffold-comparison/grouped.json --out comparison
 hop-design construction select-comparison comparison \

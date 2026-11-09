@@ -1,16 +1,3 @@
----
-doc_id: hop-design-contracts
-title: HOP Design engineering contracts
-intent: State non-negotiable invariants, error channels, and change rules.
-audience:
-  - maintainers
-  - API consumers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-30
-doc_type: explanation
----
-
 # HOP Design engineering contracts
 
 ## Invariants

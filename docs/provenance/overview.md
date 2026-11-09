@@ -1,20 +1,3 @@
----
-doc_id: hop-provenance-verification-overview
-title: Provenance and verification
-intent: Explain bundle identity, semantic replay, digests, and cross-product handoffs.
-audience:
-  - users
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-30
-doc_type: explanation
-journey:
-  - verify
-  - integrate
----
-
 # Provenance and verification
 
 HOP uses “provenance and verification” for derivation claims. Experimental
@@ -40,6 +23,7 @@ evidence merely because an encoding digest agrees.
 ## The construction handoff
 
 ```python
+# Compile and re-admit the construction bundle before using its results.
 import hop_design.construction as construction
 
 compiled = construction.compile_construction(
@@ -62,6 +46,7 @@ physically realizes. Run the matched public example from a contributor
 checkout:
 
 ```bash
+# Write the independent design and method bundles for this synthetic example.
 uv run python examples/verify_design_method_handoff.py \
   --out build/matched-handoff
 ```
@@ -72,6 +57,7 @@ and reloads each through its semantic verifier. The consuming application then
 checks exact digest equality:
 
 ```python
+# Verify both bundles before comparing their sequence digests.
 import hop_design as hop
 import hop_design.methods as methods
 

@@ -1,16 +1,7 @@
----
-doc_id: hop-guide-discover-product-scaffolds
-title: Discover scaffolds from desired product dimensions
-intent: Preview desired molecules and permitted preparation changes before choosing complete options.
-audience: [users, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-09
-doc_type: tutorial
-journey: [discover, integrate]
----
-
 # Specify the scaffold, then choose its preparation
+
+Run these repository examples from a [source checkout](install.md#work-from-source).
+The commands use its locked environment throughout.
 
 Start with the [runnable public example](../../examples/scaffold-discovery/README.md).
 For a comprehensive four-base end domain with incremental checkpoints, use
@@ -78,10 +69,11 @@ The public recipe declares AGTC/AGTC, CATT/AGTC and AGTC/AGCC at the original
 6/6-bp placements, retaining polarity, site orientation and all other controls:
 
 ```bash
-uv run python examples/scaffold-discovery/receiving_ends.py --out /tmp/hop-end-pairs.json
-hop-design construction preview-scaffolds /tmp/hop-end-pairs.json --out /tmp/hop-end-preview
-hop-design construction discover-scaffolds /tmp/hop-end-pairs.json --out /tmp/hop-end-options
-hop-design construction edit-view /tmp/hop-end-options --evaluated --out /tmp/hop-end-review
+# Explore the declared receiving ends in the repository example.
+uv run --locked python examples/scaffold-discovery/receiving_ends.py --out /tmp/hop-end-pairs.json
+uv run --locked hop-design construction preview-scaffolds /tmp/hop-end-pairs.json --out /tmp/hop-end-preview
+uv run --locked hop-design construction discover-scaffolds /tmp/hop-end-pairs.json --out /tmp/hop-end-options
+uv run --locked hop-design construction edit-view /tmp/hop-end-options --evaluated --out /tmp/hop-end-review
 ```
 
 The recipe writes a new request without editing its seed. Under these specific
@@ -108,8 +100,9 @@ and 14 unpaired 3-prime nucleotides. These are recorded terminal tracts; termina
 chemistry and assembly compatibility are separate properties.
 
 ```bash
-hop-design construction preview-scaffolds examples/scaffold-discovery/terminal-form.json --out /tmp/terminal-preview
-hop-design construction discover-scaffolds examples/scaffold-discovery/terminal-form.json --out /tmp/terminal-options
+# Preview the requested hairpin terminal form before discovery.
+uv run --locked hop-design construction preview-scaffolds examples/scaffold-discovery/terminal-form.json --out /tmp/terminal-preview
+uv run --locked hop-design construction discover-scaffolds examples/scaffold-discovery/terminal-form.json --out /tmp/terminal-options
 ```
 
 Set `scaffold.five_prime_unpaired_nt` and `scaffold.three_prime_unpaired_nt` using
@@ -163,7 +156,8 @@ modeled cohesive ends. Equal dimensions alone never establish equality.
 Choose explicit labels from your saved packet and bind meaningful names:
 
 ```bash
-hop-design construction select-scaffolds /tmp/scaffold-options \
+# Retrieve the explicitly chosen scaffold preparations.
+uv run --locked hop-design construction select-scaffolds /tmp/scaffold-options \
   --member loop3=branch-0001-option-0001-01 --baseline loop3 \
   --out /tmp/scaffold-selected
 ```

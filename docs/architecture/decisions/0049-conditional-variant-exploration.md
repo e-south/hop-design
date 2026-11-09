@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0049
-title: Conditional exploration over admitted complete products
-intent: Keep neighborhood choices conditional on whole molecular witnesses and stable comparison controls.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-07
-doc_type: explanation
----
-
 # Conditional exploration over complete products
 
 The user asks what can vary in a neighborhood while specified properties remain

@@ -1,20 +1,6 @@
----
-doc_id: hop-adr-0029
-title: ADR 0029 - Separate source partition from junction geometry
-intent: Keep auxiliary cleanup nicks and size selection out of foldback and basal local targets.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-30
-doc_type: decision
-amends:
-  - hop-adr-0026
----
-
 # ADR 0029: Separate source partition from junction geometry
+
+Updates [ADR 0026](0026-compose-complete-construction-chronology.md).
 
 ## Context
 

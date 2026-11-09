@@ -1,21 +1,6 @@
----
-doc_id: hop-adr-0028
-title: ADR 0028 - Separate the foldback boundary from the nick position
-intent: Represent foldback closure routes whose nick lies inside the first retained arm without moving the biological payload boundary.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-30
-doc_type: decision
-amends:
-  - hop-adr-0025
-  - hop-adr-0027
----
-
 # ADR 0028: Separate the foldback boundary from the nick position
+
+Updates [ADR 0025](0025-payload-centered-construction-discovery.md), [ADR 0027](0027-file-oriented-construction-facade.md).
 
 ## Context
 

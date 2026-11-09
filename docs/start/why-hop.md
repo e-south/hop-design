@@ -1,19 +1,3 @@
----
-doc_id: hop-why-hop
-title: Why HOP
-intent: Explain the value and limits of searching construction sequence around an unchanged duplex payload.
-audience:
-  - users
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-09-08
-doc_type: explanation
-journey:
-  - compile
-  - integrate
----
-
 # Why HOP
 
 The region being tested should not have to change to accommodate its

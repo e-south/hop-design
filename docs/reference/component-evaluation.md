@@ -1,16 +1,3 @@
----
-doc_id: hop-component-evaluation-reference
-title: Component evaluation and released-state projection
-intent: Define route-neutral component observations and explicit released-strand projection.
-audience:
-  - API consumers
-  - integrators
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-24
-doc_type: reference
----
-
 # Component evaluation and released-state projection
 
 ## Foldback junction

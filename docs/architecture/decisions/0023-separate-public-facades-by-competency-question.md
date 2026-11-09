@@ -1,17 +1,3 @@
----
-doc_id: hop-adr-0023
-title: ADR 0023 - Separate public facades by competency question
-intent: Keep the design-language root small while giving discovery, methods, and views explicit supported import surfaces.
-audience:
-  - maintainers
-  - integrators
-  - agent executors
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-23
-doc_type: decision
----
-
 # ADR 0023: Separate public facades by competency question
 
 ## Context

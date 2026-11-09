@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0051
-title: Explicit construction envelope revisions
-intent: Separate permitted domains, evaluated preparations and explicit movement between envelopes.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-10-09
-doc_type: explanation
----
-
 # Explicit construction envelope revisions
 
 A finite result pool is not the permitted design space. A value absent from that

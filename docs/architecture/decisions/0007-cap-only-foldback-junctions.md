@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0007
-title: ADR 0007 - Cap-only foldback junctions
-intent: Represent unpaired turns without inventing a retained tract or returning arm.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-20
-doc_type: decision
----
-
 # ADR 0007: Cap-only foldback junctions
 
 ## Context

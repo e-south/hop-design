@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0016
-title: ADR 0016 - Discover released-foldback geometry before sequence allocation
-intent: Separate cross-agent physical compatibility from concrete precursor choice and caller ranking.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
----
-
 # ADR 0016: Discover released-foldback geometry before sequence allocation
 
 ## Context

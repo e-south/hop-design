@@ -1,18 +1,6 @@
----
-doc_id: hop-adr-0005
-title: ADR 0005 - Canonical junction pair observations
-intent: Record one physical junction representation for exact and noncanonical pairs.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-20
-doc_type: decision
-amended_by: hop-adr-0021
----
-
 # ADR 0005: Canonical junction pair observations
+
+Updated by [ADR 0021](0021-separate-pair-observation-from-policy.md).
 
 ## Context
 

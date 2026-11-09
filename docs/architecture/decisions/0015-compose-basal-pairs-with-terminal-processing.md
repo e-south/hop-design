@@ -1,16 +1,3 @@
----
-doc_id: hop-adr-0015
-title: ADR 0015 - Compose basal pairs with terminal processing
-intent: Define the bounded physical join without importing caller selection policy.
-audience:
-  - maintainers
-  - integrators
-owner: HOP Design maintainers
-status: accepted
-last_verified: 2026-08-22
-doc_type: decision
----
-
 # ADR 0015: Compose basal pairs with terminal processing
 
 ## Context

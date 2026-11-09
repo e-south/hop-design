@@ -3,7 +3,7 @@
 HOP Design
 tests/repo/test_documentation_contracts.py
 
-Tests documentation metadata, links, examples, and durable claim language.
+Tests readable documentation, working links, examples, and durable claim language.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -16,7 +16,6 @@ import json
 import re
 import subprocess
 import sys
-import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import ModuleType
@@ -107,14 +106,38 @@ def test_landing_page_routes_tasks_and_ends_with_versioned_citation_guidance() -
     assert "version or commit" in citation
 
 
-def test_source_installation_continues_into_the_primary_discovery_tutorial() -> None:
+def test_installation_continues_into_the_primary_discovery_tutorial() -> None:
     install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
     tutorial = (REPO_ROOT / "docs/guides/discover-designs.md").read_text(encoding="utf-8")
-    continuation = install.split("## Continue", maxsplit=1)[1]
-    assert continuation.index("discover-designs.md") < continuation.index(
-        "design-a-construction.md"
+    assert "discover-designs.md" in install.split("## Start designing", maxsplit=1)[1]
+    assert "hop-design design discover" in tutorial
+    assert "uv run hop-design" not in tutorial
+
+
+def test_map_capture_names_its_optional_dependency_before_first_fit() -> None:
+    install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
+    capture = (REPO_ROOT / "docs/guides/share-atlas-edition.md").read_text(encoding="utf-8")
+    assert "hop-design[atlas]==0.1.0a9" in install
+    assert capture.index("install.md#fit-a-new-molecular-map") < capture.index(
+        "--include-landscape"
     )
-    assert "uv run hop-design design discover" in tutorial
+
+
+def test_checkout_recipes_do_not_switch_to_an_independent_installed_cli() -> None:
+    for name in (
+        "explore-conditional-variants",
+        "discover-product-scaffolds",
+        "survey-interfaces",
+        "compile-construction",
+        "compare-scaffold-families",
+        "edit-folded-sequences",
+        "explore-scaffolds",
+    ):
+        text = (REPO_ROOT / f"docs/guides/{name}.md").read_text(encoding="utf-8")
+        commands = re.findall(r"^```(?:bash|text)\n(.*?)^```", text, re.MULTILINE | re.DOTALL)
+        assert commands
+        for block in commands:
+            assert not re.search(r"^hop-design\s", block, re.MULTILINE), name
 
 
 def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture() -> None:
@@ -477,7 +500,7 @@ def test_campaign_context_is_generic_at_the_durable_route() -> None:
     campaign = REPO_ROOT / "docs" / "ecosystem" / "campaign-orchestration.md"
     assert campaign.is_file()
     text = campaign.read_text(encoding="utf-8")
-    assert "doc_id: hop-campaign-orchestration" in text
+    assert text.startswith("# HOP in a campaign orchestration stack")
     assert "Proto-like campaign" not in text
     assert not (REPO_ROOT / "docs" / "ecosystem" / "proto-and-campaign-orchestration.md").exists()
 
@@ -551,33 +574,47 @@ def test_skill_metadata_is_structurally_validated() -> None:
     ) == [".agents/skills/example/SKILL.md: description must be a non-empty string"]
 
 
-def test_document_frontmatter_uses_controlled_routing_fields() -> None:
+def test_reader_pages_need_a_title_instead_of_metadata_tables() -> None:
     checker = _load_docs_checker()
     path = REPO_ROOT / "docs" / "example.md"
 
+    assert checker.check_document_page(path, "# Example\n\nFollow this guide.\n") == []
+    assert checker.check_document_page(path, "---\ndoc_id: example\n---\n# Example\n") == [
+        "docs/example.md: begin with a page title, not metadata"
+    ]
+    assert checker.check_document_page(path, "# Example\n\n```bash\nhop-design --help\n") == [
+        "docs/example.md: unbalanced fenced code blocks"
+    ]
+
+
+def test_reader_documentation_opens_without_machine_metadata() -> None:
+    pages = list((REPO_ROOT / "docs").rglob("*.md")) + [
+        REPO_ROOT / name
+        for name in ("ARCHITECTURE.md", "DESIGN.md", "RELIABILITY.md", "SECURITY.md")
+    ]
+    for page in pages:
+        assert page.read_text(encoding="utf-8").startswith("# "), page.relative_to(REPO_ROOT)
+
+
+def test_pypi_readme_links_still_resolve_to_repository_pages() -> None:
+    checker = _load_docs_checker()
+    target = "https://github.com/e-south/hop-design/blob/main/docs/missing.md"
+    assert checker.check_markdown_links(REPO_ROOT / "README.md", f"[Missing]({target})") == [
+        f"README.md: broken link {target!r}"
+    ]
     assert (
-        checker.check_document_metadata(
-            path,
-            {
-                "audience": ["users"],
-                "doc_type": "how-to",
-                "journey": ["compile"],
-                "status": "active",
-            },
+        checker.check_markdown_links(
+            REPO_ROOT / "README.md",
+            "[Install](https://github.com/e-south/hop-design/blob/main/docs/guides/install.md)",
         )
         == []
     )
-    assert checker.check_document_metadata(
-        path,
-        {
-            "audience": ["everyone"],
-            "doc_type": "how-to",
-            "status": "active",
-        },
-    ) == [
-        "docs/example.md: audience must use controlled reader roles",
-        "docs/example.md: how-to documents require journey routing",
-    ]
+
+
+def test_code_comments_do_not_create_document_navigation_targets() -> None:
+    checker = _load_docs_checker()
+    text = "# Guide\n\n```bash\n# Install HOP\nhop-design --help\n```\n\n## Continue\n"
+    assert checker.heading_anchors(text) == {"guide", "continue"}
 
 
 def test_document_inline_route_targets_fail_closed() -> None:
@@ -674,23 +711,12 @@ def test_active_docs_do_not_teach_retired_candidate_ordering() -> None:
         assert retired_claim not in active_text
 
 
-def test_schema_reference_distinguishes_release_and_source_generations() -> None:
-    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
-        source_version = tomllib.load(handle)["project"]["version"]
-    install = (REPO_ROOT / "docs" / "guides" / "install.md").read_text(encoding="utf-8")
-    schemas = (REPO_ROOT / "docs" / "reference" / "schemas.md").read_text(encoding="utf-8")
-    quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
-
-    match = re.search(r"hop_design-([0-9a-z.]+)-py3-none-any\.whl", install)
-    assert match is not None
-    published_version = match.group(1)
-
-    if published_version != source_version:
-        for text in (install, schemas, quickstart):
-            assert source_version in text
-            assert published_version in text
-            assert "unreleased" in text
-        assert f"`v{published_version}` contract" in quickstart
+def test_old_package_users_keep_a_versioned_documentation_route() -> None:
+    install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
+    schemas = (REPO_ROOT / "docs/reference/schemas.md").read_text(encoding="utf-8")
+    assert "tree/v0.1.0a8" in install
+    assert "hop.interface-survey/v2" in schemas
+    assert "hop.design/v2" in schemas
 
 
 def test_every_stable_operation_is_named_in_the_api_reference() -> None:

@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0037
-title: Product intent expands into existing construction contracts
-intent: Keep one authored stem and end pair without introducing another molecular solver.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-02
-doc_type: explanation
----
-
 # Product intent expands into existing construction contracts
 
 The complete example previously required repeated payloads, catalogs and end

@@ -1,16 +1,3 @@
----
-doc_id: hop-bundle-layout
-title: HOP bundle layout and verification
-intent: Define artifact meanings and the content-integrity procedure.
-audience:
-  - bundle consumers
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-21
-doc_type: reference
----
-
 # Bundle layout and verification
 
 | File | Meaning |

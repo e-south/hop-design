@@ -1,19 +1,3 @@
----
-doc_id: hop-discovery-and-selection
-title: Discovery and selection
-intent: Explain bounded geometry discovery, symbolic domains, and caller-owned choice.
-audience:
-  - users
-  - integrators
-  - maintainers
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-08-29
-doc_type: explanation
-journey:
-  - discover
----
-
 # Discovery and selection
 
 HOP keeps four operations distinct:

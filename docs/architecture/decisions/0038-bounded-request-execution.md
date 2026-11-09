@@ -1,14 +1,3 @@
----
-doc_id: hop-adr-0038
-title: Bounded execution of authored product requests
-intent: Return a preparation or a scoped outcome through the same CLI and API without silent selection or repair.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-02
-doc_type: explanation
----
-
 # Bounded execution of authored product requests
 
 `execute_construction_request` and `construction execute` compose existing

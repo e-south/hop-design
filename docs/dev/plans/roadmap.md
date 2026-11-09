@@ -1,34 +1,17 @@
----
-doc_id: hop-roadmap
-title: HOP product roadmap
-intent: Distinguish released capabilities, source capabilities, and remaining product work.
-audience:
-  - maintainers
-  - agent executors
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-09
-doc_type: explanation
-journey:
-  - maintain
----
-
 # HOP product roadmap
 
 ## Product direction
 
-HOP is a domain-specific language and compiler for sequence-encoded hairpins.
-Its public roadmap is organized by the claim each surface makes, not by a
-private consumer migration.
+HOP discovers complete hairpin preparations around a supplied stem. This roadmap
+separates implemented molecular capabilities from planned extensions.
 
-## Candidate and published scope
+## Version 0.1.0a9
 
-The source checkout is the unreleased `v0.1.0a9` candidate. Its implemented
-workflows include complete scaffold discovery, stage-specific comparisons,
-terminal hairpin requirements and explicit material reuse. Public publication
-remains pending; a version label alone does not identify a tested source tree.
+The current workflows include complete scaffold discovery, stage-specific
+comparisons, terminal hairpin requirements and explicit material reuse. Record
+the runtime identity when using a source checkout between releases.
 
-The candidate also includes [folded-sequence editing](../../guides/edit-folded-sequences.md):
+This version also includes [folded-sequence editing](../../guides/edit-folded-sequences.md):
 exact loops, finite released-end placements and explicit method alternatives,
 shared CLI/API retrieval, a local editor, and bounded exact expansion of a
 degenerate stem. These operate on modeled preparations. Unrestricted nucleotide
@@ -40,7 +23,7 @@ adds browsing over admitted complete results: neighborhood choices narrow whole
 products under fixed references and stage-qualified controls. The API, CLI and
 single-molecule viewport share the query model; retrieval rechecks its constraints.
 Repeated queries use immutable facts, while search expansion and control relaxation
-remain explicit, separate operations. This is a source-candidate capability.
+remain explicit, separate operations.
 
 The construction-envelope navigator adds paged permitted domains, including words
 and geometries without completed preparations. Field-bound permission revisions
@@ -103,10 +86,8 @@ or change method resolution.
 
 ## Source capabilities
 
-The source checkout extends the published artifact under candidate version
-`0.1.0a9`. Retained-overhead contracts, query checkpointing and request execution
-require its matching artifact. Use tagged documentation with the published
-`0.1.0a8` wheel; a prepared candidate is not evidence of public availability.
+The following interfaces describe `0.1.0a9`. Older packages retain their own
+tagged documentation and schemas.
 
 The [construction guide](../../guides/compile-construction.md) exposes:
 
@@ -154,16 +135,16 @@ end-to-end walkthrough for users seeking a molecular preparation. The facade acc
 a separately verified design authority; raw construction models remain internal.
 The [usability priorities](construction-user-journey.md) distinguish current
 handoffs from remaining authoring work. The public-input walkthrough and
-opt-in bounded request executor are implemented in the candidate; a graphical
+opt-in bounded request executor are implemented; a graphical
 freeform request authoring surface is outside these workflows. The local viewport
 chooses among supported complete designs through the same constrained API.
 
-## Implemented product workflows in the source candidate
+## Implemented product workflows
 
 ### Complete product options before selection
 
 [Complete scaffold exploration](../../guides/explore-scaffolds.md), controlled-set
-grouping and explicit label retrieval are implemented in the local candidate.
+grouping and explicit label retrieval are implemented.
 The [delivery plan](scaffold-options.md) records acceptance and verification.
 The same comparison intent carries shared controls through selection. New
 molecular capabilities, joint search beyond the evaluated pool and persisted
@@ -172,7 +153,7 @@ continuation resumption remain separate work.
 ### Product-driven preparations
 
 [Desired scaffold dimensions](../../guides/discover-product-scaffolds.md) now drive
-explicitly permitted adapter and release-method branches in the local candidate.
+explicitly permitted adapter and release-method branches in this version.
 Exact stage grouping distinguishes hairpins from alternative preparations of one
 released product. [Acceptance and verification](product-first-discovery.md) remain
 with the delivery plan. This does not add joint molecular optimization or new chemistry.

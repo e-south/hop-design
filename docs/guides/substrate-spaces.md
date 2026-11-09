@@ -1,19 +1,3 @@
----
-doc_id: hop-substrate-spaces
-title: Define and compile a bounded substrate space
-intent: Preview and compile one complete digital hairpin design set from fixed and variable payload rules.
-audience:
-  - new users
-  - users
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-09-08
-doc_type: tutorial
-journey:
-  - compile
-  - verify
----
-
 # Define and compile a bounded substrate space
 
 Use this route when the scientific question concerns a finite set of paired
@@ -57,6 +41,7 @@ larger space without allocating a design for every member.
 From a source checkout:
 
 ```bash
+# Preview the finite repository example before compiling its complete set.
 uv run hop-design space preview examples/loxp-spacer-base-classes.yaml
 uv run hop-design space compile examples/loxp-spacer-base-classes.yaml \
   --out build/loxp-spacer-base-classes
@@ -108,6 +93,7 @@ Later evidence belongs in separate records that reference the stable design-set 
 ## Python
 
 ```python
+# Preview and compile the same substrate-space specification through Python.
 import yaml
 
 from hop_design.spaces import SubstrateSpaceSpec, compile_space, preview_space

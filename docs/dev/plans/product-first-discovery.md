@@ -1,15 +1,3 @@
----
-doc_id: hop-product-first-discovery-plan
-title: Product-first scaffold discovery
-intent: Translate desired scaffolds into explicit bounded preparation alternatives and stage-aware comparisons.
-audience: [maintainers, integrators]
-owner: HOP Design maintainers
-status: active
-last_verified: 2026-10-05
-doc_type: explanation
-journey: [maintain]
----
-
 # Product-first scaffold discovery
 
 The user specifies a scaffold and intended product, explores permitted
