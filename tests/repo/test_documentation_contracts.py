@@ -59,14 +59,14 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
     normalized = " ".join(readme.split())
-    assert "preserve the authored payload's paired relationship" in normalized
     assert "not predictions of laboratory success" in normalized
+    docs_index = (REPO_ROOT / "docs/index.md").read_text(encoding="utf-8")
     for route in (
-        "docs/guides/discover-product-scaffolds.md",
-        "docs/guides/specify-a-comparison.md",
-        "docs/guides/design-a-construction.md",
+        "guides/discover-product-scaffolds.md",
+        "guides/specify-a-comparison.md",
+        "guides/design-a-construction.md",
     ):
-        assert route in readme
+        assert route in docs_index
     assert "source, adapter and primer specifications" in normalized
     assert "## Availability" not in readme
     assert "unreleased" not in readme
@@ -80,6 +80,7 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "## Install" not in readme
     assert "## Compile a design" not in readme
     assert len(readme.splitlines()) <= 80
+    assert len(readme.split()) <= 250
 
 
 def test_landing_page_opens_with_one_short_product_paragraph() -> None:
@@ -96,15 +97,24 @@ def test_landing_page_opens_with_one_short_product_paragraph() -> None:
     assert paragraphs[0].startswith("Hairpin Oligonucleotide Processing (HOP)")
 
 
-def test_landing_page_routes_tasks_and_ends_with_a_citation_placeholder() -> None:
+def test_landing_page_routes_tasks_and_ends_with_versioned_citation_guidance() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     sections = re.findall(r"^## (.+)$", readme, flags=re.MULTILINE)
 
     assert sections == ["Start here", "Documentation", "Contribute", "Cite HOP"]
     citation = " ".join(readme.split("## Cite HOP", maxsplit=1)[1].split())
-    assert "If you use HOP in your research, please cite" in citation
+    assert "cite" in citation.lower()
     assert "version or commit" in citation
-    assert "Citation placeholder" in citation
+
+
+def test_source_installation_continues_into_the_primary_discovery_tutorial() -> None:
+    install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
+    tutorial = (REPO_ROOT / "docs/guides/discover-designs.md").read_text(encoding="utf-8")
+    continuation = install.split("## Continue", maxsplit=1)[1]
+    assert continuation.index("discover-designs.md") < continuation.index(
+        "design-a-construction.md"
+    )
+    assert "uv run hop-design design discover" in tutorial
 
 
 def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture() -> None:

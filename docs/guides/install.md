@@ -5,7 +5,7 @@ intent: Choose a released wheel or source checkout and set up HOP for use.
 audience: [new users]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-09-10
+last_verified: 2026-11-09
 doc_type: how-to
 journey: [install]
 ---
@@ -14,8 +14,8 @@ journey: [install]
 
 Use Python 3.12–3.14. The commands below use
 [uv](https://docs.astral.sh/uv/getting-started/installation/).
-Choose a released wheel for the tagged guides or a source checkout for the
-construction-search examples.
+For stem-based discovery and atlas inspection, use the source checkout below.
+Use the released wheel with its tagged documentation for earlier workflows.
 
 HOP is alpha software; APIs and file formats may change before 1.0.
 
@@ -66,7 +66,10 @@ Use `uv run hop-design` from this checkout for the source examples.
 
 ## Continue
 
-- [Design a construction](design-a-construction.md): product, materials and processing.
+- [Discover designs around your stem](discover-designs.md): inspect complete
+  preparations and retrieve oligos.
+- [Author an explicit construction](design-a-construction.md): product,
+  materials and processing requirements.
 - For anatomy only, [compile a payload design](quickstart.md).
 - [Define and preview a substrate space](substrate-spaces.md).
 - [Search junctions and compile a construction](compile-construction.md).

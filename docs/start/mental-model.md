@@ -8,7 +8,7 @@ audience:
   - maintainers
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-11-04
+last_verified: 2026-11-09
 doc_type: explanation
 journey:
   - compile
@@ -39,15 +39,40 @@ enzymes, geometry and material permissions; inspect or replace it as needed. The
 is a source ssDNA oligo with construction flanks around the payload. Its sequence
 and required auxiliaries depend on the chosen route.
 
-## What can the search change?
-
 The foldback neighborhood supplies the sequence that can be exposed, folded,
 and joined to close the cap. The basal construction neighborhood supplies the
 opposite junction, including adapter pairing and later end generation when required.
 Neither search changes the payload.
 
-These are modular local searches. HOP solves and reuses foldback and basal
-sequence domains separately, then checks selected combinations through the
+## How do local junctions become a construction?
+
+A local solution describes a possible junction, not the entire molecule.
+Composition checks selected junctions together with the source, adapters,
+primers, fragment-removal program, and endpoint requirements. Missing annealing
+sequence or incompatible materials must reject that proposed construction.
+
+For the supported linear-source route, the modeled sequence of steps is:
+
+```text
+source ssDNA + primers → source duplex
+    → cleavage → strand separation → fragment selection
+    → foldback and required adapter pairing → covalent joins → ssDNA hairpin
+    → optional PCR duplex → optional end-generating cleavage
+```
+
+Nicking breaks one backbone; it does not itself remove a fragment. Separation
+and selection are distinct steps. PCR derives expected strands from declared
+primer bindings; HOP does not predict amplification efficiency.
+
+The requested endpoint determines which steps and materials are required.
+A direct ssDNA hairpin does not acquire adapter, PCR, or end-generation
+requirements merely because another endpoint needs them. For material and
+request examples, use the [construction guide](../guides/compile-construction.md)
+or [check a named method](../guides/resolve-production-method.md).
+
+## What can the search change?
+
+HOP solves and reuses foldback and basal sequence domains separately, then checks selected combinations through the
 complete preparation. Most coupling is within each neighborhood: its geometry,
 recognition sites, cleavage and sequence must agree. Composition adds the
 requirements shared by the full molecule and its processing route. Modularity
@@ -69,7 +94,7 @@ explicit. Primer requirements and unwanted recognition sites still constrain
 the remaining auxiliary bases. If one completion fails, other permitted
 completions remain available.
 
-Keep three intentions separate when authoring a request:
+Choose which parts of the request to preserve or explore:
 
 | Intention | What HOP preserves or explores |
 | --- | --- |
@@ -112,32 +137,6 @@ keeps a witness for each accessible work unit; an all-realizations search keeps
 every exact alternative within its reported coverage. Neither order nor a
 shorter junction predicts experimental performance. A truncated search leaves
 part of the declared space unresolved. See [search interpretation](../discovery/overview.md).
-
-## How do local junctions become a construction?
-
-A local solution describes a possible junction, not the entire molecule.
-Composition checks selected junctions together with the source, adapters,
-primers, fragment-removal program, and endpoint requirements. Missing annealing
-sequence or incompatible materials must reject that proposed construction.
-
-For the supported linear-source route, the modeled sequence of steps is:
-
-```text
-source ssDNA + primers → source duplex
-    → cleavage → strand separation → fragment selection
-    → foldback and required adapter pairing → covalent joins → ssDNA hairpin
-    → optional PCR duplex → optional end-generating cleavage
-```
-
-Nicking breaks one backbone; it does not itself remove a fragment. Separation
-and selection are distinct steps. PCR derives expected strands from declared
-primer bindings; HOP does not predict amplification efficiency.
-
-The requested endpoint determines which steps and materials are required.
-A direct ssDNA hairpin does not acquire adapter, PCR, or end-generation
-requirements merely because another endpoint needs them. For material and
-request examples, use the [construction guide](../guides/compile-construction.md)
-or [check a named method](../guides/resolve-production-method.md).
 
 ## How does a preparation enter the atlas?
 

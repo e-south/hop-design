@@ -7,7 +7,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-10-23
+last_verified: 2026-11-09
 doc_type: index
 journey:
   - maintain
@@ -19,8 +19,9 @@ journey:
   search, comparison, verification and presentation, with focused test seams.
 - [Measure performance](performance.md) separates search, verification and display
   costs, with disposable benchmark outputs and bounded proof reuse.
-- [Reduce duplicate verification](plans/verification-cost.md) tracks the small
-  clean-install gate and shared fidelity checks; hosted adoption remains pending.
+- [Verification design](plans/verification-cost.md) records the separation of
+  source tests, routine installation checks and release qualification. The
+  performance guide above defines the current gate selection.
 - [GitHub governance](github-governance.md) defines repository settings,
   required checks, and the evidence unavailable when hosted CI cannot run.
 - [Release process](releasing.md) separates GitHub artifacts from PyPI
