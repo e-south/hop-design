@@ -191,9 +191,17 @@ class SurveyIndex:
 
     def next_step(self, ordinal: int) -> int:
         self.request.targets.pair_at(ordinal)
-        return int(
-            self._db.execute("SELECT COUNT(*) FROM steps WHERE ordinal=?", (ordinal,)).fetchone()[0]
-        )
+        tail = self._last_step(ordinal)
+        return 0 if tail is None else tail[0] + 1
+
+    def _last_step(self, ordinal: int) -> tuple[int, bool] | None:
+        # Admission checks the complete contiguous history; each append preserves
+        # it. The existing primary key finds its tail without recounting history.
+        row = self._db.execute(
+            "SELECT step, exhausted FROM steps WHERE ordinal=? ORDER BY step DESC LIMIT 1",
+            (ordinal,),
+        ).fetchone()
+        return None if row is None else (int(row[0]), bool(row[1]))
 
     def append(
         self, ordinal: int, *, step: int, record: bytes, witness_count: int, exhausted: bool
@@ -210,11 +218,10 @@ class SurveyIndex:
         row = (ordinal, step, digest, witness_count, int(exhausted))
         try:
             self._db.execute("BEGIN IMMEDIATE")
-            if self.next_step(ordinal) != step:
+            tail = self._last_step(ordinal)
+            if (0 if tail is None else tail[0] + 1) != step:
                 raise ValueError("Survey step must continue the existing target checkpoint.")
-            if self._db.execute(
-                "SELECT 1 FROM steps WHERE ordinal=? AND exhausted=1", (ordinal,)
-            ).fetchone():
+            if tail is not None and tail[1]:
                 raise ValueError("Survey target is already exhausted.")
             self._db.execute(
                 "INSERT OR IGNORE INTO objects VALUES (?, ?)", (digest, zlib.compress(record))

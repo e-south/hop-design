@@ -417,6 +417,13 @@ commits before progress is emitted, so a larger invocation budget does not defer
 all persistence until the call returns. Measure retained scheduler state and
 whole-process memory separately; other admission and proof state still consume memory.
 
+Checkpoint append reads the latest step through the existing `(ordinal, step)`
+index, inside the write transaction. It does not recount or scan a target's
+growing history for each evaluation. Opening still checks every record and step
+for integrity and continuity; append rejects stale steps and exhausted targets.
+This adds no cached cursor or schema change. Measure append cost separately from
+checkpoint admission and molecular search, including deep single-target histories.
+
 The numerical comparison view validates its cohort once and caches regional edit
 distances within the call. Its cache is bounded and cleared on normal exit or
 interruption. Small maps retain exact all-pairs fitting. Omitted and explicit
