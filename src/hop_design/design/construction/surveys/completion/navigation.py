@@ -168,9 +168,9 @@ class CompletionNavigator:
             )
 
         if not cursor.initialized:
-            first = introductions.first
-            if first is not None:
-                push(first)
+            initial = introductions.first
+            if initial is not None:
+                push(initial)
         if cursor.preferred_next < len(cursor.preferred_groups):
             preferred = cursor.preferred_groups[cursor.preferred_next]
             geometry = preferred.geometry

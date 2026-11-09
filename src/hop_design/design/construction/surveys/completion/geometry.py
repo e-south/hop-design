@@ -68,7 +68,11 @@ class GeometryIntroductions:
             if not self.candidate_keys:
                 return None
             wave, geometry = self.candidate_keys[0]
-            return CompletionFrontierEntry(kind="basal", wave=wave, geometry=geometry)
+            return CompletionFrontierEntry(
+                kind="basal",
+                wave=wave,
+                geometry=(geometry[0], geometry[1], geometry[2], geometry[3], 0, geometry[5]),
+            )
         return CompletionFrontierEntry(
             kind="geometry" if self.admit_basal is None else "basal",
             wave=sum(min(f) for f in self.order.costs),
@@ -115,6 +119,8 @@ class GeometryIntroductions:
         factored = entry.kind == "basal"
         order = self.basal_order if factored else self.order
         offset = min(self.order.costs[4]) if factored else 0
+        found: Geometry | None
+        following: Geometry | None
         if factored and self.basal_candidates is not None:
             position = bisect_left(self.candidate_keys, (entry.wave, g))
             found = (

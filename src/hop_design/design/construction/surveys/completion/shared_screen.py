@@ -46,7 +46,7 @@ class BasalScreen:
             return None
         groups: dict[str, tuple[SequenceSet, list[Geometry]]] = {}
         unknown: list[Geometry] = []
-        facts = []
+        facts: list[tuple[tuple[int, ...], str | None]] = []
         size = 0
         for frame in product(*(range(n) for n in factors)):
             if should_stop is not None and should_stop():
