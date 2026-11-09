@@ -21,6 +21,10 @@ from ..partitions import PartitionPlans
 from ..preference_addressing import PreparationAddress, addresses_for_preparation
 from .preference import load_preferred_preparation
 
+_LOCAL_CACHE_ENTRIES = 64
+# Charge serialized receipt bytes; parsed models and Python overhead are additional.
+_LOCAL_CACHE_BYTES = 8 * 1024 * 1024
+
 
 class LocalReceipts:
     """Full local-request dependency keys; saved bytes are replayed before use."""
@@ -34,6 +38,7 @@ class LocalReceipts:
     ):
         self.index = index
         self._warm: OrderedDict[str, LocalNeighborhoodDiscovery] = OrderedDict()
+        self._warm_bytes = 0
         self.partitions = PartitionPlans(index, limits.sequence_space_limits)
         self.proofs = EmptyPlaneHistory(index, limits)
         self._limits = limits
@@ -146,7 +151,11 @@ class LocalReceipts:
             ]
             if canonical_json_bytes(embedded) != canonical_json_bytes(request):
                 raise ValueError("Survey local cache does not match its complete dependency key.")
-        self._warm[key] = receipt
-        while len(self._warm) > 8:
-            self._warm.popitem(last=False)
+        size = len(receipt.json_bytes)
+        if size <= _LOCAL_CACHE_BYTES:
+            self._warm[key] = receipt
+            self._warm_bytes += size
+            while len(self._warm) > _LOCAL_CACHE_ENTRIES or self._warm_bytes > _LOCAL_CACHE_BYTES:
+                _, removed = self._warm.popitem(last=False)
+                self._warm_bytes -= len(removed.json_bytes)
         return receipt

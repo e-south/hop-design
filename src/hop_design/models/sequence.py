@@ -50,6 +50,10 @@ class SequenceValidationError(ValueError):
 
 def normalize_dna_sequence(raw: str, *, allow_degenerate: bool) -> str:
     """Normalize case and formatting whitespace, then validate a DNA sequence."""
+    if type(raw) is str and type(allow_degenerate) is bool and len(raw) == 1:
+        alphabet = IUPAC_DNA_ALPHABET if allow_degenerate else EXACT_DNA_ALPHABET
+        if raw in alphabet:
+            return raw
     if not isinstance(raw, str):
         raise SequenceValidationError("DNA sequence must be a string.")
 

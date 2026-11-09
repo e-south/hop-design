@@ -98,22 +98,18 @@ def _top_lineage(
     middle = template.lineage[
         forward.annealing_length_nt : len(template.sequence) - reverse.annealing_length_nt
     ]
-    records.extend(
-        item.model_copy(update={"product_index": len(records) + index})
-        for index, item in enumerate(middle)
-    )
-    records.extend(
-        _lineage_record(
-            product_index=len(records),
-            origin_id=reverse_use_id,
-            origin_strand=LineageStrand.COMPLEMENTARY,
-            origin_index=index,
+    for item in middle:
+        records.append(item.model_copy(update={"product_index": len(records)}))
+    for index in reversed(range(len(reverse.oligo.sequence_5prime))):
+        records.append(
+            _lineage_record(
+                product_index=len(records),
+                origin_id=reverse_use_id,
+                origin_strand=LineageStrand.COMPLEMENTARY,
+                origin_index=index,
+            )
         )
-        for index in reversed(range(len(reverse.oligo.sequence_5prime)))
-    )
-    return tuple(
-        item.model_copy(update={"product_index": index}) for index, item in enumerate(records)
-    )
+    return tuple(records)
 
 
 def pcr_products(

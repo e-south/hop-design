@@ -34,8 +34,8 @@ separately from publication and reopening, which deliberately retain replay.
 
 The necessary end-pair projection uses the same boundary: it reuses already
 validated enzyme provisioning while checking the derived local pairing
-constraints and unpartitioned search request. Relation cache keys, molecular solving and resource
-limits are unchanged.
+constraints and unpartitioned search request. Complete cache dependencies,
+molecular solving and resource limits remain in force.
 
 Recognition-window conjunction normalizes each distinct base-choice tuple once
 per call and replaces only positions touched by a site. Unchanged positions
@@ -43,6 +43,20 @@ share immutable tuples. Empty domains anywhere still reject the assignment;
 overlapping windows and complemented copies constrain the same variable.
 This avoids rebuilding mutable sets across the entire source for each short
 site, without a persistent cache or changes to admitted sequences.
+
+Already-normalized single bases take a direct alphabet-membership check. Case,
+whitespace, symbolic permissions, string subclasses and invalid inputs retain
+ordinary normalization. PCR product assembly assigns each lineage record its
+final position as it is appended, avoiding a second copy of the complete strand.
+Primer handles, template ancestry and complementary-strand origins are unchanged.
+
+Each survey invocation also retains at most 64 admitted local receipts and 8 MiB
+of serialized receipt bytes. Parsed models and Python overhead consume additional
+memory. Keys include the complete local request. The first load of saved bytes
+still replays and checks its embedded request; failed admission is never retained.
+Eviction or an oversized receipt causes independent admission on the next access.
+This avoids repeatedly replaying a small roster while keeping cold continuation
+and saved-file verification intact.
 
 ## Persist continuation pages
 
