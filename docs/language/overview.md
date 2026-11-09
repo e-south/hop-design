@@ -1,7 +1,8 @@
 # Design language
 
-The design language answers one question: **what hairpin is being requested?**
-It is declarative. It does not claim how the hairpin will be produced.
+The design language specifies **the requested hairpin**: its payload, junctions,
+and optional paired context. Construction programs and named methods specify
+processing steps.
 
 `hop_design.spaces` is the scientist-facing facade for defining, previewing,
 and compiling a bounded substrate space. The package root, `hop_design`, is the
@@ -27,9 +28,8 @@ not additional steps in the first-use substrate-space journey.
 ## Authored and derived sequence
 
 The payload is authored once. Its partner is always the DNA IUPAC reverse
-complement derived by HOP. Literal non-payload arms remain possible in basal
-junctions and paired stem extensions because those objects answer different
-structural questions.
+complement derived by HOP. Basal junctions and paired stem extensions accept
+literal non-payload arms to record their own pairing relationships.
 
 Pair kind is also derived from literal bases:
 

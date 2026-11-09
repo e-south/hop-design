@@ -62,10 +62,8 @@
   site in the exact source duplex. A candidate is accepted only when the
   declared length rule retains exactly the required strand spans. Auxiliary
   cleanup nicks remain route-level facts and never become basal geometry.
-- PCR handles, primer binding, and end release are endpoint-materialization
-  facts. Exact primer sequences may be checked for sequence binding, but no
-  thermodynamic feasibility claim exists without a separately declared model
-  and conditions.
+- Endpoint materialization resolves PCR handles, primer binding, and end
+  release. Primer checks compare exact sequences and declared binding spans.
 - In a PCR-bearing linear-source route, the complete retained source prefix,
   its derived reverse-complement source-return arm, the local basal pairing
   span, and the exact ligation adapter are distinct authorities. The adapter

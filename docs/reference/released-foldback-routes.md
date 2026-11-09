@@ -13,10 +13,10 @@ length, per-base domains, correlated Watson–Crick pair domains, and exact
 compatible-sequence cardinality. Empty process or pair intersections are
 explicit blockers.
 
-Paired-tract and turn lengths are request inputs. The search does not vary all
-lengths, prove a globally shortest junction, choose a sequence, or apply vendor
-and application preferences. It computes the full geometry cardinality before
-enumeration. Node and hit bounds remain independent.
+The request fixes paired-tract and turn lengths. The search computes the full
+geometry cardinality before enumeration, with independent node and hit bounds.
+Select a geometry before searching its sequences; apply vendor and application
+preferences separately.
 
 ## Materialize one selected geometry
 
@@ -39,10 +39,10 @@ Failure is `continuous_strand_mismatch`.
 
 The two end-agent identities remain independent. Upstream incompleteness is
 reported separately from local node and hit truncation. `complete` means the
-available upstream cross-product was exhausted; it does not mean a production
-method or destination assembly is complete.
+available upstream cross-product was exhausted. The output is a junction-level
+route for subsequent complete construction.
 
 `build_released_foldback_precursor_view(...)` and
 `build_hairpin_junction_route_view(route)` from `hop_design.views` recheck their
 inputs and project the typed released workflow. They accept no independent
-foldback input and make no new method claim.
+foldback input.

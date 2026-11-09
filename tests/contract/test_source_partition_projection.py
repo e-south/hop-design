@@ -67,7 +67,6 @@ def test_source_partition_projection_preserves_exact_certificate_and_boundaries(
     assert "declared cut geometry" in svg
     assert f'data-result-id="{receipt.result_id}"' in svg
     assert f'data-realization-id="{receipt.realization_ids[0]}"' in svg
-    assert "physical cleavage and recovery are not established" in svg
 
 
 def test_source_partition_projection_requires_an_accepted_realization(tmp_path) -> None:

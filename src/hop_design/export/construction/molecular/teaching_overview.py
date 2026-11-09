@@ -2,7 +2,7 @@
 
 Coordinates here only place recorded bases. Parameter occurrences and recognition
 footprints come from the shared projection, including ancestry-qualified release
-coordinates. This view does not add cleavage, pairing or folding predictions.
+coordinates.
 """
 
 import json

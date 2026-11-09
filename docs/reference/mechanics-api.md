@@ -1,8 +1,7 @@
 # Molecular mechanics reference map
 
-HOP separates component evaluation, processing geometry, route composition,
-and caller policy. Choose the narrowest question; no single operation is a
-global hairpin optimizer or a complete laboratory method.
+Choose the operation for your question: component evaluation, processing
+geometry, or route composition. Supply the acceptance policy with the request.
 
 | Question | Public operation | Detailed reference |
 | --- | --- | --- |
@@ -28,8 +27,7 @@ global hairpin optimizer or a complete laboratory method.
 
 Every bounded search reports `complete`, `infeasible`, or `truncated`, with
 node and hit bounds kept independent. `canonical_ordinal` is presentation
-order, never an optimization score. Sequence-and-cut compatibility does not
-establish empirical cleavage efficiency or destination fitness.
+order, never an optimization score.
 
 For facade signatures, see the [Python API](python-api.md). For the language
 relationships that these operations enforce, see

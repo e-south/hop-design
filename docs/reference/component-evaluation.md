@@ -5,7 +5,7 @@
 `evaluate_foldback(FoldbackEvaluationRequest)` derives the canonical junction,
 source and effective turns, pair observations, Watson–Crick runs, and added
 nucleotide count. `retained_tract_span.start` declares the foldback origin;
-generic evaluation makes no nick claim. A cap-only junction may have zero
+nick geometry is supplied separately. A cap-only junction may have zero
 retained and returning bases while preserving a nonempty turn.
 
 `search_foldback_arms(FoldbackSearchRequest, limits=...)` requires a nonempty
@@ -21,9 +21,8 @@ S3/S2/S1/S0 pairs as `watson_crick`, `gt_wobble`, or `hard_mismatch`. The
 caller-supplied `BasalConstraintProfile` separately returns `active`, `reserve`,
 or `reject`. Reserve acceptance must be explicit.
 
-`pair_support_index` and `pair_disruption_index` are dimensionless
-`pair-count-weighted@1` heuristics. They do not estimate duplex energy,
-ligation, enzyme activity, or experimental success.
+`pair_support_index` and `pair_disruption_index` use the dimensionless
+`pair-count-weighted@1` heuristic.
 
 ## Paired stem extension
 
@@ -51,8 +50,6 @@ terminal-nick and release geometry. `check` aggregates independent diagnostics;
 `compile` refuses errors and emits a feature-partitioned encoding, evaluated
 intermediates, and typed views.
 
-Compilation records declarative design derivation. It does not claim that HOP
-generated the components, that a method exists, or that a destination is
-compatible. If release geometry is supplied, a terminal nick is required and
-its active product must equal the foldback precursor; otherwise
-`HOP-ROUTE-001` reports the mismatch.
+Compilation derives the design from the supplied components. Release geometry
+requires a terminal nick whose active product equals the foldback precursor;
+otherwise `HOP-ROUTE-001` reports the mismatch.

@@ -1,7 +1,7 @@
 # Hairpin components
 
-HOP uses sequence regions with one physical meaning each. Historical labels can
-map to these regions, but they do not redefine them.
+HOP names each sequence region by its physical role. Map historical labels to
+these regions and their exact spans.
 
 ## Design anatomy
 
@@ -58,17 +58,14 @@ basal junction itself.
 
 ## Products and handoffs
 
-`HairpinEncodingInsert` is HOP's one-dimensional compiled sequence and nested
-feature map. Despite the word “insert,” it does not claim a physical duplex or
-destination readiness.
+`HairpinEncodingInsert` contains HOP's one-dimensional compiled sequence and
+nested feature map. Strands and assembly ends belong to the product records
+below.
 
 `HairpinPcrDuplex` is the exact two-strand product modeled by a named method.
 `RestrictionDigestProduct` is a destination-neutral duplex fragment made from
 that product. A caller creates an `AssemblyFragment` only after choosing a
 destination, orientation, and compatible ends.
-
-These records are digital molecular authorities. Verification replays their
-derivation but does not establish that a molecule was constructed or recovered.
 
 See the [method language](../methods/overview.md) for event order and the
 [formal ontology](ontology.md) for exact contract names.

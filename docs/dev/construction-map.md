@@ -42,7 +42,7 @@ Paths below are relative to `src/hop_design/`.
 | Execute complete options and record coverage | `design/construction/options/` and `discovery/explore.py` | Selecting the user's preferred preparation |
 | Assess a deliberate comparison | `design/construction/comparisons/` | Recomputing molecule facts from report labels |
 | Explicit family admission, recovery and retrieval | `design/construction/families/` | Product-first search policy or study-specific membership |
-| Admit selected authorities and bind exact member identities | `design/construction/families/set_members.py` | Set report assembly or discovery scheduling |
+| Admit selected results and bind exact member identities | `design/construction/families/set_members.py` | Set report assembly or discovery scheduling |
 | Capture and publish portable inventories | `design/construction/packets/` | Family-reference policy or molecular admission |
 | Project and render recorded products | `design/construction/projections/` and `export/construction/` | New molecular conclusions inferred from drawings |
 | Public operation and CLI adaptation | `construction.py` and `commands/construction/` | Raw internal-model authoring or duplicated derivations |
@@ -62,8 +62,8 @@ actually produces the requested scaffold.
 
 ## Interface survey and completion search
 
-The survey is an execution owner over the existing molecular compiler, not a
-second chemistry implementation. Keep these reasons to change separate:
+The survey schedules and checkpoints the existing molecular compiler. Keep
+these responsibilities separate:
 
 | Responsibility | Owner relative to `src/hop_design/` |
 | --- | --- |
@@ -99,9 +99,9 @@ membership. Preserve that separation when changing the implementation:
   choices. Neither derives a score from UMAP coordinates or silently changes
   search permissions.
 
-Applications own their scientific envelope, budget, selection rationale and
-publication edition. CLI and browser adapters call the shared public facade;
-neither should duplicate these policies in another solver or hidden default.
+Applications define their scientific envelope, budget, selection rationale and
+publication edition. CLI and browser adapters call the shared public facade
+with those explicit inputs.
 
 Focused seams are `test_survey_end_pair_relation.py`,
 `test_release_recognition_masks.py`, `test_survey_frame_admission.py` and
@@ -220,7 +220,7 @@ benchmark, receipt-reuse boundaries, cache lifetime and test staging. It separat
 search, admission, retained queries and retrieval instead of treating total runtime
 as one bottleneck.
 
-The regression seams are `test_construction_bundle_replay_cost.py` for whole-route
-and publication checks, `test_local_replay_scope.py` for bounded local proof reuse,
-and `test_comparison_journey.py` for selected-set admission. All use the same
-molecular authority as the public API and CLI.
+The regression seams are `test_construction_bundle_replay_cost.py` for
+whole-route and publication checks, `test_local_replay_scope.py` for bounded
+local proof reuse, and `test_comparison_journey.py` for selected-set
+admission. All use the same molecular derivations as the public API and CLI.

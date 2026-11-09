@@ -19,7 +19,7 @@ execution establishes a fresh deterministic replay claim. Historical frozen
 evidence remains unchanged.
 
 The cost is explicit process invocation and replay when reopening authorities.
-The benefit is independent installation and release ownership without weaker
-scientific checks. CLI parity tests bind report authorities and generated files
+The benefit is independent installation and release ownership while retaining
+molecular replay checks. CLI parity tests bind report authorities and generated files
 to existing public operations; corruption and invalid-input tests preserve
 failure behavior. See the [external artifact reference](../../reference/external-artifacts.md).

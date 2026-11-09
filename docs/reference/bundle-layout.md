@@ -31,6 +31,6 @@ valid spec for the authored intent that produced the plan.
 `verify_bundle(path)` runs the same complete verification and returns only the
 root manifest for callers that do not need the typed bundle contents.
 
-This layout records design compilation. A complete production-method plan uses
-the separate [method bundle layout](method-bundle-layout.md), joined by the
-exact hairpin-encoding sequence digest.
+This layout records design compilation. To link it to a complete
+[method bundle](method-bundle-layout.md), compare the exact hairpin-encoding
+sequence digests.

@@ -7,7 +7,7 @@ preceding increment.
 A comparative family needs three distinct contracts: intent, verified molecular
 comparison, and explicit retrieval. A material change is not automatically a
 change elsewhere in the product. A later coordinate can move while its regional
-sequence remains unchanged. Experimental effects are not established by either.
+sequence remains unchanged.
 
 `hop.construction-comparison/v2` adds a derived assessment of the existing exact
 property comparisons: scaffold differences, shared scaffold properties,
@@ -55,6 +55,6 @@ emits v2 with explicit lineage. Both use the existing hashed family packet and
 are admitted by the same member verifier. Each member preserves its original
 producer; the revision records the current producer separately. Provenance is
 not a signature. Neither operation discovers an alternative, relaxes a policy,
-selects a set, ranks biological performance or changes a molecular authority.
+selects a set, ranks candidates or changes a molecular authority.
 Tests cover explicit selection, edited alternatives, foreign requests/witnesses,
 forged lineage, unchanged parent bytes and relocation of selected preparations.

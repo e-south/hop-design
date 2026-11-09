@@ -2,10 +2,10 @@
 
 ## Accepted construction-discovery contracts
 
-These contracts define the implemented semantic authority for
-payload-centered construction. They do not enlarge the
-`hop_design.spaces` facade. External callers use the narrow
-`hop_design.construction` operations rather than importing the raw contracts.
+These contracts define payload-centered construction. Use the narrow
+`hop_design.construction` operations to access them; their raw replay models
+remain internal. The `hop_design.spaces` facade retains its separate substrate-space
+contract.
 
 | Contract | Preconditions | Guarantees |
 | --- | --- | --- |
@@ -36,8 +36,7 @@ ligated hairpin's terminal interval. The forward primer binds the terminal
 interval of its derived reverse complement. For a template of length `n` and
 annealing length `a`, that forward span is `[n-a, n)`. Primer 5′ tails are outside
 the annealing span. Replay rejects a binding at a different template interval,
-even if its content identity has been recomputed. These sequence checks do not
-predict annealing temperature or PCR yield.
+even if its content identity has been recomputed.
 
 HOP owns these molecular contracts and neutral projections. Client studies
 own frozen runs, observations, interpretation, and asset promotion. Manuscript

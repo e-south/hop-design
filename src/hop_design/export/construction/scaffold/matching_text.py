@@ -74,8 +74,7 @@ def render_matching_report(summary: dict[str, Any]) -> str:
         "",
         "Local search completion and quotas remain recorded per member. A missing match "
         "is not global impossibility; a local witness is not a complete preparation.",
-        "Original outcomes remain under `family/`. No requirements were relaxed, "
-        "no optimum inferred and no experimental performance established.",
+        "Original outcomes remain under `family/`; the requirements are unchanged.",
         "",
     ]
     return "\n".join(rows)

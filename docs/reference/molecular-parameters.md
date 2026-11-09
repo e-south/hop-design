@@ -1,6 +1,6 @@
 # Molecular parameter and teaching-glyph coverage
 
-The registry in `models/construction/variants/parameters.py` owns parameter names.
+The registry in `models/construction/variants/parameters.py` defines parameter names.
 Its `ParameterDefinition` contract records molecular stage, units, role, drawing
 frame, representation, boundaries and dependencies. `canonical_key` identifies a
 single measurement across equivalent keys. `design_role` separates product
@@ -29,8 +29,8 @@ existing saved selection queries remain verifiable. This does not equate derived
 or correlated quantities: a loop word and its length, an annealing minimum and
 achieved contacts, or measurements at different molecular stages remain distinct.
 
-This specification covers the preparation-bound three-frame teaching key,
-primer-boundary explanations and exact measurement locations. The browser uses
+The three-frame teaching key locates measurements and explains primer boundaries
+for the selected preparation. The browser uses
 the same `teaching.svg` as the portable atlas and single-state inspection exports.
 The implementation state is recorded in the [roadmap](../dev/plans/roadmap.md#molecular-organization-of-conditional-exploration).
 
@@ -60,7 +60,7 @@ and requested footprint; it has no completed-product identity or later states.
 | `foldback_arm_bp` (`A`) | Supplied-stem boundary to loop boundary on both opposing arms. |
 | `join_offset_nt` (`D`) | Supplied-stem boundary to the recorded foldback join; preserve the covalent boundary. |
 | `self_paired_arm_bp` (`R`) | Join to loop boundary; `R = A − D`, not another independent degree of freedom. |
-| `loop_word`, `loop_nt` (`C`) | Literal, countable loop bases in strand direction; `C = length(loop word)`. A drawing radius is not a conformation prediction. |
+| `loop_word`, `loop_nt` (`C`) | Literal, countable loop bases in strand direction; `C = length(loop word)`. |
 | `loop_side_paired_bp` | Same measured span as A for this construction; show the equivalence rather than a second independent control. |
 | `open_side_paired_positions` | Recorded open-side contacts beyond the supplied stem. It is an achieved extent, distinct from an adapter minimum. |
 | `noncanonical_pairs` | Locate the relevant recorded contacts and their classes. Zero is an empty contact set, not an absent measurement. |

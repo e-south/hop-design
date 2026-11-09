@@ -33,10 +33,10 @@ perform no molecular derivation.
 
 ## Consequences
 
-Routed views have one molecular authority and remain deterministic after an
-exact route is selected. Low-level view composition remains available for
-other already-resolved plans, but consumers with a junction route no longer
-assemble its view from independent objects.
+Routed views derive from the selected route and remain deterministic.
+Low-level view composition remains available for other already-resolved plans,
+but consumers with a junction route no longer assemble its view from
+independent objects.
 
-This change does not add caller ranking, select a route, prove a complete
-production method, or claim destination readiness.
+Caller ranking, route selection, complete-method resolution, and destination
+checks remain separate operations.

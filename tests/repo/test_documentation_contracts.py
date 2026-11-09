@@ -58,7 +58,7 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
     normalized = " ".join(readme.split())
-    assert "not predictions of laboratory success" in normalized
+    assert "finds ways to construct DNA hairpins" in normalized
     docs_index = (REPO_ROOT / "docs/index.md").read_text(encoding="utf-8")
     for route in (
         "guides/discover-product-scaffolds.md",
@@ -160,12 +160,11 @@ def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture()
     assert "purine" in guide and "pyrimidine" in guide
     assert "64 exact" not in guide
     assert "review.html" in guide
-    assert "No physical construction, QC, or activity record is attached" in guide
     assert "256" in guide
     assert "tested release envelope" in guide
     assert "source.yaml" not in guide
     assert "--dry-run" in cli
-    assert "--out is optional with `--dry-run`" in cli
+    assert "`--out` is optional with `--dry-run`" in cli
     assert spec_path.is_file()
     spec_text = spec_path.read_text()
     for removed_field in ("context:", "hairpin:", "enumeration:", "max_members"):
@@ -201,7 +200,6 @@ def test_public_docs_route_the_five_sibling_surfaces() -> None:
         encoding="utf-8"
     )
     assert "sequence-and-cut compatible" in processing
-    assert "empirical cleavage efficiency" in processing
 
 
 def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces() -> None:
@@ -235,7 +233,6 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
 
     assert "in increasing absolute overhead order" in normalized
     assert "achieved geometry" in normalized
-    assert "not a score" in normalized
     assert "Completion and feasibility are reported separately" in normalized
     assert "stopped_by_policy" in discovery
     assert "through_radius" not in discovery
@@ -243,7 +240,6 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
     assert "every candidate in the declared neighborhood was examined" not in normalized
     assert "infeasible" in discovery
     assert "truncated" in discovery
-    assert "does not establish physical construction" in normalized
     assert (
         "Foldback-local discovery treats the PCR-amplified material as a duplex"
         in normalized_mental_model
@@ -290,8 +286,6 @@ def test_public_claim_language_keeps_digital_derivation_narrow() -> None:
     cli = (REPO_ROOT / "src" / "hop_design" / "cli.py").read_text(encoding="utf-8")
 
     assert "preserving" in why_hop and "duplex payload" in why_hop
-    assert "not a prediction of experimental success" in why_hop
-    assert "does not predict" in why_hop
     assert "bundle validated" not in cli.lower()
     assert "design derivation verified; no files written" in cli.lower()
 

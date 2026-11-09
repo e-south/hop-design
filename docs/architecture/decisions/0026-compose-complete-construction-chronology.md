@@ -128,6 +128,5 @@ without inventing enzyme chemistry for non-enzyme transformations. Local
 reaction programs remain independently inspectable, while one construction
 program answers the chronological question across local-family boundaries.
 
-The additional envelope is deliberate domain structure, not a second generic
-workflow engine. Experimental execution, yield, quality control, and activity
-remain outside the digital method-resolution claim.
+The envelope connects local enzyme programs with the route's non-enzyme
+transitions. Experimental execution remains caller-owned.

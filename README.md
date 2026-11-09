@@ -8,8 +8,7 @@
 Hairpin Oligonucleotide Processing (HOP) Design finds ways to construct DNA
 hairpins and released duplex inserts around a supplied stem. Explore compatible
 sequences and processing methods, inspect the resulting molecules, and retrieve
-source, adapter and primer specifications with terminal chemistry. These are
-modeled preparations, not predictions of laboratory success.
+source, adapter and primer specifications with terminal chemistry.
 
 ## Start here
 

@@ -10,7 +10,7 @@ Updated by [ADR 0026](0026-compose-complete-construction-chronology.md).
 
 The design plan previously carried route discriminators and ordered mechanics
 steps while a separate method plan owned exact molecular states. Two objects
-could therefore appear authoritative for physical chronology.
+could therefore describe conflicting physical chronologies.
 
 ## Decision
 
@@ -30,7 +30,7 @@ The removed route fields and old schemas have no aliases or readers.
 
 ## Consequences
 
-A compiled design can be authoritative without asserting a construction route
+A compiled design records component derivation independently of a construction route
 or production method. Construction feasibility and method availability remain
 independent. Consumers must migrate to the current strict schemas and cannot
 infer chronology from a design plan.

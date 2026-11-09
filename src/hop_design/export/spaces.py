@@ -3,7 +3,7 @@
 HOP Design
 src/hop_design/export/spaces.py
 
-Renders regenerable scientist-facing projections from a verified design set.
+Renders an offline design-set review with sequence exports and verification details.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -21,11 +21,6 @@ _BASE_ORDER = ("A", "C", "G", "T")
 _CLAIM_LABELS = {
     "space_accounting": "Substrate-space accounting",
     "digital_design": "Exact digital designs",
-    "named_method": "Named construction method",
-    "destination_compatibility": "Destination compatibility",
-    "physical_construction": "Physical construction",
-    "quality_control": "Quality control",
-    "biological_activity": "Biological activity",
 }
 
 
@@ -114,6 +109,8 @@ def render_review_html(
         question = f'<p class="question">{html.escape(spec.question)}</p>'
     claim_rows: list[str] = []
     for dimension, claim in design_set.claim_status:
+        if dimension not in _CLAIM_LABELS:
+            continue
         claim_data = claim.model_dump(mode="json")
         status = claim_data["status"]
         basis = claim_data.get("basis")
@@ -127,7 +124,7 @@ def render_review_html(
             "</tr>"
         )
     rendered_claim_rows = "".join(claim_rows)
-    evidence_boundary = "No physical construction, QC, or activity record is attached."
+    evidence_boundary = "Inspect each design or export its sequence as CSV or FASTA."
     summary_accounting = (
         "Complete and digitally verified · "
         f"{design_set.enumerated_assignments}/{design_set.theoretical_cardinality} · "
@@ -278,7 +275,7 @@ A, C, G, T domain order. Ordinal is not rank.</p>
 <ul class="handoff-list">
 <li><code>figures/01-substrate-space.svg</code> — rule and paired-space schematic</li>
 <li><code>figures/02-design-set.svg</code> — complete non-ranked member map</li>
-<li><code>handoff/scientific-receipt.svg</code> — digital evidence boundary</li>
+<li><code>handoff/scientific-receipt.svg</code> — design summary</li>
 <li><code>designs.csv</code> — exact sequence index and dispositions</li>
 <li><code>sequences.fasta</code> — sequence handoff</li>
 <li><code>bundle/</code> — verified digital authority</li>

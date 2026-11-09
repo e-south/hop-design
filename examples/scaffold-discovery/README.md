@@ -32,9 +32,7 @@ hop-design construction select-scaffolds /tmp/scaffold-options --member loop3=br
 ```
 
 The explicit label in the last command belongs to this example's packet. Inspect
-your own report before selecting; HOP assigns no default winner. A preparation
-may be complete in the model while reaction performance, physical recovery and
-destination compatibility remain unresolved.
+your own report before selecting; HOP assigns no default winner.
 
 Edit `scaffold.open_side_paired_positions` to specify the desired molecule.
 `preparation_changes.adapter_redesign` permits corresponding preparation
@@ -46,8 +44,8 @@ For permitted methods, use `methods.json` with the same preview/discovery comman
 It permits BsaI-HFv2, BsmBI-v2 and BbsI-HF as separate strict release branches.
 The definitions come from the [manufacturer recognition and cleavage catalogue](https://www.neb.com/en-us/tools-and-resources/selection-charts/alphabetized-list-of-recognition-specificities).
 The bounded example returns four complete preparations for each of the first two
-methods and four rejected BbsI continuations; it does not establish general enzyme
-suitability or laboratory stock.
+methods and four rejected BbsI continuations. Inspect those recorded outcomes
+before selecting a preparation.
 
 To compare open-side architectures, change the requested range to 17–24 and
 `max_branches` to 8. Four loop cases then each offer eight different hairpins
@@ -74,8 +72,7 @@ The recipe changes only the high-level terminal requirements to request 6/14,
 explicitly selects all four for this prescribed comparison. Open
 `selected/report.pdf`: whole hairpins, countable terminal bases and changed
 material roles share one plate. `selected/set.json` regenerates the comparison
-and preparations after relocation. This recipe establishes modeled properties,
-not experimental recovery or assembly compatibility.
+and preparations after relocation.
 
 In this example only the adapter changes; the fully paired terminus adds six
 open-side paired positions. Ordinary discovery still returns alternatives without

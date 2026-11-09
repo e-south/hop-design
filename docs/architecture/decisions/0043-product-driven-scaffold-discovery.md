@@ -65,5 +65,6 @@ shared released product and material changes share one report vocabulary.
 
 The [user workflow](../../guides/discover-product-scaffolds.md) and
 [delivery plan](../../dev/plans/product-first-discovery.md) specify acceptance.
-Joint search, arbitrary new molecular endpoints, experimental performance and
-unfamiliar-user comprehension remain separate evidence questions.
+Joint search, new molecular endpoints, and
+unfamiliar-user evaluation remain separate
+work.

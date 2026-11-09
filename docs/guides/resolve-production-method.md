@@ -2,7 +2,7 @@
 
 The linear-source method requires exact materials. It resolves every named
 molecular state and produces a destination-neutral `RestrictionDigestProduct`.
-It does not establish compatibility with a vector or other destination.
+Check the product's ends against your intended vector or other destination.
 
 ## Author every input explicitly
 
@@ -55,7 +55,6 @@ The product carries exact strands, restriction sites, cut geometry, cohesive
 ends, per-base lineage, and an encoding projection. A consumer may compare
 `verified.bundle.hairpin_encoding_digest` with a separately verified design
 bundle, as described in [provenance and verification](../provenance/overview.md).
-Destination compatibility remains downstream.
 
 To run that caller-owned equality check with an intentionally matched public
 design, use `uv run python examples/verify_design_method_handoff.py --out

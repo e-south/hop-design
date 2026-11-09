@@ -17,9 +17,9 @@ HopSpec or ResolvedHopSpec
 The spec is authored intent. `HopPlan` is the immutable compiler result. It
 derives the paired payload, evaluates selected components, partitions the
 normalized encoding into typed features, and records how those design values
-were derived. Its `design_derivation` owns no ordered production chronology. A
-resolved design may preserve caller-asserted nick or release projection geometry,
-but it makes no complete production-method claim.
+were derived. Its `design_derivation` is non-temporal. A resolved design may
+preserve caller-asserted nick or release projection geometry; construction
+programs and method plans record the ordered processing steps.
 
 Every design bundle contains:
 
@@ -60,9 +60,7 @@ products, and derived exports.
 Bundle identifiers derive from manifest content. Verification checks paths and
 inventory, validates every digest, reloads strict schemas, and reruns the
 authoritative compiler. A resealed but semantically altered derived artifact is
-rejected because replay must reproduce every stored byte. Verification checks
-computational consistency. Experimental construction and recovery require
-observations outside these bundles.
+rejected because replay must reproduce every stored byte.
 
 Use `load_verified_bundle()` for a design,
 `load_verified_construction_bundle()` for a complete construction, and

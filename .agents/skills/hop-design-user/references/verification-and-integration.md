@@ -25,5 +25,5 @@ The consumer compares
 `verified_design.plan.hairpin_encoding_insert.sequence_digest` with
 `verified_method.bundle.hairpin_encoding_digest` and the product projection
 digest. This comparison is caller-owned; it does not merge sibling bundle
-identities. Destination placement, assessment, and experimental observations
-remain downstream claims.
+identities. The downstream consumer owns destination placement, assessment,
+and observations.

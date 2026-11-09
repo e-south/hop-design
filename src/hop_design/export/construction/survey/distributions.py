@@ -22,9 +22,7 @@ def render_choice_distributions(
             "fill": INK,
         },
     )
-    _element(
-        root, "title", "Recorded geometry; counts describe preparations, not biological diversity"
-    )
+    _element(root, "title", "Preparation counts by recorded geometry")
     if not distributions:
         return cast(bytes, ET.tostring(root, encoding="utf-8"))
     total = distributions[0]["denominator"]

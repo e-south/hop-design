@@ -42,10 +42,9 @@ have witnesses. Task scheduling establishes neither global completeness nor a
 best preparation. Fixed-source reuse may remove a method while preserving the
 possibility of making the same product from a newly designed source.
 
-HOP owns these reusable contracts and renderers. Caller studies own why a panel
-matters and the evidence produced from using it. No laboratory equivalence,
-physical stock, assembly compatibility or human-usability result follows from
-the modeled comparison.
+HOP owns these reusable contracts and renderers. Caller studies own panel
+rationale, physical inventory, assembly checks, and experimental and user
+evaluation.
 
 See the [public workflow](../../guides/specify-a-comparison.md) and
 [implementation checklist](../../dev/plans/terminal-scaffold-comparisons.md).

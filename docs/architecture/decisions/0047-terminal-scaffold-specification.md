@@ -24,8 +24,8 @@ Three-prime tail choices are either prefixes of the existing declared handle or
 an explicitly supplied finite list of exact sequences. Redesign permission
 authorizes those edits; length alone never creates bases. Empty tails use the
 existing derived-adapter policy. Fixed adapters cannot be rewritten. Required
-open-side pairing and terminal counts must hold together. A candidate setting
-does not prove reaction feasibility, recovery or assembly compatibility.
+open-side pairing and terminal counts must hold together. Complete-route
+admission evaluates each candidate setting.
 
 The [public workflow](../../guides/discover-product-scaffolds.md) retains explicit
 selection and portable preparation retrieval. Terminal comparison sheets consume

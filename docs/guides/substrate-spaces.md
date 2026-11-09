@@ -21,8 +21,7 @@ payload:
     label: right-recognition-arm
 ```
 
-Eight two-base domains define 256 exact assignments. This is a chosen sequence
-comparison, not a claim that these variants retain recombination activity.
+Eight two-base domains define 256 exact assignments for this sequence comparison.
 The [junction example](../../examples/basal-junction/README.md#source-definitions)
 records the public payload source. `question` is optional review text and
 does not change design-set identity. The top-level name, segment labels, and
@@ -75,20 +74,14 @@ build/loxp-spacer-base-classes/
 ```
 
 Open `review.html` directly in a browser. It explains the paired substrate
-anatomy, exact space accounting, evidence boundaries, member sequences, and
-handoff files. The two SVG projections state the substrate rule and complete
-member set; the evidence receipt reports the manifest-backed claim boundary.
-They are generic diagnostics, not manuscript panels. The HTML, SVG, CSV, and
+anatomy, exact space accounting, member sequences, and handoff files. The two SVG
+projections state the substrate rule and complete member set; the evidence receipt
+records the manifest-backed derivation and replay checks. The HTML, SVG, CSV, and
 FASTA files are regenerable projections. Only `bundle/`
 participates in design-set identity and verification.
 
-Successful compilation establishes complete digital derivation and replay of
-256 exact member designs.
-The verified manifest records the complete evidence boundary directly. The review says:
-
-> No physical construction, QC, or activity record is attached.
-
-Later evidence belongs in separate records that reference the stable design-set ID.
+Successful compilation derives and replays all 256 exact member designs. Use the
+stable design-set ID to reference the set in later records.
 
 ## Python
 
@@ -107,6 +100,6 @@ verified = compile_space(spec, destination="build/python-space")
 assert verified.design_set.coverage == "complete"
 ```
 
-The scientist-facing facade is `hop_design.spaces`. Advanced discovery retains
+The public API is `hop_design.spaces`. Advanced discovery retains
 its separate `complete`, `infeasible`, and `truncated` semantics; those states
 do not apply to this exhaustive-or-blocked surface.

@@ -3,10 +3,9 @@
 Run these repository examples from a [source checkout](install.md#work-from-source).
 The commands use its locked environment throughout.
 
-Explore complete molecular designs already supported by a saved discovery or
-molecular-edit result. Choose a neighborhood, inspect its supported variants,
-and narrow the whole products available. A local variant is never permission to
-combine independently available parts. Several preparations can produce one
+Explore complete molecular designs from a saved discovery or molecular-edit
+result. Choose a neighborhood, inspect its supported variants, and filter the
+complete products. Several preparations can produce one
 product; several products can remain compatible with one neighborhood choice.
 
 Run the [public example](../../examples/molecular-editing/conditional.py):
@@ -22,7 +21,7 @@ four-nucleotide loop exploration without supplying loop words. It retains failed
 preparations and incomplete coverage. Inspect `all-choices/summary.json`,
 `bsrdi-background/summary.json`, `btsi-comparison/summary.json` and
 `selected/report.md`. The last directory includes exact oligos and portable
-construction authorities. `preview/projection.svg` is a static molecular comparison.
+construction bundles. `preview/projection.svg` is a static molecular comparison.
 
 
 ## Explore the construction envelope
@@ -31,8 +30,8 @@ The parallel-coordinate overview keeps the evaluated network visible while you
 narrow it. Solid paths represent complete preparations; faint paths preserve
 excluded context. Dashed segments represent verified **local** foldback or basal
 realizations. They stop before unassessed axes and cannot be selected as complete
-products. A local segment does not establish compatible surroundings or a completed
-route. Crossings never authorize recombination.
+products. Choose a recorded complete path to preserve compatible surroundings;
+crossing paths cannot be recombined.
 
 Run the broader, bounded [construction-envelope request](../../examples/molecular-editing/construction-envelope.json):
 
@@ -50,8 +49,7 @@ exclude incompatible combinations. No loop-word shortlist is supplied. Four meth
 branches each allow up to 40 local realizations and 40 continuations. These are
 computation limits, not molecular restrictions. Early compact local candidates may
 fail the retained 14-nt source-primer requirement. Those failures remain visible.
-Remaining permissions stay visible even when no complete path reaches them. This is bounded
-construction evidence, not a universal feasibility survey or a laboratory result.
+Remaining permissions stay visible even when no complete path reaches them.
 
 ### One vocabulary for the diagram, axes and query
 
@@ -74,9 +72,8 @@ basal contact window.
 The primer-boundary view connects a rejected continuation to its examined source:
 the pale stem fill is retained, the available outside-stem flank has its own
 bracket, and the required primer footprint shows why that continuation fails.
-The diagram is source geometry, not a completed failed hairpin. Buttons beneath
-it inspect complete alternatives from the same declared branch that also satisfy
-the current selections; they do not claim a uniquely necessary repair.
+The diagram shows the examined source. Buttons beneath it inspect complete
+alternatives from the same branch that satisfy the current selections.
 Portable choice exports include `primer-boundaries.svg` and all individual
 failure records in `choice_space.primer_boundaries`. The atlas separately locates
 required primer footprints and available flanks on a complete preparation.
@@ -90,7 +87,7 @@ released-end gaps and the source-primer span. Method and receiving-interface
 permissions remain visible beside the plot, including fixed words and polarities.
 Selecting an ordered source/adapter contact exposes its source base, adapter base
 and contact class together. Positions count outward from ligation, beginning at
-zero; these are recorded contacts, not predicted pairing probabilities.
+zero.
 
 **Return to molecular overview** leaves constraints and preview intact. Active
 filters stay visible even when their axes are outside the current detail.
@@ -125,10 +122,8 @@ Brushing only filters existing evidence. **Evaluate selected region** runs a new
 explicitly bounded evaluation under the active generating permissions intersected with the
 selected parameters. Numeric and positional constraints narrow their owning local
 generator where supported; remaining achieved-property controls are checked after
-construction. Required panel targets outside the selected region stay recorded as outside this
-evaluation round; they are not silently fulfilled or removed.
-The operation does not guarantee a globally exhaustive or joint
-search for a comparative family. Its packet retains the previous pool unchanged.
+construction. Required panel targets outside the selected region stay recorded as
+outside this evaluation round. Its packet retains the previous pool unchanged.
 The union preserves original labels, deduplicates exact preparations and reapplies
 the query; coverage counts evaluation records, which can overlap across rounds.
 
@@ -160,8 +155,7 @@ preservation controls. Consult branch coverage for failed or unfinished evaluati
 changes, preview the exact before/after values, resolve any reported conflicts,
 then explicitly evaluate with branch and continuation budgets. The supplied stem,
 receiving end words/polarity, material policies and query controls remain locked.
-A preview is not a feasibility result. Permission to use an enzyme is not evidence
-of laboratory availability.
+Preview checks the declarations; evaluate the revised request to check completion.
 
 For example, keep a selected R = 9 while changing an arm domain from 8–10 to 10–12
 bp. The old domain supplies only A/D = 10/1; the revised domain can also test 11/2
@@ -215,9 +209,9 @@ stage-qualified axes, declared domains, complete paths, local support, exact-pro
 groups and branch coverage. Its query scope is `admitted_pool_with_explicit_eligibility`;
 `eligible_under_preserved_controls` distinguishes whole-pool context from paths
 admitted by neighborhood pins and preservation controls. `compatible_options`
-remains the authoritative filtered list. Previously saved choices must be
+lists the filtered choices. Previously saved choices must be
 regenerated against their original pool after a projection change; never edit or
-reseal historical packets. These projections introduce no new molecular authority.
+reseal historical packets.
 
 ## One complete route, local choices
 
@@ -247,7 +241,7 @@ reference.
 
 The generating envelope above the atlas separates declared basal/foldback domains
 and required dimensions from achieved hairpin properties. Its method permissions
-respect recorded enzyme roles; they do not establish laboratory stock. Export
+respect recorded enzyme roles. Export
 the captured request to author an explicit revision with `prepare-edit` and
 review it before a separate `evaluate-edit` operation. Local browsing never
 expands that envelope or launches search.
@@ -335,7 +329,7 @@ Use `--view-from previous.json` to request transition correspondence. That file
 contains `option_label` and `state` for the preceding drawing. The Python request
 has the same `view_from` object and `focus_mode` field. `transition.links` separates
 `retained`, `copied` and `comparison` relationships; unmapped addresses and notices
-remain explicit. No interpolated frame is a molecular state or a reaction prediction.
+remain explicit. Animation interpolates between the recorded states.
 
 Nicked and associated fragment drawings align recorded pairings while preserving
 covalent breaks. Rounded translucent spans mark recorded enzyme recognition
@@ -346,7 +340,7 @@ that the displayed substrate is cleavable. Active operation outlines and dashed
 strand-specific cuts remain stage-bound: pre-cleavage marks are planned;
 post-cleavage nick marks are applied.
 Released insert views show achieved end-to-stem gaps separately from recognition
-sites. None of these views implies a predicted conformation.
+sites.
 
 ## Export the complete atlas
 
@@ -461,8 +455,8 @@ Repeat `--member` to specify the set. Python uses
 `select_scaffold_variants(result, choices, members={name: option_label}, baseline=name)`.
 Passing valid labels cannot bypass active pins or controls. A selection includes
 `exploration-query.json` and `exploration-selection.json`, preserving the result,
-reference and query identities. Molecular authorities remain in the portable set;
-the query is decision provenance, not an additional chemistry authority.
+reference and query identities. The portable set contains the molecular records;
+the query records the selection criteria.
 
 ## Interpret the example's comparison
 
@@ -473,8 +467,7 @@ AAAA reference admits both AAAA and AACA while preserving their non-loop sequenc
 
 The result distinguishes complete compatible options, complete options excluded
 by a control, failed examined preparations, local exhaustion and unfinished
-coverage. Unpermitted possibilities have not been tested. None of these records
-establish laboratory recovery, destination compatibility or biological effects.
+coverage. Check the declared permissions before interpreting an absent option.
 
 Inspection follows recorded ancestry and pairing. It reports when a focused
 material has been removed or has not entered the displayed state yet; unassigned
@@ -482,8 +475,7 @@ regions remain explicit. Released overhang positions select **Released interface
 only at their actual endpoint. Opening a local chooser changes the explored
 neighborhood without altering its permitted variants. Following a base inspects
 ancestry. Arrow keys move between bases, Enter opens local choices and I follows
-the focused address. The drawing represents
-recorded pairing, not predicted conformation.
+the focused address. The drawing shows recorded pairing.
 
 ### Read the complete route
 

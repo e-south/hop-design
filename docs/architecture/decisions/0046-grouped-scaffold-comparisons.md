@@ -30,8 +30,7 @@ foldback geometry constrain target generation; each exact target carries one
 `loop_sequence`. The placement domain intersects those bases before enumeration,
 and molecular replay verifies the resulting word. Omitted optional fields retain
 old serializations. V2 required members can select exact loop words, separately
-from permitted geometry and sequence domains. This does not predict folding,
-reaction performance or biological response.
+from permitted geometry and sequence domains.
 
 Export modules compose group rows and preparation-method columns from verified
 portraits and product stages. The sheet is a projection, never a second admission

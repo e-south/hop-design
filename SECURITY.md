@@ -5,9 +5,9 @@
 `construction edit-view` binds only to `127.0.0.1`. Mutations require the exact
 local Host/Origin and a per-instance token; JSON bodies are bounded and duplicate
 keys rejected. Only packaged interface assets and normalized, non-symlink files
-inside the newly generated output directory are served. There are no external
-scripts or network design services. This is a local workstation interface, not a
-multi-user or internet-facing deployment. Stop it with Ctrl+C when finished.
+inside the newly generated output directory are served. The interface uses no
+external scripts or network design services and supports local workstation use only.
+Stop it with Ctrl+C when finished.
 
 ## Public by construction
 

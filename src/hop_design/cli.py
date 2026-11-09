@@ -229,7 +229,6 @@ def _print_ready_preview(
     typer.echo(f"{preview.theoretical_cardinality:,} exact designs ({factors})")
     typer.echo("Ready for exhaustive digital compilation")
     typer.echo("HOP will use the versioned standard hairpin context.")
-    typer.echo("Physical construction and activity are outside this preview.")
 
 
 @space_app.command("preview")
@@ -291,7 +290,6 @@ def compile_space_command(
     typer.echo(f"Sequence index: {output / 'designs.csv'}")
     typer.echo(f"FASTA: {output / 'sequences.fasta'}")
     typer.echo()
-    typer.echo("No physical construction, QC, or activity record is attached.")
 
 
 @app.command("verify")

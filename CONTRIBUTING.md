@@ -1,14 +1,13 @@
 # Contributing to HOP Design
 
-HOP accepts focused changes that preserve its public ownership boundary and
-scientific contracts. Start with the [maintainer map](docs/dev/README.md) for
+Start with the [maintainer map](docs/dev/README.md) for
 code ownership and verification. Use the [user task index](docs/index.md) to
 check the workflow affected by your change.
 
 ## Development loop
 
 Install Node.js 22 or newer alongside Python/uv for the dependency-free browser
-interaction tests. Node is a development requirement, not a HOP runtime dependency.
+interaction tests. Users need only HOP's Python runtime.
 
 ```bash
 uv sync --locked
@@ -26,9 +25,8 @@ least `source`. The [verification map](docs/dev/performance.md#choose-the-verifi
 defines these boundaries. Add `--workers 2` for a bounded parallel run; tests stay
 grouped by fixture scope. Report the scope and worker count with the result.
 
-Run the selected gate in the working checkout. Ignored runtime artifacts do not require
-a clean copy: source checks use Git's tracked and nonignored inventory, while
-the wheel smoke test checks the distributions themselves. See
+Run the selected gate in the working checkout. Source checks use Git's tracked
+and nonignored inventory; installation checks examine the distributions. See
 [verification surfaces](SECURITY.md#verification-surfaces) for the exact boundary.
 
 Add a failing test before changing behavior. Public schema or ownership changes

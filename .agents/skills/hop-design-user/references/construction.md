@@ -3,7 +3,7 @@
 For a supplied stem and intended product, start with the
 [design discovery guide](../../../../docs/guides/discover-designs.md). End words
 are optional. It discovers
-complete preparations and carries one selection through views and oligo retrieval.
+complete preparations and reuses one selection for views and oligo retrieval.
 The lower-level workflow below is for an already authored construction source.
 
 Use this reference when one strict construction source and one separately
@@ -70,8 +70,6 @@ the same exact foldback selection and direct-hairpin construction source.
   bytes. Its create-only `write()` publishes a non-authoritative projection
   packet, not a second construction authority.
 
-Construction compilation establishes deterministic digital discovery,
-materialization, composition, verification, and projection under declared
-inputs. It does not establish physical construction, destination
-compatibility, QC, biological activity, yield, route performance, or an
-optimized route.
+Report the declared inputs, exact endpoint, complete materials, route status,
+and verification result. The caller selects a preparation and checks its
+products against the intended destination.

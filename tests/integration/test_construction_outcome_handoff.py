@@ -6,7 +6,7 @@ from hop_design.models.construction import ConstructionEndpoint
 from tests.integration.test_complete_construction_projections import _verified_result
 
 
-def test_handoff_and_inspection_lead_with_product_and_remaining_conditions(tmp_path):
+def test_handoff_and_inspection_lead_with_product_and_flank_details(tmp_path):
     compiled = compile_construction_bundle(
         _verified_result(tmp_path / "source", ConstructionEndpoint.CLONE_READY_DUPLEX)
     )
@@ -19,8 +19,7 @@ def test_handoff_and_inspection_lead_with_product_and_remaining_conditions(tmp_p
         assert "Achieved product" in text
         assert "Achieved product: released duplex insert" in text
         assert "Paired flank distances" in text
-        assert "Laboratory stock: not supplied" in text
-        assert "Enzyme reaction prerequisites: not evaluated" in text
+        assert "Closing flank" in text
         assert text.index("Achieved product") < text.index("Source")
     assert report.index("Paired flank distances") < report.index("Required oligonucleotides")
     assert "Changed oligos: compare this selection with an explicit reference" in report

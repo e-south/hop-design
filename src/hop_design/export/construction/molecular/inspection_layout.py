@@ -10,7 +10,7 @@ from .primitives.style import SCENE_TOP
 
 
 def _state_points(state: ConstructionState) -> dict[tuple[str, int], tuple[float, float]]:
-    """Schematic layout uses recorded contacts; it predicts no molecular conformation."""
+    """Lay out strands using their recorded contacts."""
     points: dict[tuple[str, int], tuple[float, float]] = {}
     cursor = float(SCENE_TOP)
     for strand in sorted(

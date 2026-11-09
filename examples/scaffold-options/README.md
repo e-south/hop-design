@@ -28,4 +28,3 @@ Inspect the group report before choosing labels: these particular labels refer
 to the recorded 9-bp background for this example. Another complete background
 has 12-bp closing extensions. `report.pdf` in the selected packet shows the
 chosen molecules, shared controls, changed materials and supported product stage.
-Every preparation retains its unresolved experimental conditions.

@@ -3,7 +3,7 @@
 HOP Design
 src/hop_design/commands/construction/summary.py
 
-Reports exact construction search accounting and evidence boundaries.
+Reports the endpoint, search coverage and complete route counts.
 
 Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
@@ -54,7 +54,6 @@ def construction_summary_command(
         "not_resolved": "not resolved",
     }[claims["method"]]
     typer.echo(f"Digital method: {method}")
-    typer.echo("Physical construction, QC, and biological activity: not recorded")
 
 
 __all__ = ["construction_summary_command"]

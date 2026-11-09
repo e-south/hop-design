@@ -6,7 +6,7 @@
 ## Evidence
 
 - [ ] Failing or negative-path test added where behavior changed
-- [ ] `bash ./scripts/agent-verify` passes locally
+- [ ] Selected verification passes locally or in CI; scope and results recorded
 - [ ] Documentation and ADRs updated where required
 - [ ] Public-safety and secret checks pass
 - [ ] Compatibility or migration impact stated

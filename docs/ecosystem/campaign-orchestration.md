@@ -1,8 +1,8 @@
 # HOP in a campaign orchestration stack
 
 A campaign system can generate sequences, combine objectives, and select which
-candidates to test. HOP defines what a hairpin candidate means and whether a
-named method deterministically realizes it.
+candidates to test. HOP compiles their hairpin anatomy and resolves exact inputs
+through named methods.
 
 ```text
 campaign orchestrator

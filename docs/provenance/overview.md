@@ -1,7 +1,7 @@
 # Provenance and verification
 
-HOP uses “provenance and verification” for derivation claims. Experimental
-observations and biological interpretation remain outside HOP.
+HOP records the inputs, identities, and derivations needed to replay each bundle.
+Callers retain observations and biological interpretation in their own records.
 
 ## Three bundle authorities
 
@@ -73,10 +73,9 @@ assert design_digest == method_digest == projection_digest
 ```
 
 The command prints both verification statuses, both bundle identifiers, and the
-three equal digests as JSON. The fixtures are a synthetic contract demonstration,
-not a protocol or biological recommendation. The loaders replay each bundle
-independently. They do not infer a relationship between sibling bundles; the
-consumer owns and records this equality check.
+three equal digests as JSON. The fixtures use synthetic inputs. The loaders
+replay each bundle independently; the consumer records the digest equality that
+links them.
 
 ## What verification establishes
 
@@ -89,9 +88,6 @@ consumer owns and records this equality check.
   assessment, examined composition dispositions, exact endpoint products,
   rejection reasons, and reversible grouping;
 - each bundle is internally replayable and digest-consistent.
-
-Verification does not establish destination compatibility, protocol yield, or
-experimental success.
 
 See [plans, artifacts, and bundles](plans-artifacts-and-bundles.md), the
 [design-bundle layout](../reference/bundle-layout.md), and the

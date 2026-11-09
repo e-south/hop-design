@@ -98,12 +98,12 @@ def test_scientific_receipt_renders_manifest_claim_status(tmp_path: Path) -> Non
         if element.get("data-evidence-dimension") is not None
     }
 
-    assert "Digital evidence boundary" in text
+    assert "Design summary" in text
     assert compiled.design_set.design_set_id in text
     assert statuses == {
         dimension: claim.model_dump(mode="json")["status"]
         for dimension, claim in compiled.design_set.claim_status
+        if dimension in {"space_accounting", "digital_design"}
     }
-    assert "No physical construction, QC, or activity record is attached." in text
     assert "assay-ready" not in text.lower()
     assert "qc-passed" not in text.lower()

@@ -54,8 +54,7 @@ def render_insert_set_report(summary: dict[str, Any]) -> str:
         [
             "",
             "[Exact molecular differences](comparison.json) identify changes at the hairpin "
-            "and released insert separately. Uncertain positional correspondence remains recorded; "
-            "sequence differences do not imply measured biological effects.",
+            "and released insert separately, including uncertain positional correspondence.",
             "",
             "## Oligos and preparations",
             "",

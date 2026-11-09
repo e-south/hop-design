@@ -50,6 +50,5 @@ rejected even if the union still contains the complete protected interval.
 Direct-hairpin and PCR-only molecular golden records remain byte-identical;
 their versioned result envelopes change.
 
-This removes a representation restriction. It does not establish that every
-requested interface has a complete route, that an arbitrary primer tail is
-permitted, or that a modeled preparation has been recovered experimentally.
+This removes a representation restriction. Each requested interface still
+requires complete-route verification and permitted primer tails.

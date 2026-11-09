@@ -25,9 +25,9 @@ human design | scripts | enumeration | campaign optimization
 | Structure-assessment service | Advisory assessment of an exact digest-addressed molecular state. |
 | Study and execution system | Biological identity, protocol conditions, controls, runs, observations, and interpretation. |
 
-HOP and a composition service do not compete. HOP describes the object it
-makes; the composition service places that object somewhere else. Neither may
-rederive the other's internal features.
+HOP derives the hairpin's internal features. A composition service places the
+immutable result in a larger construct and derives that placement. Each owner
+must preserve the other's features.
 
 A destination-neutral `RestrictionDigestProduct` may carry exact cohesive ends.
 It becomes an `AssemblyFragment` only after a caller supplies a destination,

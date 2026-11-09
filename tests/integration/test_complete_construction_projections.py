@@ -207,7 +207,6 @@ def test_complete_summary_preserves_exact_order_groups_and_authorities(
     svg = render_projection_svg(projection).decode("utf-8")
     assert f'data-result-id="{source.result.result_id}"' in svg
     assert "Whole-route composition resolved" in svg
-    assert "physical construction was not recorded" in svg
     assert "dashboard" not in svg.lower()
     assert "rank" not in svg.lower()
 

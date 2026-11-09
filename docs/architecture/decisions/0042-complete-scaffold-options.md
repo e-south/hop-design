@@ -49,6 +49,5 @@ forms cannot be mixed. Baseline and membership stay explicit. Selected packets
 retain ordinary `set.json`, exact preparations and oligo inventory for relocation.
 
 The public workflow is [explore scaffolds](../../guides/explore-scaffolds.md).
-Molecular completion does not establish reaction performance, fragment removal,
-destination compatibility or unfamiliar-user comprehension. Those evidence
-questions remain with the experimentalist and downstream study.
+Caller studies own fragment-recovery observations, destination checks, and
+unfamiliar-user evaluation.

@@ -30,12 +30,11 @@ compilation = hop.compile(sequence="NRY", design_id="example")
 - Use `hop.check(spec)` before compiling a caller-authored strict spec.
 - Expand symbolic DNA only with `hop.expand_payload` and an explicit budget.
 - Calculate design-space cardinality before interpreting rows. Do not drop
-combinations or render bundles as a planning side effect.
+  combinations or render bundles as a planning side effect.
 - A reserve basal profile requires explicit reserve acceptance.
-- A successful design compilation establishes a deterministic encoding and its
-feature partition. It does not establish a production method.
-- A verified design set establishes exhaustive digital member derivation. It
-  does not establish physical construction, QC, or biological activity.
+- Report the compiled encoding and its feature partition. Resolve a named
+  production method separately when requested.
+- A verified design set contains every derived member of the declared space.
 
 For files, name the new output directory, call `Compilation.write()`, then use
 the design verifier described in `verification-and-integration.md`.

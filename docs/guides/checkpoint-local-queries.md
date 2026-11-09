@@ -31,7 +31,7 @@ for result in finished.iter_results():
 The first call is create-only. Resume requires the same normalized ordered
 requests, package-content identity, and recorded Python/dependency versions.
 Saved results pass full molecular replay before more queries execute. A changed
-producer or corrupted authority fails; it is not silently recomputed or replaced.
+producer or corrupted result fails verification.
 Move the whole directory to transfer it. Source filenames and destination paths
 are not part of its identity.
 
@@ -39,8 +39,8 @@ The directory contains a normalized `plan.json`, compressed canonical results
 under `batches/`, and `complete.json` only after every request has returned.
 Each immutable batch contains `results.jsonl.gz` and `inventory.json`. Batch
 size may change on resume without rewriting completed files or changing result
-identity. A `.pending-` directory left by a killed process is unpublished staging,
-not an authority; resumption leaves it untouched and executes the unfinished
+identity. A `.pending-` directory left by a killed process is unpublished staging;
+resumption leaves it untouched and executes the unfinished
 queries again.
 
 Limits are 4,096 requests, 1–256 requests per write batch, a 64-MiB normalized
@@ -53,6 +53,6 @@ computation. Concurrent writers must use separate destinations; publication
 refuses to overwrite another writer's batch.
 
 `finished` means every request returned, including requests that were truncated
-or stopped at a quota. It is not a combined molecular completeness claim.
-Repeated or overlapping requests are not deduplicated and their realization
-counts must not be summed as unique molecules without a separate comparison.
+or stopped at a quota. Read each request's status for its coverage. Repeated or
+overlapping requests retain separate results; compare their realizations before
+counting unique molecules.

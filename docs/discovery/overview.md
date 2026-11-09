@@ -1,18 +1,16 @@
 # Discovery and selection
 
-HOP keeps four operations distinct:
+Use four operations to move from requirements to replayable artifacts:
 
 1. **Evaluate** a fully declared component.
 2. **Discover** sequence-and-cut compatible candidates inside explicit domains.
 3. **Select** a candidate using caller-owned experimental or procurement policy.
 4. **Compile** selected components or a named method into replayable artifacts.
 
-Discovery does not silently perform selection.
-
 The [two-region envelope example](../../examples/local-envelope/README.md)
 derives local contact lengths from geometry and varies independent basal and
-foldback budgets. It also explains how to project the results without turning
-an incomplete search or a union across variable sources into a stronger claim.
+foldback budgets. It shows how to count local results, retain incomplete search
+coverage, and distinguish a union across variable sources from one fixed source.
 
 ## Payload-centered local construction discovery
 
@@ -22,9 +20,8 @@ non-payload overhead. HOP examines every admissible geometry in increasing
 absolute overhead order. Each realization preserves both the declared domain
 and its achieved geometry.
 
-Retained overhead is an inspectable molecular quantity, not a score. HOP does
-not infer a preferred geometry or claim that the first returned realization is
-best. Completion and feasibility are reported separately:
+HOP reports retained overhead for each realization and leaves geometry selection
+to the caller. Completion and feasibility are reported separately:
 
 - `complete` means the declared finite task was exhausted;
 - `stopped_by_policy` means an explicit result quota ended an otherwise valid
@@ -38,8 +35,8 @@ Overhead-level accounting records examined candidates, accepted realizations,
 rejections, and observed failure categories. A partial level appears only when
 coverage is incomplete. A local construction projection renders the same typed
 result as neutral JSON, CSV, or SVG without selecting a realization or
-recomputing molecular state. Local feasibility does not establish physical
-construction, a complete route, quality control, or biological activity.
+recomputing molecular state. To obtain complete materials and an endpoint
+product, compose the local realizations through complete construction.
 
 An unchanged payload can itself exclude a foldback enzyme program: an extra
 actionable site wholly inside that duplex cannot be repaired by varying the
@@ -68,8 +65,8 @@ requires every lower applicable level to be complete at the same scope.
 
 The future release's `cohesive_end_sequence` accepts either exact DNA or an
 IUPAC pattern. For example, `ATGC` pins one end; `ATNN` allows 16 exact ends;
-`NNNN` allows all 256 four-base ends. These are choices in a design search, not
-a prediction that a physical pool contains every end. See the
+`NNNN` allows all 256 four-base ends. The search enumerates exact ends within
+that domain. See the
 [construction guide](../guides/compile-construction.md) for the full request.
 
 The source must satisfy both recognition motifs when `recognition_material`
@@ -137,26 +134,21 @@ geometry searches use stable identifiers and declared coordinate relations.
 Measured GC content, homopolymer length, extra-site counts, or M/W/X profiles
 do not silently determine the prefix returned under a hit budget.
 
-`canonical_ordinal` is only a reproducible position in HOP's neutral order. It
-is not a score or recommendation. A future optimization surface would have to
-name its objective, report its measurements, and define deterministic
-tie-breaking. The caller should persist its own selection rule and selected
+`canonical_ordinal` records a reproducible position in HOP's neutral order.
+An optimization surface would need a named objective, reported measurements,
+and deterministic tie-breaking. Persist the caller's selection rule and selected
 candidate identity.
 
 ## What site placement proves
 
-Site placement proves that the motif, orientation, and cut coordinates fit the
-modeled substrate. It does **not** prove empirical cleavage efficiency.
-Activity near a linear end and sensitivity to flanking bases vary by enzyme and
-reaction conditions. NEB recommends extra flanking bases for uncharacterized
-cases, while its published results remain enzyme-specific; a single global
-cutoff would create false acceptance and false rejection. See [NEB's
+Site placement checks the motif, orientation, and cut coordinates against the
+modeled substrate. Catalog entries can carry warning codes; those codes do not
+change discovery admission. Callers apply and preserve their own versioned
+protocol rules. For enzyme-specific flanking-base requirements, consult [NEB's
 cleavage-close-to-ends guidance](https://www.neb.com/tools-and-resources/usage-guidelines/cleavage-close-to-the-end-of-dna-fragments).
 
-Catalog entries can carry warning codes, but current discovery does not convert
-them into feasibility or empirical performance claims. A future advisory
-contract should identify the agent, applicable context, evidence, and severity.
-Until then, callers must apply and preserve their own versioned protocol rules.
+An advisory contract would need to identify the agent, applicable context,
+evidence, and severity.
 
 The [mechanics reference map](../reference/mechanics-api.md) routes each bounded search
 and its completion evidence.

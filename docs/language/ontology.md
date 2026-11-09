@@ -25,8 +25,8 @@ from the loop word. Equivalent measurements are counted once.
 
 This separation of structural feature from contextual annotation follows the
 useful representational principle illustrated by
-[bpRNA](https://doi.org/10.1093/nar/gky285). HOP's contacts come from the modeled
-construction; they are not an RNA folding or activity prediction.
+[bpRNA](https://doi.org/10.1093/nar/gky285). HOP derives its contacts from the
+construction's molecular states.
 
 The atlas descriptor `x` is a typed record of these measured features, retained
 regional sequences/contacts and receiving interfaces. Nominal contact codes
@@ -34,9 +34,9 @@ identify base pairs and contact classes; their numerical differences have no
 meaning. A captured comparison policy supplies the scales and block weights
 used to calculate molecular dissimilarity. UMAP places its neighbors. The
 invariant stem, duplicated measurements and preparation identifiers do not
-create extra distance dimensions. Methods remain available as explanation and
-search choices. Neither a nearby point nor a visually separated cluster proves
-compatibility: each selectable point already has a complete construction witness.
+create extra distance dimensions. Methods remain available for inspection and
+further search. Each selectable point has a complete construction witness; plot
+position comes from the comparison policy.
 
 ## Construction search and its molecular meaning
 
@@ -66,10 +66,9 @@ Material policies answer a separate question from the diversity objective:
 `fixed` requires the exact material; `constrain` permits assignments within the
 declared domain; `derive` constructs a material from the selected route and its
 requirements. A `constrain` sequence containing only A/C/G/T still fixes every
-base. IUPAC alternatives or a length range create an actual domain. These modes
-do not imply a primer-efficiency or folding prediction. Auxiliary completion
-remains subject to required homology, chemistry, recognition sites and whole-route
-checks. It cannot repair a contradiction by changing a fixed material.
+base. IUPAC alternatives or a length range create a searchable domain. Auxiliary
+completion must satisfy required homology, chemistry, recognition sites and
+whole-route checks. It cannot repair a contradiction by changing a fixed material.
 
 Foldback and basal domains are solved separately. Combining them still requires
 the complete compiler: local validity is distinct from verified composability.
@@ -156,8 +155,8 @@ alternatives.
 
 Construction sequence is classified as retained, transient, auxiliary, or
 destination-associated. Compactness uses achieved endpoint geometry and
-retained non-payload sequence only. It is not a thermodynamic, yield, or
-global-optimum claim.
+retained non-payload sequence only. It describes each realization; search
+coverage is reported separately.
 
 "Added stem" and "added DNA" also answer different questions. Added stem counts
 paired positions beyond the supplied invariant stem at a named molecular stage.
@@ -173,7 +172,7 @@ the supplied stem, or between the supplied stem and loop, changes. Say which
 region changes instead of calling all these bases "flanks." A loop length and
 a paired foldback-arm length are separate requirements. Short-loop limits belong
 to the caller's request. Another application can permit longer loops without
-changing HOP's general model. Neither choice asserts reaction efficiency.
+changing HOP's general model.
 
 ## Conditional molecular choices
 
@@ -250,17 +249,15 @@ symbolic sequence and nested
 features that partition the sequence. It does not describe strandedness,
 topology, a PCR product, or destination-specific assembly ends.
 
-`HairpinPcrDuplex` models the duplex expected from hairpin PCR. It contains two
+`HairpinPcrDuplex` records the duplex derived by the hairpin-PCR step: two
 explicit complementary strands, exact primer boundaries, terminal chemistry,
-and coordinate lineage. In the modeled route, PCR creates the duplex and a
-later restriction event changes only its assembly ends. Replay does not
-establish physical recovery.
+and coordinate lineage. A later restriction event changes only its assembly ends.
 
 `RestrictionDigestProduct` is a destination-neutral duplex fragment derived
 from two facing restriction sites. It records both strand sequences, both exact
 cohesive ends, the primary-strand union, and an oriented
-`HairpinEncodingInsert` sequence projection. It is not automatically ready for
-assembly.
+`HairpinEncodingInsert` sequence projection. The caller checks its ends and
+orientation against a destination before assembly.
 
 `AssemblyFragment` is a destination-specific physical input with the ends and
 orientation required by an assembly plan. It belongs to the caller and its
@@ -273,9 +270,8 @@ classification. Its active, reserve, and reject decisions are not molecular
 pair kinds. Its support and disruption thresholds use the dimensionless
 `pair-count-weighted@1` heuristic: Watson-Crick, wobble, and hard-mismatch
 pairs contribute `1`, `0.5`, and `0` to `pair_support_index`, and the reverse
-weights to `pair_disruption_index`. These indices are bookkeeping rules, not
-energetic, kinetic, or empirical measurements. Application thresholds remain
-with their owners.
+weights to `pair_disruption_index`. The caller supplies application thresholds
+for these weighted pair counts.
 
 ## Catalogs and bounded discovery
 
@@ -287,9 +283,8 @@ application-specific processing catalog.
 `NickingPlacementTarget` describes a desired nick boundary and strand plus the
 paired tract and available turn that may contain a recognition site.
 `search_nicking_placements` compares that target with caller-supplied nicking
-agents and reports exact or nearest geometry. A placement is a physical search
-result for sequence and cut coordinates, not evidence of empirical cleavage,
-an application selection, or an orderable oligo.
+agents and reports exact or nearest sequence and cut coordinates. Select a
+placement explicitly before resolving an exact precursor.
 
 `FoldbackPrecursorSearchRequest` materializes one selected nicking placement
 inside caller-authored IUPAC sequence domains. `precursor_template` and
@@ -308,8 +303,7 @@ reserve results are selectable. `BasalCandidate` is an exact arm pair plus its
 complete `BasalEvaluation`; it does not imply that an enzyme route can produce
 the pair. `BasalCandidateExclusionSummary` accounts for evaluated reserve or
 reject outcomes not returned by that request. The result's `canonical_ordinal`
-follows literal arm content and is interoperability metadata, not an
-experimental preference.
+follows literal arm content so consumers can reproduce the same bounded result.
 
 `BasalProcessingGeometryRequest` asks whether a selected release geometry and
 one caller-supplied nicking catalog can support an exact terminal nick around a
@@ -347,11 +341,11 @@ released molecular state, a basal route, or a complete production method.
 one exact basal-processing route. It contains the projected
 `ReleasedStrandState` and is compatible only when that state's active strand is
 the strand that survives basal terminal nicking. The two end processes may use
-different release agents; their identities and orientations remain explicit
-rather than being collapsed into a same-agent rule. This is a junction-level
-route, not a complete source molecule, wet-lab method, or assembly claim. Its
-exact precursor is checked against the embedded geometry even after the route
-is extracted from its search result. A routed workflow view derives from this
+different release agents; their identities and orientations remain explicit.
+This route covers the junction processes. Complete source construction and
+destination checks are separate operations. Its exact precursor is checked
+against the embedded geometry even after the route is extracted from its search
+result. A routed workflow view derives from this
 object and cannot substitute an independent foldback evaluation.
 
 ## Molecular states, materials, and views
@@ -384,8 +378,8 @@ restriction product.
 
 `circular-precursor-exonuclease-selection-multidigest-hairpin-pcr@1` names a
 distinct method family whose implementation is unavailable. Its name records
-transformations rather than roadmap status; HOP makes no feasibility claim for
-that method until a request contract and compiler exist.
+transformations. HOP returns `unavailable` and `not_evaluated` until that method
+has a request contract and compiler.
 
 `MethodOutcome` keeps `implementation_status` separate from
 `resolution_status`. Availability is `available` or `unavailable`; resolution

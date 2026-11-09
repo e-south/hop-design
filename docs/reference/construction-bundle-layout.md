@@ -1,8 +1,7 @@
 # Construction bundle layout and verification
 
 A construction bundle records one replay-verified complete-construction result
-and embeds the separate design bundle on which that result depends. It is not a
-method-execution record or experimental evidence package.
+and embeds the separate design bundle on which that result depends.
 
 ```text
 construction-bundle/
@@ -18,13 +17,12 @@ construction-bundle/
 | --- | --- |
 | `construction-bundle.json` | Content-addressed root manifest with the construction result identity, embedded design-bundle identity, root digests, and complete artifact inventory |
 | `construction-result.json` | Exact local authorities, examined composition prefix, accepted route realizations, endpoint products, rejection accounting, grouping, provenance, and claim boundary |
-| `authorities/design/hop-bundle.json` | Manifest for the separately compiled design authority used during construction composition |
+| `authorities/design/hop-bundle.json` | Manifest for the separately compiled design bundle used during construction composition |
 | `authorities/design/<artifact>` | Unchanged design artifacts required for complete design semantic replay |
 
-The root manifest inventories every content artifact except itself. No local
-projection is embedded in the authority: JSON, CSV, and SVG projection packets
-are deterministic views generated from a verified receipt and may be stored
-separately.
+The root manifest inventories every content artifact except itself. JSON, CSV,
+and SVG projection packets are generated from a verified receipt and stored
+separately from the bundle.
 
 ## Verification
 
@@ -61,25 +59,22 @@ part of the public facade.
 
 ## Identity and claim boundary
 
-The construction bundle has its own identity. It references and embeds a
-verified design bundle without redefining that design identity. A construction
-result may be `complete`, `infeasible`, or `truncated`; all three are digital
-outcomes under declared bounds and a declared molecular model.
+The construction bundle has its own identity and preserves the embedded design
+bundle's identity. Its result records `complete`, `infeasible`, or `truncated`
+under the declared bounds and molecular model.
 
-The route implementation identity is `complete-construction/10`. It includes
+The route implementation identity is `complete-construction/11`. It includes
 retention of source-derived bases between a basal nick and the payload and
 composition of selected cleanup nicks into PCR-bearing routes. Each such route
 embeds its selected partition request and realization as `source_partition_plan`,
 so individual-route validation can replay cuts, fragment lineage, and selection.
 The field is omitted when no cleanup plan is consumed.
-Readers require this identity; results made with another implementation must
-be regenerated from their requests. The request and result schemas remain
-`hop.construction-request/v6` and `hop.construction-result/v6`.
+Current readers require this identity; regenerate results made with another
+implementation from their preserved requests. The request and result schemas
+are `hop.construction-discovery-request/v7` and `hop.construction-space-result/v9`;
+the bundle schema is `hop.construction-bundle/v6`.
 
-Verification establishes byte integrity and deterministic molecular replay. It
-does not establish that a route was performed, that a product was recovered,
-that a destination accepts the product, or that construction, QC, activity,
-yield, or empirical enzyme performance succeeded.
+Verification checks byte integrity and replays the molecular derivation.
 
 See the separate [design bundle](bundle-layout.md) and
 [method bundle](method-bundle-layout.md) contracts.

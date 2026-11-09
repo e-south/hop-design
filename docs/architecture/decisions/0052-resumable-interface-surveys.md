@@ -373,9 +373,9 @@ candidates retain ordinary local, source-preparation and complete-route checks.
 
 The kernel owns sequence grouping, models own strict cursors, and
 `design.construction.surveys.completion` owns binding, navigation, scheduling and
-compilation orchestration. Default all-word traversal remains separate. This is
-not a general constraint solver for every whole-route failure, a guarantee of
-practical exhaustive completion, or an experimental primer-design assessment.
+compilation orchestration. Default all-word traversal remains separate. Other whole-route
+failures still require complete compilation. Finite execution budgets can leave
+the declared domain unresolved.
 
 ## Storage and authority
 
@@ -481,7 +481,7 @@ concurrent append from mixing earlier coordinates with later coverage counts.
 
 Snapshot integrity remains distinct from aggregate molecular replay. Selected
 atlas inspection and material retrieval still replay their exact authority.
-The current snapshot holds all complete-path facts in memory; large-corpus
+The current snapshot holds all complete-path facts in memory. Large-corpus
 responsiveness and print composition require separate
 acceptance evidence.
 

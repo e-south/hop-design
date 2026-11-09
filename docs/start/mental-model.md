@@ -8,9 +8,9 @@ and whether selected junctions can be completed into the requested product.
 ## What do you specify?
 
 Author one payload arm as exact DNA or fixed and degenerate positions. HOP
-derives its complementary arm. You do not specify the two independently.
-Compiling this anatomy gives the intended hairpin sequence, not a construction
-procedure. See [substrate spaces](../guides/substrate-spaces.md).
+derives its complementary arm. Compiling this anatomy gives the intended hairpin
+sequence. To obtain a construction procedure, continue with discovery.
+See [substrate spaces](../guides/substrate-spaces.md).
 
 For construction, start with the stem and intended product using
 [design discovery](../guides/discover-designs.md). End words, scaffold properties
@@ -27,8 +27,8 @@ Neither search changes the payload.
 
 ## How do local junctions become a construction?
 
-A local solution describes a possible junction, not the entire molecule.
-Composition checks selected junctions together with the source, adapters,
+A local solution describes a possible junction. Composition checks selected
+junctions together with the source, adapters,
 primers, fragment removal and endpoint requirements. A construction fails if
 required annealing sequence is missing or its materials are incompatible.
 
@@ -41,9 +41,9 @@ source ssDNA + primers → source duplex
     → optional PCR duplex → optional end-generating cleavage
 ```
 
-Nicking breaks one backbone. It does not remove a fragment. Separation
-and selection are distinct steps. PCR derives expected strands from declared
-primer bindings. HOP does not predict amplification efficiency.
+Nicking breaks one backbone. Strand separation exposes the fragments; selection
+retains the required ones. PCR derives expected strands from declared primer
+bindings.
 
 The requested endpoint determines which steps and materials are required.
 A direct ssDNA hairpin does not acquire adapter, PCR, or end-generation
@@ -112,16 +112,14 @@ in the initial source duplex.
 
 Searches explore increasing retained non-payload sequence. An existence search
 keeps a witness for each accessible work unit. An all-realizations search keeps
-every exact alternative within its reported coverage. Neither order nor a
-shorter junction predicts experimental performance. A truncated search leaves
+every exact alternative within its reported coverage. A truncated search leaves
 part of the declared space unresolved. See [search interpretation](../discovery/overview.md).
 
 ## What makes a complete preparation valid?
 
 A complete preparation is **satisfiable** when an exact choice of sequences,
-materials and ordered operations passes the modeled constraints through the
-requested endpoint. This is sequence and geometry validity, not a prediction of
-experimental performance.
+materials and ordered operations passes the sequence and geometry constraints
+through the requested endpoint.
 
 Keep these decisions separate:
 
@@ -133,11 +131,10 @@ Keep these decisions separate:
 | Computing limits | How much of the domain is explored now; unfinished work remains unresolved |
 | Saving and filtering | Which recorded complete preparations are included or visible; an explicit query or identity list may select a subset |
 
-There is no hidden preparation-quality score. The current construction
-preference contract has `ranking: none`. A longer construction inside the
-declared bounds remains eligible. Being longer is not itself a rejection or an
-experimental penalty. Search order can affect which preparations are found in a
-bounded run, even when there is no ranking of the resulting preparations.
+The current construction preference contract has `ranking: none`. A longer
+construction inside the declared bounds remains eligible. Search order can
+affect which preparations are found in a bounded run, even when there is no
+ranking of the resulting preparations.
 
 Retained construction DNA, added pairing, loops and auxiliary handles describe
 different quantities. Compare them at the intended molecular stage; see the
@@ -150,8 +147,8 @@ additional paired positions there. A gap is not missing DNA, a primer handle or
 a loop extension. Sticky-end words and these distances are separate inputs.
 
 Freezing a preparation collection includes all matching recorded preparations,
-deduplicated by preparation identity. It does not choose only shortest designs
-or best-scoring molecules. An explicit query or identity list can capture a subset.
+deduplicated by preparation identity. An explicit query or identity list can
+capture a subset.
 See [saving preparations](../guides/share-atlas-edition.md) for membership and
 molecular-map interpretation.
 
@@ -164,9 +161,8 @@ these same requests, choices and selections.
 Separate local variation from complete combinations. Two preparations may differ
 in the foldback, the basal association, their released ends, or only the materials
 used to make the same product. Count exact products at the intended molecular
-stage, and inspect preparation alternatives separately. A geometry count cannot
-capture all sequence differences. A preparation count cannot establish biological
-library diversity.
+stage, and inspect preparation alternatives separately: one geometry can contain
+several sequences, and several preparations can produce the same product.
 
 Choose against your requirements first: available enzymes, permitted product
 ends, pairing rules, and the materials you can supply or allow HOP to derive.
@@ -182,9 +178,5 @@ Keep the candidate's completeness separate from the search's coverage.
 
 A successful computation supplies exact sequence and processing expectations.
 [Verification](../provenance/overview.md) checks that the saved result follows
-from its inputs. It does not establish recovery, folding, cleavage efficiency,
-ligation efficiency, or biological activity. Defined cohesive ends also need
-a separate compatibility check against the intended cloning destination.
-
-Experimental protocols, tubes, controls, and observations belong in the
-researcher's laboratory records, not in a computed molecular specification.
+from its inputs. Before cloning, check the cohesive ends against the intended
+destination.

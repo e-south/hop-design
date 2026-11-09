@@ -38,10 +38,9 @@ To test the importance of stage, copy `crossed.json`, change only
 at `comparison/discovery` with `construction assess-comparison`. All four member
 slots have complete options, but no four-distinct-insert set exists in that pool.
 
-Geometry counts describe recorded pairing architecture. Modeled completion does
-not establish recovery, reaction performance or biological effects. A hairpin
-shown as an insert intermediate is distinct from the explicit hairpin endpoint.
-See the [full workflow](../../docs/guides/specify-a-comparison.md).
+Geometry counts measure recorded pairing positions at the comparison stage.
+A hairpin used as an insert intermediate and an explicit hairpin endpoint are
+separate products. See the [full workflow](../../docs/guides/specify-a-comparison.md).
 
 ## Preserve retained regions, target a missing member and reuse an old source
 
@@ -61,4 +60,4 @@ Open `panel-selected/comparison/report.pdf` for the controlled panel,
 `required-ttc/report.pdf` for targeted search and remaining coverage, and
 `reused-source-compatible/report.pdf` for materials referenced to the actual
 prior preparation. The recipe explicitly selects `set-0001` with `aaa-bsai` as
-its display baseline. Selection is not a scientific ranking.
+its display baseline. The caller supplies the selection.

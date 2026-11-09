@@ -16,10 +16,8 @@ needs sufficient adapter pairing, primer-binding sequence, and compatible
 processing steps. Checking these together can expose a missing requirement
 even when both local junctions are feasible.
 
-The useful output is an inspectable sequence and material specification for
-testing, not a prediction of experimental success. HOP models established
-copying, cleavage, association, and joining operations; it does not predict
-their efficiency or establish library-wide physical recovery from one example.
+The output is an inspectable sequence and material specification, built from
+copying, cleavage, association, and joining operations.
 
 Start with [the molecular steps](mental-model.md), then
 [search a construction](../guides/compile-construction.md) or

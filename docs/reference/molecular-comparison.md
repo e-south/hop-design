@@ -1,8 +1,7 @@
 # Molecular comparison
 
-A comparison describes proximity between recorded preparations. It does not
-admit a new construction, prove compatibility or predict biological activity.
-The supplied stem and endpoint define the comparison scope.
+A comparison describes proximity between recorded preparations. The supplied
+stem and endpoint define the comparison scope.
 
 | Feature type | Contents | Comparison |
 | --- | --- | --- |
@@ -13,8 +12,7 @@ The supplied stem and endpoint define the comparison scope.
 The complete descriptor remains available even when a coordinate is constant.
 Only varying coordinates contribute to distance. A contact integer is a lossless
 category code: subtracting two codes has no molecular meaning. Geometry and
-sequence regions have explicit boundaries in the molecular projection; their
-names do not denote universal RNA folding classes.
+sequence regions have explicit boundaries in the molecular projection.
 
 ## Saved policy
 
@@ -34,7 +32,7 @@ the compared signatures. Its optional `distance_policy` has schema
 For region lengths `m,n` and edit count `e`, the original sequence penalty is
 `min(1, max(0, e − abs(m−n)) / max(1,min(m,n)))`. Its length correction can assign
 zero sequence penalty to insertions. Ordinary normalized edit uses
-`e / max(1,m,n)`. Neither is a learned substitution or energy model.
+`e / max(1,m,n)`.
 
 Hamming requires equal word lengths within each side of the cohort. Words retain
 their recorded orientation; reverse complements are not silently equated.
@@ -44,9 +42,8 @@ Hamming lengths raise, rather than clipping or changing metric.
 Distances are averaged within each active block, then combined as
 `sum(weight × block_mean) / sum(active_weights)`. Default weights are `1,1,1`.
 Thus a block with many coordinates does not automatically dominate another
-block. Weights and scales express a declared comparison, not biological truth.
-Application-specific molecular controls and sensitivity criteria belong to the
-caller, outside HOP.
+block. The caller declares weights, scales, molecular controls and sensitivity
+criteria for the comparison.
 
 Legacy records omit `distance_policy`; omission retains the original arithmetic
 and serialization. Descriptor schemas are a separate dimension:
@@ -84,7 +81,7 @@ hop-design design freeze designs --include-landscape \
 Capture is create-only. An explicit comparison requires `include_landscape=True`.
 Existing editions remain unchanged. The browser's descriptor explanations read
 the captured policy; hover and filtering do not fit coordinates or revise scales.
-Exact selection, routes and material retrieval retain their existing authority.
+Selections, routes and retrieved materials retain their exact identities.
 An existing `choices.figure(view="similarity", selection=selection)` export also
 contains `comparison-features.json` and `comparison-features.svg`. They describe
 that selected point using the same contact dictionary, active coordinate order

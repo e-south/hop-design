@@ -331,8 +331,8 @@ and the executing package-content digest. The
 inputs, lineage bindings, and the distinction between recorded evidence and
 fresh execution.
 
-The package root is the single-design language. Five sibling facades make
-scientist workflow and specialized competency questions explicit:
+The package root provides the single-design language. Use these public facades
+for construction, discovery, methods, spaces and views:
 
 ```python
 # Prepare molecular edits through the public construction API.
@@ -348,7 +348,7 @@ Use `hop` for design compilation, payloads, bounded design spaces, and explicit
 component evaluation. Use `construction` for file-oriented payload-centered
 construction compilation and its neutral projections, `discovery` for bounded
 catalog queries, `methods` for named production methods and molecular states,
-`spaces` for the minimal scientist-facing substrate-space journey, and `views`
+`spaces` for substrate-space preview and compilation, and `views`
 for state projections and rendering. Internal `hop_design.design.*` modules are
 not public facades.
 
@@ -379,8 +379,8 @@ All operations and receipts in this section use `hop_design.construction`.
   authored and expanded inputs. `preview_json_bytes` / `preview.json` expose
   the coupled footprint, contact permissions, annealing minimum and material
   policies. An explicit `compare_to` request adds field differences and both
-  footprints. This is input preparation, not discovery or a
-  verified construction. See the [authoring decision](../architecture/decisions/0037-product-request-authoring.md).
+  footprints. The output contains expanded inputs for subsequent discovery and
+  construction. See the [authoring decision](../architecture/decisions/0037-product-request-authoring.md).
 
 For repeated questions, load one verified construction receipt and reuse it:
 
@@ -404,8 +404,8 @@ without replaying that same result a second time.
 
 - `project_basal_source_panel(receipt, realization_id=...) -> bytes` emits the
   existing neutral molecular panel as canonical JSON for one verified local
-  basal realization. It preserves source coordinates and exact pairing facts;
-  it does not select a route or make a complete-construction claim.
+  basal realization. It preserves source coordinates and exact local pairing
+  facts; route selection is separate.
 
 - `compile_construction(source_path, design_bundle_path=...) -> ConstructionCompilation`
 - `compile_construction_from_local_realizations(source_path, design_bundle_path=...,
@@ -426,7 +426,7 @@ without replaying that same result a second time.
   design identity.
 - `discover_local_neighborhood(source_path) -> LocalNeighborhoodDiscovery`
   runs one strict foldback or basal neighborhood request and returns an opaque,
-  replay-verified family receipt without claiming a complete route. Large exact
+  replay-verified local family receipt. Large exact
   sequence domains may declare one canonical `sequence_partition`; each result
   remains complete only for that part, preserves molecular realization ids, and
   does not claim whole-domain payload compatibility.
@@ -520,7 +520,7 @@ without replaying that same result a second time.
   the unchanged complete summary plus only the additive accepted-route facts:
   typed geometry, retained overhead, cleavage-program enzyme IDs, retained
   non-payload sequence, and endpoint topology. It supports browse, filter, and
-  explicit-sort workflows without creating a second accounting relation.
+  explicit-sort workflows using the summary's accounting relation.
 - `project_complete_construction_summary(receipt) -> ConstructionProjection`
 - `project_construction_trajectory(receipt, materialized_realization_id=...) -> ConstructionProjection`
 - `project_hairpin_portrait(receipt, materialized_realization_id=...) -> ConstructionProjection`
@@ -529,13 +529,13 @@ without replaying that same result a second time.
   stage. `write(path)` exports `projection.json`, `projection.svg`, a result-bound
   `selection.json` and the selected trajectory/materials under `preparation/`.
   It supports one contiguous intramolecular stem and loop; unsupported topology
-  raises explicitly. This is a pairing architecture view, not a folding prediction.
+  raises explicitly.
 - `compare_constructions(left, right, left_realization_id=..., right_realization_id=...) -> str`
   returns a read-only Markdown comparison of two accepted routes from verified
   compilation or bundle receipts. It compares recorded molecular properties,
   not request text, and preserves both search statuses and selected identities.
   Unknown or rejected selections raise; raw model objects are not accepted.
-  No ranking, new authority, file write, or search is performed. See
+  The operation reads recorded routes without ranking, writing or searching. See
   [comparing completed choices](../guides/compile-construction.md#compare-completed-choices).
 
 The source document cannot author design or result identities. Receipts expose
@@ -556,7 +556,7 @@ optional keyword-only index is zero-based in that end's own 5′→3′ word; in
 types, out-of-range indexes, earlier endpoints and non-trajectory projections
 raise `ValueError`. The text reads recorded material origins and release cuts;
 it neither reconstructs a route nor changes projection bytes. Structured facts
-remain in `json_bytes`; text formatting is for people, not a new data schema.
+remain in `json_bytes`; use the text for reading and JSON for structured access.
 For a trajectory, `ConstructionProjection.write(path, selection_reason=None)`
 also exports `report.md`, `oligos.csv`, and `oligos.fasta`. The CSV retains required
 terminal chemistry; FASTA contains sequences only. The optional nonblank reason
@@ -584,15 +584,10 @@ ephemeral filesystem identity, not a portable scientific artifact.
 `.json` file path. A selection never changes or narrows the complete
 construction authority.
 
-These operations establish only deterministic digital discovery,
-materialization, composition, verification, and projection. They do not
-establish laboratory construction, destination compatibility, QC, activity,
-yield, or an optimized route.
-
-Source partitioning is not basal discovery. Its nick functions distinguish a
-retained-fragment boundary from excluded-fragment cleanup. Canonical enzyme
-subset order is replay metadata, not rank. PCR handles and primer
-thermodynamics are outside this local search.
+Source-partition nick functions distinguish a retained-fragment boundary from
+excluded-fragment cleanup. Canonical enzyme
+subset order is replay metadata, not rank. PCR handles are outside this local
+search.
 
 See the [construction guide](../guides/compile-construction.md), the
 [source-partition guide](../guides/discover-source-partitions.md),
@@ -621,10 +616,7 @@ The exact facade allowlist also exposes `SubstrateSpaceSpec`,
 identity. V1 compilation is exhaustive or blocked; it never returns a
 truncated authoritative set.
 
-Success establishes complete digital design derivation. It does not establish
-a named construction method, destination compatibility, physical
-construction, QC, or biological activity. See the
-[design-set layout](design-set-layout.md) and
+See the [design-set layout](design-set-layout.md) and
 [substrate-space guide](../guides/substrate-spaces.md).
 
 ## Compile and integrity
@@ -653,10 +645,9 @@ invalid call shapes raise `TypeError`; corrupt bundles raise
 `BundleIntegrityError`.
 
 A `ResolvedHopSpec` compiles supplied foldback and basal components through an
-explicit design derivation. The resulting bundle makes no claim that HOP
-discovered those components or that an enzyme route exists. A release
-projection requires explicit terminal-nick geometry, but still does not create
-a temporal method history.
+explicit design derivation. A release projection requires explicit terminal-nick
+geometry. Construction programs and named methods record their respective
+molecular-state histories.
 An optional `PairedStemExtensionRequest` records variable non-payload paired
 context between the basal junction and payload stem.
 
@@ -701,8 +692,8 @@ use `hop_design.discovery`.
 - `search_nicking_placements(catalog=..., target=..., limits=...) -> NickingPlacementSearchResult`
 - `search_foldback_precursors(request, limits=...) -> FoldbackPrecursorSearchResult`
 
-The operation list is the signature index, not the semantic authority. Follow
-the reference that matches the question:
+For input requirements, result meanings and failure semantics, follow the
+reference that matches the question:
 
 - [component evaluation](component-evaluation.md) for foldback, basal, paired
   stem, released-strand projection, and compiler integration;
@@ -791,8 +782,8 @@ requires the explicit continuation argument and preserves every member outcome.
 `select_construction_set(path) -> ConstructionSet` verifies explicit complete
 selections and exports individually supported preparations, typed comparisons
 and chemically deduplicated oligos with all member/role uses. All three expose
-`json_bytes`, `report_text`, and create-only `write(destination)`. They are
-workflow packets over existing authorities, not new molecular authorities.
+`json_bytes`, `report_text`, and create-only `write(destination)`. Their packets
+preserve the underlying molecular records.
 See [compare scaffold families](../guides/compare-scaffold-families.md) for input
 fields, bounds, conflict handling, selection and interpretation.
 
@@ -803,8 +794,7 @@ same human comparison as `compare_constructions`. `write(path.json)` creates
 one new projection. Regional contacts are aligned locally; sequence equality
 and coordinate equality are separate properties. Routes outside the hairpin
 portrait domain retain preparation facts and an explicit unavailable-region
-reason. This projection neither ranks designs nor establishes equivalent
-experimental performance.
+reason. Comparisons retain the recorded routes without ranking them.
 
 
 ## Portable scaffold comparison report

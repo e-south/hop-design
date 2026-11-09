@@ -11,9 +11,9 @@ ordering do not enter content identity.
 
 Product-to-construction lowering reuses the request's immutable characterized
 catalog when binding foldback, basal and release permissions. It validates the
-newly derived geometry and complete route through their normal models. This is
-object reuse within a translation, not a persistent admission cache; external
-JSON and saved-bundle admission still validate their complete contents.
+newly derived geometry and complete route through their normal models. Reuse is
+limited to that translation. External JSON and saved-bundle admission validate
+their complete contents.
 
 ## Bundle integrity
 
@@ -23,8 +23,9 @@ The private creation context is bound to one model type and identity field,
 consumed by one root object and discarded when creation finishes. Nested records
 still verify their supplied identities, and all schema, molecular, lineage and
 route checks still run. Independent model/file admission always checks the
-supplied identity. This removes duplicate serialization during creation without
-retaining validation authority or adding a caller option to disable checks.
+supplied identity. This removes duplicate serialization during creation. It
+retains no validation authority after creation and offers no caller option to
+disable checks.
 
 Survey checkpoints remain bound to their exact producer. Ordinary resume and
 verification never accept another producer. An explicit `survey upgrade` replays

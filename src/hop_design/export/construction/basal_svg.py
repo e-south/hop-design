@@ -209,10 +209,7 @@ def render_basal_matrix_svg(projection: BasalMinimumOverheadMatrixProjection) ->
         "Gray: no local solution after complete coverage · Unknown: declared search ended "
         "before the cell was resolved."
     )
-    boundary = (
-        "Local accessibility does not establish scaffold completion, route validity, or "
-        "physical construction."
-    )
+    boundary = "Compose these basal choices with a foldback and the required materials."
     body = (
         status_header(projection, title)
         + f"""

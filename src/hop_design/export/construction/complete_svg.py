@@ -90,9 +90,7 @@ def render_complete_projection_svg(
         f"rejected {projection.accounting.rejected_combinations} · "
         f"truncated {projection.accounting.truncated_combinations}"
     )
-    evidence_boundary = (
-        "Digital route derivation was verified; physical construction was not recorded."
-    )
+    evidence_boundary = "Each accepted combination identifies a complete preparation."
     order_note = (
         "Every examined combination appears once in canonical Cartesian order; "
         "grouping remains reversible."

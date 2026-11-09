@@ -10,7 +10,7 @@ Updated by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md).
 
 HOP already compiles exact hairpin designs, performs bounded component
 discovery, resolves one named linear-source method, and verifies separate
-design and method authorities. Those competencies use trustworthy molecular
+design and method bundles. Those competencies use trustworthy molecular
 primitives, but they do not yet share one construction-discovery contract.
 Several route-local coordinate systems and historical component conventions
 therefore risk making the source encoding, an enzyme arrangement, or one
@@ -18,9 +18,9 @@ method chronology appear to be the biological object.
 
 The biological object is the intended duplex payload. Construction discovery
 must preserve that object while finding peripheral sequence, enzyme, material,
-and operation realizations that produce a requested endpoint. The scientist
-surface for small substrate spaces remains valid and must not grow to expose
-the construction ontology.
+and operation realizations that produce a requested endpoint. The existing
+interface for small substrate spaces remains valid. Construction details stay
+behind its operations.
 
 ## Decision
 
@@ -95,11 +95,11 @@ closure bond, and achieved retained geometry.
 
 ### 5. Basal pairing is explicit and Type IIS processing is endpoint-dependent
 
-The basal pairing state is ordered from the adapter's ligation
-position outward. Every position retains its literal source and adapter bases,
-pair classification, position from ligation, and any later end-projection role.
-`match`, configured `wobble`, and declared `mismatch` are construction
-bookkeeping, not thermodynamic or biological scores.
+The basal pairing state is ordered from the adapter's ligation position
+outward. Every position retains its literal source and adapter bases, pair
+classification, position from ligation, and any later end-projection role.
+`match`, configured `wobble`, and declared `mismatch` describe literal
+construction pair states, not thermodynamic scores.
 
 The current adapter-ligation route requires a canonical ligation-proximal match
 when the endpoint requires adapter capture. `ssdna_hairpin` does not invent
@@ -124,8 +124,8 @@ the achieved local geometry and retained non-payload nucleotides. Recognition
 sites, handles, and other precursor sequence removed before that endpoint do
 not incur a compactness penalty.
 
-Compactness is a design preference, not proof of a global minimum and not a
-proxy for yield, enzyme count, or total precursor length. Realizations with
+Compactness is a design preference, not proof of a global minimum. Enzyme count
+and total precursor length are separate measures. Realizations with
 the same retained geometry remain distinct when their precursor, enzymes,
 materials, stages, or intermediates differ.
 
@@ -189,8 +189,8 @@ consume HOP without defining this generic construction contract.
 Construction discovery becomes payload-first, endpoint-explicit, and capable
 of explaining every accepted route at nucleotide and molecular-state
 resolution. Local modularity remains useful, but whole-route feasibility is a
-separate composed claim. Scientific summaries can stay compact without erasing
-alternatives.
+separate composed claim. Summaries can group equivalent geometries while preserving
+every realization.
 
 This is an intentional pre-1.0 semantic break. New schemas use the accepted
 vocabulary directly; retired field names and route assumptions receive no

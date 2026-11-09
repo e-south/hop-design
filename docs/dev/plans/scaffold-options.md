@@ -2,15 +2,16 @@
 
 A user supplies a stem, intended product, permitted scaffold dimensions and
 method/material requirements. HOP returns complete molecular alternatives,
-then helps the user choose one preparation or a deliberate comparative set.
-The payoff is making product choice possible before the user must understand
-local witness identities or supply an already completed reference.
+then helps the user choose one preparation or a deliberate comparative set. Users
+can choose a product before learning local witness identifiers or supplying a
+completed reference.
 
 The public exploration, group discovery and explicit label retrieval are now
 implemented and verified: 1,989 tests pass, with 91.35% coverage and source/wheel
 parity for exploration, grouping and explicit retrieval. Existing execution,
 continuation and matching behavior remains covered by regression tests. The [public construction example](../../../examples/complete-construction/README.md)
-supplies public inputs. No downstream study or private record is a dependency.
+supplies public inputs. The example runs
+independently of downstream studies and private records.
 
 ## Scope and delivery boundary
 

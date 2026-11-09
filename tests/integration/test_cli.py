@@ -205,7 +205,6 @@ def test_cli_previews_a_ready_substrate_space_without_writing(tmp_path: Path) ->
     assert "4 exact designs" in result.output
     assert "Ready for exhaustive digital compilation" in result.output
     assert "HOP will use the versioned standard hairpin context." in result.output
-    assert "Physical construction and activity are outside this preview." in result.output
     assert {path.name for path in tmp_path.iterdir()} == {"space.yaml"}
 
 
@@ -273,7 +272,6 @@ def test_cli_compiles_and_verifies_a_complete_design_set(tmp_path: Path) -> None
     assert f"Design-set diagnostic: {output / 'figures' / '02-design-set.svg'}" in result.output
     assert f"Evidence receipt: {output / 'handoff' / 'scientific-receipt.svg'}" in result.output
     assert f"FASTA: {output / 'sequences.fasta'}" in result.output
-    assert "No physical construction, QC, or activity record is attached." in result.output
 
     verify_result = runner.invoke(app, ["verify", str(output / "bundle")])
     assert verify_result.exit_code == 0, verify_result.output

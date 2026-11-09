@@ -40,9 +40,7 @@ def render_options_text(summary: dict[str, Any]) -> str:
         "",
         f"Examined {coverage['evaluated_pairs']} of {coverage['recorded_pairs']} recorded pairs.",
         "Local search termination and each continuation's accounting remain in summary.json.",
-        "Recorded combinations do not establish every possible route. Product options do not "
-        "automatically form a controlled comparison. "
-        "Molecular completion is not experimental qualification.",
+        "Use a comparison request to require shared properties across selected products.",
         "",
     ]
     return "\n".join(lines)

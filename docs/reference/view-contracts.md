@@ -1,7 +1,7 @@
 # Workflow view contracts
 
-`WorkflowView` (`hop.workflow-view/v1`) is the scientific authority for a
-visualization. A view contains ordered panels, strand-aware sequence tracks,
+`WorkflowView` (`hop.workflow-view/v1`) defines the molecular content of a
+visualization: ordered panels, strand-aware sequence tracks,
 typed feature spans, and explicit pair calls. Referential and coordinate
 validity are checked before rendering.
 
@@ -52,8 +52,8 @@ Explicit-component bundles include route-neutral foldback and basal view
 JSON/SVG. A design with an explicit terminal-nick request receives the basal
 processing view. A design with a release projection also receives the
 released-workflow JSON/SVG.
-The JSON is the renderer-independent review and interoperability surface; the
-SVG is a deterministic convenience artifact. Neither is experimental evidence.
+Use JSON for renderer-independent review and interoperability, and SVG for the
+rendered view.
 
 ## Local construction projections
 
@@ -136,10 +136,9 @@ fields, while SVG titles and metadata describe only the declared part. One
 complete or infeasible part never represents an exhaustive whole-domain search;
 aggregate coverage requires every verified, disjoint part.
 
-These projections establish local feasibility only under the declared
-molecular model. They do not establish a complete construction route,
-physical construction, quality control, biological activity, or empirical
-enzyme performance.
+These projections record local feasibility under the declared molecular model.
+Complete composition checks selected local solutions together with route
+materials and endpoint requirements.
 
 ### Teaching example: two bounded local neighborhoods
 
@@ -171,9 +170,9 @@ means at least one exact member exists among those requests. An open point can
 mean absence only when every included domain has exhausted. An empty partial
 search remains unresolved. A positive point may still have incomplete
 alternative coverage. An exhausted traversal that generated no candidate
-should be distinguished from evaluated candidates that failed constraints;
-neither reports a failed laboratory reaction. Coordinates outside the declared
-domain carry no claim. Every point should retain its request, result, and exact
+should be distinguished from evaluated candidates that failed constraints.
+Coordinates outside the declared domain are unevaluated. Every point should
+retain its request, result, and exact
 member identities so the aggregate can be inspected.
 
 If a plot collapses displacement, strands, orientations, or action choices,
@@ -196,9 +195,8 @@ the canonical source-partition authority.
 The SVG aligns both strands in source coordinates, labels their physical
 polarity, and shows exact cleavage bonds rather than recognition-site starts.
 The CSV is a tidy fragment relation with the threshold evidence repeated as
-canonical JSON. This projection establishes a digital partition under declared
-cut geometry; it does not establish physical cleavage, cleanup recovery, or
-experimental yield.
+canonical JSON. The projection records the selected partition under its declared
+cut geometry.
 
 ## Complete construction projections
 
@@ -213,9 +211,8 @@ than receive an approximate drawing.
 
 The state is `ligated_product` for a direct endpoint and `adapter_ligated`
 for a PCR-bearing route. `later_release`, when present, names the exact
-`clone_ready_duplex` state and its recorded cohesive ends. No thermodynamic
-conformation, destination compatibility or physical success is inferred.
-Dimensions are not source lengths, nick offsets or post-release flank spacing.
+`clone_ready_duplex` state and its recorded cohesive ends. Hairpin dimensions,
+source lengths, nick offsets and post-release flank spacing are separate measurements.
 The same HOP-owned achieved-state descriptor checks optional hard scaffold
 requirements during complete composition. Rejected candidates retain exact
 materialized evidence and per-dimension mismatches; they never enter accepted
@@ -231,12 +228,11 @@ final-product, endpoint, and material facts; rejected and truncated rows carry
 evidence only. Counts, failure partitions, material totals, group membership,
 and truncation evidence replay the source result exactly.
 
-`hop.construction-navigation/v2` is a narrow non-authoritative overlay around
-the unchanged summary v2 relation. Its accepted-route records add only typed
+`hop.construction-navigation/v2` extends the summary v5 relation with typed
 foldback and basal geometry, exact relaxation state, the sorted enzyme IDs from
 the declared cleavage programs, retained non-payload sequence, and endpoint
 topology. Rejected and truncated dispositions, accounting, failures,
-provenance, and claims remain solely in the nested summary. Geometry groups
+provenance, and claims remain in the nested summary. Geometry groups
 describe the shared achieved geometry and retain every exact member identity;
 no representative is selected. Renderer evolution does not alter the
 construction result or bundle authority.
@@ -254,10 +250,6 @@ is atomic and create-only. The packet carries its projection schema, projection
 identity, source-result identity, and renderer version while keeping the raw
 projection model internal. Formats are rendered when requested; a JSON-only
 navigation query does not construct unused CSV or SVG bytes.
-
-Complete projections are reversible views, not authority bundles. They cannot
-establish physical execution, recovery, destination compatibility, QC,
-activity, yield, empirical enzyme performance, or route preference.
 
 ## Complete preparation inspection
 
@@ -325,7 +317,8 @@ The default `"complete"` presentation and the atlas JSON retain every recorded
 state. When the recorded cleanup chain is present, the assembly drawing skips
 the separate denatured and selected-fragment scenes and shows **Retained and
 annealed**. Its **Heat · cleanup · reanneal** arrow retains all three transition
-identities in `data-transition-ids`. This is a presentation map, not a new route.
+identities in `data-transition-ids`, preserving the recorded route in the shorter
+drawing.
 
 Assembly scenes share the joined hairpin's drawing frame wherever material
 ancestry gives an unambiguous correspondence. Each scene keeps its own strands,

@@ -55,10 +55,10 @@ does not describe coverage of molecular sequence space.
 | Repository integrity | Are modules, documentation, dependencies and public boundaries coherent? | Strict preflight, lint, types, documentation and privacy checks. |
 | Distribution | Does the built and installed utility contain the required assets and reproduce its public behavior? | Clean installation and source/wheel comparisons. |
 
-These are responsibilities, not new folders. Existing tests stay with their
-owners. The presentation selection lives in `scripts/verification_tests.py`;
-extend it when a new view responsibility is introduced. It refuses stale or empty
-selections. The complete source gate still collects every test.
+Keep tests with their existing owners. The presentation selection lives in
+`scripts/verification_tests.py`; extend it when a new view responsibility is
+introduced. It refuses stale or empty selections. The complete source gate
+still collects every test.
 
 ```bash
 bash scripts/agent-verify --scope presentation
@@ -106,8 +106,8 @@ The routine installation emits stage names, elapsed times and separate logs into
 one create-only directory below `.artifacts/verification/`. Each stage has a
 five-minute deadline; failure or timeout stops qualification and cleans its
 process group. Successful temporary environments and molecular outputs are
-removed. The small gate took about 44 seconds locally with cached dependencies;
-this is not a full-suite timing or a hosted performance guarantee. The source
+removed. The small gate took about 44 seconds locally with cached dependencies.
+Full-suite and hosted timings require separate measurements; the source
 suite remains the larger cost.
 
 The extended runner labels its workflow groups and reports elapsed time and the
@@ -656,8 +656,7 @@ Only its two role references are normalized; the full catalog, other permissions
 and all other product fields remain dependencies. The definition excludes the
 name, identifier and source/vendor metadata, while retaining every other field.
 Named programs, preparation identities and complete-route verification remain
-distinct. This reuses a sequence constraint, not a claim that enzymes have the
-same experimental performance.
+distinct. Reuse applies only to the sequence constraint.
 
 Screen construction is invocation-owned and checks cooperative cancellation
 between frames. It handles at most 32,768 frames and 16 MiB of distinct relation

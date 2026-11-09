@@ -24,9 +24,8 @@ print(verified.candidate_count, verified.admitted_count)
 ```
 
 The example has two nick-strand cases, 512 raw local configurations, and four
-admitted configurations. Its small catalog is a teaching context, not a claim
-about every enzyme. Source-duplex recognition and enzyme-defined cut offsets
-remain explicit.
+admitted configurations under its small teaching catalog. Source-duplex
+recognition and enzyme-defined cut offsets remain explicit.
 
 ## Counted object and constraints
 
@@ -88,7 +87,7 @@ recovers its first exact source, derives the canonical adapter and required
 recognition context, then performs ordinary molecular realization. Unsupported
 word/program combinations raise. Rank is an address, not an optimization score.
 
-Local existence does not establish full materials, association, thermodynamic
-stability, or experimental recovery. Cohesive-end optionality can be studied
-separately by projecting admitted words onto the end footprint. A union across
-varying sources does not mean one fixed source can produce every end.
+To complete a construction, resolve the full materials and association through
+[construction compilation](compile-construction.md). Study cohesive-end
+optionality separately by projecting admitted words onto the end footprint.
+Keep source identities distinct: each source can support a different set of ends.

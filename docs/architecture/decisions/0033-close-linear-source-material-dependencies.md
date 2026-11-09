@@ -16,8 +16,7 @@ without requiring a caller to connect independent results by hand.
 HOP owns every exact molecular specification and deterministic transformation
 required to inspect or execute a digital route. A caller owns procurement,
 physical instances, protocols, observations, quality control, and biological
-interpretation. A material specification is not evidence that a physical
-material exists.
+interpretation.
 
 ### Payload and route roots
 
@@ -45,8 +44,7 @@ A content-addressed source-preparation authority records:
 
 Its output must equal the exact duplex that seeds the existing downstream
 `ConstructionProgram`. The source-preparation authority precedes that program
-inside the complete realization. It does not model PCR conditions, cycles,
-yield, or success.
+inside the complete realization. PCR conditions and cycles remain caller-owned.
 
 ### Materials and contextual use
 
@@ -101,7 +99,7 @@ material provenance. Choosing the first valid completion would hide alternatives
 and conflate a failed candidate with an infeasible domain; the result therefore
 retains the complete examined prefix under its finite limits.
 
-This adds a sequence coordinate to composition rather than a second route
+Composition gains a sequence coordinate within the existing route
 compiler. The range object is an additive domain expression within the current
 pre-release source policy. A string still denotes only its literal fixed-length
 IUPAC domain, with unchanged normalization and canonical bytes. An object has
@@ -166,8 +164,8 @@ Client studies freeze HOP requests and results, select routes, record physical
 parts and observations, and build study-specific plots.
 
 This is one intentional pre-1.0 schema change. It adds no compatibility aliases,
-fallback readers, study imports, inventory manager, dashboard, thermodynamic
-model, or physical-success claim. Existing released bundle bytes remain the
+fallback readers, study imports, inventory manager, dashboard, or
+thermodynamic model. Existing released bundle bytes remain the
 historical authorities they already are and are not reinterpreted as closed
 source-ssDNA routes.
 

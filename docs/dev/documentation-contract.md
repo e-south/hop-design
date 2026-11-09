@@ -25,9 +25,9 @@ invalid input, an impossible request and an unfinished search distinctly.
 Include identities and provenance where callers need them to reopen or verify a
 result, rather than repeating internal machinery on every page.
 
-A successful computation establishes modeled sequence and processing behavior.
-Use “experimental evidence” for caller-owned observations. Keep this distinction
-near the relevant claim without repeating a disclaimer in every paragraph.
+Describe the sequence or processing result and its evaluated scope. Omit blanket
+experimental-success disclaimers from product copy, examples and report footers.
+Explain a restriction beside the operation where it affects the reader's next action.
 
 ## Check the result
 

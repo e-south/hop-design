@@ -5,8 +5,8 @@ Updated by [ADR 0023](0023-separate-public-facades-by-competency-question.md).
 ## Context
 
 Released-foldback geometry discovery returns per-base domains and correlated
-Watson-Crick pair domains. Those domains prove that a process geometry admits
-one or more sequences, but they do not authorize HOP to choose arbitrary bases.
+Watson-Crick pair domains. Those domains establish that a process geometry admits
+one or more sequences. The caller supplies the allowed bases.
 A caller may already constrain part or all of the precursor through a payload,
 synthesis design, inherited component, or other upstream intent.
 
@@ -46,7 +46,7 @@ The selected geometry now has a bounded, replayable exact-sequence handoff.
 HOP never treats the geometry's unconstrained `A/C/G/T` positions as permission
 to invent bases outside a caller-authored template.
 
-This operation does not project a released strand, compose a basal route,
-choose a preferred process agent, or assert a complete production method.
-`search_hairpin_junction_routes` consumes its typed result and the separate
-basal-processing result without re-enumerating either input.
+`search_hairpin_junction_routes` consumes this typed result and the separate
+basal-processing result, projects the released strand, and composes the basal
+route without re-enumerating either input. Agent selection and complete
+production-method resolution remain separate operations.

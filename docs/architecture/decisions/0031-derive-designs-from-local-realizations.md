@@ -43,6 +43,5 @@ design id is the same. Two distinct exact junction selections produce distinct
 design authorities. Either authority can be written, replay-verified, and
 passed unchanged to complete construction.
 
-The operation does not select a preferred realization, assert that a search was
-complete, or claim physical construction, folding, cleavage, ligation,
-recovery, quality control, or activity.
+The caller selects the realization; each local receipt retains its own
+search-completion status.

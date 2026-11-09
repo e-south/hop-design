@@ -44,12 +44,12 @@ Read `docs/start/mental-model.md` when a request crosses competencies. Read
 
 - `payload` is authored once; its paired arm is derived. Expand symbolics only under an explicit bound.
 - A substrate-space preview is allocation-free. `blocked` means the valid exhaustive space exceeds its declared bound; it is not infeasible or truncated.
-- A hairpin design set is a verified digital package, not a physical library.
-- Keep deterministic order separate from scoring, geometry from enzyme performance, and selection from compatibility.
+- A hairpin design set contains replay-verified members of an exhaustively compiled substrate space.
+- Preserve deterministic order, report geometry measurements, and record caller selection separately from compatibility.
 - A design derivation is not chronology; construction routes and named methods own their respective ordered molecular states.
 - Preserve typed statuses exactly. Construction-specific authority and projection rules live in its reference.
 - Typed view JSON is the visual authority; rendering cannot derive new state.
-- A restriction product is destination-neutral, not assembly-ready.
+- Check a restriction product against the caller's destination, orientation, and assembly ends.
 - Do not add private sequences, study identifiers, or caller policies to public examples.
 
 ## Required Deliverables
@@ -59,9 +59,9 @@ Read `docs/start/mental-model.md` when a request crosses competencies. Read
 - New output path or write-free state, plus verification outcome.
 ## Success Criteria
 
-Distinguish `schema-valid`, `compiled`, `bundle-verified`, `destination-compatible`,
-and `experimentally supported`. Digital derivation does not establish physical
-construction, QC, activity, yield, or performance.
+Report `schema-valid`, `compiled`, `bundle-verified`, `destination-compatible`,
+and `experimentally supported` separately, using the responsible owner's records
+for each status.
 
 ## Trigger Tests
 

@@ -333,8 +333,6 @@ def test_foldback_projection_preserves_exact_membership_and_truthful_status() ->
         f"Foldback discovery identified {len(result.realizations)} exact local route realizations "
         "under the declared molecular model."
     ) in svg
-    assert "complete route composition and" in svg
-    assert "physical construction are not established" in svg
     assert 'data-completion="complete"' in svg
     assert 'data-feasibility="feasible"' in svg
     assert "Exact realizations satisfying declared constraints" in svg
@@ -479,14 +477,10 @@ def test_basal_minimum_overhead_matrix_preserves_proven_and_unknown_cells() -> N
     svg = render_projection_svg(partial).decode("utf-8")
     assert "Basal local accessibility by nickase and future release action" in svg
     assert "Coverage: truncated · feasibility: feasible" in svg
-    assert "complete route composition and physical construction" in svg
     assert "retained overhead, 0-4 nt" in svg
-    assert "scaffold completion, route validity" in svg
     assert 'data-cell-status="proven_minimum"' in svg
     assert 'data-cell-status="unknown"' in svg
     assert "Unknown" in svg
-    assert "physical construction" in svg.lower()
-    assert "does not establish" in svg.lower()
 
     pcr = discover_basal_neighborhood(basal_request(ConstructionEndpoint.HAIRPIN_PCR_DUPLEX))
     with pytest.raises(ValueError, match="requires clone-ready"):

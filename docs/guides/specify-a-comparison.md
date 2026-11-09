@@ -12,7 +12,7 @@ It uses public synthetic inputs and produces substrate, preparation-alternative 
 
 `hop.comparison-brief/v1` embeds an ordinary
 [scaffold discovery request](discover-product-scaffolds.md). The discovery request
-owns the desired endpoint, allowed geometry, available methods, material policies,
+specifies the desired endpoint, allowed geometry, available methods, material policies,
 and branch and continuation budgets. The brief adds:
 
 | Field | Meaning |
@@ -72,14 +72,14 @@ Set labels indicate order, not scientific rank.
 Read `comparison/report.pdf`, `report.md` and `summary.json`. The substrate sheet
 shows whole hairpins and countable closing-region details. The preparation sheet
 shows a common product and the different upstream molecules and materials.
-Pairing diagrams describe the specified architecture, not predicted conformation.
+Pairing diagrams show the specified architecture.
 
-Selection replays the underlying molecular authorities and recomputes the
+Selection replays the underlying molecular records and recomputes the
 assessment before admitting a displayed set. `selected/set.json` is ordinary
 portable membership. `selected/oligos.csv` and `oligo-uses.csv` retain exact
 chemical specifications and all member roles. `selected/comparison/report.pdf`
 shows the selected comparison. Move the entire selected directory together.
-The baseline controls pairwise presentation; it does not make a member optimal.
+The baseline sets the reference for pairwise presentation.
 
 To reuse an existing discovery with unchanged molecular permissions and bounds:
 
@@ -128,8 +128,7 @@ hop-design construction select-comparison comparison \
 The first sheet arranges scaffold groups as rows and preparation methods as
 columns. Exact products align beside their preparations. A missing or incompatible
 set retains its requested cells; a sole available option is not an assigned set.
-More than two methods or groups continue on additional pages. These are molecular
-and preparation comparisons, not experimental replicates or evidence of equal yield.
+More than two methods or groups continue on additional pages.
 
 ## Keep a previously chosen product
 
@@ -150,12 +149,11 @@ packet; an arbitrary molecular hash is not accepted. Change permitted methods
 or material policies explicitly in `discovery`. Newly discovered products must
 match the reference, even when they already agree with one another.
 
-A selected packet retains these authorities and its portable brief under
+A selected packet retains these verified bundles and its portable brief under
 `comparison/`. Reference paths in `comparison/request.json` are relative to that
 file; the embedded request in `comparison-selection.json` uses paths relative
-to the selected packet root. Move the entire directory together. Materials and processing may
-change while product identity remains fixed; that does not establish experimental
-equivalence of the resulting preparations.
+to the selected packet root. Move the entire directory together. Materials and
+processing may change while product identity remains fixed.
 
 ## Specify loop composition as well as size
 
@@ -172,9 +170,8 @@ required words outside inherited domains instead of changing either declaration.
 
 Loop words constrain the molecular placement domain before sequence enumeration,
 then are checked against complete constructed hairpins. A stopped search retains
-unexamined coverage. Exact composition establishes neither folding stability nor
-biological effect. A member selector alone does not expand inherited sequence
-permissions or guarantee it will be encountered under a tight search bound.
+unexamined coverage. Member selectors operate within the inherited sequence
+permissions and search bounds.
 
 A specified loop can introduce a recognition site in a later copied duplex.
 Read the reported enzyme, processing stage and recognition interval before
@@ -244,8 +241,7 @@ molecule; `preserve_material_roles` requires agreement among new members;
 `reuse_prior_materials` requires equality to the specified old materials. The
 comparison reports changes relative to that actual prior preparation. Selection
 embeds the reference and rechecks the required roles when `set.json` is retrieved
-after relocation. None of these declarations establishes physical stock, yield
-or experimental equivalence.
+after relocation.
 
 ## Obtain a hairpin itself
 
@@ -262,6 +258,5 @@ hairpin stage of an insert request continues to request an insert; it does not
 produce an independent hairpin handoff. Neither endpoint demonstrates a hairpin
 with exposed assembly sticky ends.
 
-Modeled completion does not establish recovery yield, reaction performance or
-biological effects. Preparation reports retain those conditions beside exact
-materials and processing records.
+Preparation reports retain unresolved conditions beside the exact materials and
+processing records.

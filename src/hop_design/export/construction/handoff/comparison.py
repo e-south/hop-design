@@ -22,7 +22,7 @@ def _material_changes(projection: ConstructionComparisonProjection) -> list[str]
         "Changed external oligo roles: " + (", ".join(changed) or "none") + ".",
         "Same sequence and terminal chemistry: " + (", ".join(same) or "none") + ".",
         "Roles present in only one preparation count as changed; shared oligos "
-        "retain all roles in each CSV. Laboratory stock is not inferred.",
+        "retain all roles in each CSV.",
     ]
 
 
@@ -41,19 +41,17 @@ def render_construction_comparison(projection: ConstructionComparisonProjection)
             projection.assessment.non_loop_sequences_conserved
         ]
         + ".",
-        "Coordinate shifts are distinct from sequence changes. Biological effects remain untested.",
+        "Coordinate shifts are distinct from sequence changes.",
         "",
         "## What changes in making it",
         "",
         *_material_changes(projection),
         "",
         "Sequences are written 5-prime to 3-prime; intervals are zero-based and half-open. "
-        "Same/changed compares each displayed property, not route identity or performance.",
+        "Same/changed compares each displayed property.",
         f"Composition coverage: left {projection.left.composition_status}; "
         f"right {projection.right.composition_status}.",
-        "Both selected routes resolved in their respective models; "
-        "this does not make a truncated search exhaustive and "
-        "does not describe upstream scaffold-generation coverage.",
+        "Local search coverage is recorded with each source result.",
         "",
         "| Property | Comparison | Left | Right |",
         "| --- | --- | --- | --- |",
@@ -68,10 +66,7 @@ def render_construction_comparison(projection: ConstructionComparisonProjection)
     lines.extend(
         [
             "",
-            "This is not a ranking. Operation order does not compare every binding or cut; "
-            "inspect each route for exact coordinates, pairing, bonds, and lineage. "
-            "Matching sequence and chemistry do not establish equal experimental performance. "
-            "Fragment removal is a model rule, not a prediction of cleanup recovery.",
+            "Inspect each route for exact coordinates, pairing, bonds and lineage.",
             "",
             f"Left result: `{projection.left.source_result_id}`.",
             f"Left realization: `{projection.left.materialized_realization_id}`.",

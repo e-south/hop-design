@@ -1,6 +1,6 @@
 # Payload sources and explicit expansion
 
-Use `PayloadRecord` as the small interoperability unit. Inline iterables,
+Represent each payload as a `PayloadRecord`. Inline iterables,
 FASTA, and CSV all produce the same strict record shape, so input acquisition
 stays separate from design compilation.
 
@@ -118,12 +118,10 @@ caller payloads + selected anatomy
     -> replay-verified design bundles
 ```
 
-This example is not the minimal substrate-space journey. It demonstrates the
-lower-level composable axes used when the caller already owns explicit
-foldback and basal anatomy. The example anatomy is synthetic contract data, not an enzyme recommendation
-or an empirically qualified scaffold. A real caller supplies anatomy selected
-from its own evidence or from bounded HOP discovery. Design-bundle verification
-still makes no production-method, destination, or experimental-success claim.
+Use this lower-level path when you already have explicit foldback and basal
+anatomy. The example uses synthetic anatomy; supply your own selected components
+or obtain them through bounded HOP discovery. For a simpler fixed-context
+workflow, use [substrate spaces](substrate-spaces.md).
 
 Historical migration can run in the opposite direction—decomposing a known
 full hairpin sequence into explicit HOP components and requiring exact replay.

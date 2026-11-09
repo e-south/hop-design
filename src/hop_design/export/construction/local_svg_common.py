@@ -57,10 +57,7 @@ def status_header(projection: LocalScientificProjection, title: str) -> str:
         f"Coverage: {projection.disposition.completion.value} · "
         f"feasibility: {projection.disposition.feasibility.value}"
     )
-    boundary = (
-        "Local feasibility only; complete route composition and physical construction are not "
-        "established."
-    )
+    boundary = "Compose local junctions to check a complete preparation."
     return f"""
 <g data-completion="{projection.disposition.completion.value}"
 data-feasibility="{projection.disposition.feasibility.value}"

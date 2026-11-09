@@ -2,10 +2,10 @@
 
 Help a scientist describe the hairpin or released insert they need, discover
 complete scaffold options, form a deliberate comparison and retrieve exact
-preparations. Whole-molecule choice comes before local construction identifiers.
-Sequence-to-function and structured-substrate applications motivate this service;
-HOP supplies molecular specifications, not predictions of experimental success.
-Application hypotheses, assay observations and manuscript claims belong to callers.
+preparations. Whole-molecule choice comes before local construction
+identifiers. Sequence-to-function and structured-substrate applications
+motivate this service. HOP supplies molecular specifications; callers own
+application hypotheses, assay observations and manuscript claims.
 
 ## Current entrypoints
 
@@ -21,9 +21,9 @@ one preparation and explicit alternatives. [The roadmap](roadmap.md) distinguish
 implemented capabilities, older versions and remaining work.
 
 The earlier delivery sequence is implemented through those operations. Its
-acceptance records remain in the linked delivery plans. This page owns durable
-experience principles rather than another increment-by-increment status list.
-The constrained molecular viewport is implemented. Its performance with unfamiliar users remains unestablished.
+acceptance records remain in the linked delivery plans. This page records
+durable experience principles. The constrained molecular viewport is
+implemented. Its performance with unfamiliar users remains unestablished.
 
 ## Information architecture: intention, options, comparison, handoff
 
@@ -34,7 +34,7 @@ The constrained molecular viewport is implemented. Its performance with unfamili
 | What must remain shared? | Explicit molecular properties at the intended comparison stage | Exact sequence, pairing and chemistry are separate properties |
 | What may change in making it? | Permitted enzymes, material derivation and explicit reuse | Preserving a product does not preserve its preparation |
 | What can I obtain within these bounds? | Complete molecular alternatives, examined failures and unexamined coverage | Local support is not complete-route admission; a stopped search is not impossibility |
-| Which set serves my intention? | Required members, group relationships and accompanying changes | Display order is not a recommendation; modeled equality is not experimental equivalence |
+| Which set serves my intention? | Required members, group relationships and accompanying changes | Explicit membership and stage-qualified equality remain separate from display order |
 | What do I take to the bench? | Explicit selection, exact oligos and chemistry, modeled steps and unresolved conditions | Material roles are not purchases, stock or measured readiness |
 
 The happy path is **specify → discover complete options → compare at the intended
@@ -53,14 +53,11 @@ plausible-looking default.
 A terminal tract on a hairpin is not a later restriction-released end. Read each
 exposed word in its own 5′→3′ direction with polarity and stage identified.
 Paired end-to-payload distance excludes the overhang and is independent of nick
-displacement. Loop size counts nucleotides; a drawn loop radius is not a physical
-conformation prediction. Source length, paired extension and retained product
+displacement. Loop size counts nucleotides. Source length, paired extension and retained product
 length must not share an ambiguous “size” control.
 
-Enzyme catalogue membership, permission to use an action, compatibility with the
-modeled route, reaction prerequisites and laboratory stock are different facts.
-HOP may evaluate supplied molecular actions; it must not infer procurement or
-experimental performance from their geometry.
+Catalogues provide enzyme actions. The request selects permitted actions;
+complete composition checks their sequence, cuts and placement at each step.
 
 ## Explicit edits and trustworthy failure explanations
 
@@ -100,11 +97,11 @@ what changes in preparation. The construction trace explains manufacture.
 Use consistent orientation, region roles, nucleotide pitch and explicit crops.
 Symmetric layout must not imply independent molecular feasibility.
 
-Renderers consume verified projections and own layout, not a second derivation
-of cuts, pairing or sequence origin. Keep essential labels readable at print
-width without hover. Preserve exact identities, chemistry and tables in exported
-handoffs; FASTA alone cannot encode the full material specification. No dashboard,
-readiness score or aggregate quality metric is required for this experience.
+Renderers lay out verified projections of cuts, pairing and sequence origin.
+Keep essential labels readable at print width without hover. Preserve exact
+identities, chemistry and tables in exported handoffs; FASTA alone cannot
+encode the full material specification. No dashboard, readiness score or
+aggregate quality metric is required for this experience.
 
 CLI and API operations use the same request and result authorities. An
 editor must export the exact request it executes and preserve identities through
@@ -116,8 +113,8 @@ HOP remains usable without a private study, inventory service or assay system.
 Start from one user job that current public operations do not express or make
 unnecessarily difficult. Freeze the intention and expected interpretation, test
 valid and conflicting requests, retain failures and assistance, then propose a
-bounded owner change. Separate an agent test from unfamiliar-user evidence and
-both from laboratory performance. Broader searches and richer graphics need
+bounded owner change. Record agent tests and unfamiliar-user evaluation
+separately. Broader searches and richer graphics need
 separate acceptance criteria.
 
 Use the [construction module map](../construction-map.md) to keep request

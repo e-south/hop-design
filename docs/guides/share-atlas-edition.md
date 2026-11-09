@@ -1,10 +1,9 @@
 # Share a preparation collection
 
-A preparation collection (an `AtlasEdition` in the API) captures complete
-preparations from a saved discovery. It carries
-their exact material handoffs and original producer identity. It can retain the
-original drawings or draw the selected molecule when inspected.
-You can move the directory and inspect it without rerunning the search.
+A preparation collection (an `AtlasEdition` in the API) saves complete
+preparations, exact materials and producer identity from a discovery. Keep the
+original drawings or draw selected molecules on demand. Move the directory to
+share and inspect it without rerunning the search.
 
 A discovery retains evaluated search work; a collection saves fixed preparation
 membership. An optional molecular map positions the collection for navigation.
@@ -51,7 +50,7 @@ the descriptors; inspecting a point draws its hairpin, and opening the preparati
 draws its route. Retrieving materials restores the original files byte for byte.
 The original producer and current renderer remain separately identified.
 
-Compact editions check metadata when opened and each authority archive when
+Compact editions check metadata when opened and each preparation archive when
 accessed. `edition.integrity` reports that distinction. They do not capture the
 original artwork: the requested `captured` policy therefore reports `current`
 rendering with an explanation. Use ordinary capture when preserving the exact
@@ -65,8 +64,8 @@ neither operation repeats molecular compilation.
 For parallel exploration, divide the requested end pairs into disjoint jobs using
 the ordinary intent's `ends.left` and `ends.right` alternatives. Keep the same
 stem, context, molecular permissions and effort file in every job. Each process
-owns one discovery directory and one checkpoint. Worker count and resource
-supervision belong to the caller; HOP does not start a background campaign.
+owns one discovery directory and one checkpoint. Set and supervise the worker
+count yourself.
 
 After stopping the writers, capture their union against the original full intent:
 
@@ -147,14 +146,12 @@ figures share molecular glyphs, with separate layouts for inspector and print
 widths. Print exports include a full-resolution route plate and readable
 continuation pages; the recorded physical dimensions show the effect of scaling.
 
-The molecular map arranges recorded preparations for navigation. Its distances,
-clusters and point density neither admit preparations nor show how uniformly the
-permitted space was searched.
+The molecular map arranges recorded preparations for navigation. Read the saved
+search coverage separately from map distances, clusters and point density.
 
 Nearby points compare shape, retained scaffold sequence and applicable receiving
 ends. The fixed supplied stem and auxiliary primer-handle sequences do not determine
-position. Enzyme methods remain visible in the trace. This distance helps find
-alternatives; it does not predict activity or establish a controlled comparison.
+position. Enzyme methods remain visible in the trace.
 Under **Preparation details → Nearby alternatives**, HOP describes changed
 coordinates. It labels loop surroundings preserved only after its regional
 preservation operation verifies that relationship.
@@ -162,8 +159,8 @@ preservation operation verifies that relationship.
 Coordinates stay fixed while filtering. Preparations with identical comparison
 descriptors share a position. Select that position to inspect its members;
 the pinned preparation stays outlined. Static maps preserve those positions and
-describe their multiplicity. Alternative preparations do not by themselves
-increase molecular diversity.
+describe their multiplicity. Count products separately from their alternative
+preparations.
 The saved edition carries its comparison definition, coordinates, algorithm
 settings and projector identity. Viewing it needs no numerical dependencies.
 Up to 2,048 distinct comparison signatures use exact all-pairs distances. Larger
@@ -205,10 +202,9 @@ without holding the lock used for preview and closing. Cancellation takes effect
 at computation boundaries; one in-progress molecular verification can finish first.
 
 Previewing does not select, search or change a query. The similarity figure
-exports the fixed map in `plot.svg`, and the selected hairpin above its parameter
-trace in `figure.svg` and `figure.pdf`,
-plus their separate SVGs and the saved coordinates. Exact orders still follow
-the selected preparation through `design retrieve`.
+exports the fixed map in `plot.svg`, the selected hairpin above its parameter
+trace in `figure.svg` and `figure.pdf`, separate SVGs, and the saved coordinates.
+Exact orders follow the selected preparation through `design retrieve`.
 
 The compact `x = […]` strip below the map shows the active descriptor fields in
 the saved comparison basis order. Each field connects its molecular value to its
@@ -218,8 +214,8 @@ meaning. Hover or focus a field to highlight the matching molecular span and
 parameter axes, or read its encoding and normalization in the tooltip. Constant
 features remain inspectable on the molecule and in the edition, but do not occupy
 vector fields. The strip changes atomically with the hairpin and trace and retains
-the previous view while loading. These are the descriptors underlying the saved
-molecular dissimilarity, not UMAP coordinates or an invented Euclidean embedding.
+the previous view while loading. These descriptors define the saved molecular
+dissimilarity; map coordinates are recorded separately.
 The teaching hairpin shows the matched hairpin-PCR primer pair; source-PCR primers
 appear with source ssDNA in the complete route.
 
@@ -279,8 +275,8 @@ without membership retain their meaning and serialized identity.
 The small geometry distributions compare eligible with recorded **preparations**.
 Their names, molecular stages, units, bins and missing-value counts are also
 returned by `families()`; family figure packets include `distributions.svg`.
-Several preparations can make the same product, so these counts are not library
-diversity. Missing coordinates remain missing, rather than becoming zero.
+Several preparations can make the same product; use the product groups for
+unique-product counts. Missing coordinates remain missing rather than becoming zero.
 
 `--stage hairpin` groups the folded intermediate. `--stage endpoint` groups the
 requested final product. The molecule changes with that choice of stage; the
@@ -328,8 +324,8 @@ selection. The selection's query adds stage-qualified preservation and intersect
 the existing eligible preparations. Sampling excludes the reference loop word;
 the saved query still permits returning to it on the next step. Empty or singleton
 pools report that no different loop is available instead of relaxing a requirement.
-This operation samples existing preparations; it does not establish an exhaustive
-sequence library or select a required comparative set.
+This operation samples existing preparations. To require a comparative set, use
+the [comparison workflow](specify-a-comparison.md).
 
 Captured editions reuse the regional comparison rules over their complete route
 records. If those records are missing or cannot be read, preservation reports
@@ -368,8 +364,8 @@ relocated.restore_view(view)
 The original producer is recorded in `edition.json`; newly rendered figure packets
 identify their display renderer separately. Loading checks file inventory and
 digests. Selection checks membership and query eligibility; guided receipts replay
-their sampling inputs. Captured evidence remains captured evidence, rather than a
-claim of molecular revalidation by the current installation.
+their sampling inputs. The current installation checks captured files and
+selections; the edition retains the original producer's molecular verification.
 
 Use the original discovery for new evaluations or revised construction permissions.
 The frozen edition is a reusable viewing and retrieval surface.
@@ -398,16 +394,15 @@ camera, landscape and molecular modes, family grouping stage, drawing policy,
 ordered display axes when specified, the color property and highlighted word,
 and next sampling seed/history.
 **Open saved view** restores that receipt against
-the same edition. A local
-link includes the receipt in its fragment; share the edition directory as well.
-The receipt does not start a server or make the edition publicly available.
+the same edition. A local link includes the receipt in its fragment; share the
+edition directory as well.
 
 Captured artwork remains the default, including during comparison. Under
 **Reproduce & inspect**, choose **Current glyphs · compact assembly** to use the
 shared assembly composition, or **Current glyphs · all states** to display every
 recorded state. If the schema
 cannot be interpreted, HOP retains the captured drawing and reports the effective
-policy. It does not migrate molecular authority.
+policy, preserving the captured molecular records.
 
 The same choice belongs to the saved inspection:
 
@@ -467,7 +462,7 @@ the full recorded pool, so filtering does not move colors or coordinates.
 The browser repaints color locally; **Download view** validates and records it through
 the same API. `design figure --selection view.json` reproduces the colored map.
 Unknown properties, absent words and inapplicable coordinates are rejected.
-Older receipts remain readable and do not claim to contain a saved color choice.
+Older receipts remain readable without a saved color choice.
 
 Route previews load on demand. Material downloads remain in the inspection output
 directory, and multipage print figures are generated on export. Closing the server

@@ -53,8 +53,7 @@ def retrieval_text(report: ConstructionFamilyReportProjection) -> list[str]:
             )
     md += [
         "",
-        "Each preparation retains its own chemistry and unresolved conditions. "
-        "Order specifications do not establish a pooled reaction or experimental performance.",
+        "Each preparation includes its exact materials and terminal chemistry.",
         "",
     ]
     if report.recovery:
@@ -107,10 +106,4 @@ def retrieval_text(report: ConstructionFamilyReportProjection) -> list[str]:
             + ", ".join(missing)
             + ". Missing molecular evidence is not agreement or global impossibility.",
         ]
-    md += [
-        "",
-        "These checks describe the recorded molecular architecture. "
-        "Biological effects remain untested.",
-        "",
-    ]
     return md

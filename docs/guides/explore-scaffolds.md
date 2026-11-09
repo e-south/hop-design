@@ -34,8 +34,7 @@ endpoints.
 
 `comparison.json` in the example asks for one member at each loop count, with
 surrounding sequence, region-local contacts and joins, terminal chemistry, both
-extensions and product interfaces shared. It requests a molecular comparison,
-not a causal biological conclusion.
+extensions and product interfaces shared.
 
 ```bash
 # Assess which recorded options can satisfy the comparison.
@@ -95,12 +94,11 @@ that stopped prefix as a reason to change molecular requirements.
 
 Even when every recorded pair is examined, a local quota or search-node limit
 may leave other candidates unexplored. Reports preserve each local termination
-and each complete continuation's accounting. No claim of global route exhaustion,
-minimal preparation, laboratory performance or destination compatibility follows.
+and each complete continuation's accounting. Read both before deciding whether
+to continue the search.
 
 ## Scope
 
-This workflow explores the existing molecular domain; it adds no new chemistry.
 Open-side dimensions may be inspected and compared when complete records support
 them, but they are not a new independent family authoring control. Exposed sticky
 ends on a hairpin are not implied by a later released-insert interface. Each

@@ -164,8 +164,7 @@ Use a new output directory for each export.
 | `selected-preparation/preparation/report.md` | Preparation details and conditions still to assess |
 
 Print the atlas at native page size to keep every base readable. Atlas inspection
-and retrieval replay the selected preparation. Destination compatibility,
-fragment recovery and reaction performance still require experimental assessment.
+and retrieval replay the selected preparation.
 
 ## Use the same query and selection in Python
 

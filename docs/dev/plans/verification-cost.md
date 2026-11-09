@@ -15,11 +15,11 @@ is bounded and measured separately from coverage instrumentation; see the
 [verification guide](../performance.md#use-bounded-parallelism). Scientific test
 membership and the 90% coverage floor remain unchanged.
 
-The goal is to run each scientific responsibility once in the main suite and
+The goal is to check each molecular responsibility once in the main suite and
 retain a small, independent check of the actual installed distribution. Success
 removes repeated discovery and rendering from routine CI without losing exact
-molecular, material, asset or command-line checks. It will not eliminate the cost
-of the main test suite; measure installation verification separately.
+molecular, material, asset or command-line checks. Measure installation
+verification separately from the main test suite.
 
 ## Evidence and scope
 
@@ -121,8 +121,8 @@ The existing public design example supplies the finite 64-evaluation discovery,
 reopening, complete route and frozen-edition handoff. API and CLI retrieval must
 match every handoff byte. One PDF/SVG, symbolic compilation and the existing
 browser asset list are checked separately. Both gates use one archive inventory: all prior public sdist
-requirements, exact wheel membership, and package bytes compared with source.
-This is installation evidence, not visual acceptance.
+requirements, exact wheel membership, and package bytes compared with source. Review rendered
+output separately from these installation checks.
 
 On 4 November, the first check passed in 41.48 seconds with cached dependencies;
 its case result matched the original 64-evaluation example exactly. An initial

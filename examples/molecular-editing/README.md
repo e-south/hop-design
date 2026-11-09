@@ -38,13 +38,11 @@ explicitly larger budget to examine all three; the tool does not silently enlarg
 The Nb.BtsI entry is represented in the reverse-complement orientation of NEB's
 GCAGTG (none/0) convention: CACTGC with a nick at reference boundary 0.
 [NEB recognition/cleavage definition](https://www.neb.com/en-us/products/r0707-nbbtsi).
-The example permits Nb.BsrDI by default; selecting another catalogued method is
-an explicit edit, not a claim about laboratory stock or reaction compatibility.
+The example permits Nb.BsrDI by default. Edit the method permissions explicitly
+to select another catalogued method.
 
 Hairpins in this example are intermediates of a released duplex insert.
-The drawn primary sequence and contacts are recorded architecture, not a folding
-prediction. Exact construction and preparation records do not establish recovery,
-destination compatibility or experimental function.
+The drawings show their recorded sequences and contacts.
 
 ## Coupled construction envelope
 

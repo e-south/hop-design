@@ -146,11 +146,10 @@ specification above the tested 256-design release envelope is reported as
 `blocked` with exit code zero. Invalid input returns nonzero.
 
 `space compile` re-previews, exhaustively expands, compiles and verifies every
-exact member, writes the design-set authority and human projections in a
+exact member, writes the design-set bundle and review projections in a
 sibling temporary directory, and commits the complete package atomically. It
-never publishes an authoritative partial set. Success reports complete,
-unique, and duplicate counts before paths, followed by the same downstream
-evidence boundary recorded in the manifest.
+publishes a complete set or no set. Success reports complete, unique, and
+duplicate counts before paths, followed by the manifest's claim-status values.
 
 `verify` accepts either a design-set `bundle/` containing `manifest.json` or an
 existing single-design bundle containing `hop-bundle.json`. It rejects a
@@ -169,7 +168,7 @@ input. `--spec` accepts a strict `.json`, `.yaml`, or `.yml` file with schema
 omitted, HOP derives a stable sequence-based ID. `--out` must not exist.
 `--dry-run` performs loading, normalization, validation, checking, resolution,
 artifact generation, and digest calculation without writing.
---out is optional with `--dry-run`; it remains required for a persisted
+`--out` is optional with `--dry-run`; it remains required for a persisted
 compilation.
 
 Success prints the named defaults reference, plan ID, bundle ID, and output
@@ -202,8 +201,8 @@ and the exact route. A release interface is labeled as a later stage; it is not
 drawn as an exposed end of the earlier hairpin. A stale selection fails before
 any output is published.
 
-`construction summary` reports exact route accounting, geometry and endpoint
-group counts, and the experimental evidence boundary.
+`construction summary` reports exact route accounting, geometry, endpoint group
+counts, and recorded claim status.
 
 `construction list` defaults to accepted routes grouped by achieved geometry
 in canonical replay order. It supports:
@@ -230,7 +229,7 @@ materials, molecular-state and transition counts, and endpoint for one accepted
 realization. It states whether source-fragment removal has a bound, verified
 program; resolving an endpoint alone does not establish that preparation step.
 For a released insert, it prints both actual cohesive ends in 5′→3′ order and
-their overhang polarity, without asserting destination compatibility. Earlier
+their overhang polarity. Earlier
 endpoints do not report prospective ends as already generated.
 
 `--end left|right` focuses inspection on one released end: its oriented word,
@@ -254,9 +253,8 @@ result-bound selection file. These selectors are mutually exclusive.
 
 `construction select` writes a new `hop.construction-selection/v1` JSON file.
 The reference contains the source result identity and one accepted materialized
-realization identity. It records caller intent; it does not endorse the route,
-delete alternatives, or become evidence of physical construction. Loading it
-against a different result fails.
+realization identity. The complete result and its alternatives remain unchanged.
+Loading the selection against a different result fails.
 Selection by ordinal stores the resolved full identities, not the display number.
 Selection paths must use the exact `.json` extension, and output paths must be
 outside the verified input bundle.

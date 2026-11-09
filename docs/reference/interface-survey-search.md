@@ -45,7 +45,7 @@ completion is not an exclusion of every preparation with that retained word.
 The local facts distinguish `admitted_configurations` (retained words),
 `program_supported_members` (retained words counted per program) and
 `program_supported_precursors` (source assignments counted per program).
-None is a count of complete preparations or experimental successes.
+Complete-preparation counts come from whole-route compilation.
 
 ## Declare the molecular domain
 
@@ -95,8 +95,8 @@ require their original producer; rewriting their schema is not a migration.
 
 Audit fixed oligos, source-primer spans, exact loop words, nick offsets, pairing
 permissions and whole-hairpin requirements before starting. They remain hard
-constraints; increasing a computing budget will not broaden them. Choose molecular limits for your application; the shipped example supplies
-starting values only.
+constraints; increasing a computing budget will not broaden them. Choose molecular
+limits for your application; the shipped example supplies starting values only.
 
 For an inclusive interval, declare every permitted integer rather than a few
 representative lengths. The shared design-revision operation accepts, for
@@ -158,8 +158,8 @@ orders auxiliary completions by the number of substitutions from covered seed
 bases, with A/C/G/T word order breaking ties. Protected positions remain determined
 by the scaffold group and its coupled constraints. A shorter context uses only
 the covered prefix; additional positions beyond the seed retain canonical order.
-The seed does not select a length, add permitted bases, require exact primer
-reuse, or claim thermodynamic primer quality. Substitution distance orders
+The seed does not select a length, add permitted bases, or require exact primer
+reuse. Substitution distance orders
 attempts within the existing preference tiers; a stopped search does not
 establish the closest complete preparation.
 
@@ -184,7 +184,7 @@ oligo; use the material-reuse contract when exact reuse is required.
 Exact preferred words precede seeded completion within their admitted group.
 The saved request binds both preferences, so changing either requires a new search
 index. The same context works through `design discover`, the Python API and
-subsequent atlas capture. No new browser control is needed.
+subsequent atlas capture.
 
 For the translated forward-left/reverse-right, five-prime release frame, the
 executor first computes a compact relation between **both** end words for each
@@ -205,15 +205,15 @@ start a separate index for a changed producer.
 Established joint relations are reused across requested end pairs within the
 same bound request and limits. Recognition footprints first restrict their shared
 base variables directly; paired-base relationships remain jointly enforced.
-This avoids repeated request lowering and temporary sequence graphs without
-changing the permitted molecular space or the complete compiler's authority.
+This avoids repeated request lowering and temporary sequence graphs while
+preserving the permitted molecular space and complete compilation checks.
 Selected atlas inspection and material retrieval reconstruct the same conditioned
 candidate population used during discovery, without modifying the checkpoint.
 
 Navigation records `end_pair_admission`. A rejected pair cannot satisfy the
-translated conditions within that template. An admitted pair still needs local
-and complete construction verification; `permitted_pair_count` is not a count of
-preparations or demonstrated products. Unknown frames retain ordinary search,
+translated conditions within that template. `permitted_pair_count` counts pair
+assignments admitted by this necessary relation. Each still needs local and
+complete construction verification. Unknown frames retain ordinary search,
 and computation limits remain unresolved. This applies only to
 `paired_scaffold_completions`; the public request syntax is unchanged.
 
@@ -269,10 +269,8 @@ remain unresolved. Progress and query results include `enumeration_scope`;
 after every group has been resolved. Changing the objective requires a new
 request and checkpoint; it does not reinterpret an existing survey.
 
-This survey currently requires one exact supplied stem. Exact and degenerate
-payload support in other HOP entry points does not imply symbolic-stem survey
-support. Interface coverage is conditional on this stem and the declared route,
-geometry and material permissions; it is not universal coverage for every payload.
+This survey requires one exact supplied stem. Interface coverage applies to that
+stem and the declared route, geometry and material permissions.
 
 ## Evaluate and resume
 
@@ -291,8 +289,9 @@ implementation and every per-evaluation limit identical, including
 `--continuation-batch-size`. The external `--max-evaluations` allowance may change;
 it controls how many additional evaluations this invocation attempts. Changing
 `--continuation-batch-size` requires a new index. The complete target catalogue
-is independent of these computing limits; there is no 64-target roster limit. The default database cap is 1 GiB and can be changed
-explicitly with `--max-checkpoint-bytes`. SQLite rollback journals and selected
+is independent of these computing limits; there is no 64-target roster limit.
+The default database cap is 1 GiB and can be changed explicitly with
+`--max-checkpoint-bytes`. SQLite rollback journals and selected
 exports require additional temporary disk space.
 
 Evaluation proceeds in rounds combining each target's continuation depth with
@@ -319,8 +318,8 @@ molecular domain. Coarse cases and sequence alternatives are interleaved; an
 enormous first sequence population does not prevent visiting other geometries.
 
 A completed empty basal search can rule out its entire foldback/source-context
-plane. The checkpoint retains the exact exclusion proof. This saves repeated
-local work without turning a failed preparation into a universal exclusion.
+plane. The checkpoint retains the exact exclusion proof and reuses it across
+that plane.
 `certified_empty_planes` and `certified_empty_branch_cells` report this scoped
 coverage separately from molecular continuations actually examined.
 
@@ -357,7 +356,8 @@ Batch size 1 keeps navigation and molecular attempts in separate commits.
 
 `max_evaluations` counts committed steps. `continuations_examined` and
 `new_continuations_examined` count committed canonical continuations, separately
-from steps; work discarded within an uncommitted batch is not included. Compare these counts when changing batch size: more work per commit
+from steps; work discarded within an uncommitted batch is not included.
+Compare these counts when changing batch size: more work per commit
 also changes how deeply each scheduled target is explored. Batch size is a
 checkpoint-bound execution limit, so changing it requires a new index. A resource
 stop or source change inside a batch leaves its step uncommitted; the preceding

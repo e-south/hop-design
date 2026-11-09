@@ -26,7 +26,7 @@ case = next(case for case in result["cases"] if case["sequences"]["cardinality"]
 The example has 16 exact geometry/strand cases and 163,840 raw configurations.
 It admits 190 distinct configurations. Exhaustive full molecular discovery
 independently checks every admitted member, including the empty cases. The
-enzyme definition is a synthetic fixture, not a reagent recommendation.
+enzyme definition is a synthetic fixture.
 
 ## Enzyme roles and alternative preparations
 
@@ -41,8 +41,7 @@ for closure:
 
 The current sequential solver requires coincident cuts on the two strands at
 that boundary: a blunt terminus. It reports `unsupported-staggered-terminus`
-for staggered cuts. That is a boundary of this modeled route, not a conclusion
-that other termini cannot be used experimentally. Ordinary blunt cutters can
+for staggered cuts. Ordinary blunt cutters can
 therefore be relevant here even though they cannot generate the requested
 cloning sticky ends. Type IIS classification alone does not establish an
 enzyme's role; recognition, cut geometry and the actual substrate do.
@@ -50,14 +49,11 @@ enzyme's role; recognition, cut geometry and the actual substrate do.
 Only caller-permitted programs are searched. A new supported program may
 prepare a sequence already admitted by another program. Keep the program
 alternatives and distinct sequence configurations separate; adding enzyme
-names does not necessarily add molecular diversity. A caller-supplied cut
-definition also does not establish that all necessary biochemical conditions
-have been represented or satisfied.
+names does not necessarily add distinct sequence configurations.
 
 HOP models sequence assignments, geometry, site placement, pairing and ordered
 processing. Recognition and cut checks use the intermediate at the step where
-the enzyme acts. It does not predict enzyme efficacy or optimize reaction
-conditions; users remain responsible for enzyme handling. The v1 enzyme
+the enzyme acts. The v1 enzyme
 contract's `substrate_requirement` describes strand state, not modified bases.
 Known exceptions such as methylation-dependent recognition should be explicit
 in the caller's catalog documentation; descriptive metadata does not add a
@@ -121,9 +117,8 @@ payload member is compatible merely because one case has solutions.
 arm/cap lists enumerate all lengths satisfying the declared floors and this
 ceiling; explicit lists restrict the domain. `junction_offsets_nt` is an
 explicit finite D domain. The current geometry contract has minimum arm and
-cap lengths of three. These model-domain floors do not establish thermodynamic
-or experimental viability. The retained path excludes transient construction
-and auxiliary materials, so minimizing H does not establish minimum total cost.
+cap lengths of three. H counts the retained path; compare transient construction
+and auxiliary materials separately when assessing total material requirements.
 
 `limits` bounds execution separately: exact cases, examined programs, decisions
 and operations per set builder, recognition windows per program, and serialized
@@ -157,5 +152,5 @@ of its locally admitted source completions. The report includes
 An unsupported member/program combination also raises. Rank is an address,
 not an optimization score. The returned local realization retains recognition
 spans, cut coordinates, fragment and strand states, pairing, ligation, and
-material obligations. Complete material selection and experimental success
-remain separate questions.
+material obligations. Continue with [construction compilation](compile-construction.md)
+to select materials and check the complete route.

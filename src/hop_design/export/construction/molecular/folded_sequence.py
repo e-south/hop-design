@@ -169,11 +169,10 @@ def render_folded_sequence(
     text(
         28,
         510,
-        "Specified pairing, not predicted conformation. "
-        + (
+        (
             "Released ends belong to the later product; see its staged drawing."
             if p.later_release is not None
-            else "This drawing is the modeled hairpin endpoint."
+            else "Hairpin endpoint."
             if p.stage_role == "endpoint"
             else "See the staged drawing for the supported downstream product."
         ),

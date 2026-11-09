@@ -49,7 +49,7 @@ Endpoint names in prose are `ssDNA hairpin`, `copied hairpin duplex` and
 come from the verified source catalogs through the existing enzyme-definition
 resolver. The separate `enzyme-labels.json` is presentation context, like a
 caller-stated selection reason; it changes neither projection JSON nor
-molecular identity. Catalog inclusion does not establish laboratory stock.
+molecular identity.
 
 Tests exercise CLI/API equality, changed stem length, independent hairpin
 execution, absent and malformed components, exhausted and stopped searches,

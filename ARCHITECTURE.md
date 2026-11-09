@@ -42,11 +42,11 @@ payload boundary. Source-partition discovery owns provisioned nickase subsets,
 all actionable sites, denatured fragments, length selection, and the exact
 required survivor relation. PCR handles, primer binding, Type IIS release, and
 other endpoint periphery are route-materialization concerns. A study may run
-these bounded competencies independently; complete composition may claim only
-the authorities explicitly present in its request.
+these bounded operations independently. Complete composition uses only the
+authorities explicitly present in its request.
 
-The public construction entrypoint binds that spine to files without exposing
-its model graph:
+The public construction entrypoint loads strict source files and verified
+authorities, keeps replay models internal, and returns an opaque receipt:
 
 ```text
 verified local receipts + explicit realization ids
@@ -147,10 +147,9 @@ models
   construction; `bundle.py` replays spec-to-bundle semantics over the
   lower-level integrity reader; `result.py` owns the write-capable compilation
   result.
-- A method bundle is separate from a design bundle. It proves how one named
-  method request resolves into modeled molecular states and products; it does
-  not redefine design identity or claim destination readiness, physical
-  construction, or recovery.
+- A method bundle records how one named method request resolves into molecular
+  states and products. It retains its own identity, separate from design
+  identity; callers check its products against a destination.
 - `api` is the package-root design-language operation facade. Thin top-level
   `spaces`, `construction`, `discovery`, `methods`, and `views` facades expose
   the scientist-facing workflow and specialized competency surfaces without
@@ -231,8 +230,8 @@ The file-oriented `FoldbackSequenceSpace` receipt is exposed only through
 `hop_design.construction`. It preserves compact sets, exact raw denominators,
 and program support without multiplying physical configurations by witnesses.
 Selected members use the same full molecular realization authority as concrete
-local discovery. This receipt establishes local admission, not complete materials,
-method performance, thermodynamic stability, or experimental recovery.
+local discovery. The receipt covers local admission; complete material resolution
+and route composition require their own checks.
 
 Canonical basal populations use `models/construction/basal_space.py` and the
 parallel `BasalSequenceSpace` public receipt. Shared basal domains retain the
@@ -280,9 +279,9 @@ following surfaces.
    digest handoff.
 
 Design derivation is non-temporal. Construction routes and named method plans
-own their respective molecular chronology. A successful design does not imply
-that a method is available or feasible, and a method product remains
-destination-neutral until a caller checks it against a destination.
+own their respective molecular chronology. Check method availability and request
+feasibility separately from design compilation, then check the resulting product
+against the caller's destination.
 
 Discovery operations answer separate competency questions rather than one
 global optimization problem. Canonical order is reproducible interoperability

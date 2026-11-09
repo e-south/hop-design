@@ -30,6 +30,5 @@ downstream.
 
 A design can remain valid while one method is infeasible or unavailable. More
 than one method may later produce the same design without changing its design
-bundle. Consumers that need physical-method evidence must verify the method
-bundle explicitly; a design bundle alone does not establish a duplex or
-restriction product.
+bundle. Consumers that need duplex or restriction-product states must verify the method
+bundle explicitly; those states are absent from a design bundle.

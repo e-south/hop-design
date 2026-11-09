@@ -49,7 +49,7 @@ that all unenumerated sequences fail your additional preferences. Check the
 receipt's `completion`, `feasibility`, and original search scope before claiming
 a minimum. A local choice still needs complete source, adapter, primer, and
 processing checks; `annealing_completion_nt` names an outstanding local
-adapter requirement, not a physical success estimate.
+adapter requirement.
 
 Pass the explicitly chosen family realization ids to design compilation:
 
@@ -95,9 +95,8 @@ selected = construction.compile_construction_from_local_realizations(
 For a direct `ssdna_hairpin`, omit `basal` and `basal_realization_id`. For a
 PCR-bearing endpoint, both basal arguments are required. Every receipt must
 derive from the exact local request in the construction source. The returned
-receipt uses the ordinary portable construction authority and reports one
-nominal and one examined combination. HOP evaluates the selection; it does not
-choose it or reinterpret its deterministic ordinal as a score.
+receipt reports one nominal and one examined combination. HOP evaluates the
+selection; it does not choose it or reinterpret its deterministic ordinal as a score.
 
 One replay-verified source partition may be bound to either endpoint form:
 
@@ -130,9 +129,8 @@ multi-stage cleavage requires a separately supported route model.
 
 ### Check removal for a selected source
 
-A modeled endpoint without a bound partition does not establish how unwanted
-source fragments will be removed. After selecting a construction, ask HOP to
-search removal programs on its exact prepared source:
+If the selected construction has no bound removal partition, search removal
+programs on its exact prepared source:
 
 ```python
 # Check fragment removal for the selected exact source.
@@ -161,8 +159,7 @@ enumeration:
 ```
 
 The angle-bracketed entries are caller choices, not runnable values or defaults.
-Set both maxima equal for one fixed rule. These are exact sequence-length
-predicates, not predictions of physical cleanup recovery.
+Set both maxima equal for one fixed sequence-length rule.
 
 Inspect the returned alternatives, explicitly select a partition realization,
 and pass it to `compile_construction_from_local_realizations` as shown above.

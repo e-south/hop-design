@@ -279,8 +279,6 @@ def grouped_pages(summary: dict[str, Any], files: dict[str, bytes]) -> list[byte
                     "(equal lengths only).",
                     "Whole-molecule pairing schematics; closing-region enlargements "
                     "have a separate scale.",
-                    "Loop bases are countable; drawing radius does not predict "
-                    "conformation or performance.",
                     (
                         f"Exact preparations: {selected_path_prefix(summary)}report.md and "
                         f"{selected_path_prefix(summary)}members/. "

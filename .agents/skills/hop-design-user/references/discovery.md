@@ -12,9 +12,8 @@ operations and contracts from `hop_design.discovery`.
 - Preserve `complete`, `infeasible`, and `truncated`; “no hits” is not a status.
 - Report canonical order separately from caller-owned selection.
 - Do not turn measurements, vendor eligibility, or procurement policy into
-hidden ordering inputs.
+  hidden ordering inputs.
 
 The runnable baseline is
-`examples/discover_basal_candidates.py`. A discovered candidate is compatible
-under declared inputs; it is not selected, method-realized, or experimentally
-supported.
+`examples/discover_basal_candidates.py`. Report compatibility under the declared
+inputs. Record explicit selection and method resolution as separate operations.

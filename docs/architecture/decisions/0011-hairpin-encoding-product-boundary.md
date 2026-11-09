@@ -28,8 +28,7 @@ shim. Alpha consumers must migrate deliberately.
 
 HOP can hand downstream systems one immutable annotated product without asking
 them to rederive foldback, paired-payload, stem-extension, or basal spans.
-`HairpinEncodingInsert` remains a sequence representation, not a physical
-duplex and not evidence of cloning readiness.
+`HairpinEncodingInsert` represents one annotated sequence.
 
 `HairpinPcrDuplex` is the distinct typed endpoint derived from explicit
 annealing, ligation, and PCR transitions. FASTA, feature, and GenBank exports

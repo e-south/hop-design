@@ -78,9 +78,9 @@ hop-design design retrieve designs --selection selection.json --out preparation
 `choice-figure/figure.pdf` shows the supported paths. `molecular-route/projection.svg`
 shows the selected construction at nucleotide resolution. Its print export includes
 readable pages. Open `preparation/preparation/report.md` for the selected construction and
-`preparation/preparation/oligos.csv` for its exact source, adapter, primers and chemistry. Sampling chooses from recorded preparations. It does not rank
-them by experimental performance. Use `design select --help` to choose an exact
-preparation yourself.
+`preparation/preparation/oligos.csv` for its exact source, adapter, primers and
+chemistry. Sampling chooses from recorded preparations. Use `design select --help`
+to choose an exact preparation yourself.
 
 For ordering or importing oligos, retain `sequence_5prime`, `five_prime_end` and
 `three_prime_end` together. One CSV row can serve multiple roles. `oligos.fasta`
@@ -92,8 +92,8 @@ the molecule in the browser and in `molecular-route/construction-cost.json`.
 Added-region coordinates locate the retained sequence on the endpoint. Local
 flank lengths are not summed to estimate whole-product overhead.
 
-These are modeled preparations. The handoff identifies remaining experimental
-conditions, including purification and destination compatibility.
+The handoff lists remaining preparation conditions, including purification and
+destination compatibility.
 
 ## Use the same objects in Python
 
@@ -172,7 +172,6 @@ for CLI/API examples, supported dimensions and conflict recovery.
 Start from your stem when seeking new constructions. Starting from an existing
 oligo specification also carries its material restrictions into the search.
 HOP's default insert context completes permitted auxiliary source bases as needed.
-It does not use different auxiliary PCR handles as evidence of scaffold breadth.
 Inspect loop, basal, interface and method alternatives in the returned complete
 choices. A diversity objective changes search priority, not the permissions.
 
@@ -385,7 +384,7 @@ have separate results. No comparison starts another search or selects a set.
 These operations also apply to released-insert choices. Use `stage="endpoint"`
 to preserve the released product's surroundings, or `stage="hairpin"` to preserve
 the intermediate. Differences discarded during processing do not violate an
-endpoint control. The first molecular comparison replays the saved witnesses.
+endpoint control. The first molecular comparison replays the saved witnesses;
 later filters reuse those admitted facts.
 
 Insert selections retain the query and reference alongside the native preparation
@@ -409,8 +408,8 @@ The default insert context, `linear-source/v2`, permits 3–8-nt loops, 6–12-b
 foldback arms, 0–2-nt join displacements, every minimum adapter annealing length
 from 14 through 24 nt, and every left/right sticky-end-to-stem spacing from 0
 through 6 bp (49 pairs). It includes the characterized
-Nt.Bpu10I, Nb.BsrDI and BsaI-HFv2 methods. These are permissions, not promises that
-every combination can be constructed. Saved requests retain their resolved
+Nt.Bpu10I, Nb.BsrDI and BsaI-HFv2 methods. Complete-route checks determine which
+combinations work within these permissions. Saved requests retain their resolved
 permissions. The earlier `linear-source/v1` context remains explicitly selectable
 with its original subsets. Loading it does not fill in omitted lengths.
 
@@ -483,6 +482,5 @@ options before selecting again. Retrieval consolidates exact orders in
 The CLI uses the same selection: save the member-to-selection mapping as JSON,
 run `design select-members family --members membership.json --baseline member-0001
 --out family-selection.json`, then use `design retrieve` with that selection.
-This family specifies separate exact preparations. It does not establish a pooled
-synthesis or processing protocol. One experimental member can have several scaffold
-options and preparations, which are counted separately.
+This family specifies separate exact preparations. One experimental member can
+have several scaffold options and preparations, which are counted separately.

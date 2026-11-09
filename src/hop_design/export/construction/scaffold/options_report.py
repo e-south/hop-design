@@ -60,12 +60,6 @@ def options_report(summary: dict[str, Any], files: dict[str, bytes]) -> dict[str
                 f"{c['unexamined_pairs']} remain unexamined. Local bounds also apply.",
                 14,
             ),
-            text(
-                25,
-                bottom + 25,
-                "Drawings specify pairing architecture; loop shape does not predict conformation.",
-                14,
-            ),
         ]
         if not group:
             lines.append(
@@ -155,11 +149,6 @@ def selected_plate(
             stages = files[f"members/{group[0]['name']}/portrait/stages.svg"]
             lines.append(embed(stages, 0, y + 40, 900))
             y += 310
-        lines.append(
-            text(
-                25, y + 24, "Specified pairing architecture; experimental performance untested.", 13
-            )
-        )
         pages.append(page("A deliberate scaffold comparison", lines, height=y + 55))
     return {
         **{f"pages/comparison-{i + 1}.svg": p for i, p in enumerate(pages)},

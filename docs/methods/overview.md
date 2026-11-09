@@ -1,31 +1,29 @@
 # Method language overview
 
-The method language answers one question: what exact molecular states follow
-from one named method request? It is a sibling of design compilation, not a
-later phase hidden inside a design plan.
+The method language derives exact molecular states from one named method
+request. It compiles independently of the design plan.
 
 ```text
 MethodRequest -> exact states and transitions -> destination-neutral product
 ```
 
-Keep these claims separate:
+Check three things separately:
 
-- a valid hairpin design does not imply that a production method is available;
-- an available method does not imply that one request resolves;
-- a complete method result does not imply destination compatibility;
-- a compatible destination does not imply experimental success.
+- whether this HOP version implements the named method;
+- whether the exact request resolves to a complete result; and
+- whether the resulting product matches the caller's destination.
 
 `hop_design.methods.list_method_capabilities()` reports which named method
 families this HOP version implements and their defined input exactness. Current
-records distinguish `exact_only` from `not_defined`; they do not imply symbolic
-method support. The query does not construct a request, select a method, or
-predict feasibility.
+records use `exact_only` for implemented exact-sequence requests and
+`not_defined` when no request schema exists. Use this query before authoring or
+resolving a request.
 
 ## Follow the task you have
 
 - [Hairpin-processing method boundary](destination-neutrality.md) defines the
   detailed state trajectory, capability facets, materials, outputs, and
-  non-claims.
+  caller responsibilities.
 - [Resolve and verify a production method](../guides/resolve-production-method.md)
   shows both explicit request authoring and canonical JSON replay.
 - [Linear-source method materials](../reference/linear-source-method-materials.md)
@@ -38,7 +36,5 @@ predict feasibility.
 ## Boundary
 
 HOP records exact sequence-bearing states, transitions, terminal chemistry,
-pairing, bonds, cuts, and lineage. It does not simulate yield, kinetics,
-cleanup recovery, PCR side products, or experimental success. A produced
-cohesive end remains destination-neutral until a caller checks it against a
-specific assembly context.
+pairing, bonds, cuts, and lineage. Check the resulting cohesive ends against a
+specific assembly context before using the product there.

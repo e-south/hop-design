@@ -5,15 +5,14 @@ returns `ConstructionFamilyReport`. The equivalent CLI is `construction
 report-family FAMILY --out NEW [--selection SET] [--baseline NAME]
 [--edit FROM:TO]`. Export is create-only and may not sit inside an input authority.
 
-The input is an executed `hop.construction-family-packet/v1`. Its bounded,
-canonical manifest is necessary but insufficient: request, derived member
+Provide an executed `hop.construction-family-packet/v1`. The exporter checks its
+bounded canonical manifest and semantically verifies the request, derived member
 inputs, local receipts, selected local pair, exact design, composition and
-outcomes are reconciled through existing semantic verification. Presentation
-choices and shared-property agreement are derived again. The optional
-`hop.construction-set/v1` request must name exact choices in those outcomes.
-Names or matching geometry cannot admit a foreign result. No implicit
-membership, route continuation, new request execution or requirement widening
-occurs. Verification replays recorded bounded calculations.
+outcomes. It rederives presentation choices and shared-property agreement.
+The optional `hop.construction-set/v1` request must name exact choices in those
+outcomes; a name or matching geometry cannot substitute for verified membership.
+Verification replays recorded bounded calculations with membership, routes and
+requirements fixed.
 
 `summary.json` uses `hop.construction-family-report/v3` and contains:
 
@@ -30,7 +29,7 @@ occurs. Verification replays recorded bounded calculations.
   carry no asserted base correspondence. Coordinate shifts remain separate.
 - A rederived comparison assessment separates scaffold facts, downstream endpoint
   facts, preparation changes and shifted regional coordinates. Non-loop conservation
-  requires complete same-stage sequence evidence. Biological effects remain untested.
+  requires complete same-stage sequence evidence.
 - Optional revision lineage identifies same-request continuation versus an edited
   alternative, the original status and the preserved parent packet.
 - Explicit authored member edits and their requested/effective differences.
@@ -47,19 +46,16 @@ occurs. Verification replays recorded bounded calculations.
 `report.md`, `report.pdf`, `report.svg`, `pages/*.svg` and molecular SVGs are
 views of those facts. `selected/`, when present, carries its own portable set,
 member authorities, exact preparations, `oligos.csv` and `oligo-uses.csv`.
-`family/` retains the captured input; archived presentations are not promoted
-to the report's regenerated reading surfaces. The packet manifest inventories
+`family/` retains the captured input and its archived presentations. The report
+regenerates its reading views from those records. The packet manifest inventories
 all exported bytes. PDF pages are 180 mm wide and deterministic within the
-recorded rendering environment. JSON is the machine-readable fact interface;
-PDF/SVG are presentation, not scientific authority.
+recorded rendering environment. Use JSON for machine-readable facts and PDF/SVG
+for reading and visual comparison.
 
-A complete route is a modeled preparation, not proof of physical folding,
-reaction yield, purification or destination compatibility. An infeasible
-selected continuation does not establish global impossibility. An unresolved
-search is not an exhausted negative. Shared-property disagreement and absence
-of explicit selection remain separate from construction completion. Exact
+An infeasible selected continuation excludes that continuation. An unfinished
+search leaves unexamined alternatives unresolved. Shared-property disagreement
+and absence of explicit selection remain separate from construction completion. Exact
 sequences and terminal chemistry never collapse to a shape category.
-
 
 The opening PDF groups up to three whole molecules per plate, with countable
 closing-region crops, one dimensioned reference and one named representative

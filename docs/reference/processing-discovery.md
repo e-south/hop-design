@@ -10,9 +10,9 @@ a concrete cut.
 
 `search_nicking_placements(catalog=..., target=..., limits=...)` tests bounded
 agent orientations against one requested boundary, strand, paired-tract length,
-and available turn. It establishes **sequence-and-cut compatible** geometry,
-not empirical cleavage efficiency near an end or under a reaction condition.
-HOP therefore applies no universal minimum-flank rule.
+and available turn. It returns **sequence-and-cut compatible** geometry.
+Flank requirements come from the request; HOP applies no universal
+minimum-flank rule.
 
 `HOP-DISC-001` means a site starts before precursor origin; `HOP-DISC-002`
 means it extends beyond available paired tract and turn. Hits use neutral

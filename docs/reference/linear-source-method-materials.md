@@ -60,6 +60,5 @@ Pre-phosphorylated input requires a 5′ phosphate on the source-PCR reverse
 primer and ligation adapter. `kinase_step` records that those ligatable ends are
 prepared during the method instead.
 
-Vector primers, destination overhangs, and larger construct context remain
-caller-owned because they depend on the assembly target rather than hairpin
-processing.
+Supply vector primers, destination overhangs, and larger construct context in
+the caller's assembly plan; they depend on that target.

@@ -52,8 +52,8 @@ unexamined possibilities or silently relax a predicate.
 
 `hop.interface-survey-atlas/v1` binds one exact witness to its replayed molecular
 atlas, parameter locations and teaching projection. Its create-only export uses
-`hop.interface-survey-atlas-packet/v1`. Selected-witness replay establishes that
-construction, not aggregate coverage or experimental performance.
+`hop.interface-survey-atlas-packet/v1`. Replay verifies the selected construction;
+aggregate coverage requires whole-survey verification.
 
 ## Conditional exploration of complete results
 
@@ -102,7 +102,7 @@ labels, replacement variants, changes, exclusions and original coverage. Export
 uses `hop.scaffold-variant-choices-packet/v1`. A
 `hop.scaffold-variant-view/v1` projection and
 `hop.scaffold-variant-view-packet/v1` export depict one explicit preview without
-selecting it. These are derived exploration records, not new molecular authorities.
+selecting it. These records derive from the admitted pool.
 See [conditional exploration](../guides/explore-conditional-variants.md).
 
 `hop.scaffold-atlas-request/v1` binds result/query digests, a compatible complete
@@ -110,7 +110,7 @@ option and optional state-qualified molecular address. The `hop.scaffold-atlas/v
 projection composes recorded inspections, transitions and exact material uses.
 It separates displayed occurrence, material ancestry and comparison correspondence.
 The create-only `hop.scaffold-atlas-packet/v1` contains the vector scene and captured
-generating request; it is a projection, not a new molecular authority.
+generating request. Its molecular facts derive from the recorded preparation.
 
 Its preparation-bound `hop.parameter-teaching/v1` projection covers source/
 association, folded-hairpin and released-insert frames. Each parameter has an exact
@@ -221,7 +221,7 @@ The package version alone does not distinguish post-release source changes.
 | `hop.basal-overhead-frontier/v1` | public construction projection | Examined basal retained-overhead levels from one unpartitioned search with complete or partial accounting |
 | `hop.basal-overhead-frontier/v2` | public construction projection | Examined basal retained-overhead levels from one declared sequence-domain part with complete or partial accounting |
 | `hop.complete-construction-summary/v5` | public construction projection | Lossless disposition, grouping, required external material, failure, and truncation relation over one verified complete result |
-| `hop.construction-navigation/v2` | public construction projection | Summary v4 plus accepted-route geometry, retained-overhead accounting, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
+| `hop.construction-navigation/v2` | public construction projection | Summary v5 plus accepted-route geometry, retained-overhead accounting, cleavage-program enzyme IDs, retained non-payload sequence, endpoint topology, and reversible geometry membership |
 | `hop.complete-construction-trajectory/v5` | public construction projection | One explicitly selected accepted realization with its source preparation, selected source-partition certificate when present, and exact molecular chronology |
 | `hop.construction-selection/v1` | non-authoritative construction reference | One accepted materialized realization bound to its verified source result |
 | `hop.hairpin-portrait/v1` | public construction projection | One selected joined hairpin with actual pairing geometry, joins, terminal chemistry and separately staged release interfaces |
@@ -285,7 +285,7 @@ bind this coordinate contract explicitly. Historical artifacts require their
 recorded producer; the current runtime does not supply a missing zero offset.
 
 `hop.load_spec(path)` accepts only `.json`, `.yaml`, and `.yml`, and only the
-two current single-design authored schemas. The scientist-facing CLI dispatches
+two current single-design authored schemas. The CLI dispatches
 `hop/substrate-space/v1` explicitly through `hop_design.spaces`; it does not
 extend the single-design loader or guess from fields. Design spaces, catalogs,
 plans, bundles, and workflow views use their own strict models or integrity
