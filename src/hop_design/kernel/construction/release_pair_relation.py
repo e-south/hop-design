@@ -27,14 +27,18 @@ from .release_constraints import (
     release_action_windows,
     release_flanks,
 )
-from .release_pair_projection import project_end_pairs
+from .release_pair_projection import EndPairProjectionCache, project_end_pairs
 from .sequence_sets import SequenceSetBuilder
 
 _Masks = tuple[tuple[str, ...], ...]
 _Projector = Callable[[_Masks, SequenceExpression], int]
 
 
-def _end_pair_projector(domain: BasalSequenceDomain, builder: SequenceSetBuilder) -> _Projector:
+def _end_pair_projector(
+    domain: BasalSequenceDomain,
+    builder: SequenceSetBuilder,
+    projections: EndPairProjectionCache | None = None,
+) -> _Projector:
     """Reuse equivalent projections after their full placement constraints pass.
 
     Local masks and all pairing permissions remain bound to one domain. Extra
@@ -46,6 +50,8 @@ def _end_pair_projector(domain: BasalSequenceDomain, builder: SequenceSetBuilder
 
     @lru_cache(maxsize=128)
     def solve(masks: _Masks, ends: SequenceExpression) -> int:
+        if projections is not None:
+            return projections.project(domain, masks, ends, builder)
         return project_end_pairs(domain, masks, ends, builder)
 
     def project(masks: _Masks, ends: SequenceExpression) -> int:
@@ -137,6 +143,7 @@ def necessary_end_pairs(
     domains: tuple[BasalSequenceDomain, ...],
     policy: ConstrainedSourceSsdnaPolicy,
     limits: SequenceSpaceLimits,
+    projections: EndPairProjectionCache | None = None,
 ) -> SequenceSet | None:
     """All possible end pairs under these necessary conditions, without word scans.
 
@@ -172,7 +179,7 @@ def necessary_end_pairs(
     result = 0
     for domain in domains:
         program_actions = actions(domain.program.future_release_enzyme)
-        project = _end_pair_projector(domain, builder)
+        project = _end_pair_projector(domain, builder, projections)
 
         @cache
         def local_masks(d: BasalSequenceDomain = domain) -> tuple[tuple[str, ...], ...]:

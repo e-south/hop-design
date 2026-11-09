@@ -4,9 +4,12 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
 
+from pydantic import TypeAdapter
+
 from hop_design.kernel.construction.basal.domains import solve_basal_sequence_domain
 from hop_design.kernel.construction.basal.programs import BasalPlacementFailure
 from hop_design.kernel.construction.release_constraints import release_frame_supported
+from hop_design.kernel.construction.release_pair_projection import EndPairProjectionCache
 from hop_design.kernel.construction.release_pair_relation import necessary_end_pairs
 from hop_design.models.construction.complete.source_preparation.policy import (
     ConstrainedSourceSsdnaPolicy,
@@ -16,10 +19,17 @@ from hop_design.models.construction.product_pairing import ProductConstraintConf
 from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.request import LocalNeighborhoodRequest
 from hop_design.models.construction.sequence_sets import SequenceSet, SequenceSpaceLimits
-from hop_design.models.enzymes import CharacterizedEnzyme, EnzymeProvisioningPolicy, EnzymeRole
+from hop_design.models.enzymes import (
+    CharacterizedEnzyme,
+    CharacterizedEnzymeCatalog,
+    EnzymeProvisioningPolicy,
+    EnzymeRole,
+)
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ...basal.traversal import iter_basal_work_units
+
+_CATALOG_JSON = TypeAdapter(CharacterizedEnzymeCatalog)
 
 
 @dataclass(frozen=True)
@@ -81,6 +91,7 @@ class EndPairRelations:
         self.policy, self.limits = policy, limits
         self._cache: OrderedDict[str, tuple[SequenceSet | None, int]] = OrderedDict()
         self._bytes = 0
+        self._projections = EndPairProjectionCache()
 
     def assess(self, product: ProductRequest) -> EndPairAdmission | None:
         relation = self.relation(product)
@@ -122,7 +133,12 @@ class EndPairRelations:
         )
         if len(release_enzymes) != 1:
             return None  # Different enzymes at the two ends are not yet translated.
-        data = product.model_dump(mode="json", by_alias=True)
+        data = product.model_dump(mode="json", by_alias=True, exclude={"enzyme_catalog"})
+        # A fresh typed snapshot retains catalog order, metadata and definitions
+        # without building its large nested Python representation on every key.
+        data["enzyme_catalog"] = sha256_digest(
+            _CATALOG_JSON.dump_json(product.enzyme_catalog, by_alias=True)
+        )
         # The proven frame omits the folded interior. Its geometry and display
         # name cannot change this necessary relation; full compilation still can.
         data.pop("foldback")
@@ -159,7 +175,9 @@ class EndPairRelations:
             )
             if not isinstance(domain, BasalPlacementFailure):
                 domains.append(domain)
-        result = necessary_end_pairs(product, tuple(domains), self.policy, self.limits)
+        result = necessary_end_pairs(
+            product, tuple(domains), self.policy, self.limits, self._projections
+        )
         size = 0 if result is None else len(canonical_json_bytes(result))
         if size <= 2 * 1024 * 1024:
             self._cache[key] = result, size

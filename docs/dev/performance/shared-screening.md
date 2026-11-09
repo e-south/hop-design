@@ -78,6 +78,16 @@ This reuses a necessary-condition calculation, never a complete construction or
 an externally supplied proof. Distinct source lengths and exact material
 completion remain available to ordinary discovery.
 
+Identical projected problems can also recur across local domains. One discovery
+invocation retains at most 512 exact projected sets and 8 MiB of serialized
+values. Bounded keys and Python object overhead consume additional memory. The
+key snapshots the placed masks, exposed copies and complements, contact
+positions and permissions, output length and noncanonical allowance. A hit
+imports the immutable set into the current builder, enforcing that builder's
+decision and operation limits. Failed or unfinished calculations are never
+retained. Full placement and enzyme checks still precede projection; complete
+preparations still pass ordinary compilation. Eviction recomputes the same set.
+
 ## Bound the frame index
 
 The invocation-owned basal-frame index retains at most 32,768 established
@@ -126,6 +136,12 @@ and all other product fields remain dependencies. The definition excludes the
 name, identifier and source/vendor metadata, while retaining every other field.
 Named programs, preparation identities and complete-route verification remain
 distinct. Reuse applies only to the sequence constraint.
+
+The scratch relation key hashes a fresh typed JSON snapshot of the full catalog,
+including entry order, metadata and every recognition/cut definition. This
+avoids constructing its nested Python dictionary for each placement. No catalog
+object or file metadata substitutes for reading its current content. Public
+canonical serialization, molecular identities and saved records are unchanged.
 
 ## Cancellation and measurement
 
