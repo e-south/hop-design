@@ -3,6 +3,7 @@
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from heapq import heapify, heappop, heappush
+from itertools import pairwise
 from math import prod
 
 from hop_design.models.construction.surveys.completion import (
@@ -69,8 +70,8 @@ class CompletionNavigator:
                     )
                 ):
                     raise ValueError("Indexed basal geometry lies outside the declared domain.")
-            keys = tuple((self.order.cost(g), g) for g in self.basal_candidates)
-            if keys != tuple(sorted(set(keys))):
+            keys = ((self.order.cost(g), g) for g in self.basal_candidates)
+            if any(left >= right for left, right in pairwise(keys)):
                 raise ValueError("Indexed basal geometry must be unique and cost ordered.")
 
     @property
