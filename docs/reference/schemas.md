@@ -162,8 +162,7 @@ boundaries and runnable examples.
 
 ## Schema inventory
 
-This table describes the `v0.1.0a9` schemas, including construction
-schemas. For the published `v0.1.0a8` wheel, use its
+This inventory covers `v0.1.0a9`. For the earlier `v0.1.0a8` package, use its
 [tagged reference](https://github.com/e-south/hop-design/blob/v0.1.0a8/docs/reference/schemas.md).
 The package version alone does not distinguish post-release source changes.
 

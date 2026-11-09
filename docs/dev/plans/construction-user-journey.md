@@ -18,13 +18,12 @@ supported neighborhood choices, regional preservation and continuous inspection
 through the API, CLI and molecular viewport.
 [The construction walkthrough](../../guides/design-a-construction.md) explains
 one preparation and explicit alternatives. [The roadmap](roadmap.md) distinguishes
-source-candidate capabilities, published behavior and actual remaining work.
+implemented capabilities, older versions and remaining work.
 
 The earlier delivery sequence is implemented through those operations. Its
 acceptance records remain in the linked delivery plans. This page owns durable
 experience principles rather than another increment-by-increment status list.
-The constrained molecular viewport is implemented in the source candidate;
-unfamiliar-user performance remains unestablished.
+The constrained molecular viewport is implemented. Its performance with unfamiliar users remains unestablished.
 
 ## Information architecture: intention, options, comparison, handoff
 

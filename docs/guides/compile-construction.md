@@ -8,9 +8,9 @@ why a proposed combination cannot satisfy the request.
 This lower-level search and compilation path uses `hop_design.construction`.
 The CLI also supports product-first discovery and comparison execution through
 the linked user guides, and inspects the saved authorities shown here.
-This guide describes the source checkout, including
-unreleased features; use [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8)
-with the published wheel.
+Run the repository examples from a [source checkout](install.md#work-from-source).
+For the older `0.1.0a8` package, use its
+[tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8).
 
 For product choices, sticky-end orientation, reuse permissions and a runnable
 hairpin and released-insert example, start with the [construction journey](design-a-construction.md).
