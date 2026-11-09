@@ -68,7 +68,7 @@ def test_hidden_mismatch_consumes_budget_without_rebuilding_identical_output_mas
     assert relation.cardinality == budget
     assert relation.contains("ACGTACGT") == bool(budget)
     # Every hidden assignment has the same output mask. Construct it once,
-    # while its match/mismatch cost still participates in the budget recurrence.
+    # while its match/mismatch cost still consumes the pairing budget.
     assert max(calls.values()) == 1
 
 

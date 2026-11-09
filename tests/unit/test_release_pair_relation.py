@@ -14,6 +14,34 @@ from tests.unit.test_release_pair_projection import domain
 from tests.unit.test_survey_completion_binding import product
 
 
+def test_equivalent_upstream_frames_share_projection_only_within_one_domain(monkeypatch):
+    from hop_design.kernel.construction import release_pair_relation as module
+
+    p, d = product(), domain()
+    upstream = policy({"min_length_nt": 14, "max_length_nt": 24, "base_spec": "N"})
+    original, calls = module.project_end_pairs, []
+    windows, placements = module.release_action_windows, []
+
+    def counted(*args):
+        calls.append(args)
+        return original(*args)
+
+    def placed(*args):
+        placements.append(args)
+        return windows(*args)
+
+    monkeypatch.setattr(module, "project_end_pairs", counted)
+    monkeypatch.setattr(module, "release_action_windows", placed)
+    first = necessary_end_pairs(p, (d,), upstream, DEFAULT_SEQUENCE_LIMITS)
+    assert first.cardinality == 1
+    assert len(calls) == 1
+    assert len(placements) == 22  # Both ends still check every permitted length.
+    # Another domain or invocation has separate permissions and root ownership.
+    assert necessary_end_pairs(p, (d, d), upstream, DEFAULT_SEQUENCE_LIMITS) == first
+    assert len(calls) == 3
+    assert len(placements) == 66
+
+
 def test_release_actions_are_resolved_once_per_definition_and_end_per_projection(monkeypatch):
     p, d = product(), domain()
     upstream = policy({"min_length_nt": 14, "max_length_nt": 24, "base_spec": "N"})

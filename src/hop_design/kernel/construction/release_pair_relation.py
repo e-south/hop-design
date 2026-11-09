@@ -1,7 +1,7 @@
 """Share necessary endpoint reasoning across exact receiving-end requests."""
 
 from collections.abc import Callable
-from functools import cache
+from functools import cache, lru_cache
 from typing import Literal
 
 from hop_design.models.construction.basal_release import (
@@ -26,12 +26,44 @@ from .release_constraints import _window_masks, release_action_windows, release_
 from .release_pair_projection import project_end_pairs
 from .sequence_sets import SequenceSetBuilder
 
+_Masks = tuple[tuple[str, ...], ...]
+_Projector = Callable[[_Masks, SequenceExpression], int]
+
+
+def _end_pair_projector(domain: BasalSequenceDomain, builder: SequenceSetBuilder) -> _Projector:
+    """Reuse equivalent projections after their full placement constraints pass.
+
+    Local masks and all pairing permissions remain bound to one domain. Extra
+    upstream variables absent from the output are independent existential bases;
+    remove them and renumber observed copies without merging distinct variables.
+    Roots never escape this builder, and eviction changes computation only.
+    """
+    local = len(domain.base_domains)
+
+    @lru_cache(maxsize=128)
+    def solve(masks: _Masks, ends: SequenceExpression) -> int:
+        return project_end_pairs(domain, masks, ends, builder)
+
+    def project(masks: _Masks, ends: SequenceExpression) -> int:
+        upstream: dict[int, int] = {}
+        normalized: list[str | SequenceVariable] = []
+        for base in ends:
+            if isinstance(base, str) or base.index < local:
+                normalized.append(base)
+            else:
+                index = upstream.setdefault(base.index, local + len(upstream))
+                normalized.append(SequenceVariable(index, base.complemented))
+        compact = masks[:local] + tuple(masks[index] for index in upstream)
+        return solve(compact, tuple(normalized))
+
+    return project
+
 
 def _program_relation(
     product: ProductRequest,
     domain: BasalSequenceDomain,
     pattern: str,
-    builder: SequenceSetBuilder,
+    project: _Projector,
     limits: SequenceSpaceLimits,
     actions: tuple[BasalFutureReleaseAction | None, ...],
     local_masks: Callable[[], tuple[tuple[str, ...], ...]],
@@ -93,7 +125,7 @@ def _program_relation(
         ends += reverse_complement_expression(exposed) if side == "right" else exposed
     if placed_masks is None:
         return 0
-    return project_end_pairs(d, placed_masks, ends, builder)
+    return project(placed_masks, ends)
 
 
 def necessary_end_pairs(
@@ -141,6 +173,7 @@ def necessary_end_pairs(
     result = 0
     for domain in domains:
         program_actions = actions(domain.program.future_release_enzyme)
+        project = _end_pair_projector(domain, builder)
 
         @cache
         def local_masks(d: BasalSequenceDomain = domain) -> tuple[tuple[str, ...], ...]:
@@ -152,7 +185,7 @@ def necessary_end_pairs(
 
         for pattern in patterns:
             relation = _program_relation(
-                product, domain, pattern, builder, limits, program_actions, local_masks
+                product, domain, pattern, project, limits, program_actions, local_masks
             )
             if relation is None:
                 return None
