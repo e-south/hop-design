@@ -2,11 +2,27 @@
 
 import itertools
 
+from hop_design.kernel.construction import release_constraints as module
 from hop_design.kernel.construction.foldback.domains import SequenceVariable as Variable
 from hop_design.kernel.construction.release_constraints import _window_masks
 from hop_design.models.sequence import iupac_bases, reverse_complement_iupac
 
 BASES = tuple("ACGT")
+
+
+def test_short_site_normalizes_repeated_domains_once(monkeypatch):
+    calls = []
+
+    def counted(bases):
+        calls.append(None)
+        return sorted(bases)
+
+    monkeypatch.setattr(module, "sorted", counted, raising=False)
+    domains = (tuple("TGCAA"),) * 128
+    masks = _window_masks(domains, (Variable(0), Variable(127, True)), ((0, "RT"),))
+    assert masks == (("A", "G"),) + (BASES,) * 126 + (("A",),)
+    assert len(calls) == 1
+    assert domains == (tuple("TGCAA"),) * 128
 
 
 def test_complemented_aliases_intersect_the_same_variable():
@@ -38,8 +54,11 @@ def test_literal_conflicts_and_out_of_frame_windows_are_empty():
 
 def test_small_literal_oracle_preserves_shared_and_complemented_copies():
     expression = (Variable(0), Variable(1, True), Variable(0, True), "G", Variable(2))
-    domains = (("A", "C"), BASES, ("G", "T"))
-    for word in ("NNN", "RNT", "CGG", "ATG", "YYY", "AAA"):
+    choices = tuple(bases for count in range(5) for bases in itertools.combinations(BASES, count))
+    for first, second, word in itertools.product(
+        choices, choices, ("NNN", "RNT", "CGG", "ATG", "YYY", "AAA")
+    ):
+        domains = (first, second, ("G", "T"))
         expected = set()
         for bases in itertools.product(*domains):
             literal = "".join(

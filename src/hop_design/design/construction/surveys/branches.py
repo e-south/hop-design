@@ -79,6 +79,15 @@ class SurveyBranches:
         return OrderedDict()
 
     @cached_property
+    def _catalog_member_bytes(self) -> int:
+        member = {
+            "enzyme_catalog": self.request.enzyme_catalog.model_dump(mode="json", by_alias=True)
+        }
+        # The product already has braces and a final newline. Replace those
+        # three bytes of this one-member object with its separating comma.
+        return len(canonical_json_bytes(member)) - 2
+
+    @cached_property
     def placements(self) -> tuple[EndPlacement, ...]:
         """Prefer less added DNA while reaching changes on either side early.
 
@@ -292,7 +301,8 @@ class SurveyBranches:
             pruning=CompositionPruningMode.DISABLED, max_combinations=1, max_realizations=1
         )
         product = ProductRequest.model_validate(data)
-        size = len(canonical_json_bytes(product))
+        variable = product.model_dump(mode="json", by_alias=True, exclude={"enzyme_catalog"})
+        size = len(canonical_json_bytes(variable)) + self._catalog_member_bytes
         if _PRODUCT_CACHE_ENTRIES > 0 and size <= _PRODUCT_CACHE_BYTES:
             self._products[cache_key] = product, size
             while (

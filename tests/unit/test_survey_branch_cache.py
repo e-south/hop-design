@@ -57,6 +57,39 @@ def test_new_branch_reuses_its_validated_catalog_and_keeps_external_admission():
         ProductRequest.model_validate_json(json.dumps(damaged))
 
 
+def test_cache_byte_accounting_serializes_fixed_catalog_once_per_request(monkeypatch):
+    scope = branches()
+    original, calls = module.canonical_json_bytes, []
+
+    def counted(value):
+        if isinstance(value, ProductRequest) or (
+            isinstance(value, dict) and "enzyme_catalog" in value
+        ):
+            calls.append(None)
+        return original(value)
+
+    monkeypatch.setattr(module, "canonical_json_bytes", counted)
+    for target in range(3):
+        product = scope.product(target, branch=0, limits=LIMITS)
+        _, charged_bytes = scope._products[(target, 0, LIMITS)]
+        assert charged_bytes == len(original(product))
+    assert len(calls) == 1
+    # A separate request, even with equal catalog contents, owns its own count.
+    branches().product(0, branch=0, limits=LIMITS)
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize("label", ['A "quoted" name', "Unicode αβ 🧬", "slash\\and\nline"])
+def test_cache_bytes_remain_exact_with_escaped_catalog_and_request_labels(label):
+    document = survey_document()
+    document["name"] = label
+    document["enzyme_catalog"]["enzymes"][0]["canonical_name"] = label
+    scope = module.SurveyBranches(InterfaceSurveyRequest.model_validate_json(json.dumps(document)))
+    for target, branch in ((0, 0), (1, 1), (257, 0)):
+        product = scope.product(target, branch=branch, limits=LIMITS)
+        assert scope._products[(target, branch, LIMITS)][1] == len(canonical_json_bytes(product))
+
+
 def test_target_branch_and_every_limit_remain_separate_cache_dependencies(monkeypatch):
     scope = branches()
     calls = count_parses(monkeypatch)

@@ -90,9 +90,12 @@ def _window_masks(
     windows: tuple[tuple[int, str], ...],
 ) -> tuple[tuple[str, ...], ...] | None:
     """Conjoin unary recognition obligations, retaining shared variable aliases."""
-    masks = [set(bases) for bases in domains]
-    if any(not bases for bases in masks):
+    # Many positions share the same base choices. Normalize each distinct mask
+    # once, then replace only positions touched by the recognition windows.
+    normalized = {bases: tuple(sorted(set(bases))) for bases in set(domains)}
+    if any(not bases for bases in normalized.values()):
         return None
+    masks = [normalized[bases] for bases in domains]
     for start, word in windows:
         if start < 0 or start + len(word) > len(expression):
             return None
@@ -102,12 +105,12 @@ def _window_masks(
                 if base not in allowed:
                     return None
             else:
-                masks[base.index].intersection_update(
-                    {reverse_complement_iupac(b) for b in allowed} if base.complemented else allowed
-                )
+                if base.complemented:
+                    allowed = frozenset(reverse_complement_iupac(b) for b in allowed)
+                masks[base.index] = tuple(value for value in masks[base.index] if value in allowed)
                 if not masks[base.index]:
                     return None
-    return tuple(tuple(sorted(bases)) for bases in masks)
+    return tuple(masks)
 
 
 def _window_domain(
