@@ -48,12 +48,29 @@ class CompletionNavigator:
     group_count: Callable[[Geometry, int], int]
     admit_basal: Callable[[Geometry], bool] | None = None
     class_key: Callable[[Geometry, int | None], tuple[str | None, ...]] | None = None
+    basal_candidates: tuple[Geometry, ...] | None = None
 
     def __post_init__(self) -> None:
         if len(self.order.costs) != 6 or any(
             not f or any(type(c) is not int or c < 0 for c in f) for f in self.order.costs
         ):
             raise ValueError("Completion navigation requires six finite nonnegative factors.")
+        if self.basal_candidates is not None:
+            if self.admit_basal is None:
+                raise ValueError("Indexed geometry requires necessary basal admission.")
+            for geometry in self.basal_candidates:
+                if (
+                    len(geometry) != 6
+                    or geometry[4] != 0
+                    or any(
+                        type(v) is not int or not 0 <= v < n
+                        for v, n in zip(geometry, self.sizes, strict=True)
+                    )
+                ):
+                    raise ValueError("Indexed basal geometry lies outside the declared domain.")
+            keys = tuple((self.order.cost(g), g) for g in self.basal_candidates)
+            if keys != tuple(sorted(set(keys))):
+                raise ValueError("Indexed basal geometry must be unique and cost ordered.")
 
     @property
     def sizes(self) -> tuple[int, ...]:
@@ -72,7 +89,7 @@ class CompletionNavigator:
         if type(maximum_frontier) is not int or not 1 <= maximum_frontier <= 100_000:
             raise ValueError("Completion frontier bound must be between 1 and 100000 entries.")
         sizes = self.sizes
-        introductions = GeometryIntroductions(self.order, self.admit_basal)
+        introductions = GeometryIntroductions(self.order, self.admit_basal, self.basal_candidates)
         for preferred in cursor.preferred_groups:
             if any(v >= n for v, n in zip(preferred.geometry, sizes, strict=True)):
                 raise ValueError("Preferred geometry lies outside the declared domain.")
@@ -151,7 +168,9 @@ class CompletionNavigator:
             )
 
         if not cursor.initialized:
-            push(introductions.first)
+            first = introductions.first
+            if first is not None:
+                push(first)
         if cursor.preferred_next < len(cursor.preferred_groups):
             preferred = cursor.preferred_groups[cursor.preferred_next]
             geometry = preferred.geometry

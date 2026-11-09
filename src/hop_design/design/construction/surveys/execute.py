@@ -13,7 +13,12 @@ from hop_design.models.construction.surveys.execution import SurveyEvaluationLim
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
 from hop_design.serialization import canonical_json_bytes
 
-from ..execution.feedback import DiscoveryFeedback, ProgressObserver, StopRequest
+from ..execution.feedback import (
+    DiscoveryCancelled,
+    DiscoveryFeedback,
+    ProgressObserver,
+    StopRequest,
+)
 from ..search.diversity import diversity_class
 from .admission.preference import create_survey_index, read_preference_files
 from .branches import SurveyBranches
@@ -100,7 +105,7 @@ def evaluate_interface_survey(
         feedback.emit(initial)
         cancelled_before_search = feedback.stop_requested()
         cursors: dict[int, dict[str, Any] | None] = {}
-        locals_ = LocalReceipts(index, limits)
+        locals_ = LocalReceipts(index, limits, should_stop=feedback.stop_requested)
         preferred_targets = sorted(
             {
                 candidate.target
@@ -202,6 +207,9 @@ def evaluate_interface_survey(
                 record = evaluate_step(
                     index, locals_, branches, limits, target=target, address=address
                 )
+            except DiscoveryCancelled:
+                stopped = "cancelled"
+                break
             except SequenceSetLimitError:
                 stopped = "sequence_space_budget"
                 break
@@ -267,6 +275,7 @@ def evaluate_interface_survey(
         return {
             "schema": "hop.interface-survey-progress/v1",
             **allocation,
+            **locals_.screen_facts,
             "termination_reason": stopped,
             "enumeration_scope": request.source_context_objective,
             "coverage_validation": "recorded_evaluations; aggregate_replay_not_requested",

@@ -35,6 +35,15 @@ class BasalAdmissions:
 
     def assess(self, target: int, geometry: tuple[int, ...]) -> EndPairAdmission | None:
         words = self.branches.request.targets.pair_at(target)
+        found = self.resolve(target, geometry)
+        if found is None:
+            return None
+        relation, digest = found
+        return EndPairAdmission(relation.contains("".join(words)), relation.cardinality, digest)
+
+    def resolve(self, target: int, geometry: tuple[int, ...]) -> tuple[SequenceSet, str] | None:
+        """Return the target-independent relation, never an unsupported-frame exclusion."""
+        self.branches.request.targets.pair_at(target)
         # Even the omitted foldback coordinate must be valid before a warm lookup.
         rank = coordinate_rank(self.branches.geometry_sizes, geometry)
         key = (*geometry[:4], geometry[5])
@@ -55,4 +64,4 @@ class BasalAdmissions:
                 while len(self._frames) > MAX_FRAME_ENTRIES or self._bytes > MAX_FRAME_BYTES:
                     _, (_, _, removed) = self._frames.popitem(last=False)
                     self._bytes -= removed
-        return EndPairAdmission(relation.contains("".join(words)), relation.cardinality, digest)
+        return relation, digest

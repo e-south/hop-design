@@ -1,5 +1,6 @@
 """Recover the next geometry at an exact cost without earlier-wave scans."""
 
+from bisect import bisect_left
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from functools import cached_property
@@ -41,6 +42,12 @@ class GeometryIntroductions:
 
     order: GeometryOrder
     admit_basal: Callable[[Geometry], bool] | None = None
+    basal_candidates: tuple[Geometry, ...] | None = None
+
+    @cached_property
+    def candidate_keys(self) -> tuple[tuple[int, Geometry], ...]:
+        offset = min(self.order.costs[4])
+        return tuple((self.basal_order.cost(g) + offset, g) for g in self.basal_candidates or ())
 
     @cached_property
     def basal_order(self) -> GeometryOrder:
@@ -56,7 +63,12 @@ class GeometryIntroductions:
         return dict(zip(self.foldbacks[:-1], self.foldbacks[1:], strict=True))
 
     @property
-    def first(self) -> CompletionFrontierEntry:
+    def first(self) -> CompletionFrontierEntry | None:
+        if self.basal_candidates is not None:
+            if not self.candidate_keys:
+                return None
+            wave, geometry = self.candidate_keys[0]
+            return CompletionFrontierEntry(kind="basal", wave=wave, geometry=geometry)
         return CompletionFrontierEntry(
             kind="geometry" if self.admit_basal is None else "basal",
             wave=sum(min(f) for f in self.order.costs),
@@ -70,6 +82,11 @@ class GeometryIntroductions:
             raise ValueError("Factorized cursor requires basal admission.")
         if entry.kind == "basal" and entry.geometry[4] != 0:
             raise ValueError("A basal stream cannot bind a foldback case.")
+        if entry.kind == "basal" and self.basal_candidates is not None:
+            key = (entry.wave, entry.geometry)
+            position = bisect_left(self.candidate_keys, key)
+            if position == len(self.candidate_keys) or self.candidate_keys[position] != key:
+                raise ValueError("Indexed basal cursor differs from its candidate and cost.")
         if entry.kind in {"basal", "geometry"}:
             if not sum(min(f) for f in self.order.costs) <= entry.wave <= self.order.maximum:
                 raise ValueError("Geometry stream wave lies outside the declared costs.")
@@ -98,13 +115,22 @@ class GeometryIntroductions:
         factored = entry.kind == "basal"
         order = self.basal_order if factored else self.order
         offset = min(self.order.costs[4]) if factored else 0
-        found = next(at_cost(order, entry.wave - offset, g), None)
-        sizes = tuple(len(f) for f in order.costs)
-        following = None if found is None else _successor(found, sizes)
-        if following is not None:
-            yield entry.model_copy(update={"geometry": following})
-        elif entry.wave < order.maximum + offset:
-            yield entry.model_copy(update={"wave": entry.wave + 1, "geometry": (0,) * 6})
+        if factored and self.basal_candidates is not None:
+            position = bisect_left(self.candidate_keys, (entry.wave, g))
+            found = (
+                None if position == len(self.candidate_keys) else self.candidate_keys[position][1]
+            )
+            if position + 1 < len(self.candidate_keys):
+                wave, following = self.candidate_keys[position + 1]
+                yield entry.model_copy(update={"geometry": following, "wave": wave})
+        else:
+            found = next(at_cost(order, entry.wave - offset, g), None)
+            sizes = tuple(len(f) for f in order.costs)
+            following = None if found is None else _successor(found, sizes)
+            if following is not None:
+                yield entry.model_copy(update={"geometry": following})
+            elif entry.wave < order.maximum + offset:
+                yield entry.model_copy(update={"wave": entry.wave + 1, "geometry": (0,) * 6})
         if found is None or (*found[:4], found[5]) in empty_planes:
             return
         if not factored:

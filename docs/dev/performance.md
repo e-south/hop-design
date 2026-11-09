@@ -352,6 +352,26 @@ evicts the least recently used frame without changing its answer. Nothing persis
 between invocations. Measure cold construction, repeated access and whole-process
 memory separately; a cache-hit improvement does not establish campaign throughput.
 
+Multi-target completion now groups those relations into a shared basal screen
+before target-local navigation. It derives every frame from the bound request,
+groups identical relations, and maps each requested end pair to the matching
+frames plus all unknown frames. Candidate coordinates retain the ordinary cost
+and canonical-address order. Indexed navigation jumps directly to the next
+candidate instead of traversing rejected basal coordinates and empty cost waves.
+The complete compiler, local sequence choices and all foldback alternatives
+remain unchanged. Navigation records bind the full frame-to-relation digest;
+replay rebuilds it independently. No study roster or private data enters this path.
+
+Screen construction is invocation-owned and checks cooperative cancellation
+between frames. It handles at most 32,768 frames and 16 MiB of distinct relation
+content; larger requests retain full ordinary navigation. Unsupported or
+resource-stopped translations are explicitly unknown candidates, never empty
+sets. A single-target request avoids the shared setup. A cold invocation pays
+setup again; measure that cost separately from warm navigation. This change
+reduces navigation work per target, so equal evaluation counts are no longer
+an equal-work comparison: compare exhausted finite requests, molecular outcomes,
+CPU cost and useful preparations. It does not migrate old producer checkpoints.
+
 Survey scheduling retains each examined target's continuation cursor, rather than
 its complete latest record. Resume reads every committed step once to restore
 proofs, observed classes and progress; only the latest cursor survives that pass.

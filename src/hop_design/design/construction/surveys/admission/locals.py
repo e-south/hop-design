@@ -2,6 +2,7 @@
 
 import json
 from collections import OrderedDict
+from collections.abc import Callable
 from typing import Any
 
 from hop_design.kernel.construction.sequence_sets import SequenceSetLimitError
@@ -11,6 +12,7 @@ from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ...local_public import LocalNeighborhoodDiscovery, _discover_request, _verify_result_mapping
 from ..branches import SurveyBranches
+from ..completion.shared_screen import BasalScreen
 from ..geometry_order import GeometryOrder
 from ..index import SurveyIndex
 from ..navigation.admission_order import admitted_geometry_order
@@ -23,7 +25,13 @@ from .preference import load_preferred_preparation
 class LocalReceipts:
     """Full local-request dependency keys; saved bytes are replayed before use."""
 
-    def __init__(self, index: SurveyIndex, limits: SurveyEvaluationLimits):
+    def __init__(
+        self,
+        index: SurveyIndex,
+        limits: SurveyEvaluationLimits,
+        *,
+        should_stop: Callable[[], bool] | None = None,
+    ):
         self.index = index
         self._warm: OrderedDict[str, LocalNeighborhoodDiscovery] = OrderedDict()
         self.partitions = PartitionPlans(index, limits.sequence_space_limits)
@@ -31,6 +39,27 @@ class LocalReceipts:
         self._limits = limits
         self._order: GeometryOrder | None = None
         self._preferred: tuple[PreparationAddress, ...] | None = None
+        self._screen: BasalScreen | None = None
+        self._screen_ready = False
+        self._should_stop = should_stop
+
+    def shared_screen(
+        self, branches: SurveyBranches, limits: SurveyEvaluationLimits
+    ) -> BasalScreen | None:
+        if branches.request != self.index.request or limits != self._limits:
+            raise ValueError("Shared screen must use its invocation's request and limits.")
+        if not self._screen_ready:
+            # A single target gains no cross-target reuse; keep its direct path.
+            if branches.request.targets.pair_count > 1:
+                admissions = self.partitions.basal_admissions(branches, limits)
+                if admissions is not None:
+                    self._screen = BasalScreen.build(admissions, should_stop=self._should_stop)
+            self._screen_ready = True
+        return self._screen
+
+    @property
+    def screen_facts(self) -> dict[str, object]:
+        return {} if self._screen is None else {"shared_end_pair_screen": self._screen.facts}
 
     def preferred_candidates(
         self, branches: SurveyBranches, limits: SurveyEvaluationLimits

@@ -4,7 +4,8 @@ import json
 
 from hop_design.design.construction.local_public import _discover_request
 from hop_design.design.construction.surveys.branches import SurveyBranches
-from hop_design.design.construction.surveys.partitions import PartitionPlans, local_extent
+from hop_design.design.construction.surveys.completion.extent import local_extent
+from hop_design.design.construction.surveys.partitions import PartitionPlans
 from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.surveys.execution import SurveyEvaluationLimits
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest

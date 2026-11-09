@@ -84,6 +84,7 @@ def _seek(
     address: dict[str, Any],
 ) -> dict[str, Any]:
     cursor = CompletionSeekCursor.model_validate_json(json.dumps(address["completion_seek"]))
+    screen = locals_.shared_screen(branches, limits)
 
     @lru_cache(maxsize=8)
     def product(geometry: tuple[int, ...]) -> ProductRequest:
@@ -170,12 +171,14 @@ def _seek(
             )
         return allocation_classes(objective, values, allow_unknown=True)
 
+    order = locals_.search_order(branches, limits)
     result = CompletionNavigator(
-        locals_.search_order(branches, limits),
+        order,
         pages,
         counts,
         admit_basal=admit_basal,
         class_key=class_key if objective else None,
+        basal_candidates=None if screen is None else screen.candidates(target, order),
     ).scan(
         cursor,
         empty_planes=locals_.proofs.planes(target),
@@ -217,6 +220,7 @@ def _seek(
         "release_context_admission": admission,
         "endpoint_population_admission": endpoint_admission,
         "end_pair_admission": end_pair_admission,
+        **({"shared_end_pair_screen": screen.facts} if screen is not None else {}),
     }
 
 
