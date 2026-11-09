@@ -399,6 +399,9 @@ Cursor lookup uses binary search over the admitted ordered candidates without
 materializing every candidate's cost key again. Candidate validation, cost ties,
 foldback offsets and traversal order remain unchanged. The navigator derives
 its fixed dimension sizes once when validating the candidate roster.
+Uniqueness and ordering are checked in one pass over adjacent cost/address
+keys, without copying the roster into a set and sorting it again. The check
+rejects duplicate addresses and decreasing keys while retaining every domain check.
 The complete compiler, local sequence choices and all foldback alternatives
 remain unchanged. Navigation records bind the full frame-to-relation digest;
 replay rebuilds it independently. No study roster or private data enters this path.
