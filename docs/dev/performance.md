@@ -215,7 +215,11 @@ instead of serializing and reparsing every entry at each new grid address. Deriv
 fields and the complete product still pass strict validation with typed tuples and
 enums. Independent JSON admission continues to validate the full catalog. Branch
 addresses, enumeration, canonical product bytes and the bounded product cache
-retain their existing contracts.
+retain their existing contracts. Cache accounting serializes the fixed catalog
+member once per translator, then combines that byte count with each product's
+remaining members. It still charges the exact complete canonical JSON size,
+including escaped/Unicode text and separators; entry limits and eviction stay
+unchanged. This retains one integer, not another catalog copy.
 
 Fresh complete composition evaluates its permitted combinations and validates
 the resulting molecular record once. It seals that internally generated result
