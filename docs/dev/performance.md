@@ -217,6 +217,16 @@ enums. Independent JSON admission continues to validate the full catalog. Branch
 addresses, enumeration, canonical product bytes and the bounded product cache
 retain their existing contracts.
 
+Fresh complete composition evaluates its permitted combinations and validates
+the resulting molecular record once. It seals that internally generated result
+for projections and packaging instead of immediately composing it again.
+Externally supplied results, explicit verification and saved-file admission
+retain full deterministic replay. The in-process receipt is tied to object
+identity and canonical content; it is neither a persisted proof cache nor an
+option for bypassing verification. Compare canonical records, stored objects,
+coverage and cold continuation when changing this boundary. Measure discovery
+separately from publication and reopening, which deliberately retain replay.
+
 The necessary end-pair projection uses the same boundary: it retains admitted
 enzyme provisioning while validating the derived local pairing constraints and
 unpartitioned search request. Relation cache keys, molecular solving and resource

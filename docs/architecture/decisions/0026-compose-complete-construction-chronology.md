@@ -8,7 +8,7 @@ audience:
   - agent executors
 owner: HOP Design maintainers
 status: accepted
-last_verified: 2026-08-30
+last_verified: 2026-11-09
 doc_type: decision
 ---
 
@@ -82,9 +82,22 @@ identity, specification and plan digests, bundle manifest digest, bundle
 identity, design and payload relations, locked defaults, and external
 references. Complete composition additionally requires a `VerifiedHopBundle`,
 whose compile replay establishes the artifact-backed design authority. A raw
-composition result remains a parsed record; `VerifiedConstructionSpaceResult`
-admission reruns exact whole-route composition against the verified local and
-design authorities and requires canonical-byte equality.
+composition result supplied by a caller remains a parsed record;
+`VerifiedConstructionSpaceResult` construction reruns exact whole-route
+composition against the verified local and design authorities and requires
+canonical-byte equality.
+
+Fresh discovery has a separate, internal admission boundary: the composer
+itself produces the result from verified upstream authorities, with strict
+result validators checking identities, route derivation, endpoint evidence,
+material lineage and disposition accounting. That exact result is admitted
+without immediately repeating the same composition. No caller-provided raw
+result enters this path. An in-process registry binds receipt identity and
+canonical content; copied or mutated containers cannot inherit admission.
+The public facade exposes no verification-disable switch. Explicit verification,
+staged-file publication and independent loading continue to replay the complete
+result. This distinction removes repeated generation, not any molecular rule
+or the verification required to admit external evidence.
 
 The advanced construction models remain internal. The
 `hop_design.construction` facade defined by ADR 0027 accepts one strict source
