@@ -228,6 +228,23 @@ preparations or demonstrated products. Unknown frames retain ordinary search,
 and computation limits remain unresolved. This applies only to
 `paired_scaffold_completions`; the public request syntax is unchanged.
 
+For multiple requested end pairs, the executor can screen the complete basal
+frame list once per invocation, group identical necessary relations and visit
+only compatible or unresolved frames for each pair. It preserves their cost
+order and every foldback alternative. A frame rejected by a necessary relation
+does not consume a separate navigation step for every end pair. The resulting
+`shared_end_pair_screen` reports frame count, unknown count, distinct relations
+and the digest of the complete frame-to-relation mapping. These are screening
+facts, not preparation counts; ordinary route checks still establish support.
+
+The screen is bounded to 32,768 frames and 16 MiB of distinct serialized
+relations. Requests exceeding either bound use ordinary navigation in full;
+they are not truncated. A single-target request uses its direct path. Unknown
+or resource-stopped frames remain candidates. Cooperative cancellation checks
+between frames, and a partial screen cannot establish an exclusion. Cold resume
+rebuilds the same screen before using it. This changes navigation work accounting
+and does not authorize continuation of a checkpoint produced by an older engine.
+
 Before grouping, the executor propagates the requested released ends and their
 recognition windows back into the shared source/adapter sequence variables.
 In the supported bottom-nick frame, this includes copied source bases, canonical

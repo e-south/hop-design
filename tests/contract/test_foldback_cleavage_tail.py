@@ -181,7 +181,7 @@ def test_atlas_population_keeps_tail_choices_and_inverse_addresses(exhaustive_so
 
 
 def test_source_partition_extent_and_resume_include_tail_variables():
-    from hop_design.design.construction.surveys.partitions import local_extent
+    from hop_design.design.construction.surveys.completion.extent import local_extent
     from hop_design.models.payload import ExactPayload
     from tests.contract.test_foldback_construction_discovery import _request
 
