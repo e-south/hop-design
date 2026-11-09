@@ -70,8 +70,8 @@ def test_installation_examples_report_the_current_package_version() -> None:
     assert f"# hop-design {version}" in install
     assert f"'{version}'" in install
     assert "tree/v0.1.0a8" in install  # Older APIs retain their matching documentation.
-    assert "PyPI publication is being prepared" in install
-    assert 'uv tool install "git+https://github.com/e-south/hop-design.git"' in install
+    assert f'uv tool install "hop-design=={version}"' in install
+    assert f'uv add "hop-design=={version}"' in install
 
 
 def test_source_layout_has_explicit_sprawl_limits() -> None:

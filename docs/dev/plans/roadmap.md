@@ -8,7 +8,7 @@ private consumer migration.
 
 ## Candidate and published scope
 
-The source checkout is the unreleased `v0.1.0a9` candidate. Its implemented
+Version `v0.1.0a9` implements the following
 workflows include complete scaffold discovery, stage-specific comparisons,
 terminal hairpin requirements and explicit material reuse. Public publication
 remains pending; a version label alone does not identify a tested source tree.
@@ -143,7 +143,7 @@ opt-in bounded request executor are implemented in the candidate; a graphical
 freeform request authoring surface is outside these workflows. The local viewport
 chooses among supported complete designs through the same constrained API.
 
-## Implemented product workflows in the source candidate
+## Implemented product workflows
 
 ### Complete product options before selection
 

@@ -4,16 +4,15 @@ Use [uv](https://docs.astral.sh/uv/getting-started/installation/) with Python
 3.12–3.14. It gives HOP its own environment.
 
 ```bash
-# Install the current HOP command without cloning a repository.
-uv tool install "git+https://github.com/e-south/hop-design.git"
+# Install HOP in its own environment.
+uv tool install "hop-design==0.1.0a9"
 
 # Check which version is installed.
 hop-design --version
 # hop-design 0.1.0a9
 ```
 
-PyPI publication is being prepared. This command installs the current source
-version directly. HOP is alpha software, so record the version used for your work.
+HOP is alpha software, so record the version used for your work.
 
 ## Start designing
 
@@ -27,7 +26,7 @@ Add HOP to your own uv project, then open Python in that environment.
 
 ```bash
 # Add the same package as a project dependency.
-uv add "git+https://github.com/e-south/hop-design.git"
+uv add "hop-design==0.1.0a9"
 uv run python
 ```
 
