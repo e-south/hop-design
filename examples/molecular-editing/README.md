@@ -14,14 +14,14 @@ sequence and terminal chemistry; `oligo-uses.csv` retains each material role.
 `timing.json` separates preview, evaluation and retrieval. Use a fresh output
 directory for every execution.
 
-To browse these admitted options in one molecular viewport:
+To browse these verified preparation options in one molecular view:
 
 ```bash
 uv run --locked hop-design construction edit-view /tmp/hop-molecular-edit/alternatives --evaluated --out /tmp/hop-molecular-view
 ```
 
-For the bounded AAAA/AACA background-discovery example and separate admission,
-query and retrieval measurements:
+For the bounded AAAA/AACA background-discovery example and separate timings for
+verification, query and retrieval:
 
 ```bash
 uv run --locked python examples/molecular-editing/conditional.py /tmp/hop-conditional

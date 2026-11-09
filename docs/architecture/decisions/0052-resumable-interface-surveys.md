@@ -6,6 +6,11 @@ an interface-coverage study. A four-base interface domain contains 256 words per
 side and 65,536 ordered pairs. All targets must remain accounted for even when a
 single invocation evaluates only part of that domain.
 
+The survey must account for end-pair targets, local sequence choices and complete
+preparations separately. The sections below explain how work is scheduled, how
+conditional auxiliary sequences are completed, and how saved results establish
+coverage.
+
 ## Decision
 
 `models/construction/surveys` owns the strict molecular request and target
@@ -39,6 +44,10 @@ compact admitted populations and replayed through ordinary local enumeration.
 Basal programs likewise retain joint source/adapter populations. Nickases cannot become duplex release
 methods through an unrestricted provisioning policy. A duplex method with an
 incompatible end length remains subject to the ordinary molecular evaluator.
+
+A compact population represents an exact sequence set without listing every
+member. Local admission applies the sequence and reaction checks to that set;
+complete construction still has to verify a selected local combination.
 
 Foldback admission reuses the existing complete `SequenceSet` population solver
 within each coarse case. A page selects an admitted program/member, recovers its
@@ -308,6 +317,8 @@ same local pair and length-bound group. Compact set difference finds the next
 unexcluded member without enumerating skipped words. Surviving candidates still
 use ordinary full compilation; failure of one candidate never excludes a group.
 
+### Necessary constraints before complete construction
+
 Before context projection, `kernel.construction.release_constraints` derives necessary
 endpoint recognition and cohesive-word constraints in an explicitly bound
 payload-forward, bottom-nick frame. Shared source variables retain their identity
@@ -343,6 +354,8 @@ converted into `EmptyBasalPlane` certificates. Replay recomputes the restriction
 Unknown frames retain the original program population; decision-path or sequence
 budgets raise and leave the affected search unresolved. No external solver or
 change to the public request syntax is required.
+
+### Shared end-pair screening
 
 Before local admission, `completion.interfaces.EndPairRelations` can reject an
 exact end pair using a shared necessary relation. The translated scope is one
@@ -387,9 +400,9 @@ frame depends on the bottom nick and projected end, not on recognition ownership
 Both source-duplex and endpoint-material obligations retain exact molecular replay.
 V1 requests and old producer-bound indexes are not relabeled or silently upgraded.
 
-The SQLite checkpoint binds the canonical request, catalogue, producer source and
-runtime dependencies, and local/release evaluation limits. Resuming with changed
-bindings fails. A batch budget and checkpoint capacity can change between
+The SQLite checkpoint binds the canonical request, catalogue, source files and
+runtime dependencies of the HOP installation that created it, and local/release
+evaluation limits. Resuming with changed bindings fails. A batch budget and checkpoint capacity can change between
 invocations. Only one executor should write an index at a time; transaction-level
 step continuity prevents two writers from committing the same address.
 

@@ -1,8 +1,8 @@
 # Inspect recorded choices independently of their producer
 
-A saved live discovery requires its producing implementation for admission. A
-reader should also be able to inspect and retrieve already captured preparations
-without rerunning that implementation.
+Reopening a live discovery requires the HOP implementation that produced it. A
+reader should also be able to inspect and retrieve captured preparations without
+rerunning that implementation.
 
 ## Decision
 
@@ -10,8 +10,8 @@ without rerunning that implementation.
 molecular packets and material handoffs. Its strict manifest inventories every file
 with a digest and byte count. Reading verifies that inventory; lazy retrieval
 rechecks requested bytes. Original producer and current renderer remain separate.
-Capture uses existing admitted choices and atomic, create-only publication.
-An edition cannot continue search or revise permissions.
+Capture accepts already verified choices and publishes them atomically to a new
+destination. An edition cannot continue search or revise permissions.
 
 An updated exporter can explicitly capture a completed released-insert discovery
 through `freeze_design_choices(..., source_contract=...)`. The strict
@@ -24,8 +24,9 @@ live admission and continuation still require their exact producer; source
 contracts do not authorize search, schema migration or aggregate replay.
 
 The explicit `compact=True` capture option writes `hop.atlas-edition/v2`.
-Its index contains versioned molecular descriptors bound to the source snapshot;
-each member retains its exact material handoff in a deterministic, lossless ZIP.
+Its index contains versioned molecular descriptors: summaries of recorded
+molecular properties bound to the source snapshot. Each member retains its exact
+material handoff in a deterministic, lossless ZIP.
 Capture retrieves and verifies the selected authority before deriving its descriptor.
 It does not render cohort-wide route drawings. The reader validates metadata and
 inventory at opening, and checks each authority digest before access. This scope

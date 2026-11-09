@@ -1,7 +1,9 @@
 # Method language overview
 
 The method language derives exact molecular states from one named method
-request. It compiles independently of the design plan.
+request: the materials and permitted processing that the caller supplies.
+HOP records the resulting states and transitions in a method plan, independently
+of the design plan that describes the hairpin's sequence anatomy.
 
 ```text
 MethodRequest -> exact states and transitions -> destination-neutral product

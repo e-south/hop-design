@@ -1,7 +1,10 @@
 # From payload to hairpin construction
 
-Start with the duplex sequence you want the hairpin to present. That payload
-stays fixed while HOP searches the surrounding sequence and enzyme arrangements.
+Start with the duplex region you want the hairpin to present: the **payload**, or
+supplied stem. A hairpin is one continuous DNA strand folded into paired arms
+joined by an unpaired loop. You supply one payload arm; HOP derives its complement.
+The payload stays fixed while HOP searches the surrounding sequence and enzyme
+arrangements.
 You can inspect where a junction is possible, what bases and cuts it requires,
 and whether selected junctions can be completed into the requested product.
 
@@ -12,6 +15,11 @@ derives its complementary arm. Compiling this anatomy gives the intended hairpin
 sequence. To obtain a construction procedure, continue with discovery.
 See [substrate spaces](../guides/substrate-spaces.md).
 
+The **product** is the molecule you want at a named processing stage. A **route**
+is the ordered series of steps that makes it. A **preparation** specifies that
+route together with its exact source, adapters, primers and terminal chemistry.
+Different preparations can therefore make the same product.
+
 For construction, start with the stem and intended product using
 [design discovery](../guides/discover-designs.md). End words, scaffold properties
 and methods are optional constraints. A versioned context declares the available
@@ -20,15 +28,16 @@ The physical starting material
 is a source ssDNA oligo with construction flanks around the payload. Its sequence
 and required auxiliaries depend on the chosen route.
 
-The foldback neighborhood supplies the sequence that can be exposed, folded,
-and joined to close the cap. The basal construction neighborhood supplies the
-opposite junction, including adapter pairing and later end generation when required.
+HOP calls the two construction regions **local neighborhoods**. The foldback
+neighborhood supplies the sequence that can be exposed, folded and joined to
+close the loop end. The basal neighborhood supplies the opposite, open-end
+junction, including adapter pairing and later end generation when required.
 Neither search changes the payload.
 
 ## How do local junctions become a construction?
 
-A local solution describes a possible junction. Composition checks selected
-junctions together with the source, adapters,
+A local solution describes a possible junction in one neighborhood. Composition
+combines selected junctions and checks them together with the source, adapters,
 primers, fragment removal and endpoint requirements. A construction fails if
 required annealing sequence is missing or its materials are incompatible.
 
@@ -53,8 +62,9 @@ or [check a named method](../guides/resolve-production-method.md).
 
 ## What can the search change?
 
-HOP solves and reuses foldback and basal sequence domains separately. Within each
-neighborhood, geometry, recognition sites, cleavage and sequence must agree. It
+HOP searches the permitted foldback and basal sequences separately and can reuse
+those local results. Within each neighborhood, lengths and relative positions
+(the **geometry**) must agree with recognition sites, cleavage and sequence. It
 then checks selected combinations against the complete preparation's shared
 requirements.
 
@@ -66,9 +76,12 @@ serve an earlier source-PCR primer. These are uses of the same bases at
 different steps. Permitted mismatches belong to the association record, not the unpaired
 handles.
 
-The scaffold-completion search seeks a working auxiliary completion for each
-scaffold assignment, rather than every interchangeable PCR handle. Bases that contribute to association or a retained product stay
-explicit. Primer requirements and unwanted recognition sites still constrain
+The **scaffold** is the construction sequence and pairing around the supplied
+stem, including its loop and added paired regions. Scaffold completion fills in
+the other permitted material bases needed to make it, such as PCR handles. It
+seeks a working completion for each scaffold assignment rather than every
+interchangeable handle. Bases that contribute to association or a retained
+product stay explicit. Primer requirements and unwanted recognition sites still constrain
 the remaining auxiliary bases. If one completion fails, other permitted
 completions remain available.
 
@@ -111,8 +124,9 @@ where the relevant enzyme acts. A later adapter cannot supply a site required
 in the initial source duplex.
 
 Searches explore increasing retained non-payload sequence. An existence search
-keeps a witness for each accessible work unit. An all-realizations search keeps
-every exact alternative within its reported coverage. A truncated search leaves
+keeps an exact working example, called a **witness**, for each accessible work unit.
+An all-realizations search keeps every exact alternative within its reported
+coverage. A truncated search stops before exhausting that domain and leaves
 part of the declared space unresolved. See [search interpretation](../discovery/overview.md).
 
 ## What makes a complete preparation valid?

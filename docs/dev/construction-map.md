@@ -14,7 +14,7 @@ Use these owners before reaching for the lower-level discovery contracts below.
 | Change | Owner relative to `src/hop_design/` | Boundary |
 | --- | --- | --- |
 | Stem, product and optional requirements | `design/construction/intents/resolve.py`, `context.py`, `constraints.py` | Resolve permissions without searching or choosing a preparation |
-| Start, continue or reopen discovery | `design/construction/intents/execute.py`, `hairpins.py`, `hairpin_history.py` | Delegate to native search and preserve recorded coverage |
+| Start, continue or reopen discovery | `design/construction/intents/execute.py`, `hairpins.py`, `hairpin_history.py` | Delegate to the existing endpoint search and preserve recorded coverage |
 | Refine or compare complete choices | `design/construction/intents/query.py`, `refinement.py`, `comparisons.py` | Preserve request intent and exact selected identities |
 | Parameter meaning and dependencies | `models/construction/variants/parameter_contract.py`, `parameter_catalog.py`, `applicability.py` | Units, measurement boundaries and applicable endpoints; no display-derived molecular facts |
 | Descriptor and molecular similarity | `design/construction/navigation/molecular_descriptor.py`, `similarity.py`, `numerical/` | Project verified molecules; distance and layout do not establish construction validity |
@@ -41,8 +41,8 @@ Paths below are relative to `src/hop_design/`.
 | Required targets and a shared bounded schedule | `design/construction/discovery/targets.py`, `scheduling.py` | Silent relaxation, per-member independent budgets or preference scoring |
 | Execute complete options and record coverage | `design/construction/options/` and `discovery/explore.py` | Selecting the user's preferred preparation |
 | Assess a deliberate comparison | `design/construction/comparisons/` | Recomputing molecule facts from report labels |
-| Explicit family admission, recovery and retrieval | `design/construction/families/` | Product-first search policy or study-specific membership |
-| Admit selected results and bind exact member identities | `design/construction/families/set_members.py` | Set report assembly or discovery scheduling |
+| Verify saved families, recover and retrieve preparations | `design/construction/families/` | Product-first search policy or study-specific membership |
+| Verify selected results and bind exact member identities | `design/construction/families/set_members.py` | Set report assembly or discovery scheduling |
 | Capture and publish portable inventories | `design/construction/packets/` | Family-reference policy or molecular admission |
 | Project and render recorded products | `design/construction/projections/` and `export/construction/` | New molecular conclusions inferred from drawings |
 | Public operation and CLI adaptation | `construction.py` and `commands/construction/` | Raw internal-model authoring or duplicated derivations |
@@ -57,8 +57,8 @@ The branch compiler is pure with respect to file I/O: it receives a strict reque
 and returns candidate requests and conflicts. Source loading, protected input
 roots, packet identity and preview rendering stay in `prepare.py`. Adding a
 permitted preparation transformation should therefore not require changing the
-file/packet adapter. Complete molecular admission still owns whether a branch
-actually produces the requested scaffold.
+file/packet adapter. Complete molecular validation still determines whether a
+branch actually produces the requested scaffold.
 
 ## Interface survey and completion search
 
@@ -89,11 +89,13 @@ membership. Preserve that separation when changing the implementation:
 
 - Strict models reject malformed or inconsistent requests before execution;
   expected molecular infeasibility remains a diagnostic, not a schema failure.
-- Pure constraint kernels return admitted relations or scoped contradictions.
+- Pure constraint kernels return exact relations satisfying the declared
+  constraints, or contradictions limited to the checked domain.
   They do not select a paper cohort or assign preparation quality.
 - Scheduling changes which legal work runs next. Its priority must not become
   a molecular acceptance threshold, and a resource stop must not become an
-  exclusion proof. Checkpoint admission binds the producer, request and limits.
+  exclusion proof. Reopening a checkpoint checks the recorded HOP implementation,
+  request and limits.
 - `projections/overhead/complete.py` measures retained endpoint DNA from verified
   ancestry. `editions/capture.py` records explicit membership over complete
   choices. Neither derives a score from UMAP coordinates or silently changes
@@ -115,9 +117,9 @@ behind these existing request and compiler boundaries.
 ## Conditional exploration owner
 
 `models/construction/variants/` owns strict choice intent.
-`design/construction/variants/` separates admission, immutable regional facts,
-conditional filtering, projection and retrieval. It reuses discovery admission,
-stage identity, `comparisons/controls.py` regional ancestry and portable selection.
+`design/construction/variants/` separates saved-result verification, immutable
+regional facts, conditional filtering, projection and retrieval. It reuses
+discovery replay, stage identity, `comparisons/controls.py` regional ancestry and portable selection.
 `commands/construction/variants.py` and the editor's `VariantSession` are thin
 public-facade clients. See [ADR 0049](../architecture/decisions/0049-conditional-variant-exploration.md).
 
@@ -217,8 +219,8 @@ structural cleanup. New molecular capabilities require a separate tested slice.
 
 Use [Measure construction performance](performance.md) for the public lifecycle
 benchmark, receipt-reuse boundaries, cache lifetime and test staging. It separates
-search, admission, retained queries and retrieval instead of treating total runtime
-as one bottleneck.
+search, saved-result verification, queries over loaded results and retrieval
+instead of treating total runtime as one bottleneck.
 
 The regression seams are `test_construction_bundle_replay_cost.py` for
 whole-route and publication checks, `test_local_replay_scope.py` for bounded

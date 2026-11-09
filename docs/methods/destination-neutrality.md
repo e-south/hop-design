@@ -1,14 +1,15 @@
 # Hairpin-processing method boundary
 
 HOP compiles hairpin designs and bounded sequence transformations. A method
-plan records sequence-bearing states, strand-specific events, terminal chemistry,
-pair relationships, covalent joins, primer boundaries, and per-base lineage.
+plan records the exact molecules at each step, the events on each strand,
+terminal chemistry, pair relationships, covalent joins, primer boundaries, and
+the source position of each base, called per-base lineage.
 The caller owns protocol conditions, controls, runs, and observations.
 
 ## Implemented method
 
-`linear-source-multinick-size-selection-hairpin-pcr@1` has this closed state
-sequence:
+`linear-source-multinick-size-selection-hairpin-pcr@1` derives the following
+fixed sequence of molecular states:
 
 ```text
 SourcePcrDuplex
@@ -38,9 +39,9 @@ oriented `HairpinEncodingInsert` sequence projection. Each produced cohesive
 end records its exact sequence, protruding strand, polarity, aligned span, and
 both cut boundaries. Restriction digestion does not create the duplex.
 
-The method compiler requires exact molecular inputs. Assessing a degenerate
-pool would require separate universal and existential outcomes over its member
-sequences.
+The method compiler requires exact molecular inputs. To assess a degenerate
+pool, it would need to report separately whether every member sequence resolves
+and whether at least one does.
 
 ## Capability facets
 
@@ -80,9 +81,9 @@ phosphates or an explicit kinase preparation. Vector primers remain outside
 this handoff because they depend on a destination construct.
 
 `MolecularStrand`, `Fragment`, `StrandPairObservation`, and `CovalentBond`
-provide the shared state vocabulary. The compiler, not the caller, constructs
-the ordered state plan. This preserves an extension seam for another named
-method without exposing an unrestricted reaction language.
+provide the shared state vocabulary. The compiler constructs the ordered state
+plan from the request. Another named method can reuse those records with its
+own compiler; callers cannot supply arbitrary reaction sequences.
 
 ## Other production methods
 
@@ -108,8 +109,8 @@ fragments, pairings, or features. See [ecosystem ownership](../ecosystem/ownersh
 `MethodBundle`. Its trajectory JSON/SVG, duplex and restriction-product FASTA,
 GenBank, and hairpin-encoding projection are derived only from the strict plan.
 `load_verified_method_bundle()` recompiles the stored request and requires the
-plan and every exported byte to match. An infeasible result cannot be written
-as a complete bundle.
+plan and every exported byte to match. This reproduction from saved inputs is
+called replay. An infeasible result cannot be written as a complete bundle.
 
 ## Completion evidence
 

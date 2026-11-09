@@ -1,5 +1,10 @@
 # HOP Design engineering contracts
 
+A request states the permitted inputs and requirements. A local realization
+resolves one junction; a complete realization resolves materials and checks the
+combined route. A product records the exact molecule at a named processing
+stage. Bundles save these inputs and derived results for verification.
+
 ## Invariants
 
 - The payload is authored once; the paired payload is its DNA IUPAC reverse
@@ -27,9 +32,10 @@
   pair counts are distinct types.
 - Biophysical nouns are `FoldbackJunction` and `BasalJunction`. Processing-route
   names describe operations; historical migration terms are not schema aliases.
-- A design plan is a fully resolved, immutable derivation record. Construction
-  routes and method plans own their respective temporal molecular-state
-  histories. Every bundle is content-addressed and must verify before consumption.
+- A design plan is a fully resolved, immutable account of how its sequence
+  anatomy was derived. Construction routes and method plans record molecular
+  states in processing order. Every bundle has an identifier derived from its
+  contents and must verify before consumption.
 - Foldback pairing, basal pair classification, and strand-state projection are
   physical derivations. Caller selection thresholds, reserve acceptance, and
   application eligibility are separate explicit policy inputs.

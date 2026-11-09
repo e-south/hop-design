@@ -1,7 +1,9 @@
 # Checkpoint independent local queries
 
-Use this optional batching path after authoring independent local queries.
-It is separate from [compiling one complete construction](compile-construction.md).
+Use this optional batching path for independent foldback or basal junction
+searches. It saves each query's result so a later call can skip completed queries
+and run the remaining ones. It is separate from
+[compiling one complete construction](compile-construction.md).
 
 ## Run and resume the collection
 

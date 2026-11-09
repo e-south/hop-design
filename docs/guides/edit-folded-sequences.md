@@ -1,5 +1,11 @@
 # Edit the molecule, then choose its preparation
 
+Specify a molecular change, such as replacing one loop word, and check which
+complete preparations support it. The supplied stem is the payload to preserve;
+the surrounding construction sequence and pairing form its scaffold. Each
+preparation specifies the exact source, adapter and primers and their processing
+steps, so a small product edit can require changes to several input oligos.
+
 Run these repository examples from a [source checkout](install.md#work-from-source).
 The commands use its locked environment throughout.
 

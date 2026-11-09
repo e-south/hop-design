@@ -1,7 +1,10 @@
 # Construction bundle layout and verification
 
-A construction bundle records one replay-verified complete-construction result
-and embeds the separate design bundle on which that result depends.
+A construction bundle saves one complete-construction result: the examined
+combinations of local junctions, exact materials and processing steps, and their
+outcomes. It embeds the separate design bundle used for that calculation.
+Verification replays the saved inputs and requires the same result and exported
+files.
 
 ```text
 construction-bundle/
@@ -20,9 +23,10 @@ construction-bundle/
 | `authorities/design/hop-bundle.json` | Manifest for the separately compiled design bundle used during construction composition |
 | `authorities/design/<artifact>` | Unchanged design artifacts required for complete design semantic replay |
 
-The root manifest inventories every content artifact except itself. JSON, CSV,
-and SVG projection packets are generated from a verified receipt and stored
-separately from the bundle.
+The root manifest inventories every content artifact except itself. After
+verification, the returned receipt gives read-only access to the checked result.
+JSON, CSV, and SVG projection packets are views generated from that receipt and
+stored separately from the bundle.
 
 ## Verification
 
@@ -40,8 +44,8 @@ It then:
 2. checks the result digest, manifest digest, bundle identity, and embedded
    design-bundle identity;
 3. semantically replays the complete embedded design bundle;
-4. parses the construction result and replay-verifies its foldback and optional
-   basal local authorities;
+4. parses the construction result and replays its foldback and optional basal
+   local authorities—the saved requests and results for those junctions;
 5. recomposes the complete route against those verified authorities and the
    verified design; and
 6. recompiles the expected construction bundle and requires exact artifact and

@@ -1,5 +1,10 @@
 # Symbolic DNA IUPAC payloads
 
+Use a symbolic payload to describe several possible stem sequences without
+listing them. DNA IUPAC letters state the allowed bases at each position: for
+example, `N` allows A/C/G/T and `R` allows A/G. The paired arm is derived from
+those same choices, rather than varied independently.
+
 The supported alphabet is `ACGTRYSWKMBDHVN`. Lowercase and formatting
 whitespace normalize to uppercase; empty input, RNA `U`, punctuation, digits,
 and other symbols fail immediately.
@@ -23,6 +28,7 @@ expanded = hop.expand_payload(record, max_variants=8)
 print(expanded.cardinality)  # 8
 ```
 
-HOP calculates cardinality before allocating variants. If it exceeds
+Here `NR` has 4 × 2 = 8 exact variants. HOP calculates this count, or cardinality,
+before allocating variants. If it exceeds
 `max_variants`, `VariantBudgetExceededError` exposes both values and no partial
 result is returned. Variant IDs and ordering are deterministic.

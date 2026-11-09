@@ -2,8 +2,9 @@
 
 `WorkflowView` (`hop.workflow-view/v1`) defines the molecular content of a
 visualization: ordered panels, strand-aware sequence tracks,
-typed feature spans, and explicit pair calls. Referential and coordinate
-validity are checked before rendering.
+typed feature spans, and explicit pair calls. Before rendering, validation checks
+that referenced sequence tracks exist and that feature spans and pair positions
+lie inside them.
 
 Molecular sequence fields are 5′→3′. Released-product tracks therefore display
 as 5′→3′ regardless of literal strand. A coordinate-aligned precursor-bottom
@@ -57,8 +58,9 @@ rendered view.
 
 ## Local construction projections
 
-Payload-centered foldback and basal discovery also support a narrower family
-of local scientific projections:
+Payload-centered foldback and basal discovery also produce tables and drawings
+of their local search results. These projections retain the source result's
+sequences, measurements and search scope:
 
 - `hop.foldback-feasibility-landscape/v5` records every exact foldback local
   realization from one unpartitioned search;
@@ -151,9 +153,9 @@ were allowed into the search.
 For the basal neighborhood, plot nick displacement `n` in nt against final
 paired gap `e` in bp. Moving the nick need not move the eventual assembly end.
 State the full association obligation `a` separately, along with the locally
-constrained pairing window and its permitted noncanonical pairs. Faceting by
-the pairing cap makes that conditioning visible. A count of end identities is
-a different question from whether any local solution exists.
+constrained pairing window and its permitted noncanonical pairs. Use separate
+panels for each pairing cap so readers can see which cap each result uses. A
+count of end identities is a different question from whether any local solution exists.
 
 For the foldback neighborhood, a direct search-coordinate plot uses total
 added paired arm `A` in bp against cap `C` in nt, with one panel per nick
@@ -162,8 +164,8 @@ displacement `D`. A structural view may instead use the reported post-nick arm
 `A=6,C=4,D=2` has `R=4`; this is a coordinate illustration, not an assertion
 that a particular payload or enzyme supports that point. Holding `A,C` while
 varying `D` preserves the retained path, whereas holding `R,C` while varying
-`D` changes the required total arm. Consume the physical projection for
-realized measurements rather than inferring them from a sketch.
+`D` changes the required total arm. Read achieved measurements from the physical
+projection rather than inferring them from a sketch.
 
 A plotted point aggregates an explicitly named set of requests. A filled point
 means at least one exact member exists among those requests. An open point can
@@ -176,7 +178,7 @@ retain its request, result, and exact
 member identities so the aggregate can be inspected.
 
 If a plot collapses displacement, strands, orientations, or action choices,
-its legend must state the existential meaning: “some searched choice works.”
+its legend must explain what a point establishes: “some searched choice works.”
 A catalog union does not prescribe applying every enzyme together. Neither
 the shape of the feasible region nor the size of the chosen domain establishes
 a global optimum or a complete route. Material preparation and endpoint
@@ -223,7 +225,8 @@ preparation; a projection is never a substitute for its verified bundle.
 
 `hop.complete-construction-summary/v5` is the lossless tabular receipt over one
 verified complete result. Its rows preserve the exact examined Cartesian
-prefix: accepted rows carry materialized route, achieved-geometry,
+prefix—the initial portion of the declared combination order that was evaluated.
+Accepted rows carry materialized route, achieved-geometry,
 final-product, endpoint, and material facts; rejected and truncated rows carry
 evidence only. Counts, failure partitions, material totals, group membership,
 and truncation evidence replay the source result exactly.

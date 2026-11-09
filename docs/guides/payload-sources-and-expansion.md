@@ -4,6 +4,11 @@ Represent each payload as a `PayloadRecord`. Inline iterables,
 FASTA, and CSV all produce the same strict record shape, so input acquisition
 stays separate from design compilation.
 
+Each record supplies one payload arm, the experimental sequence to preserve;
+HOP derives its paired arm during compilation. A record may contain exact
+A/C/G/T bases or IUPAC choices. Loading a record does not expand those choices
+or search for a preparation.
+
 ## Inline records and duplicate policy
 
 ```python
@@ -54,7 +59,8 @@ record = hop.PayloadRecord(
 result = hop.expand_payload(record, max_variants=8)
 ```
 
-HOP computes exact cardinality first. Over-budget requests raise
+For `NR`, `N` permits four bases and `R` permits two, giving eight exact variants.
+HOP computes that count, or cardinality, first. Over-budget requests raise
 `VariantBudgetExceededError(cardinality=..., max_variants=...)` before variant
 records are allocated. Successful variants are exact, deterministically
 ordered, and receive stable `-v0001`-style IDs. Expansion is never implicit in
@@ -66,6 +72,10 @@ ordered, and receive stable `-v0001`-style IDs. Expansion is never implicit in
 `PayloadCollection`, `FoldbackOption` records, `BasalOption` records, and
 explicit `ReleaseOption` records. A no-release case is a named option with
 `request=None`; it is not a hidden fallback.
+
+These axes are sets of choices: payloads, loop-end components, open-end
+components and release requirements. Planning combines one choice from each
+set and checks the resulting design.
 
 ```python
 # Compose the payload records with the chosen design context.

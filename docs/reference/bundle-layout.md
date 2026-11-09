@@ -1,15 +1,20 @@
 # Bundle layout and verification
 
+A design bundle saves the authored request, the design derived from it, and the
+files needed to check that derivation again. Its manifest lists the files and
+their content digests, which identify their exact bytes.
+
 | File | Meaning |
 | --- | --- |
-| `hop-spec.json` | Canonical expanded authored intent |
-| `hop-plan.json` | Fully resolved immutable design derivation and lock |
-| `provenance.json` | Deterministic compiler and reference provenance |
+| `hop-spec.json` | Authored design intent expanded into its canonical form |
+| `hop-plan.json` | Fully resolved immutable design derivation, including the fixed references used to derive it |
+| `provenance.json` | Compiler and reference identities needed to reproduce the derivation |
 | `hairpin-encoding.fasta` | Generated one-dimensional hairpin-encoding sequence |
 | `source-oligo.fasta` | Resolved-junction input when it differs from the hairpin encoding |
 | `hop-bundle.json` | Root manifest and neutral external references |
 
-Explicit component or resolved-junction bundles add these content-addressed artifacts:
+Explicit component or resolved-junction bundles add these artifacts, identified by
+their contents:
 
 | File | Meaning |
 | --- | --- |
@@ -26,8 +31,8 @@ manifest digest, and derived bundle ID. It then validates the spec, plan, and
 provenance schemas, cross-checks their identities and lock references, and
 regenerates encoding/source FASTA from the plan. Finally, it recompiles the stored
 spec and requires the replayed plan, complete artifact set, and manifest to be
-byte-equivalent to the bundle. Digest resealing cannot substitute a different
-valid spec for the authored intent that produced the plan.
+byte-equivalent to the bundle. Changing a stored spec and updating its checksums
+cannot substitute that spec for the authored intent that produced the plan.
 `verify_bundle(path)` runs the same complete verification and returns only the
 root manifest for callers that do not need the typed bundle contents.
 

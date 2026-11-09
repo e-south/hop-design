@@ -16,7 +16,8 @@ historical precursor layout.
 
 ## Decision
 
-Source partitioning is a sibling bounded discovery authority. Its input is:
+Source partitioning is a separate bounded search alongside foldback and basal
+discovery. Its input is:
 
 - an exact duplex source and payload mapping;
 - a caller-owned characterized-enzyme snapshot;

@@ -17,9 +17,9 @@ the one-dimensional sequence, its SHA-256 digest, and the ordered nested
 features that exactly partition it. The bundle artifact is
 `hairpin-encoding.fasta`.
 
-`load_verified_bundle()` is the public persisted-consumer boundary. It returns
-the typed spec, plan, provenance, manifest, and immutable artifacts only after
-content verification and deterministic spec-to-plan replay.
+`load_verified_bundle()` is the public operation for reopening a saved bundle.
+It returns the typed spec, plan, provenance, manifest, and immutable artifacts
+only after content verification and deterministic spec-to-plan replay.
 
 There is no v1 reader, field alias, fallback artifact name, or compatibility
 shim. Alpha consumers must migrate deliberately.

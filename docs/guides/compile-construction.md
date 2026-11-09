@@ -5,6 +5,12 @@ junctions can be completed into the requested hairpin or duplex. A construction
 result includes required material sequences, processing steps, and reasons
 why a proposed combination cannot satisfy the request.
 
+The payload is the supplied stem region to preserve. The foldback junction
+closes its loop end; the basal junction lies at the opposite, open end. Local
+search checks each junction separately. Complete construction combines them
+with the source oligo, adapters and primers and checks the ordered steps through
+the requested product.
+
 This lower-level search and compilation path uses `hop_design.construction`.
 The CLI also supports product-first discovery and comparison execution through
 the linked user guides, and inspects the saved results shown here.
@@ -139,9 +145,11 @@ print(compilation.examined_combinations, compilation.nominal_combinations)
 bundle_path = compilation.write(Path("construction-bundle"))
 ```
 
-The returned `ConstructionCompilation` is an opaque receipt exposing scalar
-identity and exact accounting. Writing is atomic and create-only: an existing
-destination is rejected, and a failed write leaves no committed bundle.
+The returned `ConstructionCompilation` is a receipt with identifiers and counts
+for the examined and accepted combinations. Use its public properties rather
+than constructing or editing its internal records. Writing is atomic and
+create-only: an existing destination is rejected, and a failed write leaves no
+committed bundle.
 
 `status` has exact discovery meaning:
 
@@ -177,11 +185,13 @@ def write_selected_trajectory(*, realization_id: str) -> None:
     )
 ```
 
-The summary preserves every examined composition disposition and lossless
-grouping. A trajectory requires an explicitly supplied accepted realization
-identity; HOP does not choose an exemplar. Foldback and basal feasibility plus
-their retained-overhead frontiers are available through the corresponding projection
-operations. A basal projection requires a construction with a basal result.
+The summary records whether each examined combination was accepted, rejected or
+truncated, and keeps every member of its groups. A **trajectory** shows one accepted
+preparation's materials and molecular states in processing order. Supply its
+accepted realization identity explicitly; HOP does not choose an example.
+Separate foldback and basal projections report local feasibility and
+retained-overhead frontiers: counts and coverage at each retained construction
+length. A basal projection requires a construction with a basal result.
 
 Navigate the same verified result through the CLI:
 

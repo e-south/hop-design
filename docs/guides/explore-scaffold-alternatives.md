@@ -5,6 +5,11 @@ when the obtained preparations do not yet offer the comparison you need. The
 examples assume the public `construction` facade is imported and `stem` contains
 your supplied sequence.
 
+The **scaffold** is the loop, added pairing and construction sequence around
+that stem. There are three distinct actions: filter preparations already found,
+search further within the saved permissions, or explicitly revise those
+permissions. The examples below show when to use the latter two.
+
 ## Find different scaffold options
 
 Ask for contrasts when another preparation with the same geometry would not help:

@@ -1,10 +1,15 @@
 # Enumerate exact foldback sequence populations
 
-For a fixed payload, ask which local foldback configurations satisfy the modeled
-cleavage, release, pairing, and joining constraints. The complementary arm is
-derived. The independent sequence has A arm bases followed by C cap bases;
-retained non-payload length is H = 2A + C. Displacement D is measured from the
-payload boundary, and the post-nick self-paired arm has R = A − D base pairs.
+The **foldback region** closes the hairpin's loop end. For a fixed payload, ask
+which local sequences satisfy the modeled cleavage, release, pairing and joining
+constraints. HOP derives the complementary arm from the chosen sequence.
+
+The independent word contains **A** arm bases followed by **C** unpaired cap
+(loop) bases. The retained non-payload path includes both paired arms and the cap, so
+its length is **H = 2A + C** nucleotides. **D** is the nick displacement from the
+payload boundary in nucleotides. The arm that pairs with itself after nicking has
+**R = A − D** base pairs. These quantities describe different parts of the same
+geometry; changing one can change the others.
 
 Use [the synthetic request](../../examples/foldback-sequence-space.yaml) to search
 both nick strands, D = 0–3, and every supported geometry through H = 10 nt:
@@ -90,9 +95,10 @@ cardinality may exceed the retained count; that difference is material
 flexibility, not additional retained-hairpin diversity. Empty and excluded
 programs remain in the result. Neither set proves a complete preparation.
 
-`sequences` is a canonical decision diagram, not a sample or an independence
-approximation. Each decision has A/C/G/T branches; shared downstream decisions
-compactly retain correlations. The program sets and their union can recover
+`sequences` stores the exact set compactly as a canonical decision diagram.
+It preserves which base choices can occur together, rather than estimating the
+set from independent positional frequencies. Each decision has A/C/G/T
+branches; shared downstream decisions compactly retain correlations. The program sets and their union can recover
 every admitted member. A JSON reader can inspect the schema without importing
 internal HOP models.
 

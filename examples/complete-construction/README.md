@@ -11,9 +11,9 @@ doc_type: tutorial
 
 # Obtain a preparation and inspect an end edit
 
-This example turns a public 34-base loxP arm into an exact preparation with
-materials and a replayable route. It uses characterized enzyme actions,
-explicitly synthetic handles, and finite searches.
+This example turns a public 34-base loxP sequence into an exact preparation:
+materials and a route that HOP can reproduce from its saved inputs. It uses
+characterized enzyme actions, explicitly synthetic handles, and finite searches.
 
 From a matching source checkout or unpacked source distribution:
 
@@ -63,8 +63,9 @@ they are never overwritten. This local propagation is conditional on the
 declared strand/material frame, while complete-route verification always checks
 both required ends.
 
-The searches stop after one local witness and continue exactly one selected
-combination. Coverage is limited to that witness and selected combination.
+The searches stop after one local witness, an accepted exact junction solution,
+and continue exactly one selected combination. Coverage is limited to that
+witness and selected combination.
 A changed payload, enzyme or geometry needs a new search.
 An absent witness produces a scoped `CASE/report.md` and summary, preserving
 the exact local result. Stopped searches remain unresolved; multiple witnesses
@@ -75,8 +76,8 @@ hairpin request still runs. Malformed input remains an error.
 The released-insert example declares 14-nt primer-binding lengths. The separate
 hairpin endpoint uses a 10-nt forward binding span because its retained basal
 component provides only that much non-payload sequence. The two preparations
-have different intermediates. The request leaves source-fragment removal
-unbound; the caller supplies inventory, enzyme reaction prerequisites and
+have different intermediates. The request does not prescribe removal of discarded
+source fragments; the caller supplies inventory, enzyme reaction prerequisites and
 receiving DNA.
 
 ## Source definitions

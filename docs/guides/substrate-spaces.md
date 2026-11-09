@@ -4,6 +4,12 @@ Use this route when the scientific question concerns a finite set of paired
 payload variants in one fixed hairpin context. You author one payload arm. HOP
 derives the opposite arm by reverse complement.
 
+A **substrate space** states which bases may vary and which must stay fixed.
+Each exact assignment gives one paired payload, with its two arms linked by
+complementarity. This workflow compiles their sequence anatomy in the fixed
+context; use [design discovery](discover-designs.md) to search how to construct
+a requested product.
+
 For example, keep the two recognition arms of a public loxP substrate fixed
 while varying its eight-base spacer. A constrained comparison can preserve
 each spacer position's purine (`R`, A/G) or pyrimidine (`Y`, C/T) class:
@@ -47,10 +53,10 @@ uv run hop-design space compile examples/loxp-spacer-base-classes.yaml \
 uv run hop-design verify build/loxp-spacer-base-classes/bundle
 ```
 
-Preview validates the specification, reports fixed and variable positions,
-reports each actual IUPAC domain, computes exact cardinality, and writes
-nothing. This release has a tested release envelope of 256 exact designs. A
-larger valid space is `blocked`: preview still reports its symbolic cardinality,
+Preview validates the specification, reports fixed and variable positions and
+their allowed bases, counts the exact assignments (**cardinality**), and writes
+nothing. This release supports exhaustive compilation of up to 256 exact designs.
+A larger valid space is `blocked`: preview still reports its symbolic cardinality,
 no members are allocated, and no partial set is published.
 
 Compile expands variable positions from 5-prime to 3-prime in `A`, `C`, `G`,

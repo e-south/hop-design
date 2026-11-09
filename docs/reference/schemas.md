@@ -1,5 +1,11 @@
 # Current schema identifiers
 
+Use this reference to identify the document an operation accepts or returns.
+Authored schemas describe inputs you supply; result and bundle schemas describe
+records HOP derives. Projection schemas describe tables, drawings and reports
+generated from those records. The exact schema identifier determines which
+reader handles the document.
+
 ## Molecular comparisons
 
 `hop.molecular-distance/v1` optionally declares regional edit treatment, end-word
@@ -24,7 +30,8 @@ producer and local/release evaluation limits. `hop.interface-survey-evaluation/v
 records each continuation and next address. Derived operation outputs are
 `hop.interface-survey-progress/v1`, `hop.interface-survey-inspection/v1`, and
 `hop.interface-survey-verification/v1`. Only the verification operation replays
-the whole recorded corpus; index inspection is not molecular evidence admission.
+every saved evaluation; index inspection checks saved records without repeating
+their molecular calculations.
 
 `hop.interface-survey-query/v1` accepts up to 128 distinct registered parameter
 predicates, using the same value/range validation as conditional exploration.
@@ -294,10 +301,10 @@ operations.
 Breaking-history rationale belongs in the [decision index](../architecture/decisions/README.md),
 not in the active schema contract.
 
-The listed construction schemas form one fail-closed cut and accept no retired
-source, request, result, or bundle version. The named-method v1 material
-schemas remain a separate exact-method contract and retain their exact oligo
-fields.
+Current construction readers accept only the listed active source, request,
+result and bundle versions. They reject retired versions. The
+named-method v1 material schemas remain a separate exact-method contract and
+retain their exact oligo fields.
 
 The current development cut uses construction-space-result v9 and complete-route
 implementation 11. Released inserts carry `release_evidence` with a source-anchored

@@ -4,6 +4,14 @@ For commands from a stem and desired ends to exact oligos, use the
 [sticky-end construction guide](../guides/survey-interfaces.md).
 This reference explains which choices a survey permits and how execution explores them.
 
+A survey starts with one exact stem and a finite set of permitted end pairs,
+junction geometries, methods and material choices. It saves evaluated
+combinations and any complete preparations they produce in a checkpoint.
+Here, a **domain** is the set of allowed choices, a **population** is a set of
+sequence assignments, and a **witness** is one exact solution supporting the
+reported claim. A local witness supports its junction; a complete witness also
+passes the whole construction.
+
 ## Understand what is bounded
 
 Length caps define acceptable scaffold additions; they do not make length the
@@ -26,7 +34,8 @@ does not establish that every permitted geometry/method combination was examined
 The current survey reports interface coverage and retains exact evaluations. It
 does not yet provide a compact, complete relation over all joint parameter choices.
 
-Both neighborhoods use compact local sequence populations. Basal populations
+Both neighborhoods store local sequence populations compactly rather than listing
+every sequence separately. Basal populations
 retain source/adapter pairing permissions, noncanonical-pair caps and source-site
 constraints jointly. The executor selects admitted members directly and verifies
 their exact local and complete constructions. Upstream-context addressing and
@@ -137,8 +146,9 @@ each such group and local pair, the executor seeks one complete preparation.
 Exact unpaired hairpin sequence, primers and materials may differ. Use `all_words`
 when those alternative sequences themselves are the subject of the search.
 
-Grouping uses an explicit source, association and release coordinate frame.
-Where that frame cannot be established, every context position stays protected.
+Grouping uses explicit coordinates that locate source bases, adapter contacts
+and release cuts relative to one another. Where that coordinate frame cannot be
+established, every context position stays protected.
 Correlated sequence permissions remain correlated. Finding one witness ends
 only that group's completion search; it does not remove other local sequences,
 geometry or methods. Failing one handle does not exclude the group. Failed
@@ -188,8 +198,9 @@ subsequent atlas capture.
 
 For the translated forward-left/reverse-right, five-prime release frame, the
 executor first computes a compact relation between **both** end words for each
-basal geometry and single permitted release method. Source/adapter pairing,
-recognition windows, copying and the noncanonical-pair budget constrain that
+basal geometry and single permitted release method. This relation records which
+pairs of end words can satisfy the necessary sequence constraints together.
+Source/adapter pairing, recognition windows, copying and the noncanonical-pair budget constrain that
 relation together. The same relation answers many exact end requests without
 enumerating every end pair or every auxiliary handle word. Foldback geometry is
 absent from this necessary end relation; full construction still tests it.
@@ -244,9 +255,9 @@ sequence possibilities. Fixed adapters, explicit distal pairing policies and
 unproved coordinate frames retain ordinary evaluation.
 
 The same constraints first restrict the whole joint basal population, before
-selecting individual source/adapter pairs. Handle bases are existential choices
-within the entire authored context envelope: a short unsuccessful completion
-does not eliminate a scaffold that permits a longer one. Correlated source
+selecting individual source/adapter pairs. The search asks whether any permitted
+handle-base assignment works across the entire context domain. A short unsuccessful
+completion does not eliminate a scaffold that permits a longer one. Correlated source
 admission, contact classes and the noncanonical-pair limit remain enforced.
 Surviving members keep their original exact sequence addresses.
 

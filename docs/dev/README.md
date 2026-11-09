@@ -3,7 +3,8 @@
 - [Construction module map](construction-map.md) locates request compilation,
   search, comparison, verification and presentation, with focused test seams.
 - [Measure performance](performance.md) separates search, verification and display
-  costs, with disposable benchmark outputs and bounded proof reuse.
+  costs, with disposable benchmark outputs and verification results reused only
+  within their declared scope.
 - [Verification design](plans/verification-cost.md) records the separation of
   source tests, routine installation checks and release qualification. The
   performance guide above defines the current gate selection.

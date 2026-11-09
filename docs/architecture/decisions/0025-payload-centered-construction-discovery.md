@@ -10,7 +10,7 @@ Updated by [ADR 0028](0028-separate-foldback-boundary-from-nick-position.md).
 
 HOP already compiles exact hairpin designs, performs bounded component
 discovery, resolves one named linear-source method, and verifies separate
-design and method bundles. Those competencies use trustworthy molecular
+design and method bundles. Those operations use the same checked molecular
 primitives, but they do not yet share one construction-discovery contract.
 Several route-local coordinate systems and historical component conventions
 therefore risk making the source encoding, an enzyme arrangement, or one
@@ -66,9 +66,9 @@ geometry, required constraints, design preferences, a caller-provisioned
 enzyme catalog, an explicit relaxation policy, and finite enumeration policy.
 
 A result preserves the requested and achieved geometry, relaxation shell,
-exact realizations, rejections, completion evidence, and reversible scientific
-projections. Exact targets are examined before enabled discrete relaxation
-shells. Reaching a bound before exhausting the declared domain is
+exact realizations, rejections, completion evidence, and views that retain links
+to every underlying realization. Exact targets are examined before enabled
+discrete relaxation shells. Reaching a bound before exhausting the declared domain is
 `truncated`, never `infeasible`.
 
 This advanced contract belongs behind the specialist discovery and method

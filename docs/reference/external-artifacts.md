@@ -3,8 +3,9 @@
 ## Question answered and meaning
 
 Invoke a selected HOP executable with explicit file arguments and consume its
-JSON reports and published artifact directories. This interface avoids importing
-HOP's Python models into the caller's environment. HOP derives and replays the
+JSON reports and published artifact directories. The reports expose results,
+counts and artifact paths to a caller in another environment without importing
+HOP's Python models there. HOP derives and replays the
 molecular records; the caller supplies the scientific question, acceptance rules,
 and evidence records.
 
@@ -87,11 +88,12 @@ JSON/SVG projections; the caller's reason changes the report prose only.
 
 Reports contain ordinary JSON. Design,
 local-result, partition, method, and construction reports carry their existing
-canonical authorities and SHA-256 byte bindings. Explicit metadata exposes
+canonical authorities—the saved requests and derived records used for replay—and
+SHA-256 digests binding them to exact bytes. Explicit metadata exposes
 producer-computed dispositions, counts, and identifiers; the caller need not
 duplicate molecular derivation to inspect them. Publication uses the existing
 atomic writers and does not add report files to, or reseal, a bundle.
-Construction reports serialize the admitted in-memory snapshot, so later file
+Construction reports serialize the snapshot already verified in memory, so later file
 replacement cannot mix unverified contents with the verified identities.
 Selected constructions, route references, projections, and derived source
 partitions publish outside their verified input bundle through an opened parent

@@ -1,7 +1,10 @@
 # Share a preparation collection
 
 A preparation collection (an `AtlasEdition` in the API) saves complete
-preparations, exact materials and producer identity from a discovery. Keep the
+preparations, exact materials and producer identity from a discovery. Each
+preparation specifies input oligos and an ordered route to its product; several
+preparations may make the same exact molecule. The **producer** is the HOP build
+and Python environment that generated and checked those records. Keep the
 original drawings or draw selected molecules on demand. Move the directory to
 share and inspect it without rerunning the search.
 
@@ -30,7 +33,8 @@ capture a filtered set, or repeat `--identity ID` to name particular preparation
 The destination must be new and outside the discovery directory. The edition
 records how many preparations it captures and how many matched in its source.
 
-Ordinary capture uses the producer that can admit the discovery. Once captured,
+Ordinary capture uses the original compatible producer to verify and read the
+discovery. Once captured,
 an edition can be viewed independently of changes to that producer. A changed
 renderer does not make an old live checkpoint compatible with a new compiler.
 

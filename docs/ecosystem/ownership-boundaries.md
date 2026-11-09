@@ -22,7 +22,7 @@ human design | scripts | enumeration | campaign optimization
 | HOP | Hairpin anatomy, bounded discovery, design derivation, named molecular transformations, destination-neutral products, digests, and verification. |
 | Campaign or application caller | Candidate objectives, selection, procurement policy, and application interpretation. |
 | Composition service | Generic placement of one immutable annotated object into a larger construct and destination-specific assembly checks. |
-| Structure-assessment service | Advisory assessment of an exact digest-addressed molecular state. |
+| Structure-assessment service | Advisory assessment of an exact molecular state identified by its content digest. |
 | Study and execution system | Biological identity, protocol conditions, controls, runs, observations, and interpretation. |
 
 HOP derives the hairpin's internal features. A composition service places the

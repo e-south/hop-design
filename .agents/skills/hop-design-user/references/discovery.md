@@ -6,7 +6,7 @@ domains, catalogs, geometry, and bounds.
 Read [the discovery overview](../../../../docs/discovery/overview.md) and import
 operations and contracts from `hop_design.discovery`.
 
-- Construct the smallest strict request that answers the competency question.
+- Construct the smallest strict request that answers the user's question.
 - Always provide hard node and hit limits.
 - Report candidate-space size, nodes examined, hits, fired bounds, and status.
 - Preserve `complete`, `infeasible`, and `truncated`; “no hits” is not a status.

@@ -1,8 +1,10 @@
 # Linear-source hairpin-PCR materials
 
 `linear-source-multinick-size-selection-hairpin-pcr@1` consumes six
-vendor-neutral sequence materials. The material resolver checks terminal
-relationships before the method compiler derives physical states.
+vendor-neutral sequence materials: the source oligo, its two PCR primers, a
+ligation adapter and the two hairpin-PCR primers. The material resolver checks
+where each primer binds at the source or adapter termini before the method
+compiler derives physical states.
 
 ```python
 # Resolve the method with its explicit oligos and terminal chemistry.

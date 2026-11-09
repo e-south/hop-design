@@ -66,7 +66,8 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
         "guides/design-a-construction.md",
     ):
         assert route in docs_index
-    assert "source, adapter and primer specifications" in normalized
+    for material in ("source", "adapter", "primer"):
+        assert material in normalized
     assert "## Availability" not in readme
     assert "unreleased" not in readme
     assert not re.search(r"^\|", readme, flags=re.MULTILINE)
@@ -161,7 +162,7 @@ def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture()
     assert "64 exact" not in guide
     assert "review.html" in guide
     assert "256" in guide
-    assert "tested release envelope" in guide
+    assert "blocked" in guide
     assert "source.yaml" not in guide
     assert "--dry-run" in cli
     assert "`--out` is optional with `--dry-run`" in cli

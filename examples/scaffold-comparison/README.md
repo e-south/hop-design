@@ -1,8 +1,9 @@
 # Molecular comparison specifications
 
 These synthetic public inputs show five user jobs. Each includes a stem,
-permitted preparation methods and bounds. Required members are separate from
-those search permissions. No local construction identities are authored.
+permitted preparation methods and bounds. Each brief also names the members
+required in the comparison, separately from the choices search may examine.
+HOP derives the local construction identities rather than taking them as inputs.
 
 | Brief | Comparison stage and purpose | Expected bounded result |
 | --- | --- | --- |
@@ -30,13 +31,15 @@ For one reproducible command including that explicit selection, use
 `run.py --case crossed --set set-0001 --baseline loop3-open17 --out NEW_DIR`.
 The corresponding baselines for `methods` and `hairpin` are `bsai` and `loop3`.
 Use `loop3-bsai` for `grouped` and `aaa-bsai` for `loop-sequences`.
-Outputs are create-only. Keep the selected directory intact when relocating it;
-`set.json` retrieves ordinary named preparations and consolidated oligos.
+Outputs require a new directory and never overwrite an existing one. Keep the
+selected directory intact when relocating it; `set.json` retrieves ordinary named
+preparations and consolidated oligos.
 
 To test the importance of stage, copy `crossed.json`, change only
 `discovery.comparison_stage` to `endpoint`, then assess the original discovery
-at `comparison/discovery` with `construction assess-comparison`. All four member
-slots have complete options, but no four-distinct-insert set exists in that pool.
+at `comparison/discovery` with `construction assess-comparison`. Each of the four
+requested members has complete preparations, but those preparations do not
+provide four distinct released inserts in that pool.
 
 Geometry counts measure recorded pairing positions at the comparison stage.
 A hairpin used as an insert intermediate and an explicit hairpin endpoint are

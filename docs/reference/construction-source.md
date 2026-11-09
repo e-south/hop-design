@@ -11,10 +11,13 @@ Construction compilation requires two independent inputs:
    `hop.construction-source/v8`; and
 2. a verified design-bundle directory produced by HOP.
 
-The construction source declares the foldback request, an optional basal
-request, the requested endpoint, how the source ssDNA and its preparation
-primers are resolved, endpoint-dependent auxiliary materials, whole-route
-constraints, and finite enumeration bounds. Its shape is:
+The construction source tells HOP which junctions and endpoint to build, which
+materials to derive or reuse, and how many combinations to examine. It declares
+the foldback request, an optional basal request, how the source ssDNA and its
+preparation primers are resolved, endpoint-dependent auxiliary materials,
+whole-route constraints, and finite enumeration bounds. The separate verified
+design bundle supplies the exact hairpin design used in composition. The source
+file has this shape:
 
 ```yaml
 schema: hop.construction-source/v8
@@ -88,8 +91,9 @@ Basal discovery resolves the payload-proximal nick, the exact proximal adapter
 pairs, any position-level source and adapter
 base domains, the minimum full annealing extent, mismatch warnings, retained
 overhead, and—for a clone-ready endpoint—the Type IIS action required later.
-The future release is an obligation, not a sticky end asserted in the current
-adapter state. Its `cohesive_end_sequence` may pin exact DNA or declare an
+The future release specifies what later cleavage must produce. The current
+adapter state does not yet have that sticky end. Its `cohesive_end_sequence` may
+pin exact DNA or declare an
 [IUPAC design domain](../discovery/overview.md#search-a-basal-cohesive-end-or-pin-it-to-a-destination).
 Complete composition resolves the remaining annealing bases and full adapter
 and checks endpoint obligations against the realized source scaffold and exact
@@ -207,7 +211,8 @@ and an operational maximum of 1,000 nt. A source policy with `mode: derive`
 instead evaluates the local source without an added upstream context.
 
 Composition traverses foldback, basal, then upstream assignments. Its nominal
-denominator includes all three domains. The existing
+denominator counts combinations across all three domains, including those not
+yet examined. The existing
 `max_combinations` and `max_realizations` bounds stop this traversal; a stopped
 prefix is truncated even if every examined sequence failed. Accepted alternatives
 remain distinct within geometry groups. Summary JSON and CSV bind each examined

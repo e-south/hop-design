@@ -1,6 +1,8 @@
 # Molecular parameter and teaching-glyph coverage
 
-The registry in `models/construction/variants/parameters.py` defines parameter names.
+The registry in `models/construction/variants/parameters.py` defines parameter names
+and how to interpret each measurement. It is the shared lookup used by the plot,
+molecular drawings and exported parameter guide.
 Its `ParameterDefinition` contract records molecular stage, units, role, drawing
 frame, representation, boundaries and dependencies. `canonical_key` identifies a
 single measurement across equivalent keys. `design_role` separates product

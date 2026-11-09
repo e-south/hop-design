@@ -24,7 +24,8 @@ exact hairpin designs compiled from one bounded substrate-space specification.
 ```
 
 The verified design set lives in `bundle/`. `spec.json` contains the normalized
-ordered per-position DNA domains and resolved versioned hairpin defaults reference.
+DNA bases permitted at each position, in order, and the resolved versioned
+hairpin defaults reference.
 It excludes display names, the optional question, segment labels, and
 equivalent segment boundaries. `manifest.json` uses
 `hop.hairpin-design-set/v2` and records exact cardinality, complete coverage,
@@ -33,7 +34,7 @@ identities, final-encoding digests, the closed claim-status matrix, and a
 complete recursive artifact inventory. Each unique member directory is an
 unchanged verified `HopBundle`.
 
-The SVG, CSV, FASTA, and self-contained HTML files are regenerable
+The SVG, CSV, FASTA, and self-contained HTML files are regenerable views, called
 projections. The substrate-space projection shows the authored rule, derived
 pairing, exact cardinality, selected fixed context, and one expanded member.
 The design-set diagnostic includes every assignment in deterministic non-ranked order.

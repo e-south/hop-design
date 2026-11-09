@@ -3,9 +3,9 @@
 ## Discover geometry before sequence
 
 `search_released_foldback_geometries(catalog=..., request=..., limits=...)`
-crosses bounded nick boundaries with caller nicking agents, release agents, and
-release orientations. The request distinguishes downstream recognition-site
-placement from complete two-strand separation.
+tries permitted combinations of nick boundaries, caller nicking agents, release
+agents and release orientations under the supplied bounds. The request
+distinguishes downstream recognition-site placement from complete two-strand separation.
 
 Each feasibility row records oriented footprints, strand-specific nick and
 cuts, active-product span, active-oriented nick boundary, minimum precursor
@@ -22,7 +22,8 @@ preferences separately.
 
 `search_released_foldback_precursors(request, limits=...)` intersects one
 selected hit with one complete caller-authored IUPAC precursor template.
-Correlated base pairs are one choice axis rather than two independent bases.
+Correlated base pairs are chosen together, so the search cannot choose one base
+without respecting the allowed partner on the other arm.
 An empty intersection returns `infeasible` with `caller_domain_conflict`.
 
 Each exact candidate contains its precursor, digest, geometry identity, content

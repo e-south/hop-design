@@ -1,7 +1,9 @@
 # Molecular comparison
 
-A comparison describes proximity between recorded preparations. The supplied
-stem and endpoint define the comparison scope.
+A molecular comparison assigns a dissimilarity to recorded preparations using
+their geometry, regional sequences and receiving ends. Smaller distances mean
+closer agreement under the saved comparison policy. The supplied stem and
+endpoint define which preparations are being compared.
 
 | Feature type | Contents | Comparison |
 | --- | --- | --- |
@@ -9,10 +11,14 @@ stem and endpoint define the comparison scope.
 | Regional sequence | Ordered loop bases and oriented `(base, paired base, contact class)` tokens; applicable retained tail bases | The declared sequence dissimilarity |
 | Receiving interface | Exact words on their protruding strands and recorded polarity | Declared word dissimilarity; nominal polarity mismatch |
 
-The complete descriptor remains available even when a coordinate is constant.
-Only varying coordinates contribute to distance. A contact integer is a lossless
-category code: subtracting two codes has no molecular meaning. Geometry and
-sequence regions have explicit boundaries in the molecular projection.
+The **descriptor** is the record of molecular features used in this comparison;
+a **coordinate** is one measured count or encoded sequence/contact feature in
+that record. The complete descriptor remains available even when a coordinate
+is constant.
+Only varying coordinates contribute to distance. An integer representing a
+contact identifies its category without losing information: subtracting two
+codes has no molecular meaning. Geometry and sequence regions have explicit
+boundaries in the molecular projection.
 
 ## Saved policy
 

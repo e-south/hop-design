@@ -4,6 +4,11 @@ Start with the stem you need and the product you want. HOP searches the permitte
 construction flanks and returns complete preparations. Sticky ends are optional:
 you can explore what is obtainable before deciding which ends suit your next step.
 
+The **supplied stem**, or payload, is the paired region to preserve. The
+**scaffold** is the loop, added pairing and other construction sequence around it.
+A **preparation** combines exact materials with the ordered steps, or **route**,
+that produce the requested molecule. Several preparations can make the same product.
+
 [Install HOP](install.md), then run the examples below. Each output path must
 be new so an earlier result is never overwritten.
 
@@ -27,8 +32,9 @@ hop-design design discover \
   --out designs --format text
 ```
 
-The default context supplies enzyme, geometry and material permissions. You can
-inspect these before adding optional constraints. Read
+The default **context** declares the available enzymes, allowed lengths and
+positions, and which source, adapter and primer bases may be designed or reused.
+You can inspect these before adding optional constraints. Read
 `designs/intent/report.md` for the context and `designs/intent/request.json` for
 its effective settings. To inspect those settings before searching, use the same
 flags with `design resolve --out intent`.
@@ -43,7 +49,8 @@ browser, search coverage and permissions are available beneath the opening answe
 
 ## Inspect the linked figures
 
-The inspector shows a hairpin above its parameter plot. Shaded connectors link
+The inspector shows a hairpin above its parameter plot. Each path connects the
+values for one complete preparation. Shaded connectors link
 loop size, added pairing, basal contacts, tails and later insert ends to their
 axes. Hover to compare preparations and pin one to inspect its route. Fixed
 requirements remain visible beside the plot.
@@ -86,8 +93,8 @@ For ordering or importing oligos, retain `sequence_5prime`, `five_prime_end` and
 `three_prime_end` together. One CSV row can serve multiple roles. `oligos.fasta`
 contains sequences only; terminal chemistry remains in `oligos.csv`.
 
-The selected route reports added DNA in the requested product, distinct oligo
-orders, shared roles and terminal modifications. These facts also appear beside
+The selected route's report lists added DNA in the requested product, distinct
+oligo orders, shared roles and terminal modifications. These facts also appear beside
 the molecule in the browser and in `molecular-route/construction-cost.json`.
 Added-region coordinates locate the retained sequence on the endpoint. Local
 flank lengths are not summed to estimate whole-product overhead.
@@ -212,8 +219,9 @@ Specified words remain hard constraints when no preparation is found.
 ### When no preparation is recorded
 
 An empty answer can mean unfinished search, a filter with no recorded match, or
-exclusion within the saved context. Read its reported scope before choosing the
-next action.
+exclusion within the saved context. **Filtering** inspects already recorded
+preparations; **discovery** evaluates new possibilities under the request's
+permissions. Read the reported scope before choosing the next action.
 
 - **No recorded match:** refine a filter to inspect other recorded choices. If
   relevant search remains, evaluate another batch explicitly.

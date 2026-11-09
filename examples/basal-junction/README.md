@@ -15,6 +15,8 @@ doc_type: tutorial
 Find whether a nickase site and a later Type IIS site can share the sequence
 beside an unchanged substrate. This example uses a public 34-bp loxP payload,
 Nt.BsmAI, and BbsI.
+A nickase cuts one strand; the Type IIS enzyme cuts both strands at defined
+offsets from its recognition site.
 
 From the repository root:
 
@@ -46,6 +48,8 @@ Type IIS cleavage are separate operations. A local solution records a 15-nt
 adapter-annealing requirement. Complete that association, the primer regions,
 and the remaining route through the
 [construction guide](../../docs/guides/compile-construction.md).
+The local result is an exact junction solution; the complete construction
+resolves the remaining materials and checks the combined route.
 
 ## Source definitions
 

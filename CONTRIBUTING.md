@@ -33,6 +33,10 @@ Add a failing test before changing behavior. Public schema or ownership changes
 also require an ADR and updated schema/reference documentation. Generated bundle
 digests must change only when the serialized contract changes intentionally.
 
+For documentation edits, follow the [writing guide](docs/dev/documentation-contract.md).
+Preserve commands, field meanings and examples, then check links and changed
+workflows. Use prose review for clarity rather than tests that require exact sentences.
+
 ## Module documentation
 
 Start new Python modules with a purpose docstring. Include the project, repository

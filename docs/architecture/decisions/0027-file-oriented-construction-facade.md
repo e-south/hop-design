@@ -17,7 +17,7 @@ It does not select a route or derive additional molecular state. See
 
 Payload-centered construction discovery now produces replay-verified local
 results, complete route realizations, portable bundles, and molecular
-projections. Those competencies were reachable only through internal model and
+projections. Those operations were reachable only through internal model and
 design modules. An external caller would have needed to construct embedded
 design authorities and connect local result identifiers by hand.
 
@@ -36,7 +36,9 @@ neighborhoods, derives the source ssDNA and source-preparation primers under
 their declared policies, produces the exact source duplex, optionally binds
 one selected replay-verified source partition, resolves PCR endpoint
 auxiliaries under their declared policies, composes the route, and returns an
-opaque `ConstructionCompilation` receipt.
+opaque `ConstructionCompilation` receipt. The receipt exposes supported
+inspection and writing operations while keeping internal model constructors
+private.
 
 The source document owns local requests, source-preparation policy,
 endpoint-dependent auxiliary-resolution policy, oriented endpoint release,
@@ -156,8 +158,8 @@ path. It does not mutate, subset, reseal, or supersede the complete result, and
 it cannot be reopened without the verified result that establishes membership.
 
 Standalone local-neighborhood discovery returns one replay-verified family
-receipt. It establishes only the declared foldback or basal neighborhood and
-cannot be interpreted as a complete-route authority.
+receipt. It verifies only the declared foldback or basal neighborhood. A complete
+route still requires composition and its own verification.
 
 Exhaustive foldback population discovery may return compact exact sequence sets
 through `FoldbackSequenceSpace`. Its strict file request declares finite geometry
@@ -234,10 +236,10 @@ Their public operations are `prepare_construction_family`,
 
 
 The opaque `ConstructionFamilyReport` and `project_construction_family_report`
-operation admit a saved finite family and optional exact set selection. Admission
-replays current molecular verification and checks request/result correspondence;
-it is separate from pure report rendering. The report uses existing portraits,
-trajectory lineage and construction comparisons. Regional display alignment is
+operation load a saved finite family and optional exact set selection. Before
+rendering, they replay molecular verification and check that results match their
+requests. These checks are separate from report layout. The report uses existing
+portraits, trajectory lineage and construction comparisons. Regional display alignment is
 bounded and discloses ambiguity; it does not become molecular authority. Export
 owns static SVG page composition and deterministic vector PDF encoding. ReportLab
 and svglib are runtime rendering dependencies, with a bundled font and renderer

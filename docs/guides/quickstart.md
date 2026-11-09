@@ -1,8 +1,10 @@
 # Compile payload anatomy
 
-For the ssDNA-to-hairpin service, start with the
-[construction journey](design-a-construction.md). This tutorial compiles sequence
-anatomy.
+This tutorial turns a supplied payload into a hairpin sequence and feature map.
+The payload is the stem region you want to preserve: author one arm, and HOP
+derives its complementary arm. Here, **compilation** derives that sequence
+anatomy. To find the materials and processing steps that make it from ssDNA,
+start with the [construction journey](design-a-construction.md).
 
 [Install HOP](install.md), then compile one exact payload. The Python example uses a project environment. Examples that read files from
 `examples/` use a source checkout.

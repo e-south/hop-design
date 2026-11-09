@@ -1,5 +1,10 @@
 # Component evaluation and released-state projection
 
+These operations inspect supplied junctions and cuts. Evaluators report the
+pairing and geometry of one input; searches enumerate permitted alternatives
+under explicit limits. A released-state projection derives the strands that
+remain after the supplied cuts.
+
 ## Foldback junction
 
 `evaluate_foldback(FoldbackEvaluationRequest)` derives the canonical junction,
@@ -21,15 +26,15 @@ S3/S2/S1/S0 pairs as `watson_crick`, `gt_wobble`, or `hard_mismatch`. The
 caller-supplied `BasalConstraintProfile` separately returns `active`, `reserve`,
 or `reject`. Reserve acceptance must be explicit.
 
-`pair_support_index` and `pair_disruption_index` use the dimensionless
-`pair-count-weighted@1` heuristic.
+`pair_support_index` and `pair_disruption_index` summarize the observed pairs
+using the dimensionless `pair-count-weighted@1` heuristic.
 
 ## Paired stem extension
 
 `evaluate_paired_stem_extension(PairedStemExtensionRequest)` observes every
-position in two equal-length literal arms. It represents variable non-payload
-stem context without enlarging the four-position terminal basal profile or
-making the paired payload independently authored.
+position in two equal-length literal arms. Use it to describe added pairing
+outside the payload. This keeps the four-position terminal basal profile at its
+defined size and leaves the paired payload derived from the authored arm.
 
 ## Released-strand projection
 

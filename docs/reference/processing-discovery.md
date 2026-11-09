@@ -2,15 +2,18 @@
 
 All contracts and operations on this page come from `hop_design.discovery`.
 `ProcessingCatalog` requires unique IDs across caller-supplied nicking and
-release agents. Exact scanners resolve oriented events; symbolic motif
-classification reports `guaranteed`, `possible`, or `absent` without inventing
-a concrete cut.
+release agents. These agents describe the recognition sequence, affected strands
+and cut offsets of each permitted enzyme. Exact scanners locate oriented sites
+and cuts in literal sequences. Symbolic motif classification reports
+`guaranteed`, `possible`, or `absent` without inventing a concrete cut.
 
 ## Nick placement and precursor sequence
 
-`search_nicking_placements(catalog=..., target=..., limits=...)` tests bounded
+`search_nicking_placements(catalog=..., target=..., limits=...)` tests permitted
 agent orientations against one requested boundary, strand, paired-tract length,
-and available turn. It returns **sequence-and-cut compatible** geometry.
+and available turn, under the supplied search bounds. It returns
+**sequence-and-cut compatible** geometry: placements where recognition and cut
+requirements can both fit.
 Flank requirements come from the request; HOP applies no universal
 minimum-flank rule.
 

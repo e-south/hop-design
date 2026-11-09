@@ -23,7 +23,7 @@ exact payload, foldback junction, basal junction, fixed derivation references,
 and caller-owned design id. The corresponding plan derivation is non-temporal
 and route-neutral. Local result ids, realization ids, search bounds, relaxation
 radii, enzymes, and reaction programs remain construction provenance and do not
-enter design authority.
+enter the design specification or its identity.
 
 The schema accepts arbitrary equal nonzero basal-arm lengths. These describe
 paired core geometry; [ADR 0053](0053-separate-hairpin-core-and-insert-release.md)
@@ -34,6 +34,8 @@ component-assessment question.
 Direct single-stranded endpoints are not accepted by this operation until a
 caller can supply an exact basal component independently of a PCR-local basal
 receipt. No empty basal junction or hidden default is invented.
+[ADR 0038](0038-bounded-request-execution.md) later adds that explicit component
+for direct-hairpin execution.
 
 ## Consequences
 

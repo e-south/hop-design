@@ -21,10 +21,10 @@ artifact is written, publish atomically, and never replace an existing path.
 Loaders verify content integrity and then recompile the stored request. The
 replayed plan, artifact bytes, and manifest must match.
 
-`HopBundle` and `MethodBundle` are sibling consumer boundaries. A shared
-hairpin-encoding digest is a typed join, not shared identity. Destination
-vector, orientation, compatible assembly ends, and experimental evidence remain
-downstream.
+`HopBundle` and `MethodBundle` are separate bundle types. Their shared
+hairpin-encoding digest lets a caller check that they describe the same encoding.
+The bundles retain separate identities. Destination vector, orientation,
+compatible assembly ends, and experimental evidence remain downstream.
 
 ## Consequences
 

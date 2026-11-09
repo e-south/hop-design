@@ -2,8 +2,10 @@
 
 HOP helps you specify a source ssDNA, its conversion into a hairpin, and, when
 requested, copying and cleavage into a duplex insert with defined sticky ends.
-The deliverable is a checked molecular route with exact oligos and expected
-products.
+The deliverable is a **preparation**: exact oligos and a checked **route**, the
+ordered molecular steps through the expected products. The **product** is the
+molecule at the endpoint you request; different preparations can make the same
+product.
 
 [Install HOP](install.md), then run the repository examples below from a
 [source checkout](install.md#work-from-source). The CLI and Python API share the
@@ -13,8 +15,10 @@ this walkthrough authors a more detailed product request.
 
 ## 1. Describe the product you need
 
-Author the payload once, 5′→3′. HOP derives its paired arm. Choose how far the
-route should proceed:
+The **payload** is the supplied stem region that must remain unchanged. Author
+one arm once, 5′→3′; HOP derives its paired arm. The source ssDNA contains this
+payload plus the surrounding sequence needed for construction. Choose how far
+the route should proceed:
 
 | Desired product | Request endpoint | Additional obligations |
 | --- | --- | --- |
@@ -41,8 +45,10 @@ orientation and `payload_end_offset_bp`. The checked-in
 [public request](../../examples/complete-construction/product-request.json)
 is a runnable starting point.
 
-`foldback` and `basal` each group `geometry`, `enzymes` and `search` for that
-local job. `enzyme_catalog` is shared; each job keeps its own explicit allowed,
+The foldback region closes the loop end; the basal region handles the opposite,
+open-end junction. `foldback` and `basal` each group `geometry` (lengths and
+relative positions), `enzymes` and `search` for that local job.
+`enzyme_catalog` is shared; each job keeps its own explicit allowed,
 forbidden and reserved enzymes and role restrictions. `materialization` retains
 fixed/constrained/derived policies. `release.basal_projection` declares which
 product end is projected onto which local recognition material. The translator
@@ -57,8 +63,8 @@ This writes `intent.md`, the authored `request.json`, `construction.json`, and
 local `foldback.json`/`basal.json` inputs. It performs strict translation only;
 feasibility, actual products and material sequences remain unresolved. The
 complete example below runs discovery and explicitly continues its single
-budgeted witness. Editing one product field never silently edits a material or
-contact permission to force success.
+recorded local solution, called a witness, within the search budget. Editing one
+product field never silently edits a material or contact permission to force success.
 
 | Your decision | What HOP needs |
 | --- | --- |
@@ -85,8 +91,8 @@ Changing a permitted contact or material creates a new request to evaluate.
 
 ## 3. Obtain a preparation and adapt its ends
 
-To execute your authored request directly, explicitly permit continuation of
-the sole recorded witness from each bounded local search:
+To execute your authored request directly, permit HOP to combine and check the
+sole recorded witness from each bounded local search:
 
 ```bash
 # Execute the request to obtain complete preparations.

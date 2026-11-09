@@ -8,6 +8,13 @@ result. Choose a neighborhood, inspect its supported variants, and filter the
 complete products. Several preparations can produce one
 product; several products can remain compatible with one neighborhood choice.
 
+A **neighborhood** is a named molecular region: the loop, its closing paired
+region, the open-side assembly region, the supplied stem or the later released
+interfaces. A **product** is the molecule at the stage you inspect. A
+**preparation** includes that molecule's exact input oligos and ordered
+processing route. Choosing a local variant therefore means finding a complete
+preparation that supports it together with your other requirements.
+
 Run the [public example](../../examples/molecular-editing/conditional.py):
 
 ```bash
@@ -26,9 +33,12 @@ construction bundles. `preview/projection.svg` is a static molecular comparison.
 
 ## Explore the construction envelope
 
-The parallel-coordinate overview keeps the evaluated network visible while you
-narrow it. Solid paths represent complete preparations; faint paths preserve
-excluded context. Dashed segments represent verified **local** foldback or basal
+The **construction envelope** is the set of molecular choices permitted by the
+request. The parallel-coordinate plot shows those choices on separate axes;
+each path connects the parameter values for one recorded preparation. It keeps
+the evaluated network visible while you narrow it. Solid paths represent
+complete preparations; faint paths preserve excluded context. Dashed segments
+represent verified **local** foldback or basal
 realizations. They stop before unassessed axes and cannot be selected as complete
 products. Choose a recorded complete path to preserve compatible surroundings;
 crossing paths cannot be recombined.
@@ -59,8 +69,10 @@ and its dependencies in the teaching key and throughout the atlas. Parameter def
 include symbol, units, molecular stage, measurement boundaries and dependencies.
 See the [parameter and teaching-glyph coverage specification](../reference/molecular-parameters.md)
 for the three coordinate frames and explicit nonspatial context.
-For example, the self-paired arm is **R = A − D**. Brushing R constrains compatible
-A/D pairs; it never makes R independently editable.
+For example, **A** is the total added paired arm in base pairs, **D** is the nick
+displacement in nucleotides, and the post-nick self-paired arm is **R = A − D**
+base pairs. Selecting a range on the R axis (brushing) filters compatible A/D
+pairs; it never makes R independently editable.
 
 Each axis distinguishes its declared domain from the observed values. **Fixed by
 request** means the request permits one value; **constant among evaluated results**

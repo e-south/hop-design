@@ -44,11 +44,11 @@ materialization remaps local coordinates onto the complete precursor,
 reassesses enzyme phases against their actual complete pre-states, and embeds
 the resulting exact authorities in route order.
 
-The complete result embeds the self-validating detailed foldback discovery
-authority and, when present, the detailed basal discovery authority. Its
-ordered provenance domains derive from those authorities rather than from a
-separately authored member list. Each accepted complete realization embeds the
-exact local members it composes.
+The complete result embeds the detailed foldback discovery result and, when
+present, the detailed basal discovery result. Each embedded result validates its
+own molecular facts. The complete result derives its ordered provenance domains
+from those results rather than from a separately authored member list. Each
+accepted complete realization embeds the exact local members it composes.
 
 Each local discovery result embeds its replay execution, including enumeration
 bounds, route implementation version, operation ceiling, and environment. A
@@ -73,13 +73,12 @@ composition result supplied by a caller remains a parsed record;
 composition against the verified local and design authorities and requires
 canonical-byte equality.
 
-Fresh discovery has a separate, internal admission boundary: the composer
-itself produces the result from verified upstream authorities, with strict
-result validators checking identities, route derivation, endpoint evidence,
-material lineage and disposition accounting. That exact result is admitted
-without immediately repeating the same composition. No caller-provided raw
-result enters this path. An in-process registry binds receipt identity and
-canonical content; copied or mutated containers cannot inherit admission.
+Fresh discovery follows a separate internal verification path. The composer
+produces the result from verified inputs; strict result validators check
+identities, route derivation, endpoint evidence, material lineage and disposition
+accounting. HOP can then use that exact result without immediately repeating the
+same composition. This path accepts no caller-provided raw result. An in-process
+registry binds receipt identity and canonical content; copied or mutated containers cannot inherit admission.
 The public facade exposes no verification-disable switch. Explicit verification,
 staged-file publication and independent loading continue to replay the complete
 result. This distinction removes repeated generation, not any molecular rule

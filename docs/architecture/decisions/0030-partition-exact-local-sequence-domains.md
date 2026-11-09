@@ -3,7 +3,7 @@
 ## Context
 
 An exact foldback or basal geometry can admit enough sequence solutions that
-one replayable result exceeds the portable 64 MiB authority limit even though
+one replayable result exceeds the 64 MiB limit for a portable result even though
 the declared search is finite. Raising the byte limit would couple portability
 to one study. Truncating the search would change an exhaustive scientific
 question into an unresolved one.

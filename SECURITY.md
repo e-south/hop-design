@@ -1,5 +1,9 @@
 # HOP Design security and public-data boundary
 
+Keep private data out of tracked files and release artifacts, validate files
+before use, and verify the exact distributions before release. The rules below define those
+boundaries and the local editor's access controls.
+
 ## Local molecular editor
 
 `construction edit-view` binds only to `127.0.0.1`. Mutations require the exact
@@ -113,8 +117,9 @@ Membership changes or omitted cases remain invalid even when their totals and
 content identities are recomputed consistently.
 
 Construction-bundle loading rejects unsafe paths, symlinks, incomplete or
-extra inventories, modified embedded design artifacts, and checksum-consistent
-scientific forgeries through exact semantic replay. Construction authorities
+extra inventories, and modified embedded design artifacts. It reruns the
+recorded derivation to reject molecular changes even when checksums have been
+recalculated to match the changed files. Construction authorities
 and projection packets use create-only atomic directories and never merge into
 an existing destination.
 

@@ -42,11 +42,11 @@ Read `docs/start/mental-model.md` when a request crosses competencies. Read
 
 ## Guardrails
 
-- `payload` is authored once; its paired arm is derived. Expand symbolics only under an explicit bound.
+- `payload` is authored once; its paired arm is derived. Expand symbolic sequences only under an explicit bound.
 - A substrate-space preview is allocation-free. `blocked` means the valid exhaustive space exceeds its declared bound; it is not infeasible or truncated.
 - A hairpin design set contains replay-verified members of an exhaustively compiled substrate space.
 - Preserve deterministic order, report geometry measurements, and record caller selection separately from compatibility.
-- A design derivation is not chronology; construction routes and named methods own their respective ordered molecular states.
+- A design derivation describes calculated anatomy; construction routes and named methods record ordered molecular states.
 - Preserve typed statuses exactly. Construction-specific authority and projection rules live in its reference.
 - Typed view JSON is the visual authority; rendering cannot derive new state.
 - Check a restriction product against the caller's destination, orientation, and assembly ends.
@@ -54,8 +54,8 @@ Read `docs/start/mental-model.md` when a request crosses competencies. Read
 
 ## Required Deliverables
 
-- Competency, public operation, and strict input kind.
-- Relevant authority IDs, exact status, accounting, bounds, and diagnostics.
+- User task, public operation, and required input type.
+- Relevant verified-result and bundle IDs, exact status, accounting, bounds, and diagnostics.
 - New output path or write-free state, plus verification outcome.
 ## Success Criteria
 

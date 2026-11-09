@@ -9,8 +9,9 @@ design, discovery, temporal method realization, and visualization.
 
 ## Decision
 
-The package root is the design-language golden path. It exports common design
-operations, authored design types, shared coordinates and junction nouns,
+The package root is the default interface for authoring and compiling designs.
+It exports common design operations, authored design types, shared coordinates
+and junction nouns,
 primary design results, and operator-facing errors.
 
 Three thin sibling modules own specialized public imports:

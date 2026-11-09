@@ -1,7 +1,9 @@
 # Molecular mechanics reference map
 
-Choose the operation for your question: component evaluation, processing
-geometry, or route composition. Supply the acceptance policy with the request.
+Choose the operation for your question. Component evaluation inspects supplied
+pairing and spans; processing discovery finds compatible cuts and sequences;
+route composition checks whether selected local solutions work together.
+Supply the acceptance policy with the request.
 
 | Question | Public operation | Detailed reference |
 | --- | --- | --- |

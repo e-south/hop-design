@@ -1,8 +1,8 @@
 # Method bundle layout and verification
 
-A method bundle records how one strict request resolves into molecular states
-and products. Replay recompiles the request and compares the complete derivation
-and exported bytes.
+A method bundle saves a named method's exact request, the molecular states and
+products derived from it, and their exported files. To verify it, HOP recompiles
+the request and compares the complete derivation and exported bytes.
 
 | File | Meaning |
 | --- | --- |

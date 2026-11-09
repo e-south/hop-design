@@ -11,7 +11,7 @@ the joined hairpin intermediate; downstream sticky ends do not appear on that
 hairpin. The report distinguishes complete preparations from exact molecules at either
 comparison stage. Geometry alone is insufficient to merge two products.
 
-Run from the repository root with the matching source candidate:
+Run from the repository root in the matching source checkout:
 
 ```bash
 uv run --locked python examples/scaffold-discovery/run.py /tmp/hop-scaffold-discovery
@@ -31,8 +31,8 @@ hop-design construction discover-scaffolds examples/scaffold-discovery/request.j
 hop-design construction select-scaffolds /tmp/scaffold-options --member loop3=branch-0001-option-0001-01 --baseline loop3 --out /tmp/scaffold-selected
 ```
 
-The explicit label in the last command belongs to this example's packet. Inspect
-your own report before selecting; HOP assigns no default winner.
+The explicit label in the last command belongs to this example's saved result.
+Inspect your own report before selecting; HOP assigns no default winner.
 
 Edit `scaffold.open_side_paired_positions` to specify the desired molecule.
 `preparation_changes.adapter_redesign` permits corresponding preparation
@@ -41,7 +41,7 @@ hard requirement. The preview names conflicts and the declarations to edit.
 `max_branches` and `max_continuations_per_branch` bound separate search layers.
 
 For permitted methods, use `methods.json` with the same preview/discovery commands.
-It permits BsaI-HFv2, BsmBI-v2 and BbsI-HF as separate strict release branches.
+It permits BsaI-HFv2, BsmBI-v2 and BbsI-HF as separate release-method alternatives.
 The definitions come from the [manufacturer recognition and cleavage catalogue](https://www.neb.com/en-us/tools-and-resources/selection-charts/alphabetized-list-of-recognition-specificities).
 The bounded example returns four complete preparations for each of the first two
 methods and four rejected BbsI continuations. Inspect those recorded outcomes
@@ -83,5 +83,6 @@ before adapting its sequence and redesign permissions.
 
 `receiving_ends.py --out NEW.json` writes the bounded three-pair example described
 in [the receiving-end walkthrough](../../docs/guides/discover-product-scaffolds.md#explore-declared-receiving-end-pairs).
-Words, polarity, orientation and placements stay together. The resulting v6
-request uses the same preview, discovery, conditional browsing and retrieval APIs.
+Each end sequence stays associated with its polarity, orientation and placement.
+The resulting v6 request uses the same preview, discovery, conditional browsing
+and retrieval APIs.

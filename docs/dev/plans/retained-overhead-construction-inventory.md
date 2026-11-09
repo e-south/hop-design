@@ -10,7 +10,7 @@ evidence and publication planning.
 - Characterized enzyme records carry strict recognition, strand, cleavage, substrate-state, terminal-state, and provenance facts.
 - Foldback and basal kernels enumerate exact sequence placements and return explicit molecular failures.
 - Foldback and basal realization records preserve enzyme bindings, literal pairing, retained and released sequence, bonds, material roles, and deterministic identities.
-- Complete construction composes selected verified local authorities, derives source and auxiliary materials, replays endpoint-specific molecular transitions, binds optional source-partition evidence, and verifies endpoint encodings.
+- Complete construction combines selected verified local results, derives source and auxiliary materials, replays endpoint-specific molecular transitions, binds optional source-partition evidence, and verifies endpoint encodings.
 - File-oriented public receipts, canonical JSON, create-only publication, replay verification, and typed projections expose these capabilities through portable verified results.
 
 ## Implemented boundaries
@@ -53,7 +53,7 @@ evidence and publication planning.
 
 - Client studies own finite analysis requests, independent execution, figure rendering,
   and scientific review. Their run status belongs in their own records.
-- Manuscript systems own evidence admission and publication claims.
+- Manuscript systems decide which evidence supports publication claims.
 - Client studies record physical recovery and sequence confirmation.
 
 ## Foldback allocation measurement

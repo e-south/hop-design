@@ -15,6 +15,13 @@ can execute a finite roster of loop lengths and loop-side paired extensions,
 then retrieve explicitly selected complete members as one comparative packet.
 Each member retains its own sequence and preparation.
 
+The **scaffold** is the sequence and pairing around the supplied stem. A
+**family** names the variants you require, such as one member for each loop
+length. Its shared properties state what must agree across those members.
+A **preparation** adds exact source, adapter and primer specifications and the
+processing route for one member; matching scaffold dimensions alone do not
+establish matching sequences or preparations.
+
 Choose the product first. Both examples use the same public 34-base stem; each
 has an independently authored preparation.
 

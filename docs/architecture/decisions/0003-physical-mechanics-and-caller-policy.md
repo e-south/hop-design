@@ -12,8 +12,8 @@ case and make physical results difficult to reuse or test independently.
 HOP owns pure foldback pairing, basal pair classification, and strand-state
 projection from explicit typed inputs. Callers own application catalogs,
 eligibility, and selection thresholds and pass them through versioned strict
-contracts. `ResolvedHopSpec` is an explicit event integration boundary, not a
-private catalog resolver. Renderers consume `WorkflowView` and cannot recompute
+contracts. `ResolvedHopSpec` receives explicit resolved events; it does not look
+them up in a private catalog. Renderers consume `WorkflowView` and cannot recompute
 molecular state.
 
 ## Alternatives

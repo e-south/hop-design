@@ -6,9 +6,10 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](https://github.com/e-south/hop-design/blob/main/LICENSE)
 
 Hairpin Oligonucleotide Processing (HOP) Design finds ways to construct DNA
-hairpins and released duplex inserts around a supplied stem. Explore compatible
-sequences and processing methods, inspect the resulting molecules, and retrieve
-source, adapter and primer specifications with terminal chemistry.
+hairpins and released duplex inserts around a supplied stem. Compare compatible
+sequences and enzyme choices, inspect each processing step, and retrieve the
+source, adapter and primer sequences with their required end chemistry, such as
+a 5′ phosphate.
 
 ## Start here
 
@@ -18,7 +19,7 @@ source, adapter and primer specifications with terminal chemistry.
 
 ## Documentation
 
-- [Molecular model](https://github.com/e-south/hop-design/blob/main/docs/start/mental-model.md): inputs, construction steps and
+- [How construction works](https://github.com/e-south/hop-design/blob/main/docs/start/mental-model.md): inputs, construction steps and
   search limits.
 - [Task index](https://github.com/e-south/hop-design/blob/main/docs/index.md), [CLI commands](https://github.com/e-south/hop-design/blob/main/docs/reference/cli.md), and
   [Python API](https://github.com/e-south/hop-design/blob/main/docs/reference/python-api.md).

@@ -9,6 +9,12 @@ choices for complete preparations. Select a matching path to see the entire
 processing route and retrieve its source, adapter and primers. The requested
 sticky ends belong to the released duplex insert.
 
+The supplied **stem**, or payload, is the paired region to preserve. The
+foldback region closes its loop end; the basal region handles the open-end
+junction. A complete **preparation** combines both local solutions with exact
+materials and the ordered steps needed to obtain the insert. Local support at
+each junction is only part of that check.
+
 ## 1. State your stem, ends and permissions
 
 After [installing HOP](install.md), copy the
@@ -51,9 +57,15 @@ uv run --locked hop-design construction survey evaluate survey.json --index surv
   --release-site-pairs 1000
 ```
 
-The command creates a checkpoint and reports supported, excluded, unresolved and
-unexamined pairs. A supported pair has a complete modeled preparation. An unresolved
-pair needs more evaluation; it is not a finding of impossibility.
+The command creates a checkpoint and reports four kinds of end pair:
+
+- **Supported:** at least one complete modeled preparation was found.
+- **Excluded:** the pair has been ruled out within the declared context.
+- **Unresolved:** it was examined but still needs evaluation.
+- **Unexamined:** evaluation has not yet reached it.
+
+Keep these statuses separate: a pair with no preparation yet is not necessarily
+excluded.
 
 With the unedited example, AGTC/AGTC completes and AGTC/AACC is excluded under its
 fixed permissions. To practice the successful handoff below, use AGTC for the

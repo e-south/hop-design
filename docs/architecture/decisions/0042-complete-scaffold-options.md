@@ -18,8 +18,8 @@ Visible labels are positions within one packet; molecular and preparation
 identities remain the existing verified construction identities. Equal geometry
 never merges distinct sequences, chemistry or preparations.
 
-`options/` owns orchestration and admission. The ordinary continuation evaluator
-in `execution/candidate.py` is shared with family matching; molecular search and
+`options/` owns bounded evaluation and saved-packet verification. The ordinary
+continuation evaluator in `execution/candidate.py` is shared with family matching; molecular search and
 composition remain in their existing owners. Atomic packet publication and
 bounded capture share the `packets/` owner; family and options schemas remain
 with their respective consumers. The options report
@@ -27,9 +27,9 @@ reuses verified portraits, closing crops, stage projections and vector PDF
 encoding rather than introducing another molecular renderer.
 
 Saved packets require canonical manifests, bounded inventories, normalized
-relative paths and digest agreement. Before grouping or retrieval, admission
-replays local and complete authorities, rebinds each outcome to its product
-request, verifies deterministic pair membership and rebuilds displayed facts.
+relative paths and digest agreement. Before grouping or retrieval, HOP replays
+the local and complete construction results, checks each outcome against its
+product request, verifies deterministic pair membership and rebuilds displayed facts.
 Resealing an edited summary or drawing does not confer authority. Retrieval
 regenerates drawings from verified records; user-supplied SVG does not reach the
 PDF encoder. Publication is create-only and cannot overlap captured sources.

@@ -5,6 +5,12 @@ which preparation changes you permit. HOP discovers complete preparations,
 assesses compatible sets and retains examined failures. Choose a displayed set
 explicitly to retrieve its named preparations and consolidated oligos.
 
+A **product** is the exact molecule at the stage you compare. A **preparation**
+specifies its input oligos and ordered processing steps. Several preparations
+can make the same product, and different hairpin intermediates can lead to the
+same released insert. Choose the comparison stage before deciding which members
+must agree or differ.
+
 Start with the [runnable example](../../examples/scaffold-comparison/README.md).
 It uses public synthetic inputs and produces substrate, preparation-alternative and grouped comparison sheets.
 

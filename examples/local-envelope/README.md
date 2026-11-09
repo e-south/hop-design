@@ -43,7 +43,7 @@ the supplied request asks for every four-base 5′ end. The full association
 requirement is explicitly null. L and W measure the local contact geometry;
 complete adapter length is resolved later.
 
-Foldback coordinates are added paired arm **A**, unpaired cap **C**, and
+Foldback coordinates are added paired arm **A**, unpaired turn **C**, and
 displacement **D**. This example searches every supported integer A/C pair
 under retained non-payload path `H=2A+C`, and D from zero through A. The
 post-nick self-paired arm **R=A-D** is derived. The current model starts at
@@ -65,16 +65,18 @@ and can take much longer.
 The input request's node and realization limits still apply; this script does
 not silently raise them or resume a partially completed invocation.
 
-`observed_witness_count` counts returned HOP realizations. For a truncated
-query it is only a lower bound. To count distinct projected sequences, aggregate
-hidden dimensions explicitly and deduplicate equivalent witnesses. State the
-counted object on the plot.
-Do not divide witnesses by `4^length`: paired positions, latent geometry, and
-action aliases make that comparison invalid without a matching identity.
+`observed_witness_count` counts returned HOP realizations: exact local sequences
+and processing solutions. For a truncated query it is only a lower bound. To count distinct projected sequences, aggregate
+the other searched choices explicitly and deduplicate equivalent witnesses.
+State the counted object on the plot.
+Do not divide witnesses by `4^length`: pairing dependencies, different geometry
+choices and equivalent enzyme actions can change the number of witnesses for
+one sequence. Define a matching counted population before using a denominator.
 
 Two-dimensional n/e and A/C plots can summarize these results. Each point
-represents all explicitly searched hidden choices, not one sequence. Keep
-unfinished search, exhausted absence, and outside-budget geometry distinct.
+represents all other choices explicitly included in that search, not one
+sequence. Keep unfinished search, exhausted absence, and outside-budget
+geometry distinct.
 If every point has a solution, binary dots are uninformative; inspect exact
 counts or another scientifically defined quantity rather than inventing a
 cutoff. Selection happens after enumeration and requires a named caller rule.
@@ -82,9 +84,10 @@ cutoff. Selection happens after enumeration and requires a named caller rule.
 For exact populations without generating every detailed witness, use the public
 [basal](../../docs/guides/basal-sequence-space.md) and
 [foldback](../../docs/guides/foldback-sequence-space.md) sequence-space operations.
-They preserve exact admitted sets and recover selected molecular examples.
-Basal admission checks the complete source before removing outside context from
-the counted local window. End optionality can use those same admitted words.
+They preserve the exact sets of sequences that pass the local molecular checks
+and recover selected molecular examples. Basal checks use the complete source
+before counting only the local window. End alternatives can use those same
+accepted sequences.
 
 The script accepts an unpartitioned basal request with source-duplex recognition
 and a right 5′ endpoint. It rejects other coordinate conventions before writing

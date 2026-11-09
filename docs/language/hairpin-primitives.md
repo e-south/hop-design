@@ -17,9 +17,10 @@ The diagram is an ordering aid, not a drawing of strand topology.
 
 ### Payload and paired payload
 
-The payload is the caller-authored input sequence. It may be exact DNA or a DNA
-IUPAC domain. HOP derives the paired payload by reverse complement; the paired
-payload is not a second independently authored payload.
+The payload is the caller-authored input sequence. It may be exact DNA or use DNA
+IUPAC symbols to permit several bases at a position. HOP derives the paired
+payload by reverse complement; the paired payload is not a second independently
+authored payload.
 
 ### Foldback junction
 
@@ -28,12 +29,13 @@ A foldback junction contains:
 - a retained tract at the closed end;
 - the unpaired turn connecting the two arms;
 - a returning foldback arm; and
-- the aligned pair observations between the retained tract and returning arm.
+- a record of how each aligned pair of bases in the retained tract and
+  returning arm interacts.
 
 The **foldback stem** is that pairing relationship, not another sequence block.
 Turn length and paired-tract length are therefore the independent geometric
-controls. HOP also records uninterrupted paired-run measurements and literal
-noncanonical pairs.
+controls. HOP also measures uninterrupted paired runs and records the exact
+bases at noncanonical pairs, such as G:T wobbles or mismatches.
 
 “Cap” is descriptive or historical language, not one canonical HOP component.
 Depending on its source, a historical cap label may cover the turn, a complete
@@ -58,9 +60,9 @@ basal junction itself.
 
 ## Products and handoffs
 
-`HairpinEncodingInsert` contains HOP's one-dimensional compiled sequence and
-nested feature map. Strands and assembly ends belong to the product records
-below.
+`HairpinEncodingInsert` contains HOP's compiled sequence and the named regions
+within it. It represents sequence order on one axis. Strands and assembly ends
+belong to the product records below.
 
 `HairpinPcrDuplex` is the exact two-strand product modeled by a named method.
 `RestrictionDigestProduct` is a destination-neutral duplex fragment made from

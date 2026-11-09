@@ -5,7 +5,7 @@ distribution, one public API, and no dependency on caller repositories.
 
 ## Product boundary
 
-The deterministic core has two sibling compilation spines:
+The core compiles design anatomy and named methods along separate paths:
 
 ```text
 HopSpec -> design derivation -> HopPlan -> HopBundle
@@ -38,15 +38,19 @@ final-payload specification + route family + requested endpoint
 ```
 
 Local junction discovery owns only the sequence and reaction geometry at one
-payload boundary. Source-partition discovery owns provisioned nickase subsets,
-all actionable sites, denatured fragments, length selection, and the exact
-required survivor relation. PCR handles, primer binding, Type IIS release, and
-other endpoint periphery are route-materialization concerns. A study may run
-these bounded operations independently. Complete composition uses only the
+payload boundary. Its exact solutions are inputs to complete-route checks, not
+complete preparations on their own. Source-partition discovery owns subsets of
+caller-supplied nickases, all actionable sites, denatured fragments, length
+selection, and the exact
+required surviving fragments. PCR handles, primer binding, Type IIS release, and
+other endpoint-specific materials are resolved when the route is materialized.
+A study may run these bounded operations independently. Complete composition uses only the
 authorities explicitly present in its request.
 
 The public construction entrypoint loads strict source files and verified
-authorities, keeps replay models internal, and returns an opaque receipt:
+results. Verification reruns their derivation from recorded inputs, called
+replay. The entrypoint keeps those replay models internal and returns a receipt:
+a public object exposing result identities, status and accounting.
 
 ```text
 verified local receipts + explicit realization ids
@@ -77,10 +81,11 @@ I/O; `prepare.py` owns source loading and the preview packet. The
 [construction module map](docs/dev/construction-map.md) locates the remaining
 workflow responsibilities and focused test seams.
 
-The source owns requests, exact materials, constraints, and bounds. The design
-bundle owns design identity and encoding. The construction bundle embeds the
-unchanged design authority needed for replay and owns only the complete-route
-result and its inventory.
+The source declares requests, exact materials, constraints, and bounds. The design
+bundle records design identity and encoding. The construction bundle embeds that
+unchanged design bundle for replay, then adds the complete-route result and its
+file inventory. These records have separate responsibilities; a projection or
+export cannot redefine them.
 
 The local-to-design bridge admits only explicit selections from replay-verified
 receipts. Its exact-junction design schema contains molecular components, not
@@ -91,7 +96,7 @@ never invents that component. The bounded request executor composes existing
 authorities under an explicit sole-witness policy and returns either a
 preparation or a scoped handoff. Its summary is not a molecular authority.
 
-Final-payload coordinates are shared authority. Source coordinates and source
+Final-payload coordinates are shared across routes. Source coordinates and source
 segmentation belong to the selected route family. The current linear-source
 family may use one contiguous source interval without making that layout a
 global payload invariant.
@@ -278,15 +283,17 @@ following surfaces.
    authority for construction replay; and an explicit design-method encoding-
    digest handoff.
 
-Design derivation is non-temporal. Construction routes and named method plans
-own their respective molecular chronology. Check method availability and request
-feasibility separately from design compilation, then check the resulting product
+Design derivation records how sequence anatomy was calculated. Construction
+routes and named method plans record molecular states in processing order.
+Check method availability and request feasibility separately from design
+compilation, then check the resulting product
 against the caller's destination.
 
-Discovery operations answer separate competency questions rather than one
-global optimization problem. Canonical order is reproducible interoperability
-metadata, not an objective score. Catalog warnings, empirical enzyme behavior,
-procurement, application preference, and candidate selection remain caller
+Discovery operations answer separate questions rather than one global
+optimization problem. Canonical order gives each result a reproducible position
+that consumers can share; it is not an objective score. Catalog warnings,
+empirical enzyme behavior, procurement, application preference, and candidate
+selection remain caller
 policy.
 
 All exact physical pair kinds are deterministic functions of literal bases.
@@ -298,8 +305,8 @@ Construction-route chronology is an ordered list of reaction stages. All
 concurrent operations in one stage resolve against the same pre-stage state;
 site validity depends on molecular availability in that stage. Compactness is
 an endpoint projection over retained non-payload sequence, not total source
-length. Geometry and final-product grouping remain reversible projections over
-exact realization authorities.
+length. Geometry and final-product groups retain the identities of every exact
+realization they contain, so grouping does not discard alternative preparations.
 
 For a PCR-bearing linear-source route, the retained source prefix may extend
 beyond the local basal pairing span. Its source-return arm is the reverse

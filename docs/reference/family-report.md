@@ -1,5 +1,10 @@
 # Saved scaffold family report
 
+This exporter turns an executed family into a portable comparison of its named
+members. The report shows requested variation, complete preparations, failed
+continuations and remaining search coverage together. An optional selection
+adds the chosen members and their order specifications.
+
 `project_construction_family_report(path, selection=None, baseline=None, edits=())`
 returns `ConstructionFamilyReport`. The equivalent CLI is `construction
 report-family FAMILY --out NEW [--selection SET] [--baseline NAME]
@@ -11,8 +16,8 @@ inputs, local receipts, selected local pair, exact design, composition and
 outcomes. It rederives presentation choices and shared-property agreement.
 The optional `hop.construction-set/v1` request must name exact choices in those
 outcomes; a name or matching geometry cannot substitute for verified membership.
-Verification replays recorded bounded calculations with membership, routes and
-requirements fixed.
+Verification repeats the recorded calculations under their original bounds,
+using the same membership, routes and requirements.
 
 `summary.json` uses `hop.construction-family-report/v3` and contains:
 

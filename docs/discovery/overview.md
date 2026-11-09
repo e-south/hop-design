@@ -1,11 +1,12 @@
 # Discovery and selection
 
-Use four operations to move from requirements to replayable artifacts:
+Use four operations to move from requirements to saved results that HOP can
+reproduce from their recorded inputs:
 
 1. **Evaluate** a fully declared component.
-2. **Discover** sequence-and-cut compatible candidates inside explicit domains.
+2. **Discover** compatible sequences and cut positions within declared choices.
 3. **Select** a candidate using caller-owned experimental or procurement policy.
-4. **Compile** selected components or a named method into replayable artifacts.
+4. **Compile** selected components or a named method into plans and output files.
 
 The [two-region envelope example](../../examples/local-envelope/README.md)
 derives local contact lengths from geometry and varies independent basal and
@@ -14,11 +15,16 @@ coverage, and distinguish a union across variable sources from one fixed source.
 
 ## Payload-centered local construction discovery
 
+A local search resolves one junction. Its exact solutions become inputs to the
+complete construction check, which combines the junctions, resolves materials
+and derives the requested product.
+
 A local construction request fixes the final payload, route family, requested
 endpoint, one finite foldback or basal geometry domain, and a maximum retained
-non-payload overhead. HOP examines every admissible geometry in increasing
-absolute overhead order. Each realization preserves both the declared domain
-and its achieved geometry.
+non-payload overhead: construction sequence retained outside the payload. HOP
+examines admissible geometry in increasing absolute overhead order, subject to
+the declared search limits. Each exact local solution, called a realization,
+preserves both the declared domain and its achieved geometry.
 
 HOP reports retained overhead for each realization and leaves geometry selection
 to the caller. Completion and feasibility are reported separately:
@@ -31,7 +37,7 @@ to the caller. Completion and feasibility are reported separately:
 - feasibility is `feasible`, `infeasible`, or `unknown` according to what that
   coverage establishes.
 
-Overhead-level accounting records examined candidates, accepted realizations,
+For each overhead level, HOP records examined candidates, accepted realizations,
 rejections, and observed failure categories. A partial level appears only when
 coverage is incomplete. A local construction projection renders the same typed
 result as neutral JSON, CSV, or SVG without selecting a realization or
@@ -79,12 +85,13 @@ when it acts. A permitted adapter mismatch does not waive either requirement.
 Local discovery can leave the full association requirement open by setting
 `minimum_adapter_annealing_nt` explicitly to `null`. The exact proximal pairs
 remain resolved; the full required length, distal completion count, and
-full-span mismatch fraction remain unknown. This is not a zero-length distal
-arm or a claim that the local segment supplies sufficient annealing. Complete
-construction requires an explicit association requirement and rejects an
+full-span mismatch fraction remain unknown. The unresolved distal region is
+not a zero-length arm, and the local segment does not establish the full
+annealing requirement. Complete construction requires an explicit association
+requirement and rejects an
 unresolved parent as an input error before evaluating combinations. Discovery
 can be repeated with a chosen requirement without changing its local sequence
-search; the resulting authority retains that requirement for composition.
+search; the saved result retains that requirement for composition.
 
 Each returned target and enzyme action has one exact end. Complete construction
 selects an exact endpoint from the allowed domain and rejects a selected local
@@ -115,7 +122,9 @@ current requests do not infer zero from an earlier schema.
 An IUPAC symbol is a set of possible bases, not a wildcard character. HOP uses
 set intersection to distinguish guaranteed, possible, and absent motif
 presence. Exact precursor searches calculate their candidate-space cardinality
-before enumeration and preserve correlation between paired positions.
+before enumeration and preserve dependencies between paired positions. For
+example, choosing one base constrains its paired partner; those two choices
+cannot be counted as independent.
 
 Avoid an unqualified “degeneracy cost.” Neutral measurements include:
 
@@ -135,8 +144,8 @@ Measured GC content, homopolymer length, extra-site counts, or M/W/X profiles
 do not silently determine the prefix returned under a hit budget.
 
 `canonical_ordinal` records a reproducible position in HOP's neutral order.
-An optimization surface would need a named objective, reported measurements,
-and deterministic tie-breaking. Persist the caller's selection rule and selected
+Optimization would need a named objective, reported measurements,
+and deterministic tie-breaking. Save the caller's selection rule and selected
 candidate identity.
 
 ## What site placement proves

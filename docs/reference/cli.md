@@ -191,8 +191,9 @@ hop-design construction portrait BUNDLE_PATH (REALIZATION_ID | --selection SELEC
                                  --out NEW_DIRECTORY
 ```
 
-These commands consume a verified construction bundle. They do not compile,
-rerun, subset, or reseal its result.
+These commands read a saved construction bundle and verify it before navigation.
+Use them to inspect its results and explicitly select a recorded route. They do
+not compile, rerun, subset, or reseal its result.
 
 `construction portrait` starts with the whole joined hairpin. The exported SVG
 shows added paired regions, loop and local sequence detail. Its accompanying
@@ -269,10 +270,11 @@ minimum adapter association and optional reference differences. It does not run
 a search or establish feasibility. See the
 [construction journey](../guides/design-a-construction.md).
 
-An empty `construction list` now reports result dispositions and examined versus
-nominal combinations, along with recorded rejection/truncation reasons and
-commands for inspecting all dispositions. A broad code remains broad; it does
-not identify a necessary or minimal repair.
+An empty `construction list` reports how evaluated combinations were classified,
+the examined and nominal combination counts, recorded rejection/truncation reasons and
+commands for inspecting all dispositions. A broad rejection code does not
+identify which requirement must change or the smallest change that would make
+the construction work.
 
 ## Continue explicit local choices
 

@@ -4,6 +4,11 @@ Use `hop_design.construction` to discover complete preparations and retrieve
 materials. Follow the [worked tutorial](../guides/discover-designs.md) for runnable
 CLI and Python examples, then use this reference for field and operation details.
 
+Operations often return a **receipt**: an object that exposes checked results,
+their identities and, where supported, methods for writing or projecting them.
+**Replay** repeats the recorded calculation from its inputs. A **projection**
+turns those results into a table, molecular drawing or report for inspection.
+
 - [Discover complete designs](#discover-complete-designs)
 - [Inspect and share preparations](#frozen-atlas-editions-and-guided-exploration)
 - [Compile sequence anatomy](#compile-and-integrity)
@@ -15,10 +20,13 @@ Use `hop_design.construction.discover_designs(intent, destination,
 max_evaluations=64)` to find complete preparations around an exact stem. The
 intended product is required; end words are optional. A named or supplied context
 declares geometry, methods and materials. `resolve_design_request(intent)` returns
-the authored intention and effective permissions without searching.
+the authored intention and the permissions obtained after resolving its context,
+without searching.
 
-The returned `DesignChoices` connects `query`, `explain`, `select`, `sample`, `figure`,
-`atlas` and `retrieve`. Pass one selection to both figures and retrieval.
+The returned `DesignChoices` lets you filter recorded preparations with `query`,
+read their meaning and coverage with `explain`, choose one with `select` or
+`sample`, and export it with `figure`, `atlas` and `retrieve`.
+Pass one selection to both figures and retrieval.
 `select` accepts a returned path or exact preparation identity. Filtering a
 retained pool performs no search. `load_design_choices(directory)` reopens the
 whole discovery directory and validates its request and producer bindings. Keep
@@ -133,8 +141,8 @@ shows the complete public lifecycle.
 
 ## Conditional variant exploration
 
-`load_scaffold_exploration(result_directory)` admits a verified discovery or edit
-result once and returns an immutable `ScaffoldExploration` receipt.
+`load_scaffold_exploration(result_directory)` verifies and loads a saved discovery
+or edit result once and returns an immutable `ScaffoldExploration` receipt.
 `evaluate_scaffold_parameters(pool, choices, max_branches=...,
 max_continuations_per_branch=...)` returns a create-only
 `ScaffoldParameterEvaluation`. It intersects v2 parameter selections with the
@@ -395,7 +403,7 @@ right = trajectory.inspect_end("right")
 ```
 
 The selected ID above is an explicitly addressed result entry, not a preference.
-The receipt is an admitted in-memory snapshot. Reload to inspect current disk
+The receipt is the verified result held in memory. Reload to inspect current disk
 bytes; every load still checks integrity and repeats semantic replay. No
 persistent verification cache is used. Malformed side/negative-index CLI
 arguments fail before replay; product-dependent bounds require the verified

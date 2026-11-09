@@ -5,6 +5,10 @@ product to a consumer.
 
 Read [provenance and verification](../../../../docs/provenance/overview.md).
 
+Verification checks file contents and reproduces the derived results from their
+saved inputs. A matching sequence digest links exact encodings; it does not
+give a design bundle and a method bundle the same identity.
+
 For a design bundle:
 
 ```python

@@ -1,5 +1,10 @@
 # Enumerate exact basal sequence populations
 
+The **basal region** is the construction junction at the hairpin's open end,
+opposite the loop. This guide counts exact local sequences that satisfy its
+declared cleavage and pairing constraints. A local sequence may have several
+enzyme arrangements or source completions that support it.
+
 HOP evaluates the complete source before counting distinct sequences in a local
 basal window. Different enzymes or outside source contexts can support the same
 local configuration; they do not multiply its count.
@@ -7,7 +12,10 @@ local configuration; they do not multiply its count.
 The [example request](../../examples/basal-sequence-space.yaml) reuses the public
 loxP payload and catalog from the [basal example](../../examples/basal-junction/README.md).
 It fixes nick displacement n=0 and paired gap e=0 and searches all four-base ends.
-The canonical contact W=max(1,e+k−n)=4 is derived from this geometry. It is not a
+Here **n** locates the nick relative to the payload boundary in nucleotides,
+**e** is the paired end-to-payload distance in base pairs, and **k** is the
+cohesive-end length in nucleotides. The local canonical-pairing window has
+W=max(1,e+k−n)=4 positions for this geometry. It is not a
 complete adapter length or a stability threshold. Full association remains
 explicitly unresolved.
 
@@ -35,6 +43,7 @@ bases up to the payload boundary. Its raw population is 4^(n+W). Exact end
 identities and enzyme programs constrain that population rather than multiplying
 its denominator. The local window must cover the future-end footprint.
 
+An enzyme **program** specifies the permitted cleavage actions for a case.
 Each program retains its exact target, placement-compatible source count,
 placement exclusion when applicable, admitted full-source set, and local set.
 Molecular admission checks intended and unintended actionable sites on the whole

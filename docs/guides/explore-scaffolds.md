@@ -1,5 +1,10 @@
 # Explore complete scaffolds
 
+Explore the construction sequence and pairing around a fixed supplied stem:
+the **scaffold**. A scaffold choice can require different source oligos,
+adapters or primers. HOP checks those materials and the complete processing
+route before presenting a preparation for selection.
+
 Run these repository examples from a [source checkout](install.md#work-from-source).
 The commands use its locked environment throughout.
 

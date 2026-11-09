@@ -1,5 +1,11 @@
 # Specify the scaffold, then choose its preparation
 
+The **scaffold** is the loop, added paired regions and open-end contacts around
+the supplied stem. Specify the dimensions you want, then let HOP search the
+permitted materials and molecular steps that can make them. Each complete
+**preparation** includes exact oligos and a route through the requested endpoint.
+Different preparations can yield the same molecule.
+
 Run these repository examples from a [source checkout](install.md#work-from-source).
 The commands use its locked environment throughout.
 
@@ -7,7 +13,8 @@ Start with the [runnable public example](../../examples/scaffold-discovery/READM
 For a comprehensive four-base end domain with incremental checkpoints, use
 [interface surveys](survey-interfaces.md). Its target catalogue is independent of
 batch size; the small-roster workflow below retains its original limits.
-A `hop.scaffold-discovery/v1` request embeds one ordinary
+The foldback region closes the loop end; the basal region handles the opposite,
+open-end junction. A `hop.scaffold-discovery/v1` request embeds one ordinary
 [product request](design-a-construction.md), desired scaffold ranges, permissions
 for preparation changes, the comparison stage and two explicit search budgets.
 The endpoint says what you intend to obtain. The comparison stage says which
@@ -35,8 +42,8 @@ A fixed adapter conflicts with redesign permission. HOP never silently replaces
 it with a derived material or rewrites the input file.
 
 With adapter redesign allowed, each permitted nick-to-stem offset contributes to
-the candidate annealing setting. Proximal pairing can impose a larger achieved
-span. Complete construction checks whether a candidate satisfies
+the candidate annealing setting. Pairing next to the joining bond can impose a
+larger achieved span. Complete construction checks whether a candidate satisfies
 the requested scaffold. Direct hairpins
 have no downstream adapter-redesign or release step; preserve those settings and
 use their existing basal-component declaration.

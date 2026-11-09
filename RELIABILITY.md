@@ -1,5 +1,10 @@
 # HOP Design reliability contract
 
+HOP verifies saved results at two levels. Digests check that file contents match
+their recorded fingerprints. Replay reruns the derivation from the saved inputs
+and requires the resulting records and files to match. Recalculating digests
+after changing a derived result cannot substitute for replay.
+
 ## Determinism
 
 The same normalized spec, compiler version, locked catalog/profile references,
@@ -9,11 +14,12 @@ with one newline. FASTA uses deterministic headers, 80-column sequence lines,
 and one trailing newline. Host paths, timestamps, usernames, and environment
 ordering do not enter content identity.
 
-Product-to-construction lowering reuses the request's immutable characterized
-catalog when binding foldback, basal and release permissions. It validates the
+Translation from a product request to construction inputs reuses the request's
+immutable characterized catalog when binding foldback, basal and release
+permissions. It validates the
 newly derived geometry and complete route through their normal models. Reuse is
-limited to that translation. External JSON and saved-bundle admission validate
-their complete contents.
+limited to that translation. External JSON and saved bundles undergo complete
+content validation before acceptance, called admission.
 
 ## Bundle integrity
 
@@ -44,8 +50,9 @@ Verification rejects missing, symlinked, modified, unmanifested, path-traversing
 or root-digest-inconsistent content. It also loads the strict spec, plan, and
 provenance schemas; checks their identities and locked references against each
 other; then deterministically recompiles the spec and requires the complete
-plan, artifact set, and manifest to match. This replay catches a consistently
-resealed bundle whose authored intent and derived state disagree. Writes use a
+plan, artifact set, and manifest to match. This replay catches a bundle whose
+authored intent and derived state disagree, even if its digests were recalculated
+to match the changed files. Writes use a
 sibling temporary directory, verify it, then rename it atomically. Existing
 output paths are never replaced.
 
@@ -53,8 +60,8 @@ output paths are never replaced.
 atomic-write, and no-overwrite rules to a method request and plan. Verification
 parses both strict schemas, recompiles the request, and requires the plan,
 trajectory, FASTA, GenBank, artifact inventory, manifest digest, and bundle ID
-to match byte for byte. A checksum-valid reseal of one generated artifact is
-therefore rejected.
+to match byte for byte. A changed generated artifact is therefore rejected even
+when its recorded checksum has been updated to match.
 
 `construction-bundle.json` inventories one exact complete-construction result
 and every byte of the separately verified design bundle embedded below

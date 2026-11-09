@@ -27,8 +27,8 @@ Comparison-brief/v3 makes these intentions separate and explicit:
   prior-material references. Retrieval replays the complete authorities and checks
   both controls and reused material identities after relocation.
 
-Execution and admission share one scheduling traversal. Saved previews, tasks,
-budget use, options and comparison observations must reproduce from their authored
+Execution and saved-result replay use the same scheduling traversal. Saved
+previews, tasks, budget use, options and comparison observations must reproduce from their authored
 requests and verified inner authorities. A resealed summary is not authority.
 An assessed original-domain pool is labeled by the search it actually contains;
 it is never credited with targeted work that was not performed.

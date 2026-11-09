@@ -34,7 +34,7 @@ are ordinary constraints and receive no privileged identifiers or defaults.
 
 ### Source preparation
 
-A content-addressed source-preparation authority records:
+A source-preparation record has an identity derived from its contents. It records:
 
 - one exact source ssDNA material;
 - two exact source-materialization primers;
@@ -111,9 +111,9 @@ cleanup-nick tiling design or make broad unconstrained enumeration tractable.
 
 ### Source partition
 
-Source partition remains a sibling authority. A PCR-bearing route consumes one
-explicit replay-verified source-partition plan: its request and selected exact
-realization, without copying the full enumeration ledger into each route.
+Source-partition search remains separate from local-junction search. A PCR-bearing
+route consumes one explicit replay-verified source-partition plan: its request
+and selected exact realization, without copying the full enumeration ledger into each route.
 Composition requires the same prepared source and payload coordinates, includes
 every local nick in the concurrent cleanup program, and preserves exactly the
 local survivors needed for joining. Fragment chemistry and source-coordinate

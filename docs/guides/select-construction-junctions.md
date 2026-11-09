@@ -5,6 +5,12 @@ For complete options before selection, use [product-first discovery](discover-pr
 The examples below assume verified local receipts from the [construction guide](compile-construction.md#search-a-realistic-junction).
 Import the public facade with `import hop_design.construction as construction`.
 
+A local **realization** is one exact sequence and processing solution for a
+junction. The foldback junction closes the loop end; the basal junction lies at
+the open end. Selecting one of each fixes those local choices. Complete
+construction must still check their shared source, adapters, primers and
+endpoint together.
+
 ## Derive a design from selected local alternatives
 
 First compare the molecular choices that meet your requirements. Retained

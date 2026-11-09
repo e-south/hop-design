@@ -6,19 +6,19 @@ couple their package graphs and API migrations.
 
 Expose named domain commands over existing request, result, and bundle files.
 Command adapters call public use cases; they do not derive molecular state.
-Machine-readable reports bind canonical authority bytes and expose existing
-producer-computed identities and dispositions. No scientific models,
+Machine-readable reports bind exact canonical file contents and expose the
+identities and dispositions already computed by HOP. No scientific models,
 algorithms, generic RPC dispatch, or executable object representations are
 copied into consumers. The current artifact formats and atomic publication
 writers remain authoritative.
 
-The executing producer reports installation provenance separately from its
-actual package-content digest. Consumers explicitly select its environment.
-They may retain a report for later schema and byte checks, but only a producer
+The HOP installation executing the command reports where it came from separately
+from the digest of its actual package contents. Consumers explicitly select its
+environment. They may retain a report for later schema and byte checks, but only a producer
 execution establishes a fresh deterministic replay claim. Historical frozen
 evidence remains unchanged.
 
-The cost is explicit process invocation and replay when reopening authorities.
+The cost is an explicit process invocation and replay when reopening saved records.
 The benefit is independent installation and release ownership while retaining
 molecular replay checks. CLI parity tests bind report authorities and generated files
 to existing public operations; corruption and invalid-input tests preserve

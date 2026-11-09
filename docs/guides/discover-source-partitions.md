@@ -1,9 +1,15 @@
 # Discover an exact source partition
 
+A **source partition** records the fragments produced by nicking the source
+duplex: which strands must survive and which pieces are to be removed by the
+declared length-selection rule. The source is the starting material containing
+the payload and construction flanks; it can include DNA absent from the final
+product.
+
 Use source-partition discovery when the question is:
 
-> Which provisioned nickase combinations preserve these required fragments and
-> keep every sacrificial fragment within the declared removal threshold?
+> Which permitted nickase combinations preserve these required fragments and
+> keep every unwanted fragment within the declared removal threshold?
 
 This search evaluates source-fragment removal across the route. Choose an enzyme
 program explicitly from the accepted results.

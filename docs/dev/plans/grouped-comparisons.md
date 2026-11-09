@@ -41,9 +41,10 @@ and `bash scripts/agent-verify` before delivery.
 
 ## Delivered verification
 
-The full local endpoint passes: 2,078 tests with 91.43% coverage, public-documentation
-execution, dependency audit and recursive source/installed-wheel parity. The
-shipped grouped and exact-loop examples are included in that parity check.
+At delivery, the full local endpoint passed: 2,078 tests with 91.43% coverage,
+public-documentation execution, dependency audit and recursive
+source/installed-wheel parity. The shipped grouped and exact-loop examples were
+included in that parity check.
 Repository organization limits remain unchanged. Shared diagnostic text lives in
 `export/construction/handoff`; foldback enzyme-binding placement lives in the
 existing orientation module, separate from sequence-domain solving. Run the
