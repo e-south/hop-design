@@ -82,12 +82,8 @@ failure records in `choice_space.primer_boundaries`. The atlas separately locate
 required primer footprints and available flanks on a complete preparation.
 Zero-length measurements retain coincident boundary markers.
 
-The short, wide plot fits the desktop viewport. Values sit directly on their axes
-in rounded nodes; paths meet those nodes. At 1,200 px it can show all 24 loop words
-in the open-envelope example. Height is capped at 368 px; denser domains prioritize
-selected and supported labels while retaining every coordinate and path. Literal
-values wrap rather than becoming indistinguishable ellipses. Focus and **Browse…**
-provide remaining labels and the full domain. Resizing changes only presentation.
+Dense domains prioritize selected and supported labels. Focus an axis or choose
+**Browse…** to inspect its full domain. Resizing changes presentation only.
 
 The default order connects foldback geometry, basal method and displacement,
 released-end gaps and the source-primer span. Method and receiving-interface

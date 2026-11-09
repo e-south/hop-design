@@ -137,7 +137,48 @@ adapter minimum originally declared as 17 nt to 18 nt. The key labels the
 effective threshold and original requested value separately. Neither is inferred
 from the achieved contact count.
 
-The plot describes compatibility among complete preparations. The atlas describes
+The plot describes compatibility among complete preparations. The route describes
 processing chronology. Hover/focus locates a quantity and its dependencies;
 brushing filters recorded alternatives; selecting a complete path changes the
 preview. Camera movement changes neither the request nor preparation identity.
+
+## Compose a parameter figure
+
+Start with the choices and selection from the [discovery guide](../guides/discover-designs.md).
+
+Choose the displayed axes without filtering the preparation pool:
+`choices.figure(selection=selected, display_axes=("left_gap", "right_gap", "foldback_arm_bp", "loop_nt"))`.
+Use `choices.parameters(query=query)` or
+`hop-design design parameters designs --query query.json` to read a feature's
+meaning, active constraints and available operations. For example, loop size has
+permitted lengths. Self-paired arm length follows from the arm and join position.
+Left and right end gaps are revised together. A saved collection can be filtered,
+while permission changes belong to its discovery request. Reading this guide to
+the features does not run a search or verify preserved surroundings.
+
+Requested constant coordinates remain visible. Unavailable,
+inapplicable, repeated or noncanonical keys produce an error.
+
+`display-projection.json` records displayed and omitted axes. `choices.json` and
+`domains.csv` retain the complete coordinate data. Paths that coincide in the
+drawing retain all their preparation identities. This changes figure composition,
+not requirements, search or selection. It also applies to
+the linked trace of a selected similarity or family figure. The exact route and oligo
+handoff continue to use the same selection.
+For an export-only recipe, pass the recorded axes again. To keep that composition
+when reopening the browser or reproducing a figure, save it with the selection:
+
+```python
+# Save the axis order with this view for later inspection and export.
+view = choices.view(
+    selected,
+    presentation={
+        "landscape": "parameters",
+        "display_axes": ["left_gap", "right_gap", "foldback_arm_bp", "loop_nt"],
+    },
+)
+choices.figure(selection=view).write("compact-choice-figure")
+```
+
+The saved view retains the ordered axes. Browser hover, pinning and export use
+that same recipe. Older saved views retain their original display defaults.

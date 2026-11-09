@@ -159,6 +159,22 @@ destination-associated. Compactness uses achieved endpoint geometry and
 retained non-payload sequence only. It is not a thermodynamic, yield, or
 global-optimum claim.
 
+"Added stem" and "added DNA" also answer different questions. Added stem counts
+paired positions beyond the supplied invariant stem at a named molecular stage.
+The loop is unpaired DNA. Source fragments removed during processing and
+auxiliary primer handles have their own roles. Construction cost reports the exact non-payload nucleotides
+retained on each endpoint strand. It does not add the two local search ceilings
+or equate a transient basal contact span with retained stem extension. Keep the
+loop, added pairing, sticky-end-to-stem spacing and auxiliary materials separately visible.
+
+Identical sticky-end words do not require identical added stem. The exposed
+cloning sequences can stay the same while the paired DNA between an end and
+the supplied stem, or between the supplied stem and loop, changes. Say which
+region changes instead of calling all these bases "flanks." A loop length and
+a paired foldback-arm length are separate requirements. Short-loop limits belong
+to the caller's request. Another application can permit longer loops without
+changing HOP's general model. Neither choice asserts reaction efficiency.
+
 ## Conditional molecular choices
 
 A **neighborhood** names the region being explored: loop, loop-side closing stem,

@@ -35,6 +35,28 @@ Add a failing test before changing behavior. Public schema or ownership changes
 also require an ADR and updated schema/reference documentation. Generated bundle
 digests must change only when the serialized contract changes intentionally.
 
+## Module documentation
+
+Start new Python modules with a purpose docstring. Include the project, repository
+path and responsible team using this header:
+
+```python
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/path/to/module.py
+
+Describe the module's responsibility in one sentence.
+
+Maintainer(s): HOP Design contributors
+--------------------------------------------------------------------------------
+"""
+```
+
+Preserve existing author credits. A maintainer label identifies responsibility;
+it does not assign authorship. Keep public operation details in their API docs
+and use inline comments to explain non-obvious decisions.
+
 ## Test working files
 
 Successful tests remove their temporary outputs. Shared fixtures remain available

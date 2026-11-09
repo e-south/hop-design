@@ -355,6 +355,28 @@ labels 24 pt and stage titles 28 pt. Seven-inch continuation pages have their ow
 type budget and retain every state-base occurrence exactly once. Full-route SVGs use the same geometry as
 browser inspection; captions and input orders remain separate from molecular facts.
 
+### Browser controls
+
+The browser keeps the choice plot and selected molecular route together. On a
+pinned hairpin, click a labeled feature, such as the loop or added pairing, to
+read its definition and current value. **Color by** shows that feature across the
+existing map. **Filter to** narrows complete preparations to the displayed value.
+Neither action changes the search permissions. Escape closes the feature without
+closing the inspector, and keyboard focus offers the same actions.
+Paths shared by several preparations open a chooser. Materials, fixed properties
+and search coverage sit below the figures. The same facts remain in static exports. Tab enters
+an axis or molecular region. Arrow keys inspect its values or bases. Enter applies
+a choice. At fit scale, scrolling moves the page. Pinch or Ctrl-wheel zooms into
+the molecule, after which scrolling pans it. **Fit route**, Home or 0 restores the
+whole route. These camera operations leave the query and selection unchanged.
+
+The short, wide plot fits the desktop viewport. Values sit directly on their axes
+in rounded nodes; paths meet those nodes. At 1,200 px it can show all 24 loop words
+in the open-envelope example. Height is capped at 368 px; denser domains prioritize
+selected and supported labels while retaining every coordinate and path. Literal
+values wrap rather than becoming indistinguishable ellipses. Focus and **Browse…**
+provide remaining labels and the full domain. Resizing changes only presentation.
+
 ### Molecular event grammar
 
 The teaching hairpin and route use the same continuous strand contours.

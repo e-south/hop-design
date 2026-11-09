@@ -1,9 +1,14 @@
-# Share an inspectable molecular atlas
+# Share a preparation collection
 
-An atlas edition captures complete preparations from a saved discovery. It carries
+A preparation collection (an `AtlasEdition` in the API) captures complete
+preparations from a saved discovery. It carries
 their exact material handoffs and original producer identity. It can retain the
 original drawings or draw the selected molecule when inspected.
 You can move the directory and inspect it without rerunning the search.
+
+A discovery retains evaluated search work; a collection saves fixed preparation
+membership. An optional molecular map positions the collection for navigation.
+The `design atlas` command exports one selected processing route.
 
 ## Capture the choices you want to share
 
@@ -89,44 +94,15 @@ study's computation costs and coverage.
 
 ## Capture a recorded discovery with an updated exporter
 
-To package an existing released-insert discovery after updating HOP, supply an
-explicit source contract. This operation reads recorded preparations; it does
-not resume the search or authorize execution under a different generator.
-
-```bash
-# Bind the original producer when an updated exporter captures old records.
-hop-design design freeze designs --compact --source-contract source.json --out recorded-edition
-```
-
-The same operation is available as
-`construction.freeze_design_choices("designs", "recorded-edition", compact=True,
-source_contract="source.json")`. Without `source_contract`, ordinary producer
-admission applies. Use `include_landscape=True` or `--include-landscape` to fit
-coordinates with the exporter's numerical environment.
-
-`source.json` uses `hop.recorded-design-source/v1`. It binds the original complete
-producer identity, the recorded `snapshot_digest`, and a `files` mapping with
-SHA-256 digests and byte sizes. Bind `survey.sqlite`, `effort.json`, every file
-in `intent/`, and every file in `revision/` when present. Obtain these bindings
-from the recorded generator and completed source, before changing environments.
-They are input identity checks, not evidence of exhaustive discovery.
-
-Stop writers before capture. HOP rejects SQLite sidecars, changed inputs,
-symlinks, mismatched producers and unsupported molecular records. It admits one
-read snapshot, verifies every retrieved preparation through the existing
-molecular checks, and rechecks source bindings before publishing. Failure
-publishes no edition. The returned object is an immutable `AtlasEdition`.
-
-The edition keeps the original producer and binds `capture-origin.json` with
-the source contract and current exporter identity. Aggregate discovery replay
-remains a separately recorded operation. This import supports exact-stem
-released-insert discoveries, compact capture and ordinary parameter filters;
-use the original producer for family or preservation-query capture.
+After updating HOP, capture existing records with an explicit source contract.
+See [recorded capture](../reference/external-artifacts.md#capture-a-recorded-discovery-with-an-updated-exporter)
+for the command, required bindings and supported scope. This exports recorded
+preparations; it does not resume their search under a different producer.
 
 ## Explore molecules, then their preparations
 
 For proximity-based navigation, capture coordinates once using the
-[atlas-enabled installation](install.md#fit-a-new-molecular-map).
+[optional map dependencies](install.md#fit-a-new-molecular-map).
 
 ```bash
 # Capture the molecular landscape for point-by-point inspection.
@@ -143,7 +119,7 @@ the full route and its processing controls appear after selection.
 
 **Refine → Discover alternatives** starts an explicit, separate discovery branch.
 Its request uses the same exact-stem JSON as the API and CLI, initialized with the
-atlas's recorded permissions. Set an evaluation budget, then start the search.
+collection's recorded permissions. Set an evaluation budget, then start the search.
 The default omits preparation-order references owned by the original discovery.
 To reuse one deliberately, add `prefer_preparation` with paths valid from the
 launch directory; HOP verifies and captures those files for the new branch.
@@ -170,6 +146,10 @@ the selected preparation's downloadable materials. Browser and exported teaching
 figures share molecular glyphs, with separate layouts for inspector and print
 widths. Print exports include a full-resolution route plate and readable
 continuation pages; the recorded physical dimensions show the effect of scaling.
+
+The molecular map arranges recorded preparations for navigation. Its distances,
+clusters and point density neither admit preparations nor show how uniformly the
+permitted space was searched.
 
 Nearby points compare shape, retained scaffold sequence and applicable receiving
 ends. The fixed supplied stem and auxiliary primer-handle sequences do not determine
@@ -489,15 +469,9 @@ the same API. `design figure --selection view.json` reproduces the colored map.
 Unknown properties, absent words and inapplicable coordinates are rejected.
 Older receipts remain readable and do not claim to contain a saved color choice.
 
-Full-route previews retain at most four packets and 128 MiB of files; plot artifacts
-use a separate four-entry, 16-MiB cache. The browser loads the visible molecular
-view and keeps a six-entry, 8-MiB artifact cache. Closing the server removes its
-temporary previews and plots. Lightweight teaching previews and visible route
-scenes each retain up to 12 entries within one shared 8-MiB file budget. They
-never generate the complete route or a PDF.
-Requested material downloads remain in
-the inspection output directory. Multipage print figures are generated on export,
-not on every selection.
+Route previews load on demand. Material downloads remain in the inspection output
+directory, and multipage print figures are generated on export. Closing the server
+removes temporary previews and plots.
 
 ## Specify and compare molecular distances
 

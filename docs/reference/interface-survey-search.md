@@ -302,6 +302,13 @@ other targets remain unresolved. This supplies compensating geometry and method
 choices without waiting for complete interface coverage. More time does not
 change the declared molecular permissions.
 
+When a diversity objective includes cloning ends or end gaps, HOP first suggests end pairs
+from the permitted basal pairing relationships. It tries those pairs before the
+ordinary coverage order, while keeping every other permitted pair reachable.
+A suggestion still needs a complete preparation to establish support. An explicit
+preparation preference takes precedence. Missing or unfinished suggestions do not
+establish that other pairs are impossible.
+
 Compact foldback evaluation defaults to 100,000 decision nodes, 1,000,000 set
 operations, 1,000,000 site checks and 1,000,000 serialized decisions per result.
 The corresponding flags are `--sequence-decisions`, `--sequence-operations`,

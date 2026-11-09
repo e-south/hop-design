@@ -53,10 +53,10 @@ or [check a named method](../guides/resolve-production-method.md).
 
 ## What can the search change?
 
-HOP solves and reuses foldback and basal sequence domains separately, then checks selected combinations through the
-complete preparation. Most coupling is within each neighborhood: its geometry,
-recognition sites, cleavage and sequence must agree. Composition adds the
-requirements shared by the full molecule and its processing route. The engine reuses local solutions, then verifies each complete combination.
+HOP solves and reuses foldback and basal sequence domains separately. Within each
+neighborhood, geometry, recognition sites, cleavage and sequence must agree. It
+then checks selected combinations against the complete preparation's shared
+requirements.
 
 For adapter-bearing routes, **basal association** means the source–adapter contact
 region. It is narrower than the whole upstream construction flank. The source-side
@@ -116,15 +116,12 @@ every exact alternative within its reported coverage. Neither order nor a
 shorter junction predicts experimental performance. A truncated search leaves
 part of the declared space unresolved. See [search interpretation](../discovery/overview.md).
 
-## How does a preparation enter the atlas?
+## What makes a complete preparation valid?
 
-Discovery asks whether an assignment can satisfy the requested construction.
-For a complete preparation, **satisfiable** means there is an exact choice of
-sequences, materials and ordered operations that passes the modeled constraints
-through the requested endpoint. A valid local basal or foldback arrangement is
-only one part of that proof. It must still compose with the other neighborhood,
-primer bindings, sites, cuts and joins. This is sequence/geometry validity, not
-a prediction of experimental performance.
+A complete preparation is **satisfiable** when an exact choice of sequences,
+materials and ordered operations passes the modeled constraints through the
+requested endpoint. This is sequence and geometry validity, not a prediction of
+experimental performance.
 
 Keep these decisions separate:
 
@@ -134,7 +131,7 @@ Keep these decisions separate:
 | Compactness | Length ceilings restrict the domain; traversal favors compact alternatives without proving a global minimum |
 | Diversity objective | Which permitted alternatives receive search effort earlier; it does not waive constraints or award admission points |
 | Computing limits | How much of the domain is explored now; unfinished work remains unresolved |
-| Atlas capture and query | Which recorded complete preparations are included or visible; an explicit query or identity list may select a subset |
+| Saving and filtering | Which recorded complete preparations are included or visible; an explicit query or identity list may select a subset |
 
 There is no hidden preparation-quality score. The current construction
 preference contract has `ranking: none`. A longer construction inside the
@@ -142,40 +139,25 @@ declared bounds remains eligible. Being longer is not itself a rejection or an
 experimental penalty. Search order can affect which preparations are found in a
 bounded run, even when there is no ranking of the resulting preparations.
 
-"Added stem" and "added DNA" also answer different questions. Added stem counts
-paired positions beyond the supplied invariant stem at a named molecular stage.
-The loop is unpaired DNA. Source fragments removed during processing and
-auxiliary primer handles have their own roles. Construction cost reports the exact non-payload nucleotides
-retained on each endpoint strand. It does not add the two local search ceilings
-or equate a transient basal contact span with retained stem extension. Keep the
-loop, added pairing, sticky-end-to-stem spacing and auxiliary materials separately visible.
+Retained construction DNA, added pairing, loops and auxiliary handles describe
+different quantities. Compare them at the intended molecular stage; see the
+[construction vocabulary](../language/ontology.md#payload-centered-construction-vocabulary).
 
-The API fields `left_gap` and `right_gap` measure this spacing on the released
+The API fields `left_gap` and `right_gap` measure end-to-stem spacing on the released
 insert: the paired positions between each sticky end and its supplied-stem
 boundary. Zero puts that sticky end directly beside the stem. Two retains two
 additional paired positions there. A gap is not missing DNA, a primer handle or
 a loop extension. Sticky-end words and these distances are separate inputs.
 
-Identical sticky-end words do not require identical added stem. The exposed
-cloning sequences can stay the same while the paired DNA between an end and
-the supplied stem, or between the supplied stem and loop, changes. Say which
-region changes instead of calling all these bases "flanks." A loop length and
-a paired foldback-arm length are separate requirements. Short-loop limits belong
-to the caller's request. Another application can permit longer loops without
-changing HOP's general model. Neither choice asserts reaction efficiency.
-
-By default, freezing an atlas includes all matching recorded preparations,
+Freezing a preparation collection includes all matching recorded preparations,
 deduplicated by preparation identity. It does not choose only shortest designs
-or best-scoring molecules. A captured subset must retain its explicit selection
-scope. UMAP then arranges molecular descriptors for navigation. Its distances,
-clusters and point density neither admit preparations nor measure how uniformly
-the permitted space was searched. Different preparation methods can produce the
-same product, and many valid preparations may remain undiscovered.
+or best-scoring molecules. An explicit query or identity list can capture a subset.
+See [saving preparations](../guides/share-atlas-edition.md) for membership and
+molecular-map interpretation.
 
 Use [survey scope and search](../reference/interface-survey-search.md) for
-request bounds, traversal and completion semantics, and
-[atlas capture](../guides/share-atlas-edition.md) for saved membership. The API,
-CLI and browser use these same request, choice and selection authorities.
+request bounds, traversal and completion semantics. The API, CLI and browser use
+these same requests, choices and selections.
 
 ## What can you conclude?
 

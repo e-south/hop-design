@@ -1,7 +1,8 @@
 # Ecosystem ownership boundaries
 
-HOP is the narrow waist between many sources of design intent and many forms of
-downstream use.
+Use HOP from the CLI or Python API to turn sequence requirements into complete
+preparations and exact materials. The caller chooses which preparation to use
+and how to build or assess it.
 
 ```text
 human design | scripts | enumeration | campaign optimization
@@ -34,3 +35,9 @@ orientation, and compatible assembly relation.
 
 See [HOP in a campaign stack](campaign-orchestration.md) and
 [destination neutrality](../methods/destination-neutrality.md).
+
+For a file-based integration, follow the
+[selection-to-oligo example](../guides/discover-designs.md#inspect-one-route-and-retrieve-its-oligos).
+Import sequence and terminal chemistry together from `oligos.csv`; the FASTA
+export carries sequences only. Use [JSON reports](../reference/external-artifacts.md)
+when the caller runs HOP in a separate environment.

@@ -1,6 +1,8 @@
 # ![Hairpin Oligonucleotide Processing (HOP) Design: specify a stem, discover compatible flanks, retrieve oligos and processing](https://raw.githubusercontent.com/e-south/hop-design/main/assets/hop-design-banner.png)
 
-[![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://www.python.org/)
+[![CI](https://github.com/e-south/hop-design/actions/workflows/ci.yaml/badge.svg?event=pull_request)](https://github.com/e-south/hop-design/actions/workflows/ci.yaml)
+[![PyPI](https://img.shields.io/pypi/v/hop-design?color=2a9d8f)](https://pypi.org/project/hop-design/)
+[![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://github.com/e-south/hop-design/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](https://github.com/e-south/hop-design/blob/main/LICENSE)
 
 Hairpin Oligonucleotide Processing (HOP) Design finds ways to construct DNA

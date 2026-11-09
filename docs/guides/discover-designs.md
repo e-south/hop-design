@@ -7,12 +7,17 @@ you can explore what is obtainable before deciding which ends suit your next ste
 [Install HOP](install.md), then run the examples below. Each output path must
 be new so an earlier result is never overwritten.
 
-After finding useful choices, [capture an atlas edition](share-atlas-edition.md)
+After finding useful choices, [save a preparation collection](share-atlas-edition.md)
 to share their exact molecules, figures and materials without repeating search.
 
 ## Find your first choices
 
-This example preserves one supplied stem arm and requests a released duplex insert:
+Replace the example stem with one exact A/C/G/T arm, written 5′→3′ from the
+basal (open) end toward the loop. Omit the loop and complementary arm; HOP
+derives the complement. For required members from an IUPAC stem, use a
+[family request](#require-several-experimental-stems).
+
+This example requests a released duplex insert:
 
 ```bash
 # Preserve this stem and search for complete constructions.
@@ -77,6 +82,10 @@ readable pages. Open `preparation/preparation/report.md` for the selected constr
 them by experimental performance. Use `design select --help` to choose an exact
 preparation yourself.
 
+For ordering or importing oligos, retain `sequence_5prime`, `five_prime_end` and
+`three_prime_end` together. One CSV row can serve multiple roles. `oligos.fasta`
+contains sequences only; terminal chemistry remains in `oligos.csv`.
+
 The selected route reports added DNA in the requested product, distinct oligo
 orders, shared roles and terminal modifications. These facts also appear beside
 the molecule in the browser and in `molecular-route/construction-cost.json`.
@@ -99,15 +108,24 @@ choices = discover_designs(
     "python-designs",
 )
 answer = choices.explain()  # Product facts, applicable parameters and next actions.
-selected = choices.sample(seed=1)
-choices.figure(selection=selected).write("python-choice-figure")
-choices.atlas(selected).write("python-molecular-route")
-choices.retrieve(selected, "python-preparation")
+if answer["matching_preparations"]:
+    selected = choices.sample(seed=1)
+    choices.figure(selection=selected).write("python-choice-figure")
+    choices.atlas(selected).write("python-molecular-route")
+    choices.retrieve(selected, "python-preparation")
+else:
+    print(answer["headline"], answer["guidance"])
+    if "continue_search" in answer["actions"]:
+        print("Continue with choices.find_more(max_evaluations=64).")
 
 # Reopen a relocated result, or retain this object for repeated fast queries.
 saved = load_design_choices("python-designs")
 matching = saved.query({"parameters": [{"key": "loop_nt", "values": [4]}]})
 ```
+
+Move the whole discovery directory and reopen it with its original HOP/Python
+producer environment. To inspect a fixed collection independently of that
+producer, [capture it before changing environments](share-atlas-edition.md).
 
 `choices.resolution` exposes the original intention, context, effective request and
 origin of each group of settings. `choices.find_more(max_evaluations=64)` explicitly
@@ -116,18 +134,11 @@ unchanged.
 
 ## Browser controls
 
-The browser keeps the choice plot and selected molecular route together. On a
-pinned hairpin, click a labeled feature, such as the loop or added pairing, to
-read its definition and current value. **Color by** shows that feature across the
-existing map. **Filter to** narrows complete preparations to the displayed value.
-Neither action changes the search permissions. Escape closes the feature without
-closing the inspector, and keyboard focus offers the same actions.
-Paths shared by several preparations open a chooser. Materials, fixed properties
-and search coverage sit below the figures. The same facts remain in static exports. Tab enters
-an axis or molecular region. Arrow keys inspect its values or bases. Enter applies
-a choice. At fit scale, scrolling moves the page. Pinch or Ctrl-wheel zooms into
-the molecule, after which scrolling pans it. **Fit route**, Home or 0 restores the
-whole route. These camera operations leave the query and selection unchanged.
+Click a labeled molecular feature to read its definition and current value.
+**Color by** changes its display; **Filter to** narrows recorded preparations
+without changing search permissions. See the
+[browser controls](../reference/view-contracts.md#browser-controls) for keyboard
+navigation, zoom and route inspection.
 
 ## Compose a compact figure
 
@@ -142,42 +153,9 @@ hop-design design figure designs --selection selection.json \
 # Creates compact-choice-figure/figure.pdf and its coordinate data.
 ```
 
-The same operation is available through
-`choices.figure(selection=selected, display_axes=("left_gap", "right_gap", "foldback_arm_bp", "loop_nt"))`.
-Use `choices.parameters(query=query)` or
-`hop-design design parameters designs --query query.json` to read a feature's
-meaning, active constraints and available operations. For example, loop size has
-permitted lengths. Self-paired arm length follows from the arm and join position.
-Left and right end gaps are revised together. A frozen atlas can be filtered,
-while permission changes belong to its discovery request. Reading this guide to
-the features does not run a search or verify preserved surroundings.
-
-Requested constant coordinates remain visible. Unavailable,
-inapplicable, repeated or noncanonical keys produce an error.
-
-`display-projection.json` records displayed and omitted axes. `choices.json` and
-`domains.csv` retain the complete coordinate data. Paths that coincide in the
-drawing retain all their preparation identities. This changes figure composition,
-not requirements, search or selection. It also applies to
-the linked trace of a selected similarity or family figure. The exact route and oligo
-handoff continue to use the same selection.
-For an export-only recipe, pass the recorded axes again. To keep that composition
-when reopening the browser or reproducing a figure, save it with the selection:
-
-```python
-# Save the axis order with this view for later inspection and export.
-view = choices.view(
-    selected,
-    presentation={
-        "landscape": "parameters",
-        "display_axes": ["left_gap", "right_gap", "foldback_arm_bp", "loop_nt"],
-    },
-)
-choices.figure(selection=view).write("compact-choice-figure")
-```
-
-The saved view retains the ordered axes. Browser hover, pinning and export use
-that same recipe. Older saved views retain their original display defaults.
+Display axes change figure composition, not requirements, coverage or selection.
+See the [parameter reference](../reference/molecular-parameters.md#compose-a-parameter-figure)
+for Python recipes, saved views and exported coordinate data.
 
 ## Seek a useful contrast
 
@@ -198,12 +176,8 @@ It does not use different auxiliary PCR handles as evidence of scaffold breadth.
 Inspect loop, basal, interface and method alternatives in the returned complete
 choices. A diversity objective changes search priority, not the permissions.
 
-When that objective includes cloning ends or end gaps, HOP first suggests end pairs
-from the permitted basal pairing relationships. It tries those pairs before the
-ordinary coverage order, while keeping every other permitted pair reachable.
-A suggestion still needs a complete preparation to establish support. An explicit
-preparation preference takes precedence. Missing or unfinished suggestions do not
-establish that other pairs are impossible.
+See [search allocation](../reference/interface-survey-search.md#evaluate-and-resume)
+for end-pair suggestions and preparation-preference precedence.
 
 If you need to reuse an oligo, retain its exact material policy deliberately.
 If you only need to preserve the experimental sequence, use the stem request above.

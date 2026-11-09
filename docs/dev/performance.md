@@ -755,6 +755,17 @@ separately from descriptor and drawing caches when measuring resident memory.
 
 ### Inspector rendering and interaction
 
+Full-route previews retain at most four packets and 128 MiB of files; plot artifacts
+use a separate four-entry, 16-MiB cache. The browser loads the visible molecular
+view and keeps a six-entry, 8-MiB artifact cache. Closing the server removes its
+temporary previews and plots. Lightweight teaching previews and visible route
+scenes each retain up to 12 entries within one shared 8-MiB file budget. They
+never generate the complete route or a PDF.
+Requested material downloads remain in
+the inspection output directory. Multipage print figures are generated on export,
+not on every selection.
+
+
 Browser inspection generates the active landscape, its linked parameter trace
 and distributions. Inactive drawings are deferred until selected. Presentation
 or query changes can invalidate this bounded drawing group; selection and camera

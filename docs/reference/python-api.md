@@ -5,7 +5,7 @@ materials. Follow the [worked tutorial](../guides/discover-designs.md) for runna
 CLI and Python examples, then use this reference for field and operation details.
 
 - [Discover complete designs](#discover-complete-designs)
-- [Inspect and share an atlas](#frozen-atlas-editions-and-guided-exploration)
+- [Inspect and share preparations](#frozen-atlas-editions-and-guided-exploration)
 - [Compile sequence anatomy](#compile-and-integrity)
 - [Search local construction regions](#payload-centered-construction)
 
@@ -20,8 +20,11 @@ the authored intention and effective permissions without searching.
 The returned `DesignChoices` connects `query`, `explain`, `select`, `sample`, `figure`,
 `atlas` and `retrieve`. Pass one selection to both figures and retrieval.
 `select` accepts a returned path or exact preparation identity. Filtering a
-retained pool performs no search. `load_design_choices(directory)` reopens a
-portable result and validates its request binding. `find_more` or
+retained pool performs no search. `load_design_choices(directory)` reopens the
+whole discovery directory and validates its request and producer bindings. Keep
+the original HOP/Python producer environment for live results. For inspection
+independent of that producer, [save a fixed preparation collection](../guides/share-atlas-edition.md)
+before changing environments. `find_more` or
 `continue_design_discovery` explicitly resumes discovery under the same permissions.
 
 For a released insert, an intent can also name a verified preparation to try

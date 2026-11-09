@@ -54,7 +54,7 @@ compilation to check their combination and materials.
 
 ### Inspect and share
 
-- [Capture an atlas edition](guides/share-atlas-edition.md): reopen recorded
+- [Save and share preparations](guides/share-atlas-edition.md): reopen recorded
   choices and retrieve their figures and materials without repeating discovery.
 - [Render molecular views](guides/render-component-views.md).
 - [Verify saved results](provenance/overview.md).

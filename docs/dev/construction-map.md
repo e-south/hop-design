@@ -83,7 +83,7 @@ correlations and the distinction between unsupported propagation and an empty
 proved domain. Atlas inspection and retrieval must reconstruct the same
 request-conditioned local page that discovery used.
 
-The [user mental model](../start/mental-model.md#how-does-a-preparation-enter-the-atlas)
+The [user mental model](../start/mental-model.md#what-makes-a-complete-preparation-valid)
 separates permissions, compactness, allocation, computing limits and atlas
 membership. Preserve that separation when changing the implementation:
 
