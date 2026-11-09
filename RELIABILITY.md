@@ -30,6 +30,15 @@ JSON and saved-bundle admission still validate their complete contents.
 
 ## Bundle integrity
 
+New complete-route states, programs, source preparations and materialized
+realizations generate their content identities in the normal validation pass.
+The private creation context is bound to one model type and identity field,
+consumed by one root object and discarded when creation finishes. Nested records
+still verify their supplied identities, and all schema, molecular, lineage and
+route checks still run. Independent model/file admission always checks the
+supplied identity. This removes duplicate serialization during creation without
+retaining validation authority or adding a caller option to disable checks.
+
 Survey checkpoints remain bound to their exact producer. Ordinary resume and
 verification never accept another producer. An explicit `survey upgrade` replays
 every saved evaluation into a new checkpoint under the current producer. Results,

@@ -40,9 +40,14 @@ class BasalWorkUnit:
 
 
 def iter_basal_work_units(
-    request: LocalNeighborhoodRequest, *, retained_overhead_nt: int
+    request: LocalNeighborhoodRequest, *, retained_overhead_nt: int | None
 ) -> Iterator[BasalWorkUnit]:
-    """Yield offset-major units belonging to one retained-overhead level."""
+    """Yield one level, or all budgeted levels in their existing order.
+
+    Basal geometry canonicalizes offsets in increasing order, and overhead
+    increases with the offset for its fixed pairing length. A single pass with
+    None therefore equals concatenating all permitted overhead levels.
+    """
     if not isinstance(request.geometry_domain, BasalGeometryDomain):
         raise ValueError("Basal traversal requires a basal geometry domain.")
     for geometry in request.geometry_domain.exact_targets():
@@ -52,10 +57,11 @@ def iter_basal_work_units(
             else (geometry,)
         )
         for target in exact_targets:
-            if (
-                basal_retained_overhead_nt(target=target, endpoint=request.endpoint)
-                != retained_overhead_nt
-            ):
+            overhead = basal_retained_overhead_nt(target=target, endpoint=request.endpoint)
+            if retained_overhead_nt is None:
+                if overhead > request.search.max_retained_overhead_nt:
+                    return  # Later offsets have equal or larger retained overhead.
+            elif overhead != retained_overhead_nt:
                 continue
             programs = iter_basal_programs(
                 request.enzyme_provisioning, target=target, endpoint=request.endpoint

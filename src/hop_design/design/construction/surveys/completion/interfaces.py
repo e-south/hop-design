@@ -115,17 +115,16 @@ class EndPairRelations:
         except ProductConstraintConflict:
             return None  # Ordinary admission owns exact request contradictions.
         domains = []
-        for overhead in range(local.search.max_retained_overhead_nt + 1):
-            for unit in iter_basal_work_units(local, retained_overhead_nt=overhead):
-                domain = solve_basal_sequence_domain(
-                    payload_sequence=unit.payload_sequence,
-                    target=unit.target,
-                    endpoint=product.endpoint,
-                    program=unit.program,
-                    defer_end_sequence=True,
-                )
-                if not isinstance(domain, BasalPlacementFailure):
-                    domains.append(domain)
+        for unit in iter_basal_work_units(local, retained_overhead_nt=None):
+            domain = solve_basal_sequence_domain(
+                payload_sequence=unit.payload_sequence,
+                target=unit.target,
+                endpoint=product.endpoint,
+                program=unit.program,
+                defer_end_sequence=True,
+            )
+            if not isinstance(domain, BasalPlacementFailure):
+                domains.append(domain)
         result = necessary_end_pairs(product, tuple(domains), self.policy, self.limits)
         size = 0 if result is None else len(canonical_json_bytes(result))
         if size <= 2 * 1024 * 1024:
