@@ -50,6 +50,7 @@ def project_end_pairs(
         tuple[tuple[str, str, int], ...],
     ] = {}
     minimum_cost = 0
+    hidden_cost = 0
     for position, constraint in enumerate(domain.target.pairing_constraints):
         source_index = domain.source_span.end.offset - 1 - position
         adapter_index = domain.adapter_span.start.offset + position
@@ -77,16 +78,24 @@ def project_end_pairs(
             pair_options[key] = pairs
         if not pairs:
             return 0
-        minimum_cost += min(cost for _, _, cost in pairs)
+        least = min(cost for _, _, cost in pairs)
+        minimum_cost += least
         if minimum_cost > budget:
             return 0
-        contacts.append((source_index, adapter_index, pairs))
+        if source_index in groups or adapter_index in groups:
+            contacts.append((source_index, adapter_index, pairs))
+        else:
+            # Each contact owns distinct source/adapter variables. If neither
+            # is observed, a cheapest allowed pair is an existential witness;
+            # more expensive hidden choices cannot admit another output word.
+            hidden_cost += least
+    budget = min(budget - hidden_cost, len(contacts))
     assignment_roots: dict[tuple[tuple[int, str], ...], int] = {}
 
     def assignments(values: dict[int, str]) -> int:
-        # Hidden bases still consume the pairing budget below, but cannot
-        # change this output mask. Roots belong to this builder and are
-        # discarded with this call; all pairing factors still run below.
+        # A hidden partner can affect contact cost without changing this output
+        # mask. The visible contact factors below retain that cost. Roots belong
+        # to this builder and are discarded with this call.
         key = tuple((variable, base) for variable, base in values.items() if variable in groups)
         if key not in assignment_roots:
             domains = [_BASES] * len(ends)
@@ -103,10 +112,14 @@ def project_end_pairs(
             permitted = builder.union(permitted, assignments({variable: base}))
         admitted = builder.intersection(admitted, permitted)
 
+    if not contacts:
+        return admitted
     states = [admitted] + [0] * budget
     for source_index, adapter_index, pairs in contacts:
         factors = [0, 0]
         for source, adapter, cost in pairs:
+            if cost > budget:
+                continue
             factors[cost] = builder.union(
                 factors[cost], assignments({source_index: source, adapter_index: adapter})
             )

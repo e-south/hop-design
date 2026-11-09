@@ -333,14 +333,20 @@ budget. The cache ends with the projection; it does not reuse construction proof
 Before building contact factors, the projection stages each contact's permitted
 assignments and their noncanonical costs. A contact with no assignment, or a sum
 of unavoidable costs above the declared budget, proves the projection empty.
-Hidden bases and G:T wobble contribute to that bound. Passing it still requires
-the exact dependency-preserving DP. Staging retains at most sixteen assignments
+Hidden bases and G:T wobble contribute to that bound. A contact with neither base
+in the exposed ends contributes its minimum allowed cost directly: the contact
+variables are disjoint, so a more expensive hidden assignment cannot add an end
+word. Subtract those costs before the dependency-preserving DP over visible
+contacts, and do not construct choices above the remaining mismatch allowance.
+Staging retains at most sixteen assignments
 per distinct combination of base masks and contact permissions within one call.
-Identical options are derived once, but every position retains its own factor
+Identical options are derived once, but every position retains its permissions
 and consumes its own mismatch budget. This does not introduce a persistent cache. Output-frame
 validation and the builder's computation-limit checks remain in force. Compare
 complete continuation records and memory as well as the isolated kernel timing;
-the lower bound does not establish complete-route feasibility.
+the lower bound does not establish complete-route feasibility. Reduced work may
+resolve a relation that previously exhausted the same computation allowance;
+exhaustion still means unknown, not an empty relation.
 Compare complete fresh and resumed discovery records when measuring this path.
 Within one end-pair projection, each distinct enzyme definition and end requirement
 resolves its cut program once. Different source lengths still derive and check
