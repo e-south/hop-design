@@ -18,7 +18,7 @@ unless the diff contains only the exact README/banner paths admitted by
 `scripts/ci_scope.py`. That exception retains repository and packaging checks;
 it does not cover installed assets or CI changes. Additional supported Python
 versions are checked on explicit dispatch and gate release publication. See the
-[verification policy](performance.md#hosted-ci-policy) for scope and commands.
+[verification policy](performance/verification.md#hosted-ci-policy) for scope and commands.
 Neither workflow path filters nor a skipped verification job satisfy the rule.
 The full suite runs on the protected PR, not again after squash merge. Manual
 dispatch remains available. This depends on strict checks and administrator

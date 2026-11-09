@@ -39,7 +39,7 @@ not a completed hairpin route: adapter completion, primers, and the rest of
 the source must still satisfy the requested endpoint.
 
 To interpret a collection of local searches, see the
-[bounded-neighborhood teaching example](../reference/view-contracts.md#teaching-example-two-bounded-local-neighborhoods).
+[bounded-neighborhood teaching example](../reference/view-contracts/component-and-local-views.md#teaching-example-two-bounded-local-neighborhoods).
 It separates search coordinates, physical measurements, local existence, and
 exhaustive alternative coverage before choosing an exemplar.
 
@@ -213,7 +213,7 @@ replay order. Explicit filters and sorts change only the displayed rows.
 membership remain intact. Canonical ordinal is not a rank. A selection is a
 create-only reference bound to the verified source result and one accepted
 materialized realization, preserving the remaining alternatives.
-See the [CLI reference](../reference/cli.md#construction-navigation) for the
+See the [CLI reference](../reference/cli/construction-and-comparison-commands.md#construction-navigation) for the
 complete option contract.
 
 Each `ConstructionProjection` contains canonical JSON, deterministic SVG, and
@@ -267,7 +267,7 @@ local requests. This optional path preserves completed queries and verifies thei
 producer on resumption; it does not resume within a partly evaluated local query.
 
 See the [construction bundle layout](../reference/construction-bundle-layout.md),
-[Python API](../reference/python-api.md#payload-centered-construction), and
+[Python API](../reference/python-api/construction/routes.md#payload-centered-construction), and
 [provenance contract](../provenance/overview.md).
 
 The independently requested `adapter_ligated_hairpin` endpoint requires a basal

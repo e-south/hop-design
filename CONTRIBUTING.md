@@ -21,7 +21,7 @@ views and browser behavior; `source` runs all source tests and coverage; the
 default `full` adds installed-package checks. Use `full` before merge or release,
 for packaging/runtime-dependency changes, or when the boundary is uncertain.
 Molecular rules, discovery, identity, admission and handoff changes require at
-least `source`. The [verification map](docs/dev/performance.md#choose-the-verification-boundary)
+least `source`. The [verification map](docs/dev/performance/verification.md#choose-the-verification-boundary)
 defines these boundaries. Add `--workers 2` for a bounded parallel run; tests stay
 grouped by fixture scope. Report the scope and worker count with the result.
 

@@ -20,7 +20,7 @@ to share their exact molecules, figures and materials without repeating search.
 Replace the example stem with one exact A/C/G/T arm, written 5′→3′ from the
 basal (open) end toward the loop. Omit the loop and complementary arm; HOP
 derives the complement. For required members from an IUPAC stem, use a
-[family request](#require-several-experimental-stems).
+[family request](discover-designs/require-comparative-preparations.md#require-several-experimental-stems).
 
 This example requests a released duplex insert:
 
@@ -144,7 +144,7 @@ unchanged.
 Click a labeled molecular feature to read its definition and current value.
 **Color by** changes its display; **Filter to** narrows recorded preparations
 without changing search permissions. See the
-[browser controls](../reference/view-contracts.md#browser-controls) for keyboard
+[browser controls](../reference/view-contracts/complete-preparation-views.md#browser-controls) for keyboard
 navigation, zoom and route inspection.
 
 ## Compose a compact figure
@@ -164,59 +164,7 @@ Display axes change figure composition, not requirements, coverage or selection.
 See the [parameter reference](../reference/molecular-parameters.md#compose-a-parameter-figure)
 for Python recipes, saved views and exported coordinate data.
 
-## Seek a useful contrast
-
-Use `design discover --diversify loop_nt` to prioritize different loop sizes within
-the same construction permissions. Repeat `--diversify` for joint dimensions.
-Continue, select, inspect and retrieve through the same commands. Sticky ends
-remain optional.
-
-To change a permitted arm range or method, preview a small explicit revision with
-`design revise`, then execute it into a new discovery. See
-[scaffold alternatives and permission edits](explore-scaffold-alternatives.md)
-for CLI/API examples, supported dimensions and conflict recovery.
-
-Start from your stem when seeking new constructions. Starting from an existing
-oligo specification also carries its material restrictions into the search.
-HOP's default insert context completes permitted auxiliary source bases as needed.
-Inspect loop, basal, interface and method alternatives in the returned complete
-choices. A diversity objective changes search priority, not the permissions.
-
-See [search allocation](../reference/interface-survey-search.md#evaluate-and-resume)
-for end-pair suggestions and preparation-preference precedence.
-
-If you need to reuse an oligo, retain its exact material policy deliberately.
-If you only need to preserve the experimental sequence, use the stem request above.
-Advanced contexts distinguish [fixed, constrained and derived materials](../language/ontology.md#construction-search-and-its-molecular-meaning).
-The resolved `intent/report.md` and `intent/request.json` show the effective
-permissions. The same resolution is available through `resolve_design_request`
-in Python and `design resolve` in the CLI.
-
-## Refine only what matters to you
-
-When additional source cuts remove only fragments outside the intended endpoint, an optional
-[`source_cleanup` permission](discover-source-partitions.md#permit-cleanup-during-design-discovery)
-lets HOP verify removal with the selected source nickases. The retained strands
-and complete route must still pass verification.
-
-Add an exact left end, an exact right end, or both when you have that requirement:
-
-```bash
-# Require the requested cloning ends without changing the stem.
-hop-design design discover \
-  --stem ATAACTTCGTATAGCATACATTATACGAAGTTAT \
-  --product released_insert --left AGTC --right AACC \
-  --out requested-ends
-```
-
-In a saved request, `"ends": {"left": ["AGTC", "AACC"]}` permits either left
-word while leaving the right side open. Lists on both sides explicitly permit
-their Cartesian combinations. Joint pair rosters are not accepted by this entry
-contract. Use separate requests to preserve a specific pair relationship.
-
-Specified words remain hard constraints when no preparation is found.
-
-### When no preparation is recorded
+## When no preparation is recorded
 
 An empty answer can mean unfinished search, a filter with no recorded match, or
 exclusion within the saved context. **Filtering** inspects already recorded
@@ -227,7 +175,8 @@ permissions. Read the reported scope before choosing the next action.
   relevant search remains, evaluate another batch explicitly.
 - **Excluded within the saved context:** continuing unchanged will not help.
   Inspect the method, geometry and material permissions in the saved intent, then
-  make an explicit revised request in a new directory. The AGTC/AACC example above
+  make an explicit revised request in a new directory. The AGTC/AACC
+  [requested-end example](discover-designs/refine-the-search.md#refine-only-what-matters-to-you)
   demonstrates this outcome under the default context.
 - **Permission conflict:** the error identifies the requested property, permitted
   values and declaration to edit. More search cannot reconcile that contradiction.
@@ -246,57 +195,6 @@ with `design query` or `load_design_choices`. Unfinished targets remain unresolv
 Review the execution resources before retrying, rather than looping on an unchanged
 limit. The simple insert workflow currently caps its checkpoint at 1 GiB. The
 lower-level survey API exposes `max_checkpoint_bytes` for explicitly budgeted runs.
-
-### Add scaffold requirements or filters
-
-For scaffold or method requirements, save a concise JSON or YAML request:
-
-```json
-{
-  "stem_arm": "ATAACTTCGTATAGCATACATTATACGAAGTTAT",
-  "product": "released_insert",
-  "scaffold": {"loop_nt": {"minimum": 4, "maximum": 6}},
-  "methods": {"release": ["BsaI-HFv2"]}
-}
-```
-
-Pass it with `design discover --request intent.json --out designs-with-controls`.
-The resolver intersects requirements with the context and reports conflicts.
-It does not require you to duplicate a loop-size change in several declarations.
-
-To inspect recorded preparations with a 4-nt loop, save `filters.json`:
-
-```json
-{"parameters": [{"key": "loop_nt", "values": [4]}]}
-```
-
-```bash
-# Inspect recorded preparations with the saved filter.
-hop-design design query designs --query filters.json --format text
-```
-
-This filter changes neither permissions nor search coverage. A released-end
-coordinate is inapplicable to a hairpin endpoint. HOP reports that distinction
-instead of returning a misleading empty list. Source-copying and foldback
-measurements remain available when they occur along the requested route.
-
-Use the displayed enzyme name in a filter, just as in the original request:
-
-```json
-{"parameters": [{"key": "release_method", "values": ["BsaI-HFv2"]}]}
-```
-
-HOP resolves names to catalog IDs for querying, selection and export. The returned
-`query` shows that resolved meaning. `submitted_query` retains your input. If a
-name identifies several permitted entries, use the exact catalog ID named in the
-error. Equivalent measurements must agree: a 6-bp foldback arm and a 7-bp loop-side
-extension describe conflicting requirements for this construction. HOP identifies
-the conflict before filtering. Further search cannot resolve it.
-
-The browser's CLI block uses the actual discovery directory and a saved copy of
-the applied query. Run those commands from a fresh output directory while the
-browser's files remain available. Selection, route and preparation exports use
-that same query. The block offers further search only when the result supports it.
 
 ## Request a hairpin endpoint
 
@@ -335,160 +233,13 @@ the recorded pairs does not establish that an upstream truncated search is compl
 First-choice stopping applies to the two hairpin endpoints. Insert discovery
 retains its existing resumable evaluation batches.
 
-## Compare loops while holding the scaffold
+## Refine or require a set
 
-Use the same choices object to hold a selected molecule's surroundings and
-require a deliberate set. This example permits two loop words and two arm lengths:
+[Refine the search](discover-designs/refine-the-search.md) when you need exact ends,
+scaffold or method requirements, a different construction context, or a useful
+contrast. Filtering recorded preparations and changing search permissions are
+separate operations.
 
-```python
-# Preserve the scaffold while assessing the requested loop alternatives.
-choices = discover_designs(
-    {
-        "stem_arm": "ATAACTTCGTATAGCATACATTATACGAAGTTAT",
-        "product": "hairpin",
-        "loop_words": ["GAAA", "TTTC"],
-        "scaffold": {"loop_side_paired_bp": {"minimum": 7, "maximum": 8}},
-    },
-    "loop-designs",
-    max_evaluations=4,
-)
-reference = choices.sample(seed=0)
-query = choices.preserve(reference, stage="hairpin", except_neighborhood="loop")
-matching = choices.query(query)
-comparison = choices.compare(
-    {
-        "stage": "hairpin",
-        "required_members": [
-            {"name": "gaaa", "loop_sequence": "GAAA"},
-            {"name": "tttc", "loop_sequence": "TTTC"},
-        ],
-        "max_group_evaluations": 16,
-    },
-    query=query,
-)
-```
-
-`preserve` creates a new refinement from the exact reference molecule. Filters
-used to find that reference stay in its selection. They do not prevent exploring
-another loop. The original stem, construction permissions and discovery remain
-unchanged. Add parameter filters to the returned query when needed. Its `changes`
-report separates molecular neighborhoods from changed material roles.
-
-Inspect `comparison["sets"]`, then explicitly select a set and its named baseline.
-For this example, the available set is `set-0001`:
-
-```python
-# Preserve the scaffold while assessing the requested loop alternatives.
-selected = choices.select_set(comparison, set_label="set-0001", baseline="gaaa")
-choices.retrieve(selected, "loop-preparations")
-for name, member in selected["members"].items():
-    choices.figure(selection=member).write(f"{name}-choices")
-    choices.atlas(member).write(f"{name}-route")
-```
-
-Allowing two words in a filter permits either. `required_members` asks for both.
-An absent member, incompatible shared controls and an unfinished group assessment
-have separate results. No comparison starts another search or selects a set.
-These operations also apply to released-insert choices. Use `stage="endpoint"`
-to preserve the released product's surroundings, or `stage="hairpin"` to preserve
-the intermediate. Differences discarded during processing do not violate an
-endpoint control. The first molecular comparison replays the saved witnesses;
-later filters reuse those admitted facts.
-
-Insert selections retain the query and reference alongside the native preparation
-record. Saved selections and selected sets remain retrievable after more
-evaluations are appended. A new comparison uses the current snapshot.
-
-For an insert set, start with the retrieved `report.md`: it names the comparison
-stage, requested contrast, reference, shared controls and changed material roles.
-`oligos.csv` consolidates exact sequences and terminal chemistry. `oligo-uses.csv`
-retains every member and role. Each member links directly to its nucleotide
-teaching view, full route and preparation conditions. `comparison.json` holds the
-exact hairpin and insert differences, including unresolved base correspondence.
-
-The CLI equivalents are `design preserve`, `design compare` and `design select-set`.
-Saved refinements work with the existing `--query` option, and set selections use
-the existing `design retrieve` command. See the [command reference](../reference/cli.md).
-
-## Control the construction context
-
-The default insert context, `linear-source/v2`, permits 3–8-nt loops, 6–12-bp
-foldback arms, 0–2-nt join displacements, every minimum adapter annealing length
-from 14 through 24 nt, and every left/right sticky-end-to-stem spacing from 0
-through 6 bp (49 pairs). It includes the characterized
-Nt.Bpu10I, Nb.BsrDI and BsaI-HFv2 methods. Complete-route checks determine which
-combinations work within these permissions. Saved requests retain their resolved
-permissions. The earlier `linear-source/v1` context remains explicitly selectable
-with its original subsets. Loading it does not fill in omitted lengths.
-
-The context also declares primer-length limits, canonical basal pairing, a source
-handle domain and an exact synthetic adapter handle. They affect which options
-are obtainable. Inspect `designs/intent/context.json`, then save an edited copy
-and pass `--context my-context.json` when different permissions or materials are
-needed. The saved result carries that context, so later inspection does not depend
-on its original file location.
-
-A release method must be permitted for end generation in both the basal region
-and the release step. Resolution names these two fields if their permissions
-conflict. It does not broaden either set automatically.
-
-Execution limits are separate. `--evaluations` controls the amount of work in a
-batch. Python callers can provide the explicit `effort` mapping for local search
-limits. Larger quotas search further. They cannot repair a contradictory molecular
-requirement.
-
-For exhaustive interface accounting, use the [interface survey](survey-interfaces.md).
-For an already exact construction request, use [construction compilation](design-a-construction.md).
-
-## Require several experimental stems
-
-Use an explicit family request when every expansion of an IUPAC stem is required.
-The [one-N example](../../examples/stem-family-intent.json) previews four exact
-stems with the same construction permissions. End words remain optional. Run
-this repository example from a [source checkout](install.md#work-from-source).
-
-```bash
-# Require several experimental stems.
-uv run --locked hop-design design resolve --request examples/stem-family-intent.json --out family-preview
-uv run --locked hop-design design discover --request examples/stem-family-intent.json --evaluations 256 --out family --format text
-uv run --locked hop-design design query family --member member-0001 --format text
-uv run --locked hop-design design view family --member member-0001 --out member-view
-```
-
-`max_members` bounds expansion before search. `max_total_evaluations` bounds the
-work reserved by family discovery and continuation. `--evaluations` is shared
-across the required members, not multiplied by their count. Unexamined or missing
-members stay in the roster. A later `design continue family` must fit the remaining
-bound. An interrupted batch retains its member records and reserved work. Inspect
-those records before starting a revised family.
-
-Each member has ordinary choices, figures and a preparation. Select one from each
-member, then verify the complete membership and shared requirements:
-
-```python
-# Select one compatible preparation per required stem.
-from hop_design import construction
-
-family = construction.load_design_choices("family")
-roster = family.query()
-# Choose a supported common interface or other properties after inspecting the pool.
-query = {"parameters": [{"key": "left_end_word", "values": ["AAAA"]}]}
-members = {
-    member["name"]: family.member(member["name"]).sample(seed=1, query=query)
-    for member in roster["members"]
-}
-selection = family.select_members(members, baseline="member-0001")
-family.retrieve(selection, "family-preparations")
-```
-
-Sampling each stem independently does not ensure common flanks. Selection checks
-`non_stem_sequences` on the hairpin regions outside both supplied stem arms, plus
-the requested material reuse. If those checks disagree, inspect other recorded
-options before selecting again. Retrieval consolidates exact orders in
-`oligos.csv`, with member and role assignments in `oligo-uses.csv`.
-
-The CLI uses the same selection: save the member-to-selection mapping as JSON,
-run `design select-members family --members membership.json --baseline member-0001
---out family-selection.json`, then use `design retrieve` with that selection.
-This family specifies separate exact preparations. One experimental member can
-have several scaffold options and preparations, which are counted separately.
+[Require comparative preparations](discover-designs/require-comparative-preparations.md)
+to request loop alternatives with shared surroundings or one preparation for
+every experimental stem. Permitting alternatives does not require every member.

@@ -51,7 +51,7 @@ and loop lengths and words free within explicit construction bounds. It permits
 join displacements over the budget range, two basal nickases and joint end
 placements; computation quotas remain separate from those molecular permissions. Run `construction
 discover-scaffolds` with that request, then `construction edit-view --evaluated`.
-The [parameter walkthrough](../../docs/guides/explore-conditional-variants.md#explore-the-construction-envelope)
+The [parameter walkthrough](../../docs/guides/explore-conditional-variants/construction-envelope.md#explore-the-construction-envelope)
 explains brushing, local support, bounded coverage and explicit further evaluation.
 
 `envelope.py RESULT NEW_OUTPUT` demonstrates an explicit permission revision:

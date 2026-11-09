@@ -11,7 +11,7 @@ and one separately verified design bundle, then inspect views and tables from
 the verified result. The source declares the search and material requirements;
 the design bundle records the required sequence anatomy.
 
-Read [the payload-centered construction API](../../../../docs/reference/python-api.md#payload-centered-construction)
+Read [the payload-centered construction API](../../../../docs/reference/python-api/construction/routes.md#payload-centered-construction)
 and import only from `hop_design.construction`.
 
 ```python

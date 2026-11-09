@@ -21,6 +21,7 @@ import hop_design.construction as construction
 from hop_design.design.construction.complete.bundle import compile_construction_bundle
 from tests.integration.test_complete_construction_bundle import _verified_construction
 from tests.integration.test_source_partition_discovery import _request as source_partition_request
+from tests.support.documentation import read_documentation
 
 PUBLIC_NAMES = [
     "AtlasEdition",
@@ -337,13 +338,9 @@ def test_construction_selection_loader_fails_closed(
 
 
 def test_construction_facade_decision_records_the_exact_allowlist() -> None:
-    decision = (
-        Path(__file__).resolve().parents[2]
-        / "docs"
-        / "architecture"
-        / "decisions"
-        / "0027-file-oriented-construction-facade.md"
-    ).read_text(encoding="utf-8")
+    decision = read_documentation(
+        "docs/architecture/decisions/0027-file-oriented-construction-facade.md"
+    )
 
     for name in PUBLIC_NAMES:
         assert f"`{name}`" in decision

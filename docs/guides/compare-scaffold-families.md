@@ -113,7 +113,7 @@ choices. Every member retains its request, local coverage and scoped outcome.
 Only complete, shared-property-compatible choices enter `display_choices`.
 The shared reference is the first complete recorded choice, identified in the
 summary. If a local search has multiple witnesses, use
-[explicit continuation](../reference/cli.md#continue-explicit-local-choices)
+[explicit continuation](../reference/cli/construction-and-comparison-commands.md#continue-explicit-local-choices)
 for that member and select its resulting complete construction yourself.
 
 The family summary does not establish exhaustive scaffold coverage. A member's

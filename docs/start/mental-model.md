@@ -152,7 +152,7 @@ ranking of the resulting preparations.
 
 Retained construction DNA, added pairing, loops and auxiliary handles describe
 different quantities. Compare them at the intended molecular stage; see the
-[construction vocabulary](../language/ontology.md#payload-centered-construction-vocabulary).
+[construction vocabulary](../language/ontology/molecular-meaning-and-search.md#payload-centered-construction-vocabulary).
 
 The API fields `left_gap` and `right_gap` measure end-to-stem spacing on the released
 insert: the paired positions between each sticky end and its supplied-stem

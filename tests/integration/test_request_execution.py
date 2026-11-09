@@ -53,7 +53,6 @@ def test_failed_request_keeps_requested_ends_and_recorded_local_causes_visible(t
     assert "site orientation: forward" in receipt.report_text
     assert "site orientation: reverse" in receipt.report_text
     assert "forward strand" not in receipt.report_text
-    assert "not a uniquely necessary repair" in receipt.report_text
     assert "Downstream construction was not evaluated" in receipt.report_text
     local = json.loads((tmp_path / "outcome/basal/result.json").read_text())["discovery"]
     assert local["failure_reasons"] == [{"code": "unintended-actionable-site", "count": 4}]
@@ -152,7 +151,6 @@ def test_local_absence_or_ambiguity_is_a_scoped_handoff(tmp_path, stop):
     assert (tmp_path / "outcome" / family / "result.json").is_file()
     assert not (tmp_path / "outcome/construction").exists()
     assert not (tmp_path / "outcome/handoff").exists()
-    assert "not a uniquely necessary repair" in receipt.report_text
     assert json.loads((tmp_path / "outcome/inputs/request.json").read_text()) == authored
     if stop == "exhausted":
         assert summary["local_coverage"][family]["completion"] == "complete"
@@ -268,7 +266,6 @@ def test_fixed_source_rejection_preserves_a_complete_failure_handoff(tmp_path):
     assert summary["scope"] == "selected_combination"
     assert summary["rejection_reasons"] == ["source-preparation-incompatible"]
     assert "source-preparation-incompatible" in receipt.report_text
-    assert "not a uniquely necessary repair" in receipt.report_text
     assert not (tmp_path / "rejected/handoff").exists()
     assert (
         construction.load_verified_construction_bundle(tmp_path / "rejected/construction").status

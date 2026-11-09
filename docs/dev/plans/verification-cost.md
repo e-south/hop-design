@@ -12,7 +12,7 @@ The adopted workflow removes duplicate lint and post-merge source-suite executio
 uses Python 3.14's lower-overhead branch-coverage core, and exposes per-stage
 timings. Python 3.12/3.13 compatibility still gates release. Four-worker admission
 is bounded and measured separately from coverage instrumentation; see the
-[verification guide](../performance.md#use-bounded-parallelism). Scientific test
+[verification guide](../performance/verification.md#use-bounded-parallelism). Scientific test
 membership and the 90% coverage floor remain unchanged.
 
 The goal is to check each molecular responsibility once in the main suite and
@@ -24,7 +24,7 @@ verification separately from the main test suite.
 The sections below retain the implementation sequence and its measurements,
 including checks that were pending at that point. The adoption status above
 records the completed qualification; use the
-[verification guide](../performance.md#choose-the-verification-boundary) for current
+[verification guide](../performance/verification.md#choose-the-verification-boundary) for current
 commands and scope selection.
 
 ## Evidence and scope

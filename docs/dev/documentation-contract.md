@@ -17,6 +17,12 @@ heading or link to disclose detail; avoid administrative tables, document IDs,
 verification dates and a fixed list of required sections. Git records editing
 history. Runtime skills keep only the metadata their loader requires.
 
+When a page serves several tasks, keep a short entry page and move each task
+into a named child page. Group related pages in the entry's same-stem directory,
+with links describing the question each page answers. Keep prerequisites beside
+examples and update incoming links to the specific destination. Split by the
+reader's task or molecular responsibility, rather than by a line-count target.
+
 ## References
 
 Explain what callers supply, what HOP derives and which constraints apply. Name

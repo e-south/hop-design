@@ -24,7 +24,7 @@
 
 Run `bash ./scripts/agent-preflight --strict` before editing. For review,
 choose the [verification
-boundary](performance.md#choose-the-verification-boundary):
+boundary](performance/verification.md#choose-the-verification-boundary):
 `scripts/agent-verify --scope presentation` for molecular views,
 `--scope source` for molecular/API behavior, and the default full gate for
 merge, release, packaging or uncertain scope. Full defaults to extended

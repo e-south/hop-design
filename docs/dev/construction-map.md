@@ -197,7 +197,7 @@ Use the existing contract tests nearest the changed behavior:
 Run a selected file with `uv run --locked pytest -q PATH`. Documentation metadata,
 routes and headings are checked by `uv run --locked python scripts/check_docs.py`;
 dependency direction by `uv run --locked python scripts/check_architecture.py`.
-Choose the [verification boundary](performance.md#choose-the-verification-boundary)
+Choose the [verification boundary](performance/verification.md#choose-the-verification-boundary)
 for the changed responsibility. Repository-only checks and documentation use
 focused integrity checks; molecular changes require source verification. Full
 source/distribution verification remains required before merge or release.

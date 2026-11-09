@@ -43,7 +43,7 @@ For all four-base pairs, use `targets: {}`: 256 words per side, or 65,536 ordere
 pairs. Length bounds cap acceptable scaffold additions; execution limits control
 how much of that coupled space HOP examines.
 
-The [request reference](../reference/interface-survey-search.md#declare-the-molecular-domain)
+The [request reference](../reference/interface-survey-search/molecular-domain-and-completion.md#declare-the-molecular-domain)
 defines every field, including primer policies, joint placements and recognition
 requirements. This survey accepts an exact stem. For a hairpin endpoint or other
 scaffold requests, use [scaffold discovery](discover-product-scaffolds.md).
@@ -75,7 +75,7 @@ geometry and material permissions you can accept.
 Repeat the command with `--resume` to continue. Keep the request, HOP build and
 per-evaluation limits unchanged; `--max-evaluations` sets the additional work for
 that invocation. A changed molecular request needs a new checkpoint. See
-[search limits and recovery](../reference/interface-survey-search.md#evaluate-and-resume)
+[search limits and recovery](../reference/interface-survey-search/execution-and-coverage.md#evaluate-and-resume)
 for resource stops and larger surveys.
 
 ## 3. Explore the same results visually or programmatically
@@ -196,7 +196,7 @@ Path("selected.json").write_text(json.dumps(selected, indent=2) + "\n")
 
 The saved selection works with the CLI commands above. With no match, `sample`
 raises before writing it. Retain `pool` for repeated fast queries; load it again
-to include newly evaluated results. The [API reference](../reference/python-api.md#interface-surveys)
+to include newly evaluated results. The [API reference](../reference/python-api/discovery.md#interface-surveys)
 also covers explicit selection, atlas inspection and retrieval.
 
 ## Verify or compare a result
@@ -214,4 +214,4 @@ materials across the route. Ambiguous base correspondence remains marked.
 
 For detailed [coverage and search semantics](../reference/interface-survey-search.md),
 [query and selection behavior](../reference/interface-survey-results.md), or
-[CLI options](../reference/cli.md#complete-scaffold-options), follow the linked references.
+[CLI options](../reference/cli/construction-and-comparison-commands.md#complete-scaffold-options), follow the linked references.

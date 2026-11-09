@@ -31,6 +31,7 @@ import hop_design.spaces as hop_spaces
 import hop_design.views as hop_views
 from hop_design import api as hop_api
 from tests.support.claim_language import assert_no_positive_downstream_claims
+from tests.support.documentation import read_documentation
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -145,7 +146,7 @@ def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture()
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     guide = (REPO_ROOT / "docs" / "guides" / "substrate-spaces.md").read_text(encoding="utf-8")
     quickstart = (REPO_ROOT / "docs" / "guides" / "quickstart.md").read_text(encoding="utf-8")
-    cli = (REPO_ROOT / "docs" / "reference" / "cli.md").read_text(encoding="utf-8")
+    cli = read_documentation("docs/reference/cli.md")
     spec_path = REPO_ROOT / "examples" / "fixed-site-three-base-context.yaml"
 
     for text in (readme, quickstart, guide):
@@ -223,9 +224,7 @@ def test_public_docs_distinguish_the_scientist_facade_from_specialist_surfaces()
 def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None:
     discovery = (REPO_ROOT / "docs" / "discovery" / "overview.md").read_text(encoding="utf-8")
     mental_model = (REPO_ROOT / "docs" / "start" / "mental-model.md").read_text(encoding="utf-8")
-    view_contracts = (REPO_ROOT / "docs" / "reference" / "view-contracts.md").read_text(
-        encoding="utf-8"
-    )
+    view_contracts = read_documentation("docs/reference/view-contracts.md")
     reliability = (REPO_ROOT / "RELIABILITY.md").read_text(encoding="utf-8")
     normalized = " ".join(discovery.split())
     normalized_mental_model = " ".join(mental_model.split())
@@ -278,7 +277,7 @@ def test_discovery_docs_define_truthful_overhead_ordered_local_results() -> None
 def test_default_scientist_surfaces_do_not_make_positive_downstream_claims(
     relative_path: str,
 ) -> None:
-    text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+    text = read_documentation(relative_path)
     assert_no_positive_downstream_claims(text, surface=relative_path)
 
 
@@ -689,7 +688,7 @@ def test_active_docs_do_not_teach_retired_design_schemas_or_route_fields() -> No
 
 def test_active_docs_do_not_teach_retired_candidate_ordering() -> None:
     active_text = "\n".join(
-        (REPO_ROOT / path).read_text(encoding="utf-8")
+        read_documentation(path)
         for path in (
             "DESIGN.md",
             "docs/reference/mechanics-api.md",
@@ -708,7 +707,7 @@ def test_active_docs_do_not_teach_retired_candidate_ordering() -> None:
 
 def test_old_package_users_keep_a_versioned_documentation_route() -> None:
     install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
-    schemas = (REPO_ROOT / "docs/reference/schemas.md").read_text(encoding="utf-8")
+    schemas = read_documentation("docs/reference/schemas.md")
     assert "tree/v0.1.0a8" in install
     assert "hop.interface-survey/v2" in schemas
     assert "hop.design/v2" in schemas
@@ -716,7 +715,7 @@ def test_old_package_users_keep_a_versioned_documentation_route() -> None:
 
 def test_every_stable_operation_is_named_in_the_api_reference() -> None:
     reference = "\n".join(
-        (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+        read_documentation(relative_path)
         for relative_path in (
             "docs/reference/python-api.md",
             "docs/reference/mechanics-api.md",

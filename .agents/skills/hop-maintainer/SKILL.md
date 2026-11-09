@@ -59,7 +59,7 @@ outside HOP.
    the exact README/artwork paths documented in the verification guide.
    A presentation-only change requires
    rendered review and conserved molecular content as well as its focused gate.
-   See `docs/dev/performance.md#choose-the-verification-boundary` for the
+   See `docs/dev/performance/verification.md#choose-the-verification-boundary` for the
    responsibility map and bounded worker option.
    Use the hosted gate once for final qualification; do not duplicate it locally.
    Protected main does not rerun the source suite after a green, current PR merge.
