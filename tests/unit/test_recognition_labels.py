@@ -1,4 +1,4 @@
-"""Repeated enzyme footprints keep their identities without repeating the name."""
+"""Every physical enzyme footprint has its own nearby, addressed name."""
 
 import json
 from types import SimpleNamespace as NS
@@ -7,7 +7,7 @@ from xml.etree import ElementTree as ET
 from hop_design.export.construction.molecular.recognition_sites import recognition_site_overlays
 
 
-def test_repeated_sites_share_one_name_but_keep_both_addressed_footprints():
+def test_repeated_sites_keep_both_addressed_footprints_and_names():
     sites = []
     points = {("strand", i): (100 + i * 16, 160) for i in range(20)}
     for index, start in enumerate((0, 12)):
@@ -28,10 +28,14 @@ def test_repeated_sites_share_one_name_but_keep_both_addressed_footprints():
     root = ET.fromstring("<svg>" + recognition_site_overlays(projection, points) + "</svg>")
     assert len([e for e in root.iter() if e.get("data-site-id")]) == 2
     assert len([e for e in root.iter() if e.get("data-members")]) == 2
-    assert len([e for e in root.iter() if e.get("data-label-kind") == "recognition"]) == 1
+    assert len([e for e in root.iter() if e.get("data-label-kind") == "recognition"]) == 2
+    assert {e.get("data-label-for-site") for e in root.iter() if e.get("data-label-for-site")} == {
+        "site-0",
+        "site-1",
+    }
 
 
-def test_strand_aware_names_group_repeated_sites_without_merging_status_or_sides():
+def test_strand_aware_names_preserve_every_site_status_and_side():
     points = {
         (strand, i): (100 + i * 16, y)
         for strand, y in (("top", 100), ("bottom", 160))
@@ -68,10 +72,11 @@ def test_strand_aware_names_group_repeated_sites_without_merging_status_or_sides
         for e in root.iter()
         if e.get("data-site-labels")
     }
-    assert groups == {("site-0", "site-1"), ("site-2",), ("site-3",)}
+    assert groups == {("site-0",), ("site-1",), ("site-2",), ("site-3",)}
     assert len([e for e in root.iter() if e.get("data-recognition-footprint")]) == 4
     assert sorted(e.text for e in root.iter() if e.get("data-label-kind") == "recognition") == [
         "Nickase",
+        "Nickase *",
         "Nickase *",
         "Nickase *",
     ]

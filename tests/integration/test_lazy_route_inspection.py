@@ -440,7 +440,7 @@ def test_visible_scene_batch_reuses_one_projection_without_changing_drawings(
     phases = (
         "source_ssdna",
         "duplex",
-        "cleaved_duplex",
+        "selected_fragments",
         "annealed_complex",
         "foldback_closed_hairpin",
         "adapter_annealed",

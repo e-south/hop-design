@@ -2,7 +2,14 @@
 
 from xml.etree import ElementTree as ET
 
-from .style import ANNOTATION_SIZE, INK, OPERATION_ARROW_LENGTH, OPERATION_GAP, SCENE_CLEARANCE
+from .style import (
+    ANNOTATION_SIZE,
+    INK,
+    OPERATION_ARROW_LENGTH,
+    OPERATION_GAP,
+    OPERATION_STROKE,
+    SCENE_CLEARANCE,
+)
 from .typography import text_width
 
 SVG = "http://www.w3.org/2000/svg"
@@ -19,7 +26,7 @@ def draw_operation(
         {
             "d": f"M{center},{y} V{bottom - 22}",
             "stroke": INK,
-            "stroke-width": "5",
+            "stroke-width": str(OPERATION_STROKE),
             "fill": "none",
             "stroke-linecap": "round",
             "data-operation-arrow": "true",

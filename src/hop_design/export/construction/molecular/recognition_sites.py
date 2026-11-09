@@ -125,22 +125,19 @@ def recognition_site_overlays(
                 ) / 2
                 below = (top + bottom) / 2 > middle
                 y = bottom + label_size + 10 if below else top - 10
-                named[label, color, "below" if below else "above"].append(
-                    (site.site_id, (x + right) / 2, y)
-                )
+                named[label, color, site.site_id].append((site.site_id, (x + right) / 2, y))
             else:
-                named[label, color, ""].append((site.site_id, x, top - 9))
+                named[label, color, site.site_id].append((site.site_id, (x + right) / 2, top - 9))
         rows.append("</g>")
     for (label, color, _), anchors in named.items():
         center = sum(x for _, x, _ in anchors) / len(anchors)
-        x = (
-            center - text_width(label, label_size) / 2
-            if len(anchors) > 1 or strand_labels
-            else center
-        )
+        x = center - text_width(label, label_size) / 2
         y = min(y for _, _, y in anchors)
         ids = escape(json.dumps([site for site, _, _ in anchors]), quote=True)
-        rows.append(f'<g data-site-labels="{ids}">')
+        rows.append(
+            f'<g data-site-labels="{ids}" '
+            f'data-label-for-site="{escape(anchors[0][0], quote=True)}">'
+        )
         if len(anchors) == 1:
             rows.append(labels.text("recognition", x, y, label, color, label_size))
         else:

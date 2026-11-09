@@ -9,8 +9,14 @@ from hop_design.models.construction.projections.neighborhoods import molecular_n
 
 from ..labels import endpoint_label, material_role_label
 from ..scaffold.hairpin_layout import HairpinLayout
+from .primitives.style import REGION_COLORS
 
-INK, OPEN, CLOSING, STEM = "#23313B", "#176B9A", "#258365", "#68747D"
+INK, OPEN, CLOSING, STEM = (
+    "#23313B",
+    REGION_COLORS["assembly"],
+    REGION_COLORS["closing"],
+    REGION_COLORS["stem"],
+)
 CHANGES = {"substitution": "#F0DCF2", "added": "#D3EEE3"}
 
 

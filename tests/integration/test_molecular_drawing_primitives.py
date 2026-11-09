@@ -6,6 +6,7 @@ from math import hypot
 from xml.etree import ElementTree as ET
 
 from hop_design import construction
+from hop_design.export.construction.molecular.primitives.style import PRIMER_CLEARANCE, base_ink
 from tests.integration.test_molecular_atlas import atlas_request
 
 SVG = "{http://www.w3.org/2000/svg}"
@@ -29,7 +30,10 @@ def test_strand_groups_retain_every_base_and_explicit_direction(loop_pool):
             assert group.get("id") and group.get("data-sequence-direction") == "5prime-to-3prime"
             bases = [e for e in group.iter() if e.get("data-base-index") is not None]
             assert "".join(e.find(SVG + "text").text for e in bases) == molecule["sequence"]
-            assert {e.find(SVG + "text").get("fill") for e in bases} == {"#182B34"}
+            for base in bases:
+                assert base.find(SVG + "text").get("fill") == base_ink(
+                    base.get("data-neighborhood"), base.find(SVG + "rect").get("fill")
+                )
 
 
 def test_bound_primers_show_the_exact_ordered_sequence_without_becoming_state_bases(loop_pool):
@@ -64,7 +68,7 @@ def test_bound_primers_show_the_exact_ordered_sequence_without_becoming_state_ba
             text = template[index].find(SVG + "text")
             path.append((float(rect.get("x")) + 7, float(text.get("y")) - 5))
         for glyph in bases[-len(indices) :]:
-            x, y = float(glyph.get("x")) + 5, float(glyph.get("y")) - 5
+            x, y = float(glyph.get("x")), float(glyph.get("y")) - 5
             distances = []
             for (ax, ay), (bx, by) in pairwise(path):
                 dx, dy = bx - ax, by - ay
@@ -72,7 +76,7 @@ def test_bound_primers_show_the_exact_ordered_sequence_without_becoming_state_ba
                 distances.append(hypot(x - ax - t * dx, y - ay - t * dy))
             # Normal clearance stays uniform through the kink. A miter may be
             # farther from the corner point, but never nearer than the clearance.
-            assert min(distances) >= 44 - 1e-5
+            assert min(distances) >= PRIMER_CLEARANCE - 1e-5
 
 
 def test_cut_marks_are_strand_specific_and_site_bands_remain_translucent(loop_pool):

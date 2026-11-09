@@ -1,5 +1,6 @@
 """Measure exact state scenes before route placement."""
 
+import json
 from dataclasses import dataclass
 from xml.etree import ElementTree as ET
 
@@ -10,8 +11,10 @@ from .assembly.foldback import append_cue, foldback_cue
 from .assembly.inputs import incoming_materials
 from .assembly.placement import assembly_points
 from .inspection import molecular_inspection_element
+from .inspection_overlays import inspection_overlays
 from .primitives.annotation_policy import RouteSiteLabels, named_sites
 from .primitives.extent import scene_extent
+from .primitives.style import TITLE_SIZE
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,45 @@ def atlas_scenes(
     staged = {
         state.state.state_id: incoming_materials(atlas, state, frames) for state in atlas.states
     }
+    # Reserve above-primer names against the common folded frame once, even
+    # for an isolated scene request. Shared ancestral bases stay in register.
+    folded = {"annealed_complex", "foldback_closed_hairpin", "adapter_annealed", "adapter_ligated"}
+    headroom = 0.0
+    for state in atlas.states:
+        sid = state.state.state_id
+        if state.state.phase.value not in folded or sid not in frames:
+            continue
+        overlay = ET.fromstring(
+            inspection_overlays(
+                state,
+                frames[sid],
+                tuple(
+                    item
+                    for item in atlas.inputs
+                    if item.binding_state_id == sid
+                    and item.material_use.use_id
+                    not in {i.item.material_use.use_id for items in staged.values() for i in items}
+                ),
+                staged_inputs=staged[sid],
+            )
+        )
+        low = min(
+            (
+                json.loads(e.attrib["data-label-box"])[1]
+                for e in overlay.iter()
+                if e.get("data-label-box")
+            ),
+            default=TITLE_SIZE + 18,
+        )
+        headroom = max(headroom, TITLE_SIZE + 18 - low)
+    if headroom > 1e-7:
+        for state in atlas.states:
+            sid = state.state.state_id
+            if state.state.phase.value in folded and sid in frames:
+                frames[sid] = {key: (x, y + headroom) for key, (x, y) in frames[sid].items()}
+        staged = {
+            state.state.state_id: incoming_materials(atlas, state, frames) for state in atlas.states
+        }
     staged_ids = frozenset(
         item.item.material_use.use_id for inputs in staged.values() for item in inputs
     )

@@ -25,7 +25,7 @@ def test_assembly_view_collapses_cleanup_without_changing_the_record(atlas):
     assert [r.get("data-atlas-phase") for r in rows] == [
         "source_ssdna",
         "duplex",
-        "cleaved_duplex",
+        "selected_fragments",
         "annealed_complex",
         "foldback_closed_hairpin",
         "adapter_annealed",
@@ -34,10 +34,11 @@ def test_assembly_view_collapses_cleanup_without_changing_the_record(atlas):
         "clone_ready_duplex",
     ]
     assert [int(r.get("data-atlas-order")) for r in rows] == list(range(9))
-    assert "Heat · cleanup · reanneal" in "".join(rows[2].itertext())
-    assert "Retained and annealed" in "".join(rows[3].itertext())
+    assert "Fold-back · reanneal" in "".join(rows[2].itertext())
+    assert "Cleavage · cleanup" in "".join(rows[1].itertext())
+    assert "Folded and annealed" in "".join(rows[3].itertext())
     assert json.loads(rows[2].get("data-transition-ids")) == [
-        t.authority_id for t in atlas.transitions[2:5]
+        t.authority_id for t in atlas.transitions[4:5]
     ]
     assert root.get("data-recorded-state-count") == "11"
     assert atlas.model_dump_json() == before
@@ -308,3 +309,36 @@ def test_partial_route_rejects_unknown_duplicate_or_hidden_states_before_drawing
     )
     with pytest.raises(ValueError, match="scene"):
         route_blocks(atlas, None, [], presentation="assembly", state_ids=(hidden,))
+
+
+def test_retained_scene_precedes_folding_with_upward_cue_and_exact_selected_content(atlas):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    selected = next(s for s in atlas.states if s.state.phase.value == "selected_fragments")
+    row = next(e for e in root.iter() if e.get("data-atlas-phase") == "selected_fragments")
+    assert row.get("data-atlas-state") == selected.state.state_id
+    assert len([e for e in row.iter() if e.get("data-base-index") is not None]) == len(
+        selected.bases
+    )
+    assert not any(e.get("data-pair-kind") for e in row.iter())
+    cue = next(e for e in row.iter() if e.get("data-foldback-cue"))
+    assert cue.get("data-cue-phase") == "before-folding"
+    assert not any(
+        e.get("data-foldback-cue")
+        for r in root.iter()
+        if r.get("data-atlas-phase") == "annealed_complex"
+        for e in r.iter()
+    )
+    for primer in (
+        e
+        for e in root.iter()
+        if e.get("data-primer-binding")
+        or (e.get("data-staged-material") and e.get("data-binding-context") == "derived_template")
+    ):
+        box = tuple(map(float, primer.get("data-drawing-box").split()))
+        group = next(e for e in primer if e.get("data-annotation-block"))
+        a, b, w, h = tuple(map(float, group.get("data-drawing-box").split()))
+        assert a + w / 2 == pytest.approx(box[0] + box[2] / 2)
+        if group.get("data-primer-label-side") == "above":
+            assert b + h < box[1]
+        else:
+            assert b > box[1] + box[3]

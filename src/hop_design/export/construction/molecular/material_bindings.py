@@ -10,7 +10,8 @@ from .primitives.material_labels import material_label
 from .primitives.materials import input_box
 from .primitives.primer_geometry import outward_side, position_primer
 from .primitives.primer_shape import primer_contour
-from .primitives.style import INK, object_id
+from .primitives.style import BASE_SIZE, INK, object_id
+from .primitives.typography import fitted_base_size
 
 
 def material_binding_overlays(
@@ -18,7 +19,7 @@ def material_binding_overlays(
     points: dict[tuple[str, int], tuple[float, float]],
     labels: LabelPlacer,
     *,
-    base_size: float = 16,
+    base_size: float = BASE_SIZE,
 ) -> str:
     rows = []
     for item in inputs:
@@ -63,7 +64,8 @@ def material_binding_overlays(
         for i, (base, (bx, by)) in enumerate(zip(sequence, positions, strict=True)):
             rows.append(
                 f'<text data-input-base-index="{i}" x="{bx}" y="{by + 5}" '
-                f'font-size="{base_size:g}" text-anchor="middle" fill="{INK}">{base}</text>'
+                f'font-size="{fitted_base_size(base, base_size):g}" text-anchor="middle" '
+                f'fill="{INK}">{base}</text>'
             )
         role = material_role_label(item.material_use.role)
         chemistry = (
@@ -74,6 +76,14 @@ def material_binding_overlays(
         rows.append(
             f"<title>{escape(role)}; {chemistry}; {item.annealing_length_nt} nt binding</title>"
         )
-        rows.append(material_label(item, (left, top, width, height), labels))
+        rows.append(
+            material_label(
+                item,
+                (left, top, width, height),
+                labels,
+                above=sum(y for _, y in positions) / len(positions)
+                < sum(y for _, y in template) / len(template),
+            )
+        )
         rows.append("</g>")
     return "".join(rows)

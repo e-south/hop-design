@@ -70,6 +70,12 @@ def test_inspector_overview_retains_every_base_and_fits_larger_annotations(captu
         }
 
     assert bases(narrow) == bases(public)
+    from hop_design.export.construction.molecular.primitives.style import base_ink
+
+    for glyph in narrow.iter():
+        if glyph.get("data-base-index") is not None:
+            letter = next(e for e in glyph if e.tag.endswith("}text"))
+            assert letter.get("fill") == base_ink(glyph.get("data-neighborhood"))
     assert len([e for e in narrow.iter() if e.get("data-teaching-frame")]) == 1
     assert not any(e.get("data-teaching-continuation") for e in narrow.iter())
     width, height = map(float, narrow.get("viewBox").split()[2:])
