@@ -469,7 +469,7 @@ def test_complete_trajectory_rejects_unverified_sources_and_forged_admission(
         "_result_digest",
         sha256_digest(canonical_json_bytes(forged.result)),
     )
-    with pytest.raises(ValueError, match="deterministic composition replay"):
+    with pytest.raises(ValueError, match="admitted composition"):
         project_complete_construction_trajectory(
             forged,
             materialized_realization_id=selected_id,

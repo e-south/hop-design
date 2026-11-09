@@ -77,9 +77,19 @@ limited to the invocation that compiled the authority; every independently loade
 bundle still undergoes the complete checks above. A failed write returns no
 execution handoff. No process-wide or path-based verification cache is used.
 
-Source compilation packages the result just replayed by discovery without a
-second in-memory replay. Independently called bundle compilation still verifies
-its supplied receipt. Scaffold discovery projects branch facts from candidate
+Fresh complete discovery admits the exact result produced by its composer after
+verified upstream authorities and strict result validation. It does not rerun
+that same composer immediately. The result validators still check identities,
+route derivation, material lineage, endpoint evidence and disposition accounting.
+Only this internally generated result receives direct admission; there is no
+caller-supplied result or verification-disable option on that path. Admission
+binds the receipt object's identity and current canonical result digest, so
+copying a container or altering its content cannot inherit that authority.
+
+Source compilation packages this admitted result. Explicit result verification,
+independently constructed result receipts, bundle compilation and staged-file
+publication still perform complete replay. Independently loaded files retain all
+checks above. Scaffold discovery projects branch facts from candidate
 receipts already admitted during the same invocation; the projection layer has
 no optional bundle-admission path. Candidate publication and file admission remain
 separate checks. Reopening a saved discovery replays its candidates afresh.

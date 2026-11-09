@@ -222,13 +222,13 @@ def compile_construction_bundle(
         basal=construction.basal,
         design=construction.design,
     )
-    return _package_replayed_construction(construction)
+    return _package_admitted_construction(construction)
 
 
-def _package_replayed_construction(
+def _package_admitted_construction(
     construction: VerifiedConstructionSpaceResult,
 ) -> ConstructionCompilation:
-    """Package the fresh replay result owned by this call, without replaying again."""
+    """Package the admitted result owned by this call, without repeating composition."""
     artifacts = construction_artifacts(construction)
     bundle = construction_manifest(construction, artifacts)
     return ConstructionCompilation._create(
@@ -299,7 +299,7 @@ def load_verified_construction_bundle(
         )
     except Exception as exc:
         raise BundleIntegrityError(f"Construction result cannot be replayed: {exc}") from exc
-    expected = _package_replayed_construction(construction)
+    expected = _package_admitted_construction(construction)
     if dict(expected._artifacts) != artifacts:
         raise BundleIntegrityError("Construction artifacts disagree with deterministic replay.")
     if expected._bundle != bundle:

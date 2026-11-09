@@ -11,10 +11,10 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from hop_design.design.construction.complete.discovery import VerifiedConstructionSpaceResult
-from hop_design.design.construction.complete.replay_admission import (
-    has_current_replay_admission,
+from hop_design.design.construction.complete.admission import (
+    has_current_admission,
 )
+from hop_design.design.construction.complete.discovery import VerifiedConstructionSpaceResult
 from hop_design.models.construction import ConstructionEndpoint, RealizationGrouping
 from hop_design.models.construction.complete import MaterializedConstructionRealization
 from hop_design.models.construction.complete.clone.geometry import clone_payload_end_offsets
@@ -31,17 +31,15 @@ from hop_design.serialization import canonical_json_bytes
 def _admit_source(source: VerifiedConstructionSpaceResult) -> VerifiedConstructionSpaceResult:
     if not isinstance(source, VerifiedConstructionSpaceResult):
         raise TypeError("Complete construction projections require a verified source result.")
-    if not has_current_replay_admission(source, source.result):
-        raise ValueError(
-            "Construction space result disagrees with deterministic composition replay."
-        )
+    if not has_current_admission(source, source.result):
+        raise ValueError("Construction space result differs from its admitted composition.")
     return source
 
 
 def project_complete_construction_summary(
     source: VerifiedConstructionSpaceResult,
 ) -> CompleteConstructionSummaryProjection:
-    """Project every ordered disposition from a replay-admitted complete result."""
+    """Project every ordered disposition from an admitted complete result."""
     admitted = _admit_source(source)
     result = admitted.result
     realizations = {item.materialized_realization_id: item for item in result.realizations}
