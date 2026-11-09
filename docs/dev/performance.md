@@ -395,6 +395,9 @@ groups identical relations, and maps each requested end pair to the matching
 frames plus all unknown frames. Candidate coordinates retain the ordinary cost
 and canonical-address order. Indexed navigation jumps directly to the next
 candidate instead of traversing rejected basal coordinates and empty cost waves.
+Cursor lookup uses binary search over the admitted ordered candidates without
+materializing every candidate's cost key again. Candidate validation, cost ties,
+foldback offsets and traversal order remain unchanged.
 The complete compiler, local sequence choices and all foldback alternatives
 remain unchanged. Navigation records bind the full frame-to-relation digest;
 replay rebuilds it independently. No study roster or private data enters this path.
