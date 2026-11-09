@@ -114,6 +114,32 @@ def test_installation_continues_into_the_primary_discovery_tutorial() -> None:
     assert "uv run hop-design" not in tutorial
 
 
+def test_map_capture_names_its_optional_dependency_before_first_fit() -> None:
+    install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
+    capture = (REPO_ROOT / "docs/guides/share-atlas-edition.md").read_text(encoding="utf-8")
+    assert "hop-design[atlas]==0.1.0a9" in install
+    assert capture.index("install.md#fit-a-new-molecular-map") < capture.index(
+        "--include-landscape"
+    )
+
+
+def test_checkout_recipes_do_not_switch_to_an_independent_installed_cli() -> None:
+    for name in (
+        "explore-conditional-variants",
+        "discover-product-scaffolds",
+        "survey-interfaces",
+        "compile-construction",
+        "compare-scaffold-families",
+        "edit-folded-sequences",
+        "explore-scaffolds",
+    ):
+        text = (REPO_ROOT / f"docs/guides/{name}.md").read_text(encoding="utf-8")
+        commands = re.findall(r"^```(?:bash|text)\n(.*?)^```", text, re.MULTILINE | re.DOTALL)
+        assert commands
+        for block in commands:
+            assert not re.search(r"^hop-design\s", block, re.MULTILINE), name
+
+
 def test_scientist_surface_keeps_the_64_member_space_as_a_verification_fixture() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     guide = (REPO_ROOT / "docs" / "guides" / "substrate-spaces.md").read_text(encoding="utf-8")

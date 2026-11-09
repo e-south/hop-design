@@ -86,7 +86,6 @@ does not specify a construction procedure or establish experimental success.
 - [Check a named method](resolve-production-method.md) and
   [render molecular views](render-component-views.md).
 
-The CLI can also inspect and select saved constructions with
-`hop-design construction`. Construction search and compilation use Python.
-check the [construction guide](compile-construction.md) for source-only features
-not available in the published release.
+For a complete preparation, follow [design discovery](discover-designs.md) through
+the CLI or Python API. [Local construction](compile-construction.md) exposes
+additional junction and composition controls.

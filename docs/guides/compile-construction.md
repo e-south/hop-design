@@ -22,7 +22,7 @@ From the repository root, with Python 3.12–3.14 and `uv` installed:
 ```bash
 # Run the public junction example in the locked source environment.
 uv sync --locked
-uv run python examples/basal-junction/search.py --out build/basal-junction
+uv run --locked python examples/basal-junction/search.py --out build/basal-junction
 ```
 
 The [worked example](../../examples/basal-junction/README.md) keeps a public
@@ -41,8 +41,8 @@ Once you have compiled a complete construction bundle, list and inspect it:
 
 ```bash
 # List exact local choices before selecting their route addresses.
-uv run hop-design construction list CONSTRUCTION_BUNDLE
-uv run hop-design construction inspect CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBER
+uv run --locked hop-design construction list CONSTRUCTION_BUNDLE
+uv run --locked hop-design construction inspect CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBER
 ```
 
 Use the route number shown by the listing, not its position after sorting.
@@ -69,7 +69,7 @@ routes before deciding which materials to use:
 
 ```bash
 # Compare two saved constructions without changing either bundle.
-uv run hop-design construction compare LEFT_BUNDLE RIGHT_BUNDLE \
+uv run --locked hop-design construction compare LEFT_BUNDLE RIGHT_BUNDLE \
   --left-ordinal LEFT_ROUTE_NUMBER --right-ordinal RIGHT_ROUTE_NUMBER
 ```
 
@@ -190,13 +190,13 @@ The same verified authority is navigable without importing Python:
 
 ```bash
 # Read the saved construction summary.
-hop-design construction summary construction-bundle
-hop-design construction list construction-bundle --group-by geometry
-hop-design construction inspect construction-bundle REALIZATION_ID \
+uv run --locked hop-design construction summary construction-bundle
+uv run --locked hop-design construction list construction-bundle --group-by geometry
+uv run --locked hop-design construction inspect construction-bundle REALIZATION_ID \
   --out construction-trajectory --reason "Uses the required enzymes and endpoint."
-hop-design construction select construction-bundle REALIZATION_ID \
+uv run --locked hop-design construction select construction-bundle REALIZATION_ID \
   --out selected-route.json
-hop-design construction inspect construction-bundle \
+uv run --locked hop-design construction inspect construction-bundle \
   --selection selected-route.json
 ```
 
@@ -224,7 +224,7 @@ For a released duplex, ask where a requested end comes from:
 
 ```bash
 # Inspect the exact selected route from the admitted bundle.
-hop-design construction inspect construction-bundle \
+uv run --locked hop-design construction inspect construction-bundle \
   --selection selected-route.json --end right --base-index 0
 ```
 

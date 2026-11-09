@@ -255,12 +255,14 @@ consumer makes the seam necessary.
 
 ## Current product slices
 
-The public product has four internal semantic surfaces and one first-use
-workflow:
+Start with [complete-design discovery](docs/guides/discover-designs.md) around a
+supplied stem. [Substrate spaces](docs/guides/substrate-spaces.md) provide a
+separate workflow for compiling sequence anatomy. These journeys compose the
+following surfaces.
 
-0. **Scientist surface.** One bounded substrate-space specification, symbolic
-   preview, complete digital design set, and offline review. It composes the
-   design and verification surfaces without making method or experiment claims.
+0. **Construction interface.** Resolve optional molecular intent, discover
+   complete preparations, inspect and select a result, then retrieve exact
+   materials through the same CLI/API objects.
 
 1. **Design language.** Exact and symbolic payloads, foldback and basal
    junctions, optional paired stem context, deterministic design derivation,

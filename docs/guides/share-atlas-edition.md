@@ -5,6 +5,56 @@ their exact material handoffs and original producer identity. It can retain the
 original drawings or draw the selected molecule when inspected.
 You can move the directory and inspect it without rerunning the search.
 
+## Capture the choices you want to share
+
+Start with a saved [discovery](discover-designs.md) containing at least one
+complete preparation.
+
+```bash
+# Capture and query the currently recorded preparations.
+hop-design design freeze designs --out atlas-edition
+hop-design design query atlas-edition --format text
+
+# Inspect its molecules and material handoffs in the local viewer.
+hop-design design view atlas-edition --out atlas-view
+```
+
+Open the printed local address to explore the saved edition.
+
+Freezing includes all matching recorded preparations. Use `--query query.json` to
+capture a filtered set, or repeat `--identity ID` to name particular preparations.
+The destination must be new and outside the discovery directory. The edition
+records how many preparations it captures and how many matched in its source.
+
+Ordinary capture uses the producer that can admit the discovery. Once captured,
+an edition can be viewed independently of changes to that producer. A changed
+renderer does not make an old live checkpoint compatible with a new compiler.
+
+For larger collections, use compact capture. To fit the map, first
+[install the atlas extra](install.md#fit-a-new-molecular-map). Viewing saved
+coordinates does not require this extra.
+
+```bash
+# Keep exact materials and a lightweight landscape in one compact edition.
+hop-design design freeze designs --compact --include-landscape --out compact-edition
+```
+
+The Python equivalent is `choices.freeze("compact-edition", compact=True,
+include_landscape=True)`. This keeps exact materials in a lossless archive per
+preparation and records lightweight molecular descriptors. Opening the map reads
+the descriptors; inspecting a point draws its hairpin, and opening the preparation
+draws its route. Retrieving materials restores the original files byte for byte.
+The original producer and current renderer remain separately identified.
+
+Compact editions check metadata when opened and each authority archive when
+accessed. `edition.integrity` reports that distinction. They do not capture the
+original artwork: the requested `captured` policy therefore reports `current`
+rendering with an explanation. Use ordinary capture when preserving the exact
+original SVGs is the priority. Existing editions keep their full opening checks.
+Call `edition.verify_integrity()` to check every captured file and archive in a
+compact edition. Capture performs this complete byte check before publication;
+neither operation repeats molecular compilation.
+
 ## Combine independent discovery jobs
 
 For parallel exploration, divide the requested end pairs into disjoint jobs using
@@ -36,48 +86,6 @@ new edition. Never copy or concatenate checkpoint tables. Diversity allocation
 is independent within each job, so a fixed compute budget need not discover the
 same prefix as one unpartitioned search. Record the partition recipe with the
 study's computation costs and coverage.
-
-## Capture the choices you want to share
-
-Start with an admitted result from [design discovery](discover-designs.md):
-
-```bash
-# Capture and query the currently recorded preparations.
-hop-design design freeze designs --out atlas-edition
-hop-design design query atlas-edition --format text
-```
-
-Freezing includes all matching recorded preparations. Use `--query query.json` to
-capture a filtered set, or repeat `--identity ID` to name particular preparations.
-The destination must be new and outside the discovery directory. The edition
-records how many preparations it captures and how many matched in its source.
-
-Ordinary capture uses the producer that can admit the discovery. Once captured,
-an edition can be viewed independently of changes to that producer. A changed
-renderer does not make an old live checkpoint compatible with a new compiler.
-
-For larger collections, use compact capture:
-
-```bash
-# Keep exact materials and a lightweight landscape in one compact edition.
-hop-design design freeze designs --compact --include-landscape --out compact-edition
-```
-
-The Python equivalent is `choices.freeze("compact-edition", compact=True,
-include_landscape=True)`. This keeps exact materials in a lossless archive per
-preparation and records lightweight molecular descriptors. Opening the map reads
-the descriptors; inspecting a point draws its hairpin, and opening the preparation
-draws its route. Retrieving materials restores the original files byte for byte.
-The original producer and current renderer remain separately identified.
-
-Compact editions check metadata when opened and each authority archive when
-accessed. `edition.integrity` reports that distinction. They do not capture the
-original artwork: the requested `captured` policy therefore reports `current`
-rendering with an explanation. Use ordinary capture when preserving the exact
-original SVGs is the priority. Existing editions keep their full opening checks.
-Call `edition.verify_integrity()` to check every captured file and archive in a
-compact edition. Capture performs this complete byte check before publication;
-neither operation repeats molecular compilation.
 
 ## Capture a recorded discovery with an updated exporter
 
@@ -117,8 +125,8 @@ use the original producer for family or preservation-query capture.
 
 ## Explore molecules, then their preparations
 
-For proximity-based navigation, capture coordinates once using an installation
-with `hop-design[atlas]`:
+For proximity-based navigation, capture coordinates once using the
+[atlas-enabled installation](install.md#fit-a-new-molecular-map).
 
 ```bash
 # Capture the molecular landscape for point-by-point inspection.

@@ -6,11 +6,11 @@ The deliverable is a checked molecular route with exact oligos and expected
 products. Compatibility with receiving DNA and performance in the laboratory
 require separate evidence.
 
-This journey uses the current source checkout. [Install HOP](install.md) first;
-use tagged documentation with a released wheel. The construction workflow uses
-Python for search and compilation and the CLI for inspection and selection.
-The CLI and Python share one product-request translator; there is no graphical
-request editor or automatic design wizard.
+[Install HOP](install.md), then run the repository examples below from a
+[source checkout](install.md#work-from-source). The CLI and Python API share the
+same request translation, search and construction checks. The
+[stem-first guide](discover-designs.md) starts from optional molecular constraints;
+this walkthrough authors a more detailed product request.
 
 ## 1. Describe the product you need
 

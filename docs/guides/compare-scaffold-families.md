@@ -1,5 +1,8 @@
 # Specify and retrieve a comparative scaffold set
 
+Run these repository examples from a [source checkout](install.md#work-from-source).
+The commands use its locked environment throughout.
+
 To discover required comparisons before selecting construction details, start with
 [Specify and retrieve a molecular comparison](specify-a-comparison.md). This guide
 retains explicit per-member family authoring and continuation workflows.
@@ -49,7 +52,7 @@ packet preserves the original base alongside the brief.
 
 ```bash
 # Turn the comparison into an explicit family request.
-hop-design construction author-family build/scaffold-family/comparison.json --out build/authored-family
+uv run --locked hop-design construction author-family build/scaffold-family/comparison.json --out build/authored-family
 ```
 
 Open `authored-family/preview.svg` for dimensioned intent and the member roster.
@@ -93,8 +96,8 @@ not a new independently editable member dimension.
 
 ```bash
 # Preview the family before executing and inspecting its members.
-hop-design construction prepare-family build/scaffold-family/family.json --out build/family-preview
-hop-design construction execute-family build/scaffold-family/family.json --continuation sole-witness --out build/family-outcomes
+uv run --locked hop-design construction prepare-family build/scaffold-family/family.json --out build/family-preview
+uv run --locked hop-design construction execute-family build/scaffold-family/family.json --continuation sole-witness --out build/family-outcomes
 ```
 
 Preview runs no search. Its summary lists each requested variation, effective
@@ -127,7 +130,7 @@ member, the report explicitly connects both names.
 
 ```bash
 # Retrieve the explicitly selected comparison set.
-hop-design construction select-set build/scaffold-family/set.json --out build/comparative-preparations
+uv run --locked hop-design construction select-set build/scaffold-family/set.json --out build/comparative-preparations
 ```
 
 Every selection is replay-verified before publication. Duplicate exact
@@ -167,7 +170,7 @@ Python exposes the same workflow through `prepare_construction_family`,
 
 ```bash
 # Write one portable report for the recorded selection.
-hop-design construction report-family build/scaffold-family/executed --selection build/scaffold-family/set.json --baseline loop3 --edit short-primer:loop3 --out build/family-report
+uv run --locked hop-design construction report-family build/scaffold-family/executed --selection build/scaffold-family/set.json --baseline loop3 --edit short-primer:loop3 --out build/family-report
 ```
 
 `report.pdf` contains the requested and obtained family, explicit membership,
@@ -214,7 +217,7 @@ reference fixed and evaluate a bounded set of alternative preparations:
 
 ```bash
 # Find preparations that preserve the named reference properties.
-hop-design construction match-family build/family-outcomes --reference-member loop3 --reference-choice 0 --max-continuations 8 --out build/matching
+uv run --locked hop-design construction match-family build/family-outcomes --reference-member loop3 --reference-choice 0 --max-continuations 8 --out build/matching
 ```
 
 Open `matching/report.md`. Each complete candidate links its whole hairpin,
@@ -267,8 +270,8 @@ explicit result-bound witness IDs. Admit that complete outcome into a new family
 
 ```bash
 # Reconcile the new continuation with the original family outcomes.
-hop-design construction reconcile-family build/family-outcomes --source-member choices --outcome build/continued --preferred-loop-nt 4 --out build/revised-family
-hop-design construction report-family build/revised-family --baseline choices --out build/revised-report
+uv run --locked hop-design construction reconcile-family build/family-outcomes --source-member choices --outcome build/continued --preferred-loop-nt 4 --out build/revised-family
+uv run --locked hop-design construction report-family build/revised-family --baseline choices --out build/revised-report
 ```
 
 `--preferred-loop-nt` is optional. It records a caller-declared preference after

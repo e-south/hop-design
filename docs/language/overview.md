@@ -59,8 +59,8 @@ authored intent
 
 `HopPlan` records deterministic design derivation, not an ordered production
 plan. A resolved design may preserve caller-asserted nick or release projection
-geometry needed for the encoding. Named molecular chronology belongs only to a
-method plan.
+geometry needed for the encoding. Ordered processing belongs to construction
+programs and named method plans.
 
 See [hairpin primitives](hairpin-primitives.md), the
 [formal ontology](ontology.md), and [relationships and invariants](relationships-and-invariants.md).

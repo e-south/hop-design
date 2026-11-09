@@ -45,7 +45,8 @@ Selected-local compilation makes every source and selection explicit:
 hop-design construction compile-local-design
   --design-id ID --payload DNA --endpoint ENDPOINT
   --foldback RESULT_JSON --foldback-realization-id ID
-  [--basal RESULT_JSON --basal-realization-id ID] --out OUT
+  [--basal RESULT_JSON --basal-realization-id ID]
+  [--hairpin-left-arm DNA --hairpin-right-arm DNA] --out OUT
 
 hop-design construction compile-selected SOURCE
   --design-bundle BUNDLE
@@ -62,9 +63,10 @@ hop-design construction project SOURCE --kind KIND --out OUT
   [--realization-id ID] [--selection-reason TEXT]
 ```
 
-`ENDPOINT` uses the existing endpoint vocabulary. The local-to-design operation
-requires a basal selection for supported PCR-bearing endpoints; it rejects a
-direct single-stranded endpoint rather than inventing a basal component.
+For `--endpoint ssdna_hairpin`, provide both exact basal-arm sequences with
+`--hairpin-left-arm` and `--hairpin-right-arm`, each 5′→3′. Omit the basal discovery
+selection. PCR-bearing endpoints instead require that basal selection and reject
+the direct-hairpin arm flags.
 `--sort-by` uses the existing ordered local-inspection preferences. A source
 removal policy is applied only to the selected examined construction ordinal.
 Basal panels select a `local_realization_id`; design and construction selection

@@ -2,9 +2,9 @@
 
 - [0048: Stage controls, required-member search and prior-material reuse](0048-stage-controlled-required-panels.md)
 
-Decision records preserve historical context. Active product contracts live in
-the language, method, provenance, and reference sections; when a later decision
-amends an earlier one, the earlier record links to the current decision.
+These records explain design decisions and retain their historical context. For
+current commands, use the [task index](../../index.md) and API references. When a
+later decision updates an earlier one, the earlier record links to it.
 
 - [0054: Resolve optional construction intent before discovery](0054-optional-construction-intent.md)
 

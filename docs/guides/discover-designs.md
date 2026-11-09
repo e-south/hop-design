@@ -55,8 +55,10 @@ preparation retrieval without copying record coordinates.
 
 ## Inspect one route and retrieve its oligos
 
-Select one recorded preparation with a reproducible seed, then use that same
-selection for both figures and the material handoff:
+Continue only if discovery has recorded a complete preparation. Otherwise,
+[interpret the result](#when-no-preparation-is-recorded) before sampling.
+Select one preparation with a reproducible seed and use that same selection for
+both figures and materials.
 
 ```bash
 # Record one reproducible selection. Every export below uses that same preparation.
@@ -232,8 +234,13 @@ word while leaving the right side open. Lists on both sides explicitly permit
 their Cartesian combinations. Joint pair rosters are not accepted by this entry
 contract. Use separate requests to preserve a specific pair relationship.
 
-Specified words are hard constraints. HOP keeps them when no preparation is found.
-Read the result before deciding what to do next:
+Specified words remain hard constraints when no preparation is found.
+
+### When no preparation is recorded
+
+An empty answer can mean unfinished search, a filter with no recorded match, or
+exclusion within the saved context. Read its reported scope before choosing the
+next action.
 
 - **No recorded match:** refine a filter to inspect other recorded choices. If
   relevant search remains, evaluate another batch explicitly.
@@ -258,6 +265,8 @@ with `design query` or `load_design_choices`. Unfinished targets remain unresolv
 Review the execution resources before retrying, rather than looping on an unchanged
 limit. The simple insert workflow currently caps its checkpoint at 1 GiB. The
 lower-level survey API exposes `max_checkpoint_bytes` for explicitly budgeted runs.
+
+### Add scaffold requirements or filters
 
 For scaffold or method requirements, save a concise JSON or YAML request:
 
@@ -454,14 +463,15 @@ For an already exact construction request, use [construction compilation](design
 
 Use an explicit family request when every expansion of an IUPAC stem is required.
 The [one-N example](../../examples/stem-family-intent.json) previews four exact
-stems with the same construction permissions. End words remain optional.
+stems with the same construction permissions. End words remain optional. Run
+this repository example from a [source checkout](install.md#work-from-source).
 
 ```bash
 # Require several experimental stems.
-hop-design design resolve --request examples/stem-family-intent.json --out family-preview
-hop-design design discover --request examples/stem-family-intent.json --evaluations 256 --out family --format text
-hop-design design query family --member member-0001 --format text
-hop-design design view family --member member-0001 --out member-view
+uv run --locked hop-design design resolve --request examples/stem-family-intent.json --out family-preview
+uv run --locked hop-design design discover --request examples/stem-family-intent.json --evaluations 256 --out family --format text
+uv run --locked hop-design design query family --member member-0001 --format text
+uv run --locked hop-design design view family --member member-0001 --out member-view
 ```
 
 `max_members` bounds expansion before search. `max_total_evaluations` bounds the

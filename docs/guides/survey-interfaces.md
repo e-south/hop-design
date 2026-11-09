@@ -46,7 +46,7 @@ scaffold requests, use [scaffold discovery](discover-product-scaffolds.md).
 
 ```bash
 # Evaluate a bounded batch into a resumable checkpoint.
-hop-design construction survey evaluate survey.json --index survey.sqlite \
+uv run --locked hop-design construction survey evaluate survey.json --index survey.sqlite \
   --max-evaluations 4 --local-nodes 1000 --local-realizations 1000 \
   --release-site-pairs 1000
 ```
@@ -70,7 +70,7 @@ for resource stops and larger surveys.
 
 ```bash
 # Open the recorded interface survey in the local viewer.
-hop-design construction survey view survey.json --index survey.sqlite --out survey-view
+uv run --locked hop-design construction survey view survey.json --index survey.sqlite --out survey-view
 ```
 
 Open the printed local address. The parameter key connects the molecular regions
@@ -107,7 +107,7 @@ For CLI or Python use, save your filter as `predicates.json`:
 
 ```bash
 # Filter recorded preparations using the saved predicates.
-hop-design construction survey query survey.json --index survey.sqlite --query predicates.json
+uv run --locked hop-design construction survey query survey.json --index survey.sqlite --query predicates.json
 ```
 
 Inspect `matching_preparations` and the returned paths. To compare end proximity
@@ -123,7 +123,7 @@ Use the browser's saved selection, or select a returned path by its `target`,
 
 ```bash
 # Record one selection for both the molecular route and material handoff.
-hop-design construction survey select survey.json --index survey.sqlite \
+uv run --locked hop-design construction survey select survey.json --index survey.sqlite \
   --query predicates.json --target TARGET --step STEP --identity MATERIALIZED_ID > selected.json
 ```
 
@@ -133,7 +133,7 @@ sample instead:
 
 ```bash
 # Choose reproducibly from the supported recorded preparations.
-hop-design construction survey sample survey.json --index survey.sqlite \
+uv run --locked hop-design construction survey sample survey.json --index survey.sqlite \
   --query predicates.json --seed 23 > selected.json
 ```
 
@@ -145,11 +145,11 @@ The same selection drives the figure, route and preparation:
 
 ```bash
 # Inspect the recorded support for the requested parameter values.
-hop-design construction survey query survey.json --index survey.sqlite \
+uv run --locked hop-design construction survey query survey.json --index survey.sqlite \
   --selection selected.json --out selected-figure
-hop-design construction survey atlas survey.json --index survey.sqlite \
+uv run --locked hop-design construction survey atlas survey.json --index survey.sqlite \
   --selection selected.json --out selected-atlas
-hop-design construction survey retrieve survey.json --index survey.sqlite \
+uv run --locked hop-design construction survey retrieve survey.json --index survey.sqlite \
   --selection selected.json --out selected-preparation
 ```
 
@@ -192,8 +192,8 @@ also covers explicit selection, atlas inspection and retrieval.
 
 ```bash
 # Replay the recorded evaluations when aggregate verification is required.
-hop-design construction survey verify survey.json --index survey.sqlite
-hop-design construction survey atlas survey.json --index survey.sqlite \
+uv run --locked hop-design construction survey verify survey.json --index survey.sqlite
+uv run --locked hop-design construction survey atlas survey.json --index survey.sqlite \
   --selection selected.json --reference-selection reference.json --out compared-atlas
 ```
 
