@@ -1,7 +1,7 @@
 # Hairpin components
 
-HOP names each sequence region by its physical role. Map historical labels to
-these regions and their exact spans.
+Use these components to describe a hairpin's sequence anatomy and paired regions.
+Construction programs describe how those components are made and processed.
 
 ## Design anatomy
 
@@ -37,24 +37,24 @@ Turn length and paired-tract length are therefore the independent geometric
 controls. HOP also measures uninterrupted paired runs and records the exact
 bases at noncanonical pairs, such as G:T wobbles or mismatches.
 
-“Cap” is descriptive or historical language, not one canonical HOP component.
-Depending on its source, a historical cap label may cover the turn, a complete
-foldback junction, or another inherited interval. A caller must map it to exact
-HOP spans. A turn-only topology has no retained tract, no foldback arm, and no
-invented pair calls.
+“Cap” is informal. Specify whether it means the unpaired loop or also includes
+nearby paired bases, then map it to the foldback junction's exact spans. A
+turn-only topology has no retained tract, no foldback arm, and no pair calls.
 
 A recognition motif that enables nicking or cleavage is part of precursor and
 method geometry. It does not become a second definition of the cap.
 
 ### Basal junction and stem extension
 
-The basal junction is the paired open end of the hairpin. HOP's current basal
-evaluation classifies four ordered positions, S3 through S0, as Watson-Crick,
-G:T wobble, or hard mismatch. The compact M/W/X string reports those physical
-calls; it is not an enzyme route or a ligation score.
+The basal junction is the paired open end of the hairpin. The specialist
+four-position basal-pairing evaluation classifies S3 through S0 as Watson-Crick,
+G:T wobble, or hard mismatch. Its compact M/W/X string reports those contacts.
+Complete-construction basal association records the source–adapter contact region
+separately and can span more positions; see the
+[construction vocabulary](ontology/molecular-meaning-and-search.md#payload-centered-construction-vocabulary).
 
-Longer non-payload stem context belongs to `PairedStemExtension`. This keeps a
-variable-length stem from silently enlarging the four-position basal profile.
+In the specialist design anatomy, longer non-payload paired context belongs to
+`PairedStemExtension`. It is separate from the four-position basal profile.
 Nicked and surviving strand roles belong to processing events, not to the
 basal junction itself.
 

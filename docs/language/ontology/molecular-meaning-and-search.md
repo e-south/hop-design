@@ -1,7 +1,7 @@
 # Molecular meaning and construction search
 
-Read structural features, construction roles and search choices before interpreting a
-result.
+Use these terms to distinguish a molecule's physical features, the route that
+makes it and the scope of a search result.
 
 Return to the [ontology reference](../ontology.md).
 
@@ -14,7 +14,7 @@ features in a named molecular state.
 
 | Feature | Where to locate it | Construction interpretation |
 | --- | --- | --- |
-| Paired stem | Opposing positions on the folded strand | The supplied experimental sequence and its copied complement; added pairing is measured separately |
+| Paired stem | Opposing positions on the folded strand | The supplied experimental sequence and its derived complement; added pairing is measured separately |
 | Loop | Unpaired bases joining the two stem arms | The closing sequence; its size follows its exact sequence |
 | Tail | Unpaired sequence at a strand terminus | May supply primer homology, be removed, or contribute to a later product; ancestry determines which |
 | Noncanonical contact | Two recorded interacting positions | An explicitly permitted mismatch or wobble; it is not an unpaired tail |
@@ -23,7 +23,8 @@ features in a named molecular state.
 A nucleotide may have several construction roles across processing states.
 Primer homology upstream of the basal region is not synonymous with basal
 pairing. An annealing minimum is a requirement; the achieved paired span is a
-measurement. A nick is a strand boundary; a recognition footprint is an interval.
+measurement. A nick breaks one backbone at a boundary; a recognition footprint
+occupies an interval.
 The [parameter registry](../../reference/molecular-parameters.md) supplies units,
 measurement boundaries and dependencies, including `R = A − D` and loop length
 from the loop word. Equivalent measurements are counted once.
@@ -33,17 +34,15 @@ useful representational principle illustrated by
 [bpRNA](https://doi.org/10.1093/nar/gky285). HOP derives its contacts from the
 construction's molecular states.
 
-The atlas descriptor `x` is a structured record of these measured features,
-retained regional sequences and contacts, and assembly interfaces. Contact codes
-identify base pairs and contact classes; subtracting the codes has no molecular
-meaning. The recorded comparison policy supplies scales and weights for groups
-of measurements to calculate molecular dissimilarity. The UMAP plot uses those
-distances to place similar products near each other. The invariant stem,
-duplicated measurements and preparation identifiers do not
-create extra distance dimensions. Methods remain available for inspection and
-further search. Each selectable point is supported by a complete preparation:
-a verified route and exact materials. Its plot position comes from the comparison
-policy.
+The atlas descriptor `x` records these measurements, retained regional sequences,
+contacts and assembly interfaces. Contact codes identify base pairs and contact
+classes; subtracting the codes has no molecular meaning. A recorded comparison
+policy scales and weights groups of measurements to calculate molecular
+dissimilarity. The UMAP plot uses those distances to place similar products near each other.
+The invariant stem, duplicated measurements and preparation identifiers do not
+add distance dimensions. Methods remain available for inspection and further
+search. Each selectable point has a complete preparation with a verified route
+and exact materials; its plot position comes from the comparison policy.
 
 ## Construction search and its molecular meaning
 
@@ -57,7 +56,7 @@ molecule independently.
 | Term | Biological or computational meaning |
 | --- | --- |
 | Permitted domain | Authored stem, joint interface choices, geometry, methods and material permissions; a computing quota does not narrow it |
-| Necessary relation | Combinations that satisfy the translated constraints, retaining dependencies between base choices; membership alone does not establish a complete route |
+| Necessary relation | Combinations that satisfy the constraints HOP can translate into the relation, including dependencies between base choices; membership alone does not establish a complete route |
 | Local neighborhood | Foldback or basal construction region with its own sequence, geometry and processing constraints; local solutions are reusable inputs to complete construction checks |
 | Candidate assignment | A particular geometry, method and sequence choice to evaluate through the complete construction |
 | Auxiliary completion | A choice of additional material bases under explicit permissions; some may affect retained sequence and cannot be treated as interchangeable |
@@ -118,29 +117,44 @@ adapter-side handles lie beyond that association. Primer homology is a material
 function at a declared stage; it may overlap another function in the same bases.
 
 A **hairpin core** is the route-neutral design sequence and its supplied-stem,
-foldback and basal features. For a released-insert construction, its projection
-is located within the PCR parent. The **released insert** is the exact pair of strands
-retained by end-generating cuts. The interval covered by either retained strand
-is its **union**. That union need not equal the core: outer
-construction bases may be removed and other construction bases retained. The
-protected interval containing both supplied-stem copies and foldback remains
-intact on both strands. End words and paired end-to-stem distances describe this
-released state; they do not describe the hairpin handles.
-
+foldback and basal features. For a released-insert construction, HOP locates the
+core within the PCR parent. The **released insert** is the exact pair of strands
+retained by end-generating cuts. Its **union** spans the parent positions retained
+on either strand. That union need not equal the core: cuts may remove outer
+construction bases while retaining other construction bases. The protected
+interval containing both supplied-stem copies and foldback remains intact on
+both strands. End words and paired end-to-stem distances describe this released
+state; they do not describe the hairpin handles.
 
 Construction starts from the user-defined duplex payload, with positions measured
 in the final product. Its reference strand is authored 5-prime to
 3-prime, its aligned complement is derived, and its basal and foldback
 boundaries are explicit. A route family owns the mapping from these positions
-to one or more source-material segments. `linear_source/v1` is the current
-family; contiguous source encoding is its property, not a universal payload
-property.
+to one or more source-material segments. The current family,
+`linear_source/v1`, uses a contiguous source encoding. Other route families need
+not share that property.
+
+### Local results and complete preparations
 
 An endpoint names the requested molecular product. `ssdna_hairpin` ends at the
-closed single-stranded hairpin, `hairpin_pcr_duplex` adds adapter capture and
-PCR, and `clone_ready_duplex` adds declared end-generating cleavage and exact
-cohesive ends. Endpoint choice determines required neighborhoods, materials,
-operations, and states.
+closed single-stranded hairpin. `adapter_ligated_hairpin` includes adapter
+capture and joining; `hairpin_pcr_duplex` continues through hairpin PCR.
+`clone_ready_duplex` adds declared end-generating cleavage and exact cohesive
+ends. Endpoint choice determines required neighborhoods, materials, operations
+and states.
+
+A **local realization** specifies an exact precursor, enzyme binding, operations
+and resulting states within one declared neighborhood. A basal local realization
+reaches the nicked boundary and records proximal adapter pairing and upstream
+completion requirements. It does not yet specify a finalized adapter,
+hairpin-PCR duplex or present cohesive end.
+
+A **complete realization** combines exact local realizations around one payload,
+resolves the complete materials and validates the staged route. Its exact
+endpoint molecule is the **product**; the route and materials form the
+**preparation**. Several preparations can therefore produce the same product.
+Final-product and achieved-geometry groups reference every exact realization
+they contain, preserving alternatives within each group.
 
 A local-neighborhood request defines a foldback or basal construction question.
 It combines final payload, route family, endpoint,
@@ -149,9 +163,6 @@ caller-provisioned enzymes, explicit relaxation, and finite enumeration. Its
 result preserves requested and achieved geometry, the permitted relaxation used,
 every exact local solution, rejection counts and reasons, and search completion
 evidence. Its grouped views retain the identities of all underlying solutions.
-Large exact sequence domains may be divided into deterministic,
-disjoint execution parts without changing the molecular problem or realization
-identities. One part does not establish whole-domain payload compatibility.
 
 A foldback target is described by `junction_offset_nt`, `loop_length_nt`, and
 `annealing_arm_length_bp`. A basal target describes endpoint-dependent nick
@@ -159,28 +170,25 @@ geometry, an exact ligation-proximal-outward pairing state, and optional
 end-generation geometry. Type IIS processing is absent unless the endpoint
 requests clone-ready ends.
 
-A local realization is one exact local precursor, enzyme binding, declared
-operations, and resulting molecular states within its declared neighborhood.
-A basal local realization ends at the nicked boundary plus proximal adapter-pairing and
-upstream completion obligations; it does not assert a finalized adapter,
-hairpin-PCR duplex, or present cohesive end. A complete realization composes
-exact local realizations around one payload, resolves complete materials, and
-validates the staged route. Final-product and achieved-geometry groups retain
-references to every exact realization they contain, so grouping does not erase
-alternatives.
+### Added stem and retained DNA
 
 Construction sequence is classified as retained, transient, auxiliary, or
 destination-associated. Compactness uses achieved endpoint geometry and
-retained non-payload sequence only. It describes each realization; search
-coverage is reported separately.
+retained non-payload sequence only.
 
 "Added stem" and "added DNA" also answer different questions. Added stem counts
 paired positions beyond the supplied invariant stem at a named molecular stage.
 The loop is unpaired DNA. Source fragments removed during processing and
-auxiliary primer handles have their own roles. Construction cost reports the exact non-payload nucleotides
-retained on each endpoint strand. It does not add the two local search ceilings
-or equate a transient basal contact span with retained stem extension. Keep the
-loop, added pairing, sticky-end-to-stem spacing and auxiliary materials separately visible.
+auxiliary primer handles have their own roles. Construction cost reports the
+exact non-payload nucleotides retained on each endpoint strand. It does not add
+the two local search ceilings or equate a transient basal contact span with
+retained stem extension. Keep the loop, added pairing, sticky-end-to-stem spacing
+and auxiliary materials separately visible.
+
+On the released insert, **end-to-stem spacing** counts paired positions between
+each sticky end and its supplied-stem boundary. The API fields `left_gap` and
+`right_gap` describe these distances. Zero places the end directly beside the
+stem. These paired-base counts are separate from loop length and unpaired handles.
 
 Identical sticky-end words do not require identical added stem. The exposed
 cloning sequences can stay the same while the paired DNA between an end and
@@ -189,6 +197,26 @@ region changes instead of calling all these bases "flanks." A loop length and
 a paired foldback-arm length are separate requirements. Short-loop limits belong
 to the caller's request. Another application can permit longer loops without
 changing HOP's general model.
+
+## Search coverage and ranking
+
+Search coverage records which part of the declared domain HOP examined.
+Feasibility records whether that work found a valid realization, ruled out the
+domain or left the question unresolved. Finding one complete preparation can
+establish feasibility before the search is exhausted. A truncated search cannot
+establish infeasibility; unexamined alternatives remain unresolved.
+
+Large exact sequence domains may be divided into deterministic, disjoint
+execution parts without changing the molecular problem or realization
+identities. One part does not establish whole-domain payload compatibility.
+
+Compactness describes a realization, while length ceilings bound the domain.
+Traversal can favor compact alternatives without proving a global minimum.
+The construction preference contract has `ranking: none`: a longer realization
+within the declared bounds remains eligible. Search order can affect which
+results a bounded run finds. See
+[search interpretation](../../discovery/overview.md) for stopping and coverage
+semantics.
 
 ## Conditional molecular choices
 

@@ -2,7 +2,7 @@
 name: hop-design-user
 description: Discover complete HOP hairpins or inserts from a stem and optional constraints; inspect routes, retrieve oligos, compile designs and verify bundles. Do not use for code changes or lab protocols.
 metadata:
-  version: 0.8.3
+  version: 0.8.4
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation, construction]
 ---
@@ -22,6 +22,7 @@ skill and wet-lab or interpretive work outside HOP.
 | Question | Public surface | Skill reference |
 | --- | --- | --- |
 | Preserve my stem and discover complete designs, with optional ends | `hop_design.construction.discover_designs` / `hop-design design` | [discovery guide](../../../docs/guides/discover-designs.md) |
+| What does a molecular feature or search result mean? | Terms, measurements and search coverage | [concept index](../../../docs/language/ontology.md) |
 | Author advanced scaffold discovery with explicit method catalogs | `hop_design.construction` discovery | [scaffold guide](../../../docs/guides/discover-product-scaffolds.md) |
 | What exact designs are in this bounded substrate space? | `hop_design.spaces` | [design](references/design.md) |
 | What design does this payload encode? | `hop_design` | [design](references/design.md) |
@@ -31,8 +32,8 @@ skill and wet-lab or interpretive work outside HOP.
 | How can I inspect already-derived state? | `hop_design.views` | [views](references/views.md) |
 | How do I verify or hand off an artifact? | matching verifier | [verification and integration](references/verification-and-integration.md) |
 
-Read `docs/start/mental-model.md` when a request crosses competencies. Read
-`docs/language/ontology.md` only for architecture or terminology disputes.
+Read `docs/start/mental-model.md` for the construction steps and how its regions
+fit together. Use the concept index above to locate definitions and measurements.
 
 ## Workflow
 
@@ -54,9 +55,9 @@ Read `docs/start/mental-model.md` when a request crosses competencies. Read
 
 ## Required Deliverables
 
-- User task, public operation, and required input type.
-- Relevant verified-result and bundle IDs, exact status, accounting, bounds, and diagnostics.
-- New output path or write-free state, plus verification outcome.
+- For an explanation, define the term at its molecular stage and link its reference.
+- For a computation, report the operation, input type, exact status, counts, bounds and diagnostics.
+- Include relevant result/bundle IDs, new output paths or write-free state, and verification outcome.
 ## Success Criteria
 
 Report `schema-valid`, `compiled`, `bundle-verified`, `destination-compatible`,

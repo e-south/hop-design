@@ -14,7 +14,9 @@ Choose a task, then follow its guide through the CLI or Python API. The
 | Make a controlled set of molecules | [Specify a molecular comparison](guides/specify-a-comparison.md) with required members and shared properties |
 | Work through one preparation request | [Design one construction](guides/design-a-construction.md), from materials to endpoint |
 
-For the molecular concepts, read [Understand the construction](start/mental-model.md).
+Read [Understand the construction](start/mental-model.md) for the regions and steps.
+Use the [concept index](language/ontology.md) to look up a molecular feature,
+product, preparation or search term.
 For sequence anatomy without a preparation route, [compile a payload design](guides/quickstart.md)
 or [preview a substrate space](guides/substrate-spaces.md).
 

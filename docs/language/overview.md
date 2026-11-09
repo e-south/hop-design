@@ -1,19 +1,19 @@
 # Design language
 
-The design language specifies **the requested hairpin**: its payload, junctions,
-and optional paired context. Construction programs and named methods specify
-processing steps. To discover complete preparations from a supplied stem, start
-with `hop_design.construction` and the [design discovery guide](../guides/discover-designs.md).
-This page explains the sequence anatomy used within those preparations and by
-the specialist design operations below.
+The design language describes **the requested hairpin**: its payload, junctions
+and optional paired context. This page explains that sequence anatomy and the
+specialist operations for compiling it. Construction programs and named methods
+describe processing steps. To discover complete preparations from a supplied
+stem, start with `hop_design.construction` and the
+[design discovery guide](../guides/discover-designs.md).
 
 Use `hop_design.spaces` to define a finite set of permitted sequences, preview
 its size, and compile its members. That set is a **substrate space**. The package
 root, `hop_design`, provides the specialist design-language operations documented
-here. Use `hop_design.discovery` for bounded search, `hop_design.methods` for
-named production methods, and `hop_design.views` to inspect already-derived
-states. These separate interfaces are not additional steps in the first-use
-substrate-space journey.
+here. Related interfaces serve different tasks: `hop_design.discovery` performs
+bounded search, `hop_design.methods` resolves named production methods, and
+`hop_design.views` presents already-derived states. Use them when those tasks
+are needed; compiling a substrate space does not require each interface.
 
 ## Specialist vocabulary
 

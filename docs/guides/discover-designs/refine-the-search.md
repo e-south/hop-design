@@ -41,7 +41,10 @@ When additional source cuts remove only fragments outside the intended endpoint,
 lets HOP verify removal with the selected source nickases. The retained strands
 and complete route must still pass verification.
 
-Add an exact left end, an exact right end, or both when you have that requirement:
+Add an exact left end, an exact right end, or both when you have that requirement.
+Write each word 5′→3′ on its own protruding strand. See the
+[end conventions](../design-a-construction.md#1-describe-the-product-you-need)
+for orientation, polarity and end-to-stem distances.
 
 ```bash
 # Require the requested cloning ends without changing the stem.
@@ -50,6 +53,10 @@ hop-design design discover \
   --product released_insert --left AGTC --right AACC \
   --out requested-ends
 ```
+
+With the default context, this example reports `excluded_within_scope`. To keep
+these ends, revise the context explicitly; unchanged continuation cannot add a
+preparation.
 
 In a saved request, `"ends": {"left": ["AGTC", "AACC"]}` permits either left
 word while leaving the right side open. Lists on both sides explicitly permit

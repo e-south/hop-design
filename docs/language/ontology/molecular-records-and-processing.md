@@ -60,14 +60,15 @@ be linked through neutral external references.
 
 `HairpinEncodingInsert` is the compiler-owned one-dimensional sequence that
 encodes a hairpin core. It contains a digest of its normalized literal or
-symbolic sequence and nested
-features that partition the sequence. It does not describe strandedness,
-topology, a PCR product, or destination-specific assembly ends.
+symbolic sequence and nested features that partition the sequence. It does not
+describe strandedness, topology, a PCR product, or destination-specific assembly
+ends.
 
 `HairpinPcrDuplex` records the duplex derived by the hairpin-PCR step: two
 explicit complementary strands, exact primer boundaries, terminal chemistry,
 and the source position of each base, called coordinate lineage. A later
-restriction event changes only its assembly ends.
+restriction event derives the released fragment's strand boundaries and cohesive
+ends.
 
 `RestrictionDigestProduct` is a destination-neutral duplex fragment derived
 from two facing restriction sites. It records both strand sequences, both exact
