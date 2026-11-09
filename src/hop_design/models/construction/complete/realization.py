@@ -11,11 +11,13 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from typing import Any, cast
+from pydantic import Field, ValidationInfo, model_validator
 
-from pydantic import Field, model_validator
-
-from hop_design.models.base import HopModel
+from hop_design.models.base import (
+    HopModel,
+    _create_with_content_identity,
+    _verify_or_set_content_identity,
+)
 from hop_design.models.construction.accounting import (
     MethodResolutionStatus,
     NeighborhoodClaimBoundary,
@@ -96,25 +98,25 @@ class MaterializedConstructionRealization(HopModel):
 
     @classmethod
     def create(cls, **content: object) -> MaterializedConstructionRealization:
-        draft = cls.model_construct(materialized_realization_id="", **cast(Any, content))
-        seed = draft.model_dump(mode="json", exclude={"materialized_realization_id"})
-        return cls.model_validate(
-            {
-                "materialized_realization_id": _content_id("materialized-construction", 1, seed),
-                **content,
-            }
+        return _create_with_content_identity(
+            cls, "materialized_realization_id", "materialized-construction", content
         )
 
     @model_validator(mode="after")
-    def validate_realization(self) -> MaterializedConstructionRealization:
+    def validate_realization(self, info: ValidationInfo) -> MaterializedConstructionRealization:
         DesignAuthorityReference.model_validate(self.design.model_dump(mode="python"))
         MaterializedFinalProduct.model_validate(self.final_product.model_dump(mode="python"))
         SourceDuplexPreparationAuthority.model_validate(
             self.source_preparation.model_dump(mode="python")
         )
         content = self.model_dump(mode="json", exclude={"materialized_realization_id"})
-        if self.materialized_realization_id != _content_id("materialized-construction", 1, content):
-            raise ValueError("Materialized identity must seal every complete-route fact.")
+        _verify_or_set_content_identity(
+            self,
+            "materialized_realization_id",
+            _content_id("materialized-construction", 1, content),
+            "Materialized identity must seal every complete-route fact.",
+            info.context,
+        )
         if self.realization.precursor_sequence != self.materials[0].sequence_5prime:
             raise ValueError("Complete precursor must equal the prepared source strand.")
         prepared_materials = tuple(

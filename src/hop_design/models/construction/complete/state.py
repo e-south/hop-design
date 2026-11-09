@@ -13,9 +13,13 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationInfo, model_validator
 
-from hop_design.models.base import HopModel
+from hop_design.models.base import (
+    HopModel,
+    _create_with_content_identity,
+    _verify_or_set_content_identity,
+)
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.molecular_state import MolecularStrand, StrandPairObservation
 
@@ -58,22 +62,20 @@ class ConstructionState(HopModel):
         pairings: tuple[StrandPairObservation, ...] = (),
         formed_bonds: tuple[ConstructionBondState, ...] = (),
     ) -> ConstructionState:
-        content = {
-            "molecules": tuple(item.model_dump(mode="json") for item in molecules),
-            "phase": phase,
-            "pairings": tuple(item.model_dump(mode="json") for item in pairings),
-            "formed_bonds": tuple(item.model_dump(mode="json") for item in formed_bonds),
-        }
-        return cls(
-            state_id=_content_id("construction-state", 1, content),
-            molecules=molecules,
-            phase=phase,
-            pairings=pairings,
-            formed_bonds=formed_bonds,
+        return _create_with_content_identity(
+            cls,
+            "state_id",
+            "construction-state",
+            {
+                "molecules": molecules,
+                "phase": phase,
+                "pairings": pairings,
+                "formed_bonds": formed_bonds,
+            },
         )
 
     @model_validator(mode="after")
-    def validate_identity(self) -> ConstructionState:
+    def validate_identity(self, info: ValidationInfo) -> ConstructionState:
         ids = tuple(item.strand_id for item in self.molecules)
         if len(ids) != len(set(ids)):
             raise ValueError("Construction-state strand ids must be unique.")
@@ -144,8 +146,13 @@ class ConstructionState(HopModel):
                 "formed_bonds": tuple(item.model_dump(mode="json") for item in self.formed_bonds),
             },
         )
-        if self.state_id != expected:
-            raise ValueError("Construction-state identity must seal every exact molecule.")
+        _verify_or_set_content_identity(
+            self,
+            "state_id",
+            expected,
+            "Construction-state identity must seal every exact molecule.",
+            info.context,
+        )
         return self
 
 

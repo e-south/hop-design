@@ -14,9 +14,13 @@ from __future__ import annotations
 from itertools import pairwise
 from typing import Any, cast
 
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationInfo, model_validator
 
-from hop_design.models.base import HopModel
+from hop_design.models.base import (
+    HopModel,
+    _create_with_content_identity,
+    _verify_or_set_content_identity,
+)
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.reactions import ReactionProgram, ReactionStageAssessment
 
@@ -37,17 +41,18 @@ class ConstructionProgram(HopModel):
 
     @classmethod
     def create(cls, **content: object) -> ConstructionProgram:
-        draft = cls.model_construct(program_id="", **cast(Any, content))
-        seed = draft.model_dump(mode="json", exclude={"program_id"})
-        return cls.model_validate(
-            {"program_id": _content_id("construction-program", 1, seed), **content}
-        )
+        return _create_with_content_identity(cls, "program_id", "construction-program", content)
 
     @model_validator(mode="after")
-    def validate_program(self) -> ConstructionProgram:
+    def validate_program(self, info: ValidationInfo) -> ConstructionProgram:
         content = self.model_dump(mode="json", exclude={"program_id"})
-        if self.program_id != _content_id("construction-program", 1, content):
-            raise ValueError("Construction-program identity must seal its full chronology.")
+        _verify_or_set_content_identity(
+            self,
+            "program_id",
+            _content_id("construction-program", 1, content),
+            "Construction-program identity must seal its full chronology.",
+            info.context,
+        )
         state_ids = tuple(item.state_id for item in self.states)
         if len(state_ids) != len(set(state_ids)):
             raise ValueError("Construction-program state identities must be unique.")

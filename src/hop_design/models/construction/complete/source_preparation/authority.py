@@ -11,11 +11,13 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from typing import Any, cast
+from pydantic import Field, ValidationInfo, model_validator
 
-from pydantic import Field, model_validator
-
-from hop_design.models.base import HopModel
+from hop_design.models.base import (
+    HopModel,
+    _create_with_content_identity,
+    _verify_or_set_content_identity,
+)
 from hop_design.models.construction.payload import _content_id
 from hop_design.models.coordinates import Span
 from hop_design.models.method import BindingOrientation
@@ -240,17 +242,12 @@ class SourceDuplexPreparationAuthority(HopModel):
 
     @classmethod
     def create(cls, **content: object) -> SourceDuplexPreparationAuthority:
-        draft = cls.model_construct(authority_id="", **cast(Any, content))
-        seed = draft.model_dump(mode="json", exclude={"authority_id"})
-        return cls.model_validate(
-            {
-                "authority_id": _content_id("source-duplex-preparation", 1, seed),
-                **content,
-            }
+        return _create_with_content_identity(
+            cls, "authority_id", "source-duplex-preparation", content
         )
 
     @model_validator(mode="after")
-    def validate_authority(self) -> SourceDuplexPreparationAuthority:
+    def validate_authority(self, info: ValidationInfo) -> SourceDuplexPreparationAuthority:
         expected = _derived_content(
             source_ssdna=self.source_ssdna,
             forward_primer=self.forward_primer,
@@ -275,8 +272,13 @@ class SourceDuplexPreparationAuthority(HopModel):
         if self.produced_material_bindings != expected["produced_material_bindings"]:
             raise ValueError("Source-duplex produced-material bindings must replay exactly.")
         content = self.model_dump(mode="json", exclude={"authority_id"})
-        if self.authority_id != _content_id("source-duplex-preparation", 1, content):
-            raise ValueError("Source-duplex preparation identity must seal every exact fact.")
+        _verify_or_set_content_identity(
+            self,
+            "authority_id",
+            _content_id("source-duplex-preparation", 1, content),
+            "Source-duplex preparation identity must seal every exact fact.",
+            info.context,
+        )
         return self
 
 
