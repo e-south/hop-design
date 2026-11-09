@@ -130,6 +130,8 @@ top cut. `retained_scar_template` describes allowed scar bases;
 nick. `post_nick_domain_mode` states whether a process footprint may narrow
 that domain or must preserve it. A compatible geometry is not yet a selected
 route and does not imply that a particular left/right basal pair was chosen.
+See [basal search controls](../../reference/processing-discovery.md#basal-searches)
+for the accepted domain modes and search operations.
 
 `BasalProcessingRouteCandidate` joins one exact `BasalCandidate` to one exact
 processing geometry. Its retained scar is the basal left arm. Compatibility

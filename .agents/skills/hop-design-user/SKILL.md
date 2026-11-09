@@ -1,8 +1,8 @@
 ---
 name: hop-design-user
-description: Discover complete HOP hairpins or inserts from a stem and optional constraints; inspect routes, retrieve oligos, compile designs and verify bundles. Do not use for code changes or lab protocols.
+description: Discover HOP hairpins or inserts, explain molecular features, inspect routes, retrieve oligos, compile designs and verify bundles. Do not use for repository edits or lab protocols.
 metadata:
-  version: 0.8.4
+  version: 0.8.5
   category: science-workflow
   tags: [hop-design, dna-sequence, compilation, construction]
 ---
@@ -16,8 +16,8 @@ HOP derives paired arms, junctions and processing states from those requests.
 
 ## Start with the user's task
 
-Read the matching reference before acting. Route code changes to the maintainer
-skill and wet-lab or interpretive work outside HOP.
+Read the matching reference before acting. Route repository edits to the maintainer
+skill and wet-lab work or experimental interpretation outside HOP.
 
 | Question | Public surface | Skill reference |
 | --- | --- | --- |
@@ -32,10 +32,12 @@ skill and wet-lab or interpretive work outside HOP.
 | How can I inspect already-derived state? | `hop_design.views` | [views](references/views.md) |
 | How do I verify or hand off an artifact? | matching verifier | [verification and integration](references/verification-and-integration.md) |
 
-Read `docs/start/mental-model.md` for the construction steps and how its regions
-fit together. Use the concept index above to locate definitions and measurements.
+Read `docs/start/mental-model.md` for the construction steps and regions. The concept index locates definitions and measurements.
 
 ## Workflow
+
+The steps below apply to new discovery. For saved choices, [reopen and query](../../../docs/guides/discover-designs.md#inspect-saved-choices)
+first. Continue discovery or export files only when requested. For explanations and verification, follow the task reference above.
 
 1. Identify the supplied stem and intended product. End words are optional; do not ask for them unless the user needs a particular interface. Inspect the effective permissions, then follow the discovery guide.
 2. Use `choices.explain()` or `design query --format text` to distinguish available choices, an empty filter and a scoped exclusion. Offer continuation only when the answer identifies remaining search. Use `--format json` in automation. Stop on invalid inputs or corruption; never relax a requirement silently.

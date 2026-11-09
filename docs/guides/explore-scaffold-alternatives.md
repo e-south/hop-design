@@ -148,3 +148,6 @@ An arm edit can exceed a retained-length limit. The preview identifies that
 dependency; an explicit `"retained_limits_nt": {"foldback": 20}` can revise the
 limit when appropriate. Fixed materials remain fixed. A ready preview means the
 declarations agree; complete construction is established by execution.
+
+To change a material policy while keeping the original stem and other hard
+requirements, follow the [saved material-context example](discover-designs/refine-the-search.md#revise-a-material-policy).

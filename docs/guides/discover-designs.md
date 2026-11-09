@@ -108,7 +108,7 @@ destination compatibility.
 
 ```python
 # Use the same request and selection through Python.
-from hop_design.construction import discover_designs, load_design_choices
+from hop_design.construction import discover_designs
 
 choices = discover_designs(
     {"stem_arm": "ATAACTTCGTATAGCATACATTATACGAAGTTAT", "product": "released_insert"},
@@ -124,8 +124,16 @@ else:
     print(answer["headline"], answer["guidance"])
     if "continue_search" in answer["actions"]:
         print("Continue with choices.find_more(max_evaluations=64).")
+```
 
-# Reopen a relocated result, or retain this object for repeated fast queries.
+### Inspect saved choices
+
+Replace `python-designs` below with your existing discovery directory.
+
+```python
+# Reopen a saved result for read-only filtering.
+from hop_design.construction import load_design_choices
+
 saved = load_design_choices("python-designs")
 matching = saved.query({"parameters": [{"key": "loop_nt", "values": [4]}]})
 ```

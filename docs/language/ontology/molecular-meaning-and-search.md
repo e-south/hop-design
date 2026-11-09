@@ -172,9 +172,9 @@ requests clone-ready ends.
 
 ### Added stem and retained DNA
 
-Construction sequence is classified as retained, transient, auxiliary, or
-destination-associated. Compactness uses achieved endpoint geometry and
-retained non-payload sequence only.
+Track sequence fate at the requested endpoint separately from material function.
+Primer- or adapter-derived bases can remain in the product. Compactness uses
+achieved endpoint geometry and retained non-payload sequence only.
 
 "Added stem" and "added DNA" also answer different questions. Added stem counts
 paired positions beyond the supplied invariant stem at a named molecular stage.

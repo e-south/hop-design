@@ -129,10 +129,10 @@ with its original subsets. Loading it does not fill in omitted lengths.
 
 The context also declares primer-length limits, canonical basal pairing, a source
 handle domain and an exact synthetic adapter handle. They affect which options
-are obtainable. Inspect `designs/intent/context.json`, then save an edited copy
-and pass `--context my-context.json` when different permissions or materials are
-needed. The saved result carries that context, so later inspection does not depend
-on its original file location.
+are obtainable. Inspect `designs/intent/context.json` when different permissions
+or materials are needed. A new stem-based command accepts `--context`; a saved
+`--request` carries its context inside the request. The example below preserves
+that request's hard requirements while changing one material policy.
 
 A release method must be permitted for end generation in both the basal region
 and the release step. Resolution names these two fields if their permissions
@@ -142,6 +142,44 @@ Execution limits are separate. `--evaluations` controls the amount of work in a
 batch. Python callers can provide the explicit `effort` mapping for local search
 limits. Larger quotas search further. They cannot repair a contradictory molecular
 requirement.
+
+## Revise a material policy
+
+To require at least 16 nt of source forward-primer annealing, copy the original
+intent and context. This example starts from the default `constrain` primer
+policy and keeps the stem, ends, scaffold requirements and other molecular
+permissions unchanged. Run the following in Python from the directory containing
+`designs`:
+
+```python
+# Copy the saved requirements and change one primer-length permission.
+import json
+from pathlib import Path
+
+intent = json.loads(Path("designs/intent/intent.json").read_text())
+context = json.loads(Path("designs/intent/context.json").read_text())
+primer = context["materialization"]["source_preparation"]["forward_primer"]
+assert primer["mode"] == "constrain"
+primer["min_annealing_length_nt"] = 16
+context["context_id"] = "source-forward-16"
+context["description"] = "Source forward primer anneals over at least 16 nt"
+intent["context"] = context
+with Path("primer-intent.json").open("x") as handle:
+    json.dump(intent, handle, indent=2)
+```
+
+```bash
+# Resolve the revised requirements without searching.
+hop-design design resolve --request primer-intent.json --out primer-permissions
+
+# After inspecting primer-permissions/report.md, search into a new directory.
+hop-design design discover --request primer-intent.json \
+  --evaluations 16 --out primer-designs
+```
+
+The resolved source forward-primer minimum is now 16 nt. The complete route still
+determines whether suitable materials exist. The original `designs` directory
+and its selections stay unchanged.
 
 For exhaustive interface accounting, use the [interface survey](../survey-interfaces.md).
 For an already exact construction request, use [construction compilation](../design-a-construction.md).
