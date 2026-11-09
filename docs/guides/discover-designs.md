@@ -5,7 +5,7 @@ intent: Reach complete molecular choices, inspect a selected route, and retrieve
 audience: [users, integrators]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-10-31
+last_verified: 2026-11-09
 doc_type: tutorial
 journey: [discover, verify, integrate]
 ---
@@ -27,7 +27,7 @@ to share their exact molecules, figures and materials without repeating search.
 This example preserves one supplied stem arm and requests a released duplex insert:
 
 ```bash
-hop-design design discover \
+uv run hop-design design discover \
   --stem ATAACTTCGTATAGCATACATTATACGAAGTTAT \
   --product released_insert \
   --out designs --format text
@@ -59,7 +59,7 @@ requirements remain visible beside the plot; they do not consume extra axes.
 Construction details remain in the exported parameter guide and API explanation.
 
 ```bash
-hop-design design view designs --out browser-view
+uv run hop-design design view designs --out browser-view
 ```
 
 Open the printed local address. Select a supported path to inspect its molecular
@@ -67,29 +67,16 @@ route. Filtering only narrows the recorded pool. To search further, run
 `design continue` explicitly and reload the view. Selection carries through to
 preparation retrieval without copying record coordinates.
 
-The browser keeps the choice plot and selected molecular route together. On a
-pinned hairpin, click a labeled feature, such as the loop or added pairing, to
-read its definition and current value. **Color by** shows that feature across the
-existing map; **Filter to** narrows complete preparations to the displayed value.
-Neither action changes the search permissions. Escape closes the feature without
-closing the inspector, and keyboard focus offers the same actions.
-Paths shared by several preparations open a chooser. Materials, fixed properties
-and search coverage sit below the figures; the same facts remain in static exports. Tab enters
-an axis or molecular region; arrow keys inspect its values or bases. Enter applies
-a choice. At fit scale, scrolling moves the page; pinch or Ctrl-wheel zooms into
-the molecule, after which scrolling pans it. **Fit route**, Home or 0 restores the
-whole route. These camera operations leave the query and selection unchanged.
-
 ## Inspect one route and retrieve its oligos
 
 Select one recorded preparation with a reproducible seed, then use that same
 selection for both figures and the material handoff:
 
 ```bash
-hop-design design sample designs --seed 1 --out selection.json
-hop-design design figure designs --selection selection.json --out choice-figure
-hop-design design atlas designs --selection selection.json --out molecular-route
-hop-design design retrieve designs --selection selection.json --out preparation
+uv run hop-design design sample designs --seed 1 --out selection.json
+uv run hop-design design figure designs --selection selection.json --out choice-figure
+uv run hop-design design atlas designs --selection selection.json --out molecular-route
+uv run hop-design design retrieve designs --selection selection.json --out preparation
 ```
 
 `choice-figure/figure.pdf` shows the supported paths. `molecular-route/projection.svg`
@@ -108,13 +95,55 @@ flank lengths are not summed to estimate whole-product overhead.
 These are modeled preparations. The handoff identifies remaining experimental
 conditions, including purification and destination compatibility.
 
-### Compose a compact figure
+## Use the same objects in Python
+
+Use the same source environment for these examples (`uv run python`).
+
+```python
+from hop_design.construction import discover_designs, load_design_choices
+
+choices = discover_designs(
+    {"stem_arm": "ATAACTTCGTATAGCATACATTATACGAAGTTAT", "product": "released_insert"},
+    "python-designs",
+)
+answer = choices.explain()  # Product facts, applicable parameters and next actions.
+selected = choices.sample(seed=1)
+choices.figure(selection=selected).write("python-choice-figure")
+choices.atlas(selected).write("python-molecular-route")
+choices.retrieve(selected, "python-preparation")
+
+# Reopen a relocated result, or retain this object for repeated fast queries.
+saved = load_design_choices("python-designs")
+matching = saved.query({"parameters": [{"key": "loop_nt", "values": [4]}]})
+```
+
+`choices.resolution` exposes the original intention, context, effective request and
+origin of each group of settings. `choices.find_more(max_evaluations=64)` explicitly
+advances discovery and returns a new snapshot; the original snapshot stays
+unchanged.
+
+## Browser controls
+
+The browser keeps the choice plot and selected molecular route together. On a
+pinned hairpin, click a labeled feature, such as the loop or added pairing, to
+read its definition and current value. **Color by** shows that feature across the
+existing map; **Filter to** narrows complete preparations to the displayed value.
+Neither action changes the search permissions. Escape closes the feature without
+closing the inspector, and keyboard focus offers the same actions.
+Paths shared by several preparations open a chooser. Materials, fixed properties
+and search coverage sit below the figures; the same facts remain in static exports. Tab enters
+an axis or molecular region; arrow keys inspect its values or bases. Enter applies
+a choice. At fit scale, scrolling moves the page; pinch or Ctrl-wheel zooms into
+the molecule, after which scrolling pans it. **Fit route**, Home or 0 restores the
+whole route. These camera operations leave the query and selection unchanged.
+
+## Compose a compact figure
 
 Choose the coordinates that explain your comparison without filtering out any
 preparations. Repeat `--axis` in the desired drawing order:
 
 ```bash
-hop-design design figure designs --selection selection.json \
+uv run hop-design design figure designs --selection selection.json \
   --axis left_gap --axis right_gap --axis foldback_arm_bp --axis loop_nt \
   --out compact-choice-figure
 ```
@@ -198,7 +227,7 @@ and complete route must still pass verification.
 Add an exact left end, an exact right end, or both when you have that requirement:
 
 ```bash
-hop-design design discover \
+uv run hop-design design discover \
   --stem ATAACTTCGTATAGCATACATTATACGAAGTTAT \
   --product released_insert --left AGTC --right AACC \
   --out requested-ends
@@ -224,7 +253,7 @@ Read the result before deciding what to do next:
 For an unfinished insert search, use:
 
 ```bash
-hop-design design continue designs --evaluations 64 --format text
+uv run hop-design design continue designs --evaluations 64 --format text
 ```
 
 An ordinary batch limit returns the current choices. A sequence-domain, pending-work
@@ -257,7 +286,7 @@ To inspect recorded preparations with a 4-nt loop, save `filters.json`:
 ```
 
 ```bash
-hop-design design query designs --query filters.json --format text
+uv run hop-design design query designs --query filters.json --format text
 ```
 
 This filter changes neither permissions nor search coverage. A released-end
@@ -283,31 +312,6 @@ the applied query. Run those commands from a fresh output directory while the
 browser's files remain available. Selection, route and preparation exports use
 that same query. The block offers further search only when the result supports it.
 
-## Use the same objects in Python
-
-```python
-from hop_design.construction import discover_designs, load_design_choices
-
-choices = discover_designs(
-    {"stem_arm": "ATAACTTCGTATAGCATACATTATACGAAGTTAT", "product": "released_insert"},
-    "python-designs",
-)
-answer = choices.explain()  # Product facts, applicable parameters and next actions.
-selected = choices.sample(seed=1)
-choices.figure(selection=selected).write("python-choice-figure")
-choices.atlas(selected).write("python-molecular-route")
-choices.retrieve(selected, "python-preparation")
-
-# Reopen a relocated result, or retain this object for repeated fast queries.
-saved = load_design_choices("python-designs")
-matching = saved.query({"parameters": [{"key": "loop_nt", "values": [4]}]})
-```
-
-`choices.resolution` exposes the original intention, context, effective request and
-origin of each group of settings. `choices.find_more(max_evaluations=64)` explicitly
-advances discovery and returns a new snapshot; the original snapshot stays
-unchanged.
-
 ## Request a hairpin endpoint
 
 Use `--product hairpin` for a direct hairpin or
@@ -323,10 +327,10 @@ insert route is different from requesting either hairpin endpoint.
 Start with the first complete choice within your execution budget:
 
 ```bash
-hop-design design discover \
+uv run hop-design design discover \
   --stem ATAACTTCGTATAGCATACATTATACGAAGTTAT \
   --product hairpin --evaluations 64 --first-choices 1 --out hairpins
-hop-design design continue hairpins --evaluations 4 --format text
+uv run hop-design design continue hairpins --evaluations 4 --format text
 ```
 
 `--first-choices` stops after the requested number of new complete preparations or
@@ -454,10 +458,10 @@ The [one-N example](../../examples/stem-family-intent.json) previews four exact
 stems with the same construction permissions. End words remain optional.
 
 ```bash
-hop-design design resolve --request examples/stem-family-intent.json --out family-preview
-hop-design design discover --request examples/stem-family-intent.json --evaluations 256 --out family --format text
-hop-design design query family --member member-0001 --format text
-hop-design design view family --member member-0001 --out member-view
+uv run hop-design design resolve --request examples/stem-family-intent.json --out family-preview
+uv run hop-design design discover --request examples/stem-family-intent.json --evaluations 256 --out family --format text
+uv run hop-design design query family --member member-0001 --format text
+uv run hop-design design view family --member member-0001 --out member-view
 ```
 
 `max_members` bounds expansion before search. `max_total_evaluations` bounds the

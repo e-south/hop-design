@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from dataclasses import dataclass
+from typing import Any
 
 from hop_design.kernel.construction.basal.domains import solve_basal_sequence_domain
 from hop_design.kernel.construction.basal.programs import BasalPlacementFailure
@@ -15,7 +16,7 @@ from hop_design.models.construction.product_pairing import ProductConstraintConf
 from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.request import LocalNeighborhoodRequest
 from hop_design.models.construction.sequence_sets import SequenceSet, SequenceSpaceLimits
-from hop_design.models.enzymes import EnzymeProvisioningPolicy, EnzymeRole
+from hop_design.models.enzymes import CharacterizedEnzyme, EnzymeProvisioningPolicy, EnzymeRole
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ...basal.traversal import iter_basal_work_units
@@ -34,6 +35,39 @@ class EndPairAdmission:
             "permitted_pair_count": self.permitted_pair_count,
             "relation_digest": self.relation_digest,
         }
+
+
+def _key_release_definition(
+    product: ProductRequest, enzyme: CharacterizedEnzyme, data: dict[str, Any]
+) -> None:
+    """Normalize only an admitted singleton's identity in this scratch cache key.
+
+    The full catalog, permission sets and other fields stay in the key. Named
+    products and programs are untouched; only a necessary sequence set is reused.
+    """
+    assert product.basal is not None
+    basal = EnzymeProvisioningPolicy(
+        **product.basal.enzymes.model_dump(), catalog=product.enzyme_catalog
+    )
+    if not basal.permits(enzyme.enzyme_id, role=EnzymeRole.END_GENERATION):
+        return
+    restrictions = []
+    for family in ("basal", "release"):
+        roles = [
+            role
+            for role in data[family]["enzymes"]["role_restrictions"]
+            if role["role"] == EnzymeRole.END_GENERATION.value
+        ]
+        if len(roles) != 1 or roles[0]["allowed_enzyme_ids"] != [str(enzyme.enzyme_id)]:
+            return
+        restrictions.append(roles[0])
+    definition = enzyme.model_dump(
+        mode="json",
+        by_alias=True,
+        exclude={"enzyme_id", "canonical_name", "characterization_source", "vendor_metadata"},
+    )
+    for role in restrictions:
+        role["allowed_enzyme_ids"] = {"necessary_release_definition": definition}
 
 
 class EndPairRelations:
@@ -81,13 +115,12 @@ class EndPairRelations:
             **product.release.enzymes.model_dump(),
             catalog=product.enzyme_catalog,
         )
-        if (
-            sum(
-                permissions.permits(e.enzyme_id, role=EnzymeRole.END_GENERATION)
-                for e in product.enzyme_catalog.enzymes
-            )
-            != 1
-        ):
+        release_enzymes = tuple(
+            e
+            for e in product.enzyme_catalog.enzymes
+            if permissions.permits(e.enzyme_id, role=EnzymeRole.END_GENERATION)
+        )
+        if len(release_enzymes) != 1:
             return None  # Different enzymes at the two ends are not yet translated.
         data = product.model_dump(mode="json", by_alias=True)
         # The proven frame omits the folded interior. Its geometry and display
@@ -100,6 +133,7 @@ class EndPairRelations:
         data["materialization"]["source_preparation"]["source_ssdna"] = self.policy.model_dump(
             mode="json"
         )
+        _key_release_definition(product, release_enzymes[0], data)
         key = sha256_digest(canonical_json_bytes(data))
         if key in self._cache:
             self._cache.move_to_end(key)

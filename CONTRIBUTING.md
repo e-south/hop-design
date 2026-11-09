@@ -1,8 +1,9 @@
 # Contributing to HOP Design
 
 HOP accepts focused changes that preserve its public ownership boundary and
-scientific contracts. Start with [docs/index.md](docs/index.md) and the
-nearest accepted architecture decision.
+scientific contracts. Start with the [maintainer map](docs/dev/README.md) for
+code ownership and verification. Use the [user task index](docs/index.md) to
+check the workflow affected by your change.
 
 ## Development loop
 

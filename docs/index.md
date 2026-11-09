@@ -5,16 +5,15 @@ intent: Choose a design task, then open its guide or API reference.
 audience: [users]
 owner: HOP Design maintainers
 status: active
-last_verified: 2026-10-13
+last_verified: 2026-11-09
 doc_type: index
 journey: [install, compile, discover, method, verify, integrate]
 ---
 
 # HOP documentation
 
-Start with the molecule or comparison you want. The current source candidate
-supports these workflows through CLI and Python. Check the installation guide
-for the distinction between that candidate and the published wheel.
+Choose a task, then follow its guide through the CLI or Python API. The
+[installation guide](guides/install.md) identifies the version each workflow needs.
 
 ## Start here
 
@@ -33,16 +32,24 @@ or [preview a substrate space](guides/substrate-spaces.md).
 
 ## Choose a lower-level task
 
+### Explore and compare
+
 - [Explore conditional variants](guides/explore-conditional-variants.md): preserve
   explicit properties while browsing supported complete molecules and preparations.
 - [Edit folded sequences](guides/edit-folded-sequences.md): loop words, finite
   released-end placements, retained-base changes and a bounded exact stem family.
 
-- [Explore complete scaffolds](guides/explore-scaffolds.md): obtain whole-molecule
-  options from one strict product request, without preparation branching.
+- [Explore complete scaffolds](guides/explore-scaffolds.md): find whole-molecule
+  options from an explicit product request.
 - [Author an explicit family roster](guides/compare-scaffold-families.md): bind
   member requests and selections, assess a reference and reconcile alternatives.
-  Use the comparison brief above when starting from desired membership.
+  Start with the comparison guide above to specify desired membership.
+
+### Specify construction steps
+
+Local junction searches describe part of a construction. Use whole-route
+compilation to check their combination and materials.
+
 - [Search junctions and compile a construction](guides/compile-construction.md):
   payload, enzymes, local constraints, required materials, and endpoint.
 - [Search compatible basal candidates](guides/discover-compatible-basal-candidates.md):
@@ -55,9 +62,14 @@ or [preview a substrate space](guides/substrate-spaces.md).
 - [Enumerate basal sequence populations](guides/basal-sequence-space.md):
   admit full sources, count distinct local words, and recover molecular examples.
 - [Check exact materials through a named method](guides/resolve-production-method.md):
-  molecular states and products, explained in the [method model](methods/overview.md).
-- [Render molecular views](guides/render-component-views.md) and
-  [verify saved results](provenance/overview.md).
+  inspect its molecular states and products; see the [method model](methods/overview.md).
+
+### Inspect and share
+
+- [Capture an atlas edition](guides/share-atlas-edition.md): reopen recorded
+  choices and retrieve their figures and materials without repeating discovery.
+- [Render molecular views](guides/render-component-views.md).
+- [Verify saved results](provenance/overview.md).
 
 ## Inputs and reference
 
