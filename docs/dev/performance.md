@@ -433,12 +433,25 @@ basal admission. This avoids repeated membership scans and sorting without
 caching a complete-construction claim. Lists end with the discovery invocation;
 profile their cold construction, reuse and memory separately from molecular solving.
 
+Named release enzymes with identical modeled definitions can also share a
+necessary relation through the existing bounded cache. Both basal and release
+permissions must explicitly select the same allowed singleton before lookup.
+Only its two role references are normalized; the full catalog, other permissions
+and all other product fields remain dependencies. The definition excludes the
+name, identifier and source/vendor metadata, while retaining every other field.
+Named programs, preparation identities and complete-route verification remain
+distinct. This reuses a sequence constraint, not a claim that enzymes have the
+same experimental performance.
+
 Screen construction is invocation-owned and checks cooperative cancellation
 between frames. It handles at most 32,768 frames and 16 MiB of distinct relation
 content; larger requests retain full ordinary navigation. Unsupported or
 resource-stopped translations are explicitly unknown candidates, never empty
 sets. A single-target request avoids the shared setup. A cold invocation pays
-setup again; measure that cost separately from warm navigation. This change
+setup again; measure that cost separately from warm navigation. Choose call
+allowances that amortize setup: checkpoint transactions still occur per evaluated
+step. A cold call can stop during screening before committing a new evaluation.
+This change
 reduces navigation work per target, so equal evaluation counts are no longer
 an equal-work comparison: compare exhausted finite requests, molecular outcomes,
 CPU cost and useful preparations. It does not migrate old producer checkpoints.
