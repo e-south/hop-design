@@ -337,6 +337,13 @@ reconstructed on resume. Unknown classes remain eligible. These partial hints
 affect outer target order only, preserving target-local molecular replay.
 These are finite-budget preferences, not new molecular limits or support proofs.
 
+Necessary end-pair screening traverses basal work once within its retained-DNA
+bound, rather than rescanning the target roster at every possible overhead
+level. Canonical offsets and the fixed pairing length make the retained overhead
+monotone. The stream preserves the units and order of the explicit level-by-level
+traversal and stops at the first offset above the bound. Individual-level callers
+keep their existing behavior; no search permission or resource ceiling changes.
+
 Necessary end-pair projection reuses output assignment masks within one placement
 and sequence-set builder. Bases absent from the exposed ends share an output
 mask, but still undergo pairing checks and consume the noncanonical-contact
