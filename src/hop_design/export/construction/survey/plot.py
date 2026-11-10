@@ -11,7 +11,7 @@ from ..molecular.primitives.typography import text_width
 from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 from ..presentation.regions import REGIONS, teaching_region
 from .display_projection import append_display_metadata
-from .guide import compact_plot_summary, plot_context
+from .guide import plot_context
 from .labels import headings as draw_headings
 from .labels import node_text
 from .layout import (
@@ -307,14 +307,13 @@ def render_survey_plot(
     notes = plot_context(presentation, choices.get("fully_enumerated", False), len(context))
     if profile.compact_context:
         _element(caption, "metadata", json.dumps(notes), data_complete_plot_context="true")
-        note(compact_plot_summary(presentation))
     else:
         for text, attributes in notes:
             note(text, **attributes)
     root.set("data-domain-values", str(total))
     root.set("data-visible-labels", str(labeled))
-    height = y + 8
+    height = layout.height if profile.compact_context else y + 8
     background.set("height", str(height))
-    root.set("viewBox", f"0 0 {width} {height}")
+    root.set("viewBox", f"0 0 {width} {height:g}")
     root.set("height", f"{profile.physical_width_pt * height / width}pt")
     return cast(bytes, ET.tostring(root, encoding="utf-8"))

@@ -1,5 +1,6 @@
 """Measured type remains clear of values and neighboring continuation bands."""
 
+import re
 from dataclasses import replace
 from xml.etree import ElementTree as ET
 
@@ -52,7 +53,14 @@ def test_measured_headings_clear_values_and_retain_exact_overlay(profile):
     for axis in axes:
         title = next(element for element in axis if element.get("data-axis-title"))
         text = [element for element in title if element.tag.endswith("}text")]
-        title_bottom = max(float(element.get("y")) for element in text) + font * 0.25
+
+        def bottom(element):
+            rotation = re.fullmatch(r"rotate\(-90 [^ ]+ ([^)]+)\)", element.get("transform", ""))
+            # A start-anchored -90-degree text run ends at the rotation origin;
+            # its untransformed y attribute describes the perpendicular baseline.
+            return float(rotation.group(1)) if rotation else float(element.get("y")) + font * 0.25
+
+        title_bottom = max(bottom(element) for element in text)
         labels = [
             element
             for element in axis.iter()

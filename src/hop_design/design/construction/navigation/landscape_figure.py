@@ -126,9 +126,7 @@ def landscape_figure(
                 landscape.preparations, landscape.basis, identity
             )
             files["comparison-features.json"] = canonical_json_bytes(features)
-            files["comparison-features.svg"] = render_comparison_vector(
-                features, width_pt=detail_width_pt or 504
-            )
+            files["comparison-features.svg"] = render_comparison_vector(features)
     elif view == "families":
         families = choices.families(query=query, stage=stage)
         plot = render_molecular_families(families, selected_identity=identity, layout=layout)

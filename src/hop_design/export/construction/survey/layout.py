@@ -50,8 +50,7 @@ def node_geometry(
         "lines": lines,
         "width": max(
             18,
-            max(text_width(line, profile.axis_font) for line in lines)
-            + (2 if profile.rotated_labels else 4),
+            max(text_width(line, profile.axis_font) for line in lines) + profile.node_padding,
         ),
         "height": len(lines) * profile.axis_font + 4,
     }

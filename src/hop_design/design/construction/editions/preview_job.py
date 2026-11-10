@@ -51,10 +51,11 @@ def preview_job(
         return None  # Live discovery and captured artwork retain their existing paths.
     if not any(p["materialized_realization_id"] == identity for p in answer["paths"]):
         raise ValueError("Preview must name a preparation in the recorded pool.")
-    path, _ = _projection_context(choices, identity, answer)
+    path, names = _projection_context(choices, identity, answer)
     context: Record = {
         **{k: answer[k] for k in ("snapshot_digest", "axes", "context", "coverage") if k in answer},
         "paths": [path],
+        "enzyme_names": names,
     }
     # These reads check bytes on every cache miss. Never send the cohort graph or
     # a live edition object to the worker, and never use file mtimes as authority.
@@ -82,12 +83,7 @@ def render_preview_job(job: PreviewJob) -> tuple[bytes, Record]:
         or path["materialized_realization_id"] != job.identity
     ):
         raise ValueError("Preview job disagrees with the selected molecular authority.")
-    names = {
-        node["value"]: node["label"]
-        for axis in answer["axes"]
-        if axis["key"].endswith("method")
-        for node in axis["nodes"]
-    }
+    names = answer["enzyme_names"]
     scenes: Record = {}
     atlas: MolecularScenes
     if job.phases is not None:

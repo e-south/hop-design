@@ -92,12 +92,12 @@ An existing `choices.figure(view="similarity", selection=selection)` export also
 contains `comparison-features.json` and `comparison-features.svg`. They describe
 that selected point using the same contact dictionary, active coordinate order
 and policy as the browser. The JSON retains constant features and the dictionary;
-the SVG groups the active features by scientific type: Geometry, Contacts and loop,
-and Assembly ends. Numeric geometry retains units; words retain their orientation.
-Ordered contact rows use canonical lines and noncanonical diamonds. The display
-preserves the captured feature order, values and comparison policy. Exact encodings
-remain in per-feature attributes and the embedded record; their nominal IDs imply
-no numerical ordering. The browser presents the same types within the map pane.
+the SVG draws a literal `X = [ … ]` row in captured feature order. It shows
+geometry with units, oriented words, and decoded contact rows with canonical
+lines and noncanonical diamonds. These values retain their scientific types;
+the displayed row is not a Euclidean embedding. Exact encodings remain in
+per-feature attributes and the embedded record; nominal IDs imply no numerical
+ordering. The browser uses the same horizontal reading within the map pane.
 
 For a column-width selected detail, request the physical width explicitly:
 
@@ -115,11 +115,13 @@ packet = edition.figure(
 and measured, context-shortened headings. Complete canonical labels remain in node
 titles and metadata. The column profile retains at least 7 pt type or reports the
 minimum required width; it never silently drops axes or reduces labels below that
-budget. `comparison-features.svg` uses stacked typed groups with native 8.5 pt
-annotations. The selected map, exact comparison JSON, materials and view identity
+budget. `comparison-features.svg` retains a natural-width single row independently of
+the trace width, with 7.2 pt labels, 9 pt scalar/word values and 8.5 pt contacts.
+A longer record expands rather than dropping features or splitting tokens. The selected map, exact comparison JSON, materials and view identity
 are unchanged. The figure summary records the explicit width and presentation
-profile independently of the saved scientific view. The browser keeps its wider
-inspector layout.
+profile independently of the saved scientific view. The browser uses the same compact contextual headings in a fitted plate of at
+most seven inches; narrowing the inspector does not enlarge its molecule.
+Complete trace context remains embedded metadata without a visible status footer.
 
 Parallel connections use cubic curves with shared mid-transition control points
 for identical adjacent endpoints. This is a presentation aid for following shared

@@ -71,6 +71,23 @@ def member_materials(edition: "AtlasEdition", identity: str) -> Mapping[str, byt
     return edition._store.files(prefix + "/materials/")
 
 
+def enzyme_labels_from_materials(files: Mapping[str, bytes]) -> dict[str, str]:
+    """Use the captured canonical names, including operations absent from plot axes."""
+    result: dict[str, str] = {}
+    for name in files:
+        if name.rsplit("/", 1)[-1] != "enzyme-labels.json":
+            continue
+        labels = json.loads(files[name])
+        if not isinstance(labels, dict) or any(
+            not isinstance(k, str) or not isinstance(v, str) or not v for k, v in labels.items()
+        ):
+            raise ValueError("Captured enzyme labels must map identities to nonempty names.")
+        for identity, label in labels.items():
+            if result.setdefault(identity, label) != label:
+                raise ValueError("Captured enzyme label records disagree.")
+    return result
+
+
 def route_from_materials(
     files: Mapping[str, bytes], identity: str
 ) -> MaterializedConstructionRealization:

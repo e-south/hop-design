@@ -56,7 +56,7 @@ def test_smooth_trace_keeps_exact_endpoints_and_transition_membership():
     )
 
 
-def test_column_features_use_named_types_with_unchanged_order_and_encoding():
+def test_literal_features_preserve_recorded_order_and_encoding():
     from hop_design.export.construction.survey.comparison_vector import render_comparison_vector
 
     fields = [
@@ -107,19 +107,14 @@ def test_column_features_use_named_types_with_unchanged_order_and_encoding():
     packet = {"identity": "example", "vector": fields}
     before = json.dumps(packet, sort_keys=True)
     root = ET.fromstring(render_comparison_vector(packet, width_pt=246))
-    assert root.get("data-comparison-display") == "typed-features"
-    assert float(root.get("viewBox").split()[2]) == 246
+    assert root.get("data-comparison-display") == "literal-row"
+    assert float(root.get("viewBox").split()[2]) <= 504
     assert [g.get("data-feature") for g in root.iter() if g.get("data-feature")] == [
         f["key"] for f in fields
     ]
     assert [json.loads(g.get("data-encoded")) for g in root.iter() if g.get("data-encoded")] == [
         f["encoded"] for f in fields
     ]
-    assert {g.get("data-feature-group") for g in root.iter() if g.get("data-feature-group")} == {
-        "Geometry",
-        "Contacts and loop",
-        "Assembly ends",
-    }
     assert not any((e.text or "").startswith("x =") for e in root.iter() if e.tag.endswith("text"))
     assert json.dumps(packet, sort_keys=True) == before
 
@@ -198,3 +193,64 @@ def test_column_layout_reports_insufficient_width_instead_of_tiny_labels():
     ]
     with pytest.raises(ValueError, match=r"at least.*points"):
         plot_layout({"axes": axes}, profile=COLUMN_DETAIL_FIGURE)
+
+
+def test_selected_trace_context_is_metadata_only():
+    from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
+    from hop_design.export.construction.survey.plot import render_survey_plot
+    from tests.unit.test_survey_plot import choices
+
+    root = ET.fromstring(render_survey_plot(choices(), profile=INSPECTOR_FIGURE))
+    context = next(e for e in root.iter() if e.get("data-plot-context"))
+    assert not any(e.tag.endswith("text") for e in context.iter())
+    assert any(e.get("data-complete-plot-context") for e in context.iter())
+    assert root.get("viewBox") == root.get("data-landscape-frame")
+
+
+def test_inspector_trace_uses_shared_compact_language_at_fitted_width():
+    from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
+    from hop_design.export.construction.survey.plot import render_survey_plot
+    from tests.unit.test_survey_plot import choices
+
+    root = ET.fromstring(render_survey_plot(choices(), profile=INSPECTOR_FIGURE))
+    assert float(root.get("font-size")) * 672 / float(root.get("viewBox").split()[2]) >= 12
+    assert any(e.get("data-heading-angle") == "-90" for e in root.iter())
+    assert not any(
+        e.get("transform", "").startswith("rotate")
+        for e in root.iter()
+        if e.get("data-node-label") == "true" and e.tag.endswith("text")
+    )
+
+
+def test_literal_x_is_one_horizontal_row_with_lossless_values():
+    from hop_design.export.construction.survey.comparison_vector import render_comparison_vector
+
+    packet = {
+        "identity": "example",
+        "vector": [
+            {"key": "shape.loop_nt", "label": "Loop size", "unit": "nt", "value": 4, "encoded": 4},
+            {
+                "key": "sequences.basal_pairs",
+                "label": "Basal contacts",
+                "encoding": "contacts",
+                "value": [["A", "T", "watson_crick"]] * 18,
+                "encoded": [2] * 18,
+            },
+            {
+                "key": "interfaces.right_word",
+                "label": "Right sticky end",
+                "value": "CAAG",
+                "encoded": "CAAG",
+            },
+        ],
+    }
+    root = ET.fromstring(render_comparison_vector(packet))
+    assert root.get("data-comparison-display") == "literal-row"
+    assert any(e.text == "X =" for e in root.iter() if e.tag.endswith("text"))
+    assert len([e for e in root.iter() if e.get("data-vector-bracket")]) == 2
+    fields = [e for e in root.iter() if e.get("data-feature")]
+    assert {e.get("data-feature-row") for e in fields} == {"0"}
+    assert [json.loads(e.get("data-encoded")) for e in fields] == [
+        f["encoded"] for f in packet["vector"]
+    ]
+    assert float(root.get("viewBox").split()[2]) <= 504

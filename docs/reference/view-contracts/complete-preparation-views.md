@@ -213,6 +213,12 @@ provide remaining labels and the full domain. Resizing changes only presentation
 
 The teaching hairpin and route use the same continuous strand contours.
 Recognition outlines follow those curves at their recorded base boundaries.
+An unpaired recognition footprint takes its complementary-row direction from the
+nearest recorded pairing on that same strand, or from its uniquely registered
+precursor frame. A global drawing midpoint never determines strand identity.
+Reference fragments and fold cues may suppress colliding secondary terminal ink;
+the exact terminal address and chemistry remain in titled metadata.
+
 Each physical recognition site has its own nearby enzyme name and addressed
 label binding. Repeated sites retain separate names; partial or unresolved sites
 retain their status marker. Every addressed footprint remains present.

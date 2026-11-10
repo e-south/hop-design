@@ -90,12 +90,3 @@ def plot_context(
     if context_count:
         notes.append((f"{context_count} additional query predicates: see query.json.", {}))
     return notes
-
-
-def compact_plot_summary(presentation: dict[str, Any]) -> str:
-    """Short visible context; the complete permission notes remain embedded."""
-    return (
-        f"{presentation['preparations']} exact preparations; "
-        f"{len(presentation['traces'])} projected traces. "
-        "Dotted values have no recorded complete preparation."
-    )

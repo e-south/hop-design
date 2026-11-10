@@ -79,7 +79,7 @@ def test_eligibility_changes_do_not_move_coordinates_or_mutate_a_prior_overlay()
 
 @pytest.mark.parametrize(
     ("method_label", "expected_lines"),
-    [("Nb.Mva1269I", ["Nb.Mva1269I"]), ("BsaI-HFv2", ["BsaI-", "HFv2"])],
+    [("Nb.Mva1269I", ["Nb.Mva1269I"]), ("BsaI-HFv2", ["BsaI-HFv2"])],
 )
 def test_overlay_label_geometry_matches_the_static_figure_for_method_names(
     method_label, expected_lines

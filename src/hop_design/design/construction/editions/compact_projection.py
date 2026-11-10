@@ -19,6 +19,7 @@ from ..projections.parameter_locations import parameter_locations
 from ..projections.parameter_teaching import parameter_teaching, survey_teaching_axes
 from .authority import admitted_route
 from .comparison import captured_route, comparison_provenance
+from .materials import enzyme_labels_from_materials, member_materials
 
 if TYPE_CHECKING:
     from .reader import AtlasEdition
@@ -96,6 +97,7 @@ def _projection_context(
         if axis["key"].endswith("method")
         for node in axis["nodes"]
     }
+    names.update(enzyme_labels_from_materials(member_materials(edition, identity)))
     return path, names
 
 

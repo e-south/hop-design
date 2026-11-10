@@ -7,10 +7,11 @@ from typing import Literal
 
 from hop_design.models.construction.projections.inspection import MolecularStateInspection
 
+from .complementary_row import complementary_row_offset
 from .label_layout import LabelPlacer
 from .primitives.annotation_policy import footprint_color
 from .primitives.ribbon import footprint_envelope, rounded_path
-from .primitives.style import ANNOTATION_SIZE, DUPLEX_ROW_GAP, object_id
+from .primitives.style import ANNOTATION_SIZE, object_id
 from .primitives.typography import text_width
 
 
@@ -77,11 +78,6 @@ def recognition_site_overlays(
             clusters.append(cluster)
         for cluster in clusters:
             positions = [points[key] for key in cluster]
-            origins = {
-                b.origin.origin_strand
-                for b in projection.bases
-                if (b.address.strand_id, b.address.index) in cluster
-            }
             paired = [
                 points[other]
                 for pair in projection.state.pairings
@@ -99,21 +95,10 @@ def recognition_site_overlays(
             ]
             if paired:
                 positions += paired
-            elif len(origins) == 1:
-                # Recorded paired/frame geometry distinguishes upper/lower rows;
-                # a source primary strand supplies the future upper row.
-                if projection.state.pairings or projection.layout_frame:
-                    middle = (
-                        min(y for _, y in points.values()) + max(y for _, y in points.values())
-                    ) / 2
-                    offset = (
-                        DUPLEX_ROW_GAP
-                        if sum(y for _, y in positions) / len(positions) <= middle
-                        else -DUPLEX_ROW_GAP
-                    )
-                else:
-                    offset = DUPLEX_ROW_GAP if next(iter(origins)) == "primary" else -DUPLEX_ROW_GAP
-                positions += [(x, y + offset) for x, y in positions]
+            else:
+                offset = complementary_row_offset(projection, cluster, points)
+                if offset is not None:
+                    positions += [(x, y + offset) for x, y in positions]
             outline = footprint_envelope(positions)
             x, z = min(p[0] for p in outline), max(p[0] for p in outline)
             y, w = min(p[1] for p in outline), max(p[1] for p in outline)

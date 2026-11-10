@@ -37,12 +37,16 @@ def _current_record(choices: ChoiceSource, path: Record, answer: Record) -> Reco
     from ..surveys.witness import recover_witness
 
     identity = path["materialized_realization_id"]
+    catalog_names: dict[str, str] = {}
     if isinstance(choices, HairpinDesignChoices):
         route = next(
             r for _, r in choices._pool._routes if r.materialized_realization_id == identity
         )
     elif isinstance(choices, InsertDesignChoices):
         pool = choices._pool
+        catalog_names = {
+            e.enzyme_id: e.canonical_name for e in pool._request.enzyme_catalog.enzymes
+        }
         index, limits = open_survey(
             choices._directory / "survey.sqlite",
             request=pool._request,
@@ -73,6 +77,7 @@ def _current_record(choices: ChoiceSource, path: Record, answer: Record) -> Reco
         if axis["key"].endswith("method")
         for node in axis["nodes"]
     }
+    names.update(catalog_names)
     atlas = project_molecular_atlas(route, enzyme_names=names)
     locations = parameter_locations(route, atlas, path["values"])
     teaching = parameter_teaching(

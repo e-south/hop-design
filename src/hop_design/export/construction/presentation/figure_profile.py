@@ -24,6 +24,7 @@ class FigureProfile:
     single_row: bool = False
     rotated_labels: bool = False
     physical_width_pt: float = 504
+    node_padding: int = 4
 
 
 PUBLICATION_FIGURE = FigureProfile("publication/v1")
@@ -43,7 +44,8 @@ LANDSCAPE_DETAIL_FIGURE = FigureProfile(
 )
 INSPECTOR_FIGURE = FigureProfile(
     "inspector/v1",
-    width=1800,
+    width=1100,
+    rotated_labels=True,
     single_row=True,
     axis_font=28,
     compact_context=True,
@@ -67,6 +69,7 @@ COLUMN_DETAIL_FIGURE = FigureProfile(
     single_row=True,
     rotated_labels=True,
     physical_width_pt=246,
+    node_padding=2,
     teaching_trace_gap=72,
 )
 

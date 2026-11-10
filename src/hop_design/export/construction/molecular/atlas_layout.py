@@ -6,6 +6,7 @@ from xml.etree import ElementTree as ET
 
 from hop_design.models.construction.projections.atlas import MolecularAtlas
 
+from .assembly.annotations import avoid_reference_label_collisions
 from .assembly.composition import RoutePresentation
 from .assembly.foldback import append_cue, foldback_cue
 from .assembly.ghosts import append_discarded_ghosts
@@ -99,6 +100,7 @@ def atlas_scenes(
         if state.state.state_id in frames:
             append_discarded_ghosts(root, atlas, state)
             append_cue(root, foldback_cue(atlas, state, frames[state.state.state_id]))
+            avoid_reference_label_collisions(root)
         width, height = scene_extent(root)
         positions = []
         for element in root.iter():

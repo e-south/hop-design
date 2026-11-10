@@ -8,7 +8,7 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 .linked-focus [data-choice-mark]:not([data-linked-count]){opacity:.12}.linked-focus path[data-choice-mark][data-linked-count]{opacity:1;stroke-width:3}.linked-focus [data-choice-mark][data-preparations][data-linked-count] circle{stroke:#a55236;stroke-width:5}.linked-focus [data-choice-mark][data-family-ids][data-linked-count]{stroke:#a55236;stroke-width:4}
 #refinement{position:absolute;top:116px;left:24px;width:min(650px,calc(100% - 48px));z-index:6;padding:12px 16px;background:#fff;box-shadow:0 4px 20px #20383f20;border:1px solid var(--line);border-radius:6px;max-height:65%;overflow:auto}#refinement:not([open]){display:none}#refinement p{font-size:14px;margin:6px 0;color:var(--muted)}.viewbar{margin:8px 0}.viewbar [role=group]{display:flex;gap:6px;flex-wrap:wrap}.viewbar label{font-size:14px}
 #inspector{position:absolute;inset:0 0 0 auto;width:var(--inspector-width);min-width:0;z-index:4;background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:clip}#preview-heading{min-height:50px;padding:8px 12px;justify-content:space-between;flex-wrap:nowrap;border-bottom:1px solid var(--line);font-size:14px;flex:none}#preview-heading button{padding:3px 9px}#inspector-scroll{overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:0 14px 16px;flex:1;min-height:0}.figure-cell{margin:0;padding:14px 0;border-bottom:1px solid var(--line)}.figure-cell figcaption{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;font-weight:600;margin-bottom:12px}.figure-cell figcaption button{font-size:13px;font-weight:400}.figure-caption{font-size:13px;color:var(--muted);margin:8px 0 0}
-#figure-one-canvas{position:relative;isolation:isolate;min-width:800px}#molecular-area,#teaching,#trace-context{position:relative;z-index:1}#molecular-area{aspect-ratio:1008/230}#teaching{height:100%;display:flex;align-items:center;justify-content:center}#teaching svg{display:block;width:100%;height:auto;overflow:visible}#hover-molecule{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:white;z-index:3}#hover-molecule svg{width:100%;height:auto}.previewing>#teaching{visibility:hidden}#trace-preview{position:relative;padding:0;border:0}#trace-context svg{display:block;width:100%;height:auto}#teaching [data-teaching-note="loop"]{cursor:pointer}
+#figure-one-canvas{position:relative;isolation:isolate;min-width:0;width:100%;max-width:7in;margin-inline:auto}#molecular-area,#teaching,#trace-context{position:relative;z-index:1}#molecular-area{aspect-ratio:1008/230}#teaching{height:100%;display:flex;align-items:center;justify-content:center}#teaching svg{display:block;width:100%;height:auto;overflow:visible}#hover-molecule{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:white;z-index:3}#hover-molecule svg{width:100%;height:auto}.previewing>#teaching{visibility:hidden}#trace-preview{position:relative;padding:0;border:0}#trace-context svg{display:block;width:100%;height:auto}#teaching [data-teaching-note="loop"]{cursor:pointer}
 .teaching-links{position:absolute;left:0;top:0;pointer-events:none;z-index:0}.teaching-links polygon{fill:#8ba0a8;fill-opacity:.1;stroke:#79939e;stroke-opacity:.2}.teaching-links polygon.parameter-highlight{fill-opacity:.22;stroke-opacity:.6}.parameter-highlight,#route [data-inspected]{filter:drop-shadow(0 0 3px #a95121)}
 #route-frame{position:relative;aspect-ratio:1/1.08;overflow:hidden;border:1px solid var(--line);border-radius:6px;margin-top:10px}#route{height:100%}#route svg{width:100%;height:100%;touch-action:none}#fit{position:absolute;bottom:10px;left:10px;font-size:13px}#stage-label{display:block;font-size:13px}#stage-label select{max-width:100%;font-size:13px}#selection-actions{padding:14px 0}#selection-actions button{font-size:14px}
 #inspector[data-focus]{inset:0;width:100%;min-width:0;border-left:0}#inspector[data-focus] .figure-cell{border:0}#inspector[data-focus] #inspector-scroll{padding:0 22px 16px}#inspector[data-focus="figure-two"] #figure-one,#inspector[data-focus] #selection-actions,#inspector[data-focus] #selection-details,#inspector[data-focus] footer{display:none}#inspector[data-focus="figure-two"] #route-frame{height:calc(100dvh - 250px);min-height:280px;aspect-ratio:auto}#inspector[data-focus] .figure-cell figcaption{font-size:18px}#inspector[data-focus="figure-two"] #focus-route{display:none}
@@ -91,16 +91,15 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 
 /* Exact saved feature values stay in the map column, independent of the inspector. */
 #landscape{container-type:inline-size}
-#map-comparison{position:relative;flex:none;z-index:3;width:100%;min-height:210px;padding:8px 12px 10px;background:transparent;font-size:12px;line-height:1.2}
-/* Reserve the scientific group panel before the first preview so map targets stay put. */
+#map-comparison{position:relative;flex:none;z-index:3;width:100%;min-height:120px;padding:8px 12px 10px;background:transparent;font-size:12px;line-height:1.2}
+/* One faithful row of captured features; scrolling never enlarges the molecular inspector. */
 .similarity-context #map-comparison[hidden]{display:block!important;visibility:hidden}
-[data-comparison-values]{display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.35fr) minmax(100px,.8fr);align-items:start;gap:12px;min-width:0}
-.comparison-group{min-width:0}.comparison-group h3{font-size:12px;font-weight:600;margin:0 0 7px;color:#263b40}
-.comparison-feature{display:flex;justify-content:space-between;align-items:center;gap:7px;min-width:0;margin:4px 0;padding:2px;outline-offset:2px;border-radius:3px}
-.comparison-name{display:flex;flex-wrap:wrap;gap:3px;white-space:normal;overflow-wrap:normal;font-size:11px;color:var(--muted)}
-.comparison-name>span:last-child:not(:first-child)::before{content:"("}.comparison-name>span:last-child:not(:first-child)::after{content:")"}
-.comparison-value{font-family:monospace;font-size:12px;line-height:1.15;white-space:nowrap;color:#284f51}
-.comparison-feature:has(.comparison-pairs){display:block}.comparison-pairs{display:flex;flex-direction:column;align-items:flex-start;margin-top:3px;overflow-x:auto}
+[data-comparison-values]{display:flex;align-items:stretch;gap:7px;min-width:0;overflow-x:auto}
+.comparison-vector-open,.comparison-vector-close{align-self:stretch;white-space:nowrap;font:22px/28px Georgia,serif;padding-top:40px}
+.comparison-feature{display:grid;grid-template-rows:minmax(40px,auto) 36px;flex:0 0 auto;width:min-content;min-width:24px;outline-offset:2px;border-radius:3px;text-align:center}
+.comparison-name{display:flex;flex-direction:column;white-space:normal;overflow-wrap:normal;font-size:9.6px;color:var(--muted);align-self:end;padding-bottom:4px}
+.comparison-value{font-family:monospace;font-size:12px;line-height:1.15;align-self:center;white-space:nowrap;color:#284f51}
+.comparison-pairs{display:flex;flex-direction:column;align-items:center;font-size:11.3px;letter-spacing:0}
 .comparison-pairs [data-contact-class]:not([data-contact-class="watson_crick"]){color:#a35b32;text-decoration:underline;text-decoration-style:dotted}
 .comparison-feature:hover,.comparison-feature:focus-visible{background:#ecf3f14d}
 #map-comparison>.panel-status{padding:7px 10px;font-size:12px}
@@ -112,8 +111,6 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 #map-color{top:88px;right:24px;left:auto;background:transparent;text-align:right;pointer-events:none;max-width:270px}
 #map-color label,[data-color-legend]{justify-content:flex-end}#map-color select{pointer-events:auto;background:transparent}
 #map-color [data-word]{margin-left:auto}.atlas-brand{max-width:44%}
-@container(max-width:560px){[data-comparison-values]{grid-template-columns:1fr 1.3fr}.comparison-group:last-child{grid-column:1 / -1}.comparison-group:last-child .comparison-feature{max-width:210px}}
-@container(max-width:360px){[data-comparison-values]{grid-template-columns:1fr}.comparison-group:last-child{grid-column:auto}#map-comparison{padding-inline:8px}}
-.comparison-feature{max-width:100%}#map-comparison{max-width:100%;overflow:hidden}
+#map-comparison{max-width:100%;overflow-x:auto}
 
 .comparison-contact-glyphs{display:flex;justify-content:center;line-height:0}.comparison-contact-glyphs svg{width:1ch;height:.7em;flex:none;color:#70838a}.comparison-contact-glyphs [data-contact-glyph="diamond"]{color:#a35b32}

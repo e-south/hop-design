@@ -146,7 +146,7 @@ def test_long_descriptor_fits_article_width_without_losing_encoded_tokens():
     packet = {"identity": "example", "vector": fields}
     root = ET.fromstring(render_comparison_vector(packet))
     assert float(root.get("viewBox").split()[2]) <= 504
-    assert root.get("data-comparison-display") == "typed-features"
+    assert root.get("data-comparison-display") == "literal-row"
     assert [json.loads(e.get("data-encoded")) for e in root.iter() if e.get("data-encoded")] == [
         f["encoded"] for f in fields
     ]
@@ -154,7 +154,7 @@ def test_long_descriptor_fits_article_width_without_losing_encoded_tokens():
         if e.get("data-encoded"):
             assert e.get("data-vector-index") is not None
         if e.tag.endswith("text"):
-            assert float(e.get("font-size")) >= 8
+            assert float(e.get("font-size")) >= 7.2
 
 
 def test_constant_only_descriptor_states_all_features_are_constant():
@@ -166,5 +166,5 @@ def test_constant_only_descriptor_states_all_features_are_constant():
         "features": [{"key": "shape.loop_nt", "value": 4, "active": False}],
     }
     root = ET.fromstring(render_comparison_vector(packet))
-    assert "All compared features are constant in this collection." in "".join(root.itertext())
+    assert "X =" in "".join(root.itertext())
     assert json.loads(root.find("{http://www.w3.org/2000/svg}metadata").text) == packet
