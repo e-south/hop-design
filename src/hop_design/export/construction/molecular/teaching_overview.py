@@ -145,6 +145,7 @@ def _render_projected_teaching(
     # Shared contours, palette and footprint geometry; composition stays local.
     shared = ET.fromstring(f'<g xmlns="{SVG}">' + region_spans(state, points) + "</g>")
     group.extend(list(shared))
+    site_layer_index = len(group)
     for pair in state.state.pairings:
         group.append(
             ET.fromstring(
@@ -267,8 +268,8 @@ def _render_projected_teaching(
         if i.pre_state_id == state.state.state_id and i.binding_state_id == state.state.state_id
     )
     overlays = material_binding_overlays(
-        bindings, points, labels.placer, base_size=font
-    ) + staged_materials(staged, labels.placer, base_size=font)
+        bindings, points, labels.placer, base_size=font, label_size=profile.teaching_font
+    ) + staged_materials(staged, labels.placer, base_size=font, label_size=profile.teaching_font)
     regions = (("assembly", "Basal"), ("stem", "Supplied stem"), ("closing", "Foldback"))
     for neighborhood, name in regions:
         xs = [
@@ -283,7 +284,7 @@ def _render_projected_teaching(
                 20 + label_delta,
                 name,
                 text_anchor="middle",
-                font_weight=600,
+                font_weight=400,
             )
     for strand in state.state.molecules:
         for i, label, dy in ((0, "5\u2032", -18), (len(strand.sequence) - 1, "3\u2032", 18)):
@@ -310,7 +311,13 @@ def _render_projected_teaching(
     overlays += recognition_site_overlays(
         state, points, labels.placer, label_size=profile.teaching_font, strand_labels=True
     )
-    root.extend(list(ET.fromstring(f'<g xmlns="{SVG}">' + overlays + "</g>")))
+    overlay_tree = ET.fromstring(f'<g xmlns="{SVG}">' + overlays + "</g>")
+    for site in list(overlay_tree):
+        if site.get("data-site-id"):
+            overlay_tree.remove(site)
+            group.insert(site_layer_index, site)
+            site_layer_index += 1
+    root.extend(list(overlay_tree))
     local_dimensions(root, scene["state_id"], points, teaching, locations, labels)
     projected_end_spans(root, labels)
     element(root, "metadata", data_teaching_parameters="true").text = json.dumps(

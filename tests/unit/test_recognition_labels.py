@@ -76,7 +76,7 @@ def test_strand_aware_names_preserve_every_site_status_and_side():
     assert len([e for e in root.iter() if e.get("data-recognition-footprint")]) == 4
     assert sorted(e.text for e in root.iter() if e.get("data-label-kind") == "recognition") == [
         "Nickase",
-        "Nickase *",
-        "Nickase *",
-        "Nickase *",
+        "Nickase*",
+        "Nickase*",
+        "Nickase*",
     ]

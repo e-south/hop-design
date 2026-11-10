@@ -342,3 +342,141 @@ def test_retained_scene_precedes_folding_with_upward_cue_and_exact_selected_cont
             assert b + h < box[1]
         else:
             assert b > box[1] + box[3]
+
+
+def test_route_uses_quiet_common_annotation_tiers_and_role_only_primer_names(atlas):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    titles = [e for e in root.iter() if e.get("data-stage-title")]
+    names = [e for e in root.iter() if e.get("data-label-kind") == "material-name"]
+    operations = [e for e in root.iter() if e.get("data-operation")]
+    recognition = [e for e in root.iter() if e.get("data-label-kind") == "recognition"]
+    assert titles and names and operations and recognition
+    assert {e.get("font-size") for e in [*titles, *names, *operations, *recognition]} == {"40"}
+    assert all(e.get("font-weight", "400") == "400" for e in titles)
+    assert all("5\u2032P" not in (e.text or "") for e in names)
+    assert not any(e.get("data-label-kind") == "material-context" for e in root.iter())
+    source = next(e for e in root.iter() if e.get("data-atlas-phase") == "source_ssdna")
+    by_role = {
+        e.get("data-material-role"): e
+        for e in source.iter()
+        if e.get("data-staged-material") or e.get("data-primer-binding")
+    }
+    for role, side, name in [
+        ("source_materialization_reverse_primer", "above", "Source reverse"),
+        ("source_materialization_forward_primer", "below", "Source forward"),
+    ]:
+        glyph = by_role[role]
+        label = next(e for e in glyph.iter() if e.get("data-primer-label-side"))
+        assert label.get("data-primer-label-side") == side
+        assert next(e.text for e in label if e.get("data-label-kind") == "material-name") == name
+    assert "after copying" in "".join(source.itertext())
+
+
+def test_recognition_names_have_strong_curved_center_anchored_leaders(atlas):
+    import re
+
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    for row in (e for e in root.iter() if e.get("data-atlas-state")):
+        base_points = {
+            (e.get("data-strand-id"), int(e.get("data-base-index"))): (
+                float(next(t for t in e if t.tag.endswith("}rect")).get("x")) + 7,
+                float(next(t for t in e if t.tag.endswith("}text")).get("y")) - 5,
+            )
+            for e in row.iter()
+            if e.get("data-base-index") is not None
+        }
+        state = next(s for s in atlas.states if s.state.state_id == row.get("data-atlas-state"))
+        sites = {s.site_id: s for s in state.recognition_sites}
+        for label in (e for e in row.iter() if e.get("data-label-for-site")):
+            site = sites[label.get("data-label-for-site")]
+            leader = next(e for e in label if e.get("data-site-leader"))
+            assert "Q" in leader.get("d") or "C" in leader.get("d")
+            assert float(leader.get("stroke-width")) >= 2.5
+            assert float(leader.get("stroke-opacity")) >= 0.8
+            coordinates = list(map(float, re.findall(r"[-+]?\d+(?:\.\d+)?", leader.get("d"))))
+            points = [base_points[a.strand_id, a.index] for a in site.recognition]
+            assert coordinates[:2] == pytest.approx(
+                [
+                    (min(x for x, _ in points) + max(x for x, _ in points)) / 2,
+                    (min(y for _, y in points) + max(y for _, y in points)) / 2,
+                ]
+            )
+            text = next(e.text for e in label if e.get("data-label-kind") == "recognition")
+            assert " *" not in text
+
+
+def test_retained_discarded_reference_ghosts_preserve_active_state(atlas):
+    before = atlas.model_dump_json()
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    row = next(e for e in root.iter() if e.get("data-atlas-phase") == "selected_fragments")
+    selected = next(s for s in atlas.states if s.state.phase.value == "selected_fragments")
+    cleaved = next(s for s in atlas.states if s.state.phase.value == "cleaved_duplex")
+    retained_origins = {b.origin for b in selected.bases}
+    discarded = [b for b in cleaved.bases if b.origin not in retained_origins]
+    ghosts = [e for e in row.iter() if e.get("data-ghost-base-index") is not None]
+    assert len(ghosts) == len(discarded) > 0
+    assert {
+        (
+            e.get("data-reference-state-id"),
+            e.get("data-reference-strand-id"),
+            int(e.get("data-ghost-base-index")),
+            next(t.text for t in e if t.tag.endswith("}text")),
+        )
+        for e in ghosts
+    } == {(b.address.state_id, b.address.strand_id, b.address.index, b.base) for b in discarded}
+    layer = next(e for e in row.iter() if e.get("data-discarded-fragment-ghosts"))
+    assert layer.get("pointer-events") == "none"
+    assert not any(
+        e.get("data-base-index") is not None or e.get("data-pair-kind") for e in layer.iter()
+    )
+    assert all(
+        e.get("fill") == "white" and e.get("stroke-dasharray")
+        for e in layer.iter()
+        if e.get("data-ghost-ribbon")
+    )
+    assert len([e for e in row.iter() if e.get("data-base-index") is not None]) == len(
+        selected.bases
+    )
+    assert atlas.model_dump_json() == before
+
+
+def test_cut_edges_explain_nicks_and_paired_cleavage_without_inventing_cuts(atlas):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    for row in (e for e in root.iter() if e.get("data-atlas-state")):
+        state = next(s for s in atlas.states if s.state.state_id == row.get("data-atlas-state"))
+        for operation in state.operations:
+            glyph = next(
+                e for e in row.iter() if e.get("data-operation-id") == operation.operation_id
+            )
+            expected = (
+                "nick"
+                if len(operation.cuts) == 1
+                else "blunt"
+                if operation.cuts[0].precursor_offset == operation.cuts[1].precursor_offset
+                else "staggered"
+            )
+            assert glyph.get("data-cleavage-geometry") == expected
+            edges = [e for e in glyph.iter() if e.get("data-cleavage-edge")]
+            assert len(edges) == 1 and edges[0].get("data-cleavage-edge") == expected
+            assert float(edges[0].get("stroke-width")) >= 3.5
+            assert len([e for e in glyph.iter() if e.get("data-cut")]) == len(operation.cuts)
+
+
+@pytest.mark.parametrize(
+    "profile_name", ["PUBLICATION_FIGURE", "LANDSCAPE_DETAIL_FIGURE", "INSPECTOR_FIGURE"]
+)
+def test_teaching_profiles_share_one_primer_and_site_annotation_tier(loop_pool, profile_name):
+    from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
+    from hop_design.export.construction.presentation import figure_profile
+
+    choices, request = atlas_request(loop_pool)
+    summary = json.loads(
+        construction.inspect_scaffold_atlas(loop_pool, choices, request).json_bytes
+    )
+    profile = getattr(figure_profile, profile_name)
+    root = ET.fromstring(render_teaching_overview(summary, profile=profile))
+    annotations = [
+        e for e in root.iter() if e.get("data-label-kind") in {"material-name", "recognition"}
+    ]
+    assert annotations and {e.get("font-size") for e in annotations} == {str(profile.teaching_font)}
+    assert not any(e.get("font-weight") == "600" for e in root.iter())

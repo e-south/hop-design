@@ -26,6 +26,13 @@ from .primitives.style import (
 from .recognition_sites import recognition_site_overlays
 
 
+def cleavage_geometry(offsets: tuple[int, ...]) -> Literal["nick", "blunt", "staggered"]:
+    """Name the cut icon from recorded, common-precursor boundary offsets."""
+    if len(offsets) == 1:
+        return "nick"
+    return "blunt" if offsets[0] == offsets[1] else "staggered"
+
+
 def inspection_overlays(
     projection: MolecularStateInspection,
     points: dict[tuple[str, int], tuple[float, float]],
@@ -131,10 +138,11 @@ def inspection_overlays(
         x, z = min(p[0] for p in positions) - 8, max(p[0] for p in positions) + 8
         y, w = min(p[1] for p in positions) - 16, max(p[1] for p in positions) + 16
         color = footprint_color(projection, operation.role, operation.recognition)
+        geometry = cleavage_geometry(tuple(cut.precursor_offset for cut in operation.cuts))
         rows.append(
             f'<g id="{object_id("operation", projection.state.state_id, operation.operation_id)}" '
             f'data-operation-id="{escape(operation.operation_id)}" '
-            f'data-timing="{operation.timing}">'
+            f'data-timing="{operation.timing}" data-cleavage-geometry="{geometry}">'
         )
         if not projection.recognition_sites:
             rows.append(
@@ -183,11 +191,17 @@ def inspection_overlays(
                 f'<path d="M{cx},{cy + outside * 10} L{cx},{cy}" '
                 f'stroke="{color}" stroke-width="3.2"{dash}/></g>'
             )
+            if len(operation.cuts) == 1:
+                rows.append(
+                    f'<path data-cleavage-edge="nick" d="M{cx},{cy - 15} V{cy + 15}" '
+                    f'fill="none" stroke="{color}" stroke-width="4"{dash}/>'
+                )
         if len(cuts) == 2:
             (cx, cy), (dx, dy) = cuts
             rows.append(
                 f'<path d="M{cx},{cy} V{(cy + dy) / 2} H{dx} V{dy}" fill="none" '
-                f'stroke="{color}" stroke-width="3.2" stroke-dasharray="6 3" '
+                f'stroke="{color}" stroke-width="4"{dash} '
+                f'data-cleavage-edge="{geometry}" '
                 'data-paired-cut-boundary="true"/>'
             )
         rows.append("</g>")

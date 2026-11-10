@@ -69,3 +69,12 @@ def test_recognition_key_uses_the_filled_band_drawn_on_the_strand():
     symbol = next(e for e in key if e.tag == "rect")
     assert symbol.get("fill") == "#176487"
     assert float(symbol.get("fill-opacity")) == 0.2
+
+
+@pytest.mark.parametrize(
+    "offsets, expected", [((8,), "nick"), ((8, 8), "blunt"), ((8, 12), "staggered")]
+)
+def test_cleavage_grammar_distinguishes_recorded_cut_boundaries(offsets, expected):
+    from hop_design.export.construction.molecular.inspection_overlays import cleavage_geometry
+
+    assert cleavage_geometry(offsets) == expected

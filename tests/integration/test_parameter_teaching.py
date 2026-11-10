@@ -135,8 +135,9 @@ def test_teaching_neighborhood_names_clear_complete_primer_contours(captured_edi
         for node in root.iter()
         if node.get("data-staged-material") or node.get("data-primer-binding")
     ]
-    headings = [node for node in root.iter() if node.get("font-weight") == "600"]
+    headings = [node for node in root.iter() if node.text in {"Basal", "Supplied stem", "Foldback"}]
     assert {node.text for node in headings} == {"Basal", "Supplied stem", "Foldback"}
+    assert all(node.get("font-weight") == "400" for node in headings)
     for node in headings:
         x, y, width, height = json.loads(node.get("data-label-box"))
         for a, b, w, h in primers:

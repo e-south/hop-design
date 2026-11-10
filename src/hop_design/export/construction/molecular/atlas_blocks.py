@@ -137,7 +137,7 @@ def route_blocks(
         title = next(e for e in root.iter() if e.get("data-stage-title") == "true")
         title.text = name
         title.set("font-size", str(TITLE_SIZE))
-        title.set("font-weight", "600")
+        title.set("font-weight", "400")
         attach_scene_header(root)
         width, height = scene_extent(root)
         if scene.transition_indices:

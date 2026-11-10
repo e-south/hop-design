@@ -10,7 +10,7 @@ from .primitives.material_labels import material_label
 from .primitives.materials import input_box
 from .primitives.primer_geometry import outward_side, position_primer
 from .primitives.primer_shape import primer_contour
-from .primitives.style import BASE_SIZE, INK, object_id
+from .primitives.style import ANNOTATION_SIZE, BASE_SIZE, INK, object_id
 from .primitives.typography import fitted_base_size
 
 
@@ -20,6 +20,7 @@ def material_binding_overlays(
     labels: LabelPlacer,
     *,
     base_size: float = BASE_SIZE,
+    label_size: int = ANNOTATION_SIZE,
 ) -> str:
     rows = []
     for item in inputs:
@@ -83,6 +84,7 @@ def material_binding_overlays(
                 labels,
                 above=sum(y for _, y in positions) / len(positions)
                 < sum(y for _, y in template) / len(template),
+                label_size=label_size,
             )
         )
         rows.append("</g>")

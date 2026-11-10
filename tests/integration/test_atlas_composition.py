@@ -58,7 +58,7 @@ def test_atlas_packs_columns_and_centers_the_wide_finishing_states(loop_pool):
     ]
 
 
-def test_stage_titles_are_centered_over_bases_with_a_larger_hierarchy(loop_pool):
+def test_stage_titles_are_centered_over_bases_in_the_common_annotation_tier(loop_pool):
     choices, request = atlas_request(loop_pool)
     packet = construction.inspect_scaffold_atlas(loop_pool, choices, request)
     for row in (
@@ -75,8 +75,9 @@ def test_stage_titles_are_centered_over_bases_with_a_larger_hierarchy(loop_pool)
         assert title.get("text-anchor") == "middle"
         assert float(title.get("x")) == pytest.approx((min(centers) + max(centers)) / 2)
         assert set(sizes) == {BASE_SIZE}
-        assert float(title.get("font-size")) * 0.5 == 28
-        assert float(title.get("font-size")) >= 2.5 * max(sizes)
+        assert float(title.get("font-size")) == 40
+        assert float(title.get("font-size")) == 2 * max(sizes)
+        assert title.get("font-weight") == "400"
 
 
 def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
@@ -116,7 +117,7 @@ def test_molecular_annotations_are_readable_and_do_not_collide(loop_pool):
     assert labels
     assert min(float(e.get("font-size")) for e in labels) >= 32
     assert all(
-        float(e.get("font-size")) >= 48
+        float(e.get("font-size")) >= 40
         for e in labels
         if e.get("data-label-kind")
         not in {"terminus", "primer-chemistry", "material-name", "material-context"}

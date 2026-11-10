@@ -7,7 +7,7 @@ from hop_design.models.construction.projections.atlas import AtlasMaterialInput
 
 from ...labels import drawing_material_label, terminal_label
 from ..label_layout import LabelPlacer
-from .style import INK, LABEL_CLEARANCE, TERMINAL_SIZE
+from .style import ANNOTATION_SIZE, INK, LABEL_CLEARANCE
 from .typography import text_width
 
 
@@ -18,20 +18,18 @@ def material_label(
     *,
     cue: str = "",
     above: bool = False,
+    label_size: int = ANNOTATION_SIZE,
 ) -> str:
     chemistry = [
         terminal_label("5\u2032", item.material.five_prime_end),
         terminal_label("3\u2032", item.material.three_prime_end),
     ]
-    modifications = [value for value in chemistry if not value.endswith("OH")]
-    name = " · ".join([drawing_material_label(item.material_use.role), *modifications])
+    name = drawing_material_label(item.material_use.role)
     lines = [("material-name", name)]
-    if cue:
-        lines.append(("material-context", cue))
     left, top, width, height = box
-    text_widths = [text_width(text, TERMINAL_SIZE) + 4 for _, text in lines]
+    text_widths = [text_width(text, label_size) + 4 for _, text in lines]
     extent = max(text_widths)
-    block_height = len(lines) * (TERMINAL_SIZE + 5)
+    block_height = len(lines) * (label_size + 5)
     x = left + width / 2 - extent / 2
     y = top - block_height - 8 if above else top + height + 8
     # Preserve the horizontal anchor and outward side while resolving only nearby
@@ -58,15 +56,16 @@ def material_label(
     rows = [
         f'<g data-annotation-block="true" data-primer-label-side="{"above" if above else "below"}" '
         f'data-primer-chemistry="{escape(" → ".join(chemistry), quote=True)}" '
+        f'data-binding-cue="{escape(cue, quote=True)}" '
         f'data-drawing-box="{x} {y} {extent} {block_height}">'
     ]
     for (kind, text), line_width in zip(lines, text_widths, strict=True):
         line_x = left + width / 2 - line_width / 2
-        label_box = escape(json.dumps([line_x, y, line_width, TERMINAL_SIZE + 5]), quote=True)
+        label_box = escape(json.dumps([line_x, y, line_width, label_size + 5]), quote=True)
         rows.append(
             f'<text data-label-kind="{kind}" data-label-box="{label_box}" '
-            f'x="{line_x}" y="{y + TERMINAL_SIZE}" '
-            f'font-size="{TERMINAL_SIZE}" fill="{INK}">{escape(text)}</text>'
+            f'x="{line_x}" y="{y + label_size}" '
+            f'font-size="{label_size}" fill="{INK}">{escape(text)}</text>'
         )
-        y += TERMINAL_SIZE + 5
+        y += label_size + 5
     return "".join(rows) + "</g>"

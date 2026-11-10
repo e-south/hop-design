@@ -9,7 +9,7 @@ from hop_design.models.construction.projections.inspection import MolecularState
 
 from .label_layout import LabelPlacer
 from .primitives.annotation_policy import footprint_color
-from .primitives.ribbon import ribbon_path, ribbon_points
+from .primitives.ribbon import ribbon_points, rounded_path
 from .primitives.style import ANNOTATION_SIZE, SITE_HALF_WIDTH, object_id
 from .primitives.typography import text_width
 
@@ -75,6 +75,9 @@ def recognition_site_overlays(
             run_addresses[-1].append((address.strand_id, address.index))
             previous = address
         boxes = []
+        half_width = (
+            32 if len({address.strand_id for address in site.recognition}) == 1 else SITE_HALF_WIDTH
+        )
         for members in run_addresses:
             context = list(members)
             for step in (-1, 1):
@@ -94,17 +97,17 @@ def recognition_site_overlays(
                     else:
                         context.append(neighbor)
             start, end = context.index(members[0]), context.index(members[-1])
-            outline = ribbon_points([points[k] for k in context], SITE_HALF_WIDTH, start, end)
+            outline = ribbon_points([points[k] for k in context], half_width, start, end)
             x, z = min(p[0] for p in outline), max(p[0] for p in outline)
             y, w = min(p[1] for p in outline), max(p[1] for p in outline)
             boxes.append((x, z, y, w))
-            contour = ribbon_path([points[k] for k in context], SITE_HALF_WIDTH, start, end)
+            contour = rounded_path(outline, radius=6)
             dash = ' stroke-dasharray="5 3"' if site.presence in {"partial", "unresolved"} else ""
             rows.append(
                 f'<path data-members="{escape(json.dumps(members), quote=True)}" '
                 f'data-path-members="{escape(json.dumps(context), quote=True)}" '
                 f'data-path-start="{start}" data-path-end="{end}" '
-                f'data-recognition-footprint="{SITE_HALF_WIDTH}" d="{contour}" '
+                f'data-recognition-footprint="{half_width}" d="{contour}" '
                 f'fill="{color}" fill-opacity=".2" stroke="{color}" '
                 f'stroke-opacity="{1 if operation else 0.85}" '
                 f'stroke-linejoin="round" stroke-width="{2.8 if operation else 1.8}"{dash}/>'
@@ -114,11 +117,12 @@ def recognition_site_overlays(
             and (site_labels == "all" or operation is not None)
             and (label_site_ids is None or site.site_id in label_site_ids)
         ):
-            x, right, top, bottom = min(boxes, key=lambda box: (box[2], box[0]))
+            x, right = min(box[0] for box in boxes), max(box[1] for box in boxes)
+            top, bottom = min(box[2] for box in boxes), max(box[3] for box in boxes)
             # Role, lineage and eligibility remain in the titled site group.
             label = site.enzyme_name
             if site.presence in {"partial", "unresolved"}:
-                label += " *"
+                label += "*"
             if strand_labels:
                 middle = (
                     min(y for _, y in points.values()) + max(y for _, y in points.values())
@@ -139,7 +143,29 @@ def recognition_site_overlays(
             f'data-label-for-site="{escape(anchors[0][0], quote=True)}">'
         )
         if len(anchors) == 1:
-            rows.append(labels.text("recognition", x, y, label, color, label_size))
+            a, b, width, height = labels.place(x, y, label, size=label_size)
+            site = next(s for s in projection.recognition_sites if s.site_id == anchors[0][0])
+            positions = [points[address.strand_id, address.index] for address in site.recognition]
+            px = (min(p[0] for p in positions) + max(p[0] for p in positions)) / 2
+            py = (min(p[1] for p in positions) + max(p[1] for p in positions)) / 2
+            tx = min(max(px, a + 4), a + width - 4)
+            ty = b + height if py > b + height / 2 else b
+            bend = py + (ty - py) * 0.65
+            molecule_center = (
+                min(p[0] for p in points.values()) + max(p[0] for p in points.values())
+            ) / 2
+            bow = min(22, max(10, abs(ty - py) / 4)) * (-1 if px < molecule_center else 1)
+            rows.append(
+                f'<path data-site-leader="true" d="M{px},{py} Q{px + bow},{bend} {tx},{ty}" '
+                f'fill="none" stroke="{color}" stroke-opacity=".9" '
+                'stroke-width="3" stroke-linecap="round"/>'
+            )
+            box = escape(json.dumps([a, b, width, height]), quote=True)
+            rows.append(
+                f'<text data-label-kind="recognition" data-label-box="{box}" '
+                f'x="{a}" y="{b + label_size}" font-size="{label_size}" '
+                f'fill="{color}">{escape(label)}</text>'
+            )
         else:
             a, b, width, height = labels.place(x, y, label, size=label_size)
             box = escape(json.dumps([a, b, width, height]), quote=True)

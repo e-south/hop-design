@@ -44,8 +44,8 @@ def foldback_cue(atlas: MolecularAtlas, state: MolecularStateInspection, points:
     (x, y), (target, target_y) = endpoints
     direction = 1 if target > x else -1
     start, end = x - direction * 24, target - direction * 16
-    peak = min(y, target_y) - 84
-    end_y = target_y - 18
+    peak = min(y, target_y) - 108
+    end_y = target_y - 34
     dx, dy = direction * 80, end_y - peak
     length = hypot(dx, dy)
     ux, uy = dx / length, dy / length
@@ -57,7 +57,7 @@ def foldback_cue(atlas: MolecularAtlas, state: MolecularStateInspection, points:
         f'data-drawing-box="{left} {peak - 6} {right - left} {max(y, target_y) - peak + 24}">'
         "<title>Fold the exposed retained end toward its recorded pairing partner; "
         "schematic cue</title>"
-        f'<path d="M{start},{y - 8} C{start - direction * 48},{peak} '
+        f'<path d="M{start},{y - 24} C{start - direction * 48},{peak} '
         f'{end - direction * 80},{peak} {end},{end_y}" fill="none" '
         f'stroke="{color}" stroke-width="{OPERATION_STROKE}" '
         'stroke-dasharray="14 8" stroke-linecap="round"/>'

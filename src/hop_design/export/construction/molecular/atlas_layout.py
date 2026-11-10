@@ -8,6 +8,7 @@ from hop_design.models.construction.projections.atlas import MolecularAtlas
 
 from .assembly.composition import RoutePresentation
 from .assembly.foldback import append_cue, foldback_cue
+from .assembly.ghosts import append_discarded_ghosts
 from .assembly.inputs import incoming_materials
 from .assembly.placement import assembly_points
 from .inspection import molecular_inspection_element
@@ -96,6 +97,7 @@ def atlas_scenes(
             ),
         )
         if state.state.state_id in frames:
+            append_discarded_ghosts(root, atlas, state)
             append_cue(root, foldback_cue(atlas, state, frames[state.state.state_id]))
         width, height = scene_extent(root)
         positions = []

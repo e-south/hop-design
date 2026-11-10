@@ -11,7 +11,7 @@ from .material_labels import material_label
 from .primer_shape import outline_box, primer_outline
 from .primer_shape import primer_contour as primer_contour
 from .ribbon import ribbon_path, ribbon_points
-from .style import BASE_SIZE, INK, REGION_COLORS, REGION_OPACITY, base_ink
+from .style import ANNOTATION_SIZE, BASE_SIZE, INK, REGION_COLORS, REGION_OPACITY, base_ink
 from .typography import fitted_base_size
 
 
@@ -36,7 +36,11 @@ def input_box(
 
 
 def staged_materials(
-    inputs: tuple[PlacedInput, ...], labels: LabelPlacer, *, base_size: float = BASE_SIZE
+    inputs: tuple[PlacedInput, ...],
+    labels: LabelPlacer,
+    *,
+    base_size: float = BASE_SIZE,
+    label_size: int = ANNOTATION_SIZE,
 ) -> str:
     rows = []
     for placed in inputs:
@@ -69,7 +73,11 @@ def staged_materials(
             + " → "
             + terminal_label("3\u2032", item.material.three_prime_end)
         )
-        rows.append(material_label(item, box, labels, cue=placed.cue, above=placed.label_above))
+        rows.append(
+            material_label(
+                item, box, labels, cue=placed.cue, above=placed.label_above, label_size=label_size
+            )
+        )
         rows.append(
             f"<title>Incoming {escape(drawing_material_label(item.material_use.role))}; "
             f"{chemistry}; {escape(placed.cue or 'not yet associated')}</title></g>"

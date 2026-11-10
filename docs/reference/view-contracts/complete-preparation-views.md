@@ -96,14 +96,16 @@ centered on their recorded drawing positions. Standalone parameter figures retai
 their full-width profile. Exact base addresses are unchanged. A composed plate
 must still check its final scaling and provide full-resolution or continuation
 exports for base readability.
-Recognition sites use lightly filled, shallow-rounded bands slightly taller than
-the strand. Their shape follows the same base path, including handle bends.
-Enzyme names identify the site without a competing direction arrow; recorded
-orientation remains available in the projection and SVG metadata.
+Recognition sites use translucent, rounded bands above region fills and beneath
+nucleotide ink. A single-strand footprint retains a duplex-height envelope.
+Their shape follows the same base path, including handle bends.
+Enzyme names have contrast-bearing curved leaders from the recorded footprint
+center to their collision-placed label, without a competing direction arrow;
+recorded orientation remains available in the projection and SVG metadata.
 Triangles and short boundary strokes identify strand-specific cuts; hollow marks
 are planned operations and filled marks are applied operations. Persistent site
 footprints follow recorded ancestry separately from the active operation. An
-asterisk and dashed outline mark a partial or unresolved footprint; its title
+asterisk directly after the name and a dashed outline mark a partial or unresolved footprint; its title
 carries the exact mapping and substrate eligibility. The route names enzymes at
 their first mapped appearance and at acting steps. Every mapped footprint remains
 visible. A printed key carries the color bindings and warning notation into both
@@ -132,6 +134,10 @@ snapshots. The **Cleavage · cleanup** arrow retains their three transition
 identities in `data-transition-ids`; the retained scene's **Fold-back · reanneal**
 arrow names the recorded annealing transition. The directional cue sits above
 the exposed retained end before folding; it does not add molecular pairings.
+When exact recorded ancestry establishes the common precursor frame, discarded
+strands remain as white, dashed reference ghosts with faint nucleotide ink and
+no pairing marks. Their `data-ghost-base-index` and reference-state addresses are
+separate from active state-base occurrences; they add no retained material.
 
 Region ribbons use dark, distinct hues with adaptive nucleotide ink. Pale
 comparison tiles keep dark text; dark structural ribbons use white text. Primer
@@ -144,7 +150,9 @@ Assembly scenes share the joined hairpin's drawing frame wherever material
 ancestry gives an unambiguous correspondence. Each scene keeps its own strands,
 contacts, cuts and bonds. An incoming adapter uses its later associated shape,
 displaced from that position. The forward hairpin primer appears beside the
-handle with **after copying**, since its binding template is the derived copy.
+handle with its future binding context retained in metadata and the tooltip,
+since its binding template is the derived copy. Visible primer names are the
+short role labels; chemistry remains explicit in metadata and titles.
 Incoming materials have `data-staged-material` and `data-input-base-index`;
 they never acquire molecular occurrence addresses or premature pairing marks.
 When exact placement cannot be established, the complete input listing remains.
@@ -164,7 +172,9 @@ continuous rounded connector with an arrowhead at the destination.
 Titles are unnumbered. Measured scene edges and arrow endpoints use equal
 clearance, with separate space reserved for the column turn before the wide finish.
 The route's native print scale is 0.5 pt per drawing unit: canonical bases are
-10 pt, molecular labels 24 pt and stage titles 28 pt. Wider IUPAC letters fit the
+10 pt, molecular labels and quiet, regular-weight stage titles 20 pt, and terminal
+labels 16 pt. Teaching/inspector profiles give primers and enzyme names the same
+annotation tier. Wider IUPAC letters fit the
 existing base pitch. Seven-inch continuation pages have their own
 type budget and retain every state-base occurrence exactly once. Full-route SVGs use the same geometry as
 browser inspection; captions and input orders remain separate from molecular facts.
@@ -200,12 +210,15 @@ label binding. Repeated sites retain separate names; partial or unresolved sites
 retain their status marker. Every addressed footprint remains present.
 Noncanonical contacts have an open diamond; Watson–Crick contacts retain a simple
 bond. Cut triangles distinguish planned (hollow) from applied (filled) cleavage;
-applied cuts also expose the break. A bridge marks a recorded ligation bond.
+applied cuts also expose the break. Strong boundary edges show a single-strand
+nick, a blunt double cut or staggered cleavage according to the recorded cuts.
+A bridge marks a recorded ligation bond.
 
 Route termini show 5′/3′ direction and explicit phosphate marks. Unmarked termini
 are hydroxyl ends, as stated in the printed key; exact chemistry remains in the
-projection and addressed SVG metadata. Primer names and chemistry share one
-measured annotation block, including in continuation-page exports. Released-end
+projection and addressed SVG metadata. Primer role names are centered outside
+their own silhouettes; chemistry and future-binding qualifications remain in
+that block's metadata and tooltips, including in continuation-page exports. Released-end
 labels show the recorded word in 5′→3′ order and its gap to the supplied stem.
 
 Single-base parameter connectors mark their exact origins. A contact count can
