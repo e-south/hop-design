@@ -202,6 +202,7 @@ class DesignChoices(AtlasNavigation, ABC):
         render_policy: str | None = None,
         reference_selection: Source | None = None,
         display_axes: tuple[str, ...] | None = None,
+        detail_width_pt: float | None = None,
     ) -> SourceBoundConstructionPacket: ...
 
     def atlas(

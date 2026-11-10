@@ -12,11 +12,12 @@ from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 from ..presentation.regions import REGIONS, teaching_region
 from .display_projection import append_display_metadata
 from .guide import compact_plot_summary, plot_context
+from .labels import headings as draw_headings
+from .labels import node_text
 from .layout import (
     FONT,
     STATES,
     WIDTH,
-    heading_lines,
     node_geometry,
     plot_layout,
     visible_labels,
@@ -54,7 +55,7 @@ def render_survey_plot(
         {
             "viewBox": f"0 0 {width} {layout.height:g}",
             "data-axis-frame": json.dumps(asdict(frame), separators=(",", ":")),
-            "width": "7in",
+            "width": f"{profile.physical_width_pt}pt",
             "font-size": str(font),
             "font-family": "Arial, Helvetica, sans-serif",
             "role": "group",
@@ -195,27 +196,7 @@ def render_survey_plot(
             role="button",
             aria_label=f"Choose {axis['label']}",
         )
-        headings = heading_lines(axis, profile=profile)
-        for i, line in enumerate(headings):
-            _element(
-                title,
-                "text",
-                line,
-                x=x,
-                y=offset + frame.heading_y + i * font,
-                text_anchor="middle",
-                fill="#263b40",
-            )
-        unit = {"positions": "pos", "contacts": "ct"}.get(axis["unit"], axis["unit"])
-        _element(
-            title,
-            "text",
-            unit,
-            x=x,
-            y=offset + frame.heading_y + 3 + len(headings) * font,
-            text_anchor="middle",
-            fill="#617277",
-        )
+        draw_headings(title, axis, x, offset, frame, profile)
         _element(title, "title", f"{axis['symbol']}: {axis['label']}. {axis['measurement']}")
         selected_values = {
             p["values"][axis["key"]]
@@ -284,7 +265,7 @@ def render_survey_plot(
                 continue
             labeled += 1
             geometry = node_geometry(axis, node, profile=profile)
-            lines, height, node_width = geometry["lines"], geometry["height"], geometry["width"]
+            height, node_width = geometry["height"], geometry["width"]
             _element(
                 node_group,
                 "rect",
@@ -299,17 +280,7 @@ def render_survey_plot(
                 stroke_width=0.8,
                 data_node_label="true",
             )
-            for j, text in enumerate(lines):
-                _element(
-                    node_group,
-                    "text",
-                    text,
-                    x=x,
-                    y=y + (j - (len(lines) - 1) / 2) * font + font * 0.35,
-                    text_anchor="middle",
-                    fill="#263b40",
-                    data_node_label="true",
-                )
+            node_text(node_group, x, y, geometry, font)
             if pinned:
                 _element(
                     node_group,
@@ -345,5 +316,5 @@ def render_survey_plot(
     height = y + 8
     background.set("height", str(height))
     root.set("viewBox", f"0 0 {width} {height}")
-    root.set("height", f"{7 * height / width}in")
+    root.set("height", f"{profile.physical_width_pt * height / width}pt")
     return cast(bytes, ET.tostring(root, encoding="utf-8"))

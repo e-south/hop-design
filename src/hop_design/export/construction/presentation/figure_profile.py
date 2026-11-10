@@ -1,6 +1,6 @@
 """Internal composition budgets; molecular geometry and public intent stay separate."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import ceil
 
 from .print_contract import PUBLICATION
@@ -22,6 +22,8 @@ class FigureProfile:
     stable_teaching_slot: bool = False
     compact_context: bool = False
     single_row: bool = False
+    rotated_labels: bool = False
+    physical_width_pt: float = 504
 
 
 PUBLICATION_FIGURE = FigureProfile("publication/v1")
@@ -52,3 +54,25 @@ INSPECTOR_FIGURE = FigureProfile(
     heading_columns=10,
     stable_teaching_slot=True,
 )
+
+
+COLUMN_DETAIL_FIGURE = FigureProfile(
+    "column-detail/v1",
+    width=620,
+    axis_font=18,
+    teaching_font=32,
+    teaching_base_font=19,
+    loop_label_below=True,
+    compact_context=True,
+    single_row=True,
+    rotated_labels=True,
+    physical_width_pt=246,
+    teaching_trace_gap=72,
+)
+
+
+def column_detail_profile(width_pt: float) -> FigureProfile:
+    """Explicit physical budget for selected details, independent of scientific axes."""
+    return replace(
+        COLUMN_DETAIL_FIGURE, width=round(620 * width_pt / 246), physical_width_pt=width_pt
+    )

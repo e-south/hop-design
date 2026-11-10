@@ -95,7 +95,7 @@ test('descriptor names and units have separate lines without fragmenting either 
  p.columns[0].label='Retained from 5′ tail';p.columns[0].unit='nt';
  const state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
  comparisonStrip(host,()=>{}).prepare('A',state)();
- const fields=host.children[0].children.slice(1,-1);
+ const fields=host.children[0].children.flatMap(g=>g.children.filter(e=>e.dataset.feature));
  assert.deepEqual(fields[0].children[0].children.map(n=>n.textContent),['Retained from 5′ tail','nt']);
  assert.deepEqual(fields[1].children[0].children.map(n=>n.textContent),['Basal contacts']);
  assert.equal(fields[0].children[3].dataset.encoded,'4');
@@ -108,8 +108,8 @@ test('decoded strip shows scientific scalar values while retaining exact stored 
  const {comparisonStrip}=await load(),host=element(),strip=comparisonStrip(host,()=>{});
  const p=packet(),state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
  strip.prepare('B',state)();
- assert.equal(host.dataset.comparisonDisplay,'decoded');
- const fields=host.children[0].children.filter(e=>e.dataset.feature);
+ assert.equal(host.dataset.comparisonDisplay,'typed-features');
+ const fields=host.children[0].children.flatMap(g=>g.children.filter(e=>e.dataset.feature));
  assert.deepEqual(fields.map(e=>e.dataset.feature),['shape.five_prime_unpaired_nt','sequences.basal_pairs','interfaces.left_word']);
  const scalar=fields[0];
  assert.equal(scalar.children.find(e=>e.className==='comparison-value').textContent,'6');
@@ -118,4 +118,16 @@ test('decoded strip shows scientific scalar values while retaining exact stored 
  const contacts=fields[1].children.find(e=>e.className==='comparison-value');
  const glyphs=contacts.children.find(e=>e.className==='comparison-contact-glyphs');
  assert.equal(glyphs.children[0].dataset.contactGlyph,'diamond');
+});
+
+test('typed scientific groups replace the numerical-array presentation without changing values',async t=>{
+ const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});
+ globalThis.document={createElement:element,createElementNS:element};
+ const {comparisonStrip}=await load(),host=element(),p=packet(),before=JSON.stringify(p);
+ comparisonStrip(host,()=>{}).prepare('B',{presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}})();
+ const panel=host.children[0];
+ assert.equal(host.dataset.comparisonDisplay,'typed-features');
+ assert.deepEqual(panel.children.map(e=>e.dataset.featureGroup),['Geometry','Contacts and loop','Assembly ends']);
+ assert.deepEqual(panel.children.flatMap(g=>g.children.filter(e=>e.dataset.feature).map(e=>e.dataset.feature)),['shape.five_prime_unpaired_nt','sequences.basal_pairs','interfaces.left_word']);
+ assert.equal(JSON.stringify(p),before);
 });

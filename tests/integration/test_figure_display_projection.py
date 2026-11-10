@@ -182,3 +182,43 @@ def test_saved_projection_reopens_the_same_browser_trace_and_public_figure(
 def test_projected_view_rejects_invalid_axis_recipe(captured_choices, axes):
     with pytest.raises(ValueError, match=r"axis|axes|canonical|at least"):
         captured_choices.view(captured_choices.sample(seed=2), presentation={"display_axes": axes})
+
+
+@pytest.mark.parametrize("kind", ["compact", "captured"])
+def test_selected_landscape_accepts_explicit_column_detail_width(captured_choices, tmp_path, kind):
+    choices = captured_choices.freeze(
+        tmp_path / "edition", compact=kind == "compact", include_landscape=True
+    )
+    selection = choices.sample(seed=2)
+    axes = ("left_end_word", "left_gap", "right_gap", "right_end_word")
+    original = choices.figure(
+        selection=selection, view="similarity", display_axes=axes, render_policy="current"
+    )
+    packet = choices.figure(
+        selection=selection,
+        view="similarity",
+        display_axes=axes,
+        detail_width_pt=246,
+        render_policy="current",
+    )
+    files, old = dict(packet._files), dict(original._files)
+    for name in (
+        "plot.svg",
+        "landscape.json",
+        "comparison-features.json",
+        "selection.json",
+        "display-projection.json",
+    ):
+        assert files[name] == old[name], name
+    trace = ET.fromstring(files["trace.svg"])
+    assert trace.get("width") == "246pt"
+    assert float(trace.get("font-size")) * 246 / float(trace.get("viewBox").split()[2]) >= 7
+    assert {e.get("data-band") for e in trace.iter() if e.get("data-axis")} == {"0"}
+    assert [e.get("data-axis") for e in trace.iter() if e.get("data-axis")] == list(axes)
+    assert ET.fromstring(files["comparison-features.svg"]).get("width") == "246pt"
+    assert json.loads(packet.json_bytes)["figure_presentation"]["detail_width_pt"] == 246
+    for width in (True, 0, 179, 721, float("nan")):
+        with pytest.raises(ValueError, match="width"):
+            choices.figure(selection=selection, view="similarity", detail_width_pt=width)
+    with pytest.raises(ValueError, match="selected similarity"):
+        choices.figure(view="parameters", detail_width_pt=246)

@@ -91,18 +91,17 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 
 /* Exact saved feature values stay in the map column, independent of the inspector. */
 #landscape{container-type:inline-size}
-#map-comparison{--comparison-label-height:32px;position:relative;flex:none;z-index:3;width:100%;min-height:calc(var(--comparison-label-height) + 94px);padding:8px 12px 10px;background:transparent;font-size:12px;line-height:1.2}
-/* Reserve the vector row before the first preview so map targets stay put. */
+#map-comparison{position:relative;flex:none;z-index:3;width:100%;min-height:210px;padding:8px 12px 10px;background:transparent;font-size:12px;line-height:1.2}
+/* Reserve the scientific group panel before the first preview so map targets stay put. */
 .similarity-context #map-comparison[hidden]{display:block!important;visibility:hidden}
-[data-comparison-values]{display:flex;align-items:stretch;gap:6px;min-width:0;overflow-x:auto}
-.comparison-vector-open,.comparison-vector-close{align-self:stretch;white-space:nowrap;font:22px/25px Georgia,serif;padding-top:calc(var(--comparison-label-height) + 12px)}
-.comparison-feature{display:grid;grid-template-rows:minmax(var(--comparison-label-height),auto) minmax(36px,auto);flex:var(--comparison-weight,1) 1 0;min-width:28px;outline-offset:2px;border-radius:3px;text-align:center}
-.comparison-name{display:flex;flex-direction:column;white-space:normal;overflow-wrap:anywhere;font-size:11px;color:var(--muted);align-self:end;padding-bottom:4px}
-.comparison-value{font-family:monospace;font-size:12px;line-height:1.15;align-self:center;white-space:normal;overflow-wrap:anywhere;color:#284f51}
-.comparison-pairs{display:flex;flex-direction:column;letter-spacing:.01em}.comparison-pairs [data-contact-class]:not([data-contact-class="watson_crick"]){color:#a35b32;text-decoration:underline;text-decoration-style:dotted}
-.comparison-encoding-link{height:8px;width:1px;background:#9eafac;justify-self:center}
-.comparison-code{grid-row:4;align-self:start;font:12px/1.25 monospace;white-space:normal;overflow-wrap:anywhere;color:#173c40;position:relative;padding:3px 0;border-top:1px solid #bdceca}
-.comparison-feature:not(:nth-last-child(2)) .comparison-code::after{content:",";position:absolute;right:-5px;top:3px;color:#73817f}
+[data-comparison-values]{display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.35fr) minmax(100px,.8fr);align-items:start;gap:12px;min-width:0}
+.comparison-group{min-width:0}.comparison-group h3{font-size:12px;font-weight:600;margin:0 0 7px;color:#263b40}
+.comparison-feature{display:flex;justify-content:space-between;align-items:center;gap:7px;min-width:0;margin:4px 0;padding:2px;outline-offset:2px;border-radius:3px}
+.comparison-name{display:flex;flex-wrap:wrap;gap:3px;white-space:normal;overflow-wrap:normal;font-size:11px;color:var(--muted)}
+.comparison-name>span:last-child:not(:first-child)::before{content:"("}.comparison-name>span:last-child:not(:first-child)::after{content:")"}
+.comparison-value{font-family:monospace;font-size:12px;line-height:1.15;white-space:nowrap;color:#284f51}
+.comparison-feature:has(.comparison-pairs){display:block}.comparison-pairs{display:flex;flex-direction:column;align-items:flex-start;margin-top:3px;overflow-x:auto}
+.comparison-pairs [data-contact-class]:not([data-contact-class="watson_crick"]){color:#a35b32;text-decoration:underline;text-decoration-style:dotted}
 .comparison-feature:hover,.comparison-feature:focus-visible{background:#ecf3f14d}
 #map-comparison>.panel-status{padding:7px 10px;font-size:12px}
 #object:has(#inspector[data-dismissed="true"]:not([hidden])) #map-comparison,#object:has(#inspector:not([hidden]):not([data-has-pin="true"])) #map-comparison{width:calc(100% - var(--inspector-width))}
@@ -113,8 +112,8 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 #map-color{top:88px;right:24px;left:auto;background:transparent;text-align:right;pointer-events:none;max-width:270px}
 #map-color label,[data-color-legend]{justify-content:flex-end}#map-color select{pointer-events:auto;background:transparent}
 #map-color [data-word]{margin-left:auto}.atlas-brand{max-width:44%}
-@container(max-width:700px){.comparison-name{font-size:10px}.comparison-value,.comparison-code{font-size:12px}#map-comparison{padding-inline:10px}[data-comparison-values]{gap:5px}}
-
-.comparison-pairs>span{overflow-wrap:anywhere;word-break:break-all}.comparison-feature{max-width:100%}#map-comparison{max-width:100%;overflow:hidden}[data-comparison-values]{max-width:100%;overflow-x:auto}
+@container(max-width:560px){[data-comparison-values]{grid-template-columns:1fr 1.3fr}.comparison-group:last-child{grid-column:1 / -1}.comparison-group:last-child .comparison-feature{max-width:210px}}
+@container(max-width:360px){[data-comparison-values]{grid-template-columns:1fr}.comparison-group:last-child{grid-column:auto}#map-comparison{padding-inline:8px}}
+.comparison-feature{max-width:100%}#map-comparison{max-width:100%;overflow:hidden}
 
 .comparison-contact-glyphs{display:flex;justify-content:center;line-height:0}.comparison-contact-glyphs svg{width:1ch;height:.7em;flex:none;color:#70838a}.comparison-contact-glyphs [data-contact-glyph="diamond"]{color:#a35b32}

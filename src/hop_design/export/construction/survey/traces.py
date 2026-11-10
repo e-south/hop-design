@@ -17,7 +17,15 @@ def trace_commands(axes: list[dict[str, Any]], path: dict[str, Any]) -> str:
     for i, axis in enumerate(axes):
         value = path["values"][axis["definition"]["key"]]
         move = i == 0 or axis["band"] != axes[i - 1]["band"]
-        commands.append(f"{'M' if move else 'L'}{axis['x']:.4f} {axis['y'][value]:.4f}")
+        x, y = axis["x"], axis["y"][value]
+        if move:
+            commands.append(f"M{x:.4f} {y:.4f}")
+        else:
+            previous = axes[i - 1]
+            px, py = previous["x"], previous["y"][path["values"][previous["definition"]["key"]]]
+            middle = (px + x) / 2
+            commands.append(f"C{middle:.4f} {py:.4f} {middle:.4f} {y:.4f} {x:.4f} {y:.4f}")
+
     return " ".join(commands)
 
 

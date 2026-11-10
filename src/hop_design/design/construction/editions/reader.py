@@ -167,6 +167,7 @@ class AtlasEdition(AtlasNavigation):
         render_policy: str | None = None,
         reference_selection: Source | None = None,
         display_axes: tuple[str, ...] | None = None,
+        detail_width_pt: float | None = None,
     ) -> SourceBoundConstructionPacket:
         from .rendering import edition_figure
 
@@ -180,6 +181,7 @@ class AtlasEdition(AtlasNavigation):
             render_policy=render_policy,
             reference_selection=reference_selection,
             display_axes=display_axes,
+            detail_width_pt=detail_width_pt,
         )
 
     def select(

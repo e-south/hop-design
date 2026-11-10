@@ -102,10 +102,19 @@ export function comparisonStrip(host,onFocus) {
    if(!identity||!next)return ()=>{host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;};
    if(packet!==next){reader=comparisonReader(next,state.choices.paths.map(p=>p.materialized_realization_id));packet=next;}
    const reading=reader(identity),content=[];
-   const heading=element('span','x = [','comparison-vector-open');
+   const heading=element('span','Mixed-type molecular features','comparison-reading-key');
    heading.title='Molecular descriptors define dissimilarity; the layout uses that dissimilarity, not Euclidean distance on these displayed values. The supplied stem is held fixed; methods are excluded. '+(reading.basis.schema_id==='hop.molecular-comparison/v2'?'Only tail bases contributing through recorded copying or primer binding to the released insert affect distance; discarded handle changes do not move the scaffold.':'This saved comparison includes complete hairpin tail lengths.');
-   content.push(heading,...reading.vector.map(f=>field(f,reading.basis)),element('span',']','comparison-vector-close'));
-   return ()=>{panel.replaceChildren(...content);host.dataset.preparationId=identity;host.dataset.comparisonDisplay='decoded';host.hidden=false;};
+   const groups=new Map(),labels={shape:'Geometry',sequences:'Contacts and loop',interfaces:'Assembly ends'};
+   for(const feature of reading.vector){
+    const label=labels[feature.key.split('.')[0]];
+    if(!groups.has(label)){
+     const group=element('section',undefined,'comparison-group');group.dataset.featureGroup=label;group.title=heading.title;
+     group.append(element('h3',label));groups.set(label,group);
+    }
+    groups.get(label).append(field(feature,reading.basis));
+   }
+   content.push(...groups.values());
+   return ()=>{panel.replaceChildren(...content);host.dataset.preparationId=identity;host.dataset.comparisonDisplay='typed-features';host.hidden=false;};
   },
   clear(){host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;},
  };

@@ -92,12 +92,41 @@ An existing `choices.figure(view="similarity", selection=selection)` export also
 contains `comparison-features.json` and `comparison-features.svg`. They describe
 that selected point using the same contact dictionary, active coordinate order
 and policy as the browser. The JSON retains constant features and the dictionary;
-the SVG draws the active `x` as decoded scientific values at seven-inch width.
-Ordered contact rows use canonical lines and noncanonical diamonds. Whole feature
-cells continue on additional rows when necessary, keeping vector order and native
-8.5 pt type. Exact encodings remain in per-feature attributes and the embedded
-record; their nominal IDs imply no numerical ordering. The browser presents the
-same decoded values within the available map pane.
+the SVG groups the active features by scientific type: Geometry, Contacts and loop,
+and Assembly ends. Numeric geometry retains units; words retain their orientation.
+Ordered contact rows use canonical lines and noncanonical diamonds. The display
+preserves the captured feature order, values and comparison policy. Exact encodings
+remain in per-feature attributes and the embedded record; their nominal IDs imply
+no numerical ordering. The browser presents the same types within the map pane.
+
+For a column-width selected detail, request the physical width explicitly:
+
+```python
+packet = edition.figure(
+    selection=selected,
+    view="similarity",
+    display_axes=existing_axes,
+    render_policy="current",
+    detail_width_pt=246,
+)
+```
+
+`trace.svg` keeps every declared axis in one row, with horizontal category values
+and measured, context-shortened headings. Complete canonical labels remain in node
+titles and metadata. The column profile retains at least 7 pt type or reports the
+minimum required width; it never silently drops axes or reduces labels below that
+budget. `comparison-features.svg` uses stacked typed groups with native 8.5 pt
+annotations. The selected map, exact comparison JSON, materials and view identity
+are unchanged. The figure summary records the explicit width and presentation
+profile independently of the saved scientific view. The browser keeps its wider
+inspector layout.
+
+Parallel connections use cubic curves with shared mid-transition control points
+for identical adjacent endpoints. This is a presentation aid for following shared
+transitions, not a hierarchy, clustering analysis or new distance. Every path keeps
+its exact preparation membership and the same axis endpoints; SVG hit paths and
+inspection overlays use that same geometry.
+
 Recapturing an edition inherits its comparison policy and weights unless explicitly
 replaced. An unchanged complete descriptor set reuses its saved landscape.
 Its recorded descriptor scope is also preserved and checked against retrieved

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from itertools import groupby
+from math import ceil
 from textwrap import wrap
 from typing import Any
 
@@ -44,10 +45,14 @@ def node_geometry(
     axis: dict[str, Any], node: dict[str, Any], *, profile: FigureProfile = PUBLICATION_FIGURE
 ) -> dict[str, Any]:
     """One label contour for the static figure and its exact inspection overlay."""
-    lines = node_lines(axis, node)
+    lines = [node_label(axis, node)] if profile.rotated_labels else node_lines(axis, node)
     return {
         "lines": lines,
-        "width": max(18, max(text_width(line, profile.axis_font) for line in lines) + 4),
+        "width": max(
+            18,
+            max(text_width(line, profile.axis_font) for line in lines)
+            + (2 if profile.rotated_labels else 4),
+        ),
         "height": len(lines) * profile.axis_font + 4,
     }
 
@@ -60,6 +65,21 @@ def heading_lines(
         width=profile.heading_columns,
         break_long_words=False,
     )
+
+
+def compact_heading(axis: dict[str, Any]) -> str:
+    """Context comes from the region strip; canonical titles remain attached."""
+    label = {
+        "basal_method": "Nickase",
+        "foldback_method": "Nickase",
+        "open_side_paired_positions": "Paired extent",
+        "foldback_arm_bp": "Extension",
+        "left_end_word": "Left end",
+        "right_end_word": "Right end",
+        "release_method": "Release enzyme",
+    }.get(axis["key"], axis.get("label", axis["symbol"]))
+    unit = {"positions": "pos", "contacts": "ct"}.get(axis["unit"], axis["unit"])
+    return str(label) + (f" ({unit})" if unit else "")
 
 
 def _region_widths(
@@ -162,11 +182,31 @@ def plot_layout(
             lines = node_lines(axis, node)
             node_rows = max(node_rows, len(lines))
             labels.extend(lines)
-        width = max(18, max(text_width(label, profile.axis_font) for label in labels) + 4)
+        width = (
+            max(
+                [
+                    18,
+                    *[node_geometry(axis, n, profile=profile)["width"] for n in axis["nodes"]],
+                ]
+            )
+            if profile.rotated_labels
+            else max(18, max(text_width(label, profile.axis_font) for label in labels) + 4)
+        )
         widths.append(width)
     items = list(zip(axes, widths, strict=True))
+    margin, minimum_gap = (6, 2) if profile.rotated_labels else (26, 6)
     if profile.single_row:
-        needed = sum(_region_widths(items, profile)) + 6 * max(0, len(items) - 1) + 52
+        needed = (
+            sum(_region_widths(items, profile)) + minimum_gap * max(0, len(items) - 1) + 2 * margin
+        )
+        if (
+            profile.rotated_labels
+            and profile.axis_font * profile.physical_width_pt / max(profile.width, needed + 1) < 7
+        ):
+            minimum = ceil((needed + 1) * 7 / profile.axis_font)
+            raise ValueError(
+                f"The declared axes require at least {minimum} points for readable labels."
+            )
         profile = replace(profile, width=max(profile.width, round(needed + 1)))
         bands = [items] if items else []
     else:
@@ -177,14 +217,34 @@ def plot_layout(
         node_rows=node_rows,
         region_rows=2 if profile.width < WIDTH else 1,
     )
+    if profile.rotated_labels:
+        longest = max(
+            (text_width(compact_heading(a), profile.axis_font) for a in axes),
+            default=0,
+        )
+        tallest = max(
+            (node_geometry(a, n, profile=profile)["height"] for a in axes for n in a["nodes"]),
+            default=profile.axis_font,
+        )
+        heading_y = frame.region_height + longest + 6
+        top = heading_y + tallest / 2 + 8
+        bottom = top + max(150, 6 * profile.axis_font)
+        frame = AxisFrame(
+            frame.region_baseline,
+            frame.region_height,
+            heading_y,
+            top,
+            bottom,
+            bottom + tallest / 2 + 12,
+        )
     result = []
     for band, items in enumerate(bands):
         items = [
             (axis, width)
             for (axis, _), width in zip(items, _region_widths(items, profile), strict=True)
         ]
-        gap = (profile.width - 52 - sum(w for _, w in items)) / max(1, len(items) - 1)
-        left = 26.0
+        gap = (profile.width - 2 * margin - sum(w for _, w in items)) / max(1, len(items) - 1)
+        left = float(margin)
         for axis, width in items:
             values = [n["value"] for n in axis["nodes"]]
             if len(set(values)) != len(values):
