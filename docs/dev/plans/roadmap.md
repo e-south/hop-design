@@ -5,7 +5,7 @@
 HOP discovers complete hairpin preparations around a supplied stem. This roadmap
 separates implemented molecular capabilities from planned extensions.
 
-## Version 0.1.0a9
+## Version 0.1.0a10
 
 The current workflows include complete scaffold discovery, stage-specific
 comparisons, terminal hairpin requirements and explicit material reuse. Record
@@ -89,7 +89,7 @@ or change method resolution.
 
 ## Source capabilities
 
-The following interfaces describe `0.1.0a9`. Older packages retain their own
+The following interfaces describe `0.1.0a10`. Older packages retain their own
 tagged documentation and schemas.
 
 The [construction guide](../../guides/compile-construction.md) exposes:

@@ -23,22 +23,27 @@ stored API token. Build and GitHub publication jobs cannot publish to PyPI.
 
 ## Publish a version
 
+Before tagging, check that the repository Actions policy allows every external
+action in `release.yaml` at its pinned commit. Release tags cannot be updated or
+deleted. If GitHub refuses to retry a startup failure, correct its cause and use
+the next version.
+
 1. Merge the version and documentation through a green pull request.
 2. Tag that exact main commit. This starts the release workflow.
 3. Confirm both the GitHub release and PyPI files.
-4. Test `uv tool install "hop-design==0.1.0a9"` outside the checkout. Confirm the
+4. Test `uv tool install "hop-design==0.1.0a10"` outside the checkout. Confirm the
    installed version and the Python import before announcing availability.
 
 ```bash
 # Tag a version only after its protected-main checks pass.
 git switch main
 git pull --ff-only
-git tag v0.1.0a9
-git push origin v0.1.0a9
+git tag v0.1.0a10
+git push origin v0.1.0a10
 
 # Watch publication and inspect the uploaded files.
 gh run list --workflow release.yaml --limit 1
-gh release view v0.1.0a9
+gh release view v0.1.0a10
 ```
 
 The release build runs extended qualification on the exact distributions and

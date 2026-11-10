@@ -5,11 +5,11 @@ Use [uv](https://docs.astral.sh/uv/getting-started/installation/) with Python
 
 ```bash
 # Install HOP in its own environment.
-uv tool install "hop-design==0.1.0a9"
+uv tool install "hop-design==0.1.0a10"
 
 # Check which version is installed.
 hop-design --version
-# hop-design 0.1.0a9
+# hop-design 0.1.0a10
 ```
 
 HOP is alpha software, so record the version used for your work. For a new
@@ -30,10 +30,10 @@ To add fitting support to the command installation, use:
 
 ```bash
 # Include the numerical dependencies used to fit new atlas coordinates.
-uv tool install --reinstall "hop-design[atlas]==0.1.0a9"
+uv tool install --reinstall "hop-design[atlas]==0.1.0a10"
 ```
 
-For a Python project, use `uv add "hop-design[atlas]==0.1.0a9"`. In a source
+For a Python project, use `uv add "hop-design[atlas]==0.1.0a10"`. In a source
 checkout, use `uv sync --locked --extra atlas` and pass `--extra atlas` to the
 `uv run` command that fits coordinates. Keep the same HOP and Python installation
 when continuing a saved search.
@@ -44,7 +44,7 @@ Add HOP to your own uv project, then open Python in that environment.
 
 ```bash
 # Add the same package as a project dependency.
-uv add "hop-design==0.1.0a9"
+uv add "hop-design==0.1.0a10"
 uv run python
 ```
 
@@ -52,7 +52,7 @@ uv run python
 >>> # Confirm the package in this Python environment.
 >>> from importlib.metadata import version
 >>> version("hop-design")
-'0.1.0a9'
+'0.1.0a10'
 ```
 
 ## Work from source
@@ -67,7 +67,7 @@ uv sync --locked
 
 # Run this checkout rather than a separately installed command.
 uv run hop-design --version
-# hop-design 0.1.0a9
+# hop-design 0.1.0a10
 ```
 
 For the earlier GitHub-only package, use its
