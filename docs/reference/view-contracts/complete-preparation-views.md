@@ -96,6 +96,12 @@ centered on their recorded drawing positions. Standalone parameter figures retai
 their full-width profile. Exact base addresses are unchanged. A composed plate
 must still check its final scaling and provide full-resolution or continuation
 exports for base readability.
+The compact single-hairpin overview reserves primer silhouettes and structural
+measurements before placing enzyme names. It names one best-mapped footprint per
+enzyme and displayed presence status, using the shared enzyme color. Every site
+keeps its addressed footprint, presence and title. Per-site enzyme leaders are
+omitted from this parameter overview so they do not cross materials or dimensions;
+the procedural route retains its separate names and curved site leaders.
 Recognition sites use translucent, rounded bands above region fills and beneath
 nucleotide ink. A single-strand footprint retains a duplex-height envelope.
 Their shape follows the same base path, including handle bends.

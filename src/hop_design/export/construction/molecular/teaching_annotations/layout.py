@@ -4,10 +4,13 @@ import json
 from typing import Any
 from xml.etree import ElementTree as ET
 
+from hop_design.models.construction.projections.inspection import MolecularStateInspection
+
 from ..label_layout import LabelPlacer, coalesce_horizontal
 from ..parameter_boundaries import boundary_point
 from ..primitives.typography import text_width
 from ..printing.panels import base_box
+from ..recognition_sites import recognition_site_overlays
 from ..teaching_canvas import TeachingCanvas
 
 SVG = "http://www.w3.org/2000/svg"
@@ -86,6 +89,29 @@ class OverviewLabels:
         )
         node.text = value
         return node
+
+
+def compact_recognition_overlays(
+    state: MolecularStateInspection,
+    points: dict[tuple[str, int], tuple[float, float]],
+    labels: OverviewLabels,
+) -> str:
+    """Name best-mapped sites without competing with the parameter overview."""
+    names: dict[tuple[str, bool], str] = {}
+    for site in sorted(state.recognition_sites, key=lambda s: -len(s.recognition)):
+        if site.recognition:
+            names.setdefault(
+                (site.enzyme_id, site.presence in {"partial", "unresolved"}), site.site_id
+            )
+    return recognition_site_overlays(
+        state,
+        points,
+        labels.placer,
+        label_size=labels.size,
+        strand_labels=True,
+        site_leaders=False,
+        label_site_ids=frozenset(names.values()),
+    )
 
 
 def teaching_brackets(

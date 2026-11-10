@@ -4,8 +4,50 @@ import json
 from collections import Counter
 from xml.etree import ElementTree as ET
 
+import pytest
+
 from hop_design import construction
 from tests.integration.test_atlas_edition import captured_choices, captured_edition  # noqa: F401
+
+
+@pytest.mark.parametrize("profile_name", ["LANDSCAPE_DETAIL_FIGURE", "INSPECTOR_FIGURE"])
+def test_overview_compacts_repeated_enzyme_names_and_clears_materials(
+    captured_edition,  # noqa: F811
+    profile_name,
+):
+    from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
+    from hop_design.export.construction.presentation import figure_profile
+
+    summary = json.loads(
+        captured_edition._inspection_packet(captured_edition.sample(seed=0)).json_bytes
+    )
+    before = json.dumps(summary, sort_keys=True)
+    root = ET.fromstring(
+        render_teaching_overview(summary, profile=getattr(figure_profile, profile_name))
+    )
+    names = [e.text for e in root.iter() if e.get("data-label-kind") == "recognition"]
+    assert names and len(names) == len(set(names))
+    assert all(" *" not in name for name in names)
+    sid = root.find(".//*[@data-teaching-frame='hairpin']").get("data-state-id")
+    state = next(s for s in summary["atlas"]["states"] if s["state"]["state_id"] == sid)
+    assert {e.get("data-site-id") for e in root.iter() if e.get("data-site-id")} == {
+        site["site_id"] for site in state["recognition_sites"]
+    }
+    protected = [
+        json.loads(e.get("data-label-box"))
+        for e in root.iter()
+        if e.get("data-label-box") and e.get("data-label-kind") != "recognition"
+    ] + [
+        list(map(float, e.get("data-drawing-box").split()))
+        for e in root.iter()
+        if e.get("data-primer-binding") or e.get("data-staged-material")
+    ]
+    assert not any(e.get("data-site-leader") for e in root.iter())
+    for label in (e for e in root.iter() if e.get("data-label-kind") == "recognition"):
+        a, b, width, height = json.loads(label.get("data-label-box"))
+        for x, y, w, h in protected:
+            assert a + width <= x or x + w <= a or b + height <= y or y + h <= b
+    assert json.dumps(summary, sort_keys=True) == before
 
 
 def test_overview_teaches_local_relationships_and_both_primer_inputs(captured_edition):  # noqa: F811

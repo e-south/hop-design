@@ -23,6 +23,7 @@ def recognition_site_overlays(
     label_site_ids: frozenset[str] | None = None,
     label_size: int = ANNOTATION_SIZE,
     strand_labels: bool = False,
+    site_leaders: bool = True,
 ) -> str:
     if site_labels not in ("all", "operations"):
         raise ValueError("Unknown site-label policy.")
@@ -155,11 +156,12 @@ def recognition_site_overlays(
                 min(p[0] for p in points.values()) + max(p[0] for p in points.values())
             ) / 2
             bow = min(22, max(10, abs(ty - py) / 4)) * (-1 if px < molecule_center else 1)
-            rows.append(
-                f'<path data-site-leader="true" d="M{px},{py} Q{px + bow},{bend} {tx},{ty}" '
-                f'fill="none" stroke="{color}" stroke-opacity=".9" '
-                'stroke-width="3" stroke-linecap="round"/>'
-            )
+            if site_leaders:
+                rows.append(
+                    f'<path data-site-leader="true" d="M{px},{py} Q{px + bow},{bend} {tx},{ty}" '
+                    f'fill="none" stroke="{color}" stroke-opacity=".9" '
+                    'stroke-width="3" stroke-linecap="round"/>'
+                )
             box = escape(json.dumps([a, b, width, height]), quote=True)
             rows.append(
                 f'<text data-label-kind="recognition" data-label-box="{box}" '

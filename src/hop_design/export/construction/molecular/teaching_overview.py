@@ -25,9 +25,9 @@ from .primitives.extent import scene_bounds
 from .primitives.materials import input_box, staged_materials
 from .primitives.style import FONT_FAMILY, INK, base_ink
 from .primitives.typography import fitted_base_size, text_width
-from .recognition_sites import recognition_site_overlays
 from .teaching_annotations import (
     OverviewLabels,
+    compact_recognition_overlays,
     label_backplates,
     local_dimensions,
     projected_end_spans,
@@ -308,9 +308,9 @@ def _render_projected_teaching(
             data_teaching_note="loop",
             data_teaching_keys=json.dumps(["loop_nt", "loop_word"]),
         )
-    overlays += recognition_site_overlays(
-        state, points, labels.placer, label_size=profile.teaching_font, strand_labels=True
-    )
+    # Structural measurements and materials have priority over compact site names.
+    local_dimensions(root, scene["state_id"], points, teaching, locations, labels)
+    overlays += compact_recognition_overlays(state, points, labels)
     overlay_tree = ET.fromstring(f'<g xmlns="{SVG}">' + overlays + "</g>")
     for site in list(overlay_tree):
         if site.get("data-site-id"):
@@ -318,7 +318,6 @@ def _render_projected_teaching(
             group.insert(site_layer_index, site)
             site_layer_index += 1
     root.extend(list(overlay_tree))
-    local_dimensions(root, scene["state_id"], points, teaching, locations, labels)
     projected_end_spans(root, labels)
     element(root, "metadata", data_teaching_parameters="true").text = json.dumps(
         teaching["parameters"], sort_keys=bool(label_delta)
