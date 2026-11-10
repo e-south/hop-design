@@ -94,10 +94,7 @@ def render_source_partition_projection_svg(
         f"{projection.examined_nodes} of {projection.candidate_space_size} enzyme programs "
         f"examined · selected maximum {selected} nt"
     )
-    boundary = (
-        "Digital partition under declared cut geometry; physical cleavage and recovery "
-        "are not established."
-    )
+    boundary = "Retained and removed fragments follow the declared cut geometry."
     body = f"""
 <g data-result-id="{escape(projection.source_result_id)}"
 data-realization-id="{escape(projection.realization_id)}">

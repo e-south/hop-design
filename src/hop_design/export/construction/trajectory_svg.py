@@ -290,9 +290,9 @@ def render_complete_trajectory_svg(
             f"{cohesive_rows}"
         )
         cursor += 50 + len(realization.final_product.cohesive_ends) * 22
-    title = f"The selected digital route records {len(program.states)} exact molecular states."
-    subtitle = f"Digital route only · selected composition ordinal {projection.composition_ordinal}"
-    boundary = "No physical construction, QC, or biological activity is established."
+    title = f"The selected route records {len(program.states)} molecular states."
+    subtitle = f"Selected composition ordinal {projection.composition_ordinal}"
+    boundary = "Exact materials and terminal chemistry are listed in oligos.csv."
     body = f"""
 <g data-projection-id="{escape(projection.projection_id)}"
 data-projection-schema="{escape(projection.schema_id)}"

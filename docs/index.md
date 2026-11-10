@@ -14,7 +14,9 @@ Choose a task, then follow its guide through the CLI or Python API. The
 | Make a controlled set of molecules | [Specify a molecular comparison](guides/specify-a-comparison.md) with required members and shared properties |
 | Work through one preparation request | [Design one construction](guides/design-a-construction.md), from materials to endpoint |
 
-For the molecular concepts, read [Understand the construction](start/mental-model.md).
+Read [Understand the construction](start/mental-model.md) for the regions and steps.
+Use the [concept index](language/ontology.md) to look up a molecular feature,
+product, preparation or search term.
 For sequence anatomy without a preparation route, [compile a payload design](guides/quickstart.md)
 or [preview a substrate space](guides/substrate-spaces.md).
 
@@ -26,11 +28,10 @@ or [preview a substrate space](guides/substrate-spaces.md).
   explicit properties while browsing supported complete molecules and preparations.
 - [Edit folded sequences](guides/edit-folded-sequences.md): loop words, finite
   released-end placements, retained-base changes and a bounded exact stem family.
-
 - [Explore complete scaffolds](guides/explore-scaffolds.md): find whole-molecule
   options from an explicit product request.
-- [Author an explicit family roster](guides/compare-scaffold-families.md): bind
-  member requests and selections, assess a reference and reconcile alternatives.
+- [Compare a family of scaffolds](guides/compare-scaffold-families.md): specify
+  members, assess a reference and choose alternatives.
   Start with the comparison guide above to specify desired membership.
 
 ### Specify construction steps
@@ -48,13 +49,13 @@ compilation to check their combination and materials.
 - [Enumerate foldback sequence populations](guides/foldback-sequence-space.md):
   count exact local configurations and recover molecular examples from compact sets.
 - [Enumerate basal sequence populations](guides/basal-sequence-space.md):
-  admit full sources, count distinct local words, and recover molecular examples.
+  check full sources, count distinct local words, and recover molecular examples.
 - [Check exact materials through a named method](guides/resolve-production-method.md):
   inspect its molecular states and products; see the [method model](methods/overview.md).
 
 ### Inspect and share
 
-- [Capture an atlas edition](guides/share-atlas-edition.md): reopen recorded
+- [Save and share preparations](guides/share-atlas-edition.md): reopen recorded
   choices and retrieve their figures and materials without repeating discovery.
 - [Render molecular views](guides/render-component-views.md).
 - [Verify saved results](provenance/overview.md).

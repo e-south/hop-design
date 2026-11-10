@@ -102,10 +102,9 @@ def render_complete_outcome(
         f"Selected continuation: {status}. {preparation}\n\n"
         f"Recorded rejection reasons: {reasons}.\n\n"
         f"{constraints}"
-        "This outcome covers one selected local combination, not every route. "
+        "This outcome covers the selected local combination. "
         "Local search coverage and termination reasons are retained in summary.json. "
         "The construction/ bundle retains complete-route accounting and diagnostics.\n\n"
         "Compare explicitly edited material, contact or geometry permissions if appropriate; "
-        "a successful alternative is not a uniquely necessary repair. No requirement was relaxed. "
-        "Molecular completion is not experimental qualification.\n"
+        "the saved request retains every requirement.\n"
     )

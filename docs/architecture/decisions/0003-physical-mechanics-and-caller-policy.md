@@ -12,8 +12,8 @@ case and make physical results difficult to reuse or test independently.
 HOP owns pure foldback pairing, basal pair classification, and strand-state
 projection from explicit typed inputs. Callers own application catalogs,
 eligibility, and selection thresholds and pass them through versioned strict
-contracts. `ResolvedHopSpec` is an explicit event integration boundary, not a
-private catalog resolver. Renderers consume `WorkflowView` and cannot recompute
+contracts. `ResolvedHopSpec` receives explicit resolved events; it does not look
+them up in a private catalog. Renderers consume `WorkflowView` and cannot recompute
 molecular state.
 
 ## Alternatives
@@ -21,8 +21,8 @@ molecular state.
 A built-in application catalog would simplify one caller but turn private
 identity and thresholds into package defaults. A plugin framework would defer
 ownership questions while adding abstraction before a second implementation.
-Letting renderers derive molecular state would create a second scientific
-authority and allow figures to drift from plans.
+Letting renderers derive molecular state would duplicate molecular derivation
+and allow figures to drift from plans.
 
 ## Consequences and reversal cost
 

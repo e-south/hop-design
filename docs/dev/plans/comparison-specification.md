@@ -24,9 +24,9 @@ membership → explicitly select → retrieve preparations.
 
 ## First executor contract
 
-Implement preview and assessment over existing verified discovery packets before
-changing molecular execution. Four distinct hairpins may yield two distinct
-inserts; they must not satisfy a four-distinct-insert requirement. Alternative
+The delivery began with preview and assessment over existing verified discovery
+packets, before changes to molecular execution. Four distinct hairpins may yield
+two distinct inserts; they must not satisfy a four-distinct-insert requirement. Alternative
 methods may satisfy exact endpoint identity while retaining distinct preparations.
 Every required member remains visible, including values excluded by permissions.
 

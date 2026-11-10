@@ -12,9 +12,11 @@ doc_type: tutorial
 
 # Find a basal junction beside a fixed substrate
 
-Can a nickase site and a later Type IIS site share the sequence beside an
-unchanged substrate? This example uses a 34-bp loxP payload, Nt.BsmAI, and BbsI.
-The payload is a public reference, not a special HOP target or an assay result.
+Find whether a nickase site and a later Type IIS site can share the sequence
+beside an unchanged substrate. This example uses a public 34-bp loxP payload,
+Nt.BsmAI, and BbsI.
+A nickase cuts one strand; the Type IIS enzyme cuts both strands at defined
+offsets from its recognition site.
 
 From the repository root:
 
@@ -43,10 +45,11 @@ Copy [request.yaml](request.yaml) and pass its path with `--request`.
 
 Both recognition sites are required in the source duplex. Nicking and later
 Type IIS cleavage are separate operations. A local solution records a 15-nt
-adapter-annealing requirement; this example does not complete that association,
-the primer regions, or the rest of the construction. It predicts neither
-enzyme performance nor physical recovery. For complete material inputs, see
-the [construction guide](../../docs/guides/compile-construction.md).
+adapter-annealing requirement. Complete that association, the primer regions,
+and the remaining route through the
+[construction guide](../../docs/guides/compile-construction.md).
+The local result is an exact junction solution; the complete construction
+resolves the remaining materials and checks the combined route.
 
 ## Source definitions
 
@@ -59,5 +62,4 @@ junction search does not establish compatibility across those variants.
 is `GTCTC(1/none)`: a reference-strand cut at boundary 6 from the motif start,
 with no complementary-strand cut. The
 [BbsI definition](https://www.neb.com/en-us/tools-and-resources/selection-charts/alphabetized-list-of-recognition-specificities)
-is `GAAGAC(2/6)`, giving motif-start boundaries 8 and 12. These are recognition
-and cleavage specifications, not buffer, kinetics, or procurement recommendations.
+is `GAAGAC(2/6)`, giving motif-start boundaries 8 and 12.

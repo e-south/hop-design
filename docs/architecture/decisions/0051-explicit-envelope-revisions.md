@@ -9,7 +9,8 @@ Increasing a drawing's trace density must not invent complete constructions.
 Keep three operations distinct:
 
 1. Query existing complete preparations under the current selections and controls.
-2. Evaluate a selected region within the active generating envelope.
+2. Evaluate a selected region within the active generating envelope: the
+   permissions in the request used for further discovery.
 3. Preview an explicit permission revision, then evaluate it with supplied quotas.
 
 `models/construction/variants/envelope.py` owns a field whitelist and strict edit
@@ -50,6 +51,11 @@ recorded preparations; domain ticks denote permissions. Static and interactive
 views share state-qualified parameter definitions and bracket boundaries.
 
 ## Parameter responsibility
+
+In the foldback measurements below, A is the paired extension from the supplied
+stem to the loop, D is the join position measured from that stem boundary, and C
+is loop length. R is the self-paired portion from the join to the loop, with
+R = A − D.
 
 | Request information | Representation |
 | --- | --- |

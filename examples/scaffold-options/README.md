@@ -1,7 +1,7 @@
 # Choose scaffolds before choosing preparations
 
 These public requests share a 34-bp stem and permit four loop sizes across three
-closing extensions. `hairpin.json` requests a direct hairpin endpoint;
+loop-side paired extensions. `hairpin.json` requests a direct hairpin endpoint;
 `insert.json` requests a released duplex insert. Their open-side constructions
 are different; they are not two aliquots of one preparation.
 
@@ -25,7 +25,7 @@ uv run hop-design construction select-options /tmp/hop-options \
 ```
 
 Inspect the group report before choosing labels: these particular labels refer
-to the recorded 9-bp background for this example. Another complete background
-has 12-bp closing extensions. `report.pdf` in the selected packet shows the
-chosen molecules, shared controls, changed materials and supported product stage.
-Every preparation retains its unresolved experimental conditions.
+to the recorded 9-bp loop-side extension for this example. Another complete
+group has 12-bp closing extensions. `report.pdf` in the selected directory shows
+the chosen molecules, shared controls, changed materials and supported product
+stage.

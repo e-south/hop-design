@@ -9,8 +9,9 @@ metadata:
 
 # HOP Design maintainer workflow
 
-Preserve one authority per derivation and one dependency direction. The public
-package is deterministic and public-by-construction.
+Keep each calculation in one owning module, shared by the CLI, API and browser.
+Preserve the documented dependency direction and keep private study data outside
+the public package.
 
 ## Scope
 
@@ -20,7 +21,8 @@ outside HOP.
 
 ## Success Criteria
 
-- A failing test proves the missing behavior before implementation.
+- A failing test proves a behavior change before implementation. Prose-only
+  edits preserve examples, field meanings and links through documentation checks.
 - The smallest owning layer changes and all affected contracts remain explicit.
 - Targeted checks and the verification scope appropriate to the changed responsibility pass.
 - Full source and the selected installed-distribution verification passes before merge;
@@ -34,7 +36,9 @@ outside HOP.
    relevant ADR, and `docs/dev/plans/roadmap.md` as the change requires; then
    inspect the worktree.
 2. State one observable behavior and its nearest test level.
-3. RED: add the smallest failing test and confirm the intended failure.
+   For prose-only edits, state the reader's task and check the affected commands,
+   examples and links; use the [documentation guide](../../../docs/dev/documentation-contract.md).
+3. RED: for a behavior change, add the smallest failing test and confirm its failure.
 4. GREEN: implement the minimum behavior through the owning layer. Do not add
    speculative abstractions, hidden defaults, or compatibility aliases.
 5. REFACTOR: improve names and structure only while the focused test stays green.
@@ -55,7 +59,7 @@ outside HOP.
    the exact README/artwork paths documented in the verification guide.
    A presentation-only change requires
    rendered review and conserved molecular content as well as its focused gate.
-   See `docs/dev/performance.md#choose-the-verification-boundary` for the
+   See `docs/dev/performance/verification.md#choose-the-verification-boundary` for the
    responsibility map and bounded worker option.
    Use the hosted gate once for final qualification; do not duplicate it locally.
    Protected main does not rerun the source suite after a green, current PR merge.
@@ -65,7 +69,8 @@ outside HOP.
 
 ## Required Deliverables
 
-- RED evidence and focused GREEN verification.
+- RED/GREEN evidence for behavior changes, or documentation and example checks
+  for prose-only edits.
 - Changed ownership boundary and contract surface.
 - The named scope, result and changed responsibility. Name routine installation
   or extended source-versus-wheel parity explicitly; do not imply that a

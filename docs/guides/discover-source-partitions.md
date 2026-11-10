@@ -1,12 +1,18 @@
 # Discover an exact source partition
 
+A **source partition** records the fragments produced by nicking the source
+duplex: which strands must survive and which pieces are to be removed by the
+declared length-selection rule. The source is the starting material containing
+the payload and construction flanks; it can include DNA absent from the final
+product.
+
 Use source-partition discovery when the question is:
 
-> Which provisioned nickase combinations preserve these required fragments and
-> keep every sacrificial fragment within the declared removal threshold?
+> Which permitted nickase combinations preserve these required fragments and
+> keep every unwanted fragment within the declared removal threshold?
 
-This is a route-level question. It is not a basal-junction subtype and it does
-not select a preferred enzyme program.
+This search evaluates source-fragment removal across the route. Choose an enzyme
+program explicitly from the accepted results.
 
 ## Permit cleanup during design discovery
 
@@ -44,7 +50,7 @@ Create a regular, nonsymlink JSON or YAML file with schema
 
 - one exact duplex source through its 5′→3′ top sequence and four terminal
   chemistries;
-- one final-payload authority and its exact source-coordinate mapping;
+- one final-payload specification and its exact source-coordinate mapping;
 - one caller-owned characterized-enzyme catalog and provisioning policy;
 - preferred and absolute inclusive sacrificial-fragment maxima;
 - the exact top- or bottom-strand spans that must survive;
@@ -107,20 +113,17 @@ nick sites, full two-strand fragment certificate, threshold ladder, selected
 survivors, and nick functions. `data.csv` is a tidy candidate table,
 `fragments.csv` records every exact fragment and boundary cause, and
 `thresholds.csv` records the complete preferred-to-absolute threshold ladder.
-These tables support study-owned analysis and rendering without replacing the
-JSON authority.
+Use these tables for analysis and rendering; keep `result.json` for replay.
 
 The certificate projection requires an explicit accepted realization ID and
-returns canonical JSON, tidy fragment CSV, and a publication-oriented SVG. It
-does not auto-select a program or change the source-partition authority.
+returns canonical JSON, tidy fragment CSV, and a publication-oriented SVG while
+preserving the source-partition result.
 
 Nick functions have literal route meaning:
 
 - `retained_fragment_boundary` defines one edge of a required survivor;
 - `excluded_fragment_cleanup` subdivides material that the declared length
   selection excludes.
-
-Neither value implies biological importance or enzyme preference.
 
 ## Interpret completion
 
@@ -139,10 +142,3 @@ above it. This rule applies equally to internal and terminal fragments.
 Changing the fragment policy changes the scientific problem. Increasing
 an execution bound does not. A truncated result is never reported as
 infeasible.
-
-## Boundary
-
-This result establishes deterministic source partitioning under characterized
-cut geometry. It does not establish empirical cleavage efficiency, fragment
-recovery, silica-column performance, PCR feasibility, primer melting
-temperature, ligation, physical hairpin construction, QC, or activity.

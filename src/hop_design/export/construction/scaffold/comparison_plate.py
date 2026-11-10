@@ -156,15 +156,8 @@ def comparison_plates(
             ),
             text(
                 25,
-                1007 - unused,
-                "Destination compatibility and preparation performance remain unevaluated.",
-                14,
-            ),
-            text(
-                25,
                 1033 - unused,
-                "Pairing architecture; drawings use separate scales. "
-                "Biological effects remain untested.",
+                "Drawings use separate scales.",
                 13,
             ),
         ]

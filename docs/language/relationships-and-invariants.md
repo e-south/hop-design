@@ -2,10 +2,16 @@
 
 ## Accepted construction-discovery contracts
 
-These contracts define the implemented semantic authority for
-payload-centered construction. They do not enlarge the
-`hop_design.spaces` facade. External callers use the narrow
-`hop_design.construction` operations rather than importing the raw contracts.
+These contracts define construction around a fixed payload. A local realization
+resolves exact sequences and operations at one junction; a complete realization
+combines local results, resolves all materials, and checks the route through the
+requested endpoint. Neither is the endpoint product alone: different routes and
+materials can produce the same molecule.
+
+Use `hop_design.construction` to access these results. Its verified receipts
+confirm that the checks passed without exposing the internal models used to
+rerun the derivation. The `hop_design.spaces` interface retains its separate
+substrate-space contract.
 
 | Contract | Preconditions | Guarantees |
 | --- | --- | --- |
@@ -26,7 +32,8 @@ payload-centered construction. They do not enlarge the
 | `ConstructionBundle` | Replay-verified complete result and embedded unchanged design authority | Content-addressed root inventory, exact result and design identities, byte integrity, complete semantic replay, and create-only atomic persistence |
 | construction projection | Opaque verified construction receipt plus explicit family or accepted realization selection where required | Deterministic JSON, optional tidy CSV, and SVG preserving the exact source relation; no ranking, implicit exemplar selection, or authority mutation |
 
-Compactness is achieved endpoint geometry plus retained non-payload sequence.
+Compactness measures the achieved endpoint geometry and the non-payload sequence
+retained in that product.
 Transient recognition sites, source handles, auxiliary oligos, and destination
 sequence remain visible but do not change that measurement.
 
@@ -36,8 +43,7 @@ ligated hairpin's terminal interval. The forward primer binds the terminal
 interval of its derived reverse complement. For a template of length `n` and
 annealing length `a`, that forward span is `[n-a, n)`. Primer 5′ tails are outside
 the annealing span. Replay rejects a binding at a different template interval,
-even if its content identity has been recomputed. These sequence checks do not
-predict annealing temperature or PCR yield.
+even if its content identity has been recomputed.
 
 HOP owns these molecular contracts and neutral projections. Client studies
 own frozen runs, observations, interpretation, and asset promotion. Manuscript

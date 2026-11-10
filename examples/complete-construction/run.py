@@ -112,8 +112,6 @@ def run(output, case="all"):
         "summary.json and each case's report.md retain outcomes, including rejections.\n"
         "The local searches stop at one witness; only that selected combination is continued.\n"
         "The fixed-source edit is an expected rejection, not a uniquely diagnosed repair.\n"
-        "Primer lengths, noncanonical contacts, purification, ligation and destination "
-        "compatibility are not experimentally qualified.\n"
         "The independent hairpin case authors its own terminal arms and preparation; "
         "it is not an aliquot of the released-insert preparation.\n"
     )

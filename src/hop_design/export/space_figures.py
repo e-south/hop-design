@@ -198,19 +198,16 @@ non-ranked order.</text>
 
 
 def render_scientific_receipt_svg(design_set: HairpinDesignSet) -> bytes:
-    """Render complete accounting and the manifest-backed evidence boundary."""
-    title = "Digital evidence boundary"
+    """Render assignment accounting, design identity and verification details."""
+    title = "Design summary"
     claim_labels = {
         "space_accounting": "Substrate-space accounting",
         "digital_design": "Exact digital designs",
-        "named_method": "Named construction method",
-        "destination_compatibility": "Destination compatibility",
-        "physical_construction": "Physical construction",
-        "quality_control": "Quality control",
-        "biological_activity": "Biological activity",
     }
     rows: list[str] = []
     for index, (dimension, claim) in enumerate(design_set.claim_status):
+        if dimension not in claim_labels:
+            continue
         claim_data = claim.model_dump(mode="json")
         status = claim_data["status"]
         basis = claim_data.get("basis", "")
@@ -230,14 +227,13 @@ def render_scientific_receipt_svg(design_set: HairpinDesignSet) -> bytes:
         f"{design_set.unique_designs} unique designs · {design_set.duplicate_count} "
         "duplicates · digital verification passed"
     )
-    evidence_boundary = "No physical construction, QC, or activity record is attached."
+    evidence_boundary = "Inspect each design or export its sequence as CSV or FASTA."
     handoff_note = (
         "CSV and FASTA provide sequence handoff; bundle/ remains the verified digital authority."
     )
     body = f"""
-<text x="72" y="72" class="title">Digital evidence boundary</text>
-<text x="72" y="108" class="subtitle">Verified derivation and absent experimental
-evidence remain distinct.</text>
+<text x="72" y="72" class="title">Design summary</text>
+<text x="72" y="108" class="subtitle">Assignments, design identities and sequence exports.</text>
 <line x1="72" y1="140" x2="1128" y2="140" class="rule"/>
 <text x="72" y="188" class="label">Complete digital handoff</text>
 <text x="72" y="232" class="title">{_escape(assignment_count)}</text>

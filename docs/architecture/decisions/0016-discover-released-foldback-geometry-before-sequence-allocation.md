@@ -43,13 +43,12 @@ validation.
 
 ## Consequences
 
-Cross-agent compatibility now has one public, serializable authority. Exact and
+Cross-agent compatibility now has one public, serializable result. Exact and
 near-boundary results can be compared without importing application preferences
 or predecessor workspace files.
 
-The result proves only a released-foldback sequence domain. The separate
+The result defines a released-foldback sequence domain. The separate
 precursor search materializes exact sequences inside caller-authored domains,
 and `search_hairpin_junction_routes` projects that exact state before checking
-strand continuity with a basal route. Neither step infers a preferred agent,
-silently fills sequence, proves a complete production method, or claims
-destination readiness.
+strand continuity with a basal route. Agent selection, complete production-method
+resolution, and destination checks remain separate operations.

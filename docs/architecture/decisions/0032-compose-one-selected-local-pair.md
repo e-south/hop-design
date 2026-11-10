@@ -34,8 +34,7 @@ bound prevents a conclusion.
 
 ## Consequences
 
-The operation returns the existing `ConstructionCompilation` receipt and adds
-no public model. It does not rank or choose local alternatives, weaken source
-identity, infer missing materials, or claim laboratory construction. Unknown,
-wrong-family, source-mismatched, forged, or design-incompatible selections fail
-before a portable authority is returned.
+The operation returns the existing `ConstructionCompilation` receipt using
+explicit local choices, unchanged source identity, and declared materials. It
+adds no public model. Unknown, wrong-family, source-mismatched, forged, or
+design-incompatible selections fail before a portable result is returned.

@@ -48,12 +48,8 @@ def test_review_is_one_self_contained_claim_bounded_scientific_story(tmp_path: P
     assert "4 exact hairpin designs" in review
     assert "Complete and digitally verified · 4/4 · 4 unique · 0 duplicates" in review
     assert "How does activity vary across one paired context position?" in review
-    assert "No physical construction, QC, or activity record is attached." in review
+    assert "Inspect each design or export its sequence as CSV or FASTA." in review
     assert "<details><summary>Evidence details</summary>" in review
-    assert "Named construction method</td><td>Not evaluated" in review
-    assert "Physical construction</td><td>Not recorded" in review
-    assert "Quality control</td><td>Not recorded" in review
-    assert "Biological activity</td><td>Not recorded" in review
 
     assert "https://" not in review
     assert "http://" not in review
@@ -66,6 +62,8 @@ def test_review_is_one_self_contained_claim_bounded_scientific_story(tmp_path: P
 
     manifest = json.loads((output / "bundle" / "manifest.json").read_text(encoding="utf-8"))
     for dimension, claim in manifest["claim_status"].items():
+        if dimension not in {"space_accounting", "digital_design"}:
+            continue
         assert f'data-claim="{dimension}"' in review
         assert f'data-status="{claim["status"]}"' in review
         if "basis" in claim:

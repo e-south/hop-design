@@ -185,8 +185,7 @@ def _set_pages(summary: dict[str, Any], files: dict[str, bytes]) -> list[bytes]:
                 )
             y = _caption(
                 rows,
-                "Pairing schematics; enlargements use separate scales. Loop bases are countable; "
-                "radius is not a conformation prediction. Circles mark covalent joins.",
+                "Enlargements use separate scales. Circles mark covalent joins.",
                 y + 12,
                 size=12,
             )

@@ -17,6 +17,12 @@ heading or link to disclose detail; avoid administrative tables, document IDs,
 verification dates and a fixed list of required sections. Git records editing
 history. Runtime skills keep only the metadata their loader requires.
 
+When a page serves several tasks, keep a short entry page and move each task
+into a named child page. Group related pages in the entry's same-stem directory,
+with links describing the question each page answers. Keep prerequisites beside
+examples and update incoming links to the specific destination. Split by the
+reader's task or molecular responsibility, rather than by a line-count target.
+
 ## References
 
 Explain what callers supply, what HOP derives and which constraints apply. Name
@@ -25,9 +31,21 @@ invalid input, an impossible request and an unfinished search distinctly.
 Include identities and provenance where callers need them to reopen or verify a
 result, rather than repeating internal machinery on every page.
 
-A successful computation establishes modeled sequence and processing behavior.
-Use “experimental evidence” for caller-owned observations. Keep this distinction
-near the relevant claim without repeating a disclaimer in every paragraph.
+Describe the sequence or processing result and its evaluated scope. Omit blanket
+experimental-success disclaimers from product copy, examples and report footers.
+Explain a restriction beside the operation where it affects the reader's next action.
+
+## Teach the terms that matter
+
+Use a familiar word when it preserves the meaning. Introduce a necessary technical
+term through its role or an example before relying on it. For example, explain
+that a preparation contains exact molecules, materials and processing steps before
+introducing its record type. Keep public field and operation names unchanged.
+
+Keep enough context to connect the input, calculation and result. A short page
+still needs to explain which choices the user supplies, which HOP derives, and
+what to inspect or retrieve next. Link to a precise reference when the detail
+outgrows that task.
 
 ## Check the result
 
@@ -35,3 +53,8 @@ Run `uv run python scripts/check_docs.py` to check titles, local links, heading
 fragments, code fences and skill metadata. Exercise changed examples at their
 owning CLI or Python boundary. Keep scientific values and public operations
 unchanged during a prose edit.
+
+Review these questions from the reader's starting point: What do I supply? What
+will this operation produce? Where do I find it? What should I do with an empty
+or unfinished result? Use source or example checks to resolve unclear answers.
+Tests should protect operations and data, without requiring one exact prose sentence.

@@ -127,8 +127,7 @@ def render_report_text(report: ConstructionFamilyReportProjection, page_count: i
             + ({True: "unchanged", False: "changed", None: "not assessed"}[conserved])
             + ".",
             "",
-            "Coordinate movement is reported separately from sequence changes. "
-            "Biological effects remain untested.",
+            "Coordinate movement is reported separately from sequence changes.",
             "",
             "What changes in making it — changed material roles: "
             + ", ".join(material_role_label(r) for r in comparison.molecular.changed_material_roles)
@@ -165,10 +164,7 @@ def render_report_text(report: ConstructionFamilyReportProjection, page_count: i
             "",
         ]
     md += [
-        "Each preparation retains its own materials and chemistry. No pooled "
-        "reaction, destination compatibility, "
-        "purification success or experimental performance is established. Consult "
-        "each preparation report for unresolved conditions.",
+        "Each preparation report lists its exact materials and terminal chemistry.",
         "",
         "Captured source inputs are preserved under family/ for provenance; "
         "regenerated report facts, drawings and exact preparation links above are "

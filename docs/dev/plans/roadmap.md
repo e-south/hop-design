@@ -14,7 +14,8 @@ the runtime identity when using a source checkout between releases.
 This version also includes [folded-sequence editing](../../guides/edit-folded-sequences.md):
 exact loops, finite released-end placements and explicit method alternatives,
 shared CLI/API retrieval, a local editor, and bounded exact expansion of a
-degenerate stem. These operate on modeled preparations. Unrestricted nucleotide
+degenerate stem.
+Unrestricted nucleotide
 editing, new chemistry, RNA prediction, destination validation, global optimization
 and pooled-library guarantees remain outside that increment.
 
@@ -25,14 +26,16 @@ single-molecule viewport share the query model; retrieval rechecks its constrain
 Repeated queries use immutable facts, while search expansion and control relaxation
 remain explicit, separate operations.
 
-The construction-envelope navigator adds paged permitted domains, including words
-and geometries without completed preparations. Field-bound permission revisions
-are previewed before explicitly bounded evaluation; replay retains the original
-pool and the declared changes. The shared CLI/API/browser contract keeps the
-supplied stem, receiving ends, material policies and preservation controls fixed.
-The public open-domain example separates molecular permissions from computation
-quotas. This does not establish exhaustive satisfiability or a jointly optimized
-experimental family. See [ADR 0051](../../architecture/decisions/0051-explicit-envelope-revisions.md).
+The construction-envelope navigator adds paged permitted domains, including
+words and geometries without completed preparations. Field-bound permission
+revisions are previewed before explicitly bounded evaluation; replay retains
+the original pool and the declared changes. The shared CLI/API/browser
+contract keeps the supplied stem, receiving ends, material policies and
+preservation controls fixed. The public open-domain example separates
+molecular permissions from computation quotas. Its bounded results cover the
+examined candidates; exhaustive satisfiability and joint optimization remain
+separate questions. See [ADR
+0051](../../architecture/decisions/0051-explicit-envelope-revisions.md).
 
 Continuous molecular inspection keeps variant choice, processing state and camera
 movement independent. Stage-qualified surroundings controls narrow supported
@@ -164,9 +167,9 @@ The [comparison brief](../../guides/specify-a-comparison.md) names required
 members, shared properties and permitted preparation changes. Its versioned
 grouped form requires identical stage products within scaffold groups and
 different products between groups. Verified prior-product references and exact
-loop words retain their molecular meaning through discovery and retrieval.
-The [grouped-comparison plan](grouped-comparisons.md) owns delivery verification.
-These operations do not establish experimental equivalence or public release.
+loop words retain their molecular meaning through discovery and retrieval. The
+[grouped-comparison plan](grouped-comparisons.md) owns delivery verification.
+Public release remains a separate gate.
 
 ### Terminal forms, stage controls and prior-material reuse
 
@@ -201,7 +204,8 @@ failure, loop changes, zero-gap coverage and explicit end-pair retrieval. A fixe
 comparison reference, processing state and zoom survive preparation changes.
 Installed-wheel exports match source outputs for discovery, teaching, atlas and
 retrieval. The full repository verification endpoint remains the delivery gate;
-unfamiliar-user and laboratory evaluation remain separate evidence needs.
+unfamiliar-user evaluation remains separate
+from these software checks.
 
 ### Bounded scaffold completion
 

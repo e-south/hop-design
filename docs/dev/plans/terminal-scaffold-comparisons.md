@@ -22,10 +22,11 @@ annealing settings. Existing request meanings and sealed evidence remain intact.
 
 ## Acceptance cases
 
-The terminal example must obtain 6/14, 6/8, 6/0 and 0/0 unpaired 5-prime/3-prime
-nucleotides through high-level requirements. The fully paired example adds six
-open-side paired positions; only the adapter changes in this demonstrated set.
-Counts do not define arbitrary new sequence or establish assembly compatibility.
+The terminal example must obtain 6/14, 6/8, 6/0 and 0/0 unpaired
+5-prime/3-prime nucleotides through high-level requirements. The fully paired
+example adds six open-side paired positions; only the adapter changes in this
+demonstrated set. Terminal counts constrain geometry. Exact sequences and
+assembly checks remain separate requirements.
 
 Stage controls must admit the appropriate eight-preparation loop-by-method
 released-product comparison while preserving hairpin differences. An unintended

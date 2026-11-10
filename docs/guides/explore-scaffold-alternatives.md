@@ -5,6 +5,11 @@ when the obtained preparations do not yet offer the comparison you need. The
 examples assume the public `construction` facade is imported and `stem` contains
 your supplied sequence.
 
+The **scaffold** is the loop, added pairing and construction sequence around
+that stem. There are three distinct actions: filter preparations already found,
+search further within the saved permissions, or explicitly revise those
+permissions. The examples below show when to use the latter two.
+
 ## Find different scaffold options
 
 Ask for contrasts when another preparation with the same geometry would not help:
@@ -136,10 +141,13 @@ preview can be relocated and loaded with `construction.load_design_revision`.
 For a method edit, use `{"methods": {"basal": ["Nb.BtsI"]}}`. HOP resolves the
 name against the captured enzyme catalog and shows the affected role permissions.
 If the characterization is absent, include its explicit catalog definition in
-`add_enzymes`. HOP does not invent recognition or cleavage requirements. Existing
+`add_enzymes`, including its recognition and cleavage requirements. Existing
 hard method requirements and forbidden-method policies still apply.
 
 An arm edit can exceed a retained-length limit. The preview identifies that
 dependency; an explicit `"retained_limits_nt": {"foldback": 20}` can revise the
 limit when appropriate. Fixed materials remain fixed. A ready preview means the
 declarations agree; complete construction is established by execution.
+
+To change a material policy while keeping the original stem and other hard
+requirements, follow the [saved material-context example](discover-designs/refine-the-search.md#revise-a-material-policy).

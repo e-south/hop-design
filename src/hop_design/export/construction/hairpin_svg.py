@@ -52,7 +52,7 @@ def render_hairpin_portrait_svg(p: HairpinPortraitProjection) -> bytes:
         'height="94.5mm" '
         f'viewBox="0 0 {width:.1f} 420" role="img">',
         "<title>Choose a hairpin by its scaffold</title>",
-        "<desc>Recorded pairing architecture, not a predicted physical conformation. "
+        "<desc>Hairpin sequence and pairing. "
         "Exact selection and preparation accompany this view.</desc>",
         '<rect width="100%" height="100%" fill="white"/>',
         '<g font-family="Arial, Helvetica, sans-serif">',
@@ -169,12 +169,6 @@ def render_hairpin_portrait_svg(p: HairpinPortraitProjection) -> bytes:
     else:
         rows.append(_text(420, 302, "No downstream release interface requested."))
     rows += [
-        _text(
-            28,
-            374,
-            "Recorded pairing architecture; no folding or experimental-performance prediction.",
-            size=12,
-        ),
         _text(
             28,
             395,

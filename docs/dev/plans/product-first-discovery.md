@@ -51,8 +51,8 @@ clipped terminal label; a common frame now fits full handles while retaining
 shared spacing and stem alignment. The missing ADR-index link found by the first full regression is corrected.
 Strict preflight and the final full gate pass: 2,019 tests, 91.40% coverage,
 documentation examples, dependency audit and source/wheel parity, including the
-new discovery example. These are software checks, not human-usability or
-laboratory evidence.
+new discovery example. Unfamiliar-user
+evaluation remains separate from these software checks.
 
 ## Contract and dependency direction
 

@@ -38,8 +38,9 @@ one selected placement, replays that placement from its agent and target, and
 intersects the recognition motif with explicit precursor and turn-extension
 templates. It derives the returning foldback arm by reverse complement and
 reports all additional recognition sites. Search-node and returned-hit budgets
-remain distinct. This closes sequence-construction parity without accepting a
-monolithic recipe or making unconstrained DNA completion an implicit default.
+remain distinct. This closes sequence-construction parity through explicit
+templates. Monolithic recipes and implicit unconstrained completion remain
+unsupported.
 
 `search_basal_candidates` is an independent bounded enumeration over two
 caller-authored four-nucleotide IUPAC arm domains. It reuses the canonical
@@ -69,8 +70,8 @@ accepts `hop.processing-catalog/v1`; it adds no built-in experimental catalog.
 
 New nicking or release agents can be supplied without changing HOP. Geometry
 and sequence discovery remain reusable and testable without a workspace or
-private study. Basal candidate enumeration is reusable without carrying a
-scar-nick workspace or study profile. Basal processing and released-foldback
+private study. Basal candidate enumeration remains independent of scar-nick
+workspaces and study profiles. Basal processing and released-foldback
 geometry now have separate bounded contracts. Concrete precursor
 materialization and hairpin-junction route composition have their own bounded
 contracts. Complete production-method resolution and predecessor differential

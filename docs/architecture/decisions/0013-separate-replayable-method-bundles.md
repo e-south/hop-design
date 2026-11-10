@@ -21,15 +21,14 @@ artifact is written, publish atomically, and never replace an existing path.
 Loaders verify content integrity and then recompile the stored request. The
 replayed plan, artifact bytes, and manifest must match.
 
-`HopBundle` and `MethodBundle` are sibling consumer boundaries. A shared
-hairpin-encoding digest is a typed join, not shared identity. Destination
-vector, orientation, compatible assembly ends, and experimental evidence remain
-downstream.
+`HopBundle` and `MethodBundle` are separate bundle types. Their shared
+hairpin-encoding digest lets a caller check that they describe the same encoding.
+The bundles retain separate identities. Destination vector, orientation,
+compatible assembly ends, and experimental evidence remain downstream.
 
 ## Consequences
 
 A design can remain valid while one method is infeasible or unavailable. More
 than one method may later produce the same design without changing its design
-bundle. Consumers that need physical-method evidence must verify the method
-bundle explicitly; a design bundle alone does not establish a duplex or
-restriction product.
+bundle. Consumers that need duplex or restriction-product states must verify the method
+bundle explicitly; those states are absent from a design bundle.

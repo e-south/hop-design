@@ -1,9 +1,8 @@
 # Method bundle layout and verification
 
-A method bundle records how one strict request resolves into modeled molecular
-states and products. It is not a design bundle and does not claim that a
-restriction product is compatible with a destination, physically constructed,
-or recovered. Replay verifies the digital derivation only.
+A method bundle saves a named method's exact request, the molecular states and
+products derived from it, and their exported files. To verify it, HOP recompiles
+the request and compares the complete derivation and exported bytes.
 
 | File | Meaning |
 | --- | --- |

@@ -1,5 +1,10 @@
 # HOP Design reliability contract
 
+HOP verifies saved results at two levels. Digests check that file contents match
+their recorded fingerprints. Replay reruns the derivation from the saved inputs
+and requires the resulting records and files to match. Recalculating digests
+after changing a derived result cannot substitute for replay.
+
 ## Determinism
 
 The same normalized spec, compiler version, locked catalog/profile references,
@@ -9,11 +14,12 @@ with one newline. FASTA uses deterministic headers, 80-column sequence lines,
 and one trailing newline. Host paths, timestamps, usernames, and environment
 ordering do not enter content identity.
 
-Product-to-construction lowering reuses the request's immutable characterized
-catalog when binding foldback, basal and release permissions. It validates the
-newly derived geometry and complete route through their normal models. This is
-object reuse within a translation, not a persistent admission cache; external
-JSON and saved-bundle admission still validate their complete contents.
+Translation from a product request to construction inputs reuses the request's
+immutable characterized catalog when binding foldback, basal and release
+permissions. It validates the
+newly derived geometry and complete route through their normal models. Reuse is
+limited to that translation. External JSON and saved bundles undergo complete
+content validation before acceptance, called admission.
 
 ## Bundle integrity
 
@@ -23,8 +29,9 @@ The private creation context is bound to one model type and identity field,
 consumed by one root object and discarded when creation finishes. Nested records
 still verify their supplied identities, and all schema, molecular, lineage and
 route checks still run. Independent model/file admission always checks the
-supplied identity. This removes duplicate serialization during creation without
-retaining validation authority or adding a caller option to disable checks.
+supplied identity. This removes duplicate serialization during creation. It
+retains no validation authority after creation and offers no caller option to
+disable checks.
 
 Survey checkpoints remain bound to their exact producer. Ordinary resume and
 verification never accept another producer. An explicit `survey upgrade` replays
@@ -43,8 +50,9 @@ Verification rejects missing, symlinked, modified, unmanifested, path-traversing
 or root-digest-inconsistent content. It also loads the strict spec, plan, and
 provenance schemas; checks their identities and locked references against each
 other; then deterministically recompiles the spec and requires the complete
-plan, artifact set, and manifest to match. This replay catches a consistently
-resealed bundle whose authored intent and derived state disagree. Writes use a
+plan, artifact set, and manifest to match. This replay catches a bundle whose
+authored intent and derived state disagree, even if its digests were recalculated
+to match the changed files. Writes use a
 sibling temporary directory, verify it, then rename it atomically. Existing
 output paths are never replaced.
 
@@ -52,8 +60,8 @@ output paths are never replaced.
 atomic-write, and no-overwrite rules to a method request and plan. Verification
 parses both strict schemas, recompiles the request, and requires the plan,
 trajectory, FASTA, GenBank, artifact inventory, manifest digest, and bundle ID
-to match byte for byte. A checksum-valid reseal of one generated artifact is
-therefore rejected.
+to match byte for byte. A changed generated artifact is therefore rejected even
+when its recorded checksum has been updated to match.
 
 `construction-bundle.json` inventories one exact complete-construction result
 and every byte of the separately verified design bundle embedded below

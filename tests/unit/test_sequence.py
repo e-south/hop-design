@@ -45,6 +45,33 @@ def test_normalization_rejects_non_string_input() -> None:
         normalize_dna_sequence(42, allow_degenerate=True)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("symbol", IUPAC_DNA)
+@pytest.mark.parametrize("allow_degenerate", [True, False])
+def test_single_base_normalization_retains_exact_and_symbolic_permissions(symbol, allow_degenerate):
+    if allow_degenerate or symbol in "ACGT":
+        assert normalize_dna_sequence(symbol, allow_degenerate=allow_degenerate) == symbol
+    else:
+        with pytest.raises(SequenceValidationError, match="exact DNA"):
+            normalize_dna_sequence(symbol, allow_degenerate=allow_degenerate)
+
+
+def test_string_subclass_keeps_its_normalization_behavior():
+    class ChangedUpper(str):
+        def upper(self):
+            return "T"
+
+    assert normalize_dna_sequence(ChangedUpper("A"), allow_degenerate=False) == "T"
+
+
+def test_non_boolean_permission_keeps_its_existing_truth_check():
+    class Permission:
+        def __bool__(self):
+            raise RuntimeError("permission evaluated")
+
+    with pytest.raises(RuntimeError, match="permission evaluated"):
+        normalize_dna_sequence("A", allow_degenerate=Permission())  # type: ignore[arg-type]
+
+
 def test_reverse_complement_covers_complete_dna_iupac_alphabet() -> None:
     assert reverse_complement_iupac(IUPAC_DNA) == "NBDHVKMWSRYACGT"
 

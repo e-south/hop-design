@@ -1,8 +1,10 @@
 # Plans, artifacts, and bundles
 
 HOP keeps sequence anatomy, complete constructions and named methods in separate
-bundles. Each stores inputs and derived outputs. Use the verified loaders below
-to check them.
+bundles. A **plan** records derived structure or processing states. An **artifact**
+is an output file, such as FASTA or SVG. A **bundle** stores the inputs, plan and
+artifacts with a manifest listing their paths and content digests. Use the
+verified loaders below to check them.
 
 ## Design compilation
 
@@ -17,9 +19,10 @@ HopSpec or ResolvedHopSpec
 The spec is authored intent. `HopPlan` is the immutable compiler result. It
 derives the paired payload, evaluates selected components, partitions the
 normalized encoding into typed features, and records how those design values
-were derived. Its `design_derivation` owns no ordered production chronology. A
-resolved design may preserve caller-asserted nick or release projection geometry,
-but it makes no complete production-method claim.
+were derived. Its `design_derivation` does not describe processing order. A
+resolved design may preserve caller-asserted nick or release projection geometry;
+construction
+programs and method plans record the ordered processing steps.
 
 Every design bundle contains:
 
@@ -59,10 +62,9 @@ products, and derived exports.
 
 Bundle identifiers derive from manifest content. Verification checks paths and
 inventory, validates every digest, reloads strict schemas, and reruns the
-authoritative compiler. A resealed but semantically altered derived artifact is
-rejected because replay must reproduce every stored byte. Verification checks
-computational consistency. Experimental construction and recovery require
-observations outside these bundles.
+compiler from the recorded inputs. This is replay. Recalculating the digests
+after changing an output file cannot make it valid: replay must reproduce every
+stored byte.
 
 Use `load_verified_bundle()` for a design,
 `load_verified_construction_bundle()` for a complete construction, and

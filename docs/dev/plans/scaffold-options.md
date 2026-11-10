@@ -2,15 +2,16 @@
 
 A user supplies a stem, intended product, permitted scaffold dimensions and
 method/material requirements. HOP returns complete molecular alternatives,
-then helps the user choose one preparation or a deliberate comparative set.
-The payoff is making product choice possible before the user must understand
-local witness identities or supply an already completed reference.
+then helps the user choose one preparation or a deliberate comparative set. Users
+can choose a product before learning local witness identifiers or supplying a
+completed reference.
 
-The public exploration, group discovery and explicit label retrieval are now
-implemented and verified: 1,989 tests pass, with 91.35% coverage and source/wheel
-parity for exploration, grouping and explicit retrieval. Existing execution,
+The public exploration, group discovery and explicit label retrieval were
+implemented and verified at delivery: 1,989 tests passed, with 91.35% coverage and
+source/wheel parity for exploration, grouping and explicit retrieval. Existing execution,
 continuation and matching behavior remains covered by regression tests. The [public construction example](../../../examples/complete-construction/README.md)
-supplies public inputs. No downstream study or private record is a dependency.
+supplies public inputs. The example runs
+independently of downstream studies and private records.
 
 ## Scope and delivery boundary
 
@@ -195,9 +196,8 @@ paths gave the same prefix pattern:
 | 8 | 7 | 4 | 9-bp closing extension |
 | 12 | 11 | 0 | Both 9-bp and 12-bp closing extensions |
 
-Selecting the first complete product for each loop count was rejected by current
-HOP admission: closing extension, non-loop sequence and regional contacts
-disagreed. Both full shared-background sets passed all declared controls for
+Selecting the first complete product for each loop count failed the set checks:
+closing extension, non-loop sequence and regional contacts disagreed. Both full shared-background sets passed all declared controls for
 each endpoint. All four sets were retrieved again after relocation with equal
 set identities and exact oligo/role-use specifications.
 

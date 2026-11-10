@@ -35,12 +35,7 @@ def render_construction_inspection(projection: CompleteConstructionTrajectoryPro
     if projection.source_partition_certificate is None:
         lines.append("Source-fragment removal: unresolved (no bound removal program)")
     else:
-        lines.extend(
-            [
-                "Source-fragment removal: specified and verified in the model",
-                "Cleanup recovery: not predicted",
-            ]
-        )
+        lines.append("Source-fragment removal: verified")
     lines.extend(
         [
             f"Endpoint: {reference.endpoint.value} · {reference.topology}",
@@ -53,8 +48,6 @@ def render_construction_inspection(projection: CompleteConstructionTrajectoryPro
             f"(5-prime to 3-prime) · {end.overhang_end.value.replace('_', '-')} overhang"
             for end in route.final_product.cohesive_ends
         )
-        lines.append("Destination compatibility: not evaluated")
     else:
         lines.append("Cohesive ends: not generated for this endpoint")
-    lines.append("Physical construction, QC, and biological activity: not recorded")
     return "\n".join(lines)

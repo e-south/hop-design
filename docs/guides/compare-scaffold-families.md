@@ -13,8 +13,14 @@ details or a complete reference, start with [explore scaffolds](explore-scaffold
 Start with the stem and the scaffold differences you want to investigate. HOP
 can execute a finite roster of loop lengths and loop-side paired extensions,
 then retrieve explicitly selected complete members as one comparative packet.
-Their sequences and preparations remain individual; a common shape does not
-make two products interchangeable.
+Each member retains its own sequence and preparation.
+
+The **scaffold** is the sequence and pairing around the supplied stem. A
+**family** names the variants you require, such as one member for each loop
+length. Its shared properties state what must agree across those members.
+A **preparation** adds exact source, adapter and primer specifications and the
+processing route for one member; matching scaffold dimensions alone do not
+establish matching sequences or preparations.
 
 Choose the product first. Both examples use the same public 34-base stem; each
 has an independently authored preparation.
@@ -27,14 +33,13 @@ has an independently authored preparation.
 Open `comparison/report.pdf`, then `comparison/report.md` for the selected
 preparations, order specifications and member/role uses. The report puts these
 actions before detailed search accounting. The direct hairpin family ends at the
-hairpin; it does not claim exposed cloning ends. In the insert example, AGTC/AGTC
-ends arise only after copying and release.
+hairpin. In the insert example, AGTC/AGTC ends arise only after copying and release.
 
 Both compare 3-, 4- and 5-nt loops at a 7-bp loop-side extension. They explicitly
 require unchanged non-loop regional sequences, region-local contacts and joins,
 and hairpin terminal chemistry while permitting derived source oligos and primers.
-These are selected-set admission requirements, not a promise that a search finds
-an admissible series. The insert example retains a rejected 6-bp/3-nt preparation:
+Complete members must satisfy these requirements before entering the selected
+set. The insert example retains a rejected 6-bp/3-nt preparation:
 its selected reverse primer requires 14 nt and the span supplies 13. The report
 shows an explicitly edited 7-bp alternative beside that outcome; it does not
 exclude every possible preparation of the failed geometry.
@@ -107,9 +112,9 @@ an exhausted local absence, a stopped unresolved search or multiple local
 choices. Every member retains its request, local coverage and scoped outcome.
 Only complete, shared-property-compatible choices enter `display_choices`.
 The shared reference is the first complete recorded choice, identified in the
-summary; it is not a scientific preference. If a local search has multiple
-witnesses, use [explicit continuation](../reference/cli.md#continue-explicit-local-choices)
-for that member and select its resulting complete authority yourself.
+summary. If a local search has multiple witnesses, use
+[explicit continuation](../reference/cli/construction-and-comparison-commands.md#continue-explicit-local-choices)
+for that member and select its resulting complete construction yourself.
 
 The family summary does not establish exhaustive scaffold coverage. A member's
 complete route can follow an existence search stopped at its first witness.
@@ -122,9 +127,8 @@ has a safe short `name`, a `bundle_path` and a result-bound `selection_path`.
 Paths are relative to that request file or absolute. `baseline` names the
 comparison reference; `shared_properties` must agree across all selected
 members, while `compared_properties` states what the author wants to compare.
-The latter is not a causal-isolation claim or a requirement that values differ.
-The report names that intended comparison before retrieval and distinguishes
-it from observed differences. A one-molecule selection is valid for retrieval,
+Values may agree or differ; the report separates the intended comparison from
+observed differences. A one-molecule selection is valid for retrieval,
 but between-member agreement remains unassessed. If a selection renames a family
 member, the report explicitly connects both names.
 
@@ -134,10 +138,10 @@ uv run --locked hop-design construction select-set build/scaffold-family/set.jso
 ```
 
 Every selection is replay-verified before publication. Duplicate exact
-selections, stale selections, missing authorities, mixed endpoints/stages or
+selections, stale selections, missing bundles, mixed endpoints/stages or
 false shared-property claims reject the entire packet. Same-shaped molecules
 with different sequences or chemistry retain their own identities. Publication
-is create-only and outside every input authority.
+is create-only and outside every input bundle.
 
 The output contains:
 
@@ -147,18 +151,15 @@ The output contains:
   operations, product dimensions and region-local contacts. Equal sequence
   and shifted coordinates are reported separately.
 - `oligos.csv`: one order row per exact sequence and terminal chemistry.
-- `oligo-uses.csv`: every member/role using each specification. Deduplication
-  does not imply pooled reactions, quantities or stock availability.
+- `oligo-uses.csv`: every member/role using each deduplicated order specification.
 - `set.json`: portable membership, reusable after moving the whole packet.
 
 In this loop series the loop sequence and count change. Recorded regional
 sequences outside the loop, regional contacts, joins, terminal chemistry and
 extension dimensions remain unchanged. Later coordinates shift. The source
-oligo and reverse primer change to make these products; these material changes
-do not imply additional sequence differences elsewhere in the hairpin.
-Biological effects remain untested. Read each preparation's unresolved removal, reaction and
-destination obligations before experimental use. The drawings depict recorded
-pairing architecture, not predicted physical conformation.
+oligo and reverse primer change to make these products. Read each preparation's
+unresolved removal, reaction and destination requirements before use. The drawings
+show the recorded pairing architecture.
 
 Python exposes the same workflow through `prepare_construction_family`,
 `execute_construction_family(..., continuation="sole-witness")` and
@@ -184,7 +185,7 @@ artifacts in `family/` are provenance; the report regenerates its reading surfac
 
 The selection and baseline are optional. With neither, the report shows all
 outcomes without choosing a design. `--baseline` explicitly chooses a comparison
-reference; it is not an optimum. Repeat `--edit SOURCE:TARGET` to describe an
+reference. Repeat `--edit SOURCE:TARGET` to describe an
 intentional request change. An edit does not alter either saved request, rerun
 search, select its target or identify a uniquely necessary repair. A failed
 continuation has no complete product for sequence comparison.
@@ -194,15 +195,14 @@ sequence changes from movement of half-open coordinates. A unique minimum-edit
 display alignment can highlight additions, removals and substitutions. Repeated
 bases can make that correspondence ambiguous; HOP then shows the sequences
 without inventing a changed position. Larger alignments retain exact sequences
-and an explicit unresolved comparison budget. Neither display establishes
-mutation history or a biological effect.
+and an explicit unresolved comparison budget.
 
-Verification replays the saved bounded local and complete authorities and
-reconciles them with the family request and selections. Rendering then performs
+Verification replays the saved local results and complete constructions,
+then reconciles them with the family request and selections. Rendering performs
 no new design search. Stale/foreign selections, modified geometry summaries,
-missing authorities and unsafe inventories reject before publication. Historical
+missing bundles and unsafe inventories reject before publication. Historical
 producer identity is retained separately from the current verifier/renderer and
-its library/font versions; recorded provenance is not a signed attestation.
+its library/font versions.
 
 To change requirements: edit a copy of `family.json`, run `prepare-family`, read
 effective domains/conflicts, run `execute-family` into a new directory, then

@@ -1,5 +1,10 @@
 # HOP Design engineering contracts
 
+A request states the permitted inputs and requirements. A local realization
+resolves one junction; a complete realization resolves materials and checks the
+combined route. A product records the exact molecule at a named processing
+stage. Bundles save these inputs and derived results for verification.
+
 ## Invariants
 
 - The payload is authored once; the paired payload is its DNA IUPAC reverse
@@ -27,9 +32,10 @@
   pair counts are distinct types.
 - Biophysical nouns are `FoldbackJunction` and `BasalJunction`. Processing-route
   names describe operations; historical migration terms are not schema aliases.
-- A design plan is a fully resolved, immutable derivation record. Construction
-  routes and method plans own their respective temporal molecular-state
-  histories. Every bundle is content-addressed and must verify before consumption.
+- A design plan is a fully resolved, immutable account of how its sequence
+  anatomy was derived. Construction routes and method plans record molecular
+  states in processing order. Every bundle has an identifier derived from its
+  contents and must verify before consumption.
 - Foldback pairing, basal pair classification, and strand-state projection are
   physical derivations. Caller selection thresholds, reserve acceptance, and
   application eligibility are separate explicit policy inputs.
@@ -62,10 +68,8 @@
   site in the exact source duplex. A candidate is accepted only when the
   declared length rule retains exactly the required strand spans. Auxiliary
   cleanup nicks remain route-level facts and never become basal geometry.
-- PCR handles, primer binding, and end release are endpoint-materialization
-  facts. Exact primer sequences may be checked for sequence binding, but no
-  thermodynamic feasibility claim exists without a separately declared model
-  and conditions.
+- Endpoint materialization resolves PCR handles, primer binding, and end
+  release. Primer checks compare exact sequences and declared binding spans.
 - In a PCR-bearing linear-source route, the complete retained source prefix,
   its derived reverse-complement source-return arm, the local basal pairing
   span, and the exact ligation adapter are distinct authorities. The adapter

@@ -233,8 +233,6 @@ def molecular_inspection_element(
         )
     lines.append(
         f'<text data-caption="true" x="28" y="{height - 24}" font-size="14">'
-        "Recorded strands and contacts; "
-        "schematic arrangement, not predicted conformation. "
         "Unmarked termini: OH; P: phosphate.</text></g></svg>"
     )
     root = _annotate_inspection_element(

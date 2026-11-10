@@ -25,7 +25,7 @@ stored API token. Build and GitHub publication jobs cannot publish to PyPI.
 
 1. Merge the version and documentation through a green pull request.
 2. Tag that exact main commit. This starts the release workflow.
-3. Confirm both the GitHub release and PyPI files before announcing availability.
+3. Confirm both the GitHub release and PyPI files.
 4. Test `uv tool install "hop-design==0.1.0a9"` outside the checkout. Confirm the
    installed version and the Python import before announcing availability.
 

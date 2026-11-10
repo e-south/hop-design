@@ -66,8 +66,8 @@ def render_molecular_atlas(
     notes_top = y
     y += 18  # The key returns its lower edge; the next text needs an ascent.
     notes = [
-        f'<text x="28" y="{y}" font-size="18">Recorded strands and contacts; '
-        "schematic arrangement, not predicted conformation.</text>"
+        f'<text x="28" y="{y}" font-size="18">'
+        "Strands and contacts through the processing route.</text>"
     ]
     y += 28
     if atlas.construction_cost:

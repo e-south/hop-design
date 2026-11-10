@@ -16,7 +16,7 @@ Load the other only for a repository defect or public-use verification.
 
 ## Verify changes
 Run targeted checks while editing, then use the scope in
-`docs/dev/performance.md#choose-the-verification-boundary`:
+`docs/dev/performance/verification.md#choose-the-verification-boundary`:
 
 - Molecular views, typography, layout or browser interaction only:
   `bash ./scripts/agent-verify --scope presentation` plus visual and molecular-inventory review.

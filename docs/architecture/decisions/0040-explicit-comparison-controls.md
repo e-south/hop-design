@@ -8,9 +8,9 @@ may disagree with the family and remains recorded, but is ineligible for its
 shared display. Set selection rejects a declared disagreement before publication;
 a report cannot use a weaker set request to bypass the family's requirements.
 
-The comparison and admission paths use one region-local fact derivation over the
-verified hairpin architecture. Non-loop sequences include all eight non-loop
-regions, including terminal tracts. Contacts retain primary-region offsets,
+Comparison and saved-result verification derive regional facts through the same
+function over the verified hairpin architecture. Non-loop sequences include all
+eight non-loop regions, including terminal tracts. Contacts retain primary-region offsets,
 literal bases and contact classes. Joins retain bond boundaries within all nine
 regions, including the loop. Each new property binds the hairpin stage. Absolute
 coordinate movement does not itself violate a regional control. Material roles
@@ -21,9 +21,9 @@ controls and their assessments. `hop.construction-family-report/v3` reports
 family-wide and selected-set assessments separately, each with its own reference
 and membership. Outcomes are required-and-verified, observed agreement,
 difference or not-assessed; differing and unassessed member lists remain explicit.
-A missing complete molecule cannot count as agreement. Requirements restrict
-admission, not the solver's coverage or discovery order. A requirement neither
-promises a matching family nor establishes biological equivalence.
+A missing complete molecule cannot count as agreement. Requirements reject
+incompatible selections; they do not change the solver's coverage or discovery
+order. A declared requirement may have no matching family in the evaluated pool.
 
 A single selected molecule has no between-member comparison: all agreement
 assessments are `not_assessed`, while achieved properties remain available.
@@ -51,6 +51,5 @@ failed preparation with its authored alternative. Recovery uses a separate
 decision view. Rendering consumes admitted facts and performs no new search.
 
 HOP owns these reusable contracts and renderers. Callers own the scientific
-comparison, participant tasks and any experimental observations. Neither a
-passing software test nor this presentation establishes unfamiliar-user success,
-physical recovery, reaction performance or destination compatibility.
+comparison, participant tasks, experimental observations, and destination
+checks. Unfamiliar-user evaluation remains separate from software verification.

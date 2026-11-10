@@ -67,16 +67,14 @@ def test_handoff_lists_external_oligos_and_preserves_molecular_authority(
     report = (output / "report.md").read_text()
     assert "Uses the caller&#x27;s available enzyme set." in report
     assert realization.design.payload_sequence in report
-    assert "not a ranking" in report
     assert "Unwanted-fragment removal is not verified" in report
-    assert "not an experimental protocol" in report
     assert "Source copying" in report
     assert "oligos.csv" in report and "oligos.fasta" in report
     for end in realization.final_product.cohesive_ends:
         assert end.sequence in report
         assert f"{end.product_end.capitalize()} cohesive end:" in report
     if endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
-        assert "Destination compatibility: not evaluated" in report
+        assert "Compare both oriented ends" in report
     inspected = CliRunner().invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
     assert inspected.exit_code == 0, inspected.output
     assert trajectory.inspection_text + "\n" == inspected.output
@@ -102,7 +100,7 @@ def test_handoff_requires_nonblank_selection_reason_before_writing(tmp_path: Pat
         trajectory.write(output, selection_reason=" \n ")
     assert not output.exists()
     output = trajectory.write(output)
-    assert "No selection preference was supplied" in (output / "report.md").read_text()
+    assert "The caller selected this route." in (output / "report.md").read_text()
 
     summary = construction.project_complete_construction_summary(receipt)
     with pytest.raises(ValueError, match="only applies to a selected trajectory"):
@@ -134,7 +132,7 @@ def test_handoff_explains_verified_fragment_removal_and_escapes_caller_text(tmp_
     assert "<script>" not in report and "[choice](link)" not in report
     assert "&lt;script&gt;" in report
     assert "Unwanted-fragment removal is not verified" not in report
-    assert "The bound fragment-removal rule is satisfied in the model" in report
+    assert "## Fragment selection" in report
     certificate = partition.realizations[0].fragment_certificate
     for disposition, label in (("required", "Retained"), ("sacrificial", "Unwanted")):
         lengths = ", ".join(
@@ -146,8 +144,7 @@ def test_handoff_explains_verified_fragment_removal_and_escapes_caller_text(tmp_
 
     inspected = CliRunner().invoke(app, ["construction", "inspect", str(bundle), "--ordinal", "0"])
     assert inspected.exit_code == 0, inspected.output
-    assert "Source-fragment removal: specified and verified in the model" in inspected.output
-    assert "Cleanup recovery: not predicted" in inspected.output
+    assert "Source-fragment removal: verified" in inspected.output
     assert "unresolved" not in inspected.output
     comparison = construction.compare_constructions(
         receipt,
@@ -187,9 +184,7 @@ def test_comparison_exposes_molecular_changes_without_replacing_authorities(tmp_
     assert "| Right cohesive end | changed | not generated | AAAA" in report
     assert "| Operation/enzyme order | changed |" in report
     assert "Composition coverage: left complete; right complete." in report
-    assert "does not describe upstream scaffold-generation coverage" in report
     assert "unresolved" in report
-    assert "not a ranking" in report
     assert left_id in report and right_id in report
     assert (
         construction.project_construction_trajectory(

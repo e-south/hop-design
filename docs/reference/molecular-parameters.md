@@ -1,6 +1,8 @@
 # Molecular parameter and teaching-glyph coverage
 
-The registry in `models/construction/variants/parameters.py` owns parameter names.
+The registry in `models/construction/variants/parameters.py` defines parameter names
+and how to interpret each measurement. It is the shared lookup used by the plot,
+molecular drawings and exported parameter guide.
 Its `ParameterDefinition` contract records molecular stage, units, role, drawing
 frame, representation, boundaries and dependencies. `canonical_key` identifies a
 single measurement across equivalent keys. `design_role` separates product
@@ -29,8 +31,8 @@ existing saved selection queries remain verifiable. This does not equate derived
 or correlated quantities: a loop word and its length, an annealing minimum and
 achieved contacts, or measurements at different molecular stages remain distinct.
 
-This specification covers the preparation-bound three-frame teaching key,
-primer-boundary explanations and exact measurement locations. The browser uses
+The three-frame teaching key locates measurements and explains primer boundaries
+for the selected preparation. The browser uses
 the same `teaching.svg` as the portable atlas and single-state inspection exports.
 The implementation state is recorded in the [roadmap](../dev/plans/roadmap.md#molecular-organization-of-conditional-exploration).
 
@@ -60,7 +62,7 @@ and requested footprint; it has no completed-product identity or later states.
 | `foldback_arm_bp` (`A`) | Supplied-stem boundary to loop boundary on both opposing arms. |
 | `join_offset_nt` (`D`) | Supplied-stem boundary to the recorded foldback join; preserve the covalent boundary. |
 | `self_paired_arm_bp` (`R`) | Join to loop boundary; `R = A − D`, not another independent degree of freedom. |
-| `loop_word`, `loop_nt` (`C`) | Literal, countable loop bases in strand direction; `C = length(loop word)`. A drawing radius is not a conformation prediction. |
+| `loop_word`, `loop_nt` (`C`) | Literal, countable loop bases in strand direction; `C = length(loop word)`. |
 | `loop_side_paired_bp` | Same measured span as A for this construction; show the equivalence rather than a second independent control. |
 | `open_side_paired_positions` | Recorded open-side contacts beyond the supplied stem. It is an achieved extent, distinct from an adapter minimum. |
 | `noncanonical_pairs` | Locate the relevant recorded contacts and their classes. Zero is an empty contact set, not an absent measurement. |
@@ -137,7 +139,48 @@ adapter minimum originally declared as 17 nt to 18 nt. The key labels the
 effective threshold and original requested value separately. Neither is inferred
 from the achieved contact count.
 
-The plot describes compatibility among complete preparations. The atlas describes
+The plot describes compatibility among complete preparations. The route describes
 processing chronology. Hover/focus locates a quantity and its dependencies;
 brushing filters recorded alternatives; selecting a complete path changes the
 preview. Camera movement changes neither the request nor preparation identity.
+
+## Compose a parameter figure
+
+Start with the choices and selection from the [discovery guide](../guides/discover-designs.md).
+
+Choose the displayed axes without filtering the preparation pool:
+`choices.figure(selection=selected, display_axes=("left_gap", "right_gap", "foldback_arm_bp", "loop_nt"))`.
+Use `choices.parameters(query=query)` or
+`hop-design design parameters designs --query query.json` to read a feature's
+meaning, active constraints and available operations. For example, loop size has
+permitted lengths. Self-paired arm length follows from the arm and join position.
+Left and right end gaps are revised together. A saved collection can be filtered,
+while permission changes belong to its discovery request. Reading this guide to
+the features does not run a search or verify preserved surroundings.
+
+Requested constant coordinates remain visible. Unavailable,
+inapplicable, repeated or noncanonical keys produce an error.
+
+`display-projection.json` records displayed and omitted axes. `choices.json` and
+`domains.csv` retain the complete coordinate data. Paths that coincide in the
+drawing retain all their preparation identities. This changes figure composition,
+not requirements, search or selection. It also applies to
+the linked trace of a selected similarity or family figure. The exact route and oligo
+handoff continue to use the same selection.
+For an export-only recipe, pass the recorded axes again. To keep that composition
+when reopening the browser or reproducing a figure, save it with the selection:
+
+```python
+# Save the axis order with this view for later inspection and export.
+view = choices.view(
+    selected,
+    presentation={
+        "landscape": "parameters",
+        "display_axes": ["left_gap", "right_gap", "foldback_arm_bp", "loop_nt"],
+    },
+)
+choices.figure(selection=view).write("compact-choice-figure")
+```
+
+The saved view retains the ordered axes. Browser hover, pinning and export use
+that same recipe. Older saved views retain their original display defaults.

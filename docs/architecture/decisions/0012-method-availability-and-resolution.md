@@ -2,7 +2,7 @@
 
 ## Context
 
-A hairpin sequence may be authoritative even when HOP cannot produce it through
+A hairpin sequence may be valid even when HOP cannot produce it through
 a particular method. Treating sequence validity, method support, and physical
 feasibility as one status would either reject real records or make a strict
 method permissive.

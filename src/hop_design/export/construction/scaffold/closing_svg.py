@@ -73,8 +73,6 @@ def render_closing_svg(
         [
             '<text x="20" y="190" font-size="13">5\u2032 upper arm → loop → lower '
             "arm 3\u2032</text>",
-            '<text x="20" y="211" font-size="12">Closing crop; nucleotide counts, '
-            "not a physical loop radius.</text>",
             "</g></svg>",
         ]
     )

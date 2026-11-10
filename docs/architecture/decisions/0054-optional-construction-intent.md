@@ -11,8 +11,9 @@ interface coverage is a different task from finding initial preparations.
 
 `ConstructionIntent` expresses a supplied stem, intended product and optional
 constraints. Resolution intersects that intent with a captured, versioned
-construction context and produces an existing strict request. The result records
-authored intent, effective permissions and their origin. Execution quotas remain
+construction context defining geometry, enzymes and material permissions, then
+produces an existing strict request. The result records authored intent, effective
+permissions and their origin. Execution quotas remain
 separate from molecular permissions.
 
 `DesignChoices` is the common query, selection, figure, atlas and retrieval

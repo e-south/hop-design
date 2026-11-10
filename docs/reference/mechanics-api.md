@@ -1,8 +1,9 @@
 # Molecular mechanics reference map
 
-HOP separates component evaluation, processing geometry, route composition,
-and caller policy. Choose the narrowest question; no single operation is a
-global hairpin optimizer or a complete laboratory method.
+Choose the operation for your question. Component evaluation inspects supplied
+pairing and spans; processing discovery finds compatible cuts and sequences;
+route composition checks whether selected local solutions work together.
+Supply the acceptance policy with the request.
 
 | Question | Public operation | Detailed reference |
 | --- | --- | --- |
@@ -11,7 +12,7 @@ global hairpin optimizer or a complete laboratory method.
 | Which nicking placement or exact precursor satisfies this selected geometry? | discovery placement and precursor searches | [Processing discovery](processing-discovery.md) |
 | Which basal arm pairs, processing geometries, and terminal routes compose? | bounded basal searches | [Processing discovery](processing-discovery.md#basal-searches) |
 | Which nick/release geometry can produce a released foldback, and can it join a basal route? | released-foldback searches | [Released-foldback routes](released-foldback-routes.md) |
-| Which exact complete routes, or which explicit endpoint-local selection, follow from strict local requests and a verified design? | `compile_construction`, `compile_construction_from_local_realizations`, and construction projections | [Python API](python-api.md#payload-centered-construction) |
+| Which exact complete routes, or which explicit endpoint-local selection, follow from strict local requests and a verified design? | `compile_construction`, `compile_construction_from_local_realizations`, and construction projections | [Python API](python-api/construction/routes.md#payload-centered-construction) |
 | How does a selected set of components become a verified encoding? | `check` and `compile` | [Compiler integration](component-evaluation.md#compiler-integration) |
 
 ## Public seams
@@ -28,8 +29,7 @@ global hairpin optimizer or a complete laboratory method.
 
 Every bounded search reports `complete`, `infeasible`, or `truncated`, with
 node and hit bounds kept independent. `canonical_ordinal` is presentation
-order, never an optimization score. Sequence-and-cut compatibility does not
-establish empirical cleavage efficiency or destination fitness.
+order, never an optimization score.
 
 For facade signatures, see the [Python API](python-api.md). For the language
 relationships that these operations enforce, see

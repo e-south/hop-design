@@ -100,7 +100,5 @@ def render_product_request(request: ProductRequest) -> str:
         "and complete-route verification. Local witnesses must be selected explicitly.",
         "Hairpin execution requires an explicit hairpin_basal_component; translation "
         "does not invent terminal sequence or borrow a downstream insert design.",
-        "Laboratory stock, enzyme prerequisites, primer suitability, fragment removal, "
-        "association, ligation and destination compatibility need separate evidence.",
     ]
     return "\n".join(lines) + "\n"

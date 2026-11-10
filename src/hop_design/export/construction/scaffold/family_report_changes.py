@@ -102,8 +102,7 @@ def comparison_pages(
             text(
                 25,
                 828,
-                "Molecular differences and preparation changes are distinct; "
-                "biological effects untested.",
+                "Molecular differences and preparation changes are listed separately.",
                 14,
             ),
             text(

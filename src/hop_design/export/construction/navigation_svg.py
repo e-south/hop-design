@@ -79,9 +79,7 @@ def render_navigation_projection_svg(
         f"Examined {accounting.examined_combinations} of {accounting.nominal_combinations} "
         f"combinations · {accounting.valid_realizations} accepted"
     )
-    evidence_boundary = (
-        "Digital route derivation was verified; physical construction was not recorded."
-    )
+    evidence_boundary = "Select a route to retrieve its exact materials and processing steps."
     body = f"""
 <g data-status="{summary.status.value}" data-endpoint="{summary.endpoint.value}"
 data-projection-id="{projection.projection_id}"

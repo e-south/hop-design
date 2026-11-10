@@ -17,9 +17,9 @@ the one-dimensional sequence, its SHA-256 digest, and the ordered nested
 features that exactly partition it. The bundle artifact is
 `hairpin-encoding.fasta`.
 
-`load_verified_bundle()` is the public persisted-consumer boundary. It returns
-the typed spec, plan, provenance, manifest, and immutable artifacts only after
-content verification and deterministic spec-to-plan replay.
+`load_verified_bundle()` is the public operation for reopening a saved bundle.
+It returns the typed spec, plan, provenance, manifest, and immutable artifacts
+only after content verification and deterministic spec-to-plan replay.
 
 There is no v1 reader, field alias, fallback artifact name, or compatibility
 shim. Alpha consumers must migrate deliberately.
@@ -28,8 +28,7 @@ shim. Alpha consumers must migrate deliberately.
 
 HOP can hand downstream systems one immutable annotated product without asking
 them to rederive foldback, paired-payload, stem-extension, or basal spans.
-`HairpinEncodingInsert` remains a sequence representation, not a physical
-duplex and not evidence of cloning readiness.
+`HairpinEncodingInsert` represents one annotated sequence.
 
 `HairpinPcrDuplex` is the distinct typed endpoint derived from explicit
 annealing, ligation, and PCR transitions. FASTA, feature, and GenBank exports

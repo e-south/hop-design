@@ -1,8 +1,10 @@
 # Compile payload anatomy
 
-For the ssDNA-to-hairpin service, start with the
-[construction journey](design-a-construction.md). This tutorial compiles sequence
-anatomy. It does not produce a processing route or an orderable construction.
+This tutorial turns a supplied payload into a hairpin sequence and feature map.
+The payload is the stem region you want to preserve: author one arm, and HOP
+derives its complementary arm. Here, **compilation** derives that sequence
+anatomy. To find the materials and processing steps that make it from ssDNA,
+start with the [construction journey](design-a-construction.md).
 
 [Install HOP](install.md), then compile one exact payload. The Python example uses a project environment. Examples that read files from
 `examples/` use a source checkout.
@@ -21,7 +23,7 @@ The command prints the design and saved-file identifiers. Open the output
 directory to inspect the sequence and feature files.
 
 The payload is a public 34-bp loxP reference. HOP preserves it and derives the
-paired arm. It does not model Cre activity. The
+paired arm. The
 [worked junction example](../../examples/basal-junction/README.md#source-definitions)
 records the sequence source.
 
@@ -75,8 +77,7 @@ compilation.write("build/symbolic-python")
 hop.verify_bundle("build/symbolic-python")
 ```
 
-This compiles hairpin anatomy with a derived complementary payload arm. It
-does not specify a construction procedure or establish experimental success.
+This compiles hairpin anatomy with a derived complementary payload arm.
 
 ## Continue
 

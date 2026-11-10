@@ -40,7 +40,7 @@ def render_construction_report(
     selection_reason: str | None,
     enzyme_names: tuple[tuple[str, str], ...] = (),
 ) -> bytes:
-    """Describe the chosen route without adding experimental or ranking claims."""
+    """Describe the selected route, materials, fragments and endpoint."""
     route = projection.realization
     preparation = route.source_preparation
     program = route.construction_program
@@ -54,7 +54,7 @@ def render_construction_report(
         }
     )
     reason = (
-        "No selection preference was supplied; the caller selected this route explicitly."
+        "The caller selected this route."
         if selection_reason is None
         else f"Caller-stated selection reason: {_text(selection_reason)}"
     )
@@ -70,7 +70,6 @@ def render_construction_report(
         f"Requested endpoint: {endpoint_label(endpoint.reference.endpoint)}.",
         "",
         reason,
-        "Enumeration order is not a ranking; this report does not establish an optimum.",
         "",
         "## Required oligonucleotides",
         "",
@@ -139,7 +138,7 @@ def render_construction_report(
             ]
             operation += f" ({'; then '.join(stages)})"
         lines.append(f"{index}. {operation} → {_state(states[transition.post_state_id])}.")
-    lines.extend(["", "## Preparation conditions", ""])
+    lines.extend(["", "## Fragment selection", ""])
     certificate = projection.source_partition_certificate
     if certificate is None:
         lines.append(
@@ -154,15 +153,8 @@ def render_construction_report(
                 if fragment.disposition.value == disposition
             )
             lines.append(f"{label} separated fragment lengths: {lengths} nt.")
-        lines.append(
-            "The bound fragment-removal rule is satisfied in the model. "
-            "It does not predict cleanup recovery."
-        )
     lines.extend(
         [
-            "This is a sequence-and-operation plan, not an experimental protocol. "
-            "Buffers, temperatures, reaction times, concentrations, yields, primer performance, "
-            "and physical recovery are not established by this report.",
             "",
             "## Expected endpoint",
             "",
@@ -178,7 +170,7 @@ def render_construction_report(
         )
     if endpoint.cohesive_ends:
         lines.append(
-            "Destination compatibility: not evaluated. Compare both oriented ends and "
+            "Compare both oriented ends and "
             "terminal chemistry with the intended receiving DNA before assembly."
         )
     lines.extend(

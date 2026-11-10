@@ -2,9 +2,10 @@
 
 HOP helps you specify a source ssDNA, its conversion into a hairpin, and, when
 requested, copying and cleavage into a duplex insert with defined sticky ends.
-The deliverable is a checked molecular route with exact oligos and expected
-products. Compatibility with receiving DNA and performance in the laboratory
-require separate evidence.
+The deliverable is a **preparation**: exact oligos and a checked **route**, the
+ordered molecular steps through the expected products. The **product** is the
+molecule at the endpoint you request; different preparations can make the same
+product.
 
 [Install HOP](install.md), then run the repository examples below from a
 [source checkout](install.md#work-from-source). The CLI and Python API share the
@@ -14,8 +15,10 @@ this walkthrough authors a more detailed product request.
 
 ## 1. Describe the product you need
 
-Author the payload once, 5′→3′. HOP derives its paired arm. Choose how far the
-route should proceed:
+The **payload** is the supplied stem region that must remain unchanged. Author
+one arm once, 5′→3′; HOP derives its paired arm. The source ssDNA contains this
+payload plus the surrounding sequence needed for construction. Choose how far
+the route should proceed:
 
 | Desired product | Request endpoint | Additional obligations |
 | --- | --- | --- |
@@ -23,10 +26,9 @@ route should proceed:
 | Copied hairpin duplex | `hairpin_pcr_duplex` | Adapter completion and endpoint primer bindings |
 | Released duplex with sticky ends | `clone_ready_duplex` | Declared cleavage agent and both exact oriented ends |
 
-The last schema label describes a destination-neutral restriction product.
-It does not establish that an insert can be cloned into a particular vector.
-Only request stages you need; an earlier endpoint must not inherit unnecessary
-primer or release requirements.
+The last schema label describes a destination-neutral restriction product;
+check its ends against your receiving DNA. Request only the stages you need,
+so each endpoint carries its required primers and release steps.
 
 For a released insert, specify the left and right words separately, each
 5′→3′ on its own protruding strand, together with 5′/3′ overhang polarity,
@@ -43,8 +45,10 @@ orientation and `payload_end_offset_bp`. The checked-in
 [public request](../../examples/complete-construction/product-request.json)
 is a runnable starting point.
 
-`foldback` and `basal` each group `geometry`, `enzymes` and `search` for that
-local job. `enzyme_catalog` is shared; each job keeps its own explicit allowed,
+The foldback region closes the loop end; the basal region handles the opposite,
+open-end junction. `foldback` and `basal` each group `geometry` (lengths and
+relative positions), `enzymes` and `search` for that local job.
+`enzyme_catalog` is shared; each job keeps its own explicit allowed,
 forbidden and reserved enzymes and role restrictions. `materialization` retains
 fixed/constrained/derived policies. `release.basal_projection` declares which
 product end is projected onto which local recognition material. The translator
@@ -59,8 +63,8 @@ This writes `intent.md`, the authored `request.json`, `construction.json`, and
 local `foldback.json`/`basal.json` inputs. It performs strict translation only;
 feasibility, actual products and material sequences remain unresolved. The
 complete example below runs discovery and explicitly continues its single
-budgeted witness. Editing one product field never silently edits a material or
-contact permission to force success.
+recorded local solution, called a witness, within the search budget. Editing one
+product field never silently edits a material or contact permission to force success.
 
 | Your decision | What HOP needs |
 | --- | --- |
@@ -73,10 +77,10 @@ contact permission to force success.
 | How far should the search go? | Finite sequence/geometry domains and execution bounds |
 
 `fixed` means keep the exact material; `constrain` allows completion within
-stated restrictions; `derive` authorizes the supported derivation. Neither mode
-means “pick something that works experimentally.” HOP does not silently change
-end words, relax pairing rules, choose reusable handles, or rank primers by
-unmodeled thermodynamics. The [construction guide](compile-construction.md)
+stated restrictions; `derive` authorizes the supported derivation. HOP preserves
+end words, pairing rules and fixed handles throughout completion. Declare reusable
+handles explicitly. The
+[construction guide](compile-construction.md)
 contains the full input contract and supported material policies.
 
 Two end words can be entered independently while their realization remains
@@ -87,8 +91,8 @@ Changing a permitted contact or material creates a new request to evaluate.
 
 ## 3. Obtain a preparation and adapt its ends
 
-To execute your authored request directly, explicitly permit continuation of
-the sole recorded witness from each bounded local search:
+To execute your authored request directly, permit HOP to combine and check the
+sole recorded witness from each bounded local search:
 
 ```bash
 # Execute the request to obtain complete preparations.
@@ -136,7 +140,7 @@ It uses the public 34-base loxP arm and characterized cleavage actions. Read
 `oligos.csv` and `projection.svg`. The example provides a separate hairpin
 endpoint, a released insert with two authored ends, a fixed-source rejection,
 and an explicit successful redesign. Each case retains its complete request
-and verified construction authority. The producer content digest identifies
+and verified construction result. The producer content digest identifies
 capabilities more precisely than the package version alone.
 
 When more than one witness is recorded, inspect `construction local-choices`
@@ -154,13 +158,11 @@ The original request supplies the terminal arms and material policies, so they
 need not be retyped. Mismatched local requests or selections fail before output.
 The lower-level compilation interfaces also remain available.
 
-The hairpin preparation explicitly shortens a
-primer to fit its non-payload context;
-these primer lengths are not laboratory recommendations. Read the example's
-coverage and experimental limits before adapting it.
+The hairpin preparation explicitly shortens a primer to fit its non-payload
+context. Read the example's request and coverage before adapting it.
 
 Use a new output directory for each run. An ordinal identifies canonical replay
-order within that exact result; it is not a recommendation. Persist a selected
+order within that exact result. Persist a selected
 route with `construction select ... --ordinal 0 --out selected-route.json`.
 The [construction guide](compile-construction.md) covers the complete contracts.
 The [local loxP survey](../../examples/basal-junction/README.md) answers a different
@@ -223,12 +225,12 @@ trajectory JSON. A PCR-only endpoint has no released ends and rejects this query
 | Rejected combination | Read its recorded rejection reason before changing a constraint |
 | Infeasible bounded search | No solution in that declared, exhausted problem; not proof against every route |
 | Truncated search | Unexamined alternatives remain; an accepted witness may still be usable |
-| Invalid input or corrupt bundle | Correct the input or restore the authority; do not treat it as biological infeasibility |
+| Invalid input or corrupt bundle | Correct the input or restore the verified bundle |
 
 Use `construction compare` for two explicitly selected routes after changing a
 requirement. Source reuse, required oligo count, input length, and retained
 non-payload DNA are different properties. A shorter source is not necessarily
-a smaller final insert. Enumeration order is not a recommendation.
+a smaller final insert.
 
 The [mental model](../start/mental-model.md), [terms](../language/ontology.md),
 and [search interpretation](../discovery/overview.md) explain these distinctions.
@@ -238,8 +240,8 @@ and [search interpretation](../discovery/overview.md) explain these distinctions
 Use `construction prepare edited-request.json --compare-to original-request.json
 --out build/edited-preview` to inspect both requested ends, the source contact
 footprint, expanded pairing permissions and the authored minimum adapter
-association. The report and `preview.json` show changes without predicting
-feasibility. `request.json` preserves the exact edited intent.
+association. The report and `preview.json` show the requested changes before
+search. `request.json` preserves the exact edited intent.
 
 For the supported single bottom-strand nick and right-end projection,
 `basal.end_footprint_pairing` can be authored as:

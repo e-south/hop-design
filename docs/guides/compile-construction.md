@@ -5,9 +5,15 @@ junctions can be completed into the requested hairpin or duplex. A construction
 result includes required material sequences, processing steps, and reasons
 why a proposed combination cannot satisfy the request.
 
+The payload is the supplied stem region to preserve. The foldback junction
+closes its loop end; the basal junction lies at the opposite, open end. Local
+search checks each junction separately. Complete construction combines them
+with the source oligo, adapters and primers and checks the ordered steps through
+the requested product.
+
 This lower-level search and compilation path uses `hop_design.construction`.
 The CLI also supports product-first discovery and comparison execution through
-the linked user guides, and inspects the saved authorities shown here.
+the linked user guides, and inspects the saved results shown here.
 Run the repository examples from a [source checkout](install.md#work-from-source).
 For the older `0.1.0a8` package, use its
 [tagged documentation](https://github.com/e-south/hop-design/tree/v0.1.0a8).
@@ -33,7 +39,7 @@ not a completed hairpin route: adapter completion, primers, and the rest of
 the source must still satisfy the requested endpoint.
 
 To interpret a collection of local searches, see the
-[bounded-neighborhood teaching example](../reference/view-contracts.md#teaching-example-two-bounded-local-neighborhoods).
+[bounded-neighborhood teaching example](../reference/view-contracts/component-and-local-views.md#teaching-example-two-bounded-local-neighborhoods).
 It separates search coordinates, physical measurements, local existence, and
 exhaustive alternative coverage before choosing an exemplar.
 
@@ -50,15 +56,14 @@ Inspection leads with the achieved product and paired flank distances, then
 exact materials and preparation conditions. It shows whether source-fragment
 removal is specified and reports the
 actual released ends, each read 5′→3′ on its protruding strand. Compare both
-ends with any required interface; a sequence match alone is not a check of
-destination compatibility or laboratory performance.
+ends with the required destination interface, including polarity and orientation.
 `--full-ids` reveals complete identities and group keys. For a durable reference,
 `construction select CONSTRUCTION_BUNDLE --ordinal ROUTE_NUMBER --out selected.json`
 stores the full result and realization identities, not the display number.
 
-For complete construction, [define the inputs](#prepare-the-two-authorities),
+For complete construction, [define the inputs](#prepare-the-inputs),
 [select local alternatives](#derive-a-design-from-selected-local-alternatives),
-then [compile](#compile-and-write-the-authority) and
+then [compile](#compile-and-save-the-construction) and
 [inspect the result](#reopen-and-project). Checkpointing below is optional for
 collections of independent queries; it is not required to compile one route.
 
@@ -97,9 +102,8 @@ report = construction.compare_constructions(
 print(report)
 ```
 
-“Same” applies to the displayed property, not to every molecular interaction or
-experimental performance. Processing-order equality does not establish equal
-cut or binding coordinates; inspect either route for those details. A selected
+“Same” applies to the displayed property. Inspect cut and binding coordinates
+separately from processing order. A selected
 route can be resolved even when its originating search is truncated. The
 reported coverage belongs to the composition result; it does not describe a
 separate upstream scaffold-generation search. Comparison introduces no
@@ -112,7 +116,7 @@ basal and optional source-partition receipts to one explicit design. This is the
 advanced selection path; product-first discovery performs complete continuation
 before asking for a preparation choice.
 
-## Prepare the two authorities
+## Prepare the inputs
 
 Compilation takes a strict construction-source file and a separately verified
 design bundle. The [source and material-policy reference](../reference/construction-source.md)
@@ -120,7 +124,7 @@ defines the exact schema, endpoint obligations, source completion, adapter
 pairing, primers and release constraints. Keep the design bundle outside the
 source document; HOP verifies their agreement during compilation.
 
-## Compile and write the authority
+## Compile and save the construction
 
 ```python
 # Compile the request against its verified design and save the construction.
@@ -141,10 +145,11 @@ print(compilation.examined_combinations, compilation.nominal_combinations)
 bundle_path = compilation.write(Path("construction-bundle"))
 ```
 
-The returned `ConstructionCompilation` is an opaque receipt. It exposes scalar
-identity and exact accounting, not mutable result or manifest models. Writing
-is atomic and create-only: an existing destination is rejected, and a failed
-write leaves no committed bundle.
+The returned `ConstructionCompilation` is a receipt with identifiers and counts
+for the examined and accepted combinations. Use its public properties rather
+than constructing or editing its internal records. Writing is atomic and
+create-only: an existing destination is rejected, and a failed write leaves no
+committed bundle.
 
 `status` has exact discovery meaning:
 
@@ -180,13 +185,15 @@ def write_selected_trajectory(*, realization_id: str) -> None:
     )
 ```
 
-The summary preserves every examined composition disposition and lossless
-grouping. A trajectory requires an explicitly supplied accepted realization
-identity; HOP does not choose an exemplar. Foldback and basal feasibility plus
-their retained-overhead frontiers are available through the corresponding projection
-operations. A basal projection rejects a construction with no basal authority.
+The summary records whether each examined combination was accepted, rejected or
+truncated, and keeps every member of its groups. A **trajectory** shows one accepted
+preparation's materials and molecular states in processing order. Supply its
+accepted realization identity explicitly; HOP does not choose an example.
+Separate foldback and basal projections report local feasibility and
+retained-overhead frontiers: counts and coverage at each retained construction
+length. A basal projection requires a construction with a basal result.
 
-The same verified authority is navigable without importing Python:
+Navigate the same verified result through the CLI:
 
 ```bash
 # Read the saved construction summary.
@@ -201,18 +208,18 @@ uv run --locked hop-design construction inspect construction-bundle \
 ```
 
 Listing defaults to accepted routes grouped by achieved geometry in canonical
-replay order. Explicit filters and sorts do not change the result authority.
+replay order. Explicit filters and sorts change only the displayed rows.
 `--limit` bounds displayed rows only; verified search status, accounting, and
 membership remain intact. Canonical ordinal is not a rank. A selection is a
 create-only reference bound to the verified source result and one accepted
-materialized realization; it neither removes alternatives nor endorses a route.
-See the [CLI reference](../reference/cli.md#construction-navigation) for the
+materialized realization, preserving the remaining alternatives.
+See the [CLI reference](../reference/cli/construction-and-comparison-commands.md#construction-navigation) for the
 complete option contract.
 
 Each `ConstructionProjection` contains canonical JSON, deterministic SVG, and
 CSV when the projection defines a table. Projection directories are also
-atomic and create-only. They are reversible, non-authoritative views over the
-verified construction result; they do not replace the bundle.
+atomic and create-only. Keep the verified construction bundle to regenerate
+these views.
 
 A selected trajectory also exposes `trajectory.inspection_text`, the concise
 text used by `construction inspect`. Other projection kinds reject this property.
@@ -241,7 +248,7 @@ this focused view does not yet traverse them or propose a repair.
 For a selected trajectory, start with `report.md`. It summarizes the payload,
 endpoint, caller-stated selection reason, retained sequence, enzymes, molecular
 steps, and unresolved preparation conditions. `oligos.csv` lists each distinct
-external oligo with its roles, sequence, length, and required end chemistry;
+external oligo with its roles, sequence, length, and required end chemistry.
 The route list counts distinct auxiliary oligos, excluding the source oligo;
 `--sort auxiliary-count` uses that same count. Reusing an identical sequence
 with identical terminal chemistry in several roles does not add another oligo.
@@ -249,10 +256,9 @@ with identical terminal chemistry in several roles does not add another oligo.
 FASTA does not encode modifications. Produced duplexes are not extra orders.
 The exact `projection.json` and `projection.svg` remain available for inspection.
 
-The optional reason is explanatory text, not a verified preference or a score;
-it does not change the result or selection identity. Without it, the report says
-no preference was supplied. A blank reason is rejected. This handoff specifies
-sequences and operations, not reaction conditions, yields, or experimental success.
+The optional reason records why you selected the route while preserving result
+and selection identities. Without it, the report records that the caller selected the route.
+A blank reason is rejected.
 
 ## Checkpoint independent local queries
 
@@ -260,18 +266,10 @@ sequences and operations, not reaction conditions, yields, or experimental succe
 local requests. This optional path preserves completed queries and verifies their
 producer on resumption; it does not resume within a partly evaluated local query.
 
-## Claim boundary
-
-Successful compilation establishes deterministic local discovery,
-whole-route composition, endpoint materialization, design-encoding agreement,
-and portable replay under the declared molecular model. It does not establish
-laboratory construction, destination compatibility, QC, activity, yield,
-empirical enzyme performance, or an optimized route.
-
 See the [construction bundle layout](../reference/construction-bundle-layout.md),
-[Python API](../reference/python-api.md#payload-centered-construction), and
+[Python API](../reference/python-api/construction/routes.md#payload-centered-construction), and
 [provenance contract](../provenance/overview.md).
 
-The independently requested `adapter_ligated_hairpin` endpoint requires basal
-authority and `materialization.adapter_ligation`, and excludes downstream PCR
+The independently requested `adapter_ligated_hairpin` endpoint requires a basal
+result and `materialization.adapter_ligation`, and excludes downstream PCR
 auxiliaries and release. See [the product-first comparison workflow](specify-a-comparison.md#obtain-a-hairpin-itself).

@@ -30,13 +30,12 @@ foldback geometry constrain target generation; each exact target carries one
 `loop_sequence`. The placement domain intersects those bases before enumeration,
 and molecular replay verifies the resulting word. Omitted optional fields retain
 old serializations. V2 required members can select exact loop words, separately
-from permitted geometry and sequence domains. This does not predict folding,
-reaction performance or biological response.
+from permitted geometry and sequence domains.
 
 Export modules compose group rows and preparation-method columns from verified
-portraits and product stages. The sheet is a projection, never a second admission
-engine. A boundary sheet identifies unassigned options without claiming a common
-product or inventing a completed failed molecule. Shared molecular-location
+portraits and product stages. The sheet displays these facts; it does not decide
+whether a preparation is valid. A boundary sheet identifies unassigned options
+without claiming a common product or inventing a completed failed molecule. Shared molecular-location
 diagnostic text belongs to `export/construction/handoff`; request, discovery and
 comparison presentations reuse that formatter.
 

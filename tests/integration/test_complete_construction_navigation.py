@@ -167,7 +167,6 @@ def test_navigation_adds_route_facts_without_resealing_or_repeating_summary(
     assert "loop 3 nt" in svg
     assert "data-foldback-retained-overhead-nt" in svg
     assert "data-basal-retained-overhead-nt" in svg
-    assert "physical construction was not recorded" in svg
     assert "dashboard" not in svg.lower()
     assert "rank" not in svg.lower()
 

@@ -17,7 +17,7 @@ A fixed payload still permits many construction sequences. This example derives
 local lengths from geometry, enumerates those possibilities under explicit
 budgets, and retains the exact HOP results. It reuses the public loxP payload
 and characterized enzymes in the [basal-junction example](../basal-junction/README.md).
-Its small catalog is a stated teaching context, not a claim about all enzymes.
+The results cover only the supplied teaching catalog.
 
 From the repository root:
 
@@ -28,9 +28,8 @@ uv run python examples/local-envelope/search.py \
 
 The command writes `summary.csv`, `summary.json`, and ten independently
 replayable request/result pairs. The small example exhausts its scope. It finds
-basal solutions but no foldback solution in this catalog and envelope. A
-zero after complete search has meaning; choosing different constraints solely
-to make every panel colorful would erase that lesson.
+basal solutions but no foldback solution in this catalog and envelope. Retain
+both results when comparing or plotting the searched domain.
 
 ## What varies
 
@@ -41,16 +40,15 @@ relevant interval is `W=max(1,e+k-n)`. This example searches all n/e pairs whose
 local span `L=n+W=max(n+1,e+k)` fits the supplied basal budget, both nick
 strands, and both release orientations. It preserves the input end domain;
 the supplied request asks for every four-base 5′ end. The full association
-requirement is explicitly null. Neither L nor W is a complete adapter length
-or a thermodynamic stability rule.
+requirement is explicitly null. L and W measure the local contact geometry;
+complete adapter length is resolved later.
 
-Foldback coordinates are added paired arm **A**, unpaired cap **C**, and
+Foldback coordinates are added paired arm **A**, unpaired turn **C**, and
 displacement **D**. This example searches every supported integer A/C pair
 under retained non-payload path `H=2A+C`, and D from zero through A. The
 post-nick self-paired arm **R=A-D** is derived. The current model starts at
-A=3 bp and C=3 nt; these are model floors, not experimentally established
-universal minima. All allowed nicking enzymes from the supplied catalog are
-eligible for the foldback role.
+A=3 bp and C=3 nt, the current model floors. All allowed nicking enzymes from
+the supplied catalog are eligible for the foldback role.
 
 The two budgets measure different objects. H counts retained nucleotides;
 the basal budget bounds a local source-coordinate interval. Neither measures
@@ -62,22 +60,23 @@ offsets. Recognition length is not automatically extra construction cost.
 
 Choose an increasing sequence of budgets before examining the outcome. Pass
 each pair to the same command with a fresh output directory. The supplied
-4/10 pair is a fast computational exercise, not a recommended biological
-length. Larger budgets include more possibilities and can take much longer.
+4/10 pair keeps the example small. Larger budgets include more possibilities
+and can take much longer.
 The input request's node and realization limits still apply; this script does
 not silently raise them or resume a partially completed invocation.
 
-`observed_witness_count` counts returned HOP realizations. For a truncated
-query it is only a lower bound. It is not a count of distinct projected
-sequences, a survival fraction, or a laboratory success probability. A plot
-must state its counted object, aggregate hidden dimensions explicitly, and
-deduplicate equivalent witnesses before claiming a sequence-state count.
-Do not divide witnesses by `4^length`: paired positions, latent geometry, and
-action aliases make that comparison invalid without a matching identity.
+`observed_witness_count` counts returned HOP realizations: exact local sequences
+and processing solutions. For a truncated query it is only a lower bound. To count distinct projected sequences, aggregate
+the other searched choices explicitly and deduplicate equivalent witnesses.
+State the counted object on the plot.
+Do not divide witnesses by `4^length`: pairing dependencies, different geometry
+choices and equivalent enzyme actions can change the number of witnesses for
+one sequence. Define a matching counted population before using a denominator.
 
 Two-dimensional n/e and A/C plots can summarize these results. Each point
-represents all explicitly searched hidden choices, not one sequence. Keep
-unfinished search, exhausted absence, and outside-budget geometry distinct.
+represents all other choices explicitly included in that search, not one
+sequence. Keep unfinished search, exhausted absence, and outside-budget
+geometry distinct.
 If every point has a solution, binary dots are uninformative; inspect exact
 counts or another scientifically defined quantity rather than inventing a
 cutoff. Selection happens after enumeration and requires a named caller rule.
@@ -85,9 +84,10 @@ cutoff. Selection happens after enumeration and requires a named caller rule.
 For exact populations without generating every detailed witness, use the public
 [basal](../../docs/guides/basal-sequence-space.md) and
 [foldback](../../docs/guides/foldback-sequence-space.md) sequence-space operations.
-They preserve exact admitted sets and recover selected molecular examples.
-Basal admission checks the complete source before removing outside context from
-the counted local window. End optionality can use those same admitted words.
+They preserve the exact sets of sequences that pass the local molecular checks
+and recover selected molecular examples. Basal checks use the complete source
+before counting only the local window. End alternatives can use those same
+accepted sequences.
 
 The script accepts an unpartitioned basal request with source-duplex recognition
 and a right 5′ endpoint. It rejects other coordinate conventions before writing
@@ -101,7 +101,5 @@ An end union across those sources is not a claim that one fixed source can
 produce every end. A positional N pattern is valid only when its Cartesian
 product exactly equals the observed set; correlated sets need exact identities.
 
-Local admission leaves full association, materials, complete composition, and
-experimental performance unresolved. Use the
-[construction guide](../../docs/guides/compile-construction.md) when those
-obligations become the research question.
+Use the [construction guide](../../docs/guides/compile-construction.md) to resolve
+full association, materials, and complete composition from the local results.

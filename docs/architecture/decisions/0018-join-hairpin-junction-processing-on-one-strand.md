@@ -13,7 +13,7 @@ preserve the same continuous molecular strand.
 Combining the results by agent name would be insufficient. Two end processes
 can use different release agents, while two routes that happen to name the same
 agent can still retain opposite strands. Re-enumerating either upstream search
-would also create a second authority for candidate identity and completeness.
+would also duplicate candidate identity and completeness accounting.
 
 ## Decision
 
@@ -38,8 +38,8 @@ prefer a one-enzyme or multi-enzyme route.
 
 The result reports upstream precursor and basal-route incompleteness separately
 from its own node and hit budgets. `complete` describes exhaustive evaluation
-of the available upstream cross-product; it does not mean that a wet-lab method
-or destination assembly has been selected.
+of the available upstream cross-product. Method and
+destination-assembly selection remain separate operations.
 
 ADR 0023 later moved this operation and its public contracts from the package
 root to `hop_design.discovery`; the molecular decision is unchanged.
@@ -53,7 +53,6 @@ The two hairpin-junction processing surfaces now share one explicit molecular
 continuity contract. Callers can compare or filter enzyme sets after receiving
 physically coherent routes without changing HOP identity or order.
 
-This result does not choose a payload, construct a full source molecule,
-resolve method materials, prove a complete production method, or claim
-destination readiness. Live-catalog candidate parity, routed QA views, and
-downstream cutover remain separate gates.
+Payload selection, full-source construction, method-material resolution, and
+destination checks remain separate operations. Live-catalog candidate parity,
+routed QA views, and downstream cutover remain separate gates.

@@ -1,7 +1,10 @@
 # Provenance and verification
 
-HOP uses “provenance and verification” for derivation claims. Experimental
-observations and biological interpretation remain outside HOP.
+HOP saves each bundle's inputs, derived results and content-based identifiers.
+Verification reruns the derivation and compares the result with the saved files;
+this is **replay**. A **digest** is a fingerprint calculated from content, used
+to detect changes or compare exact sequences. Callers retain observations and
+biological interpretation in their own records.
 
 ## Three bundle authorities
 
@@ -14,11 +17,12 @@ ConstructionSource + verified HopBundle
 MethodRequest -> molecular states -> RestrictionDigestProduct -> MethodBundle
 ```
 
-Each bundle has its own identity and replay claim. The construction bundle
-embeds the complete verified design bundle used during composition; it does not
-reconstruct or rename that design authority. The method bundle remains a
-sibling authority for one named method request and does not become construction
-evidence merely because an encoding digest agrees.
+Each bundle has its own identifier and derivation to verify. It is the
+**authority** for the result it records. The construction bundle embeds the
+complete verified design bundle used during composition, preserving that
+design's identity and files. The method bundle independently records one named
+method request. Matching an encoding digest links the sequence described by the
+two bundles; it does not supply the complete-construction checks.
 
 ## The construction handoff
 
@@ -34,15 +38,16 @@ bundle_path = compiled.write("construction")
 verified = construction.load_verified_construction_bundle(bundle_path)
 ```
 
-The loader checks the root inventory and digests, replays the embedded design,
-replays each local authority, recomposes the complete route, and requires the
-expected result, artifacts, and root manifest to match. Opaque public receipts
-expose identity and accounting without making raw replay models public.
+The loader checks the file inventory and digests, replays the embedded design
+and each local result, recomposes the complete route, and requires the expected
+result, output files and root manifest to match. It returns a verified receipt:
+an API object that exposes identifiers and result counts while keeping the
+internal replay models private.
 
 ## The design-method handoff
 
-A method product can project the one-dimensional hairpin encoding that it
-physically realizes. Run the matched public example from a contributor
+A method product can report the one-dimensional hairpin encoding contained in
+its modeled strands. Run the matched public example from a contributor
 checkout:
 
 ```bash
@@ -53,8 +58,8 @@ uv run python examples/verify_design_method_handoff.py \
 
 The example compiles the [matched design fixture](../../examples/linear-source-matched-design.yaml)
 and the existing public method request, writes each sibling bundle independently,
-and reloads each through its semantic verifier. The consuming application then
-checks exact digest equality:
+and reloads each through its semantic verifier, which reruns its derivation.
+The consuming application then checks exact digest equality:
 
 ```python
 # Verify both bundles before comparing their sequence digests.
@@ -73,25 +78,21 @@ assert design_digest == method_digest == projection_digest
 ```
 
 The command prints both verification statuses, both bundle identifiers, and the
-three equal digests as JSON. The fixtures are a synthetic contract demonstration,
-not a protocol or biological recommendation. The loaders replay each bundle
-independently. They do not infer a relationship between sibling bundles; the
-consumer owns and records this equality check.
+three equal digests as JSON. The fixtures use synthetic inputs. The loaders
+replay each bundle independently; the consumer records the digest equality that
+links them.
 
 ## What verification establishes
 
 - every manifest entry matches its bytes;
 - strict schemas reject unknown or retired fields;
-- derived artifacts replay from their authoritative inputs;
+- derived output files are reproduced from their recorded inputs;
 - feature partitions, spans, sequences, and digests agree;
 - method states preserve cut, fragment, bond, and per-base lineage;
 - construction results preserve local authority membership, reaction
   assessment, examined composition dispositions, exact endpoint products,
   rejection reasons, and reversible grouping;
 - each bundle is internally replayable and digest-consistent.
-
-Verification does not establish destination compatibility, protocol yield, or
-experimental success.
 
 See [plans, artifacts, and bundles](plans-artifacts-and-bundles.md), the
 [design-bundle layout](../reference/bundle-layout.md), and the

@@ -9,6 +9,12 @@ choices for complete preparations. Select a matching path to see the entire
 processing route and retrieve its source, adapter and primers. The requested
 sticky ends belong to the released duplex insert.
 
+The supplied **stem**, or payload, is the paired region to preserve. The
+foldback region closes its loop end; the basal region handles the open-end
+junction. A complete **preparation** combines both local solutions with exact
+materials and the ordered steps needed to obtain the insert. Local support at
+each junction is only part of that check.
+
 ## 1. State your stem, ends and permissions
 
 After [installing HOP](install.md), copy the
@@ -37,7 +43,7 @@ For all four-base pairs, use `targets: {}`: 256 words per side, or 65,536 ordere
 pairs. Length bounds cap acceptable scaffold additions; execution limits control
 how much of that coupled space HOP examines.
 
-The [request reference](../reference/interface-survey-search.md#declare-the-molecular-domain)
+The [request reference](../reference/interface-survey-search/molecular-domain-and-completion.md#declare-the-molecular-domain)
 defines every field, including primer policies, joint placements and recognition
 requirements. This survey accepts an exact stem. For a hairpin endpoint or other
 scaffold requests, use [scaffold discovery](discover-product-scaffolds.md).
@@ -51,9 +57,15 @@ uv run --locked hop-design construction survey evaluate survey.json --index surv
   --release-site-pairs 1000
 ```
 
-The command creates a checkpoint and reports supported, excluded, unresolved and
-unexamined pairs. A supported pair has a complete modeled preparation. An unresolved
-pair needs more evaluation; it is not a finding of impossibility.
+The command creates a checkpoint and reports four kinds of end pair:
+
+- **Supported:** at least one complete modeled preparation was found.
+- **Excluded:** the pair has been ruled out within the declared context.
+- **Unresolved:** it was examined but still needs evaluation.
+- **Unexamined:** evaluation has not yet reached it.
+
+Keep these statuses separate: a pair with no preparation yet is not necessarily
+excluded.
 
 With the unedited example, AGTC/AGTC completes and AGTC/AACC is excluded under its
 fixed permissions. To practice the successful handoff below, use AGTC for the
@@ -63,7 +75,7 @@ geometry and material permissions you can accept.
 Repeat the command with `--resume` to continue. Keep the request, HOP build and
 per-evaluation limits unchanged; `--max-evaluations` sets the additional work for
 that invocation. A changed molecular request needs a new checkpoint. See
-[search limits and recovery](../reference/interface-survey-search.md#evaluate-and-resume)
+[search limits and recovery](../reference/interface-survey-search/execution-and-coverage.md#evaluate-and-resume)
 for resource stops and larger surveys.
 
 ## 3. Explore the same results visually or programmatically
@@ -164,8 +176,7 @@ Use a new output directory for each export.
 | `selected-preparation/preparation/report.md` | Preparation details and conditions still to assess |
 
 Print the atlas at native page size to keep every base readable. Atlas inspection
-and retrieval replay the selected preparation. Destination compatibility,
-fragment recovery and reaction performance still require experimental assessment.
+and retrieval replay the selected preparation.
 
 ## Use the same query and selection in Python
 
@@ -185,7 +196,7 @@ Path("selected.json").write_text(json.dumps(selected, indent=2) + "\n")
 
 The saved selection works with the CLI commands above. With no match, `sample`
 raises before writing it. Retain `pool` for repeated fast queries; load it again
-to include newly evaluated results. The [API reference](../reference/python-api.md#interface-surveys)
+to include newly evaluated results. The [API reference](../reference/python-api/discovery.md#interface-surveys)
 also covers explicit selection, atlas inspection and retrieval.
 
 ## Verify or compare a result
@@ -203,4 +214,4 @@ materials across the route. Ambiguous base correspondence remains marked.
 
 For detailed [coverage and search semantics](../reference/interface-survey-search.md),
 [query and selection behavior](../reference/interface-survey-results.md), or
-[CLI options](../reference/cli.md#complete-scaffold-options), follow the linked references.
+[CLI options](../reference/cli/construction-and-comparison-commands.md#complete-scaffold-options), follow the linked references.

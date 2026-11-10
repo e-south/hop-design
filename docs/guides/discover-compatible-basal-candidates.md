@@ -1,9 +1,8 @@
 # Discover compatible basal candidates
 
-Use this search when the question is “which exact basal arm pairs satisfy these
-declared domains and pairing policy?” It enumerates candidates; it does not
-resolve processing or cut geometry, and it does not choose which candidate
-should be tested.
+Enumerate exact basal arm pairs that satisfy the declared domains and pairing
+policy. To resolve processing and cut geometry, continue with
+[construction compilation](compile-construction.md).
 
 Run the public example from a contributor checkout:
 
@@ -37,7 +36,7 @@ Interpret the result by status:
   justified.
 
 Every hit has a content-derived `candidate_id` and a `canonical_ordinal`. The
-ordinal provides reproducible presentation order, not biological preference.
+ordinal provides reproducible presentation order.
 Record any caller selection separately with its objective and chosen candidate
 identity.
 

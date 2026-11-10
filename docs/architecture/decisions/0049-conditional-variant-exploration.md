@@ -2,9 +2,9 @@
 
 The user asks what can vary in a neighborhood while specified properties remain
 fixed. Independent local domains cannot answer this: coupled processing may reject
-a combination or change retained sequence elsewhere. Query a finite admitted set
-of complete preparations, projecting supported neighborhood variants from whole
-products at a named stage. Do not construct products in the query layer.
+a combination or change retained sequence elsewhere. Query a finite set of
+verified complete preparations instead. Derive the available neighborhood variants
+from those whole products at a named stage; the query layer constructs no products.
 
 `models/construction/variants/query.py` owns the strict stage, neighborhood, pins,
 fixed reference and controls. `design/construction/variants/` separates source
@@ -14,9 +14,11 @@ the authorities. `comparisons/controls.py` supplies the same regional context to
 both preserved-property checks and variant projection. Missing ancestry stays
 unassessed.
 
-Pins admit a union of variants within each neighborhood and an intersection across
-neighborhoods. Replacement alternatives omit only the current focus pin. The
-compatible product list enforces every pin. Controls compare every candidate to
+A pin allows one or more observed variants in a neighborhood. Alternatives within
+one pin are combined by union; pins in different neighborhoods are combined by
+intersection, so a compatible product must satisfy each neighborhood's pin.
+Replacement alternatives omit only the current focus pin. The compatible product
+list enforces every pin. Controls compare every candidate to
 the explicitly named reference at their own stage, independent of the current
 focus or preview. Exact stage identity groups products while retaining distinct
 preparations. Filtering never commits a product or chooses a best preparation.

@@ -27,8 +27,8 @@ Comparison-brief/v3 makes these intentions separate and explicit:
   prior-material references. Retrieval replays the complete authorities and checks
   both controls and reused material identities after relocation.
 
-Execution and admission share one scheduling traversal. Saved previews, tasks,
-budget use, options and comparison observations must reproduce from their authored
+Execution and saved-result replay use the same scheduling traversal. Saved
+previews, tasks, budget use, options and comparison observations must reproduce from their authored
 requests and verified inner authorities. A resealed summary is not authority.
 An assessed original-domain pool is labeled by the search it actually contains;
 it is never credited with targeted work that was not performed.
@@ -42,10 +42,9 @@ have witnesses. Task scheduling establishes neither global completeness nor a
 best preparation. Fixed-source reuse may remove a method while preserving the
 possibility of making the same product from a newly designed source.
 
-HOP owns these reusable contracts and renderers. Caller studies own why a panel
-matters and the evidence produced from using it. No laboratory equivalence,
-physical stock, assembly compatibility or human-usability result follows from
-the modeled comparison.
+HOP owns these reusable contracts and renderers. Caller studies own panel
+rationale, physical inventory, assembly checks, and experimental and user
+evaluation.
 
 See the [public workflow](../../guides/specify-a-comparison.md) and
 [implementation checklist](../../dev/plans/terminal-scaffold-comparisons.md).

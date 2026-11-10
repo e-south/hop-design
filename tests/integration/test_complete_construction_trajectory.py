@@ -248,7 +248,6 @@ def test_complete_trajectory_embeds_one_selected_route_verbatim(
     assert f'data-result-id="{source.result.result_id}"' in svg
     assert f'data-realization-id="{selected.materialized_realization_id}"' in svg
     assert 'data-composition-ordinal="0"' in svg
-    assert "selected composition ordinal 0" in svg
     for state in selected.construction_program.states:
         assert f'data-state-id="{state.state_id}"' in svg
         assert state.phase.value.replace("_", " ") in svg
@@ -289,8 +288,6 @@ def test_complete_trajectory_embeds_one_selected_route_verbatim(
                 assert f'data-recognition-end="{binding.recognition_span.end.offset}"' in svg
                 assert f'data-reference-cut="{reference_cut}"' in svg
                 assert f'data-complement-cut="{complement_cut}"' in svg
-    assert "Digital route only" in svg
-    assert "No physical construction, QC, or biological activity is established." in svg
 
 
 def test_complete_trajectory_starts_with_recorded_source_duplex_preparation(

@@ -1,5 +1,11 @@
 # Edit the molecule, then choose its preparation
 
+Specify a molecular change, such as replacing one loop word, and check which
+complete preparations support it. The supplied stem is the payload to preserve;
+the surrounding construction sequence and pairing form its scaffold. Each
+preparation specifies the exact source, adapter and primers and their processing
+steps, so a small product edit can require changes to several input oligos.
+
 Run these repository examples from a [source checkout](install.md#work-from-source).
 The commands use its locked environment throughout.
 
@@ -40,7 +46,7 @@ journey with an explicit unique match for each requested loop.
 An edit captures the original validated request and its digest, stage and region.
 Unedited geometry, material policies, forbidden/reserved enzymes and search
 quotas remain active. Selection replays the saved constructions and reconstructs
-their sequence views; rehashing altered annotations cannot make them authoritative.
+their sequence views, checking annotations against the molecular records.
 
 ## Compare conditional end placements
 
@@ -91,7 +97,5 @@ visible and cannot silently disappear from the selected family. `non_stem_sequen
 checks both flanks and loop in the hairpin; shared material roles also check exact
 sequence and chemistry through the ordinary portable-set material contract.
 
-This is a set of separate exact preparations. It does not establish a pooled
-degenerate synthesis, pooled reaction, equal recovery, biological effects, RNA
-conformation, or destination compatibility. The intended pairing architecture
-and complete modeled preparation are the demonstrated endpoints.
+The result contains a separate exact preparation for every selected member,
+including its pairing architecture and required materials.

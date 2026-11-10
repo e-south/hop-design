@@ -19,8 +19,8 @@ The new optional material field is excluded when absent, preserving existing
 serialized requests. Complete-authority semantic replay, producer identity and
 strict model validation still bind the endpoint; no drawing or summary grants
 molecular authority. Reports label this endpoint explicitly and retain reaction
-and fragment-recovery conditions. No new cleavage or ligation chemistry,
-performance claim or exposed-end hairpin capability is introduced.
+and fragment-recovery conditions. Cleavage and ligation chemistry are
+unchanged; exposed-end hairpins remain unsupported.
 
 See the [comparison workflow](../../guides/specify-a-comparison.md) and
 [comparison decision](0044-molecular-comparison-briefs.md).

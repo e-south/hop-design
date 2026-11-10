@@ -111,7 +111,6 @@ def test_construction_summary_reports_complete_accounting_and_evidence_boundary(
     assert "Geometry groups: 1" in result.output
     assert "Final products: 2" in result.output
     assert "Digital method: resolved under the declared molecular model" in result.output
-    assert "Physical construction, QC, and biological activity: not recorded" in result.output
     assert_no_positive_downstream_claims(result.output, surface="construction summary")
 
 
@@ -196,7 +195,6 @@ def test_inspection_reports_actual_endpoint_ends(
                 f"{side} cohesive end: {requirement.cohesive_end_sequence} (5-prime to 3-prime)"
                 " · five-prime overhang"
             ) in inspected.output
-        assert "Destination compatibility: not evaluated" in inspected.output
     else:
         assert "Cohesive ends: not generated for this endpoint" in inspected.output
         assert "Left cohesive end:" not in inspected.output
@@ -352,7 +350,6 @@ def test_construction_inspect_prints_one_exact_route_and_exports_create_only(
     assert "External material roles:" in result.output
     assert "Molecular states:" in result.output
     assert "Endpoint: hairpin_pcr_duplex · linear_duplex" in result.output
-    assert "Physical construction, QC, and biological activity: not recorded" in result.output
     assert {item.name for item in output.iterdir()} == {
         "enzyme-labels.json",
         "projection.json",

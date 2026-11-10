@@ -2,16 +2,16 @@
 
 ## Question answered and meaning
 
-How can a caller use HOP without installing its Python model graph in the
-caller's environment? Invoke a selected HOP executable with explicit file
-arguments and consume its existing JSON authorities, reports, and published
-artifact directories. HOP owns derivation and replay; the caller owns its
-scientific question, acceptance rules, and evidence records.
+Invoke a selected HOP executable with explicit file arguments and consume its
+JSON reports and published artifact directories. The reports expose results,
+counts and artifact paths to a caller in another environment without importing
+HOP's Python models there. HOP derives and replays the
+molecular records; the caller supplies the scientific question, acceptance rules,
+and evidence records.
 
 The executable runs in an independently installed environment. The caller
 selects and records its immutable source revision and execution command; HOP
-does not discover, install, or update another environment. No server, RPC
-dispatcher, or Python-object transport is involved.
+does not discover, install, or update another environment.
 
 ## Authored inputs and operations
 
@@ -86,13 +86,14 @@ JSON/SVG projections; the caller's reason changes the report prose only.
 
 ## Derived values, identity, and lineage
 
-Reports contain ordinary JSON, not serialized executable objects. Design,
+Reports contain ordinary JSON. Design,
 local-result, partition, method, and construction reports carry their existing
-canonical authorities and SHA-256 byte bindings. Explicit metadata exposes
+canonical authorities—the saved requests and derived records used for replay—and
+SHA-256 digests binding them to exact bytes. Explicit metadata exposes
 producer-computed dispositions, counts, and identifiers; the caller need not
 duplicate molecular derivation to inspect them. Publication uses the existing
 atomic writers and does not add report files to, or reseal, a bundle.
-Construction reports serialize the admitted in-memory snapshot, so later file
+Construction reports serialize the snapshot already verified in memory, so later file
 replacement cannot mix unverified contents with the verified identities.
 Selected constructions, route references, projections, and derived source
 partitions publish outside their verified input bundle through an opened parent
@@ -135,28 +136,58 @@ existing method facade. `design_report` serializes an admitted design receipt;
 
 A successful discovery or compilation command performs the existing producer
 operation. A successful verification command checks retained artifact
-integrity and performs deterministic semantic replay. Discovery truncation
-and infeasibility remain explicit scientific dispositions, with unchanged
-enumeration bounds. Complete method publication requires a complete plan;
+integrity and performs deterministic semantic replay. Discovery truncation and
+infeasibility remain explicit outcomes, with unchanged enumeration bounds.
+Complete method publication requires a complete plan;
 method resolution preserves expected infeasibility as a JSON outcome.
-
-These are computational derivation claims. They establish neither experimental
-performance nor caller-specific eligibility. Sorting, selection reasons, and
-artifact transport cannot strengthen the scientific claim.
 
 ## Retained reports and failure semantics
 
 A caller may retain the command report with its exact input/output digests and
 execution provenance. A later parser can inspect the retained report without
-executing HOP. Such a read can check schema, digests, and byte consistency; it
-is **not a new semantic replay**, and a self-consistent report is not an
-authentication proof. Report provenance must identify the execution that made
-the recorded claim. Existing artifacts without such a retained report still
-need an explicit producer verification command for a fresh replay claim.
+executing HOP. The parser can check schema, digests, and byte consistency.
+Report provenance must identify the execution; self-consistent bytes alone
+cannot authenticate it. For a fresh semantic replay, run the producer's
+verification command.
 
 Missing executables, invalid request schemas, invalid selectors, corrupt
-authorities, and existing output directories fail explicitly. Caller runtime
-unavailability does not justify skipping a required scientific verification
-or silently installing HOP into the caller's environment. Historical frozen
+authorities, and existing output directories fail explicitly. If the selected
+runtime is unavailable, restore it before replay. Historical frozen
 clients may retain their original environment requirements as evidence;
 they do not define a current consumer installation dependency.
+
+## Capture a recorded discovery with an updated exporter
+
+To package an existing released-insert discovery after updating HOP, supply an
+explicit source contract. This operation reads recorded preparations; it does
+not resume the search or authorize execution under a different generator.
+
+```bash
+# Bind the original producer when an updated exporter captures old records.
+hop-design design freeze designs --compact --source-contract source.json --out recorded-edition
+```
+
+The same operation is available as
+`construction.freeze_design_choices("designs", "recorded-edition", compact=True,
+source_contract="source.json")`. Without `source_contract`, ordinary producer
+admission applies. Use `include_landscape=True` or `--include-landscape` to fit
+coordinates with the exporter's numerical environment.
+
+`source.json` uses `hop.recorded-design-source/v1`. It binds the original complete
+producer identity, the recorded `snapshot_digest`, and a `files` mapping with
+SHA-256 digests and byte sizes. Bind `survey.sqlite`, `effort.json`, every file
+in `intent/`, and every file in `revision/` when present. Obtain these bindings
+from the recorded generator and completed source, before changing environments.
+They are input identity checks, not evidence of exhaustive discovery.
+
+Stop writers before capture. HOP rejects SQLite sidecars, changed inputs,
+symlinks, mismatched producers and unsupported molecular records. It admits one
+read snapshot, verifies every retrieved preparation through the existing
+molecular checks, and rechecks source bindings before publishing. Failure
+publishes no edition. The returned object is an immutable `AtlasEdition`.
+
+The edition keeps the original producer and binds `capture-origin.json` with
+the source contract and current exporter identity. Aggregate discovery replay
+remains a separately recorded operation. This import supports exact-stem
+released-insert discoveries, compact capture and ordinary parameter filters;
+use the original producer for family or preservation-query capture.

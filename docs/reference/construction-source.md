@@ -11,10 +11,13 @@ Construction compilation requires two independent inputs:
    `hop.construction-source/v8`; and
 2. a verified design-bundle directory produced by HOP.
 
-The construction source declares the foldback request, an optional basal
-request, the requested endpoint, how the source ssDNA and its preparation
-primers are resolved, endpoint-dependent auxiliary materials, whole-route
-constraints, and finite enumeration bounds. Its shape is:
+The construction source tells HOP which junctions and endpoint to build, which
+materials to derive or reuse, and how many combinations to examine. It declares
+the foldback request, an optional basal request, how the source ssDNA and its
+preparation primers are resolved, endpoint-dependent auxiliary materials,
+whole-route constraints, and finite enumeration bounds. The separate verified
+design bundle supplies the exact hairpin design used in composition. The source
+file has this shape:
 
 ```yaml
 schema: hop.construction-source/v8
@@ -42,13 +45,12 @@ composition:
 Angle-bracketed values above describe required mappings; they are not literal
 values to copy. Start from a complete example source under `examples/` and
 consult the [schema reference](schemas.md) for supported document types and limits.
-The public API reads the source file directly; no study package or internal
-model import is required. Keep the design bundle outside the source document.
-YAML anchors, aliases, and merge
-keys are rejected. The source cannot author design, result, realization,
+Read the source file directly through the public API and supply the design
+bundle separately. YAML anchors, aliases, and merge keys are rejected.
+The source cannot author design, result, realization,
 projection, output-path, timestamp, or environment identities.
 
-Source preparation is an explicit modeled relation:
+Source preparation copies the declared source with its two primers:
 
 ```text
 source ssDNA + two source-preparation primers
@@ -75,28 +77,26 @@ meaning:
 The adapter always preserves the selected basal pairing segment. A derived or
 constrained forward primer binds within the invariant source-side construction
 prefix, and its reverse counterpart binds within the adapter. Neither may
-anneal across the payload. HOP performs no Tm, yield, or empirical ranking, and
-does not generate a reusable handle that the caller did not specify.
+anneal across the payload. Supply any reusable handle explicitly.
 
 To limit imperfect pairing, set `geometry_domain.max_noncanonical_pairs` in a
 basal request. It counts G:T/T:G wobble and other mismatches across the declared
 proximal `pairing_constraints`. For example, `2` allows at most two noncanonical
 pairs while the ligation-adjacent position still requires a match. Omission
-applies no aggregate cap. This caller-selected bound is not a prediction of
-ligation efficiency; it does not relax recognition-site fidelity or apply to
-distal adapter completion. At displaced nicks the proximal window and final
-cohesive-end footprint need not coincide.
+applies no aggregate cap. Recognition-site fidelity and distal adapter
+completion have separate constraints. At displaced nicks the proximal window
+and final cohesive-end footprint need not coincide.
 
-Basal discovery is deliberately local. It establishes the payload-proximal
-nick, the exact proximal adapter pairs, any position-level source and adapter
+Basal discovery resolves the payload-proximal nick, the exact proximal adapter
+pairs, any position-level source and adapter
 base domains, the minimum full annealing extent, mismatch warnings, retained
 overhead, and—for a clone-ready endpoint—the Type IIS action required later.
-The future release is an obligation, not a sticky end asserted in the current
-adapter state. Its `cohesive_end_sequence` may pin exact DNA or declare an
+The future release specifies what later cleavage must produce. The current
+adapter state does not yet have that sticky end. Its `cohesive_end_sequence` may
+pin exact DNA or declare an
 [IUPAC design domain](../discovery/overview.md#search-a-basal-cohesive-end-or-pin-it-to-a-destination).
-Basal discovery does not invent the remaining annealing bases,
-finalize the complete adapter, or claim a PCR product. Complete composition
-must satisfy those obligations against the realized source scaffold and exact
+Complete composition resolves the remaining annealing bases and full adapter
+and checks endpoint obligations against the realized source scaffold and exact
 endpoint materials.
 
 The future release requires an explicit `payload_end_offset_bp`, independent
@@ -108,9 +108,10 @@ count; it does not describe a zero-length end.
 
 The source recognition placement follows the characterized action's cuts at
 that gap. It does not follow the nick when only the nick is moved. Local search
-intersects the independently placed recognition and end constraints. At complete
-release, the exact cut union must still equal the verified design encoding;
-HOP then measures each gap from the cuts to the design's payload features.
+intersects the independently placed recognition and end constraints. Complete
+release derives the retained strands and their union from the cuts while
+preserving the protected payload interval. Gaps are measured from the cut-derived
+paired edges to payload boundaries.
 
 When compiling an exact design from selected local realizations, the clone-ready
 basal arms cover the declared gap plus overhang length. Their exact source bases
@@ -159,7 +160,7 @@ must satisfy the declared constraints and remain canonical at undeclared
 distal positions. HOP appends a requested handle after the pairing segment;
 a fixed material can instead contain overlapping pairing and primer-binding
 spans. The trajectory records every literal pair, including permitted wobbles
-and mismatches, without predicting annealing or ligation performance.
+and mismatches.
 
 If the selected source lacks enough upstream sequence, that exact composition
 is rejected. For PCR-bearing endpoints, a `fixed` source may supply a longer
@@ -203,29 +204,28 @@ source_ssdna:
   three_prime_end: hydroxyl
 ```
 
-These are synthetic domain bounds, not preferred source lengths. A range
-contains every permitted sequence at every inclusive length. HOP evaluates
+The range contains every permitted sequence at every inclusive length. HOP evaluates
 lengths in ascending order and bases in A/C/G/T order within each length;
 it does not stop at the first working length. A range has positive lengths
 and an operational maximum of 1,000 nt. A source policy with `mode: derive`
 instead evaluates the local source without an added upstream context.
 
 Composition traverses foldback, basal, then upstream assignments. Its nominal
-denominator includes all three domains. The existing
+denominator counts combinations across all three domains, including those not
+yet examined. The existing
 `max_combinations` and `max_realizations` bounds stop this traversal; a stopped
 prefix is truncated even if every examined sequence failed. Accepted alternatives
 remain distinct within geometry groups. Summary JSON and CSV bind each examined
 assignment through `source_context_sequence`.
 
 The string form supplies one finite, fixed-length domain; the range form
-supplies a finite union of length-specific sequence domains. Neither form
-provides constraint-directed cleanup-site placement. An unrestricted `N` domain
-can be much larger than the declared execution budget, and a truncated prefix
-does not establish absence at later lengths. HOP does not choose an unbounded
-extension length, generate a reusable handle without constraints, or design
-cleanup-nick tiling through this policy. A selected partition still
-certifies its exact supplied source. No fixed primer is rewritten, no annealing
-length is silently reduced, and no melting temperature or recovery is predicted.
+supplies a finite union of length-specific sequence domains. An unrestricted
+`N` domain can be much larger than the declared execution budget; a truncated
+prefix leaves later lengths unresolved. Both forms require finite extension
+bounds and explicit reusable-handle constraints. Cleanup-site placement and
+cleanup-nick tiling are outside this source policy. A selected partition
+certifies its exact supplied source. Fixed primers and authored annealing
+lengths remain unchanged.
 
 The future release requirement records `recognition_material`:
 

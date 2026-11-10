@@ -1,12 +1,13 @@
 # Reference-bound family matching
 
 Two individually complete preparations can disagree on required scaffold
-properties. Admission detects this; it does not find a compatible alternative.
+properties. Checking those properties detects the disagreement; it does not find
+a compatible alternative.
 `match_construction_family` adds bounded evaluation against a caller-declared
 complete member and zero-based choice. Historical execution and its first-complete
 display reference stay unchanged. Matching does not infer a preferred reference.
 
-The input family is captured and replay-admitted before evaluation. The matcher
+The input family is captured and verified by replay before evaluation. The matcher
 uses each exact member request and recorded local witnesses. A missing local
 search runs under its original domains and quotas. Members are visited by name,
 not roster position; recorded foldback/basal pairs are continued in recorded

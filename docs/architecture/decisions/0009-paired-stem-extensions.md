@@ -44,6 +44,5 @@ order rather than assuming that every insert has five parts.
 
 Variable paired stem context is visible in the plan, pair calls, spans, and
 content identity. It no longer needs to be hidden in payload metadata or
-application flanks. This decision does not create a general sequence-assembly
-language; it adds one hairpin-specific optional component observed in supplied
-designs.
+application flanks. The scope is one optional hairpin component observed in supplied
+designs. General sequence assembly remains outside this contract.

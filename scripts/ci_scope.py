@@ -18,6 +18,18 @@ ARTWORK_PATHS = frozenset(
         "assets/fonts/OFL-IBM-Plex-Sans.txt",
     }
 )
+DOCUMENTATION_PATHS = frozenset(
+    {
+        "AGENTS.md",
+        "ARCHITECTURE.md",
+        "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
+        "DESIGN.md",
+        "RELIABILITY.md",
+        "SECURITY.md",
+        ".github/pull_request_template.md",
+    }
+)
 
 
 def classify_paths(paths: Sequence[str]) -> str:
@@ -36,9 +48,10 @@ def distribution_mode(paths: Sequence[str]) -> str:
             return "extended"
         ordinary = (
             name in ARTWORK_PATHS
+            or name in DOCUMENTATION_PATHS
             or (name.startswith("src/hop_design/") and name.endswith(".py"))
             or (name.startswith("tests/") and name.endswith((".py", ".mjs")))
-            or (name.startswith("docs/") and name.endswith(".md"))
+            or (name.startswith(("docs/", ".agents/", "examples/")) and name.endswith(".md"))
         )
         if not ordinary:
             return "extended"

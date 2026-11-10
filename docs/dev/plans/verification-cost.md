@@ -12,14 +12,20 @@ The adopted workflow removes duplicate lint and post-merge source-suite executio
 uses Python 3.14's lower-overhead branch-coverage core, and exposes per-stage
 timings. Python 3.12/3.13 compatibility still gates release. Four-worker admission
 is bounded and measured separately from coverage instrumentation; see the
-[verification guide](../performance.md#use-bounded-parallelism). Scientific test
+[verification guide](../performance/verification.md#use-bounded-parallelism). Scientific test
 membership and the 90% coverage floor remain unchanged.
 
-The goal is to run each scientific responsibility once in the main suite and
+The goal is to check each molecular responsibility once in the main suite and
 retain a small, independent check of the actual installed distribution. Success
 removes repeated discovery and rendering from routine CI without losing exact
-molecular, material, asset or command-line checks. It will not eliminate the cost
-of the main test suite; measure installation verification separately.
+molecular, material, asset or command-line checks. Measure installation
+verification separately from the main test suite.
+
+The sections below retain the implementation sequence and its measurements,
+including checks that were pending at that point. The adoption status above
+records the completed qualification; use the
+[verification guide](../performance/verification.md#choose-the-verification-boundary) for current
+commands and scope selection.
 
 ## Evidence and scope
 
@@ -121,8 +127,8 @@ The existing public design example supplies the finite 64-evaluation discovery,
 reopening, complete route and frozen-edition handoff. API and CLI retrieval must
 match every handoff byte. One PDF/SVG, symbolic compilation and the existing
 browser asset list are checked separately. Both gates use one archive inventory: all prior public sdist
-requirements, exact wheel membership, and package bytes compared with source.
-This is installation evidence, not visual acceptance.
+requirements, exact wheel membership, and package bytes compared with source. Review rendered
+output separately from these installation checks.
 
 On 4 November, the first check passed in 41.48 seconds with cached dependencies;
 its case result matched the original 64-evaluation example exactly. An initial
@@ -163,9 +169,12 @@ routine cost further. No persistent source-evidence cache was introduced.
 `agent-verify --distribution routine` runs the complete source gate, dependency
 audit and representative isolated installation. The default extended mode runs
 the full workflow parity catalog. Packaging, dependencies, CLI wiring, assets,
-scripts, workflows, examples, unknown paths and manual dispatch retain extended
-checks; mixed changes use the stronger mode. Routine selection covers ordinary
-Python implementation/tests and Markdown guides. Missing outputs fail closed.
+scripts, workflows, non-Markdown examples, unknown paths and manual dispatch
+retain extended checks; mixed changes use the stronger mode. Routine selection covers ordinary
+Python implementation/tests and documentation Markdown: guides, known root
+contracts, `.agents/` and `examples/` Markdown, and `.github/pull_request_template.md`.
+Packaged assets, including Markdown assets, and non-Markdown `.agents/` files
+retain extended qualification. Missing outputs fail closed.
 Release still checks the exact release wheel/sdist with the extended gate.
 
 The extended script now labels each workflow group and reports elapsed time and

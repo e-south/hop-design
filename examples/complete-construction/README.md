@@ -11,10 +11,9 @@ doc_type: tutorial
 
 # Obtain a preparation and inspect an end edit
 
-This example starts with a public 34-base loxP arm and ends with an exact
-modeled preparation. It uses characterized enzyme actions, explicitly synthetic
-handles, and finite searches. It does not establish Cre activity, qualified
-primers, purification, ligation efficiency, or compatibility with a destination.
+This example turns a public 34-base loxP sequence into an exact preparation:
+materials and a route that HOP can reproduce from its saved inputs. It uses
+characterized enzyme actions, explicitly synthetic handles, and finite searches.
 
 From a matching source checkout or unpacked source distribution:
 
@@ -55,8 +54,8 @@ values. Edit `product-request.json` to author another public example.
 Both end words are read 5′→3′ on their own protruding strands. In the reference
 route, canonical association contacts couple the two words. The edit explicitly
 permits up to four noncanonical contacts in the future end footprint; HOP does
-not silently relax pairing or required ends. A successful redesign shows one
-alternative, not a necessary or minimal repair of every rejected request.
+not silently relax pairing or required ends. The redesign returns one
+alternative under the declared permissions.
 For this single-offset geometry, the product-request translator propagates the
 left word into the declared source contact positions. The user edits the end
 once. Explicit source-base restrictions are intersected, and conflicts raise;
@@ -64,9 +63,10 @@ they are never overwritten. This local propagation is conditional on the
 declared strand/material frame, while complete-route verification always checks
 both required ends.
 
-The searches stop after one local witness and continue exactly one selected
-combination. This is a reproducible example, not an exhaustive coverage result
-or an optimal route. A changed payload, enzyme or geometry needs a new search.
+The searches stop after one local witness, an accepted exact junction solution,
+and continue exactly one selected combination. Coverage is limited to that
+witness and selected combination.
+A changed payload, enzyme or geometry needs a new search.
 An absent witness produces a scoped `CASE/report.md` and summary, preserving
 the exact local result. Stopped searches remain unresolved; multiple witnesses
 require explicit selection. If the reference preparation is unavailable, the
@@ -75,11 +75,10 @@ hairpin request still runs. Malformed input remains an error.
 
 The released-insert example declares 14-nt primer-binding lengths. The separate
 hairpin endpoint uses a 10-nt forward binding span because its retained basal
-component provides only that much non-payload sequence. These are model inputs,
-not experimentally qualified primer recommendations. The two preparations are
-not the same physical intermediate. Source-fragment removal is unbound, and
-inventory, enzyme reaction prerequisites and receiving DNA remain external
-conditions. Exact oligos are a design handoff, not a validated bench protocol.
+component provides only that much non-payload sequence. The two preparations
+have different intermediates. The request does not prescribe removal of discarded
+source fragments; the caller supplies inventory, enzyme reaction prerequisites and
+receiving DNA.
 
 ## Source definitions
 
@@ -96,11 +95,7 @@ The synthetic upstream and adapter handles are authored for this tutorial.
 - The same NEB table lists BsaI-HFv2 as GGTCTC(1/5): reference/complementary
   bond offsets 7/11 from the six-base recognition site's start.
 
-These definitions identify modeled cleavage actions. They do not assert
-laboratory stock or authorize substituting enzyme preparations or conditions.
-
-For a deliberate comparative set, use [Specify and retrieve scaffold families](../../docs/guides/compare-scaffold-families.md).
-
+For a comparative set, use [Specify and retrieve scaffold families](../../docs/guides/compare-scaffold-families.md).
 
 For a direct hairpin family, run `family.py --endpoint hairpin --out NEW`.
 For explicit choice after a stopped family, run `continue_family.py --out NEW`.

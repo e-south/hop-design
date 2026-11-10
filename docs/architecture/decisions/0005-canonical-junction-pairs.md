@@ -18,7 +18,7 @@ types. Feasibility thresholds remain in evaluation and caller policy.
 
 ## Consequences
 
-Pair observations cover every aligned position, including mismatches. A matched
-only pair map is not a second authority. Views and serialized intermediates
+Pair observations cover every aligned position, including mismatches. A map
+containing only matches cannot replace these observations. Views and serialized intermediates
 consume the canonical junction object. This pre-release correction remains in
 the `v1` schemas because no public artifact preceded it.

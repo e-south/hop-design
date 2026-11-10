@@ -1,5 +1,11 @@
 # Specify the scaffold, then choose its preparation
 
+The **scaffold** is the loop, added paired regions and open-end contacts around
+the supplied stem. Specify the dimensions you want, then let HOP search the
+permitted materials and molecular steps that can make them. Each complete
+**preparation** includes exact oligos and a route through the requested endpoint.
+Different preparations can yield the same molecule.
+
 Run these repository examples from a [source checkout](install.md#work-from-source).
 The commands use its locked environment throughout.
 
@@ -7,7 +13,8 @@ Start with the [runnable public example](../../examples/scaffold-discovery/READM
 For a comprehensive four-base end domain with incremental checkpoints, use
 [interface surveys](survey-interfaces.md). Its target catalogue is independent of
 batch size; the small-roster workflow below retains its original limits.
-A `hop.scaffold-discovery/v1` request embeds one ordinary
+The foldback region closes the loop end; the basal region handles the opposite,
+open-end junction. A `hop.scaffold-discovery/v1` request embeds one ordinary
 [product request](design-a-construction.md), desired scaffold ranges, permissions
 for preparation changes, the comparison stage and two explicit search budgets.
 The endpoint says what you intend to obtain. The comparison stage says which
@@ -35,9 +42,9 @@ A fixed adapter conflicts with redesign permission. HOP never silently replaces
 it with a derived material or rewrites the input file.
 
 With adapter redesign allowed, each permitted nick-to-stem offset contributes to
-the candidate annealing setting. Proximal pairing can impose a larger achieved
-span. Only complete construction establishes whether a candidate actually satisfies
-the requested scaffold. Redesign does not guarantee a witness. Direct hairpins
+the candidate annealing setting. Pairing next to the joining bond can impose a
+larger achieved span. Complete construction checks whether a candidate satisfies
+the requested scaffold. Direct hairpins
 have no downstream adapter-redesign or release step; preserve those settings and
 use their existing basal-component declaration.
 
@@ -45,15 +52,14 @@ use their existing basal-component declaration.
 hard constraints and material policies remain active. Exact failures, local
 coverage and unevaluated combinations stay in the packet. Release alternatives
 also set the matching basal end-generation role, without changing nickase roles.
-Unknown, forbidden or reserved methods conflict before execution. Catalog
-membership does not establish laboratory availability.
+Unknown, forbidden or reserved methods conflict before execution.
 
 Open `report.pdf` for whole molecules, stage-specific products and changed
 material roles. `report.md` links every complete option to its preparation and
-branch request. Opening negative pages distinguish dimension mismatch, release
-incompatibility and actionable-site conflict. A site rejection without recorded
-coordinates is not a localized diagnosis. Successful branches are explicit
-alternatives, not proven necessary or minimal repairs.
+branch request. Failure pages distinguish dimension mismatch, release
+incompatibility and actionable-site conflict. Use recorded coordinates to
+localize a site rejection. Successful branches provide
+explicit alternatives to inspect.
 
 ## Explore declared receiving-end pairs
 
@@ -84,7 +90,7 @@ those marginal words returns no compatible preparation, and further evaluation
 rejects the empty joint-domain intersection instead of creating another pair.
 
 Every evaluated branch retains its exact product request and changes. Catalog,
-material-reuse and search bounds remain authoritative. Method alternatives can
+material-reuse and search bounds remain in force. Method alternatives can
 cross the declared pair roster only through explicit existing method permissions;
 the total expansion remains bounded at 256 branches, with at most 64 evaluated.
 Use the ordinary conditional query and explicit preparation retrieval operations
@@ -141,10 +147,9 @@ retrieval regenerates its terminal comparison when those dimensions are declared
 `summary.json` groups exact products under `stage_groups.hairpin` and
 `stage_groups.endpoint`; `molecules` selects the requested comparison stage.
 Grouping uses oriented sequences, pairing contacts, topology, terminal chemistry
-and interfaces. It ignores manufacturing origins and precursor cut coordinates.
-It does not infer equivalence under strand permutations or predict physical
-conformation, biological behavior or ligation efficiency. Preparation and
-construction identities remain attached to every option.
+and interfaces, with strand order preserved. Manufacturing origins and precursor
+cut coordinates are recorded separately. Preparation and construction identities
+remain attached to every option.
 
 The report may show two distinct hairpins leading to the same released insert.
 That is a useful substrate contrast at the hairpin stage and an alternative
@@ -167,17 +172,15 @@ Repeat `--member NAME=LABEL` for a family. `--shared` requires achieved hairpin
 properties to agree; `--compare` declares the intended contrasts. These existing
 set controls concern the hairpin architecture. Exact endpoint grouping remains
 separate in `stage-comparison.json`; it must not be inferred from shared dimensions.
-There is no automatic winning design or joint optimization across an unexamined pool.
 
 The selected set includes user names in drawings, `set.json`, exact preparation
 paths and `oligo-uses.csv`, alongside stable identities. After moving the whole
 folder, `select_construction_set("moved/set.json")` verifies and retrieves the
-same members. The set's molecular contents remain authoritative; added stage
-comparisons are projections from those verified records.
+same members. Stage comparisons are derived from the set's verified molecular
+records.
 
 Preparation reports retain terminal chemistry, material specifications and
-unresolved reaction, recovery and destination conditions. Modeled completion
-is not laboratory validation. All output locations must be new and cannot
-overlap captured inputs. The [Python facade](../reference/python-api.md) provides
+unresolved reaction, recovery and destination conditions. All output locations
+must be new and outside captured inputs. The [Python facade](../reference/python-api.md) provides
 `prepare_scaffold_discovery`, `discover_scaffolds` and `select_scaffold_options`
 with the same behavior.

@@ -3,14 +3,15 @@
 For a supplied stem and intended product, start with the
 [design discovery guide](../../../../docs/guides/discover-designs.md). End words
 are optional. It discovers
-complete preparations and carries one selection through views and oligo retrieval.
+complete preparations and reuses one selection for views and oligo retrieval.
 The lower-level workflow below is for an already authored construction source.
 
-Use this reference when one strict construction source and one separately
-verified design bundle must produce exact, bounded construction-route
-authorities and neutral scientific projections.
+Use this reference to derive complete routes from one strict construction source
+and one separately verified design bundle, then inspect views and tables from
+the verified result. The source declares the search and material requirements;
+the design bundle records the required sequence anatomy.
 
-Read [the payload-centered construction API](../../../../docs/reference/python-api.md#payload-centered-construction)
+Read [the payload-centered construction API](../../../../docs/reference/python-api/construction/routes.md#payload-centered-construction)
 and import only from `hop_design.construction`.
 
 ```python
@@ -67,11 +68,9 @@ the same exact foldback selection and direct-hairpin construction source.
 - Call `project_construction_trajectory()` only with an explicit ID from
   `materialized_realization_ids`. Never auto-select a realization.
 - A `ConstructionProjection` contains canonical JSON, SVG, and optional CSV
-  bytes. Its create-only `write()` publishes a non-authoritative projection
-  packet, not a second construction authority.
+  bytes. Its create-only `write()` saves those views as a projection packet;
+  the verified construction result remains their authority.
 
-Construction compilation establishes deterministic digital discovery,
-materialization, composition, verification, and projection under declared
-inputs. It does not establish physical construction, destination
-compatibility, QC, biological activity, yield, route performance, or an
-optimized route.
+Report the declared inputs, exact endpoint, complete materials, route status,
+and verification result. The caller selects a preparation and checks its
+products against the intended destination.

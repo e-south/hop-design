@@ -12,20 +12,23 @@ page. Target addresses follow lexicographic A/C/G/T word order, left side first;
 
 `construction survey verify REQUEST --index FILE` replays every recorded
 evaluation without changing the checkpoint. Use replayed coverage for aggregate
-molecular claims. Support for all 256 words on each side does not establish all
-65,536 ordered pairs. Found preparations also do not establish a global minimum
-of added DNA. See [search scope](interface-survey-search.md) for the three kinds
-of coverage and the meaning of exclusions.
+molecular coverage. Word coverage counts the 256 words on each side; pair coverage
+counts the 65,536 ordered pairs. Neither measures the global minimum of added DNA.
+See [search scope](interface-survey-search.md) for the three kinds of coverage and
+the meaning of exclusions.
 
 ## Conditional queries
 
-A query filters complete recorded preparations. It retains declared words,
-placements, geometry and methods even where no complete witness exists.
+A query filters complete recorded preparations. Its result also lists the
+permitted words, placements, geometry and methods, including values for which
+the search has not recorded a complete preparation. Each plotted axis describes
+one of these choices or measurements. A path connects values used together in
+recorded complete preparations.
 
 | Result | Interpretation |
 | --- | --- |
-| Matching path | Satisfies every predicate in the query |
-| Node's conditional count | Applies predicates on the other axes, showing what remains if this axis changes |
+| Matching path | A recorded preparation that satisfies every predicate in the query |
+| Node's conditional count | Number of distinct preparations at this value when this axis's predicate is ignored and the rest of the query is applied |
 | `supported_elsewhere` | Has a complete witness outside the current conditions |
 | `unresolved` | No witness or complete exclusion in the recorded search |
 | Excluded within scope | Exhaustion establishes absence under the declared molecular permissions |
@@ -38,8 +41,9 @@ exclusion. One excluded pair alone does not exclude either end word. Use
 
 Preparation counts deduplicate exact identities; record counts retain repeated
 evaluations. Two preparations producing the same exact product remain separate
-preparation choices. Crossing lines or individually supported axis values do not
-license new combinations: only complete paths establish joint support.
+preparation choices. Complete paths show which values work together in one
+preparation. Individually supported axis values can belong to different
+preparations.
 
 `load_interface_survey_choices()` loads one immutable snapshot. Retain this pool
 for repeated in-memory queries; load it again to see appended evaluations.

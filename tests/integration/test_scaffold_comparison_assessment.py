@@ -121,6 +121,5 @@ def test_comparison_plate_keeps_countable_molecules_and_truthful_endpoint(family
     assert "What changes in making it" in text
     assert "released duplex insert" in text
     assert "clone ready duplex" not in text
-    assert "Destination compatibility" in text
     assert len([e for e in root.iter() if e.get("data-loop-index") is not None]) == 7
     assert "short-primer" in report.report_text

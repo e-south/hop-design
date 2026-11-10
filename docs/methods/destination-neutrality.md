@@ -1,15 +1,15 @@
 # Hairpin-processing method boundary
 
-HOP compiles hairpin designs and bounded sequence transformations. It is not a
-general reaction simulator. A method plan records sequence-bearing states,
-strand-specific events, terminal chemistry, pair relationships, covalent joins,
-primer boundaries, and per-base lineage. Laboratory conditions, recovery,
-controls, runs, and observations remain with the caller.
+HOP compiles hairpin designs and bounded sequence transformations. A method
+plan records the exact molecules at each step, the events on each strand,
+terminal chemistry, pair relationships, covalent joins, primer boundaries, and
+the source position of each base, called per-base lineage.
+The caller owns protocol conditions, controls, runs, and observations.
 
 ## Implemented method
 
-`linear-source-multinick-size-selection-hairpin-pcr@1` has this closed state
-sequence:
+`linear-source-multinick-size-selection-hairpin-pcr@1` derives the following
+fixed sequence of molecular states:
 
 ```text
 SourcePcrDuplex
@@ -29,10 +29,9 @@ scans the complete source for every compatible nick site. It does not select a
 site by ordinal position or record ID.
 
 After nicking, HOP enumerates every top- and bottom-strand fragment in 5′→3′
-orientation. Length selection is a declared deterministic rule, not an
-empirical recovery prediction. Resolution continues only when the rule retains
-one top and one bottom fragment that satisfy strand continuity, adapter pairing,
-both required ligations, and terminal PCR bindings.
+orientation. The declared length rule must retain exactly one top and one
+bottom fragment. Resolution continues only when those fragments satisfy strand
+continuity, adapter pairing, both required ligations, and terminal PCR bindings.
 
 Hairpin PCR creates `HairpinPcrDuplex`. A subsequent facing type-IIS digest
 creates `RestrictionDigestProduct`, which records two strand products and an
@@ -40,10 +39,9 @@ oriented `HairpinEncodingInsert` sequence projection. Each produced cohesive
 end records its exact sequence, protruding strand, polarity, aligned span, and
 both cut boundaries. Restriction digestion does not create the duplex.
 
-The method compiler requires exact molecular inputs. Symbolic design
-compilation does not establish that every sequence in a degenerate pool follows
-this trajectory. A future pool assessment needs explicit universal and
-existential outcomes without materializing the entire pool.
+The method compiler requires exact molecular inputs. To assess a degenerate
+pool, it would need to report separately whether every member sequence resolves
+and whether at least one does.
 
 ## Capability facets
 
@@ -58,14 +56,13 @@ existential outcomes without materializing the entire pool.
 | Assembly input | `AssemblyFragment` | Caller-owned destination, orientation, and compatible ends |
 | Experimental result | observation record | Caller-owned execution, controls, yield, and evidence |
 
-No HOP product is called cloning-ready without a destination vector, insertion
-slot, orientation, compatible ends, and assembly policy.
+The caller checks the product against a destination vector, insertion slot,
+orientation, compatible ends, and assembly policy.
 
 `hop_design.methods.list_method_capabilities()` returns these availability and
 input-exactness facets for every named method without building or resolving a
 request. The returned tuple and its `MethodCapability` records are immutable;
-they are a version-local public contract, not a plugin registry or selection
-policy.
+they describe capabilities of that HOP version. The caller selects the method.
 
 ## Materials and events
 
@@ -84,9 +81,9 @@ phosphates or an explicit kinase preparation. Vector primers remain outside
 this handoff because they depend on a destination construct.
 
 `MolecularStrand`, `Fragment`, `StrandPairObservation`, and `CovalentBond`
-provide the shared state vocabulary. The compiler, not the caller, constructs
-the ordered state plan. This preserves an extension seam for another named
-method without exposing an unrestricted reaction language.
+provide the shared state vocabulary. The compiler constructs the ordered state
+plan from the request. Another named method can reuse those records with its
+own compiler; callers cannot supply arbitrary reaction sequences.
 
 ## Other production methods
 
@@ -112,8 +109,8 @@ fragments, pairings, or features. See [ecosystem ownership](../ecosystem/ownersh
 `MethodBundle`. Its trajectory JSON/SVG, duplex and restriction-product FASTA,
 GenBank, and hairpin-encoding projection are derived only from the strict plan.
 `load_verified_method_bundle()` recompiles the stored request and requires the
-plan and every exported byte to match. An infeasible result cannot be written
-as a complete bundle.
+plan and every exported byte to match. This reproduction from saved inputs is
+called replay. An infeasible result cannot be written as a complete bundle.
 
 ## Completion evidence
 
@@ -127,5 +124,5 @@ The implemented compiler is complete for a request only when:
 - the duplex strands are exact reverse complements; and
 - the restriction product and encoding projection replay from facing cuts.
 
-Serialized drift in any of those relationships is rejected. This evidence does
-not establish laboratory yield or destination compatibility.
+Serialized drift in any of those relationships is rejected. Use the resulting
+strand products and cohesive ends for the caller's destination checks.

@@ -3,7 +3,8 @@
 - [Construction module map](construction-map.md) locates request compilation,
   search, comparison, verification and presentation, with focused test seams.
 - [Measure performance](performance.md) separates search, verification and display
-  costs, with disposable benchmark outputs and bounded proof reuse.
+  costs, with disposable benchmark outputs and verification results reused only
+  within their declared scope.
 - [Verification design](plans/verification-cost.md) records the separation of
   source tests, routine installation checks and release qualification. The
   performance guide above defines the current gate selection.
@@ -21,18 +22,18 @@
 - [Architecture decisions](../architecture/decisions/) record public contract
   and ownership changes.
 
-Run `bash ./scripts/agent-preflight --strict` before editing. For review, choose
-the [verification boundary](performance.md#choose-the-verification-boundary):
-`scripts/agent-verify --scope presentation` for molecular views, `--scope source`
-for molecular/API behavior, and the default full gate for merge, release,
-packaging or uncertain scope. Full defaults to extended installation; CI may
-select `--distribution routine` for documented non-packaging changes. Each scope
-includes strict preflight and browser
-checks. Strict preflight runs the existing
-source-layout limit test before the expensive molecular replay suite, so package
-sprawl fails early. A local pass does not substitute
-for the Linux, permission, integration, and branch-protection evidence produced
-by GitHub. Node.js 22 or newer is required for development.
+Run `bash ./scripts/agent-preflight --strict` before editing. For review,
+choose the [verification
+boundary](performance/verification.md#choose-the-verification-boundary):
+`scripts/agent-verify --scope presentation` for molecular views,
+`--scope source` for molecular/API behavior, and the default full gate for
+merge, release, packaging or uncertain scope. Full defaults to extended
+installation; CI may select `--distribution routine` for documented
+non-packaging changes. Each scope includes strict preflight and browser
+checks. Strict preflight checks source-layout limits before the expensive
+molecular replay suite. GitHub additionally verifies Linux behavior,
+permissions, integration, and branch protection. Node.js 22 or newer is
+required for development.
 
 ## Delivery decisions and acceptance records
 

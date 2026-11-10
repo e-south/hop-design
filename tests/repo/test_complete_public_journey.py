@@ -82,7 +82,6 @@ def test_public_journey_replays_products_and_fixed_source_rejection(tmp_path):
     assert not (output / "fixed-source-edit" / "handoff").exists()
     assert summary["cases"]["hairpin"]["actual_ends"] == {}
     assert summary["producer"]["package_content"].startswith("sha256:")
-    assert "not experimentally qualified" in (output / "README.md").read_text()
 
 
 def test_tutorial_can_start_at_hairpin_without_an_insert_run(tmp_path):

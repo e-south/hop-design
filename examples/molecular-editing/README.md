@@ -14,14 +14,14 @@ sequence and terminal chemistry; `oligo-uses.csv` retains each material role.
 `timing.json` separates preview, evaluation and retrieval. Use a fresh output
 directory for every execution.
 
-To browse these admitted options in one molecular viewport:
+To browse these verified preparation options in one molecular view:
 
 ```bash
 uv run --locked hop-design construction edit-view /tmp/hop-molecular-edit/alternatives --evaluated --out /tmp/hop-molecular-view
 ```
 
-For the bounded AAAA/AACA background-discovery example and separate admission,
-query and retrieval measurements:
+For the bounded AAAA/AACA background-discovery example and separate timings for
+verification, query and retrieval:
 
 ```bash
 uv run --locked python examples/molecular-editing/conditional.py /tmp/hop-conditional
@@ -38,13 +38,11 @@ explicitly larger budget to examine all three; the tool does not silently enlarg
 The Nb.BtsI entry is represented in the reverse-complement orientation of NEB's
 GCAGTG (none/0) convention: CACTGC with a nick at reference boundary 0.
 [NEB recognition/cleavage definition](https://www.neb.com/en-us/products/r0707-nbbtsi).
-The example permits Nb.BsrDI by default; selecting another catalogued method is
-an explicit edit, not a claim about laboratory stock or reaction compatibility.
+The example permits Nb.BsrDI by default. Edit the method permissions explicitly
+to select another catalogued method.
 
 Hairpins in this example are intermediates of a released duplex insert.
-The drawn primary sequence and contacts are recorded architecture, not a folding
-prediction. Exact construction and preparation records do not establish recovery,
-destination compatibility or experimental function.
+The drawings show their recorded sequences and contacts.
 
 ## Coupled construction envelope
 
@@ -53,7 +51,7 @@ and loop lengths and words free within explicit construction bounds. It permits
 join displacements over the budget range, two basal nickases and joint end
 placements; computation quotas remain separate from those molecular permissions. Run `construction
 discover-scaffolds` with that request, then `construction edit-view --evaluated`.
-The [parameter walkthrough](../../docs/guides/explore-conditional-variants.md#explore-the-construction-envelope)
+The [parameter walkthrough](../../docs/guides/explore-conditional-variants/construction-envelope.md#explore-the-construction-envelope)
 explains brushing, local support, bounded coverage and explicit further evaluation.
 
 `envelope.py RESULT NEW_OUTPUT` demonstrates an explicit permission revision:

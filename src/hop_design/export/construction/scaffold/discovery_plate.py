@@ -169,7 +169,7 @@ def discovery_plates(summary: dict[str, Any], files: dict[str, bytes]) -> list[b
         changes = (
             _material_changes(shown[0], shown[-1])
             if len(shown) > 1
-            else ["Exact materials and unresolved reaction conditions accompany this preparation."]
+            else ["Retrieve this preparation for exact oligos and terminal chemistry."]
         )
         for line in [part for value in changes for part in wrap(value, width=96)]:
             y += 24

@@ -14,7 +14,7 @@ def product_outcome_lines(projection: CompleteConstructionTrajectoryProjection) 
     lines = [
         f"Achieved product: {endpoint_label(product.reference.endpoint)}; "
         f"strand lengths {', '.join(str(len(s.sequence)) for s in product.strands)} nt.",
-        "This selected route satisfies its bound molecular request in the model.",
+        "This selected route satisfies the recorded request.",
     ]
     if product.reference.endpoint is ConstructionEndpoint.CLONE_READY_DUPLEX:
         left, right = product.cohesive_ends
@@ -46,11 +46,4 @@ def product_outcome_lines(projection: CompleteConstructionTrajectoryProjection) 
         basal = route.basal_authority.local_realization.achieved_geometry
         assert isinstance(basal, BasalTarget)
         lines.append(f"Attachment flank: nick displacement {basal.nick_offset_nt} nt.")
-    lines.extend(
-        [
-            "Laboratory stock: not supplied. Enzyme reaction prerequisites: not evaluated.",
-            "Association, ligation, primer performance and physical recovery require "
-            "experimental qualification; destination compatibility is not evaluated.",
-        ]
-    )
     return lines

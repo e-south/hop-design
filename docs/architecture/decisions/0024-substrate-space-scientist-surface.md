@@ -3,13 +3,11 @@
 ## Context
 
 HOP's exact design, discovery, method, state, view, and verification contracts
-are strong but expose the software lifecycle before a scientist can see the
-experiment. A proposed library surface repeated those backend nouns and risked
-calling a digital expansion a physical library.
+expose the software lifecycle before the user can inspect a substrate. A
+proposed library surface repeated those backend nouns and risked calling a
+digital expansion a physical library.
 
-The supported evidence establishes deterministic digital design derivation. It
-does not establish pooled construction, molecule-level pairing, QC, activity,
-or improvement over another method.
+The supported behavior is deterministic digital design derivation.
 
 ## Decision
 
@@ -19,17 +17,17 @@ allocation-free `SubstrateSpacePreview`, and one complete
 allowlist is separate from the package root.
 
 The caller authors one segmented payload arm. HOP derives the opposite arm.
-V1 supports exhaustive compilation only. The scientist-authored schema
+V1 supports exhaustive compilation only. The authored schema
 contains the optional question and one labeled payload arm; the versioned
 standard hairpin context and tested 256-design release envelope are product
 policy. A valid larger space is `blocked`, not infeasible or truncated.
 Compilation publishes no authoritative partial set.
 
 Each unique member remains an unchanged, verified `HopBundle`. The collection
-authority lives below `bundle/`; the sequence exports and offline HTML review
-are regenerable projections outside identity. The canonical
-molecular specification records only the ordered per-position DNA domains and
-the resolved versioned hairpin defaults reference. Display names, descriptive
+manifest lives below `bundle/`; the sequence exports and offline HTML review
+are regenerable projections outside identity. The canonical molecular
+specification records only the ordered per-position DNA domains and the
+resolved versioned hairpin defaults reference. Display names, descriptive
 question, segment labels, and equivalent segment boundaries are excluded from
 member and collection identity.
 
@@ -51,13 +49,13 @@ digital replay, named-method evaluation, destination compatibility, physical
 construction, quality control, and biological activity. Human projections
 render those statuses from the verified manifest. Later experimental evidence
 references `design_set_id` in a separate immutable record; it does not revise
-the original design-set authority.
+the original design-set record.
 
 ## Consequences
 
-The scientist can understand the declared sequence space, exact size, paired
-arm, output sequences, and evidence boundary without learning HOP's backend
-ontology. Discovery retains `complete`, `infeasible`, and `truncated` for its
+The caller can inspect the declared sequence space, exact size, paired
+arm, output sequences, and recorded statuses before learning HOP's internal
+contracts. Discovery retains `complete`, `infeasible`, and `truncated` for its
 different competency questions. Named methods, molecular states, provenance,
 and typed views remain available through progressive disclosure.
 

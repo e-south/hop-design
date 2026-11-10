@@ -3,8 +3,9 @@
 `BasalGeometryDomain.max_noncanonical_pairs` optionally limits the number of
 non-Watson–Crick pairs across the declared proximal `pairing_constraints`.
 G:T/T:G wobble and other mismatches each consume one position in this budget.
-Literal pair classes remain distinct. The cap does not cover distal adapter
-completion or assert ligation efficiency. Its window can differ from the final
+Literal pair classes remain distinct. Distal adapter
+completion has separate checks. The capped
+window can differ from the final
 cohesive end when the nick is displaced from the payload.
 
 The cap travels into each exact `BasalTarget`. Search applies it before accepting

@@ -23,7 +23,7 @@ def comparison_detail(comparison: AtlasComparison, y: float) -> tuple[str, float
             line(f"{label if i == 0 else ' ' * len(label)} {chunk}", mono=True)
 
     line("Exact molecular and material differences", size=18)
-    line("Reference → selected; regional edits describe correspondence, not a physical reaction.")
+    line("Reference → selected: regional sequence changes.")
     for label, regions in (
         ("Hairpin", comparison.regions),
         ("Endpoint", comparison.endpoint_regions),

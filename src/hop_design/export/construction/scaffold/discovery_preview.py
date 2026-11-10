@@ -50,7 +50,6 @@ def preview_report(summary: dict[str, Any]) -> str:
             "Local search quotas remain in force within each branch.",
             "",
             "These settings are unevaluated. The achieved scaffold is checked after construction.",
-            "Catalog membership describes a recorded method, not laboratory stock.",
             "",
         ]
     )

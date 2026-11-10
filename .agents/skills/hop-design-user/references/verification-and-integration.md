@@ -5,6 +5,10 @@ product to a consumer.
 
 Read [provenance and verification](../../../../docs/provenance/overview.md).
 
+Verification checks file contents and reproduces the derived results from their
+saved inputs. A matching sequence digest links exact encodings; it does not
+give a design bundle and a method bundle the same identity.
+
 For a design bundle:
 
 ```python
@@ -25,5 +29,5 @@ The consumer compares
 `verified_design.plan.hairpin_encoding_insert.sequence_digest` with
 `verified_method.bundle.hairpin_encoding_digest` and the product projection
 digest. This comparison is caller-owned; it does not merge sibling bundle
-identities. Destination placement, assessment, and experimental observations
-remain downstream claims.
+identities. The downstream consumer owns destination placement, assessment,
+and observations.

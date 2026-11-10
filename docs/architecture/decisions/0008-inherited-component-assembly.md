@@ -34,9 +34,9 @@ Replacing either identifier with the other would discard provenance.
 Component assembly evaluates the supplied foldback and basal components,
 derives the paired payload, composes the five-part insert, and emits a verified
 bundle. Its state graph contains foldback, basal pairing, and insert assembly.
-It does not assert that HOP discovered the components or that a nicking or
-release route exists. Route-neutral foldback and basal views avoid invented
-pre/post-processing states.
+Component assembly evaluates supplied components independently of discovery or
+a known processing route. Route-neutral foldback and basal views show those
+components directly.
 
 At the time of this decision, `FoldbackEvaluationRequest.nick_boundary`
 duplicated the start of the retained tract without establishing that a nicking

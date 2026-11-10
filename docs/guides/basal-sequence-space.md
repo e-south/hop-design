@@ -1,5 +1,10 @@
 # Enumerate exact basal sequence populations
 
+The **basal region** is the construction junction at the hairpin's open end,
+opposite the loop. This guide counts exact local sequences that satisfy its
+declared cleavage and pairing constraints. A local sequence may have several
+enzyme arrangements or source completions that support it.
+
 HOP evaluates the complete source before counting distinct sequences in a local
 basal window. Different enzymes or outside source contexts can support the same
 local configuration; they do not multiply its count.
@@ -7,7 +12,10 @@ local configuration; they do not multiply its count.
 The [example request](../../examples/basal-sequence-space.yaml) reuses the public
 loxP payload and catalog from the [basal example](../../examples/basal-junction/README.md).
 It fixes nick displacement n=0 and paired gap e=0 and searches all four-base ends.
-The canonical contact W=max(1,e+k−n)=4 is derived from this geometry. It is not a
+Here **n** locates the nick relative to the payload boundary in nucleotides,
+**e** is the paired end-to-payload distance in base pairs, and **k** is the
+cohesive-end length in nucleotides. The local canonical-pairing window has
+W=max(1,e+k−n)=4 positions for this geometry. It is not a
 complete adapter length or a stability threshold. Full association remains
 explicitly unresolved.
 
@@ -24,9 +32,8 @@ print(verified.candidate_count, verified.admitted_count)
 ```
 
 The example has two nick-strand cases, 512 raw local configurations, and four
-admitted configurations. Its small catalog is a teaching context, not a claim
-about every enzyme. Source-duplex recognition and enzyme-defined cut offsets
-remain explicit.
+admitted configurations under its small teaching catalog. Source-duplex
+recognition and enzyme-defined cut offsets remain explicit.
 
 ## Counted object and constraints
 
@@ -36,6 +43,7 @@ bases up to the payload boundary. Its raw population is 4^(n+W). Exact end
 identities and enzyme programs constrain that population rather than multiplying
 its denominator. The local window must cover the future-end footprint.
 
+An enzyme **program** specifies the permitted cleavage actions for a case.
 Each program retains its exact target, placement-compatible source count,
 placement exclusion when applicable, admitted full-source set, and local set.
 Molecular admission checks intended and unintended actionable sites on the whole
@@ -88,7 +96,7 @@ recovers its first exact source, derives the canonical adapter and required
 recognition context, then performs ordinary molecular realization. Unsupported
 word/program combinations raise. Rank is an address, not an optimization score.
 
-Local existence does not establish full materials, association, thermodynamic
-stability, or experimental recovery. Cohesive-end optionality can be studied
-separately by projecting admitted words onto the end footprint. A union across
-varying sources does not mean one fixed source can produce every end.
+To complete a construction, resolve the full materials and association through
+[construction compilation](compile-construction.md). Study cohesive-end
+optionality separately by projecting admitted words onto the end footprint.
+Keep source identities distinct: each source can support a different set of ends.

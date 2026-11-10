@@ -24,9 +24,6 @@ def render_family_preview(summary: dict[str, Any]) -> bytes:
         text(405, 110, "Loop-side extension (bp)", 16),
         text(615, 173, "Loop size (nt)", 17),
         '<path d="M 470 128 v -10 h 80 v 10" stroke="#23313B" fill="none"/>',
-        text(
-            25, 280, "Dimension labels locate intent; drawing is not to scale or a prediction.", 14
-        ),
         text(25, 322, "Member", 17),
         text(235, 322, "Loop", 17),
         text(365, 322, "Loop-side extension", 17),

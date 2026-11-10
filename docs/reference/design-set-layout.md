@@ -2,8 +2,8 @@
 
 ## Question answered
 
-Did one bounded substrate-space specification produce a complete,
-deterministically ordered set of verified exact digital hairpin designs?
+A design-set package records the complete, deterministically ordered set of
+exact hairpin designs compiled from one bounded substrate-space specification.
 
 ## Package layout
 
@@ -23,8 +23,9 @@ deterministically ordered set of verified exact digital hairpin designs?
 └── review.html
 ```
 
-Only `bundle/` is authoritative. `spec.json` contains the normalized ordered
-per-position DNA domains and resolved versioned hairpin defaults reference.
+The verified design set lives in `bundle/`. `spec.json` contains the normalized
+DNA bases permitted at each position, in order, and the resolved versioned
+hairpin defaults reference.
 It excludes display names, the optional question, segment labels, and
 equivalent segment boundaries. `manifest.json` uses
 `hop.hairpin-design-set/v2` and records exact cardinality, complete coverage,
@@ -33,12 +34,11 @@ identities, final-encoding digests, the closed claim-status matrix, and a
 complete recursive artifact inventory. Each unique member directory is an
 unchanged verified `HopBundle`.
 
-The SVG, CSV, FASTA, and self-contained HTML files are regenerable
+The SVG, CSV, FASTA, and self-contained HTML files are regenerable views, called
 projections. The substrate-space projection shows the authored rule, derived
 pairing, exact cardinality, selected fixed context, and one expanded member.
 The design-set diagnostic includes every assignment in deterministic non-ranked order.
-The evidence receipt renders the manifest-backed claim status. These generic
-outputs do not select a paper example or panel composition. Editing or
+The evidence receipt renders the manifest-backed claim status. Editing or
 regenerating any projection does not change design-set identity.
 
 ## Invariants and identity
@@ -78,8 +78,3 @@ the space as blocked; no streaming or authoritative partial set is available.
 unmanifested, noncanonical, or path-unsafe content. It recomputes the
 collection identity, replays the symbolic expansion, and calls
 `load_verified_bundle` for every unique member.
-
-Verification establishes complete digital derivation and replay. It does not
-establish a production method, destination fit, physical construction,
-molecule-level complement fidelity, QC, folding behavior, or biological
-activity.
