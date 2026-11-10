@@ -6,7 +6,7 @@ from hop_design.models.construction.complete.state import ConstructionState
 from hop_design.models.construction.projections.inspection import MolecularStateInspection
 from hop_design.models.molecular_state import MaterialBaseLineage
 
-from .primitives.style import SCENE_TOP
+from .primitives.style import DUPLEX_ROW_GAP, SCENE_TOP
 
 
 def _state_points(state: ConstructionState) -> dict[tuple[str, int], tuple[float, float]]:
@@ -35,7 +35,7 @@ def _state_points(state: ConstructionState) -> dict[tuple[str, int], tuple[float
                 if i < turn_left:
                     point = (100 + i * 16, cursor)
                 elif i >= turn_right:
-                    point = (100 + (pair_sum - i) * 16, cursor + 44)
+                    point = (100 + (pair_sum - i) * 16, cursor + DUPLEX_ROW_GAP)
                 else:
                     angle = -math.pi / 2 + math.pi * (i - turn_left + 1) / (
                         turn_right - turn_left + 1
@@ -63,7 +63,7 @@ def _state_points(state: ConstructionState) -> dict[tuple[str, int], tuple[float
             first, last = contacts[0], contacts[-1]
             direction = 1 if last[1][0] > first[1][0] else -1
             offset = first[1][0] - direction * first[0] * 16
-            y = first[1][1] + 44
+            y = first[1][1] + DUPLEX_ROW_GAP
         for i in range(len(strand.sequence)):
             points[strand.strand_id, i] = (offset + direction * i * 16, y)
         cursor = max(cursor + 80, y + 80)

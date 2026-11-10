@@ -15,7 +15,7 @@ from hop_design.export.construction.survey.traces import TraceProjection
 from tests.unit.test_survey_plot import choices
 
 
-def test_publication_axes_remain_readable_in_a_two_column_plate():
+def test_publication_axes_remain_readable_in_a_full_width_trace():
     from hop_design.export.construction.presentation.figure_profile import LANDSCAPE_DETAIL_FIGURE
 
     drawing = ET.fromstring(
@@ -23,9 +23,9 @@ def test_publication_axes_remain_readable_in_a_two_column_plate():
             choices(), selected_identity="exact-one", profile=LANDSCAPE_DETAIL_FIGURE
         )
     )
-    # A seven-inch plate leaves 246 pt per column after its gutter and margins.
+    # The selected trace uses the seven-inch plate width.
     width = float(drawing.get("data-landscape-frame").split()[2])
-    assert float(drawing.get("font-size")) * 246 / width >= 7
+    assert float(drawing.get("font-size")) * 498 / width >= 7
 
 
 @pytest.mark.parametrize("profile", [INSPECTOR_FIGURE, replace(PUBLICATION_FIGURE, axis_font=35)])
@@ -42,7 +42,11 @@ def test_measured_headings_clear_values_and_retain_exact_overlay(profile):
     )
     font = float(drawing.get("font-size"))
     axes = [element for element in drawing if element.get("data-axis")]
-    assert len({axis.get("data-band") for axis in axes}) > 1
+    assert (
+        len({axis.get("data-band") for axis in axes}) == 1
+        if profile.single_row
+        else len({axis.get("data-band") for axis in axes}) > 1
+    )
     bottom_by_band = {}
     top_by_band = {}
     for axis in axes:

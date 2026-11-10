@@ -31,7 +31,7 @@ def test_selected_static_descriptor_retains_the_browser_vector_and_policy():
     drawing = ET.fromstring(render_comparison_vector(packet))
     assert drawing.get("data-preparation-id") == "other"
     assert [e.get("data-feature") for e in drawing.iter() if e.get("data-feature")] == expected_keys
-    displayed = [e.text for e in drawing.iter() if e.get("data-encoded")]
+    displayed = [e.get("data-encoded") for e in drawing.iter() if e.get("data-encoded")]
     assert [json.loads(text) for text in displayed] == json.loads(
         json.dumps([f["encoded"] for f in packet["vector"]])
     )

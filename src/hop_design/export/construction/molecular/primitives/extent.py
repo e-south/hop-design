@@ -22,6 +22,8 @@ def scene_bounds(root: ET.Element) -> tuple[float, float, float, float]:
         box = None
         if node.get("data-label-box"):
             box = json.loads(node.attrib["data-label-box"])
+        elif node.get("data-envelope-box"):
+            box = json.loads(node.attrib["data-envelope-box"])
         elif node.get("data-drawing-box"):
             box = [float(v) for v in node.attrib["data-drawing-box"].split()]
         elif node.get("data-base-index") is not None:

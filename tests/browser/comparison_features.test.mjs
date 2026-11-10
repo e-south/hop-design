@@ -56,7 +56,7 @@ test('the compact vector follows the saved active feature order with exact conta
 
 test('retained terminal fields remain exact and do not masquerade as complete hairpin tails',async t=>{
  const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});
- globalThis.document={createElement:element};
+ globalThis.document={createElement:element,createElementNS:element};
  const {comparisonReader,comparisonStrip}=await load(),p=packet();
  p.basis.schema_id='hop.molecular-comparison/v2';
  p.basis.shape_scales={five_prime_retained_tail_nt:2};
@@ -78,7 +78,7 @@ test('retained terminal fields remain exact and do not masquerade as complete ha
 
 test('strip prepares without changing visible identity, commits atomically and restores the pin',async t=>{
  const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});
- globalThis.document={createElement:element};
+ globalThis.document={createElement:element,createElementNS:element};
  const {comparisonStrip}=await load(),host=element(),strip=comparisonStrip(host,()=>{});
  const state={presentation:{landscape:'similarity'},map_index:{comparison:packet()},choices:{paths:['A','B'].map(id=>({materialized_realization_id:id}))}};
  const pin=strip.prepare('A',state);assert.equal(host.dataset.preparationId,undefined);pin();
@@ -90,7 +90,7 @@ test('strip prepares without changing visible identity, commits atomically and r
 
 test('descriptor names and units have separate lines without fragmenting either label',async t=>{
  const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});
- globalThis.document={createElement:element};
+ globalThis.document={createElement:element,createElementNS:element};
  const {comparisonStrip}=await load(),host=element(),p=packet();
  p.columns[0].label='Retained from 5′ tail';p.columns[0].unit='nt';
  const state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
@@ -100,4 +100,22 @@ test('descriptor names and units have separate lines without fragmenting either 
  assert.deepEqual(fields[1].children[0].children.map(n=>n.textContent),['Basal contacts']);
  assert.equal(fields[0].children[3].dataset.encoded,'4');
  assert.match(fields[0].title,/Retained from 5′ tail: 4 nt/);
+});
+
+test('decoded strip shows scientific scalar values while retaining exact stored encodings',async t=>{
+ const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});
+ globalThis.document={createElement:element,createElementNS:element};
+ const {comparisonStrip}=await load(),host=element(),strip=comparisonStrip(host,()=>{});
+ const p=packet(),state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
+ strip.prepare('B',state)();
+ assert.equal(host.dataset.comparisonDisplay,'decoded');
+ const fields=host.children[0].children.filter(e=>e.dataset.feature);
+ assert.deepEqual(fields.map(e=>e.dataset.feature),['shape.five_prime_unpaired_nt','sequences.basal_pairs','interfaces.left_word']);
+ const scalar=fields[0];
+ assert.equal(scalar.children.find(e=>e.className==='comparison-value').textContent,'6');
+ const code=scalar.children.find(e=>e.className==='comparison-code');
+ assert.equal(code.dataset.encoded,'6');assert.equal(code.hidden,true);
+ const contacts=fields[1].children.find(e=>e.className==='comparison-value');
+ const glyphs=contacts.children.find(e=>e.className==='comparison-contact-glyphs');
+ assert.equal(glyphs.children[0].dataset.contactGlyph,'diamond');
 });

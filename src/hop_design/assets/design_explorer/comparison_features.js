@@ -49,7 +49,7 @@ export function distanceDescription(block,key,basis) {
 function field(feature,basis) {
  const [block,key]=feature.key.split('.'),label=feature.label||names[key][0],unit=feature.unit??names[key][1];
  const node=element('span',undefined,'comparison-feature');node.tabIndex=0;
- node.dataset.feature=feature.key;node.dataset.parameterKeys=JSON.stringify(feature.parameters);node.dataset.active=String(feature.active);
+ node.dataset.feature=feature.key;node.style?.setProperty('--comparison-weight',String(feature.encoding==='contacts'?Math.max(1,feature.value.length/6):1));node.dataset.parameterKeys=JSON.stringify(feature.parameters);node.dataset.active=String(feature.active);
  const title=element('span',undefined,'comparison-name'),value=element('span',undefined,'comparison-value');
  title.append(element('span',label));if(unit)title.append(element('span',unit));
  node.append(title,value);
@@ -57,27 +57,34 @@ function field(feature,basis) {
  if(block==='sequences'&&['basal_pairs','foldback_pairs'].includes(key)){
   // Both rows follow the descriptor's ordered contacts. These are not two
   // independently authored strands, and contact classes remain part of the data.
-  const upper=element('span'),lower=element('span');
+  const upper=element('span'),lower=element('span'),glyphs=element('span',undefined,'comparison-contact-glyphs');
   feature.value.forEach(([a,b,kind])=>{
    for(const [row,base] of [[upper,a],[lower,b]]){
     const letter=element('span',base);letter.dataset.contactClass=kind;row.append(letter);
    }
+   const glyph=document.createElementNS('http://www.w3.org/2000/svg','svg');
+   glyph.setAttribute('viewBox','0 0 8 12');glyph.setAttribute('aria-hidden','true');
+   glyph.dataset.contactGlyph=kind==='watson_crick'?'line':'diamond';glyph.dataset.contactClass=kind;
+   const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+   path.setAttribute('d',kind==='watson_crick'?'M4,0 V12':'M4,1 L7,6 L4,11 L1,6 Z');
+   path.setAttribute('fill','none');path.setAttribute('stroke','currentColor');path.setAttribute('stroke-width','1');
+   glyph.append(path);glyphs.append(glyph);
   });
   if(!feature.value.length)upper.textContent='∅';
-  value.append(upper,lower);value.classList.add('comparison-pairs');
+  value.append(upper,glyphs,lower);value.classList.add('comparison-pairs');
   description=feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join('; ')||'No paired positions';
  } else {
   const text=block==='sequences'?(feature.value.join('')||'∅'):key.endsWith('polarity')?({'five_prime':'5′','three_prime':'3′'}[feature.value]):String(feature.value);
-  if(block!=='shape')value.textContent=text;description=`${text}${unit?' '+unit:''}`;
+  value.textContent=text;description=`${text}${unit?' '+unit:''}`;
  }
  const encoded=JSON.stringify(feature.encoded),code=element('code',encoded,'comparison-code');
- code.dataset.encoded=encoded;
+ code.dataset.encoded=encoded;code.hidden=true;code.setAttribute('aria-hidden','true');
  const connector=element('span',undefined,'comparison-encoding-link');connector.setAttribute('aria-hidden','true');
- if(block==='shape')connector.hidden=true;
+ connector.hidden=true;
  node.append(connector,code);
  const scale=feature.active?' '+distanceDescription(block,key,basis):'';
  const retention=key.includes('retained_tail')?' Hairpin-tail bases contributing through recorded copying or primer binding to either insert strand; each template base is counted once.':'';
- const encoding=feature.encoding==='contacts'?' The integer list is the saved contact encoding; each code identifies the displayed source base, paired base and contact class. Codes are labels, not numerical distances.':'';
+ const encoding=feature.encoding==='contacts'?' Stored nominal IDs preserve these displayed ordered contacts and classes; they have no numerical ordering.':'';
  node.title=`${label}: ${description}. ${feature.active?'Used in molecular distance.':'Constant in this atlas; does not affect distance.'}${scale}${retention}${encoding}`;
  node.setAttribute('aria-label',node.title);return node;
 }
@@ -98,7 +105,7 @@ export function comparisonStrip(host,onFocus) {
    const heading=element('span','x = [','comparison-vector-open');
    heading.title='Molecular descriptors define dissimilarity; the layout uses that dissimilarity, not Euclidean distance on these displayed values. The supplied stem is held fixed; methods are excluded. '+(reading.basis.schema_id==='hop.molecular-comparison/v2'?'Only tail bases contributing through recorded copying or primer binding to the released insert affect distance; discarded handle changes do not move the scaffold.':'This saved comparison includes complete hairpin tail lengths.');
    content.push(heading,...reading.vector.map(f=>field(f,reading.basis)),element('span',']','comparison-vector-close'));
-   return ()=>{panel.replaceChildren(...content);host.dataset.preparationId=identity;host.hidden=false;};
+   return ()=>{panel.replaceChildren(...content);host.dataset.preparationId=identity;host.dataset.comparisonDisplay='decoded';host.hidden=false;};
   },
   clear(){host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;},
  };

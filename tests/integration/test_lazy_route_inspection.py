@@ -117,7 +117,7 @@ def test_inspector_pin_and_hover_share_readable_profile_without_changing_public_
         axes = ET.fromstring(
             (session.root / state["plots"]["inspection"].removeprefix("/files/")).read_bytes()
         )
-        assert float(axes.get("viewBox").split()[2]) == 600
+        assert float(axes.get("viewBox").split()[2]) == INSPECTOR_FIGURE.width
         assert state["trace_projection"]["frame"] == axes.get("data-landscape-frame")
         assert hovered["figure_layout"]["frame"] == state["figure_layout"]["frame"]
         assert dict(choices.atlas(selected)._files)["overview.svg"] == public_overview

@@ -20,6 +20,8 @@ class FigureProfile:
     teaching_slot_step: int = 120
     heading_columns: int = 9
     stable_teaching_slot: bool = False
+    compact_context: bool = False
+    single_row: bool = False
 
 
 PUBLICATION_FIGURE = FigureProfile("publication/v1")
@@ -27,7 +29,11 @@ PUBLICATION_FIGURE = FigureProfile("publication/v1")
 # Seven primary coordinates fit one row; detailed views retain continuation rows.
 LANDSCAPE_DETAIL_FIGURE = FigureProfile(
     "landscape-detail/v1",
-    axis_font=35,
+    width=1800,
+    axis_font=28,
+    single_row=True,
+    heading_columns=10,
+    compact_context=True,
     teaching_font=32,
     teaching_base_font=19,
     loop_label_below=True,
@@ -35,12 +41,14 @@ LANDSCAPE_DETAIL_FIGURE = FigureProfile(
 )
 INSPECTOR_FIGURE = FigureProfile(
     "inspector/v1",
-    width=600,
-    axis_font=19,
+    width=1800,
+    single_row=True,
+    axis_font=28,
+    compact_context=True,
     teaching_font=32,
     key_font=31,
     minimum_teaching_slot=300,
     teaching_slot_step=60,
-    heading_columns=7,
+    heading_columns=10,
     stable_teaching_slot=True,
 )

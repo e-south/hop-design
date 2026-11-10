@@ -23,8 +23,8 @@ def test_inspector_profile_keeps_exact_paths_with_readable_annotation_scale():
     tree = ET.fromstring(
         render_survey_plot(records, selected_identity="exact-one", profile=INSPECTOR_FIGURE)
     )
-    assert float(tree.get("font-size")) * 412 / float(narrow.frame.split()[2]) >= 12
-    assert float(narrow.frame.split()[2]) == 600
+    assert float(tree.get("font-size")) * 800 / float(narrow.frame.split()[2]) >= 12
+    assert float(narrow.frame.split()[2]) == INSPECTOR_FIGURE.width
     assert plot_geometry(tree) == narrow.figure_geometry
     path = next(e for e in tree.iter() if e.get("data-selected") == "true")
     assert narrow.trace("exact-one")["path"] == path.get("d")

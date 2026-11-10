@@ -64,7 +64,7 @@ def position_primer(
     """Find the nearest normal offset clearing the complete directional outline.
 
     Sample the outline, including its wedge, against the recorded base centers.
-    A 23-unit exclusion radius covers a 13-unit strand half-width, half-pitch
+    A 18-unit exclusion radius covers a 13-unit strand half-width, half-pitch
     between adjacent bases and visible separation. This changes input placement
     only; template addresses, sequence order and extension direction stay fixed.
     If nearby lanes are occupied, translate the preferred silhouette beyond the
@@ -77,12 +77,12 @@ def position_primer(
     # avoiding a scan of the whole molecule for every outline sample.
     bins: dict[tuple[int, int], list[Point]] = defaultdict(list)
     for x, y in molecule:
-        bins[floor(x / 23), floor(y / 23)].append((x, y))
+        bins[floor(x / 18), floor(y / 18)].append((x, y))
 
     def clear(x: float, y: float) -> bool:
-        i, j = floor(x / 23), floor(y / 23)
+        i, j = floor(x / 18), floor(y / 18)
         return all(
-            (x - a) ** 2 + (y - b) ** 2 >= 23**2
+            (x - a) ** 2 + (y - b) ** 2 >= 18**2
             for dx in (-1, 0, 1)
             for dy in (-1, 0, 1)
             for a, b in bins.get((i + dx, j + dy), ())
@@ -122,6 +122,6 @@ def position_primer(
     nx, ny = -(b[1] - a[1]) * outward / length, (b[0] - a[0]) * outward / length
     outline, _ = primer_outline(preferred, outward=outward)
     shift = max(
-        0, max(x * nx + y * ny for x, y in molecule) + 24 - min(x * nx + y * ny for x, y in outline)
+        0, max(x * nx + y * ny for x, y in molecule) + 19 - min(x * nx + y * ny for x, y in outline)
     )
     return [(x + nx * shift, y + ny * shift) for x, y in preferred]

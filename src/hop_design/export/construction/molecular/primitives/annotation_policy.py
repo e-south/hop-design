@@ -85,13 +85,13 @@ def draw_site_key(
         )
         x += extent
     captions: tuple[str, ...] = (
-        "Dashed site: partial / unresolved · Hollow / filled cut: planned / applied.",
-        "Unmarked termini: OH · P: phosphate.",
-        "Diamond: noncanonical · Bridge: joined · End words: 5\u2032→3\u2032; gap in bp.",
+        "Dashed site: partial / unresolved, Hollow / filled cut: planned / applied.",
+        "Unmarked termini: OH, P: phosphate.",
+        "Diamond: noncanonical, Bridge: joined, End words: 5\u2032→3\u2032; gap in bp.",
     )
     if not include_events:
         captions = (
-            "Dashed site: partial / unresolved · Diamond: noncanonical · "
+            "Dashed site: partial / unresolved, Diamond: noncanonical, "
             "P: phosphate; unmarked termini: OH.",
         )
     for caption in captions:

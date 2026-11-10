@@ -93,6 +93,13 @@ def inspection_overlays(
             (len(strand.sequence) - 1, terminal_label("3\u2032", strand.three_prime_end)),
         ):
             label = chemistry.removesuffix("OH")
+            if projection.state.phase.value == "selected_fragments" and label == "3\u2032":
+                rows.append(
+                    f'<g data-terminal-display="metadata" data-terminal-chemistry="{chemistry}" '
+                    f'data-terminal-strand="{escape(strand.strand_id)}" '
+                    f'data-terminal-index="{index}"><title>{chemistry}</title></g>'
+                )
+                continue
             x, y = points[strand.strand_id, index]
             neighbor = 1 if index == 0 else index - 1
             nx, _ = points.get((strand.strand_id, neighbor), (x + 16, y))
@@ -216,7 +223,7 @@ def inspection_overlays(
             f"{interface.distance_bp} bp to the supplied stem</title>"
         )
         rows.append(f'<path d="M{x},{by + 5} V{by} H{z} V{by + 5}" fill="none" stroke="#AE6820"/>')
-        text(min(x, z), by - 8, f"{interface.sequence} · {interface.distance_bp} bp", "#8C5318")
+        text(min(x, z), by - 8, f"{interface.sequence}, {interface.distance_bp} bp", "#8C5318")
         overhang = [point(a) for a in interface.overhang]
         lo, hi = min(a for a, _ in overhang) - 7, max(a for a, _ in overhang) + 7
         top = min(b for _, b in overhang) - 12

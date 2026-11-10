@@ -24,7 +24,13 @@ def test_repeated_sites_keep_both_addressed_footprints_and_names():
                 recognition=addresses,
             )
         )
-    projection = NS(operations=(), recognition_sites=sites, state=NS(state_id="state"))
+    projection = NS(
+        operations=(),
+        recognition_sites=sites,
+        state=NS(state_id="state", pairings=()),
+        bases=(),
+        layout_frame=None,
+    )
     root = ET.fromstring("<svg>" + recognition_site_overlays(projection, points) + "</svg>")
     assert len([e for e in root.iter() if e.get("data-site-id")]) == 2
     assert len([e for e in root.iter() if e.get("data-members")]) == 2
@@ -63,7 +69,13 @@ def test_strand_aware_names_preserve_every_site_status_and_side():
                 recognition=addresses,
             )
         )
-    projection = NS(operations=(), recognition_sites=sites, state=NS(state_id="state"))
+    projection = NS(
+        operations=(),
+        recognition_sites=sites,
+        state=NS(state_id="state", pairings=()),
+        bases=(),
+        layout_frame=None,
+    )
     root = ET.fromstring(
         "<svg>" + recognition_site_overlays(projection, points, strand_labels=True) + "</svg>"
     )

@@ -9,8 +9,8 @@ from hop_design.models.construction.projections.inspection import MolecularState
 
 from .label_layout import LabelPlacer
 from .primitives.annotation_policy import footprint_color
-from .primitives.ribbon import ribbon_points, rounded_path
-from .primitives.style import ANNOTATION_SIZE, SITE_HALF_WIDTH, object_id
+from .primitives.ribbon import footprint_envelope, rounded_path
+from .primitives.style import ANNOTATION_SIZE, DUPLEX_ROW_GAP, object_id
 from .primitives.typography import text_width
 
 
@@ -58,60 +58,78 @@ def recognition_site_overlays(
             f"<title>{escape(site.enzyme_name)}; {role}; {site.orientation}; "
             f"{site.presence}; substrate eligibility: {site.substrate_eligibility}</title>"
         )
-        runs: list[list[tuple[float, float]]] = []
-        run_addresses: list[list[tuple[str, int]]] = []
-        previous = None
-        for address in site.recognition:
-            position = points[address.strand_id, address.index]
-            if (
-                previous is None
-                or address.strand_id != previous.strand_id
-                or address.index != previous.index + 1
-                or abs(position[0] - runs[-1][-1][0]) > 32
-                or abs(position[1] - runs[-1][-1][1]) > 24
-            ):
-                runs.append([])
-                run_addresses.append([])
-            runs[-1].append(position)
-            run_addresses[-1].append((address.strand_id, address.index))
-            previous = address
+        members = [(a.strand_id, a.index) for a in site.recognition]
         boxes = []
-        half_width = (
-            32 if len({address.strand_id for address in site.recognition}) == 1 else SITE_HALF_WIDTH
-        )
-        for members in run_addresses:
-            context = list(members)
-            for step in (-1, 1):
-                for _ in range(2):
-                    strand, index = context[0] if step < 0 else context[-1]
-                    neighbor = (strand, index + step)
-                    if neighbor not in points:
-                        break
-                    current_point, neighbor_point = points[strand, index], points[neighbor]
-                    if (
-                        abs(current_point[0] - neighbor_point[0]) > 32
-                        or abs(current_point[1] - neighbor_point[1]) > 24
-                    ):
-                        break
-                    if step < 0:
-                        context.insert(0, neighbor)
-                    else:
-                        context.append(neighbor)
-            start, end = context.index(members[0]), context.index(members[-1])
-            outline = ribbon_points([points[k] for k in context], half_width, start, end)
+        remaining = set(members)
+        clusters = []
+        while remaining:
+            cluster = [min(remaining)]
+            remaining.remove(cluster[0])
+            for key in cluster:
+                neighbors = [
+                    k
+                    for k in sorted(remaining)
+                    if abs(points[k][0] - points[key][0]) <= 24
+                    and abs(points[k][1] - points[key][1]) <= 60
+                ]
+                cluster.extend(neighbors)
+                remaining.difference_update(neighbors)
+            clusters.append(cluster)
+        for cluster in clusters:
+            positions = [points[key] for key in cluster]
+            origins = {
+                b.origin.origin_strand
+                for b in projection.bases
+                if (b.address.strand_id, b.address.index) in cluster
+            }
+            paired = [
+                points[other]
+                for pair in projection.state.pairings
+                for key, other in [
+                    (
+                        (pair.left_strand_id, pair.left_index),
+                        (pair.right_strand_id, pair.right_index),
+                    ),
+                    (
+                        (pair.right_strand_id, pair.right_index),
+                        (pair.left_strand_id, pair.left_index),
+                    ),
+                ]
+                if key in cluster and other in points
+            ]
+            if paired:
+                positions += paired
+            elif len(origins) == 1:
+                # Recorded paired/frame geometry distinguishes upper/lower rows;
+                # a source primary strand supplies the future upper row.
+                if projection.state.pairings or projection.layout_frame:
+                    middle = (
+                        min(y for _, y in points.values()) + max(y for _, y in points.values())
+                    ) / 2
+                    offset = (
+                        DUPLEX_ROW_GAP
+                        if sum(y for _, y in positions) / len(positions) <= middle
+                        else -DUPLEX_ROW_GAP
+                    )
+                else:
+                    offset = DUPLEX_ROW_GAP if next(iter(origins)) == "primary" else -DUPLEX_ROW_GAP
+                positions += [(x, y + offset) for x, y in positions]
+            outline = footprint_envelope(positions)
             x, z = min(p[0] for p in outline), max(p[0] for p in outline)
             y, w = min(p[1] for p in outline), max(p[1] for p in outline)
             boxes.append((x, z, y, w))
+            labels.occupied.append((x, y, z - x, w - y))
             contour = rounded_path(outline, radius=6)
             dash = ' stroke-dasharray="5 3"' if site.presence in {"partial", "unresolved"} else ""
             rows.append(
-                f'<path data-members="{escape(json.dumps(members), quote=True)}" '
-                f'data-path-members="{escape(json.dumps(context), quote=True)}" '
-                f'data-path-start="{start}" data-path-end="{end}" '
-                f'data-recognition-footprint="{half_width}" d="{contour}" '
+                f'<path data-members="{escape(json.dumps(cluster), quote=True)}" '
+                f'data-path-members="{escape(json.dumps(cluster), quote=True)}" '
+                f'data-path-start="0" data-path-end="{len(cluster) - 1}" '
+                f'data-envelope-box="{escape(json.dumps([x, y, z - x, w - y]), quote=True)}" '
+                f'data-recognition-footprint="18" d="{contour}" '
                 f'fill="{color}" fill-opacity=".2" stroke="{color}" '
-                f'stroke-opacity="{1 if operation else 0.85}" '
-                f'stroke-linejoin="round" stroke-width="{2.8 if operation else 1.8}"{dash}/>'
+                f'stroke-opacity="{1 if operation else 0.85}" stroke-linejoin="round" '
+                f'stroke-width="{2.8 if operation else 1.8}"{dash}/>'
             )
         if (
             boxes

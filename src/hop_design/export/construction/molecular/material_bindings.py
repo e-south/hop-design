@@ -11,7 +11,7 @@ from .primitives.materials import input_box
 from .primitives.primer_geometry import outward_side, position_primer
 from .primitives.primer_shape import primer_contour
 from .primitives.style import ANNOTATION_SIZE, BASE_SIZE, INK, object_id
-from .primitives.typography import fitted_base_size
+from .primitives.typography import base_ink_shift, fitted_base_size
 
 
 def material_binding_overlays(
@@ -65,7 +65,8 @@ def material_binding_overlays(
         for i, (base, (bx, by)) in enumerate(zip(sequence, positions, strict=True)):
             rows.append(
                 f'<text data-input-base-index="{i}" x="{bx}" y="{by + 5}" '
-                f'font-size="{fitted_base_size(base, base_size):g}" text-anchor="middle" '
+                f'font-size="{fitted_base_size(base, base_size):g}" '
+                f'dy="{base_ink_shift(fitted_base_size(base, base_size)):g}" text-anchor="middle" '
                 f'fill="{INK}">{base}</text>'
             )
         role = material_role_label(item.material_use.role)
@@ -85,6 +86,7 @@ def material_binding_overlays(
                 above=sum(y for _, y in positions) / len(positions)
                 < sum(y for _, y in template) / len(template),
                 label_size=label_size,
+                positions=positions,
             )
         )
         rows.append("</g>")

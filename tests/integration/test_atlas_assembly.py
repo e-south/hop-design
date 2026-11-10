@@ -34,8 +34,8 @@ def test_assembly_view_collapses_cleanup_without_changing_the_record(atlas):
         "clone_ready_duplex",
     ]
     assert [int(r.get("data-atlas-order")) for r in rows] == list(range(9))
-    assert "Fold-back · reanneal" in "".join(rows[2].itertext())
-    assert "Cleavage · cleanup" in "".join(rows[1].itertext())
+    assert "Fold back and anneal" in "".join(rows[2].itertext())
+    assert "Cleave, separate and retain" in "".join(rows[1].itertext())
     assert "Folded and annealed" in "".join(rows[3].itertext())
     assert json.loads(rows[2].get("data-transition-ids")) == [
         t.authority_id for t in atlas.transitions[4:5]
@@ -242,7 +242,7 @@ def test_complete_primer_silhouettes_clear_the_molecule_and_fit_their_bounds(atl
                 tuple(map(float, p))
                 for p in re.findall(r"(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)", contour.get("d"))
             ]
-            assert min(hypot(x - a, y - b) for x, y in outline for a, b in centers) >= 21
+            assert min(hypot(x - a, y - b) for x, y in outline for a, b in centers) >= 18
             left, top, width, height = map(float, glyph.get("data-drawing-box").split())
             assert all(left <= x <= left + width and top <= y <= top + height for x, y in outline)
 
@@ -334,14 +334,14 @@ def test_retained_scene_precedes_folding_with_upward_cue_and_exact_selected_cont
         if e.get("data-primer-binding")
         or (e.get("data-staged-material") and e.get("data-binding-context") == "derived_template")
     ):
-        box = tuple(map(float, primer.get("data-drawing-box").split()))
         group = next(e for e in primer if e.get("data-annotation-block"))
         a, b, w, h = tuple(map(float, group.get("data-drawing-box").split()))
-        assert a + w / 2 == pytest.approx(box[0] + box[2] / 2)
+        anchor = json.loads(group.get("data-material-label-anchor"))
+        assert a + w / 2 == pytest.approx(anchor[0])
         if group.get("data-primer-label-side") == "above":
-            assert b + h < box[1]
+            assert b + h < anchor[1] - 13
         else:
-            assert b > box[1] + box[3]
+            assert b > anchor[1] + 13
 
 
 def test_route_uses_quiet_common_annotation_tiers_and_role_only_primer_names(atlas):

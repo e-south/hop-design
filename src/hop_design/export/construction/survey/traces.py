@@ -40,7 +40,7 @@ class TraceProjection:
             axis["definition"]["key"]: {n["value"]: n for n in axis["definition"]["nodes"]}
             for axis in self.axes
         }
-        self.frame = f"0 0 {profile.width} {layout.height:g}"
+        self.frame = f"0 0 {layout.width} {layout.height:g}"
         self.figure_geometry = {
             "frame": self.frame,
             "anchors": {

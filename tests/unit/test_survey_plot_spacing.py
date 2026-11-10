@@ -157,3 +157,40 @@ def test_recognition_name_does_not_wrap_a_single_character_suffix():
     node = {"label": "Nt.Bpu10I", "value": "example:enzyme/nt.bpu10i@1"}
     contour = node_geometry(axis, node)
     assert contour["lines"] == ["Nt.Bpu10I"]
+
+
+def test_selected_all_axis_recipe_stays_on_one_row_with_measured_widths():
+    from hop_design.export.construction.presentation.figure_profile import LANDSCAPE_DETAIL_FIGURE
+
+    labels = [
+        ("Basal nickase", "Nb.BssSI", "recognition"),
+        ("Foldback nickase", "Nt.Bpu10I", "recognition"),
+        ("Release enzyme", "BsaI-HFv2", "recognition"),
+        ("Loop sequence", "AAAACG", "sequence"),
+        ("Left sticky end", "CGAG", "sequence"),
+        ("Right sticky end", "CAAG", "sequence"),
+        ("Left gap", "0", "span"),
+        ("Right gap", "0", "span"),
+        ("Loop size", "4", "span"),
+        ("Loop-side extension", "6", "span"),
+        ("Join offset", "2", "span"),
+        ("Basal paired extent", "18", "span"),
+    ]
+    axes = [
+        {
+            "key": str(i),
+            "label": name,
+            "symbol": "",
+            "kind": "categorical",
+            "representation": kind,
+            "unit": "",
+            "nodes": [{"value": value, "label": value, "supported_preparations": 1}],
+        }
+        for i, (name, value, kind) in enumerate(labels)
+    ]
+    for profile in [LANDSCAPE_DETAIL_FIGURE, INSPECTOR_FIGURE]:
+        plotted = plot_axes({"axes": axes}, profile=profile)
+        assert len(plotted) == len(axes)
+        assert {a["band"] for a in plotted} == {0}
+        for left, right in pairwise(plotted):
+            assert right["x"] - right["width"] / 2 >= left["x"] + left["width"] / 2 + 6 - 1e-8

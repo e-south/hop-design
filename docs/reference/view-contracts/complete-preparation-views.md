@@ -86,25 +86,26 @@ The compact teaching hairpin uses these same bands, base typography and site
 contours. The band carries the backbone visually; addressed backbone edges remain
 in the SVG without a second dashed texture. Separate strands leave a visible gap
 even when their terminal bases occupy adjacent positions.
-The hairpin/trace detail accompanying a similarity landscape uses larger labels
-for a column in a paired seven-inch plate. Its axis labels remain at least 7 pt
-at a 246 pt panel width; broader parameter sets use measured continuation bands.
-The column detail places its loop-size label below the cap, leaving more width
-for the molecule, and reserves space between the molecule and trace for a panel
-letter. Nucleotide type is fitted to measured glyph widths; material letters are
-centered on their recorded drawing positions. Standalone parameter figures retain
-their full-width profile. Exact base addresses are unchanged. A composed plate
-must still check its final scaling and provide full-resolution or continuation
-exports for base readability.
-The compact single-hairpin overview reserves primer silhouettes and structural
-measurements before placing enzyme names. It names one best-mapped footprint per
-enzyme and displayed presence status, using the shared enzyme color. Every site
-keeps its addressed footprint, presence and title. Per-site enzyme leaders are
-omitted from this parameter overview so they do not cross materials or dimensions;
-the procedural route retains its separate names and curved site leaders.
+The hairpin/trace detail accompanying a similarity landscape preserves every
+caller-declared axis and category. Selected traces use measured, nonuniform
+column widths on one row; longer recipes expand the drawing width instead of
+omitting axes. At article width the standard selected trace retains readable
+type. Narrow browser panes provide horizontal access. Complete permission and
+coverage notes stay embedded, with concise recorded-collection context visible.
+Nucleotide ink uses an explicit uppercase cap-height offset for consistent SVG
+and PDF centering. Exact per-base hit rectangles and addresses remain separate
+from typography. Full-resolution and continuation exports preserve base access.
+The concise single-hairpin overview reserves complete primer silhouettes and
+labels before placing connected enzyme names. One best-mapped footprint per
+enzyme and displayed presence status anchors its curved callout; every site keeps
+its own footprint, presence and title. Regional headings and floating dimensions
+are omitted here because the accompanying grouped trace supplies that context;
+parameter locations and complete definitions remain address-bound in metadata.
 Recognition sites use translucent, rounded bands above region fills and beneath
-nucleotide ink. A single-strand footprint retains a duplex-height envelope.
-Their shape follows the same base path, including handle bends.
+nucleotide ink. The actual or lineage-bound duplex frame supplies each footprint envelope. A
+source primary strand reserves the absent complementary row below it. The two row
+projections of one site share one rounded envelope; genuinely distinct sites and
+spatially separate occurrences retain separate bands.
 Enzyme names have contrast-bearing curved leaders from the recorded footprint
 center to their collision-placed label, without a competing direction arrow;
 recorded orientation remains available in the projection and SVG metadata.
@@ -136,18 +137,19 @@ The default `"complete"` presentation and the atlas JSON retain every recorded
 state. When the recorded cleanup chain is present, the assembly drawing shows
 the actual **Cleaved and retained** selected-fragments state as linear strands,
 then **Folded and annealed**. It omits the separate cleaved-duplex and denatured
-snapshots. The **Cleavage · cleanup** arrow retains their three transition
-identities in `data-transition-ids`; the retained scene's **Fold-back · reanneal**
+snapshots. The **Cleave, separate and retain** arrow retains their three transition
+identities in `data-transition-ids`; the retained scene's **Fold back and anneal**
 arrow names the recorded annealing transition. The directional cue sits above
 the exposed retained end before folding; it does not add molecular pairings.
 When exact recorded ancestry establishes the common precursor frame, discarded
 strands remain as white, dashed reference ghosts with faint nucleotide ink and
 no pairing marks. Their `data-ghost-base-index` and reference-state addresses are
-separate from active state-base occurrences; they add no retained material.
+separate from active state-base occurrences; they add no retained material. Secondary retained 3′-OH labels may stay in
+metadata when their visible names would collide with reference ghosts or the cue.
 
 Region ribbons use dark, distinct hues with adaptive nucleotide ink. Pale
 comparison tiles keep dark text; dark structural ribbons use white text. Primer
-names are centered above or below their own silhouettes, with the nearest legal
+names are centered above or below their horizontal nucleotide run, with the nearest legal
 clearance from the template. Local operation arrows and column continuation
 share one stroke and arrow vocabulary. These presentation rules change no
 sequence, pairing, material chemistry, identity or recorded atlas coordinate.
@@ -230,3 +232,12 @@ labels show the recorded word in 5′→3′ order and its gap to the supplied s
 Single-base parameter connectors mark their exact origins. A contact count can
 link to its individual recorded contacts, rather than a whole neighborhood.
 These marks do not add choices, contacts, cuts or preparation witnesses.
+
+The comparison descriptor displays decoded scientific feature values in vector
+order: scalar values, intact words and ordered contact rows with canonical lines
+or noncanonical diamonds. Whole feature cells continue on additional rows only
+when necessary. The printed component uses native 8.5 pt type at seven-inch
+width. Exact nominal encodings and the unchanged comparison policy remain in the
+embedded JSON and addressed per-feature attributes; their IDs imply no numerical
+ordering. The browser presents the same decoded values within the available map
+pane, independently of the open inspector.

@@ -109,7 +109,7 @@ def compact_recognition_overlays(
         labels.placer,
         label_size=labels.size,
         strand_labels=True,
-        site_leaders=False,
+        site_leaders=True,
         label_site_ids=frozenset(names.values()),
     )
 

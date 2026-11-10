@@ -85,7 +85,7 @@ def test_display_projection_preserves_saved_view_and_comparison(captured_choices
         assert "families.json" in files and "trace.svg" in files
     if view == "similarity":
         trace = ET.fromstring(files["trace.svg"])
-        assert float(trace.get("font-size")) * 246 / 1200 >= 7
+        assert float(trace.get("font-size")) * 498 / float(trace.get("viewBox").split()[2]) >= 7
         overview = ET.fromstring(files["overview.svg"])
         original = ET.fromstring(dict(choices.atlas(saved)._files)["overview.svg"])
 

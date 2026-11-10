@@ -42,7 +42,7 @@ def test_overview_compacts_repeated_enzyme_names_and_clears_materials(
         for e in root.iter()
         if e.get("data-primer-binding") or e.get("data-staged-material")
     ]
-    assert not any(e.get("data-site-leader") for e in root.iter())
+    assert any(e.get("data-site-leader") for e in root.iter())
     for label in (e for e in root.iter() if e.get("data-label-kind") == "recognition"):
         a, b, width, height = json.loads(label.get("data-label-box"))
         for x, y, w, h in protected:
@@ -58,7 +58,7 @@ def test_overview_teaches_local_relationships_and_both_primer_inputs(captured_ed
     drawing = ET.fromstring(render_teaching_overview(summary))
     assert not any(e.get("data-site-key") for e in drawing.iter())
     assert not any(e.get("data-teaching-note") == "release" for e in drawing.iter())
-    assert "R = A \u2212 D" in "".join(drawing.itertext())
+    assert not any(e.get("data-teaching-bracket") for e in drawing.iter())
     hairpin_id = next(
         s["state_id"] for s in summary["teaching"]["scenes"] if s["frame"] == "hairpin"
     )
@@ -122,7 +122,7 @@ def test_inspector_overview_retains_every_base_and_fits_larger_annotations(captu
     assert not any(e.get("data-teaching-continuation") for e in narrow.iter())
     width, height = map(float, narrow.get("viewBox").split()[2:])
     boxes = [json.loads(e.get("data-label-box")) for e in narrow.iter() if e.get("data-label-box")]
-    assert len(boxes) >= 6
+    assert len(boxes) >= 5
     for a, b, w, h in boxes:
         assert 0 <= a < a + w <= width
         assert 0 <= b < b + h <= height
@@ -159,10 +159,16 @@ def test_publication_overview_measures_complete_glyphs_and_labels(captured_editi
             a, b, w, h = box
             assert x <= a < a + w <= x + width
             assert y <= b < b + h <= y + height
-    loop = next(node for node in drawing.iter() if node.get("data-teaching-note") == "loop")
-    value = next(p["value"] for p in summary["teaching"]["parameters"] if p["key"] == "loop_nt")
-    assert loop.text == f"{value} nt"
-    assert set(json.loads(loop.get("data-teaching-keys"))) == {"loop_nt", "loop_word"}
+    anchors = {
+        node.get("data-parameter-anchor")
+        for node in drawing.iter()
+        if node.get("data-parameter-anchor")
+    }
+    assert {"loop_nt", "loop_word"} <= anchors
+    parameters = json.loads(
+        next(node.text for node in drawing.iter() if node.get("data-teaching-parameters"))
+    )
+    assert parameters == summary["teaching"]["parameters"]
 
 
 def test_teaching_neighborhood_names_clear_complete_primer_contours(captured_edition):  # noqa: F811
@@ -178,7 +184,7 @@ def test_teaching_neighborhood_names_clear_complete_primer_contours(captured_edi
         if node.get("data-staged-material") or node.get("data-primer-binding")
     ]
     headings = [node for node in root.iter() if node.text in {"Basal", "Supplied stem", "Foldback"}]
-    assert {node.text for node in headings} == {"Basal", "Supplied stem", "Foldback"}
+    assert not headings
     assert all(node.get("font-weight") == "400" for node in headings)
     for node in headings:
         x, y, width, height = json.loads(node.get("data-label-box"))

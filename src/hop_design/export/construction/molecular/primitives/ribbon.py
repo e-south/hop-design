@@ -1,6 +1,6 @@
 """Constant-width recognition contours sampled from the shared strand curve."""
 
-from math import hypot
+from math import floor, hypot
 
 from .strand_curve import band_segments
 
@@ -44,6 +44,9 @@ def rounded_path(
     points: list[tuple[float, float]], radius: float = 2, *, sharp: frozenset[int] = frozenset()
 ) -> str:
     """Shallow corner rounding contained inside the original polygon."""
+    original = points
+    points = simple_outline(points)
+    sharp = frozenset(i for i, p in enumerate(points) if any(p == original[j] for j in sharp))
     rows = []
     for i, (x, y) in enumerate(points):
         previous, following = points[i - 1], points[(i + 1) % len(points)]
@@ -83,3 +86,73 @@ def ribbon_path(
     if end is not None and end < len(points) - 1:
         sharp.update((n - 1, n))
     return rounded_path(outline, sharp=frozenset(sharp))
+
+
+def simple_outline(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Remove small offset loops at tight bends, retaining the enclosing contour."""
+
+    def area(poly: list[tuple[float, float]]) -> float:
+        return abs(
+            sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(poly, [*poly[1:], poly[0]], strict=True))
+        )
+
+    result = points
+    for _ in range(len(points)):
+        bins: dict[tuple[int, int], list[int]] = {}
+        crossing = None
+        for j, c in enumerate(result):
+            d = result[(j + 1) % len(result)]
+            cells = [
+                (x, y)
+                for x in range(floor(min(c[0], d[0]) / 64), floor(max(c[0], d[0]) / 64) + 1)
+                for y in range(floor(min(c[1], d[1]) / 64), floor(max(c[1], d[1]) / 64) + 1)
+            ]
+            for i in sorted({i for cell in cells for i in bins.get(cell, ())}):
+                if j - i <= 1 or (i == 0 and j == len(result) - 1):
+                    continue
+                a, b = result[i : i + 2]
+                if (
+                    max(a[0], b[0]) < min(c[0], d[0])
+                    or min(a[0], b[0]) > max(c[0], d[0])
+                    or max(a[1], b[1]) < min(c[1], d[1])
+                    or min(a[1], b[1]) > max(c[1], d[1])
+                ):
+                    continue
+                u, v = (b[0] - a[0], b[1] - a[1]), (d[0] - c[0], d[1] - c[1])
+                denominator = u[0] * v[1] - u[1] * v[0]
+                if abs(denominator) < 1e-9:
+                    continue
+                t = ((c[0] - a[0]) * v[1] - (c[1] - a[1]) * v[0]) / denominator
+                q = ((c[0] - a[0]) * u[1] - (c[1] - a[1]) * u[0]) / denominator
+                if 1e-7 < t < 1 - 1e-7 and 1e-7 < q < 1 - 1e-7:
+                    crossing = (i, j, (a[0] + t * u[0], a[1] + t * u[1]))
+                    break
+            if crossing:
+                break
+            for cell in cells:
+                bins.setdefault(cell, []).append(j)
+        if crossing is None:
+            break
+        i, j, p = crossing
+        result = max(
+            ([p, *result[i + 1 : j + 1]], [p, *result[j + 1 :], *result[: i + 1]]), key=area
+        )
+    return result
+
+
+def footprint_envelope(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Rounded-envelope vertices around the actual or lineage-bound duplex rows."""
+    corners = sorted({(x + dx, y + dy) for x, y in points for dx in (-8, 8) for dy in (-18, 18)})
+
+    def cross(a: tuple[float, float], b: tuple[float, float], c: tuple[float, float]) -> float:
+        return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+    sides = []
+    for values in (corners, list(reversed(corners))):
+        side: list[tuple[float, float]] = []
+        for p in values:
+            while len(side) >= 2 and cross(side[-2], side[-1], p) <= 0:
+                side.pop()
+            side.append(p)
+        sides.extend(side[:-1])
+    return sides

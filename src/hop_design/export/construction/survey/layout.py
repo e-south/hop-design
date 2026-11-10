@@ -1,6 +1,6 @@
 """Stable axis coordinates and label allocation, independent of SVG interactions."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import groupby
 from textwrap import wrap
 from typing import Any
@@ -67,14 +67,16 @@ def _region_widths(
 ) -> list[float]:
     """Reserve a shared heading once per contiguous molecular region in a row."""
     widths = [width for _, width in items]
-    if profile.width >= PUBLICATION_FIGURE.width:
-        return widths
     for region, group in groupby(
         enumerate(items), key=lambda item: teaching_region(item[1][0].get("neighborhood", "whole"))
     ):
         columns = list(group)
         label = REGIONS[region][0]
-        minimum = max(text_width(word, profile.axis_font) for word in label.split()) + 8
+        minimum = (
+            text_width(label, profile.axis_font)
+            if profile.width >= WIDTH
+            else max(text_width(word, profile.axis_font) for word in label.split())
+        ) + 8
         available = sum(width for _, (_, width) in columns) + 6 * (len(columns) - 1)
         extra = max(0.0, minimum - available) / len(columns)
         for index, _ in columns:
@@ -138,6 +140,7 @@ def categorical_positions(
 class SurveyLayout:
     axes: list[dict[str, Any]]
     frame: AxisFrame
+    width: float
 
     @property
     def height(self) -> float:
@@ -161,7 +164,13 @@ def plot_layout(
             labels.extend(lines)
         width = max(18, max(text_width(label, profile.axis_font) for label in labels) + 4)
         widths.append(width)
-    bands = _axis_bands(list(zip(axes, widths, strict=True)), profile)
+    items = list(zip(axes, widths, strict=True))
+    if profile.single_row:
+        needed = sum(_region_widths(items, profile)) + 6 * max(0, len(items) - 1) + 52
+        profile = replace(profile, width=max(profile.width, round(needed + 1)))
+        bands = [items] if items else []
+    else:
+        bands = _axis_bands(items, profile)
     frame = measured_frame(
         font=profile.axis_font,
         heading_rows=heading_rows,
@@ -198,7 +207,7 @@ def plot_layout(
                 {"definition": axis, "x": x, "y": positions, "band": band, "width": width}
             )
             left += width + gap
-    return SurveyLayout(result, frame)
+    return SurveyLayout(result, frame, profile.width)
 
 
 def plot_axes(

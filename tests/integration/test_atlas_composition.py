@@ -120,7 +120,13 @@ def test_molecular_annotations_are_readable_and_do_not_collide(loop_pool):
         float(e.get("font-size")) >= 40
         for e in labels
         if e.get("data-label-kind")
-        not in {"terminus", "primer-chemistry", "material-name", "material-context"}
+        not in {
+            "terminus",
+            "input-terminus",
+            "primer-chemistry",
+            "material-name",
+            "material-context",
+        }
     )
     for row in (e for e in root.iter() if e.get("data-atlas-state")):
         boxes = [json.loads(e.get("data-label-box")) for e in row.iter() if e.get("data-label-box")]
@@ -154,7 +160,14 @@ def test_terminal_labels_share_collision_layout_with_enzyme_and_primer_names(loo
     terminals = [
         e for e in ET.fromstring(packet.svg_bytes).iter() if e.get("data-label-kind") == "terminus"
     ]
-    assert len(terminals) == 2 * sum(len(s["state"]["molecules"]) for s in atlas["states"])
+    hidden = [
+        e
+        for e in ET.fromstring(packet.svg_bytes).iter()
+        if e.get("data-terminal-display") == "metadata"
+    ]
+    assert len(terminals) + len(hidden) == 2 * sum(
+        len(s["state"]["molecules"]) for s in atlas["states"]
+    )
     assert {e.get("data-terminal-chemistry") for e in terminals} == {
         "5\u2032OH",
         "5\u2032P",
@@ -269,7 +282,7 @@ def test_released_end_labels_name_the_recorded_words_and_gaps(loop_pool):
         )
         for interface in state["interfaces"]:
             group = next(e for e in row.iter() if e.get("data-interface") == interface["side"])
-            assert f"{interface['sequence']} · {interface['distance_bp']} bp" in "".join(
+            assert f"{interface['sequence']}, {interface['distance_bp']} bp" in "".join(
                 group.itertext()
             )
             assert group.get("data-end-polarity") == interface["polarity"]

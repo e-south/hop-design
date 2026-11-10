@@ -96,7 +96,7 @@ def test_column_detail_reserves_a_panel_letter_between_molecule_and_trace():
     profile = replace(LANDSCAPE_DETAIL_FIGURE, minimum_teaching_slot=0, teaching_slot_step=1)
     spec = figure_layout(teaching_geometry(KEY), plot_geometry(PLOT), profile=profile)
     molecule_bottom = spec["hairpin"]["y"] + spec["hairpin"]["height"]
-    printed_gap = (spec["trace"]["y"] - molecule_bottom) * 246 / profile.width
+    printed_gap = (spec["trace"]["y"] - molecule_bottom) * 498 / profile.width
     assert printed_gap >= 13
 
 
@@ -132,7 +132,7 @@ def test_narrow_figure_export_and_inspection_share_profile_and_inherited_type():
     plot = PLOT.replace(b"viewBox=", b'font-size="18" viewBox=')
     expected = figure_layout(teaching_geometry(key), plot_geometry(plot), profile=INSPECTOR_FIGURE)
     drawing = ET.fromstring(compose_figure(key, plot, {"axes": []}, profile=INSPECTOR_FIGURE))
-    assert float(expected["frame"].split()[2]) == 600
+    assert float(expected["frame"].split()[2]) == INSPECTOR_FIGURE.width
     assert json.loads(drawing.get("data-figure-layout")) == expected
     panels = [e for e in drawing if e.get("data-figure-panel")]
     assert [p.get("font-size") for p in panels] == ["32", "18"]

@@ -11,7 +11,7 @@ from ..molecular.primitives.typography import text_width
 from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 from ..presentation.regions import REGIONS, teaching_region
 from .display_projection import append_display_metadata
-from .guide import plot_context
+from .guide import compact_plot_summary, plot_context
 from .layout import (
     FONT,
     STATES,
@@ -48,7 +48,7 @@ def render_survey_plot(
     presentation = present_choices(choices, display_axes=display_axes)
     layout = plot_layout(presentation, profile=profile)
     axes, frame = layout.axes, layout.frame
-    width, font = profile.width, profile.axis_font
+    width, font = layout.width, profile.axis_font
     root = ET.Element(
         f"{{{SVG}}}svg",
         {
@@ -333,10 +333,13 @@ def render_survey_plot(
             _element(caption, "text", line, x=26, y=y, fill="#53696d", **attrs)
             y += font + 5
 
-    for text, attributes in plot_context(
-        presentation, choices.get("fully_enumerated", False), len(context)
-    ):
-        note(text, **attributes)
+    notes = plot_context(presentation, choices.get("fully_enumerated", False), len(context))
+    if profile.compact_context:
+        _element(caption, "metadata", json.dumps(notes), data_complete_plot_context="true")
+        note(compact_plot_summary(presentation))
+    else:
+        for text, attributes in notes:
+            note(text, **attributes)
     root.set("data-domain-values", str(total))
     root.set("data-visible-labels", str(labeled))
     height = y + 8

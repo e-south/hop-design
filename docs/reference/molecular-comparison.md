@@ -92,9 +92,12 @@ An existing `choices.figure(view="similarity", selection=selection)` export also
 contains `comparison-features.json` and `comparison-features.svg`. They describe
 that selected point using the same contact dictionary, active coordinate order
 and policy as the browser. The JSON retains constant features and the dictionary;
-the SVG draws the active `x` without wrapping or abbreviating encoded values.
-Its natural width follows its contents. A publication composer must check the
-final type size rather than shrink a long vector into an unreadable label.
+the SVG draws the active `x` as decoded scientific values at seven-inch width.
+Ordered contact rows use canonical lines and noncanonical diamonds. Whole feature
+cells continue on additional rows when necessary, keeping vector order and native
+8.5 pt type. Exact encodings remain in per-feature attributes and the embedded
+record; their nominal IDs imply no numerical ordering. The browser presents the
+same decoded values within the available map pane.
 Recapturing an edition inherits its comparison policy and weights unless explicitly
 replaced. An unchanged complete descriptor set reuses its saved landscape.
 Its recorded descriptor scope is also preserved and checked against retrieved

@@ -8,7 +8,7 @@ from hop_design.models.construction.projections.inspection import MolecularState
 from ..inspection_layout import inspection_points
 from ..primitives.ribbon import ribbon_path
 from ..primitives.style import BASE_SIZE
-from ..primitives.typography import fitted_base_size
+from ..primitives.typography import base_ink_shift, fitted_base_size
 from .placement import origin_points
 
 SVG = "{http://www.w3.org/2000/svg}"
@@ -113,6 +113,7 @@ def append_discarded_ghosts(
                     "x": str(x),
                     "y": str(y + 5),
                     "text-anchor": "middle",
+                    "dy": f"{base_ink_shift(fitted_base_size(symbol, BASE_SIZE)):g}",
                     "font-size": f"{fitted_base_size(symbol, BASE_SIZE):g}",
                     "fill": "#9CA7AD",
                 },
