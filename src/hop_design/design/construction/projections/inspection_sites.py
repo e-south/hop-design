@@ -12,7 +12,7 @@ from hop_design.models.construction.projections.inspection_annotations import (
 from hop_design.models.construction.projections.route_view import MolecularRouteView
 from hop_design.models.construction.variants.inspection import MolecularAddress
 
-from .inspection_annotations import inspection_operation_role
+from .inspection_annotations import inspection_operation_role, require_precursor_frame
 from .inspection_layout import Origin
 from .inspection_lineage import ancestry_resolver
 
@@ -65,8 +65,7 @@ def inspection_recognition_sites(
             raise ValueError("Recognition footprint requires the declared precursor duplex.")
         program = programs[mapping.reaction_program_id]
         for stage in program.stages:
-            if stage.pre_state_id != program.states[0].state_id:
-                raise ValueError("Recognition footprint requires an exact intermediate mapping.")
+            require_precursor_frame(program, stage)
             for operation in stage.operations:
                 binding = operation.intended_binding
                 a, z = binding.recognition_span.start.offset, binding.recognition_span.end.offset

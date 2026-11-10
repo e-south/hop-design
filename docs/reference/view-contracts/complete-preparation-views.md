@@ -67,6 +67,9 @@ annotations bind recognition spans, orientation, reference/complement cut offset
 and displayed base addresses to the recorded reaction boundary mapping. Offsets
 are zero-based precursor boundaries; recognition spans are half-open. Applied nick
 boundaries may connect adjacent positions on different covalent fragments.
+Sequential stages can reuse that coordinate frame when their named precursor
+duplex and both strand sequences remain unchanged. Changed intermediate targets
+require an exact mapping; inspection does not infer one by sequence alignment.
 
 A layout frame is another recorded state with identical unique material positions
 and pairing edges, but fewer covalent components. It supplies coordinates only.
