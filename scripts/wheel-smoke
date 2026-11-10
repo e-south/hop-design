@@ -325,35 +325,14 @@ for journey_case in released hairpin fixed-source-edit redesigned-source-edit; d
 done
 
 for construction_case in composed-pcr exact infeasible expanded-domain; do
-  construction_trajectory_id=''
-  if [[ "$construction_case" == "composed-pcr" ]]; then
-    construction_trajectory_id='hop:materialized-construction/427a738083142d5f09f9b48bfade8b2e613bff8da96e068770f17ab1c0fd9f44@1'
-  elif [[ "$construction_case" == "exact" ]]; then
-    construction_trajectory_id='hop:materialized-construction/6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1'
-  elif [[ "$construction_case" == "expanded-domain" ]]; then
-    construction_trajectory_id='hop:materialized-construction/6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1'
-  fi
-  if [[ -n "$construction_trajectory_id" ]]; then
-    source_construction="$(uv run --locked python examples/compile_construction.py \
-      --design examples/construction-exact-design.yaml \
-      --source "examples/construction-${construction_case}.yaml" \
-      --out "$smoke_root/source-construction-${construction_case}" \
-      --trajectory-realization-id "$construction_trajectory_id")"
-    wheel_construction="$("$smoke_root/venv/bin/python" examples/compile_construction.py \
-      --design examples/construction-exact-design.yaml \
-      --source "examples/construction-${construction_case}.yaml" \
-      --out "$smoke_root/wheel-construction-${construction_case}" \
-      --trajectory-realization-id "$construction_trajectory_id")"
-  else
-    source_construction="$(uv run --locked python examples/compile_construction.py \
-      --design examples/construction-exact-design.yaml \
-      --source "examples/construction-${construction_case}.yaml" \
-      --out "$smoke_root/source-construction-${construction_case}")"
-    wheel_construction="$("$smoke_root/venv/bin/python" examples/compile_construction.py \
-      --design examples/construction-exact-design.yaml \
-      --source "examples/construction-${construction_case}.yaml" \
-      --out "$smoke_root/wheel-construction-${construction_case}")"
-  fi
+  source_construction="$(uv run --locked python examples/compile_construction.py \
+    --design examples/construction-exact-design.yaml \
+    --source "examples/construction-${construction_case}.yaml" \
+    --out "$smoke_root/source-construction-${construction_case}")"
+  wheel_construction="$("$smoke_root/venv/bin/python" examples/compile_construction.py \
+    --design examples/construction-exact-design.yaml \
+    --source "examples/construction-${construction_case}.yaml" \
+    --out "$smoke_root/wheel-construction-${construction_case}")"
   if [[ "$source_construction" != "$wheel_construction" ]]; then
     echo "source/wheel construction mismatch: $construction_case" >&2
     exit 1
@@ -368,7 +347,7 @@ wheel_navigation_bundle="$smoke_root/wheel-construction-composed-pcr/constructio
 wheel_navigation_id="$(
   printf '%s' "$composed_construction" \
     | uv run --locked python -c \
-      'import json, sys; print(json.load(sys.stdin)["selected_trajectory_realization_id"])'
+      'import json, sys; print(json.load(sys.stdin)["materialized_realization_ids"][0])'
 )"
 "$smoke_root/venv/bin/hop-design" construction summary "$wheel_navigation_bundle" >/dev/null
 "$smoke_root/venv/bin/hop-design" construction list "$wheel_navigation_bundle" --limit 1 >/dev/null
@@ -377,6 +356,18 @@ wheel_navigation_id="$(
 "$smoke_root/venv/bin/hop-design" construction inspect "$wheel_navigation_bundle" \
   --selection "$smoke_root/wheel-selected-route.json" \
   --out "$smoke_root/wheel-selected-trajectory" >/dev/null
+uv run --locked hop-design construction select \
+  "$smoke_root/source-construction-composed-pcr/construction" \
+  "$wheel_navigation_id" --out "$smoke_root/source-selected-route.json" >/dev/null
+uv run --locked hop-design construction inspect \
+  "$smoke_root/source-construction-composed-pcr/construction" \
+  --selection "$smoke_root/source-selected-route.json" \
+  --out "$smoke_root/source-selected-trajectory" >/dev/null
+if ! cmp -s "$smoke_root/source-selected-route.json" "$smoke_root/wheel-selected-route.json" \
+    || ! diff -qr "$smoke_root/source-selected-trajectory" "$smoke_root/wheel-selected-trajectory"; then
+  echo "source/wheel construction selection or trajectory mismatch" >&2
+  exit 1
+fi
 
 source_comparison="$(uv run --locked hop-design construction compare \
   "$smoke_root/source-construction-composed-pcr/construction" \

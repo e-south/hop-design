@@ -21,6 +21,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+import hop_design.construction as construction
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_COMMAND_TIMEOUT_SECONDS = 60.0
 
@@ -367,22 +369,9 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
         "infeasible": "infeasible",
         "expanded-domain": "complete",
     }
-    trajectories = {
-        "composed-pcr": (
-            "hop:materialized-construction/"
-            "427a738083142d5f09f9b48bfade8b2e613bff8da96e068770f17ab1c0fd9f44@1"
-        ),
-        "exact": (
-            "hop:materialized-construction/"
-            "6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1"
-        ),
-        "expanded-domain": (
-            "hop:materialized-construction/"
-            "6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1"
-        ),
-    }
     statuses: dict[str, str] = {}
     for case, expected_status in expected.items():
+        output = smoke_root / f"construction-{case}"
         arguments = [
             "examples/compile_construction.py",
             "--design",
@@ -390,10 +379,8 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
             "--source",
             f"examples/construction-{case}.yaml",
             "--out",
-            str(smoke_root / f"construction-{case}"),
+            str(output),
         ]
-        if case in trajectories:
-            arguments.extend(["--trajectory-realization-id", trajectories[case]])
         summary = _json_output(
             f"{case} construction dogfood",
             arguments,
@@ -412,14 +399,24 @@ def _exercise_construction(smoke_root: Path, *, content_root: Path) -> dict[str,
         realization_ids = summary.get("materialized_realization_ids")
         if status == "complete":
             _require(
-                isinstance(realization_ids, list) and selected in realization_ids,
-                f"{case} trajectory did not select an accepted realization",
+                isinstance(realization_ids, list) and bool(realization_ids),
+                f"{case} construction omitted accepted realizations",
             )
-            selection_sha256 = summary.get("selection_sha256")
+            # IDs belong to the current result, including its producer version.
+            # Reopen and select without repeating constraint search.
+            verified = construction.load_verified_construction_bundle(output / "construction")
+            selected = realization_ids[0]
+            selection = construction.select_construction_realization(
+                verified, materialized_realization_id=selected
+            )
+            selection_path = selection.write(output / "selected-route.json")
             _require(
-                isinstance(selection_sha256, str) and len(selection_sha256) == 64,
-                f"{case} construction omitted its result-bound selection digest",
+                selection_path.read_bytes() == selection.json_bytes,
+                f"{case} construction changed its result-bound selection",
             )
+            construction.project_construction_trajectory(
+                verified, materialized_realization_id=selected
+            ).write(output / "projections" / "trajectory")
         else:
             _require(selected is None, "infeasible construction invented a trajectory")
             _require(

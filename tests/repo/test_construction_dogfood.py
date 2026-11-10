@@ -32,24 +32,12 @@ SOURCES = {
     "infeasible": REPO_ROOT / "examples" / "construction-infeasible.yaml",
     "expanded-domain": REPO_ROOT / "examples" / "construction-expanded-domain.yaml",
 }
-TRAJECTORY_REALIZATION_IDS = {
-    "composed-pcr": (
-        "hop:materialized-construction/"
-        "427a738083142d5f09f9b48bfade8b2e613bff8da96e068770f17ab1c0fd9f44@1"
-    ),
-    "exact": (
-        "hop:materialized-construction/"
-        "6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1"
-    ),
-    "expanded-domain": (
-        "hop:materialized-construction/"
-        "6ecfaedc4eb01e0fc24f52cfad089386bb94b39377ad9aabeb355c93fe8f7900@1"
-    ),
-}
 LOCAL_FOLDBACK_PARTITION = REPO_ROOT / "examples" / "foldback-local-partition.yaml"
 
 
-def _run_example(tmp_path: Path, case: str, suffix: str) -> dict[str, object]:
+def _run_example(
+    tmp_path: Path, case: str, suffix: str, *, selected_id: str | None = None
+) -> dict[str, object]:
     arguments = [
         sys.executable,
         str(EXAMPLE),
@@ -60,8 +48,8 @@ def _run_example(tmp_path: Path, case: str, suffix: str) -> dict[str, object]:
         "--out",
         str(tmp_path / f"{case}-{suffix}"),
     ]
-    if case in TRAJECTORY_REALIZATION_IDS:
-        arguments.extend(["--trajectory-realization-id", TRAJECTORY_REALIZATION_IDS[case]])
+    if selected_id is not None:
+        arguments.extend(["--trajectory-realization-id", selected_id])
     result = subprocess.run(
         arguments,
         cwd=REPO_ROOT,
@@ -109,9 +97,22 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
     basal_expected: bool,
 ) -> None:
     first = _run_example(tmp_path, case, "first")
-    second = _run_example(tmp_path, case, "second")
+    ids = first["materialized_realization_ids"]
+    selected_id = ids[0] if trajectory_expected else None
+    second = _run_example(tmp_path, case, "second", selected_id=selected_id)
 
-    assert first == second
+    # Producer versions can change result-bound IDs. Select from this result,
+    # then require the second compilation to reproduce the complete result.
+    selection_fields = {
+        "projection_sha256",
+        "selection_sha256",
+        "selected_trajectory_realization_id",
+    }
+    assert {k: v for k, v in first.items() if k not in selection_fields} == {
+        k: v for k, v in second.items() if k not in selection_fields
+    }
+    assert first["selected_trajectory_realization_id"] is None
+    assert first["selection_sha256"] is None
     assert first["schema"] == "hop.construction-dogfood/v2"
     assert first["case"] == case
     assert first["status"] == status
@@ -142,12 +143,24 @@ def test_construction_example_is_deterministic_and_preserves_search_status(
         assert realized_levels == []
     else:
         assert realized_levels == [{"retained_overhead_nt": 11, "realization_count": 2}]
-    selected = first["selected_trajectory_realization_id"]
+    second_hashes = second["projection_sha256"]
+    assert {k: v for k, v in second_hashes.items() if k != "trajectory"} == projection_hashes
+    selected = second["selected_trajectory_realization_id"]
     if trajectory_expected:
         assert isinstance(selected, str)
         assert selected in first["materialized_realization_ids"]
-        assert "trajectory" in projection_hashes
-        assert len(first["selection_sha256"]) == 64
+        assert selected == selected_id
+        assert "trajectory" in second_hashes
+        assert len(second["selection_sha256"]) == 64
+        verified = construction.load_verified_construction_bundle(
+            tmp_path / f"{case}-second" / "construction"
+        )
+        selection = construction.select_construction_realization(
+            verified, materialized_realization_id=selected
+        )
+        assert (tmp_path / f"{case}-second" / "selected-route.json").read_bytes() == (
+            selection.json_bytes
+        )
     else:
         assert selected is None
         assert first["selection_sha256"] is None
@@ -186,9 +199,9 @@ def test_docs_and_wheel_smoke_share_the_construction_example() -> None:
 
     assert '"examples/compile_construction.py"' in docs_smoke
     assert '"construction_statuses": construction_statuses' in docs_smoke
-    assert '"--trajectory-realization-id"' in docs_smoke
+    assert "select_construction_realization" in docs_smoke
     assert '"navigation"' in docs_smoke
-    assert 'summary.get("selection_sha256")' in docs_smoke
+    assert '"selected-route.json"' in docs_smoke
     assert '"construction": construction.__all__' in wheel_smoke
     inventory = runpy.run_path(str(REPO_ROOT / "scripts/distribution/inventory.py"))
     for path in (EXAMPLE, DESIGN, *SOURCES.values()):
