@@ -15,9 +15,31 @@ from hop_design.models.construction.projections.route_view import MolecularRoute
 from hop_design.models.construction.variants.inspection import MolecularAddress
 from hop_design.models.coordinates import Boundary
 from hop_design.models.molecular_state import MolecularStrand
-from hop_design.models.reactions import ReactionOperation
+from hop_design.models.reactions import ReactionOperation, ReactionProgram, ReactionStage
 
 from .inspection_layout import lineage_key
+
+
+def require_precursor_frame(program: ReactionProgram, stage: ReactionStage) -> None:
+    """Verify the named target still uses the mapped precursor coordinate frame.
+
+    Earlier operations may add released molecules without moving bindings on
+    the unchanged duplex. Changed targets need a separate exact intermediate
+    mapping; sequence alignment cannot establish one here.
+    """
+    first = program.states[0].molecules
+    if len(first) != 1 or first[0].complement_sequence_5prime is None:
+        raise ValueError("Operation annotation requires one mapped precursor duplex.")
+    state = next(state for state in program.states if state.state_id == stage.pre_state_id)
+    for operation in stage.operations:
+        try:
+            target = state.by_id(operation.molecule_id)
+        except KeyError as error:
+            raise ValueError(
+                "Operation annotation requires an exact intermediate mapping."
+            ) from error
+        if target != first[0]:
+            raise ValueError("Operation annotation requires an exact intermediate mapping.")
 
 
 def inspection_operation_role(
@@ -127,10 +149,7 @@ def inspection_operations(
             )
 
         for stage in program.stages:
-            if stage.pre_state_id != program.states[0].state_id:
-                raise ValueError(
-                    "Operation overlay requires an exact intermediate boundary mapping."
-                )
+            require_precursor_frame(program, stage)
             for operation in stage.operations:
                 b = operation.intended_binding
                 a, z = b.recognition_span.start.offset, b.recognition_span.end.offset
