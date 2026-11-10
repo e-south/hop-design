@@ -41,19 +41,22 @@ def incoming_materials(
                 sum(y for _, y in points.values()) / len(points),
             )
             side = outward_side(bound, center)
+            positions = tuple(
+                position_primer(
+                    bound,
+                    list(points.values()),
+                    outward=side,
+                    leading=len(item.material.sequence_5prime) - len(bound),
+                )
+            )
             result.append(
                 PlacedInput(
                     item,
-                    tuple(
-                        position_primer(
-                            bound,
-                            list(points.values()),
-                            outward=side,
-                            leading=len(item.material.sequence_5prime) - len(bound),
-                        )
-                    ),
+                    positions,
                     "after copying",
                     side,
+                    sum(y for _, y in positions) / len(positions)
+                    < sum(y for _, y in bound) / len(bound),
                 )
             )
     return tuple(result)

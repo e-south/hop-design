@@ -7,7 +7,7 @@ Return to the [schemas reference](../schemas.md).
 
 ## Schema inventory
 
-This inventory covers `v0.1.0a9`. For the earlier `v0.1.0a8` package, use its
+This inventory covers `v0.1.0a10`. For the earlier `v0.1.0a8` package, use its
 [tagged reference](https://github.com/e-south/hop-design/blob/v0.1.0a8/docs/reference/schemas.md).
 The package version alone does not distinguish post-release source changes.
 

@@ -275,7 +275,7 @@ def test_scene_carries_fitted_regions_and_addressed_edges(inspected_route):
     }
     assert all(r.attrib.get("data-members") for r in regions)
     assert {r.attrib["fill"] for r in regions if r.attrib["data-region-fill"] == "stem"} == {
-        "#CE7171"
+        "#B95300"
     }
     assert all(r.tag.endswith("}path") and r.get("data-path-members") for r in regions)
     edges = root.findall(".//*[@data-edge-kind]")

@@ -16,6 +16,7 @@ import json
 import re
 import subprocess
 import sys
+import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import ModuleType
@@ -119,7 +120,8 @@ def test_installation_continues_into_the_primary_discovery_tutorial() -> None:
 def test_map_capture_names_its_optional_dependency_before_first_fit() -> None:
     install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
     capture = (REPO_ROOT / "docs/guides/share-atlas-edition.md").read_text(encoding="utf-8")
-    assert "hop-design[atlas]==0.1.0a9" in install
+    version = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text())["project"]["version"]
+    assert f"hop-design[atlas]=={version}" in install
     assert capture.index("install.md#fit-a-new-molecular-map") < capture.index(
         "--include-landscape"
     )

@@ -1,7 +1,7 @@
 """Reading-order cue shared by route and page composition."""
 
 from .atlas_placement import RoutePlacement
-from .primitives.style import INK
+from .primitives.style import INK, OPERATION_STROKE
 
 
 def continuation_svg(
@@ -23,7 +23,7 @@ def continuation_svg(
         f"Q{x},{bottom} {x + first_radius},{bottom} H{right - radius} "
         f"Q{right},{bottom} {right},{bottom - radius} V{end_y + radius} "
         f'Q{right},{end_y} {right + radius},{end_y} H{target - 16}" '
-        f'stroke="{INK}" fill="none" stroke-width="3" stroke-opacity=".65" stroke-linecap="round"/>'
+        f'stroke="{INK}" fill="none" stroke-width="{OPERATION_STROKE}" stroke-linecap="round"/>'
         f'<path d="M{target - 18},{end_y - 10} L{target},{end_y} '
-        f'L{target - 18},{end_y + 10} Z" fill="{INK}" fill-opacity=".65"/></g>'
+        f'L{target - 18},{end_y + 10} Z" fill="{INK}"/></g>'
     )

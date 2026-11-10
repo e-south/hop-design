@@ -39,6 +39,19 @@ def assembly_points(atlas: MolecularAtlas) -> dict[str, Points]:
             mapped[base.address.strand_id, base.address.index] = origins[key]
         else:
             result[state.state.state_id] = mapped
+    linear = next((s for s in atlas.states if s.state.phase.value == "cleaved_duplex"), None)
+    retained = next((s for s in atlas.states if s.state.phase.value == "selected_fragments"), None)
+    if linear is not None and retained is not None:
+        origins = origin_points(linear, inspection_points(linear))
+        if origins is not None:
+            mapped = {}
+            for base in retained.bases:
+                key = (base.origin.origin_id, base.origin.origin_strand, base.origin.origin_index)
+                if key not in origins:
+                    break
+                mapped[base.address.strand_id, base.address.index] = origins[key]
+            else:
+                result[retained.state.state_id] = mapped
     return result
 
 

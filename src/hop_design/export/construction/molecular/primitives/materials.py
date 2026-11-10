@@ -11,7 +11,8 @@ from .material_labels import material_label
 from .primer_shape import outline_box, primer_outline
 from .primer_shape import primer_contour as primer_contour
 from .ribbon import ribbon_path, ribbon_points
-from .style import INK
+from .style import BASE_SIZE, INK, REGION_COLORS, REGION_OPACITY, base_ink
+from .typography import fitted_base_size
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class PlacedInput:
     positions: tuple[tuple[float, float], ...]
     cue: str = ""
     outward: int = 1
+    label_above: bool = False
 
 
 def input_box(
@@ -34,7 +36,7 @@ def input_box(
 
 
 def staged_materials(
-    inputs: tuple[PlacedInput, ...], labels: LabelPlacer, *, base_size: float = 16
+    inputs: tuple[PlacedInput, ...], labels: LabelPlacer, *, base_size: float = BASE_SIZE
 ) -> str:
     rows = []
     for placed in inputs:
@@ -51,21 +53,23 @@ def staged_materials(
         else:
             rows.append(
                 f'<path d="{ribbon_path(positions, 13, terminal_extension=6)}" '
-                f'fill="#409AC0" fill-opacity=".78" stroke="#334B58" stroke-width="1"/>'
+                f'fill="{REGION_COLORS["assembly"]}" fill-opacity="{REGION_OPACITY}" '
+                'stroke="#334B58" stroke-width="1"/>'
             )
         for index, (base, (x, y)) in enumerate(
             zip(item.material.sequence_5prime, positions, strict=True)
         ):
             rows.append(
                 f'<text data-input-base-index="{index}" x="{x}" y="{y + 5}" '
-                f'font-size="{base_size:g}" text-anchor="middle" fill="{INK}">{base}</text>'
+                f'font-size="{fitted_base_size(base, base_size):g}" text-anchor="middle" '
+                f'fill="{INK if item.binding is not None else base_ink("assembly")}">{base}</text>'
             )
         chemistry = (
             terminal_label("5\u2032", item.material.five_prime_end)
             + " → "
             + terminal_label("3\u2032", item.material.three_prime_end)
         )
-        rows.append(material_label(item, box, labels, cue=placed.cue))
+        rows.append(material_label(item, box, labels, cue=placed.cue, above=placed.label_above))
         rows.append(
             f"<title>Incoming {escape(drawing_material_label(item.material_use.role))}; "
             f"{chemistry}; {escape(placed.cue or 'not yet associated')}</title></g>"

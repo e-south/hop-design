@@ -33,7 +33,8 @@ def test_saved_assembly_preserves_all_states_and_exact_selection(
     packet = choices.atlas(receipt)
     assert len(phases(packet.svg_bytes)) == 9
     assert "denatured_fragments" not in phases(packet.svg_bytes)
-    assert "selected_fragments" not in phases(packet.svg_bytes)
+    assert "cleaved_duplex" not in phases(packet.svg_bytes)
+    assert "selected_fragments" in phases(packet.svg_bytes)
     before, after = json.loads(complete.json_bytes), json.loads(packet.json_bytes)
     assert after["atlas"] == before["atlas"]
     assert after["rendering"]["route"]["effective"] == "assembly"

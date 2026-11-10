@@ -96,7 +96,7 @@ def place_route(blocks: tuple[BlockExtent, ...]) -> RoutePlacement:
         x += column_width + GUTTER
     # The column turn extends below its last block; reserve its bend plus the
     # same clearance used around ordinary operation arrows before the finish.
-    y = MARGIN + upper_height + (SCENE_CLEARANCE * 2 if columns and blocks[finish:] else 0)
+    y = MARGIN + upper_height + (24 + SCENE_CLEARANCE if columns and blocks[finish:] else 0)
     for block in blocks[finish:]:
         positions.append(BlockPosition((total_width - block.width) / 2, y, "full"))
         y += block.height + GAP

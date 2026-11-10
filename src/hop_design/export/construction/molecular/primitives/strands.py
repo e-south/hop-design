@@ -7,6 +7,7 @@ from hop_design.models.construction.projections.inspection import MolecularState
 
 from ..inspection_scene import Points, edge
 from .style import BASE_SIZE, INK, object_id
+from .typography import fitted_base_size
 
 
 def strand_primitives(
@@ -31,7 +32,8 @@ def strand_primitives(
                 f'<g data-base-index="{i}" data-strand="{strand_index}" data-change="{change}">'
                 f'<rect x="{x - 7}" y="{y - 11}" width="14" height="20" '
                 f'fill="{change_colors.get(change, "none")}"/>'
-                f'<text x="{x - 5}" y="{y + 5}" font-size="{BASE_SIZE}" '
+                f'<text x="{x}" y="{y + 5}" text-anchor="middle" '
+                f'font-size="{fitted_base_size(base, BASE_SIZE):g}" '
                 f'fill="{INK}">{base}</text></g>'
             )
         rows.append("</g>")

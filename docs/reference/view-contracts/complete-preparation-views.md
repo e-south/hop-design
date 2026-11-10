@@ -122,11 +122,20 @@ tables remain unchanged.
 
 The renderer accepts `presentation="assembly"` for a shorter assembly drawing.
 The default `"complete"` presentation and the atlas JSON retain every recorded
-state. When the recorded cleanup chain is present, the assembly drawing skips
-the separate denatured and selected-fragment scenes and shows **Retained and
-annealed**. Its **Heat · cleanup · reanneal** arrow retains all three transition
-identities in `data-transition-ids`, preserving the recorded route in the shorter
-drawing.
+state. When the recorded cleanup chain is present, the assembly drawing shows
+the actual **Cleaved and retained** selected-fragments state as linear strands,
+then **Folded and annealed**. It omits the separate cleaved-duplex and denatured
+snapshots. The **Cleavage · cleanup** arrow retains their three transition
+identities in `data-transition-ids`; the retained scene's **Fold-back · reanneal**
+arrow names the recorded annealing transition. The directional cue sits above
+the exposed retained end before folding; it does not add molecular pairings.
+
+Region ribbons use dark, distinct hues with adaptive nucleotide ink. Pale
+comparison tiles keep dark text; dark structural ribbons use white text. Primer
+names are centered above or below their own silhouettes, with the nearest legal
+clearance from the template. Local operation arrows and column continuation
+share one stroke and arrow vocabulary. These presentation rules change no
+sequence, pairing, material chemistry, identity or recorded atlas coordinate.
 
 Assembly scenes share the joined hairpin's drawing frame wherever material
 ancestry gives an unambiguous correspondence. Each scene keeps its own strands,
@@ -151,8 +160,9 @@ Operation names sit beside large arrows in one row. Column transitions use a
 continuous rounded connector with an arrowhead at the destination.
 Titles are unnumbered. Measured scene edges and arrow endpoints use equal
 clearance, with separate space reserved for the column turn before the wide finish.
-The route's native print scale is 0.5 pt per drawing unit: bases are 8 pt, molecular
-labels 24 pt and stage titles 28 pt. Seven-inch continuation pages have their own
+The route's native print scale is 0.5 pt per drawing unit: canonical bases are
+10 pt, molecular labels 24 pt and stage titles 28 pt. Wider IUPAC letters fit the
+existing base pitch. Seven-inch continuation pages have their own
 type budget and retain every state-base occurrence exactly once. Full-route SVGs use the same geometry as
 browser inspection; captions and input orders remain separate from molecular facts.
 
@@ -182,9 +192,9 @@ provide remaining labels and the full domain. Resizing changes only presentation
 
 The teaching hairpin and route use the same continuous strand contours.
 Recognition outlines follow those curves at their recorded base boundaries.
-In the teaching view, repeated sites on the same side can share an enzyme name
-and leaders. Every addressed footprint remains present; complete sites and
-partial or unresolved sites keep distinct labels. Opposite sides remain separate.
+Each physical recognition site has its own nearby enzyme name and addressed
+label binding. Repeated sites retain separate names; partial or unresolved sites
+retain their status marker. Every addressed footprint remains present.
 Noncanonical contacts have an open diamond; Watson–Crick contacts retain a simple
 bond. Cut triangles distinguish planned (hollow) from applied (filled) cleavage;
 applied cuts also expose the break. A bridge marks a recorded ligation bond.

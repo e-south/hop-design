@@ -14,7 +14,9 @@ jobs:
   build:
     name: Build release artifacts
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Exact-distribution qualification includes the extended molecular journeys.
+    # Keep its finite ceiling above the former 30-minute smoke-test allowance.
+    timeout-minutes: 120
     env:
       UV_PYTHON: "3.14"
     steps:

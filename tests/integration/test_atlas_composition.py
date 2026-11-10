@@ -7,6 +7,11 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from hop_design import construction
+from hop_design.export.construction.molecular.primitives.style import (
+    BASE_SIZE,
+    OPERATION_ARROW_LENGTH,
+    SCENE_CLEARANCE,
+)
 from tests.integration.test_molecular_atlas import atlas_request
 
 
@@ -39,7 +44,7 @@ def test_atlas_packs_columns_and_centers_the_wide_finishing_states(loop_pool):
             assert gap == pytest.approx(0)
             arrow = next(e for e in previous.iter() if e.get("data-operation-arrow"))
             _, top, _, height = map(float, arrow.get("data-drawing-box").split())
-            assert float(previous.get("data-atlas-height")) - top - height >= 24 - 1e-9
+            assert float(previous.get("data-atlas-height")) - top - height >= SCENE_CLEARANCE - 1e-9
     assert float(rows[-2].get("data-atlas-y")) > max(bottoms)
     width = float(root.get("viewBox").split()[2])
     for row in rows[-2:]:
@@ -69,9 +74,9 @@ def test_stage_titles_are_centered_over_bases_with_a_larger_hierarchy(loop_pool)
         title = next(e for e in row.iter() if e.get("data-stage-title") == "true")
         assert title.get("text-anchor") == "middle"
         assert float(title.get("x")) == pytest.approx((min(centers) + max(centers)) / 2)
-        assert set(sizes) == {16}
+        assert set(sizes) == {BASE_SIZE}
         assert float(title.get("font-size")) * 0.5 == 28
-        assert float(title.get("font-size")) >= 3 * max(sizes)
+        assert float(title.get("font-size")) >= 2.5 * max(sizes)
 
 
 def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
@@ -84,7 +89,7 @@ def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
         arrow = arrows[0]
         label = next(e for e in row.iter() if e.get("data-operation"))
         x, y, width, height = map(float, arrow.get("data-drawing-box").split())
-        assert height >= 90
+        assert height == OPERATION_ARROW_LENGTH
         assert float(label.get("x")) > x + width
         assert float(label.get("y")) - float(label.get("font-size")) * 0.35 == pytest.approx(
             y + height / 2

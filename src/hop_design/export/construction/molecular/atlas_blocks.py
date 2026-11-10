@@ -17,7 +17,7 @@ from .primitives.extent import scene_extent
 from .primitives.inputs import draw_inputs
 from .primitives.operations import draw_operation
 from .primitives.scene_header import attach_scene_header
-from .primitives.style import ANNOTATION_SIZE, TITLE_SIZE, object_id
+from .primitives.style import ANNOTATION_SIZE, TITLE_SIZE, base_ink, object_id
 
 SVG = "http://www.w3.org/2000/svg"
 
@@ -116,6 +116,9 @@ def route_blocks(
             if address in substitutions or address in additions:
                 attrs["data-change"] = "substitution" if address in substitutions else "added"
                 rect.set("fill", "#DED2EC" if address in substitutions else "#D2EAD7")
+                next(e for e in element if e.tag.endswith("}text")).set(
+                    "fill", base_ink(attrs.get("data-neighborhood", ""), rect.get("fill"))
+                )
             if address in unresolved:
                 attrs["data-correspondence"] = "unresolved"
                 rect.set("stroke", "#986A26")

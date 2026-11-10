@@ -23,8 +23,8 @@ from .material_bindings import material_binding_overlays
 from .parameter_boundaries import boundary_point
 from .primitives.extent import scene_bounds
 from .primitives.materials import input_box, staged_materials
-from .primitives.style import FONT_FAMILY, INK
-from .primitives.typography import text_width
+from .primitives.style import FONT_FAMILY, INK, base_ink
+from .primitives.typography import fitted_base_size, text_width
 from .recognition_sites import recognition_site_overlays
 from .teaching_annotations import (
     OverviewLabels,
@@ -67,6 +67,17 @@ def render_projected_teaching(
     profile: FigureProfile = PUBLICATION_FIGURE,
 ) -> bytes:
     """Draw an already typed projection without serializing its complete route."""
+    return _render_projected_teaching(atlas, teaching, locations, profile=profile)
+
+
+def _render_projected_teaching(
+    atlas: MolecularScenes,
+    teaching: dict[str, Any],
+    locations: list[dict[str, Any]],
+    *,
+    profile: FigureProfile,
+    annotation_shift: float = 0,
+) -> bytes:
     definitions, label_projection = parameter_labels(
         [location["definition"] for location in locations]
     )
@@ -82,7 +93,7 @@ def render_projected_teaching(
     # Baseline belongs to the molecular coordinate frame, not to a mutable
     # publication style. Changing print type must not move the inspector frame.
     label_delta = profile.teaching_font - 18
-    shift = 4 * label_delta
+    shift = 4 * label_delta + annotation_shift
     loop_room = 20 if profile.loop_label_below else text_width("12 nt", profile.teaching_font) + 30
     left = 40 if profile.loop_label_below else 80
     scale = min(1.0, (WIDTH - left - 20 - loop_room) / max(1, high - low))
@@ -179,7 +190,8 @@ def render_projected_teaching(
             base.base,
             text_anchor="middle",
             font_family=FONT_FAMILY,
-            font_size=font,
+            font_size=fitted_base_size(base.base, font, pitch=pitch),
+            fill=base_ink(base.neighborhood or "unmapped"),
         )
         element(
             glyph, "title"
@@ -304,7 +316,19 @@ def render_projected_teaching(
     element(root, "metadata", data_teaching_parameters="true").text = json.dumps(
         teaching["parameters"], sort_keys=bool(label_delta)
     )
-    height = max(HEIGHT, labels.bottom + 16)
+    label_top = min(
+        (json.loads(e.attrib["data-label-box"])[1] for e in root.iter() if e.get("data-label-box")),
+        default=4,
+    )
+    if label_top < 4 - 1e-7:
+        return _render_projected_teaching(
+            atlas,
+            teaching,
+            locations,
+            profile=profile,
+            annotation_shift=annotation_shift + 4 - label_top,
+        )
+    height = max(HEIGHT, labels.bottom + 10)
     label_backplates(root)
     x, y, width, content_height = scene_bounds(root)
     root.set("data-content-frame", f"{x - 8:g} {y - 8:g} {width + 16:g} {content_height + 16:g}")

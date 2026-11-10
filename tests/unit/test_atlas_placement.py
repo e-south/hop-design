@@ -63,20 +63,22 @@ def test_column_connector_has_rounded_corners_and_a_visible_arrowhead():
     root = ET.fromstring(continuation_svg(place_route((block(), block()))))
     path = next(e for e in root if e.tag.endswith("}path"))
     assert path.get("d").count("Q") >= 2
-    assert 0 < float(path.get("stroke-width")) < 4
+    assert float(path.get("stroke-width")) == 5
     assert not path.get("stroke-dasharray")
 
 
 def test_column_turn_has_clearance_before_full_width_finish():
     layout = place_route((block(), block(), block(phase="hairpin_pcr_duplex")))
     assert layout.continuation is not None
-    assert layout.positions[-1].y - (layout.continuation[1] + 24) >= 24
+    from hop_design.export.construction.molecular.primitives.style import SCENE_CLEARANCE
+
+    assert layout.positions[-1].y - (layout.continuation[1] + 24) >= SCENE_CLEARANCE
 
 
-def test_column_transport_is_quieter_than_local_processing_arrows():
+def test_column_transport_matches_local_processing_arrows():
     from xml.etree import ElementTree as ET
 
     from hop_design.export.construction.molecular.atlas_reading_order import continuation_svg
 
     root = ET.fromstring(continuation_svg(place_route((block(), block()))))
-    assert float(root[0].get("stroke-width")) < 4
+    assert float(root[0].get("stroke-width")) == 5

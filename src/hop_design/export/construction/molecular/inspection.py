@@ -1,6 +1,7 @@
 """Render one recorded state and attach its authoritative molecular addresses."""
 
 import json
+from dataclasses import replace
 from html import escape
 from typing import Any, Literal, cast
 from xml.etree import ElementTree as ET
@@ -17,7 +18,7 @@ from .inspection_scene import edge, region_spans
 from .parameter_boundaries import mark_parameter_locations
 from .primitives.materials import PlacedInput
 from .primitives.strands import strand_primitives
-from .primitives.style import FONT_FAMILY, INK, TITLE_SIZE
+from .primitives.style import FONT_FAMILY, TITLE_SIZE, base_ink
 
 SVG = "{http://www.w3.org/2000/svg}"
 INKSCAPE = "{http://www.inkscape.org/namespaces/inkscape}"
@@ -55,7 +56,13 @@ def _annotate_inspection_element(
         )
         for child in element:
             if child.tag == SVG + "text":
-                child.set("fill", INK)
+                child.set(
+                    "fill",
+                    base_ink(
+                        base.neighborhood or "unmapped",
+                        next(element.iter(SVG + "rect")).get("fill"),
+                    ),
+                )
             if base.focus_relation is not None and child.tag == SVG + "rect":
                 child.set("stroke", "#8A4FA1")
                 child.set("stroke-width", "2")
@@ -243,6 +250,28 @@ def molecular_inspection_element(
         label_site_ids=label_site_ids,
         staged_inputs=staged_inputs,
     )
+    label_top = min(
+        (json.loads(e.attrib["data-label-box"])[1] for e in root.iter() if e.get("data-label-box")),
+        default=TITLE_SIZE + 18,
+    )
+    if label_top < TITLE_SIZE + 18 - 1e-7:
+        # Above-primer names own their side; grow the molecular frame rather
+        # than clipping them or moving them onto the template.
+        dy = TITLE_SIZE + 18 - label_top
+        return molecular_inspection_element(
+            projection,
+            comparison=comparison,
+            comparison_stage=comparison_stage,
+            material_inputs=material_inputs,
+            parameter_locations=parameter_locations,
+            site_labels=site_labels,
+            label_site_ids=label_site_ids,
+            staged_inputs=tuple(
+                replace(item, positions=tuple((x, y + dy) for x, y in item.positions))
+                for item in staged_inputs
+            ),
+            layout_points={key: (x, y + dy) for key, (x, y) in points.items()},
+        )
     if parameter_locations is not None:
         mark_parameter_locations(root, parameter_locations, projection)
     return root
