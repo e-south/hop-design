@@ -2,8 +2,9 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="hop-token" content="__SESSION_TOKEN__"><title>Hairpin Oligonucleotide Processing · Molecular choices</title><link rel="stylesheet" href="/editor.css"><script type="module" src="/editor.js"></script></head>
 <body><main>
 <section id="object" aria-label="Molecular landscape and selected preparation">
-<details id="refinement"><summary>Refine the atlas</summary><div class="actions"><button id="open-view">Open saved view</button><button id="back" disabled aria-label="Previous inspection">← Back</button></div>
-<div class="viewbar"><div role="group" aria-label="Landscape view"><button id="similarity" aria-pressed="false">Molecular similarity</button><button id="parameters" aria-pressed="false">Parameter traces</button><button id="families" aria-pressed="false">Structural groups</button></div><label id="family-stage-label" hidden>Products at <select id="family-stage"><option value="endpoint">Requested endpoint</option><option value="hairpin">Hairpin</option></select></label><button id="clear" hidden>Clear filters</button></div>
+<details id="refinement"><summary>Atlas options</summary><div class="actions"><button id="open-view">Open saved view</button><button id="back" disabled aria-label="Previous inspection">← Back</button><button id="clear" hidden>Clear filters</button></div>
+<p id="counts">Opening atlas…</p>
+<details id="alternate-views"><summary>Other population views</summary><p>These views summarize the population. The inspector shows one preparation.</p><div class="viewbar"><div role="group" aria-label="Landscape view"><button id="similarity" aria-pressed="false">Molecular atlas</button><button id="parameters" aria-pressed="false">Population parameter traces</button><button id="families" aria-pressed="false">Structural groups</button></div><label id="family-stage-label" hidden>Products at <select id="family-stage"><option value="endpoint">Requested endpoint</option><option value="hairpin">Hairpin</option></select></label></div></details>
 <p id="map-scope"></p><p>Filter complete preparations here. Further search and changed construction permissions are separate operations.</p>
 <details id="discovery-controls"><summary>Discover alternatives</summary>
 <details><summary>Request · same syntax as the API and CLI</summary><label for="discovery-request">Exact-stem request</label><textarea id="discovery-request" spellcheck="false" rows="8"></textarea></details>
@@ -14,10 +15,10 @@
 </details>
 <section id="landscape" aria-label="Conditional molecular landscape">
 <header class="atlas-brand"><h1>Hairpin Oligonucleotide Processing</h1></header>
-<div id="landscape-panels"><div id="plot" tabindex="0" aria-label="Molecular map. Drag background to pan; pinch or use plus and minus to zoom; zero fits the map."></div></div>
+<div id="landscape-panels"><div id="plot" tabindex="0" aria-label="Molecular map. Drag background to pan; pinch or use plus and minus to zoom; zero fits the map."></div><button id="comparison-help" aria-controls="comparison-help-panel" aria-expanded="false" hidden>How X is read</button><section id="comparison-help-panel" role="region" aria-labelledby="comparison-help-title" hidden><header><h2 id="comparison-help-title">How X is read</h2><button id="close-comparison-help" class="icon-close" aria-label="Close X explanation">×</button></header><div id="comparison-help-content"></div></section></div>
 <section id="map-comparison" aria-label="Molecular features used for map proximity" hidden></section>
 <div id="map-color" hidden><label>Color <select data-lens aria-label="Color by molecular property"></select></label><select data-word aria-label="Exact sticky-end word to highlight" hidden></select><div data-color-legend aria-live="polite"></div></div>
-<div class="map-tools"><div class="actions"><button id="fit-map" aria-label="Fit molecular landscape" title="Fit map">⤢</button><button id="refine" aria-controls="refinement" aria-expanded="false">Refine</button><button id="another">⚄ Show me another</button></div><p id="counts">Opening atlas…</p></div>
+<div class="map-tools"><div class="actions"><button id="fit-map" title="Reset atlas pan and zoom">Fit atlas</button><button id="refine" aria-controls="refinement" aria-expanded="false">Atlas options</button><button id="another">Show me another</button></div></div>
 <p id="focus" class="sr-only">Hover to inspect a preparation; click to pin it.</p>
 <section id="members" aria-labelledby="member-title" hidden><header><h2 id="member-title">Choose a preparation</h2><button id="close-members" class="icon-close" aria-label="Close choices" title="Close choices">×</button></header><div id="member-options"></div></section>
 </section>
@@ -26,11 +27,11 @@
 <header id="preview-heading"><span><span id="preview-label">Preparation</span><span id="route-progress" role="status" aria-live="polite" aria-atomic="true"></span></span><div class="actions"><button id="return-map" hidden>← Atlas</button><button id="close-inspector" class="icon-close" aria-label="Close preparation inspector" title="Close inspector">×</button></div></header>
 <div id="inspector-scroll">
 <figure id="figure-one" class="figure-cell">
-<figcaption>Selected hairpin</figcaption><p class="figure-premise">See how the flanks around your supplied stem support this preparation.</p>
+<figcaption><span>Flanks support hairpin construction</span></figcaption>
 <div id="figure-one-canvas"><div id="figure-one-plate"><div id="molecular-area"><div id="teaching"></div><div id="hover-molecule" hidden></div></div><div id="trace-preview"><div id="trace-context" aria-label="Exact parameter trace of the inspected preparation"></div></div></div><div id="feature-details"></div></div>
 </figure>
 <figure id="figure-two" class="figure-cell" hidden>
-<figcaption>Complete preparation <div class="actions"><button id="route-view">Full figure</button><button id="focus-route" hidden>Focus figure</button></div></figcaption>
+<figcaption><span>Each step supplies the next substrate</span><div class="actions"><button id="route-view">Full figure</button><button id="focus-route" hidden>Focus figure</button></div></figcaption>
 <div id="route-content"><div id="route-scenes" aria-label="Processing scenes of the inspected preparation"></div><div id="route-focus" hidden><label id="stage-label" hidden>Processing state <select id="stage"><option value="all">All processing steps</option></select></label>
 <div id="route-frame" tabindex="0" aria-label="Exact preparation. Pinch to zoom, drag to pan; press 0 to fit." hidden><div id="route"></div><button id="fit">Fit route</button></div>
 </div></div>

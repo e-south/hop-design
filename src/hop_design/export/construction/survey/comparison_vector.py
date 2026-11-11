@@ -98,9 +98,22 @@ def render_comparison_vector(packet: dict[str, Any], *, width_pt: float = 504) -
             group,
             "path",
             {
-                "d": f"M{left + inset},12 H{right - inset} L{right},23 H{left} Z",
+                "d": f"M{left + inset},12 H{right - inset} L{right},21 H{left} Z",
                 "fill": style["fill"],
-                "fill-opacity": ".35",
+                "fill-opacity": ".25",
+            },
+        )
+        ET.SubElement(
+            group,
+            "line",
+            {
+                "x1": str(left),
+                "x2": str(right),
+                "y1": "22",
+                "y2": "22",
+                "stroke": "#8a9699",
+                "stroke-width": ".5",
+                "data-feature-span": block,
             },
         )
         text(group, (left + right) / 2, 9, style["label"])

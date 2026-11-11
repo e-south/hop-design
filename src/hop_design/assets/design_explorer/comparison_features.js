@@ -49,6 +49,18 @@ export function distanceDescription(block,key,basis) {
   'Edit distance divided by the longer end-word length, in recorded strand orientation.';
  return 'Polarity is nominal: equal or different.';
 }
+export function comparisonExplanation(feature,basis) {
+ const [block,key]=feature.key.split('.'),measurement=block==='shape',contacts=['basal_pairs','foldback_pairs'].includes(key);
+ const label=feature.label||names[key][0],unit=feature.unit??names[key][1],policy=basis.distance_policy||{};
+ const decoded=contacts?feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join(', ')||'No contacts':Array.isArray(feature.value)?feature.value.join('')||'Empty region':String(feature.value);
+ const count=contacts?`${feature.value.length} ordered contact${feature.value.length===1?'':'s'}`:key.endsWith('_polarity')?'a strand polarity':`${feature.value.length} nt`;
+ const meaning=measurement?`The measured ${label.toLowerCase()} is ${feature.value}${unit?' '+unit:''}.`:
+  `Code ${feature.displayValue} identifies ${count} in this field's exact dictionary. It is not a count or rank; code subtraction is not used.`;
+ const formula=measurement?`abs(a − b) / ${basis.shape_scales[key]}`:block==='sequences'?
+  (policy.regional_metric==='normalized_edit'?'edit(a, b) / max(1, m, n)':'min(1, max(0, edit(a, b) − abs(m − n)) / max(1, min(m, n)))'):
+  key.endsWith('_word')?(policy.end_word_metric==='hamming'?'mismatches(a, b) / length(a)':'edit(a, b) / max(1, m, n)'):'0 if a = b, otherwise 1';
+ return {label,display:String(feature.displayValue),kind:measurement?'Measurement':'Dictionary code',decoded,meaning,formula,rule:distanceDescription(block,key,basis)};
+}
 function field(feature,basis) {
  const [block,key]=feature.key.split('.'),label=feature.label||names[key][0],unit=feature.unit??names[key][1];
  const node=element('span',undefined,'comparison-feature');node.tabIndex=0;
@@ -59,9 +71,7 @@ function field(feature,basis) {
  const measurement=block==='shape';
  node.dataset.displayKind=measurement?'measurement':'nominal-code';
  value.textContent=String(feature.displayValue);
- const description=['basal_pairs','foldback_pairs'].includes(key)?
-   feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join('; ')||'No paired positions':
-   Array.isArray(feature.value)?feature.value.join('')||'∅':String(feature.value);
+ const description=comparisonExplanation(feature,basis).decoded;
  const encoded=JSON.stringify(feature.encoded),code=element('code',encoded,'comparison-code');
  code.dataset.encoded=encoded;code.hidden=true;code.setAttribute('aria-hidden','true');
  const connector=element('span',undefined,'comparison-encoding-link');connector.setAttribute('aria-hidden','true');
@@ -74,9 +84,33 @@ function field(feature,basis) {
  node.setAttribute('aria-label',node.title);return node;
 }
 
-export function comparisonStrip(host,onFocus) {
- let packet=null,reader=null;
+export function comparisonStrip(host,onFocus,help=null) {
+ let packet=null,reader=null,displayed=null,explained=null;
  const panel=element('div');panel.dataset.comparisonValues='true';host.append(panel);
+ function explain() {
+  if(!help||help.panel.hidden||!displayed)return;
+  if(!displayed.vector.some(f=>f.key===explained))explained=displayed.vector[0]?.key;
+  help.content.replaceChildren();help.panel.dataset.preparationId=displayed.identity;
+  const intro=element('p',`${displayed.vector.length} fields describe this saved comparison. Counts are measurements; sequence and end codes look up exact molecular values. The codes themselves are not distances.`);
+  const select=element('select');select.setAttribute('aria-label','Feature explained');
+  displayed.vector.forEach((f,i)=>{const option=element('option',`${i+1}. ${f.label||names[f.key.split('.')[1]][0]} = ${f.displayValue}`);option.value=f.key;select.append(option);});
+  select.value=explained;select.addEventListener('change',()=>{explained=select.value;explain();help.content.querySelector('select').focus();});
+  help.content.append(intro,select);
+  if(!explained)return;
+  const f=displayed.vector.find(f=>f.key===explained),reading=comparisonExplanation(f,displayed.basis);
+  help.content.append(element('h3',`X${displayed.vector.indexOf(f)+1} = ${reading.display} · ${reading.kind}`),element('p',reading.meaning),element('p',reading.decoded,'comparison-decoded'),element('code',reading.formula,'comparison-formula'),element('p',reading.rule));
+  help.content.append(element('p','a and b are the decoded values for any two preparations; m and n are their region lengths. Edits count whole bases or ordered contact tokens, retaining strand orientation.'));
+  help.content.append(element('p',`Active field distances are averaged within each group, then combined with saved group weights ${displayed.basis.weights.join(' : ')}. The layout uses these dissimilarities, not Euclidean distance between the displayed codes.`, 'comparison-policy'),element('code','D(a, b) = sum(w × group mean) / sum(active w)','comparison-formula'));
+ }
+ function dismiss(restore=false) {if(!help)return false;const open=!help.panel.hidden;help.panel.hidden=true;help.button.setAttribute('aria-expanded','false');if(open&&restore)help.button.focus();return open;}
+ function reveal(key=null) {if(!help||!displayed)return;explained=key||explained;help.panel.hidden=false;help.button.setAttribute('aria-expanded','true');explain();}
+ const toggle=()=>help.panel.hidden?reveal():dismiss();
+ const close=()=>dismiss(true);
+ if(help){help.button.addEventListener('click',toggle);help.close.addEventListener('click',close);}
+ const activate=e=>{const item=e.target.closest('[data-feature]');if(item&&help){reveal(item.dataset.feature);if(e.type==='keydown')help.content.querySelector('select').focus();}};
+ panel.addEventListener('click',activate);
+ const keydown=e=>{if(['Enter',' '].includes(e.key)&&e.target.closest('[data-feature]')){e.preventDefault();activate(e);}};
+ panel.addEventListener('keydown',keydown);
  for(const event of ['pointerover','focusin']) panel.addEventListener(event,e=>{
   const item=e.target.closest('[data-feature]');if(item)onFocus(JSON.parse(item.dataset.parameterKeys));
  });
@@ -84,7 +118,7 @@ export function comparisonStrip(host,onFocus) {
  return {
   prepare(identity,state) {
    const next=state?.presentation?.landscape==='similarity'?state.map_index?.comparison:null;
-   if(!identity||!next)return ()=>{host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;};
+   if(!identity||!next)return ()=>{host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;displayed=null;dismiss();if(help)help.button.hidden=true;};
    if(packet!==next){reader=comparisonReader(next,state.choices.paths.map(p=>p.materialized_realization_id));packet=next;}
    const reading=reader(identity),content=[];
    const heading=element('span','X = [','comparison-vector-open');
@@ -100,10 +134,12 @@ export function comparisonStrip(host,onFocus) {
     content.push(band);
    }
    content.push(...reading.vector.map((f,i)=>{
-    const node=field(f,reading.basis);node.style.setProperty('grid-column',String(i+2));node.style.setProperty('grid-row','2 / 4');return node;
+    const node=field(f,reading.basis);node.style.setProperty('grid-column',String(i+2));node.style.setProperty('grid-row','2 / 4');if(help){node.setAttribute('role','button');node.setAttribute('aria-controls',help.panel.id);}return node;
    }),element('span',']','comparison-vector-close'));
-   return ()=>{panel.style?.setProperty('--feature-count',String(reading.vector.length));panel.replaceChildren(...content);host.dataset.preparationId=identity;host.dataset.comparisonDisplay='numeric-row';host.hidden=false;};
+   return ()=>{panel.style?.setProperty('--feature-count',String(reading.vector.length));panel.style?.setProperty('--feature-min',`${Math.max(35,...reading.vector.map(f=>String(f.displayValue).length*10))}px`);panel.replaceChildren(...content);host.dataset.preparationId=identity;host.dataset.comparisonDisplay='numeric-row';host.hidden=false;displayed=reading;if(help)help.button.hidden=false;explain();};
   },
-  clear(){host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;},
+  dismiss,
+  clear(){host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;displayed=null;dismiss();if(help)help.button.hidden=true;},
+  close(){this.clear();if(help){help.button.removeEventListener('click',toggle);help.close.removeEventListener('click',close);}panel.removeEventListener('click',activate);panel.removeEventListener('keydown',keydown);},
  };
 }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const load=async()=>import('data:text/javascript;base64,'+Buffer.from(await readFile(new URL('../../src/hop_design/assets/design_explorer/comparison_features.js',import.meta.url))).toString('base64'));
-function element(){return {style:{values:{},setProperty(k,v){this.values[k]=v;}},dataset:{},children:[],classList:{add(){}},setAttribute(){},addEventListener(){},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;}};}
+function element(tag){return {tag,hidden:false,attributes:{},handlers:new Map(),style:{values:{},setProperty(k,v){this.values[k]=v;}},dataset:{},children:[],classList:{add(){}},setAttribute(k,v){this.attributes[k]=v;},addEventListener(k,v){this.handlers.set(k,v);},removeEventListener(k){this.handlers.delete(k);},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;},querySelector(tag){return this.children.find(e=>e.tag===tag);},focus(){this.focused=true;}};}
 const packet=()=>({algorithm:'umap',basis:{shape_scales:{five_prime_unpaired_nt:2},sequence_keys:['basal_pairs'],interface_keys:['left_word'],weights:[1,1,1]},columns:[
  {key:'shape.five_prime_unpaired_nt',parameters:['five_prime_unpaired_nt'],active:true,dictionary:[4,6],indices:[0,1]},
  {key:'shape.loop_nt',parameters:['loop_nt'],active:false,dictionary:[4],indices:[0,0]},
@@ -18,6 +18,49 @@ test('distance explanations follow the saved policy without adding controls',asy
  assert.match(distanceDescription('sequences','basal_pairs',basis),/longer region/);
  assert.match(distanceDescription('interfaces','left_word',basis),/positionwise/);
  assert.match(distanceDescription('interfaces','left_polarity',basis),/nominal/);
+});
+
+test('feature explanations distinguish physical values from exact dictionary lookups',async()=>{
+ const {comparisonReader,comparisonExplanation}=await load(),p=packet(),reading=comparisonReader(p,['A','B'])('B');
+ const geometry=comparisonExplanation(reading.vector[0],reading.basis);
+ assert.equal(geometry.kind,'Measurement');assert.equal(geometry.display,'6');
+ assert.match(geometry.formula,/abs\(a − b\) \/ 2/);
+ const contact=comparisonExplanation(reading.vector[1],reading.basis);
+ assert.equal(contact.kind,'Dictionary code');assert.match(contact.decoded,/G:T/);
+ assert.match(contact.meaning,/1 ordered contact/);assert.match(contact.meaning,/not a count/);
+ assert.match(contact.formula,/edit\(a, b\)/);assert.match(contact.formula,/abs\(m − n\)/);
+ const end=comparisonExplanation(reading.vector[2],reading.basis);
+ assert.equal(end.decoded,'GGAA');assert.match(end.meaning,/4 nt/);
+ p.basis.distance_policy={regional_metric:'normalized_edit',end_word_metric:'hamming'};
+ assert.equal(comparisonExplanation(reading.vector[2],p.basis).formula,'mismatches(a, b) / length(a)');
+ assert.equal(JSON.stringify(p.columns[2].dictionary[1]),'[["G","T","gt_wobble"]]');
+});
+
+test('optional X explanation follows committed hover values, retains its field and closes before clearing',async t=>{
+ const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});globalThis.document={createElement:element};
+ const {comparisonStrip}=await load(),host=element(),help={button:element(),close:element(),panel:element(),content:element()};
+ help.panel.id='help';help.panel.hidden=true;
+ const p=packet();p.basis.weights=[2,1,3];const state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
+ const strip=comparisonStrip(host,()=>{},help);strip.prepare('A',state)();
+ help.button.handlers.get('click')();assert.equal(help.panel.hidden,false);assert.equal(help.panel.dataset.preparationId,'A');
+ const select=help.content.querySelector('select');select.value='sequences.basal_pairs';select.handlers.get('change')();
+ const pending=strip.prepare('B',state);assert.equal(help.panel.dataset.preparationId,'A');
+ pending();assert.equal(help.panel.dataset.preparationId,'B');assert.equal(help.content.querySelector('select').value,'sequences.basal_pairs');
+ assert.match(help.content.children.find(e=>e.tag==='h3').textContent,/= 1.*Dictionary code/);
+ assert.match(help.content.children.find(e=>e.className==='comparison-policy').textContent,/2 : 1 : 3/);
+ assert.match(help.content.children.at(-1).textContent,/sum\(active w\)/);
+ assert.ok(strip.dismiss(true));assert.equal(help.button.focused,true);assert.equal(help.panel.hidden,true);
+ help.button.handlers.get('click')();strip.clear();assert.equal(help.panel.hidden,true);assert.equal(help.button.hidden,true);
+ strip.close();assert.equal(help.button.handlers.size,0);assert.equal(help.close.handlers.size,0);
+});
+
+test('the numeric strip reserves readable space for the longest exact value without rounding',async t=>{
+ const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});globalThis.document={createElement:element};
+ const {comparisonStrip}=await load(),p=packet(),host=element();p.columns[0].dictionary[1]=123456;
+ const state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
+ comparisonStrip(host,()=>{}).prepare('B',state)();
+ assert.equal(host.children[0].style.values['--feature-min'],'60px');
+ assert.equal(host.children[0].children.find(e=>e.dataset.feature).children.find(e=>e.className==='comparison-value').textContent,'123456');
 });
 test('comparison reading uses exact fitted tokens and preserves fixed versus active features',async()=>{
  const {comparisonReader}=await load(),p=packet(),original=JSON.stringify(p),read=comparisonReader(p,['A','B']);

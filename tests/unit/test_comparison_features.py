@@ -138,3 +138,9 @@ def test_compact_export_has_grouped_single_numeric_row_with_angled_labels():
     labels = [e for e in root.iter() if e.get("data-feature-label")]
     assert all(e.get("transform").startswith("rotate(-45 ") for e in labels)
     assert all(e.get("font-weight") == "normal" for e in labels)
+    spans = [e for e in root.iter() if e.get("data-feature-span")]
+    assert [e.get("data-feature-span") for e in spans] == groups
+    for span in spans:
+        assert float(span.get("x2")) > float(span.get("x1"))
+        assert float(span.get("y1")) < float(values[0].get("y")) - 5
+        assert span.get("stroke") == "#8a9699"

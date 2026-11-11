@@ -49,7 +49,7 @@ const local=localChoices($('molecular-area'),{
 });
 const viewport=molecularViewport($('route'),$('fit'),keys=>plots.focusParameters(keys));
 const plots=landscape($('plot'),$('members'),q=>act('query',{query:q}),id=>act('select',{materialized_realization_id:id}),keys=>viewport.highlight(keys),showHover);
-const comparisonView=comparisonStrip($('map-comparison'),keys=>plots.focusParameters(keys));
+const comparisonView=comparisonStrip($('map-comparison'),keys=>plots.focusParameters(keys),{button:$('comparison-help'),panel:$('comparison-help-panel'),content:$('comparison-help-content'),close:$('close-comparison-help')});
 const colors=colorControls($('map-color'),lens=>plots.color(lens));
 for(const event of ['pointerover','focusin']) $('teaching').addEventListener(event,e=>{
   const feature=e.target.closest(parameterSelector);
@@ -240,6 +240,7 @@ async function render(next,restore=false) {
   $('similarity').disabled=!state.has_landscape;
   $('map-scope').textContent=state.has_landscape?'Nearby points compare declared molecular shape, retained sequence and receiving interfaces. Coordinates stay fixed while filtering.':'Structural groups are shown. Capture molecular coordinates with design freeze --include-landscape for similarity navigation.';
   $('family-stage-label').hidden=mode!=='families';
+  if(mode!=='similarity')$('alternate-views').open=true;
   $('selection-actions').hidden=!state.preview;$('selection-details').hidden=!state.preview;
   $('preview-label').textContent='Preparation';
   setMolecularMode(state.presentation.molecule);
@@ -314,9 +315,9 @@ $('view-file').addEventListener('change',async()=>{try{const file=$('view-file')
 async function restoreHash(){if(location.hash.startsWith('#view=')){const receipt=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));await act('restore',{receipt},false);}}
 window.addEventListener('hashchange',()=>restoreHash().catch(e=>{$('status').textContent=e.message;}));
 const observer=new ResizeObserver(()=>{connect();scenes.refresh();});observer.observe($('object'));
-window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();nearby.close();raster.close();mapView.close();views.clear();figure.clear();selectedTrace.clear();plots.close();distributionScene.clear();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
+window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();nearby.close();raster.close();mapView.close();comparisonView.close();views.clear();figure.clear();selectedTrace.clear();plots.close();distributionScene.clear();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
 window.addEventListener('blur',()=>showHover(null));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')escapeInspection($('inspector'),{dismissRefinement:()=>{if(!$('refinement').open)return false;$('refinement').open=false;$('refine').focus();return true;},restorePreview:()=>showHover(null),returnToMap:returnToAtlas,close:closeInspector});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')escapeInspection($('inspector'),{dismissRefinement:()=>{if(comparisonView.dismiss(true))return true;if(!$('refinement').open)return false;$('refinement').open=false;$('refine').focus();return true;},restorePreview:()=>showHover(null),returnToMap:returnToAtlas,close:closeInspector});});
 $('refine').addEventListener('click',()=>{$('refinement').open=!$('refinement').open;});
 $('refinement').addEventListener('toggle',()=>$('refine').setAttribute('aria-expanded',String($('refinement').open)));
 $('fit-map').addEventListener('click',()=>{showHover(null);plots.clear();});

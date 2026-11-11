@@ -107,6 +107,16 @@ comparison policy, rather than Euclidean distance between these display codes,
 determines map proximity. An older saved comparison is never expanded merely to
 match the number of fields in another figure.
 
+In the browser, **How X is read** opens a local explanation beside the atlas.
+Choose a field there, or activate its value in X, to see the current measurement
+or dictionary code, its decoded molecular value and the saved comparison rule.
+The explanation follows the same committed preparation as X and the inspector.
+For example, a basal-contact code of 74 identifies one exact ordered pattern;
+it does not mean 74 contacts. The pattern length and oriented contacts are shown
+after decoding. This display code is also distinct from the numerical kernel's
+internal token identifiers. No one-hot feature matrix or Euclidean code distance
+is implied. Changing that representation requires a separately qualified fit.
+
 The linked inspector uses the same molecular and parameter renderers as export.
 Its side-panel behavior and hover/pin lifecycle are independent of typography.
 The hairpin and trace keep a common fitted width; sparse alternative values use

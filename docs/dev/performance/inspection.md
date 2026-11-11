@@ -260,3 +260,11 @@ without repeated loading cards or screen-reader announcements. Retained drawings
 remain subdued and inactive while updating. Failures and unavailable states still
 show and announce their specific notice at the affected step. Offscreen steps do
 not imply ongoing work; the cue clears on completion, failure, restoration or close.
+
+The optional atlas X explanation decodes only the inspected member from the
+already-loaded comparison packet. It adds no requests or fitting work, and stays
+closed until requested. Its content commits with the matching hairpin and X;
+Escape closes it before changing the inspector. Atlas options retain alternate
+population views and saved-view loading; Fit atlas resets the existing camera.
+The color legend and feature explanation occupy the left of the atlas. Numeric
+X meanings and arithmetic are defined in [molecular comparison](../../reference/molecular-comparison.md).
