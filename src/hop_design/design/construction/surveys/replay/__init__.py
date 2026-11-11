@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import Callable
+from contextlib import nullcontext
 from typing import Any
 
 from hop_design.design.runtime import producer_identity
@@ -28,7 +29,19 @@ def replay_evaluations(
 ) -> dict[str, Any]:
     """Regenerate every committed step; no selection of convenient matching records."""
     request = saved.request
+    historical = transition is None and len(saved.creators) > 1
+    if historical:
+        # Local caches are authorities, not trusted answers: their readers rerun
+        # discovery and check their complete dependency keys before use. Retain
+        # the original creator even for cache entries made before a cancelled step.
+        for key, digest in saved._db.execute("SELECT key,digest FROM cache ORDER BY key"):
+            with replay.origins.expect(saved.object_creator(digest)):
+                replay.cache(key, saved.get_object(digest))
     if request.preferred_preparation is not None:
+        if historical:
+            for entry in request.preferred_preparation.files:
+                with replay.origins.expect(saved.object_creator(entry.digest)):
+                    replay.put_object(saved.get_object(entry.digest))
         store_preference_files(
             replay,
             {
@@ -38,12 +51,26 @@ def replay_evaluations(
         )
     locals_, branches = LocalReceipts(replay, limits), SurveyBranches(request)
     previous, address, count = None, None, 0
-    for target, step, raw, witnesses, exhausted in saved.evaluations():
-        if previous != target:
-            address = locals_.first_address(branches, limits, target)
-        if address is None:
-            raise ValueError("Survey evaluation follows an already finished target.")
-        expected = evaluate_step(replay, locals_, branches, limits, target=target, address=address)
+    for target, step, raw, witnesses, exhausted in saved.evaluations(origin_order=historical):
+        scope = (
+            replay.origins.expect(saved.step_creator(target, step=step))
+            if historical
+            else nullcontext()
+        )
+        with scope:
+            if historical:
+                address = (
+                    locals_.first_address(branches, limits, target)
+                    if step == 0
+                    else json.loads(replay.record(target, step=step - 1))["next"]
+                )
+            elif previous != target:
+                address = locals_.first_address(branches, limits, target)
+            if address is None:
+                raise ValueError("Survey evaluation follows an already finished target.")
+            expected = evaluate_step(
+                replay, locals_, branches, limits, target=target, address=address
+            )
         if witnesses != len(expected["witnesses"]) or exhausted != (
             expected["next"] is None and expected["exhaustion_proven"]
         ):
@@ -64,13 +91,18 @@ def replay_evaluations(
             for digest in (d for d in authorities if d is not None):
                 if saved.get_object(digest) != replay.get_object(digest):
                     raise ValueError("Survey molecular authority failed replay.")
-        replay.append(
-            target,
-            step=step,
-            record=canonical_json_bytes(expected),
-            witness_count=witnesses,
-            exhausted=exhausted,
-        )
+        with (
+            replay.origins.expect(saved.step_creator(target, step=step))
+            if historical
+            else nullcontext()
+        ):
+            replay.append(
+                target,
+                step=step,
+                record=canonical_json_bytes(expected),
+                witness_count=witnesses,
+                exhausted=exhausted,
+            )
         previous, address, count = target, expected["next"], count + 1
         if on_replayed is not None:
             on_replayed(count)

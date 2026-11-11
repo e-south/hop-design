@@ -195,6 +195,11 @@ every exact hairpin or preparation. Both objective and execution limits bind the
 checkpoint; see the [scope definitions](../interface-survey-search/molecular-domain-and-completion.md#complete-handles-without-enumerating-every-interchangeable-word).
 
 `construction survey verify REQUEST --index FILE` replays all recorded outcomes.
+`construction survey migrate REQUEST --index FILE --out NEW` converts a stopped
+checkpoint to shared blocks, preserving original content without historical
+solver replay. `--max-checkpoint-bytes` bounds the target; `--minimum-free-bytes`
+keeps a disk reserve. Progress goes to stderr and the receipt to stdout. See
+[storage, compatibility and recovery](../interface-survey-search/checkpoint-storage.md).
 `construction survey upgrade REQUEST --index FILE --source-producer PRODUCER_JSON
 --out NEW` replays a **stopped** checkpoint under the installed build. Supply the
 exact original producer mapping. It preserves the source, rejects changed results

@@ -138,6 +138,7 @@ from .design.construction.surveys.choices import (
 from .design.construction.surveys.public import evaluate_interface_survey, inspect_interface_survey
 from .design.construction.surveys.replay.upgrade import upgrade_interface_survey
 from .design.construction.surveys.retrieve import retrieve_interface_survey_witness
+from .design.construction.surveys.storage.migration import migrate_interface_survey
 from .design.construction.surveys.verify import verify_interface_survey
 from .design.construction.variants.atlas import ScaffoldAtlas, inspect_scaffold_atlas
 from .design.construction.variants.choices import load_scaffold_variant_choices
@@ -283,6 +284,7 @@ __all__ = [
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "match_construction_family",
+    "migrate_interface_survey",
     "prepare_construction_family",
     "prepare_construction_request",
     "prepare_molecular_edit",

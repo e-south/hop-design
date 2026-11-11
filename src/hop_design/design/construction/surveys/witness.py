@@ -52,7 +52,10 @@ def recover_witness(
         artifact = root / name
         artifact.parent.mkdir(parents=True, exist_ok=True)
         artifact.write_bytes(index.get_object(digest))
-    receipt = load_verified_construction_bundle(root)
+    # Resolve the root object's creator; imported local authorities can retain
+    # their own earlier creator within the admitted history.
+    with index.origins.replay(index.object_creator(record["bundle"]["construction-result.json"])):
+        receipt = load_verified_construction_bundle(root)
     authority = receipt._verified_source()
     source = product.construction_source()
     actual = authority.result.request

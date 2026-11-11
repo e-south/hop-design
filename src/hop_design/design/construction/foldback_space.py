@@ -11,10 +11,10 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
-from importlib.metadata import version
 from itertools import product
 from math import prod
 
+from hop_design.design.runtime import creation_version
 from hop_design.kernel.construction.foldback.admission import (
     admit_foldback_precursors,
     retained_sequences,
@@ -148,7 +148,7 @@ def discover_sequence_space(request: FoldbackSequenceRequest) -> FoldbackSequenc
             )
     return FoldbackSequenceResult(
         request=request,
-        hop_version=version("hop-design"),
+        hop_version=creation_version(),
         route_implementation_version=_ROUTE_VERSION,
         cases=tuple(cases),
         candidate_count=sum(case.candidate_count for case in cases),

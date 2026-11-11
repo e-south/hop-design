@@ -144,7 +144,8 @@ class LocalReceipts:
             receipt = _discover_request(request)
             self.index.cache(key, receipt.json_bytes)
         else:
-            receipt = _verify_result_mapping(json.loads(content))
+            with self.index.origins.replay(self.index.cache_creator(key)):
+                receipt = _verify_result_mapping(json.loads(content))
             result = json.loads(receipt.json_bytes)
             embedded = result["neighborhood" if receipt.family == "foldback" else "discovery"][
                 "request"

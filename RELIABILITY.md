@@ -14,6 +14,13 @@ with one newline. FASTA uses deterministic headers, 80-column sequence lines,
 and one trailing newline. Host paths, timestamps, usernames, and environment
 ordering do not enter content identity.
 
+An admitted checkpoint supplies the creator version used to replay its saved
+bundles and cached local authorities. Replay derives every molecular field and
+requires complete canonical bytes and exported artifacts to match. A result's
+version label cannot authorize itself or replace that binding. New results use
+the installed version; replay never changes the actual runtime fingerprint.
+Ordinary checkpoint opening and resume still require the exact producer.
+
 Translation from a product request to construction inputs reuses the request's
 immutable characterized catalog when binding foldback, basal and release
 permissions. It validates the
@@ -33,9 +40,15 @@ supplied identity. This removes duplicate serialization during creation. It
 retains no validation authority after creation and offers no caller option to
 disable checks.
 
-Survey checkpoints remain bound to their exact producer. Ordinary resume and
-verification never accept another producer. An explicit `survey upgrade` replays
-every saved evaluation into a new checkpoint under the current producer. Results,
+Survey checkpoints remain bound to their current writer. Ordinary resume never
+changes that binding. `survey migrate` preserves all original bytes and creators
+in compact storage; a writer change requires a shipped compatibility declaration
+for the exact packages and unchanged runtime inputs. The creator ledger seals
+each prior prefix, and full verification replays its recorded creator segments.
+See [storage and migration](docs/reference/interface-survey-search/checkpoint-storage.md).
+
+An explicit `survey upgrade` replays every saved evaluation of a single-creator
+checkpoint into a new checkpoint under the current producer. Results,
 continuations, exclusion scope and molecular authorities must match; only
 regenerated exclusion certificates may change their producer digest and resulting
 references. The original checkpoint remains unchanged. The transition receipt
@@ -101,7 +114,7 @@ Identical local foldback/basal proof inputs may reuse a successful replay within
 one saved-discovery admission or one bounded options evaluation. Each reuse
 reparses the strict model and compares the full
 canonical result bytes, including request, catalog and limits, under the current
-producer identity and replay policy. The scope retains at most 64 proofs and
+executor, admitted creator version and replay policy. The scope retains at most 64 proofs and
 8 MiB, ends when that call returns or raises, and never bypasses file checks,
 complete-route replay or projection comparison. Failed proofs are not retained.
 A separate load or evaluation starts a new proof scope. Candidate quotas,

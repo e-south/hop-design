@@ -8,7 +8,8 @@ from pathlib import Path
 from hop_design.models.construction.surveys.execution import SurveyEvaluationLimits
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
 
-from ..index import MAX_RECORD_BYTES, SurveyIndex
+from ..index import SurveyIndex
+from ..storage.legacy import MAX_RECORD_BYTES
 
 
 def open_survey(

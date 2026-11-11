@@ -12,8 +12,8 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from importlib.metadata import version
 
+from hop_design.design.runtime import creation_version
 from hop_design.models.construction import (
     DigitalDesignStatus,
     FailureReasonCount,
@@ -158,7 +158,7 @@ def build_result(
     geometry_groups = _groups(realizations, grouping=RealizationGrouping.ACHIEVED_GEOMETRY)
     product_groups = _groups(realizations, grouping=RealizationGrouping.FINAL_PRODUCT)
     problem = request.problem_id
-    hop_version = version("hop-design")
+    hop_version = creation_version()
     execution = ConstructionCompositionExecution(
         problem_id=problem,
         hop_version=hop_version,

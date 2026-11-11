@@ -9,10 +9,10 @@ Module Author(s): Eric J. South
 --------------------------------------------------------------------------------
 """
 
-from importlib.metadata import version
 from itertools import product
 from math import prod
 
+from hop_design.design.runtime import creation_version
 from hop_design.kernel.construction.basal.domains import solve_basal_sequence_domain
 from hop_design.kernel.construction.basal.programs import (
     BasalPlacementFailure,
@@ -156,7 +156,7 @@ def discover_sequence_space(request: BasalSequenceRequest) -> BasalSequenceResul
             )
     return BasalSequenceResult(
         request=request,
-        hop_version=version("hop-design"),
+        hop_version=creation_version(),
         route_implementation_version=_ROUTE_VERSION,
         cases=tuple(cases),
         candidate_count=sum(c.candidate_count for c in cases),

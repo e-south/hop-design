@@ -129,7 +129,8 @@ preview/evaluation separation and replayed original evidence; see
 
 Resumable interface surveys add `evaluate_interface_survey`,
 `inspect_interface_survey`, `query_interface_survey`, `verify_interface_survey`,
-`upgrade_interface_survey` and `retrieve_interface_survey_witness`. These accept
+`upgrade_interface_survey`, `migrate_interface_survey` and
+`retrieve_interface_survey_witness`. These accept
 strict files and explicit execution budgets, return versioned JSON summaries, and rehydrate selected
 ordinary construction receipts on demand. The checkpoint index remains derived
 bookkeeping; aggregate molecular coverage requires replay. See

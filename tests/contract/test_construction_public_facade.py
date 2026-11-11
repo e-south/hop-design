@@ -125,6 +125,7 @@ PUBLIC_NAMES = [
     "load_verified_local_neighborhood",
     "load_verified_source_partition",
     "match_construction_family",
+    "migrate_interface_survey",
     "prepare_construction_family",
     "prepare_construction_request",
     "prepare_molecular_edit",

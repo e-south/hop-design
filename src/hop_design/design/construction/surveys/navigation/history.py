@@ -47,7 +47,7 @@ class EmptyPlaneHistory:
             target=target,
             branch=branch,
             population=population,
-            producer=self.producer,
+            producer=self.index.origins.expected_producer or self.producer,
         )
         if proof is None or proof.coordinates in self.planes(target):
             return None
@@ -61,5 +61,7 @@ class EmptyPlaneHistory:
             raise ValueError(
                 "A committed empty-plane proof is duplicated or assigned to another target."
             )
-        coordinates = verify_empty_basal(proof, self.branches, self.limits, producer=self.producer)
+        coordinates = verify_empty_basal(
+            proof, self.branches, self.limits, producer=self.index.object_creator(digest)
+        )
         self._planes.setdefault(target, set()).add(coordinates)

@@ -197,16 +197,29 @@ def evaluate_interface_survey(
             if target is None:
                 stopped = "exhausted_enumeration"
                 break
+            step = last.get(target, -1) + 1
             try:
-                address = (
-                    cursors[target]
-                    if target in cursors
-                    else locals_.first_address(branches, limits, target)
-                )
-                assert address is not None, "Survey schedule emitted a finished target."
-                record = evaluate_step(
-                    index, locals_, branches, limits, target=target, address=address
-                )
+                with index.evaluation(), index.origins.permitted():
+                    address = (
+                        cursors[target]
+                        if target in cursors
+                        else locals_.first_address(branches, limits, target)
+                    )
+                    assert address is not None, "Survey schedule emitted a finished target."
+                    record = evaluate_step(
+                        index, locals_, branches, limits, target=target, address=address
+                    )
+                    if producer_identity() != producer:
+                        raise ValueError(
+                            "Survey producer changed during evaluation; step was not committed."
+                        )
+                    index.append(
+                        target,
+                        step=step,
+                        record=canonical_json_bytes(record),
+                        witness_count=len(record["witnesses"]),
+                        exhausted=record["next"] is None and record["exhaustion_proven"],
+                    )
             except DiscoveryCancelled:
                 stopped = "cancelled"
                 break
@@ -216,24 +229,6 @@ def evaluate_interface_survey(
             except CompletionFrontierLimitError:
                 stopped = "navigation_frontier_budget"
                 break
-            except sqlite3.OperationalError as error:
-                if error.sqlite_errorcode != sqlite3.SQLITE_FULL:
-                    raise
-                stopped = "checkpoint_storage_limit"
-                break
-            if producer_identity() != producer:
-                raise ValueError(
-                    "Survey producer changed during evaluation; step was not committed."
-                )
-            step = last.get(target, -1) + 1
-            try:
-                index.append(
-                    target,
-                    step=step,
-                    record=canonical_json_bytes(record),
-                    witness_count=len(record["witnesses"]),
-                    exhausted=record["next"] is None and record["exhaustion_proven"],
-                )
             except sqlite3.OperationalError as error:
                 if error.sqlite_errorcode != sqlite3.SQLITE_FULL:
                     raise

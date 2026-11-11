@@ -12,8 +12,8 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from importlib.metadata import version
 
+from hop_design.design.runtime import creation_version
 from hop_design.kernel.construction.basal import (
     BasalPlacementFailure,
     iter_basal_program_solutions,
@@ -178,7 +178,7 @@ def discover_basal_neighborhood(
 
     execution = ConstructionExecution(
         problem_id=problem_id(request),
-        hop_version=version("hop-design"),
+        hop_version=creation_version(),
         route_implementation_version=_ROUTE_VERSION,
         search=request.search,
         max_operations=request.enzyme_provisioning.max_operations,
@@ -199,7 +199,7 @@ def discover_basal_neighborhood(
         ),
         payload_compatibility=accounting,
         provenance=NeighborhoodProvenance(
-            hop_version=version("hop-design"),
+            hop_version=creation_version(),
             route_implementation_version=_ROUTE_VERSION,
             enzyme_catalog_digest=request.enzyme_catalog_digest,
         ),

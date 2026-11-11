@@ -1,12 +1,14 @@
 """Bound admitted local reuse by bytes and entries, with independent cold admission."""
 
 from collections import Counter
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
 
 from hop_design.design.construction.surveys.admission import locals as module
 from hop_design.design.construction.surveys.execute import load_request
+from hop_design.design.runtime import producer_identity
 from hop_design.models.construction.surveys.execution import SurveyEvaluationLimits
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 from tests.support.context_completion import LIMITS, request
@@ -41,7 +43,13 @@ def local_cache(monkeypatch, tmp_path):
 
     monkeypatch.setattr(module, "_discover_request", packet)
     monkeypatch.setattr(module, "_verify_result_mapping", admit)
-    index = SimpleNamespace(request=survey, cached=cached, cache=store)
+    index = SimpleNamespace(
+        request=survey,
+        cached=cached,
+        cache=store,
+        cache_creator=lambda key: producer_identity(),
+        origins=SimpleNamespace(replay=lambda producer: nullcontext()),
+    )
 
     def owner():
         return module.LocalReceipts(index, SurveyEvaluationLimits(**LIMITS))

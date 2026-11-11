@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 
-from hop_design.design.runtime import producer_identity
+from hop_design.design.runtime import creation_version, producer_identity
 from hop_design.models.construction.basal import BasalNeighborhoodDiscoveryResult
 from hop_design.models.construction.foldback import FoldbackNeighborhoodDiscoveryResult
 from hop_design.serialization import canonical_json_bytes
@@ -42,7 +42,10 @@ def local_replay_scope() -> Iterator[None]:
 def _proof_key(kind: str, content: bytes) -> tuple[bytes, bytes] | None:
     if _proofs.get() is None:
         return None
-    return canonical_json_bytes(["local-replay/v1", kind, producer_identity()]), content
+    return (
+        canonical_json_bytes(["local-replay/v2", kind, producer_identity(), creation_version()]),
+        content,
+    )
 
 
 def _remember(key: tuple[bytes, bytes] | None) -> None:

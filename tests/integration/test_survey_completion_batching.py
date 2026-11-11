@@ -71,12 +71,15 @@ def empty_then_supported(tmp_path):
 
 
 def test_cold_resume_recomputes_necessary_relations_inside_the_batch(tmp_path):
+    from tests.support.context_completion import legacy_checkpoint
+
     path = empty_then_supported(tmp_path)
     resumed = tmp_path / "resumed.sqlite"
     full = tmp_path / "continuous.sqlite"
     first = construction.evaluate_interface_survey(
         path, resumed, max_evaluations=1, continuation_batch_size=64, **LIMITS
     )
+    legacy_checkpoint(resumed)
     row = records(resumed)[0]
     assert not row["empty_basal_planes"]
     import sqlite3
@@ -129,12 +132,14 @@ def test_replay_rejects_resealed_necessary_relation_from_preceding_step(tmp_path
     import pytest
 
     from hop_design.serialization import canonical_json_bytes, sha256_digest
+    from tests.support.context_completion import legacy_checkpoint
 
     path = empty_then_supported(tmp_path)
     index = tmp_path / "tamper.sqlite"
     construction.evaluate_interface_survey(
         path, index, max_evaluations=1, continuation_batch_size=64, **LIMITS
     )
+    legacy_checkpoint(index)
     row = records(index)[0]
     with sqlite3.connect(index) as db:
         for digest in row["preceding_completion_steps"]:
