@@ -104,7 +104,8 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 .comparison-value{grid-row:1;font:14px/25px monospace;white-space:nowrap;color:var(--ink)}
 .comparison-feature:hover,.comparison-feature:focus-visible{background:#ecf3f14d}
 #map-comparison>.panel-status{padding:7px 10px;font-size:12px}
-#object:has(#inspector:not([hidden]):not([data-dismissed="true"]):not([data-has-pin="true"])) #map-comparison{width:calc(100% - var(--inspector-width))}
+#object:has(#inspector:not([hidden]):not([data-has-pin="true"])) #map-comparison,
+#object:has(#inspector:not([hidden])[data-dismissed="true"][data-transient="true"]) #map-comparison{width:calc(100% - var(--inspector-width))}
 /* Transparent map controls occupy one corner and never intercept the surrounding canvas. */
 .map-tools{top:18px;right:20px;bottom:auto;left:auto;text-align:right;background:transparent;padding:0;pointer-events:none}
 .map-tools button{pointer-events:auto}.map-tools .actions{justify-content:flex-end;gap:6px}

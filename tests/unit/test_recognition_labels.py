@@ -8,7 +8,11 @@ from hop_design.export.construction.molecular.recognition_sites import recogniti
 
 
 def test_compact_overview_keeps_same_enzyme_names_at_both_molecular_regions(monkeypatch):
+    from hop_design.export.construction.molecular.primitives import annotation_policy
     from hop_design.export.construction.molecular.teaching_annotations import layout
+
+    # Changing a presentation palette cannot merge distinct molecular regions.
+    monkeypatch.setattr(annotation_policy, "site_color", lambda role: "#112233")
 
     basal, closing = object(), object()
     state = NS(

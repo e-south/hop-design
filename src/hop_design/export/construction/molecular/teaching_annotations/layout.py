@@ -8,7 +8,7 @@ from hop_design.models.construction.projections.inspection import MolecularState
 
 from ..label_layout import LabelPlacer, coalesce_horizontal
 from ..parameter_boundaries import boundary_point
-from ..primitives.annotation_policy import footprint_color
+from ..primitives.annotation_policy import footprint_region
 from ..primitives.typography import text_width
 from ..printing.panels import base_box
 from ..recognition_sites import recognition_site_overlays
@@ -104,7 +104,7 @@ def compact_recognition_overlays(
             names.setdefault(
                 (
                     site.enzyme_id,
-                    footprint_color(state, site.role, site.recognition),
+                    footprint_region(state, site.role, site.recognition),
                     site.presence in {"partial", "unresolved"},
                 ),
                 site.site_id,

@@ -14,6 +14,16 @@ from .typography import text_width
 RouteSiteLabels = Literal["all", "operations", "narrative"]
 
 
+def footprint_region(
+    projection: MolecularStateInspection, role: str, addresses: tuple[MolecularAddress, ...]
+) -> str:
+    """Recognition labels group by physical region, independently of its palette."""
+    if role == "end_generation":
+        return "interfaces"
+    neighborhoods = {base.neighborhood for base in projection.bases if base.address in addresses}
+    return "closing" if neighborhoods and neighborhoods <= {"closing", "loop"} else "assembly"
+
+
 def footprint_color(
     projection: MolecularStateInspection, role: str, addresses: tuple[MolecularAddress, ...]
 ) -> str:
