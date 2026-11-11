@@ -12,13 +12,13 @@ def coordinates(path):
 
 
 @pytest.mark.parametrize("side", [-1, 1])
-def test_primer_tip_continues_the_template_facing_edge(side):
+def test_primer_tip_stays_centered_with_the_flare_outward(side):
     from hop_design.export.construction.molecular.primitives.materials import primer_contour
 
     root = ET.fromstring(primer_contour([(0, 0), (16, 0), (32, 0)], outward=side))
     points = coordinates(root.get("d"))
     tip = max(points, key=lambda p: p[0])
-    assert tip == pytest.approx((64, -side * 12))
+    assert tip == pytest.approx((52, 0))
     assert min(y * side for _, y in points) >= -12
     assert max(y * side for _, y in points) >= 24
     assert "Q" in root.get("d")

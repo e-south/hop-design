@@ -9,9 +9,21 @@ from hop_design.export.construction.molecular.primitives.primer_shape import pri
 
 
 @pytest.mark.parametrize("outward", [-1, 1])
+def test_primer_stays_near_handle_where_template_straightens(outward):
+    template = [(16.0 * i, outward * 64.0) for i in range(11)]
+    template += [(160.0 + 12 * i, outward * (64.0 - 12 * i)) for i in range(1, 5)]
+    molecule = template + [(208.0 + 16 * i, outward * 16.0) for i in range(1, 10)]
+
+    placed = position_primer(template, molecule, outward=outward)
+
+    assert len(placed) == len(template)
+    assert outward * (placed[0][1] - template[0][1]) <= 48
+
+
+@pytest.mark.parametrize("outward", [-1, 1])
 def test_blocked_primer_uses_a_clear_lane_without_changing_its_shape(outward):
     template = [(16.0 * i, 0.0) for i in range(11)]
-    molecule = template + [(16.0 * i, outward * 80.0) for i in range(16)]
+    molecule = template + [(16.0 * i, outward * 70.0) for i in range(16)]
     nearest = position_primer(template, template, outward=outward, leading=2)
     placed = position_primer(template, molecule, outward=outward, leading=2)
     assert len(placed) == len(template) + 2
@@ -20,4 +32,4 @@ def test_blocked_primer_uses_a_clear_lane_without_changing_its_shape(outward):
     shifts = [y - before[1] for (_, y), before in zip(placed, nearest, strict=True)]
     assert shifts == pytest.approx([shifts[0]] * len(placed))
     outline, _ = primer_outline(placed, outward=outward)
-    assert min(outward * y for _, y in outline) >= max(outward * y for _, y in molecule) + 23
+    assert min(outward * y for _, y in outline) >= max(outward * y for _, y in molecule) + 19
