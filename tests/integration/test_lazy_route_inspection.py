@@ -54,7 +54,10 @@ def test_preview_can_include_visible_scenes_without_committing(source, captured_
 def test_inspector_pin_and_hover_share_readable_profile_without_changing_public_artwork(
     source, captured_choices, tmp_path, monkeypatch
 ):
-    from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
+    from hop_design.export.construction.molecular.teaching_overview import (
+        render_projected_teaching,
+        render_teaching_overview,
+    )
     from hop_design.export.construction.presentation.figure_profile import (
         INSPECTOR_FIGURE,
         PUBLICATION_FIGURE,
@@ -74,11 +77,19 @@ def test_inspector_pin_and_hover_share_readable_profile_without_changing_public_
         profiles.append(kwargs.get("profile", PUBLICATION_FIGURE).key)
         return render_teaching_overview(*args, **kwargs)
 
+    def measured_projected(*args, **kwargs):
+        profiles.append(kwargs.get("profile", PUBLICATION_FIGURE).key)
+        return render_projected_teaching(*args, **kwargs)
+
     for module in ("packets.inspection", "navigation.inspection_projection"):
         monkeypatch.setattr(
             f"hop_design.design.construction.{module}.render_teaching_overview",
             measured_overview,
         )
+    monkeypatch.setattr(
+        "hop_design.design.construction.editions.compact_projection.render_projected_teaching",
+        measured_projected,
+    )
     session = DesignInspectionSession(choices, tmp_path / "session")
     try:
         state = session.select(
@@ -300,7 +311,6 @@ def test_compact_pin_compares_before_drawing_and_reads_each_route_once(
     loop_designs, tmp_path, monkeypatch
 ):
     from hop_design.design.construction.editions import authority, compact_projection, comparison
-    from hop_design.design.construction.packets import inspection
 
     edition = loop_designs[1].freeze(tmp_path / "edition", compact=True)
     old, new = (edition.select(p) for p in edition.query()["paths"][:2])
@@ -313,21 +323,28 @@ def test_compact_pin_compares_before_drawing_and_reads_each_route_once(
         redraw=True,
         draw_route=False,
     )
-    reads, drawings = [], []
-    read, draw = comparison.captured_route, inspection.render_teaching_overview
+    reads, drawings, comparisons = [], [], []
+    read, draw = comparison.captured_route, compact_projection.render_projected_teaching
+    compare = compact_projection.compare_route_atlases
 
     def counted_read(edition, identity):
         reads.append(identity)
         return read(edition, identity)
 
-    def counted_draw(summary, **kwargs):
-        drawings.append(summary.get("comparison"))
-        return draw(summary, **kwargs)
+    def counted_compare(*args, **kwargs):
+        result = compare(*args, **kwargs)
+        comparisons.append(result)
+        return result
+
+    def counted_draw(*args, **kwargs):
+        drawings.append(comparisons[-1] if comparisons else None)
+        return draw(*args, **kwargs)
 
     monkeypatch.setattr(authority, "captured_route", counted_read)
     monkeypatch.setattr(comparison, "captured_route", counted_read)
     monkeypatch.setattr(compact_projection, "captured_route", counted_read)
-    monkeypatch.setattr(inspection, "render_teaching_overview", counted_draw)
+    monkeypatch.setattr(compact_projection, "compare_route_atlases", counted_compare)
+    monkeypatch.setattr(compact_projection, "render_projected_teaching", counted_draw)
     actual = compact_projection.compact_atlas(
         edition, edition._selected(new), reference_selection=old, draw_route=False
     )
@@ -338,6 +355,44 @@ def test_compact_pin_compares_before_drawing_and_reads_each_route_once(
     assert sorted(reads) == sorted(
         [old["materialized_realization_id"], new["materialized_realization_id"]]
     )
+
+
+@pytest.mark.parametrize("with_reference", [False, True])
+def test_compact_pin_reuses_typed_atlas_with_exact_packet_parity(
+    with_reference, loop_designs, tmp_path, monkeypatch
+):
+    from dataclasses import asdict
+
+    from hop_design.design.construction.editions import compact_projection
+    from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
+    from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
+    from hop_design.models.construction.projections.atlas import MolecularAtlas
+
+    edition = loop_designs[1].freeze(tmp_path / "edition", compact=True)
+    old, selected = (edition.select(p) for p in edition.query()["paths"][:2])
+    reference = old if with_reference else None
+    expected = compact_projection.compact_atlas(
+        edition, edition._selected(selected), reference_selection=reference, draw_route=False
+    )
+    summary = json.loads(expected.json_bytes)
+    overview = render_teaching_overview(summary, profile=INSPECTOR_FIGURE)
+    assert summary["selection"] == selected
+    assert (
+        summary["atlas"]["materialized_realization_id"] == selected["materialized_realization_id"]
+    )
+    assert summary["inspection_profile"] == asdict(INSPECTOR_FIGURE)
+    assert (summary["comparison"] is not None) == with_reference
+
+    def forbid_reconstruction(*args, **kwargs):
+        pytest.fail("Compact pin must draw its existing typed atlas without reconstructing JSON")
+
+    monkeypatch.setattr(MolecularAtlas, "model_validate_json", forbid_reconstruction)
+    actual = compact_projection.compact_atlas(
+        edition, edition._selected(selected), reference_selection=reference, draw_route=False
+    )
+    assert actual.json_bytes == expected.json_bytes
+    assert dict(actual._files) == dict(expected._files)
+    assert dict(actual._files)["overview.svg"] == overview
 
 
 @pytest.mark.parametrize(

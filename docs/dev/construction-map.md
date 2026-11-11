@@ -173,6 +173,27 @@ primer-input context, stable focus, query preservation and CLI/API parity.
 state-qualified animation keys and superseded responses. Browser cache entries
 remain bound to verified result/query/preview identities; retrieval re-admits.
 
+## Saved results and browser presentation
+
+Start at the owner of the changed behavior; the browser consumes admitted public
+objects and shared molecular drawings. Study requests, selected paper inputs and
+editorial composition remain outside HOP.
+
+| Responsibility | Owner relative to `src/hop_design/` |
+| --- | --- |
+| Saved live choices and frozen editions | `design/construction/variants/`, `design/construction/editions/` |
+| Public command parsing and readable next actions | `commands/design/__init__.py`, `commands/design/presentation.py` |
+| Browser session, exact selection and downloads | `commands/design/inspection.py` and its adjacent `inspection_*` owners |
+| Browser reproduction commands | `commands/design_commands.py` |
+| Shared molecular glyphs and composition profiles | `export/construction/molecular/`, `export/construction/presentation/figure_profile.py` |
+| Atlas, hover, side inspector and X interactions | `assets/design_explorer/`; wiring in `editor.js`, behavior in adjacent controllers |
+| Reused browser modules and explicit asset routes | `commands/construction/editor/assets.py`; shared files remain under `assets/survey_explorer/` and `assets/variant_explorer/` |
+
+`test_lazy_route_inspection.py` checks the generated pin/hover composition;
+`test_design_sequence_family.py` checks member-aware CLI handoffs. Browser logic
+uses `node --test tests/browser/*.test.mjs`. For cache, worker, loading and owned
+browser journeys, start at [Browser inspection](performance/inspection.md).
+
 ## Focused checks, then the repository gate
 
 Molecular editing composes the same machinery: `models/construction/molecular/edits.py`

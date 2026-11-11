@@ -195,6 +195,12 @@ connection. Scene drawings share the existing bounded hover cache and are remove
 with it; captured editions retain their original scene artwork and provenance.
 The browser's private packet is composed before its manifest is written. Public
 figure exports and material retrieval retain their existing defaults.
+Compact pinning passes its already-typed molecular atlas to the same teaching
+renderer used by preview. It does not serialize that generated atlas and validate
+it again merely to draw the overview. Archive/snapshot admission, descriptor
+validation, reference comparison and saved-view validation still run at their
+existing boundaries. Verify exact overview bytes and complete summary parity,
+including the inspector profile, before accepting a timing change.
 Private molecule packets draw the inspector composition directly and record that
 profile. The inspector reuses a matching composition instead of first drawing a
 publication overview and replacing it. Captured artwork keeps its original profile;

@@ -1,10 +1,13 @@
 """Project an inspected captured authority through the shared molecular renderer."""
 
 import json
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 from hop_design.export.construction.molecular.atlas import render_molecular_atlas
 from hop_design.export.construction.molecular.teaching import render_parameter_teaching
+from hop_design.export.construction.molecular.teaching_overview import render_projected_teaching
+from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
 from hop_design.models.construction.complete.realization import MaterializedConstructionRealization
 from hop_design.models.construction.editions.manifest import EditionSelection
 from hop_design.models.construction.projections.atlas import MolecularAtlas, MolecularScenes
@@ -171,6 +174,14 @@ def compact_atlas(
                 summary["teaching"], atlas, summary["parameter_locations"], comparison=comparison
             ),
         }
+    else:
+        files["overview.svg"] = render_projected_teaching(
+            atlas,
+            summary["teaching"],
+            summary["parameter_locations"],
+            profile=INSPECTOR_FIGURE,
+        )
+        summary["inspection_profile"] = asdict(INSPECTOR_FIGURE)
     packet_type = CapturedAtlas if draw_route else MolecularInspectionPacket
     packet = packet_type._create(
         files,
