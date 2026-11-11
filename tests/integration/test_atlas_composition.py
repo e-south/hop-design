@@ -90,6 +90,16 @@ def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
         arrow = arrows[0]
         label = next(e for e in row.iter() if e.get("data-operation"))
         x, y, width, height = map(float, arrow.get("data-drawing-box").split())
+        if arrow.get("data-connector-target-phase"):
+            assert arrow.get("data-connector-target-phase") == "hairpin_pcr_duplex"
+            assert "C" in arrow.get("d") and height > 0
+            # The caption accompanies the source of this curved transition.
+            origin_x = float(arrow.get("d").split(",", 1)[0][1:])
+            assert float(label.get("x")) > origin_x
+            assert float(label.get("y")) - float(label.get("font-size")) * 0.35 == pytest.approx(
+                y + OPERATION_ARROW_LENGTH / 2
+            )
+            continue
         assert height == OPERATION_ARROW_LENGTH
         assert float(label.get("x")) > x + width
         assert float(label.get("y")) - float(label.get("font-size")) * 0.35 == pytest.approx(

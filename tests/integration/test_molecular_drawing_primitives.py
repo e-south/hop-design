@@ -88,7 +88,10 @@ def test_cut_marks_are_strand_specific_and_site_bands_remain_translucent(loop_po
     assert sites and all(e.get("id") for e in sites)
     for site in sites:
         bands = [e for e in site.iter() if e.get("data-recognition-footprint")]
-        if site.get("data-presence") in {"present", "partial"}:
+        if site.get("data-footprint-display") == "metadata":
+            assert not bands
+            assert json.loads(site.get("data-recognition-addresses"))
+        elif site.get("data-presence") in {"present", "partial"}:
             assert bands
         if site.get("data-presence") in {"not_yet_present", "removed"}:
             assert not bands

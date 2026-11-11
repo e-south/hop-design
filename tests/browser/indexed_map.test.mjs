@@ -13,7 +13,7 @@ test('color repaints existing points without changing the camera, exact picking 
  const contexts=[];
  function element(tag){const attrs=new Map();return{tag,dataset:{},style:{},children:[],handlers:new Map(),className:'',setAttribute(k,v){attrs.set(k,String(v));},getAttribute:k=>attrs.get(k)??null,removeAttribute:k=>attrs.delete(k),replaceChildren(...children){this.children=children;},remove(){this.removed=true;},addEventListener(k,v){this.handlers.set(k,v);},removeEventListener(k){this.handlers.delete(k);},getBoundingClientRect:()=>({left:0,top:0,width:400,height:200}),getContext(){const ctx={fills:[],alphas:[],radii:[],strokes:[],setTransform(){},clearRect(){},beginPath(){},closePath(){},arc(x,y,r){this.radii.push(r);},moveTo(){},lineTo(){},fillText(){},fill(){this.fills.push(this.fillStyle);this.alphas.push(this.globalAlpha);},stroke(){this.strokes.push(this.globalAlpha);},setLineDash(){}};contexts.push(ctx);return ctx;}};}
  globalThis.document={createElement:element,createElementNS:(ns,tag)=>element(tag)};
- let text=await source('indexed_map');for(const name of ['map_index','map_raster'])text=text.replace(`'./${name}.js'`,JSON.stringify(uri(await source(name))));
+ let text=await source('indexed_map');for(const name of ['map_index','map_raster','molecular_colors'])text=text.replace(`'./${name}.js'`,JSON.stringify(uri(await source(name))));
  const {indexedMap}=await import(uri(text)),host=element('div'),selected=[],inspected=[];
  const map=indexedMap(host,ids=>inspected.push(ids),ids=>selected.push(ids));
  const rows=[{materialized_realization_id:'A',matches:true,values:{left_gap:0,loop_word:'AAAA'}},{materialized_realization_id:'B',matches:false,values:{left_gap:6,loop_word:'AAAC'}}];
@@ -29,6 +29,11 @@ test('color repaints existing points without changing the camera, exact picking 
  host.handlers.get('click')({clientX:100,clientY:0});assert.deepEqual(selected,[['A']]);
  host.handlers.get('keydown')({target:host,key:'End',preventDefault(){}});assert.deepEqual(inspected.at(-1),['B']);
  assert.match(host.children.at(-1).textContent,/Left end gap.*6.*bp/);assert.equal(host.children.at(-1).getAttribute('aria-selected'),'false');
+ rows[1].values.right_gap=2;
+ map.color({label:'Larger end gap',unit:'bp',key:'max_end_gap',color:()=> '#112233'});
+ host.handlers.get('keydown')({target:host,key:'End',preventDefault(){}});
+ assert.match(host.children.at(-1).textContent,/Larger end gap: 6 bp/);
+
  const together=[rows[0],rows[1],{materialized_realization_id:'C',matches:true,values:{left_gap:0,loop_word:'AAAA'}}];
  map.update({schema:'hop.inspection-map/v1',digest:'together',frame:[0,0,100,100],radius:7,points:[[0,0,0],[1,100,100],[2,0,0]]},together,'C');flush();
  assert.ok(contexts.at(-2).radii[0]<=.75,'overview marks stay within 1.5 CSS pixels in radius');

@@ -63,6 +63,10 @@ def render_molecular_atlas(
                     )
                     from_side = True
                     block.element.remove(arrow)
+                    label = next(e for e in block.element if e.get("data-operation"))
+                    label.set("x", str(continuation_start[0] - position.x + 24))
+                    label.set("y", str(continuation_start[1] - position.y - 28))
+                    label.set("data-operation-label-placement", "loop-cap")
             for element in list(block.element):
                 if element.get("data-operation-arrowhead"):
                     block.element.remove(element)

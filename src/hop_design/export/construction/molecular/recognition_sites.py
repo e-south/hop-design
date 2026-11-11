@@ -44,8 +44,14 @@ def recognition_site_overlays(
         ):
             points_right = (path[-1][0] > path[0][0]) == (site.orientation == "forward")
             direction = "right" if points_right else "left"
+        painted = visible_footprint(projection, site.role)
+        addresses = escape(
+            json.dumps([(a.strand_id, a.index) for a in site.recognition]), quote=True
+        )
         rows.append(
-            f'<g id="{object_id("site", projection.state.state_id, site.site_id)}" '
+            f'<g data-footprint-display="{"painted" if painted else "metadata"}" '
+            f'data-recognition-addresses="{addresses}" '
+            f'id="{object_id("site", projection.state.state_id, site.site_id)}" '
             f'data-site-id="{escape(site.site_id)}" data-presence="{site.presence}" '
             f'data-eligibility="{site.substrate_eligibility}" data-display-direction="{direction}" '
             f'data-site-role="{site.role}" data-orientation="{site.orientation}" '
@@ -76,7 +82,7 @@ def recognition_site_overlays(
                 cluster.extend(neighbors)
                 remaining.difference_update(neighbors)
             clusters.append(cluster)
-        for cluster in clusters if visible_footprint(projection, site.role) else []:
+        for cluster in clusters if painted else []:
             positions = [points[key] for key in cluster]
             paired = [
                 points[other]
