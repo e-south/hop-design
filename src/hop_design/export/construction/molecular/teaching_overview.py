@@ -114,12 +114,13 @@ def _render_projected_teaching(
     ]
     pitch = min(horizontal_steps, default=float(profile.teaching_base_font))
     font = min(float(profile.teaching_base_font), max(0.1, pitch - 0.5) / widest_base)
+    physical_width = profile.physical_width_pt
     root = ET.Element(
         f"{{{SVG}}}svg",
         {
             "viewBox": f"0 0 {WIDTH} {HEIGHT}",
-            "width": "7in",
-            "height": f"{7 * HEIGHT / WIDTH}in",
+            "width": "7in" if physical_width == 504 else f"{physical_width:g}pt",
+            "height": f"{physical_width * HEIGHT / WIDTH:g}pt",
             "role": "img",
             "aria-label": "Selected hairpin and its parameter locations",
             "font-family": FONT_FAMILY,
@@ -310,6 +311,11 @@ def _render_projected_teaching(
     x, y, width, content_height = scene_bounds(root)
     root.set("data-content-frame", f"{x - 8:g} {y - 8:g} {width + 16:g} {content_height + 16:g}")
     root.set("viewBox", f"0 0 {WIDTH} {height}")
-    root.set("height", f"{7 * height / WIDTH}in")
+    root.set(
+        "height",
+        f"{7 * height / WIDTH}in"
+        if physical_width == 504
+        else f"{physical_width * height / WIDTH:g}pt",
+    )
     next(e for e in root if e.tag.endswith("}rect")).set("height", str(height))
     return bytes(ET.tostring(root, encoding="utf-8"))

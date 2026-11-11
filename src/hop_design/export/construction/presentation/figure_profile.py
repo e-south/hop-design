@@ -1,7 +1,7 @@
 """Internal composition budgets; molecular geometry and public intent stay separate."""
 
 from dataclasses import dataclass, replace
-from math import ceil
+from math import ceil, isfinite
 
 from .print_contract import PUBLICATION
 
@@ -76,6 +76,8 @@ COLUMN_DETAIL_FIGURE = FigureProfile(
 
 def column_detail_profile(width_pt: float) -> FigureProfile:
     """Explicit physical budget for selected details, independent of scientific axes."""
+    if isinstance(width_pt, bool) or not isfinite(width_pt) or not 180 <= width_pt <= 720:
+        raise ValueError("Detail width must be 180 to 720 points.")
     return replace(
         COLUMN_DETAIL_FIGURE, width=round(620 * width_pt / 246), physical_width_pt=width_pt
     )

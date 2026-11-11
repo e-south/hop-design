@@ -2,7 +2,6 @@
 
 import json
 from dataclasses import dataclass
-from math import isfinite
 from pathlib import Path
 
 from hop_design.design.source_documents import load_source_mapping
@@ -103,12 +102,9 @@ def figure_context(
     if display_axes is not None and mode != "parameters" and selection is None:
         raise ValueError("Display axes require a parameter figure or a selected landscape trace.")
     if detail_width_pt is not None:
-        if (
-            isinstance(detail_width_pt, bool)
-            or not isfinite(detail_width_pt)
-            or not 180 <= detail_width_pt <= 720
-        ):
-            raise ValueError("Detail width must be 180 to 720 points.")
+        from hop_design.export.construction.presentation.figure_profile import column_detail_profile
+
+        column_detail_profile(detail_width_pt)
         if mode != "similarity" or selection is None:
             raise ValueError("Detail width requires a selected similarity figure.")
     return FigureContext(

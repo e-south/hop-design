@@ -222,3 +222,44 @@ def test_selected_landscape_accepts_explicit_column_detail_width(captured_choice
             choices.figure(selection=selection, view="similarity", detail_width_pt=width)
     with pytest.raises(ValueError, match="selected similarity"):
         choices.figure(view="parameters", detail_width_pt=246)
+
+
+@pytest.mark.parametrize("kind", ["live", "compact", "captured"])
+def test_preview_column_detail_requires_no_landscape(captured_choices, tmp_path, kind):
+    choices = captured_choices
+    if kind != "live":
+        choices = choices.freeze(
+            tmp_path / "edition", compact=kind == "compact", include_landscape=False
+        )
+        assert not choices.has_landscape
+    selection = choices.sample(seed=2)
+    identity = selection["materialized_realization_id"]
+    before = choices.query()
+    default = choices.preview(identity)
+    packet = choices.preview(identity, detail_width_pt=244)
+    assert choices.query() == before
+    assert json.loads(packet.json_bytes)["path"] == json.loads(default.json_bytes)["path"]
+    assert json.loads(packet.json_bytes)["figure_presentation"] == {
+        "detail_width_pt": 244,
+        "detail_profile": "column-detail/v1",
+    }
+    new, old = dict(packet._files), dict(default._files)
+
+    def bases(content):
+        return sorted(
+            (e.get("data-strand-id"), e.get("data-base-index"), "".join(e.itertext()))
+            for e in ET.fromstring(content).iter()
+            if e.get("data-base-index")
+        )
+
+    assert bases(new["overview.svg"]) == bases(old["overview.svg"])
+    assert ET.fromstring(new["overview.svg"]).get("width") == "244pt"
+    trace = ET.fromstring(new["trace.svg"])
+    assert trace.get("width") == "244pt"
+    assert float(trace.get("font-size")) * 244 / float(trace.get("viewBox").split()[2]) >= 7
+    assert [e.get("data-axis") for e in trace.iter() if e.get("data-axis")] == [
+        e.get("data-axis") for e in ET.fromstring(old["trace.svg"]).iter() if e.get("data-axis")
+    ]
+    for width in (True, 179, 721, float("nan")):
+        with pytest.raises(ValueError, match="width"):
+            choices.preview(identity, detail_width_pt=width)

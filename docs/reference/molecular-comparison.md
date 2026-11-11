@@ -128,7 +128,22 @@ left and right end gaps, in bp. It requires both measurements; a missing side
 remains missing rather than becoming zero. The lens changes display color only,
 never a query, comparison field, coordinate, or preparation identity.
 
-For a column-width selected detail, request the physical width explicitly:
+To export a column-width hairpin and parameter trace without fitting a map:
+
+```python
+preview = edition.preview(preparation_id, detail_width_pt=246)
+preview.write("selected-detail")
+```
+
+This works with live choices and captured or compact editions, including editions
+without a saved landscape. Both SVGs use the existing column-detail profile;
+all declared axes, exact bases and selection identity remain intact. An explicit
+width uses current molecular rendering and records the width and profile in the
+packet summary. Unsupported current projections fail instead of silently returning
+captured artwork at a different size. Omitting the width preserves the existing
+preview and browser behavior.
+
+For a selected detail alongside a saved similarity map, request the physical width explicitly:
 
 ```python
 packet = edition.figure(

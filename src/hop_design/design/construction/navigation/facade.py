@@ -51,12 +51,16 @@ class AtlasNavigation:
             work=NeighborWork(timeout_seconds),
         )
 
-    def preview(self, identity: str, *, query: "Source | None" = None) -> "MolecularPreview":
+    def preview(
+        self, identity: str, *, query: "Source | None" = None, detail_width_pt: float | None = None
+    ) -> "MolecularPreview":
         """Inspect one recorded hairpin and trace without committing a selection."""
         from .preview import preview_preparation
         from .types import ChoiceSource
 
-        return preview_preparation(cast(ChoiceSource, self), identity, query=query)
+        return preview_preparation(
+            cast(ChoiceSource, self), identity, query=query, detail_width_pt=detail_width_pt
+        )
 
     def landscape(self) -> "MolecularLandscape":
         """Return fixed molecular coordinates for the complete recorded choice pool."""
