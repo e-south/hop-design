@@ -23,14 +23,14 @@
 </section>
 <div id="inspector-resize" hidden tabindex="0" role="separator" aria-orientation="vertical" aria-controls="inspector" aria-label="Preparation inspector width" title="Drag to resize; arrow keys adjust width"></div>
 <aside id="inspector" hidden aria-label="Selected molecular preparation">
-<header id="preview-heading"><span id="preview-label">Preparation</span><div class="actions"><button id="return-map" hidden>← Atlas</button><button id="close-inspector" class="icon-close" aria-label="Close preparation inspector" title="Close inspector">×</button></div></header>
+<header id="preview-heading"><span><span id="preview-label">Preparation</span><span id="route-progress" role="status" aria-live="polite" aria-atomic="true"></span></span><div class="actions"><button id="return-map" hidden>← Atlas</button><button id="close-inspector" class="icon-close" aria-label="Close preparation inspector" title="Close inspector">×</button></div></header>
 <div id="inspector-scroll">
 <figure id="figure-one" class="figure-cell">
 <figcaption>Selected hairpin</figcaption><p class="figure-premise">See how the flanks around your supplied stem support this preparation.</p>
 <div id="figure-one-canvas"><div id="figure-one-plate"><div id="molecular-area"><div id="teaching"></div><div id="hover-molecule" hidden></div></div><div id="trace-preview"><div id="trace-context" aria-label="Exact parameter trace of the inspected preparation"></div></div></div><div id="feature-details"></div></div>
 </figure>
 <figure id="figure-two" class="figure-cell" hidden>
-<figcaption><span>Complete preparation</span><div class="actions"><button id="route-view">Full figure</button><button id="focus-route" hidden>Focus figure</button></div></figcaption>
+<figcaption>Complete preparation <div class="actions"><button id="route-view">Full figure</button><button id="focus-route" hidden>Focus figure</button></div></figcaption>
 <div id="route-content"><div id="route-scenes" aria-label="Processing scenes of the inspected preparation"></div><div id="route-focus" hidden><label id="stage-label" hidden>Processing state <select id="stage"><option value="all">All processing steps</option></select></label>
 <div id="route-frame" tabindex="0" aria-label="Exact preparation. Pinch to zoom, drag to pan; press 0 to fit." hidden><div id="route"></div><button id="fit">Fit route</button></div>
 </div></div>

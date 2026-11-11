@@ -253,3 +253,10 @@ route-render request. Escape restores a transient preview before leaving figure
 focus or closing the inspector.
 Returning to the already-inspected point restores its existing drawing immediately,
 without another preview request or loading indicator.
+
+Complete preparation uses one compact loading cue in the fixed inspector heading
+for visible pending steps. Individual scene slots keep their phase labels and measured bounds,
+without repeated loading cards or screen-reader announcements. Retained drawings
+remain subdued and inactive while updating. Failures and unavailable states still
+show and announce their specific notice at the affected step. Offscreen steps do
+not imply ongoing work; the cue clears on completion, failure, restoration or close.

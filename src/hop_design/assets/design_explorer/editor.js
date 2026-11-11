@@ -34,7 +34,7 @@ const selectedTrace=inspectionOverlay($('trace-context'));
 const distributionScene=persistentScene($('distributions'));
 const artifacts=artifactLoader();
 const loading=inspectionLoading($);
-const scenes=routeScenes($('route-scenes'),$('inspector-scroll'),job=>post('scenes',{materialized_realization_id:job.identity,phases:job.phases}),artifacts);
+const scenes=routeScenes($('route-scenes'),$('inspector-scroll'),job=>post('scenes',{materialized_realization_id:job.identity,phases:job.phases}),artifacts,$('route-progress'));
 const resizing=resizableInspector($('object'),$('inspector'),$('inspector-scroll'),$('inspector-resize'),()=>{connect();scenes.refresh();},()=>showHover(null));
 const nearby=neighboringChoices($('nearby'),$('neighbor-options'),post,()=>state,id=>act('select',{materialized_realization_id:id}));
 const discovery=discoveryControls($,post,{inspect:async job_id=>{

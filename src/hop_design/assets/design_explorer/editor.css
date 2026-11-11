@@ -69,6 +69,12 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 .route-scene-drawing{position:absolute;inset:0}
 .route-scene-drawing,.route-scene-drawing svg{display:block;width:100%;height:100%}
 .route-scene>.panel-status{padding:18px 8px}
+/* One route-level cue; unrequested steps keep quiet, stable phase slots. */
+#route-progress{display:inline-flex;align-items:center;gap:5px;width:7em;height:1.2em;margin-left:6px;font-size:12px;font-weight:400;color:var(--muted);vertical-align:middle}
+#route-progress[data-busy]::before{content:"";width:11px;height:11px;flex:none;border:1.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:panel-spin .75s linear infinite}
+.route-scene[data-panel-feedback="quiet"][data-panel-state="loading"]>.panel-status,.route-scene[data-panel-feedback="quiet"][data-panel-state="waiting"]>.panel-status{display:none}
+.route-scene[data-panel-feedback="quiet"]:is([data-panel-state="loading"],[data-panel-state="waiting"]):not([data-panel-retained])::before{content:attr(aria-label);position:absolute;top:14px;left:8px;right:8px;text-align:center;font-size:13px;font-weight:400;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){#route-progress::before{animation:none!important}}
 
 /* The boundary is the control; resizing never adds another toolbar. */
 #inspector-resize{position:absolute;top:0;bottom:0;right:calc(var(--inspector-width) - 4px);width:8px;z-index:5;cursor:col-resize;touch-action:none}
