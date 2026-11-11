@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from importlib.metadata import version
 from types import MappingProxyType
 
 from hop_design.design.result import Compilation
+from hop_design.design.runtime import creation_version
 from hop_design.export.fasta import render_fasta
 from hop_design.models.bundle import (
     ArtifactManifestEntry,
@@ -49,7 +49,7 @@ def assemble_compilation(
 ) -> Compilation:
     """Assemble the shared sequence, plan, provenance, and bundle artifacts."""
     report.raise_for_errors()
-    compiler_version = version("hop-design")
+    compiler_version = creation_version()
 
     spec_bytes = canonical_json_bytes(spec)
     spec_digest = sha256_digest(spec_bytes)

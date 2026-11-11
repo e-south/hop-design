@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from importlib.metadata import version
 from pathlib import Path
 from types import MappingProxyType
 
@@ -12,6 +11,7 @@ from hop_design.design.linear_source_method import (
     compile_linear_source_multinick_hairpin_pcr,
 )
 from hop_design.design.method_views import build_method_trajectory_view
+from hop_design.design.runtime import creation_version
 from hop_design.export.bundle import (
     BundleIntegrityError,
     verify_manifested_bundle_contents,
@@ -133,7 +133,7 @@ def compile_linear_source_method_bundle(
     if result.plan is None:
         raise MethodResolutionError(result)
     plan = result.plan
-    compiler_version = version("hop-design")
+    compiler_version = creation_version()
     artifacts = _method_artifacts(request, plan)
     entries = tuple(
         ArtifactManifestEntry(

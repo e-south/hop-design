@@ -5,6 +5,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from typing import Any
 
+from hop_design.design.runtime import replay_creation
 from hop_design.kernel.construction.sequence_sets import SequenceSetLimitError
 from hop_design.models.construction.request import LocalNeighborhoodRequest
 from hop_design.models.construction.surveys.execution import SurveyEvaluationLimits
@@ -144,7 +145,8 @@ class LocalReceipts:
             receipt = _discover_request(request)
             self.index.cache(key, receipt.json_bytes)
         else:
-            receipt = _verify_result_mapping(json.loads(content))
+            with replay_creation(self.index.creator_producer["package_version"]):
+                receipt = _verify_result_mapping(json.loads(content))
             result = json.loads(receipt.json_bytes)
             embedded = result["neighborhood" if receipt.family == "foldback" else "discovery"][
                 "request"

@@ -65,9 +65,17 @@ def _inflate(content: bytes) -> bytes:
 class SurveyIndex:
     """Private disk-backed index; opening checks binding, records and step continuity."""
 
-    def __init__(self, db: sqlite3.Connection, request: InterfaceSurveyRequest):
+    def __init__(
+        self, db: sqlite3.Connection, request: InterfaceSurveyRequest, producer: dict[str, str]
+    ):
         self._db = db
         self.request = request
+        self._creator_producer = dict(producer)
+
+    @property
+    def creator_producer(self) -> dict[str, str]:
+        """Return the producer admitted against this checkpoint's stored metadata."""
+        return dict(self._creator_producer)
 
     @classmethod
     def create(
@@ -89,7 +97,7 @@ class SurveyIndex:
                 db.execute(
                     "INSERT INTO metadata VALUES (?)", (_metadata(request, producer, limits),)
                 )
-            return cls(db, request)
+            return cls(db, request, producer)
         except BaseException:
             db.close()
             path.unlink()
@@ -133,7 +141,7 @@ class SurveyIndex:
                 raise ValueError(
                     "Survey checkpoint request or producer disagrees with this invocation."
                 )
-            instance = cls(db, request)
+            instance = cls(db, request, producer)
             instance._validate()
             return instance
         except BaseException as error:

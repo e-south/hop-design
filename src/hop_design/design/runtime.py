@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 import os
 import platform
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from importlib.metadata import distribution, version
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
@@ -73,3 +76,34 @@ def runtime_identity() -> dict[str, object]:
             "hop/linear-source-method-report/v1",
         ],
     }
+
+
+_creator: ContextVar[str | None] = ContextVar("authority_creator_version", default=None)
+
+
+def creation_version() -> str:
+    """Tag new authorities with this installation, or replay with their creator.
+
+    This affects serialized creation metadata only. Executing runtime identity
+    and survey producer admission always use the actual installation.
+    """
+    declared = _creator.get()
+    return version("hop-design") if declared is None else declared
+
+
+@contextmanager
+def replay_creation(creator: str) -> Iterator[None]:
+    """Replay under a creator admitted by the caller's checkpoint boundary.
+
+    Readers still recompute every scientific field and require canonical-byte
+    equality. Readers must not take this value from the result being checked.
+    This private context neither accepts checkpoint producers nor
+    changes package version, dependency identity or compatibility policy.
+    """
+    if type(creator) is not str or not creator.strip():
+        raise ValueError("Authority creator version must be a nonempty string.")
+    token = _creator.set(creator)
+    try:
+        yield
+    finally:
+        _creator.reset(token)

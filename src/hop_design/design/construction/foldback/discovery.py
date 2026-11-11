@@ -12,9 +12,9 @@ Module Author(s): Eric J. South
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from importlib.metadata import version
 
 from hop_design.design.construction.overhead import foldback_overhead_levels
+from hop_design.design.runtime import creation_version
 from hop_design.kernel.construction.foldback import (
     FoldbackPlacementFailure,
 )
@@ -182,7 +182,7 @@ def discover_foldback_neighborhood(
         )
 
     disposition = search_disposition(termination=termination, has_results=bool(exact_records))
-    hop_version = version("hop-design")
+    hop_version = creation_version()
     execution = ConstructionExecution(
         problem_id=problem_id(request),
         hop_version=hop_version,

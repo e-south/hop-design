@@ -7,6 +7,7 @@ import pytest
 
 from hop_design.design.construction.surveys.admission import locals as module
 from hop_design.design.construction.surveys.execute import load_request
+from hop_design.design.runtime import producer_identity
 from hop_design.models.construction.surveys.execution import SurveyEvaluationLimits
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 from tests.support.context_completion import LIMITS, request
@@ -41,7 +42,9 @@ def local_cache(monkeypatch, tmp_path):
 
     monkeypatch.setattr(module, "_discover_request", packet)
     monkeypatch.setattr(module, "_verify_result_mapping", admit)
-    index = SimpleNamespace(request=survey, cached=cached, cache=store)
+    index = SimpleNamespace(
+        request=survey, cached=cached, cache=store, creator_producer=producer_identity()
+    )
 
     def owner():
         return module.LocalReceipts(index, SurveyEvaluationLimits(**LIMITS))

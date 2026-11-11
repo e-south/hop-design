@@ -46,6 +46,12 @@ authority; new proofs and steps use the current producer. Preserve historical
 canonical bytes and recheck their molecular obligations. Full verification must
 understand every supported creator segment before the transition is supported.
 
+The legacy index has one admitted `creator_producer`. Its reader now supplies
+that origin when replaying saved bundles, caches and exclusion proofs. A mixed-
+producer store needs a per-record/object origin resolver before new work can be
+appended; retaining this single-producer lookup is insufficient. A version label
+inside the result being checked cannot authorize a replay origin.
+
 In particular, test reading and retrieving an older preparation after the package
 version changes. Rewriting checkpoint metadata alone does not resolve the
 version-bearing complete-result replay path. If the compatible transition is

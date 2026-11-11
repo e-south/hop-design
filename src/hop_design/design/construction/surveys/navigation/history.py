@@ -61,5 +61,7 @@ class EmptyPlaneHistory:
             raise ValueError(
                 "A committed empty-plane proof is duplicated or assigned to another target."
             )
-        coordinates = verify_empty_basal(proof, self.branches, self.limits, producer=self.producer)
+        coordinates = verify_empty_basal(
+            proof, self.branches, self.limits, producer=self.index.creator_producer
+        )
         self._planes.setdefault(target, set()).add(coordinates)

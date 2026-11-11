@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from hop_design.design.runtime import replay_creation
 from hop_design.models.construction.surveys.preference import SurveyPreparationReference
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
 from hop_design.serialization import sha256_digest
@@ -87,7 +88,8 @@ def load_preferred_preparation(index: SurveyIndex) -> VerifiedConstructionBundle
             path = root / entry.path
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
-        receipt = load_verified_construction_bundle(root)
+        with replay_creation(index.creator_producer["package_version"]):
+            receipt = load_verified_construction_bundle(root)
     if (
         receipt.result_id != reference.result_id
         or reference.materialized_realization_id not in receipt.materialized_realization_ids

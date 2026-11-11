@@ -4,6 +4,12 @@ Keep long discovery searches affordable by sharing repeated bytes within each
 evaluation and validating stored objects in a streaming scan. This is an
 implementation plan. The released checkpoint format and commands are unchanged.
 
+The first implementation separates authority creation metadata from the executing
+runtime during exact replay. Saved bundles retain their IDs and artifacts;
+exclusion proofs use the creator admitted against checkpoint metadata. Ordinary
+resume still requires the exact producer. A supported compatibility transition,
+mixed-creator history and block storage remain to implement before deployment.
+
 ## Ownership
 
 HOP owns record storage, integrity, migration, continuation, inspection and exact
