@@ -48,6 +48,10 @@ scenes together so they share one molecular admission and projection. An absent
 or ambiguous phase is explicitly unavailable. Only requested scenes are drawn,
 while label introduction and incoming-material placement retain the whole route's
 context. Measure authority access, scene drawing and cache reuse separately.
+For an isolated linear/early scene request, skip the folded-frame headroom prepass.
+Full-route and mixed/folded requests retain their shared measurement pass. Exact
+SVG bytes and scene metadata must agree with the corresponding full projection;
+a performance change cannot bypass molecular admission or change input placement.
 Scene composition keeps a native element tree through annotation, measurement
 and placement. Serialization occurs at the export boundary, avoiding a second
 document representation and a serialize/reparse cycle for each route scene.

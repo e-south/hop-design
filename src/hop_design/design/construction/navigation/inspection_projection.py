@@ -8,6 +8,7 @@ import json
 from dataclasses import asdict
 from functools import partial
 
+from hop_design.export.construction.labels import atlas_state_label, endpoint_label
 from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
 from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
 from hop_design.export.construction.presentation.parameter_labels import (
@@ -21,6 +22,7 @@ from hop_design.export.construction.survey.figure_layout import figure_layout, t
 from hop_design.export.construction.survey.plot import render_survey_plot
 from hop_design.export.construction.survey.similarity import landscape_geometry
 from hop_design.export.construction.survey.traces import TraceProjection
+from hop_design.models.construction import ConstructionEndpoint
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ..editions.preview_job import preview_job, render_preview_job
@@ -70,8 +72,24 @@ def map_index(choices: ChoiceSource, answer: Record) -> Record:
     }
 
 
+def product_label(cost: Record | None) -> str | None:
+    """Display the measured endpoint without changing its scientific cost record."""
+    return None if cost is None else endpoint_label(ConstructionEndpoint(cost["endpoint"]))
+
+
+def stage_options(states: list[Record]) -> list[Record]:
+    """Use the export vocabulary while preserving the exact recorded state IDs."""
+    return [
+        {"value": entry["state"]["state_id"], "label": atlas_state_label(entry["state"]["phase"])}
+        for entry in states
+    ]
+
+
 class _InspectionProjection:
     type Trace = TraceProjection
+
+    product_label = staticmethod(product_label)
+    stage_options = staticmethod(stage_options)
 
     profile = sha256_digest(
         canonical_json_bytes({"figure": asdict(INSPECTOR_FIGURE), "labels": LABEL_CATALOG_DIGEST})

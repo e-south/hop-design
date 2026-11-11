@@ -97,7 +97,8 @@ export function transientInspector(inspector,scroll) {
   };
 }
 
-export function escapeInspection(inspector,{restorePreview,returnToMap,close}) {
+export function escapeInspection(inspector,{restorePreview,returnToMap,close,dismissRefinement=()=>false}) {
+  if(dismissRefinement())return;
   if(inspector.dataset.transient) restorePreview();
   else if(inspector.dataset.focus) returnToMap();
   else close();

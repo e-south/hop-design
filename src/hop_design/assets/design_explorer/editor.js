@@ -83,7 +83,7 @@ const hover=hoverPreview(async id=>{
   if(a.dataset.preparationId!==value.materialized_realization_id) throw Error('Preview identity disagrees with its molecule.');
   if(value.trace.materialized_realization_id!==value.materialized_realization_id) throw Error('Preview identity disagrees with its trace.');
   const trace=selectedTrace.prepare(value.trace,state.trace_projection);
-  const factCommit=facts.prepare(value.materialized_realization_id,value.inspection_explanation,value.construction_cost,{preview:true,referencePinned:Boolean(state.selection)});
+  const factCommit=facts.prepare(value.materialized_realization_id,value.inspection_explanation,value.construction_cost,{preview:true,referencePinned:Boolean(state.selection),productLabel:value.product_label});
   const comparisonCommit=comparisonView.prepare(value.materialized_realization_id,state);
   validateFigureLayout(value.figure_layout);
   return ()=>{
@@ -209,6 +209,7 @@ function definitions(axes) {
   }));
 }
 async function render(next,restore=false) {
+  if(!Array.isArray(next.stage_options))throw Error('Inspection state lacks its recorded processing-stage labels. Reload the browser.');
   const previousMode=molecularMode, previousStage=state?.stage;
   const mapNeeded=!next.map_index&&plots.needsMap(next.plots[next.presentation.landscape]);
   const traceNeeded=plots.needsTrace(next.plots.inspection);
@@ -225,7 +226,7 @@ async function render(next,restore=false) {
   if(traceNeeded) svgDocument(trace);
   if(next.selected_trace && (next.selected_trace.projection!==next.trace_projection.projection || next.selected_trace.frame!==next.trace_projection.frame)) throw Error('Selected trace does not match the parameter projection.');
   next={...next,landscape_svg:plot,plot_svg:trace};
-  const factCommit=facts.prepare(next.preview?.summary.atlas.materialized_realization_id,next.inspection_explanation,next.preview?.summary.atlas.construction_cost);
+  const factCommit=facts.prepare(next.preview?.summary.atlas.materialized_realization_id,next.inspection_explanation,next.preview?.summary.atlas.construction_cost,{productLabel:next.product_label});
   const comparisonCommit=comparisonView.prepare(next.preview?.summary.atlas.materialized_realization_id,next);
   if(next.preview) await views.show(next.preview,next.presentation.molecule==='route'?'both':'molecule',()=>setMolecularMode(next.presentation.molecule));
   else views.clear();
@@ -268,7 +269,7 @@ async function render(next,restore=false) {
   $('cost').textContent=cost?`Added DNA ${Object.values(cost.added_nt_by_strand).join(' / ')} nt${Object.keys(cost.added_nt_by_strand).length>1?' per strand':''} · ${cost.distinct_orders} orders`:'';
   $('cost-detail').textContent=cost?`${cost.distinct_orders} distinct oligo orders cover ${cost.material_roles} material roles, totaling ${cost.ordered_nt} ordered nucleotides.`:'';
   const selectedStage=state.stage;
-  $('stage').replaceChildren(new Option('All processing steps','all'),...(current?.atlas.states || []).map(s=>new Option(s.state.phase.replaceAll('_',' '),s.state.state_id)));
+  $('stage').replaceChildren(new Option('All processing steps','all'),...state.stage_options.map(s=>new Option(s.label,s.value)));
   $('stage').value=selectedStage;
   if(!restore && previousStage!==selectedStage) viewport.stage(selectedStage);
   else if(restore || previousMode!==state.presentation.molecule) {
@@ -315,8 +316,9 @@ window.addEventListener('hashchange',()=>restoreHash().catch(e=>{$('status').tex
 const observer=new ResizeObserver(()=>{connect();scenes.refresh();});observer.observe($('object'));
 window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();nearby.close();raster.close();mapView.close();views.clear();figure.clear();selectedTrace.clear();plots.close();distributionScene.clear();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
 window.addEventListener('blur',()=>showHover(null));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')escapeInspection($('inspector'),{restorePreview:()=>showHover(null),returnToMap:returnToAtlas,close:closeInspector});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')escapeInspection($('inspector'),{dismissRefinement:()=>{if(!$('refinement').open)return false;$('refinement').open=false;$('refine').focus();return true;},restorePreview:()=>showHover(null),returnToMap:returnToAtlas,close:closeInspector});});
 $('refine').addEventListener('click',()=>{$('refinement').open=!$('refinement').open;});
+$('refinement').addEventListener('toggle',()=>$('refine').setAttribute('aria-expanded',String($('refinement').open)));
 $('fit-map').addEventListener('click',()=>{showHover(null);plots.clear();});
 const opening=loading.opening();
 try {const response=await fetch('/api/state',{headers:{'X-HOP-Inspection':'compact-v1'}});if(!response.ok) throw Error('Could not open the recorded choices.');await rendering.show(hydrateCohort(await response.json(),null));opening.ready();await restoreHash();}

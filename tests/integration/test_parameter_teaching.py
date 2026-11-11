@@ -171,7 +171,7 @@ def test_publication_overview_measures_complete_glyphs_and_labels(captured_editi
     assert parameters == summary["teaching"]["parameters"]
 
 
-def test_teaching_neighborhood_names_clear_complete_primer_contours(captured_edition):  # noqa: F811
+def test_teaching_omits_duplicate_headers_and_keeps_integrated_primer_contours(captured_edition):  # noqa: F811
     from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
 
     summary = json.loads(
@@ -185,11 +185,10 @@ def test_teaching_neighborhood_names_clear_complete_primer_contours(captured_edi
     ]
     headings = [node for node in root.iter() if node.text in {"Basal", "Supplied stem", "Foldback"}]
     assert not headings
-    assert all(node.get("font-weight") == "400" for node in headings)
-    for node in headings:
-        x, y, width, height = json.loads(node.get("data-label-box"))
-        for a, b, w, h in primers:
-            assert x + width <= a or a + w <= x or y + height <= b or b + h <= y, node.text
+    assert len(primers) == 2
+    contours = [node for node in root.iter() if node.get("data-primer-shape") == "integrated-wedge"]
+    assert len(contours) == 2
+    assert all("Q" in node.get("d", "") for node in contours)
 
 
 def test_structural_scenes_keep_stage_qualified_parameters_and_exact_bases(loop_pool, tmp_path):

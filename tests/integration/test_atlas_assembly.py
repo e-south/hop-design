@@ -518,3 +518,35 @@ def test_hairpin_pcr_connector_curves_toward_the_centered_finish(atlas):
     arrow = next(e for e in stage if e.get("data-operation-arrow"))
     assert "C" in arrow.get("d")
     assert arrow.get("data-connector-target-phase") == "hairpin_pcr_duplex"
+
+
+@pytest.mark.parametrize(
+    "phases",
+    [
+        ("source_ssdna", "duplex"),
+        ("selected_fragments",),
+        ("hairpin_pcr_duplex", "clone_ready_duplex"),
+    ],
+)
+def test_isolated_unfolded_scenes_do_not_measure_offscreen_folded_headroom(
+    atlas, monkeypatch, phases
+):
+    from hop_design.export.construction.molecular import atlas_layout
+
+    full = atlas_layout.atlas_scenes(atlas)
+    requested = tuple(i for i, s in enumerate(atlas.states) if s.state.phase.value in phases)
+    calls = []
+    original = atlas_layout.inspection_overlays
+
+    def measured(state, *args, **kwargs):
+        calls.append(state.state.phase.value)
+        return original(state, *args, **kwargs)
+
+    monkeypatch.setattr(atlas_layout, "inspection_overlays", measured)
+    isolated = atlas_layout.atlas_scenes(atlas, record_indices=requested)
+    assert not calls, "Unrequested folded states must not add work to early/linear scene inspection"
+    assert set(isolated.scenes) == set(requested)
+    for index in requested:
+        assert ET.tostring(isolated.scenes[index][0]) == ET.tostring(full.scenes[index][0])
+        assert isolated.scenes[index][1:] == full.scenes[index][1:]
+    assert isolated.staged_ids == full.staged_ids

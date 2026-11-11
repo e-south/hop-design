@@ -40,10 +40,17 @@ def atlas_scenes(
     # Reserve above-primer names against the common folded frame once, even
     # for an isolated scene request. Shared ancestral bases stay in register.
     folded = {"annealed_complex", "foldback_closed_hairpin", "adapter_annealed", "adapter_ligated"}
+    # Only shared folded scenes consume this frame. Linear viewport requests
+    # must not measure four unrequested overlays before drawing their own state.
+    needs_folded_frame = record_indices is None or any(
+        state.state.phase.value in folded
+        for index, state in enumerate(atlas.states)
+        if index in record_indices
+    )
     headroom = 0.0
     for state in atlas.states:
         sid = state.state.state_id
-        if state.state.phase.value not in folded or sid not in frames:
+        if not needs_folded_frame or state.state.phase.value not in folded or sid not in frames:
             continue
         overlay = ET.fromstring(
             inspection_overlays(
