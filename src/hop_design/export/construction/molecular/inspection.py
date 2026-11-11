@@ -32,6 +32,7 @@ def _annotate_inspection_element(
     site_labels: Literal["all", "operations"] = "all",
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
+    interface_labels: bool = True,
 ) -> ET.Element:
     """Mutate only this new drawing; preserve the authoritative projection."""
     bases = {(b.strand_index, b.address.index): b for b in projection.bases}
@@ -80,6 +81,7 @@ def _annotate_inspection_element(
             site_labels=site_labels,
             label_site_ids=label_site_ids,
             staged_inputs=staged_inputs,
+            interface_labels=interface_labels,
         )
     )
     regions = ET.fromstring(
@@ -152,6 +154,7 @@ def render_molecular_inspection(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
+    interface_labels: bool = True,
 ) -> bytes:
     """Serialize one scene at the export boundary."""
     root = molecular_inspection_element(
@@ -164,6 +167,7 @@ def render_molecular_inspection(
         label_site_ids=label_site_ids,
         staged_inputs=staged_inputs,
         layout_points=layout_points,
+        interface_labels=interface_labels,
     )
     return cast(bytes, ET.tostring(root, encoding="utf-8"))
 
@@ -179,6 +183,7 @@ def molecular_inspection_element(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
+    interface_labels: bool = True,
 ) -> ET.Element:
     state = projection.state
     points = layout_points if layout_points is not None else _points(projection)
@@ -249,6 +254,7 @@ def molecular_inspection_element(
         site_labels=site_labels,
         label_site_ids=label_site_ids,
         staged_inputs=staged_inputs,
+        interface_labels=interface_labels,
     )
     label_top = min(
         (json.loads(e.attrib["data-label-box"])[1] for e in root.iter() if e.get("data-label-box")),
@@ -271,6 +277,7 @@ def molecular_inspection_element(
                 for item in staged_inputs
             ),
             layout_points={key: (x, y + dy) for key, (x, y) in points.items()},
+            interface_labels=interface_labels,
         )
     if parameter_locations is not None:
         mark_parameter_locations(root, parameter_locations, projection)

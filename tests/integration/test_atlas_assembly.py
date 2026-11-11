@@ -513,11 +513,102 @@ def test_late_route_omits_discarded_handle_footprint_ink_but_retains_site_record
 
 
 def test_hairpin_pcr_connector_curves_toward_the_centered_finish(atlas):
+    import re
+
     root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
     stage = next(e for e in root.iter() if e.get("data-atlas-phase") == "adapter_ligated")
     arrow = next(e for e in stage if e.get("data-operation-arrow"))
-    assert "C" in arrow.get("d")
+    assert re.fullmatch(r"M[-\d.]+,[-\d.]+ V[-\d.]+ C[-\d., ]+ V[-\d.]+", arrow.get("d"))
     assert arrow.get("data-connector-target-phase") == "hairpin_pcr_duplex"
+    target = next(e for e in root.iter() if e.get("data-atlas-phase") == "hairpin_pcr_duplex")
+    title = next(e for e in target if e.get("data-stage-title"))
+    head = next(e for e in stage if e.get("data-operation-arrowhead"))
+    tip_x = float(re.findall(r"[-\d.]+", head.get("d"))[2])
+    assert tip_x + float(stage.get("data-atlas-x")) == pytest.approx(
+        float(target.get("data-atlas-x")) + float(title.get("x"))
+    )
+
+
+@pytest.mark.parametrize(
+    ("presentation", "phase", "origin"),
+    [
+        ("complete", "selected_fragments", "retained-foldback"),
+        ("assembly", "annealed_complex", "loop-cap"),
+    ],
+)
+def test_route_column_turn_leaves_the_recorded_foldback_region_horizontally(
+    atlas, presentation, phase, origin
+):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation=presentation))
+    last = [e for e in root.iter() if e.get("data-atlas-column") == "0"][-1]
+    assert last.get("data-atlas-phase") == phase
+    assert not any(e.get("data-operation-arrow") for e in last)
+    connector = next(e for e in root.iter() if e.get("data-column-continuation"))
+    assert connector.get("data-continuation-start") == origin
+    assert connector[0].get("d").split(" ", 2)[1].startswith("H")
+    label = next(e for e in last if e.get("data-operation"))
+    assert label.get("data-operation-label-placement") == origin
+
+
+def test_route_column_turn_retains_operation_departure_without_loop_geometry(atlas):
+    changed = atlas.model_copy(
+        update={
+            "states": tuple(
+                s.model_copy(
+                    update={
+                        "bases": tuple(
+                            b.model_copy(update={"neighborhood": None})
+                            if b.neighborhood == "loop"
+                            else b
+                            for b in s.bases
+                        )
+                    }
+                )
+                if s.state.phase.value == "selected_fragments"
+                else s
+                for s in atlas.states
+            )
+        }
+    )
+    root = ET.fromstring(render_molecular_atlas(changed))
+    last = [e for e in root.iter() if e.get("data-atlas-column") == "0"][-1]
+    assert any(e.get("data-operation-arrow") for e in last)
+    connector = next(e for e in root.iter() if e.get("data-column-continuation"))
+    assert connector.get("data-continuation-start") == "operation"
+    assert connector[0].get("d").split(" ", 2)[1].startswith("V")
+
+
+def test_assembly_omits_route_notes_and_repeated_end_words_without_losing_exact_records(atlas):
+    before = atlas.model_dump_json()
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    complete = ET.fromstring(render_molecular_atlas(atlas))
+    assert not any(e.get("data-site-key") or e.get("data-atlas-notes") for e in root.iter())
+    assert any(e.get("data-site-key") for e in complete.iter())
+    assert any(e.get("data-atlas-notes") for e in complete.iter())
+    compact_rows = {e.get("data-atlas-state"): e for e in root.iter() if e.get("data-atlas-state")}
+    full_rows = {e.get("data-atlas-state"): e for e in complete.iter() if e.get("data-atlas-state")}
+    for identity, row in compact_rows.items():
+
+        def addresses(element):
+            return sorted(
+                e.get("data-occurrence") for e in element.iter() if e.get("data-occurrence")
+            )
+
+        assert addresses(row) == addresses(full_rows[identity])
+        for interface in (e for e in row.iter() if e.get("data-interface")):
+            full = next(
+                e
+                for e in full_rows[identity].iter()
+                if e.get("data-interface") == interface.get("data-interface")
+            )
+            assert interface.attrib == full.attrib
+            assert any(e.get("data-overhang") for e in interface)
+            assert not any(e.tag.endswith("}text") for e in interface)
+            assert (
+                next(e for e in interface if e.tag.endswith("}title")).text
+                == next(e for e in full if e.tag.endswith("}title")).text
+            )
+    assert atlas.model_dump_json() == before
 
 
 @pytest.mark.parametrize(

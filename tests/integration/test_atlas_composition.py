@@ -109,13 +109,22 @@ def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
     rows = [e for e in root.iter() if e.get("data-atlas-state")]
     last_left = [row for row in rows if row.get("data-atlas-column") == "0"][-1]
     assert not any(e.get("data-operation-arrowhead") for e in last_left)
+    connector = next(e for e in root.iter() if e.get("data-column-continuation"))
+    if connector.get("data-continuation-start") != "operation":
+        assert last_left.get("data-atlas-phase") in {"selected_fragments", "annealed_complex"}
+        assert not any(e.get("data-operation-arrow") for e in last_left)
+        assert connector[0].get("d").split(" ", 2)[1].startswith("H")
+        label = next(e for e in last_left if e.get("data-operation"))
+        assert label.get("data-operation-label-placement") == connector.get(
+            "data-continuation-start"
+        )
+        return
     arrow = next(e for e in last_left if e.get("data-operation-arrow"))
     x, y, width, height = map(float, arrow.get("data-drawing-box").split())
     start = (
         float(last_left.get("data-atlas-x")) + x + width / 2,
         float(last_left.get("data-atlas-y")) + y + height - 22,
     )
-    connector = next(e for e in root.iter() if e.get("data-column-continuation"))
     assert connector[0].get("d").startswith(f"M{start[0]},{start[1]}")
 
 

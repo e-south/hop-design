@@ -94,6 +94,7 @@ def atlas_scenes(
             continue
         root = molecular_inspection_element(
             state,
+            interface_labels=presentation != "assembly",
             layout_points=frames.get(state.state.state_id),
             staged_inputs=staged[state.state.state_id],
             label_site_ids=labels,

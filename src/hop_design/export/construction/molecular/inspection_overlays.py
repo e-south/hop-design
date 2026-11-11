@@ -41,6 +41,7 @@ def inspection_overlays(
     site_labels: Literal["all", "operations"] = "all",
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
+    interface_labels: bool = True,
 ) -> str:
     rows = [
         '<g xmlns="http://www.w3.org/2000/svg" data-inspection-overlays="true" '
@@ -213,17 +214,20 @@ def inspection_overlays(
             )
         rows.append("</g>")
     for interface in projection.interfaces:
-        x, y = boundary(interface.paired_start)
-        z, _ = boundary(interface.paired_end)
-        by = min(v for _, v in points.values()) - 33
         rows.append(
             f'<g data-interface="{interface.side}" data-gap-bp="{interface.distance_bp}" '
             f'data-end-polarity="{interface.polarity}" data-end-word="{interface.sequence}">'
             f"<title>{interface.side} end; {interface.polarity}; word 5\u2032 to 3\u2032; "
             f"{interface.distance_bp} bp to the supplied stem</title>"
         )
-        rows.append(f'<path d="M{x},{by + 5} V{by} H{z} V{by + 5}" fill="none" stroke="#AE6820"/>')
-        text(min(x, z), by - 8, f"{interface.sequence}, {interface.distance_bp} bp", "#8C5318")
+        if interface_labels:
+            x, _ = boundary(interface.paired_start)
+            z, _ = boundary(interface.paired_end)
+            by = min(v for _, v in points.values()) - 33
+            rows.append(
+                f'<path d="M{x},{by + 5} V{by} H{z} V{by + 5}" fill="none" stroke="#AE6820"/>'
+            )
+            text(min(x, z), by - 8, f"{interface.sequence}, {interface.distance_bp} bp", "#8C5318")
         overhang = [point(a) for a in interface.overhang]
         lo, hi = min(a for a, _ in overhang) - 7, max(a for a, _ in overhang) + 7
         top = min(b for _, b in overhang) - 12

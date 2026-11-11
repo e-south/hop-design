@@ -268,3 +268,19 @@ Escape closes it before changing the inspector. Atlas options retain alternate
 population views and saved-view loading; Fit atlas resets the existing camera.
 The color legend and feature explanation occupy the left of the atlas. Numeric
 X meanings and arithmetic are defined in [molecular comparison](../../reference/molecular-comparison.md).
+
+Renderer version and route composition are separate saved-view choices. The
+browser's Renderer control selects captured or current glyphs; Route view selects
+all recorded states or grouped cleanup. Neither control changes the other choice.
+The route control follows the effective renderer: captured artwork cannot be
+recomposed, while compact editions draw their recorded molecular authority on
+demand. The recorded preference can therefore use current glyphs when no artwork
+was captured; the rendering receipt states this explicitly. Both route
+profiles retain the complete molecular record and use the same processing
+renderers as API and CLI exports. Grouped cleanup aggregates cleavage, separation
+and retention, without removing their recorded states or transition identities.
+
+The hover wrapper is transparent: FigureLayout already removes SVG page backgrounds
+and hides the prior molecule before showing a preview. Its link layer can therefore
+remain behind molecular ink without an opaque rectangle masking the molecular
+origin. Highlighted links use a quiet translucent fill, with no decorative shadow.

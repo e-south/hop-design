@@ -162,7 +162,7 @@ function pendingControls() {
   $('retry-render').hidden=!rendering.blocked;
   document.body.classList.toggle('render-pending',rendering.blocked);
   if(rendering.blocked) {
-    for(const id of ['another','back','retrieve','bookmark','open-view','stage','route-view','render-policy','family-stage','clear','similarity','parameters','families']) {
+    for(const id of ['another','back','retrieve','bookmark','open-view','stage','route-view','render-policy','route-presentation','family-stage','clear','similarity','parameters','families']) {
       const control=$(id);if(!suspendedControls.has(control)) suspendedControls.set(control,control.disabled);control.disabled=true;
     }
     $('status').textContent='The new preparation is saved; its drawing could not load. Retry to display it.';
@@ -252,7 +252,8 @@ async function render(next,restore=false) {
   $('clear').hidden=!state.choices.query.parameters.length && !state.choices.query.membership;
   const current=state.preview?.summary, comparison=current?.comparison;
   local.update(state);
-  $('render-policy').value=state.render_policy==='current' && state.presentation.route==='assembly'?'assembly':state.render_policy;$('render-policy').disabled=!state.selection;
+  $('render-policy').value=state.render_policy;$('render-policy').disabled=!state.selection;
+  $('route-presentation').value=state.presentation.route;$('route-presentation').disabled=!state.selection||current?.rendering?.effective!=='current';$('route-presentation').title=current?.rendering?.effective==='captured'?'Choose Current glyphs to change the recorded composition.':'';
   $('render-info').textContent=current?.rendering?.notice || (current?.rendering?.effective==='current'?'Current shared glyphs over the same molecular record.':'Artwork retained from this recorded edition.');
   const notices=comparison?.notices || [];
   $('change').textContent=state.preview_status==='excluded_by_query' ? 'The inspected molecule is outside the current filters. Choose an eligible trace to retrieve it.' :
@@ -309,7 +310,8 @@ $('bookmark').addEventListener('click',async()=>{
     $('view-link').href=`#view=${fragment}`;$('view-link').hidden=false;
   }catch(error){$('status').textContent=error.message;pendingControls();}
 });
-$('render-policy').addEventListener('change',()=>{const choice=$('render-policy').value;act('view',{stage:state.stage,camera:null,render_policy:choice==='captured'?'captured':'current',presentation:{...state.presentation,route:choice==='assembly'?'assembly':'complete'}});});
+$('render-policy').addEventListener('change',()=>act('view',{stage:state.stage,camera:null,render_policy:$('render-policy').value}));
+$('route-presentation').addEventListener('change',()=>act('view',{stage:state.stage,camera:null,presentation:{...currentPresentation(),route:$('route-presentation').value}}));
 $('open-view').addEventListener('click',()=>$('view-file').click());
 $('view-file').addEventListener('change',async()=>{try{const file=$('view-file').files[0];if(file) await act('restore',{receipt:JSON.parse(await file.text())},false);}catch(error){$('status').textContent=error.message;}});
 async function restoreHash(){if(location.hash.startsWith('#view=')){const receipt=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));await act('restore',{receipt},false);}}
