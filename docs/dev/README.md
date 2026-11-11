@@ -8,6 +8,8 @@
 - [Verification design](plans/verification-cost.md) records the separation of
   source tests, routine installation checks and release qualification. The
   performance guide above defines the current gate selection.
+- [Compact checkpoints](plans/checkpoint-storage.md) plans bounded storage,
+  cross-version continuation and content-verified migration.
 - [GitHub governance](github-governance.md) defines repository settings,
   required checks, and the evidence unavailable when hosted CI cannot run.
 - [Release HOP](releasing.md) publishes verified files to GitHub and PyPI.
