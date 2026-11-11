@@ -54,11 +54,11 @@ def render_molecular_atlas(
                 if cap:
                     continuation_start = (
                         position.x
-                        + max(float(r.get("x")) + float(r.get("width")) for r in cap)
+                        + max(float(r.attrib["x"]) + float(r.attrib["width"]) for r in cap)
                         + 18,
                         position.y
-                        + float(scene.get("data-scene-y"))
-                        + sum(float(r.get("y")) + float(r.get("height")) / 2 for r in cap)
+                        + float(scene.attrib["data-scene-y"])
+                        + sum(float(r.attrib["y"]) + float(r.attrib["height"]) / 2 for r in cap)
                         / len(cap),
                     )
                     from_side = True
@@ -80,7 +80,7 @@ def render_molecular_atlas(
             end_x = target.x + blocks[index + 1].extent.width / 2 - position.x
             end_y = target.y - position.y - 24
             arrow = next(e for e in block.element if e.get("data-operation-arrow"))
-            x, y, width, _ = map(float, arrow.get("data-drawing-box").split())
+            x, y, width, _ = map(float, arrow.attrib["data-drawing-box"].split())
             x += width / 2
             arrow.set("d", f"M{x},{y} C{x},{y + 48} {end_x},{end_y - 64} {end_x},{end_y - 20}")
             arrow.set("data-connector-target-phase", "hairpin_pcr_duplex")

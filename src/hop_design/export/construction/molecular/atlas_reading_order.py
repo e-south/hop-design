@@ -14,7 +14,7 @@ def continuation_svg(
     if placement.continuation is None:
         return ""
     x, y, target, top = placement.continuation
-    bottom, right, end_y, radius = y + 24, target - 48, top + 100, 20
+    bottom, right, end_y, radius = y + 24, target - 48, top + 100, 20.0
     if end is not None:
         target, end_y = end
     x, source_y = start if start is not None else (x, y)

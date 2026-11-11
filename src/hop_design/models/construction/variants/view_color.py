@@ -37,8 +37,9 @@ class AtlasColorLens(HopModel):
         ends = [values.get(key) for key in ("left_gap", "right_gap")]
         if None in ends:
             return None
-        if any(
-            isinstance(v, bool) or not isinstance(v, int | float) or not isfinite(v) for v in ends
-        ):
-            raise ValueError("End-gap color requires finite numeric measurements.")
-        return max(ends)
+        measurements: list[int | float] = []
+        for value in ends:
+            if isinstance(value, bool) or not isinstance(value, int | float) or not isfinite(value):
+                raise ValueError("End-gap color requires finite numeric measurements.")
+            measurements.append(value)
+        return max(measurements)

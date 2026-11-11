@@ -49,7 +49,14 @@ def render_comparison_vector(packet: dict[str, Any], *, width_pt: float = 504) -
         packet, ensure_ascii=False, separators=(",", ":")
     )
 
-    def text(parent, x, y, value, size=font, **attrs):
+    def text(
+        parent: ET.Element,
+        x: float,
+        y: float,
+        value: object,
+        size: float = font,
+        **attrs: str,
+    ) -> ET.Element:
         node = ET.SubElement(
             parent,
             "text",

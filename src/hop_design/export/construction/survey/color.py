@@ -47,7 +47,7 @@ def molecular_colors(answer: dict[str, Any], raw: dict[str, Any]) -> MolecularCo
             raise ValueError("Larger end gap is not applicable to this endpoint.")
         axis = {"label": "Larger end gap", "unit": "bp"}
 
-    def value(row):
+    def value(row: dict[str, Any]) -> Any:
         return lens.value_in(row["values"])
 
     if axis is None or axis.get("applicable") is False:
