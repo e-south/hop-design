@@ -8,6 +8,7 @@ from xml.etree import ElementTree as ET
 
 from pydantic import ValidationError
 
+from hop_design.export.construction.labels import atlas_state_label
 from hop_design.export.construction.molecular.assembly.composition import (
     RoutePresentation,
     assembly_scenes,
@@ -158,6 +159,7 @@ def projected_scene_previews(
             {
                 "state_id": state.state_id,
                 "phase": state.phase.value,
+                "label": atlas_state_label(state.phase.value),
                 "order": order,
                 "transition_ids": [
                     atlas.transitions[i].authority_id for i in scene.transition_indices
@@ -197,7 +199,7 @@ def _scene_document(
             "data-preparation-id": identity,
             "data-route-scene": row.attrib["data-atlas-state"],
             "role": "img",
-            "aria-label": row.get("data-atlas-phase", "Molecular scene"),
+            "aria-label": atlas_state_label(row.attrib["data-atlas-phase"]),
         },
     )
     for attribute in ("width", "height"):

@@ -96,6 +96,8 @@ export function routeScenes(host,scroll,request,artifacts) {
   }
   function setRoster(roster) {
     const phases=[...new Set(roster.map(s=>s.phase))];
+    const labels=new Map(roster.map(s=>[s.phase,s.label]));
+    if(phases.some(phase=>typeof labels.get(phase)!=='string'||!labels.get(phase).trim()))throw Error('Route scene lacks its recorded display label. Reload the browser.');
     if(JSON.stringify([...slots.keys()])===JSON.stringify(phases)) return;
     const saved=anchor(phases),keep=new Set(phases);
     for(const [phase,slot] of slots) if(!keep.has(phase)) {
@@ -106,10 +108,10 @@ export function routeScenes(host,scroll,request,artifacts) {
       let slot=slots.get(phase);
       if(!slot) {
         const element=document.createElement('div'),body=document.createElement('div');
-        element.className='route-scene';element.dataset.scenePhase=phase;element.setAttribute('aria-label',phase.replaceAll('_',' '));
+        element.className='route-scene';element.dataset.scenePhase=phase;element.setAttribute('aria-label',labels.get(phase));
         body.className='route-scene-drawing';element.append(body);host.append(element);
         slot={phase,element,body,status:panelStatus(element,{retainPrevious:()=>Boolean(body.firstElementChild)}),shown:null,failed:null,unavailable:null,geometry:null};
-        slot.status.begin('').idle(phase.replaceAll('_',' '));observer.observe(element);
+        slot.status.begin('').idle(labels.get(phase));observer.observe(element);
       }
       ordered.push([phase,slot]);host.append(slot.element);
     }
@@ -155,11 +157,14 @@ export function routeScenes(host,scroll,request,artifacts) {
   scroll.addEventListener('scroll',schedule,{passive:true});
   return {
     pin(state) {
+      const labels=new Map(state.stage_options.map(s=>[s.value,s.label]));
+      const roster=(state.preview?.summary.atlas.states||[]).map(s=>({...s.state,label:labels.get(s.state.state_id)}));
+      if(roster.some(s=>typeof s.label!=='string'||!s.label.trim()))throw Error('Route scene lacks its recorded display label. Reload the browser.');
       const identity=state.preview?.summary.atlas.materialized_realization_id;
       const next=identity?{identity,token:state.token,snapshot:state.choices.snapshot_digest,policy:state.render_policy,presentation:state.presentation.route}:null;
       if(!pinned || !next || drawingKey(pinned,'')!==drawingKey(next,'')){pinnedNodes.clear();pinnedRoster=null;}
       pinned=next;
-      setRoster(pinnedRoster||(state.preview?.summary.atlas.states||[]).map(s=>s.state));
+      setRoster(pinnedRoster||roster);
       show(pinned);
     },
     pending:invalidate,

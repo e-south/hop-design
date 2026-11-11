@@ -20,8 +20,8 @@ Use these owners before reaching for the lower-level discovery contracts below.
 | Descriptor and molecular similarity | `design/construction/navigation/molecular_descriptor.py`, `similarity.py`, `numerical/` | Project verified molecules; distance and layout do not establish construction validity |
 | Frozen atlas capture and inspection | `design/construction/editions/capture.py`, `compact_capture.py`, `reader.py`, `authority.py` | Distinguish original molecular producer from current rendering |
 | Shared glyphs and figure composition | `export/construction/molecular/`, `export/construction/survey/` | Render recorded facts and addresses without new chemistry |
-| Browser selection and asynchronous preview | `commands/design/inspection.py`, `inspection_hover.py`, `inspection_worker.py`; `assets/design_explorer/` | Adapt public choices; keep preview separate from committed selection and own teardown |
-| Browser display names | `design/construction/navigation/inspection_projection.py` consumes `export/construction/labels.py` | Emit product and processing-state labels; the client does not rename endpoints or derive chemistry |
+| Browser selection and asynchronous preview | `commands/design/inspection.py`, `inspection_hover.py`, `inspection_worker.py`; `design/construction/editions/preview_job.py`; `assets/design_explorer/` | Adapters own lifecycle; detached jobs avoid command registration and retain molecular admission |
+| Browser display names | `design/construction/navigation/inspection_projection.py`, `route_presentation.py` consume `export/construction/labels.py` | Share product/stage labels across controls, scene wrappers and waiting slots; retain exact IDs |
 | Visible route scenes | `design/construction/navigation/route_presentation.py`, `export/construction/molecular/atlas_layout.py` | Reuse exact records; measure shared folded headroom only when a requested state consumes that frame |
 | Browser typography | `assets/design_explorer/editor.css` | Banner-style heading is separate from data type and molecular/PDF font budgets |
 

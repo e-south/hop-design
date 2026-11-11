@@ -93,6 +93,15 @@ silent fallback or alternate molecular authority. Measure cold process startup,
 warm cache misses, parent-plus-child CPU and memory separately. Route-scene drawing
 does not yet use this worker.
 
+The console entrypoint defers CLI registration until invoked. Its standard
+`__main__` module stays under the CLI dependency rules. The detached pipe target
+is colocated with the existing preview job and exposed through the inspection
+facade; the command adapter still owns process startup, deadlines and disposal.
+Spawned renderers must not import command registration. Benchmark the installed
+console command as well as a guarded Python caller: spawn re-executes the launch
+script, and bytecode-cache differences can reverse an apparent startup gain.
+No extra process, prewarming, admission cache or fallback is introduced.
+
 `test_inspection_worker.py` checks failure, timeout, concurrent work and teardown.
 `test_isolated_preview.py` compares exact drawings and summaries and rejects altered
 authority. Changes to that extraction/admission boundary require source verification;

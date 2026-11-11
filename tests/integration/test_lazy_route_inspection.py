@@ -402,6 +402,12 @@ def test_visible_scene_preview_keeps_authority_and_renders_only_requested_states
         state = next(s for s in expected["states"] if s["state"]["state_id"] == scene["state_id"])
         root = ET.fromstring(drawings[scene["state_id"]])
         assert root.get("data-preparation-id") == identity
+        label = {
+            "foldback_closed_hairpin": "Closed hairpin",
+            "hairpin_pcr_duplex": "Hairpin PCR duplex",
+        }[scene["phase"]]
+        assert scene["label"] == label
+        assert root.get("aria-label") == label
         bases = [e for e in root.iter() if e.get("data-base-index") is not None]
         assert len(bases) == len(state["bases"])
         assert {e.get("data-state-id") for e in bases} == {scene["state_id"]}

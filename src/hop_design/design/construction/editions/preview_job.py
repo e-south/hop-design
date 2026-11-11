@@ -1,7 +1,9 @@
 """Detached single-preparation jobs; cohort admission stays in the parent."""
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
+from multiprocessing.connection import Connection
 from typing import cast
 
 from hop_design.export.construction.molecular.assembly.composition import RoutePresentation
@@ -20,6 +22,25 @@ from .compact_projection import _projection_context, _teaching_summary, teaching
 from .descriptors import descriptor_index
 from .materials import member_materials, route_record_from_materials
 from .reader import AtlasEdition
+
+
+def serve_preview_jobs[Request, Result](
+    connection: Connection, function: Callable[[Request], Result]
+) -> None:
+    """Detached pipe target; command registration stays in the parent process."""
+    try:
+        while True:
+            request = connection.recv()
+            try:
+                response: tuple[bool, Result | str] = True, function(request)
+            except Exception as error:
+                # Validation exceptions need not be pickleable across the pipe.
+                response = False, f"{type(error).__name__}: {error}"
+            connection.send(response)
+    except EOFError:
+        pass
+    finally:
+        connection.close()
 
 
 @dataclass(frozen=True)

@@ -40,7 +40,7 @@ Issues = "https://github.com/e-south/hop-design/issues"
 Repository = "https://github.com/e-south/hop-design"
 
 [project.scripts]
-hop-design = "hop_design.cli:app"
+hop-design = "hop_design.__main__:main"
 
 [dependency-groups]
 dev = [

@@ -18,8 +18,12 @@ test('failed bundled preview gives its visible route a terminal error; obsolete 
  let text=await source('route_scenes');text=text.replace("'./route_scene_work.js'",JSON.stringify(uri(work))).replace("'./panel_status.js'",JSON.stringify(uri(await source('panel_status'))));
  const {routeScenes}=await import(uri(text)),host=element(),scroll=element();
  scenes=routeScenes(host,scroll,async()=>{requests++;throw Error('No independent request is needed for this failed bundle');},{});
- scenes.pin({token:'token',choices:{snapshot_digest:'snapshot'},render_policy:'current',presentation:{route:'assembly'},preview:{summary:{atlas:{materialized_realization_id:'A',states:[{state:{phase:'duplex'}}]}}}});
+ const state={token:'token',choices:{snapshot_digest:'snapshot'},render_policy:'current',presentation:{route:'assembly'},stage_options:[{value:'released-state',label:'Released insert'}],preview:{summary:{atlas:{materialized_realization_id:'A',states:[{state:{state_id:'released-state',phase:'clone_ready_duplex'}}]}}}};
+ scenes.pin(state);
  const slot=host.children[0],body=slot.children[0],previous=element();previous.dataset.preparationId='A';body.append(previous);
+ assert.equal(slot.getAttribute('aria-label'),'Released insert');
+ assert.throws(()=>scenes.pin({...state,stage_options:[]}),/label/i,'Missing labels must fail before replacing the route');
+ assert.equal(host.children[0],slot);
  scenes.pending('B');assert.equal(slot.dataset.panelState,'waiting');assert.equal(slot.dataset.panelRetained,'previous');
  scenes.previewFailed?.('B');assert.equal(slot.dataset.panelState,'error','The route must not remain Preparing after the shared preview fails');
  assert.equal(slot.getAttribute('aria-busy'),'false');assert.equal(body.firstElementChild,previous);assert.equal(requests,0);

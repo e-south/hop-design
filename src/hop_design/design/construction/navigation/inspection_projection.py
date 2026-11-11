@@ -25,7 +25,7 @@ from hop_design.export.construction.survey.traces import TraceProjection
 from hop_design.models.construction import ConstructionEndpoint
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from ..editions.preview_job import preview_job, render_preview_job
+from ..editions.preview_job import preview_job, render_preview_job, serve_preview_jobs
 from ..packets.atlas import MolecularAtlasPacket
 from .features.vocabulary import describe_parameters
 from .landscape_source import inspection_landscape
@@ -103,6 +103,7 @@ class _InspectionProjection:
     preview = staticmethod(partial(preview_components, profile=INSPECTOR_FIGURE))
     preview_job = staticmethod(preview_job)
     render_preview_job = staticmethod(render_preview_job)
+    serve_preview_jobs = staticmethod(serve_preview_jobs)
     scenes = staticmethod(scene_previews)
     packet = staticmethod(inspector_packet)
     explain = staticmethod(explain_choice)
