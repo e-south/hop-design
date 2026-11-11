@@ -7,9 +7,10 @@ from itertools import pairwise
 
 from hop_design.models.construction.projections.hairpin import HairpinPortraitProjection
 
+from .presentation.palette import BASAL, FOLDBACK
 from .scaffold.hairpin_layout import HairpinLayout
 
-BLUE, GREEN, GREY, INK = "#176B9A", "#258365", "#9AA3AA", "#23313B"
+BLUE, GREEN, GREY, INK = BASAL, FOLDBACK, "#9AA3AA", "#23313B"
 
 
 def _text(
@@ -72,7 +73,7 @@ def render_hairpin_portrait_svg(p: HairpinPortraitProjection) -> bytes:
     points = [point(i) for i in range(len(strand.sequence))]
     for i, (a, b) in enumerate(pairwise(points)):
         segment = (
-            f"A{radius:.2f},17 0 0 1 {b[0]:.2f},{b[1]:.2f}"
+            f"A{radius:.2f},{radius:.2f} 0 0 1 {b[0]:.2f},{b[1]:.2f}"
             if ls - 1 <= i < le
             else f"L{b[0]:.2f},{b[1]:.2f}"
         )

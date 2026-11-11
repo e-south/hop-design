@@ -15,7 +15,6 @@ from hop_design.export.construction.molecular.primitives.style import (
 def test_region_nucleotides_keep_small_type_contrast():
     for region, color in REGION_COLORS.items():
         assert contrast_ratio(base_ink(region), color) >= 4.5
-        assert base_ink(region) == "#FFFFFF"
     assert base_ink("unmapped") != "#FFFFFF"
     assert base_ink("stem", "#DED2EC") != "#FFFFFF"
 

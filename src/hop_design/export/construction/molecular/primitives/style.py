@@ -2,6 +2,8 @@
 
 from hashlib import sha256
 
+from ...presentation.palette import BASAL, FOLDBACK, STEM
+
 INK = "#182B34"
 BACKBONE = "#334B58"
 CONTACT = "#70838A"
@@ -11,7 +13,7 @@ ANNOTATION_SIZE = 40
 TERMINAL_SIZE = 32
 TITLE_SIZE = 40
 FONT_FAMILY = "Helvetica, Arial, sans-serif"
-REGION_COLORS = {"stem": "#B85E16", "assembly": "#1B70A4", "closing": "#207B62", "loop": "#207B62"}
+REGION_COLORS = {"stem": STEM, "assembly": BASAL, "closing": FOLDBACK, "loop": FOLDBACK}
 REGION_OPACITY = 1
 SITE_HALF_WIDTH = 18
 CUT_HALF_WIDTH = 16

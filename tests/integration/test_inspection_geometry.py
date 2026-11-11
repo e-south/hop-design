@@ -274,8 +274,10 @@ def test_scene_carries_fitted_regions_and_addressed_edges(inspected_route):
         "assembly",
     }
     assert all(r.attrib.get("data-members") for r in regions)
+    from hop_design.export.construction.molecular.primitives.style import REGION_COLORS
+
     assert {r.attrib["fill"] for r in regions if r.attrib["data-region-fill"] == "stem"} == {
-        "#B85E16"
+        REGION_COLORS["stem"]
     }
     assert all(r.tag.endswith("}path") and r.get("data-path-members") for r in regions)
     edges = root.findall(".//*[@data-edge-kind]")

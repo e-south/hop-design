@@ -1,9 +1,10 @@
 """Shared schematic coordinates; geometry is a drawing convention, not a fold."""
 
-import math
 from dataclasses import dataclass
 
 from hop_design.models.construction.projections.hairpin import HairpinPortraitProjection
+
+from ..presentation.loop_arc import LoopArc
 
 
 @dataclass(frozen=True)
@@ -16,12 +17,17 @@ class HairpinLayout:
 
     @property
     def loop_x(self) -> float:
-        p = self.portrait
-        return self.anchor + (p.loop_span.start.offset - p.stem_primary_span.start.offset - 1) * 5
+        return self.loop_arc.center_x
 
     @property
     def radius(self) -> float:
-        return 17.0 + self.portrait.loop_nt * 1.2
+        return self.loop_arc.radius
+
+    @property
+    def loop_arc(self) -> LoopArc:
+        p = self.portrait
+        x = self.anchor + (p.loop_span.start.offset - p.stem_primary_span.start.offset - 1) * 5
+        return LoopArc(x, 111, 34, p.loop_nt, 5)
 
     def point(self, index: float) -> tuple[float, float]:
         p = self.portrait
@@ -31,5 +37,4 @@ class HairpinLayout:
             return self.anchor + (index - start) * 5, 111.0
         if index >= le:
             return self.anchor + (ls - 1 - start - (index - le)) * 5, 145.0
-        theta = -math.pi / 2 + math.pi * (index - ls + 1) / (p.loop_nt + 1)
-        return self.loop_x + self.radius * math.cos(theta), 128 + 17 * math.sin(theta)
+        return self.loop_arc.point(index - ls + 1)
