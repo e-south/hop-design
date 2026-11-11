@@ -7,6 +7,23 @@ from hop_design.export.construction.survey.color import molecular_colors
 from hop_design.models.construction.variants.view import parse_view_receipt
 
 
+def test_browser_and_print_keep_the_shared_numeric_palette():
+    import json
+    import re
+    from importlib.resources import files
+
+    from hop_design.export.construction.presentation.palette import NUMERIC_BLUE
+
+    rows = [{"materialized_realization_id": str(i), "values": {"left_gap": i}} for i in range(5)]
+    answer = {"paths": rows, "axes": [{"key": "left_gap", "label": "Left gap", "unit": "bp"}]}
+    colors = molecular_colors(answer, {"key": "left_gap"}).colors
+    assert list(colors.values()) == [value.lower() for value in NUMERIC_BLUE]
+    source = files("hop_design").joinpath("assets/design_explorer/molecular_colors.js").read_text()
+    stops = json.loads(re.search(r"const ramp=(\[[^;]+\]);", source).group(1))
+    expected = [[int(color[i : i + 2], 16) for i in (1, 3, 5)] for color in NUMERIC_BLUE]
+    assert stops == expected
+
+
 def receipt(color):
     return {
         "schema": "hop.atlas-view/v5",
@@ -91,7 +108,7 @@ def test_print_color_keeps_full_pool_scale_and_exact_words_under_filtering():
         ],
     }
     numeric = molecular_colors(answer, {"key": "left_gap"})
-    assert numeric.colors == {"a": "#dfebe6", "b": "#539997", "c": "#1a3e4b", "d": None}
+    assert numeric.colors == {"a": "#66a8ed", "b": "#0073e6", "c": "#0c2043", "d": None}
     word = molecular_colors(answer, {"key": "left_end_word", "word": "AGTC"})
-    assert word.colors == {"a": "#216e72", "b": "#c5cecf", "c": "#216e72", "d": None}
+    assert word.colors == {"a": "#0073E6", "b": "#8D99A5", "c": "#0073E6", "d": None}
     assert "AGTC" in word.label

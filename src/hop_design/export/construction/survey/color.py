@@ -6,8 +6,10 @@ from typing import Any
 
 from hop_design.models.construction.variants.view_color import AtlasColorLens
 
-ACCENT, NEUTRAL = "#216e72", "#c5cecf"
-RAMP = ((223, 235, 230), (83, 153, 151), (26, 62, 75))
+from ..presentation.palette import BASAL, NUMERIC_BLUE
+
+ACCENT, NEUTRAL = BASAL, "#8D99A5"
+RAMP = tuple(tuple(int(color[i : i + 2], 16) for i in (1, 3, 5)) for color in NUMERIC_BLUE)
 
 
 @dataclass(frozen=True)
@@ -18,8 +20,9 @@ class MolecularColors:
 
 
 def _shade(t: float) -> str:
-    index = min(1, floor(t * 2))
-    fraction = t * 2 - index
+    last = len(RAMP) - 1
+    index = min(last - 1, floor(t * last))
+    fraction = t * last - index
     return "#" + "".join(
         f"{floor(v + (RAMP[index + 1][i] - v) * fraction + 0.5):02x}"
         for i, v in enumerate(RAMP[index])

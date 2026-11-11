@@ -1,9 +1,10 @@
 // Display only: measured values and names come from the admitted parameter rows.
 export const COLOR_KEYS=['left_gap','right_gap','loop_nt','foldback_arm_bp','loop_word','left_end_word','right_end_word'];
-const accent='#216e72',neutral='#6a8186';
-const ramp=[[223,235,230],[83,153,151],[26,62,75]];
+const accent='#0073E6',neutral='#8D99A5';
+// Matched to presentation.palette.NUMERIC_BLUE by the print/browser parity test.
+const ramp=[[102,168,237],[51,141,233],[0,115,230],[0,86,170],[12,32,67]];
 function shade(t) {
-  const index=Math.min(1,Math.floor(t*2)),fraction=t*2-index;
+  const last=ramp.length-1,index=Math.min(last-1,Math.floor(t*last)),fraction=t*last-index;
   return '#'+ramp[index].map((v,i)=>Math.round(v+(ramp[index+1][i]-v)*fraction).toString(16).padStart(2,'0')).join('');
 }
 export function molecularColors(paths,axes,{key='none',word=null}={}) {
@@ -25,7 +26,7 @@ export function molecularColors(paths,axes,{key='none',word=null}={}) {
     const extent=values.length?[values[0].value,values.at(-1).value]:null;
     const constant=extent!==null&&extent[0]===extent[1];
     const colors=new Map(values.map(({value})=>[value,constant?accent:shade((value-extent[0])/(extent[1]-extent[0]))]));
-    return {...common,kind:'numeric',extent,constant,stops:[shade(0),shade(.5),shade(1)],color:row=>{
+    return {...common,kind:'numeric',extent,constant,stops:ramp.map((_,i)=>shade(i/(ramp.length-1))),color:row=>{
       return colors.get(row.values[key])??null;
     }};
   }
