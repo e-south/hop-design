@@ -30,11 +30,16 @@ def _source_fingerprints(package: Path) -> dict[str, str]:
 
 
 def producer_identity() -> dict[str, str]:
-    """Bind producer Python source bytes and runtime dependency versions."""
-    files = _source_fingerprints(Path(__file__).resolve().parents[1])
+    """Bind source, authority-bearing compatibility policy and runtime versions."""
+    package = Path(__file__).resolve().parents[1]
+    files = _source_fingerprints(package)
+    code = sha256_digest(canonical_json_bytes(files))
+    policy = "assets/checkpoint-compatibility.json"
+    files[policy] = sha256_digest((package / policy).read_bytes())
     return {
         "package_version": version("hop-design"),
         "package_content": sha256_digest(canonical_json_bytes(files)),
+        "package_code": code,
         "python": platform.python_version(),
         "implementation": platform.python_implementation(),
         **{name: version(name) for name in ("pydantic", "pydantic-core", "PyYAML", "typer")},
@@ -79,6 +84,9 @@ def runtime_identity() -> dict[str, object]:
 
 
 _creator: ContextVar[str | None] = ContextVar("authority_creator_version", default=None)
+_admitted: ContextVar[frozenset[str] | None] = ContextVar(
+    "admitted_authority_creators", default=None
+)
 
 
 def creation_version() -> str:
@@ -107,3 +115,36 @@ def replay_creation(creator: str) -> Iterator[None]:
         yield
     finally:
         _creator.reset(token)
+
+
+@contextmanager
+def admitted_creators(creators: tuple[str, ...]) -> Iterator[None]:
+    """Scope nested replay to an already-admitted checkpoint's creator history.
+
+    This private scope does not authorize a producer transition. Its caller
+    must first verify the stored history and its supported compatibility rules.
+    """
+    if not creators or any(type(value) is not str or not value.strip() for value in creators):
+        raise ValueError("Admitted creators must contain nonempty versions.")
+    token = _admitted.set(frozenset(creators))
+    try:
+        yield
+    finally:
+        _admitted.reset(token)
+
+
+@contextmanager
+def replay_authority(creator: str) -> Iterator[None]:
+    """Replay a child authority only within an admitted creator history.
+
+    Ordinary readers retain their exact expected creator. A label in an
+    unadmitted result cannot enable historical replay by itself.
+    """
+    allowed = _admitted.get()
+    if allowed is None:
+        yield
+    elif creator not in allowed:
+        raise ValueError("Child authority creator is absent from the admitted checkpoint history.")
+    else:
+        with replay_creation(creator):
+            yield

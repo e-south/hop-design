@@ -83,9 +83,9 @@ def test_capture_revalidates_changed_checkpoint_before_export(capture_pool, tmp_
     shutil.copytree(capture_pool._directory, root)
     choices = construction.load_design_choices(root)
     with sqlite3.connect(root / "survey.sqlite") as db:
-        digest, raw = db.execute("SELECT digest, content FROM objects LIMIT 1").fetchone()
+        block, raw = db.execute("SELECT id, content FROM blocks LIMIT 1").fetchone()
         db.execute(
-            "UPDATE objects SET content=? WHERE digest=?", (raw[:-1] + bytes([raw[-1] ^ 1]), digest)
+            "UPDATE blocks SET content=? WHERE id=?", (raw[:-1] + bytes([raw[-1] ^ 1]), block)
         )
     with pytest.raises(ValueError):
         choices.freeze(tmp_path / "edition", compact=True)

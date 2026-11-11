@@ -227,6 +227,14 @@ The `hop_design.construction` facade exposes these file-oriented operations:
   drawing and physical-size contract as `ScaffoldAtlas`; browser previews omit them.
 - `verify_interface_survey(request_path, index_path) -> dict` recomputes all
   recorded evaluations and returns replay-derived coverage.
+- `migrate_interface_survey(request_path, index_path, *, destination,
+  max_checkpoint_bytes=1073741824, minimum_free_bytes=0, should_stop=None,
+  on_converted=None) -> dict` converts a stopped checkpoint into compact storage
+  without repeating historical discovery. It preserves the source, identities,
+  selections and original creators. The callback receives converted object count
+  and decoded bytes; a true stop request cancels publication. Cross-producer
+  conversion requires a shipped compatibility declaration. See
+  [storage and recovery](../interface-survey-search/checkpoint-storage.md).
 - `upgrade_interface_survey(request_path, index_path, *, source_producer,
   destination, max_checkpoint_bytes=1073741824, on_replayed=None) -> dict` replays
   a stopped checkpoint into a new directory under the current producer.

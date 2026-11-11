@@ -22,10 +22,13 @@ def verify_interface_survey(request_path: str | Path, index_path: str | Path) ->
         SurveyIndex.create(
             Path(directory) / "replay.sqlite",
             request=request,
-            producer=producer,
+            producer=saved.creator_producer if len(saved.creators) > 1 else producer,
             limits=limits.model_dump(mode="json"),
+            format_version=2 if len(saved.creators) > 1 else 1,
         ) as replay,
     ):
+        if len(saved.creators) > 1:
+            replay.origins.import_history(saved.origins)
         return {
             "schema": "hop.interface-survey-verification/v1",
             **replay_evaluations(saved, replay, limits, producer=producer),

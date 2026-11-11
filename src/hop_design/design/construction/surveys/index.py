@@ -9,8 +9,8 @@ target domain is bound once, including targets with no evaluation yet.
 from __future__ import annotations
 
 import sqlite3
-import zlib
 from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Self
@@ -18,59 +18,30 @@ from typing import Any, Self
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-MAX_RECORD_BYTES = 64 * 1024 * 1024
-_TABLES = {"metadata", "objects", "steps", "cache"}
-_DDL = """
-CREATE TABLE metadata (content BLOB NOT NULL);
-CREATE TABLE objects (digest TEXT PRIMARY KEY, content BLOB NOT NULL);
-CREATE TABLE cache (key TEXT PRIMARY KEY, digest TEXT NOT NULL REFERENCES objects(digest));
-CREATE TABLE steps (
-    ordinal INTEGER NOT NULL, step INTEGER NOT NULL, record_digest TEXT NOT NULL,
-    witness_count INTEGER NOT NULL, exhausted INTEGER NOT NULL, digest TEXT NOT NULL,
-    PRIMARY KEY (ordinal, step),
-    FOREIGN KEY (record_digest) REFERENCES objects(digest)
-);
-"""
-
-
-def _metadata(
-    request: InterfaceSurveyRequest, producer: dict[str, str], limits: dict[str, Any] | None
-) -> bytes:
-    return canonical_json_bytes(
-        {
-            "schema": "hop.interface-survey-index/v1",
-            "request": request.model_dump(mode="json", by_alias=True),
-            "producer": producer,
-            "evaluation_limits": limits,
-        }
-    )
-
-
-def _inflate(content: bytes) -> bytes:
-    try:
-        decoder = zlib.decompressobj()
-        raw = decoder.decompress(content, MAX_RECORD_BYTES + 1)
-        if (
-            len(raw) > MAX_RECORD_BYTES
-            or not decoder.eof
-            or decoder.unused_data
-            or decoder.unconsumed_tail
-        ):
-            raise ValueError("Survey object integrity or size check failed.")
-        return raw
-    except zlib.error as error:
-        raise ValueError("Survey object integrity check failed.") from error
+from .storage import schema
+from .storage.blocks import BlockStore
+from .storage.legacy import MAX_RECORD_BYTES, ObjectStore
+from .storage.origin_access import OriginAccess
+from .storage.origins import OriginLedger
+from .storage.transactions import Transactions
 
 
 class SurveyIndex:
     """Private disk-backed index; opening checks binding, records and step continuity."""
 
     def __init__(
-        self, db: sqlite3.Connection, request: InterfaceSurveyRequest, producer: dict[str, str]
+        self,
+        db: sqlite3.Connection,
+        request: InterfaceSurveyRequest,
+        producer: dict[str, str],
+        ledger: OriginLedger | None = None,
     ):
         self._db = db
         self.request = request
         self._creator_producer = dict(producer)
+        self.origins = OriginAccess(db, producer, ledger)
+        self._objects = BlockStore(db) if ledger is not None else ObjectStore(db, tracked=False)
+        self._transactions = Transactions(db, self._objects)
 
     @property
     def creator_producer(self) -> dict[str, str]:
@@ -85,23 +56,10 @@ class SurveyIndex:
         request: InterfaceSurveyRequest,
         producer: dict[str, str],
         limits: dict[str, Any] | None = None,
+        format_version: int = 1,
     ) -> Self:
-        # Exclusive creation also refuses dangling symlinks and existing stores.
-        with path.open("xb"):
-            pass
-        db = sqlite3.connect(path)
-        try:
-            db.execute("PRAGMA foreign_keys = ON")
-            db.executescript(_DDL)
-            with db:
-                db.execute(
-                    "INSERT INTO metadata VALUES (?)", (_metadata(request, producer, limits),)
-                )
-            return cls(db, request, producer)
-        except BaseException:
-            db.close()
-            path.unlink()
-            raise
+        db, ledger = schema.create(path, request, producer, limits, format_version)
+        return cls(db, request, producer, ledger)
 
     @classmethod
     def open(
@@ -113,41 +71,58 @@ class SurveyIndex:
         limits: dict[str, Any] | None = None,
         read_only: bool = False,
     ) -> Self:
-        if path.is_symlink() or not path.is_file():
-            raise ValueError("Survey checkpoint must be an existing regular file.")
-        mode = "ro" if read_only else "rw"
-        db = sqlite3.connect(f"{path.resolve().as_uri()}?mode={mode}", uri=True)
+        db, original, ledger = schema.open_snapshot(path, request, producer, limits, read_only)
         try:
-            db.execute("PRAGMA foreign_keys = ON")
-            db.execute("PRAGMA trusted_schema = OFF")
-            if read_only:
-                # Bind validation, coordinates and coverage to one SQLite snapshot.
-                # A resumed writer must not appear halfway through admission.
-                db.execute("BEGIN")
-            tables = {
-                row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            }
-            executable_schema = db.execute(
-                "SELECT 1 FROM sqlite_master WHERE type IN ('view', 'trigger')"
-            ).fetchone()
-            if (
-                tables != _TABLES
-                or executable_schema
-                or db.execute("PRAGMA integrity_check").fetchone() != ("ok",)
-            ):
-                raise ValueError("Survey checkpoint integrity check failed.")
-            rows = db.execute("SELECT content FROM metadata").fetchall()
-            if rows != [(_metadata(request, producer, limits),)]:
-                raise ValueError(
-                    "Survey checkpoint request or producer disagrees with this invocation."
-                )
-            instance = cls(db, request, producer)
+            instance = cls(db, request, original, ledger)
             instance._validate()
             return instance
         except BaseException as error:
             db.close()
             if isinstance(error, sqlite3.Error):
                 raise ValueError("Survey checkpoint integrity check failed.") from error
+            raise
+
+    @property
+    def writer_producer(self) -> dict[str, str]:
+        return self.origins.producer(self.origins.writer)
+
+    @property
+    def creators(self) -> tuple[dict[str, str], ...]:
+        return self.origins.producers()
+
+    def object_creator(self, digest: str) -> dict[str, str]:
+        pending = self._objects.pending_creator(digest)
+        if pending is not None:
+            return self.origins.producer(pending)
+        return self.origins.object(digest)
+
+    def step_creator(self, ordinal: int, *, step: int) -> dict[str, str]:
+        return self.origins.step(ordinal, step)
+
+    def cache_creator(self, key: str) -> dict[str, str]:
+        row = self._db.execute("SELECT digest FROM cache WHERE key=?", (key,)).fetchone()
+        if row is None:
+            raise ValueError("Unknown checkpoint cache origin.")
+        return self.object_creator(row[0])
+
+    def prefix_digest(self, creator: int) -> str:
+        return self.origins.prefix(creator)
+
+    def logical_digest(self) -> str:
+        return self.origins.prefix(self.origins.writer)
+
+    def transition_producer(self, target: dict[str, str]) -> None:
+        if self._db.in_transaction or self._transactions.active:
+            raise ValueError("Commit checkpoint writes before changing its producer.")
+        if self.origins.ledger is None:
+            raise ValueError("Legacy checkpoints need origin-tracked migration before transition.")
+        prefix = self.logical_digest()
+        previous = self.writer_producer
+        try:
+            with self._db:
+                self.origins.ledger.transition(target, prefix=prefix)
+        except BaseException:
+            self.origins.ledger = OriginLedger.load(self._db, self.creator_producer, previous)
             raise
 
     def __enter__(self) -> Self:
@@ -161,12 +136,21 @@ class SurveyIndex:
     ) -> None:
         self._db.close()
 
+    @contextmanager
+    def evaluation(self) -> Iterator[None]:
+        """Publish one evaluation and all its authorities, or roll back every write."""
+        if self._transactions.active:
+            raise ValueError("Checkpoint evaluations cannot nest.")
+        with self._transactions.write():
+            yield
+
     def _validate(self) -> None:
-        for digest, content in self._db.execute("SELECT digest, content FROM objects"):
-            if sha256_digest(_inflate(content)) != digest:
-                raise ValueError("Survey object integrity check failed.")
+        self._objects.verify()
         previous, expected, ended = None, 0, False
-        for row in self._db.execute("SELECT * FROM steps ORDER BY ordinal, step"):
+        for row in self._db.execute(
+            "SELECT ordinal,step,record_digest,witness_count,exhausted,digest "
+            "FROM steps ORDER BY ordinal,step"
+        ):
             ordinal, step, _, witnesses, exhausted, digest = row
             self.request.targets.pair_at(ordinal)
             if previous != ordinal:
@@ -180,12 +164,33 @@ class SurveyIndex:
             ):
                 raise ValueError("Survey checkpoint step integrity check failed.")
             previous, expected, ended = ordinal, step + 1, bool(exhausted)
+        self.origins.verify()
         if self._db.execute("PRAGMA foreign_key_check").fetchone() is not None:
             raise ValueError("Survey checkpoint references a missing record.")
 
     @property
     def object_count(self) -> int:
         return int(self._db.execute("SELECT COUNT(*) FROM objects").fetchone()[0])
+
+    def storage_info(self) -> dict[str, Any]:
+        """Report physical storage independently of molecular coverage."""
+        tracked = self.origins.ledger is not None
+        table = "blocks" if tracked else "objects"
+        stored = self._db.execute(
+            f"SELECT COALESCE(SUM(length(content)),0) FROM {table}"
+        ).fetchone()[0]
+        return {
+            "format": 2 if tracked else 1,
+            "encoding": "zstd-blocks/v1" if tracked else "zlib-objects/v1",
+            "encoded_bytes": stored,
+            "allocated_bytes": self._db.execute("PRAGMA page_count").fetchone()[0]
+            * self._db.execute("PRAGMA page_size").fetchone()[0],
+            "objects": self.object_count,
+            "blocks": self._db.execute("SELECT COUNT(*) FROM blocks").fetchone()[0]
+            if tracked
+            else 0,
+            "creator_count": len(self.creators),
+        }
 
     def set_storage_limit(self, maximum_bytes: int) -> None:
         """Limit database pages; journal and selected exports are separate transient storage."""
@@ -224,38 +229,28 @@ class SurveyIndex:
             raise ValueError("Survey record must be nonempty bytes within the record size limit.")
         digest = sha256_digest(record)
         row = (ordinal, step, digest, witness_count, int(exhausted))
-        try:
-            self._db.execute("BEGIN IMMEDIATE")
+        with self._transactions.write():
             tail = self._last_step(ordinal)
             if (0 if tail is None else tail[0] + 1) != step:
                 raise ValueError("Survey step must continue the existing target checkpoint.")
             if tail is not None and tail[1]:
                 raise ValueError("Survey target is already exhausted.")
-            self._db.execute(
-                "INSERT OR IGNORE INTO objects VALUES (?, ?)", (digest, zlib.compress(record))
-            )
-            self._db.execute(
-                "INSERT INTO steps VALUES (?, ?, ?, ?, ?, ?)",
-                (*row, sha256_digest(canonical_json_bytes(row))),
-            )
-            self._db.commit()
-        except BaseException:
-            self._db.rollback()
-            raise
+            creator = self.origins.creating
+            self._objects.put(record, creator=creator)
+            sealed = (*row, sha256_digest(canonical_json_bytes(row)))
+            if self.origins.ledger is not None:
+                self._db.execute("INSERT INTO steps VALUES (?,?,?,?,?,?,?)", (*sealed, creator))
+            else:
+                self._db.execute("INSERT INTO steps VALUES (?,?,?,?,?,?)", sealed)
 
     def record(self, ordinal: int, *, step: int) -> bytes:
         self.request.targets.pair_at(ordinal)
         row = self._db.execute(
-            "SELECT objects.content, objects.digest FROM steps JOIN objects "
-            "ON steps.record_digest=objects.digest WHERE ordinal=? AND step=?",
-            (ordinal, step),
+            "SELECT record_digest FROM steps WHERE ordinal=? AND step=?", (ordinal, step)
         ).fetchone()
         if row is None:
             raise ValueError("Unknown survey evaluation address.")
-        raw = _inflate(row[0])
-        if sha256_digest(raw) != row[1]:
-            raise ValueError("Survey object integrity check failed.")
-        return raw
+        return self.get_object(row[0])
 
     def coverage(self) -> dict[str, int]:
         """Keep target and marginal counts separate; multiple witnesses count once."""
@@ -289,42 +284,37 @@ class SurveyIndex:
         return dict(self._db.execute("SELECT ordinal, MAX(step) FROM steps GROUP BY ordinal"))
 
     def evaluations(
-        self, *, offset: int = 0, limit: int = -1
+        self, *, offset: int = 0, limit: int = -1, origin_order: bool = False
     ) -> Iterator[tuple[int, int, bytes, int, bool]]:
         """Stream exact addresses, without loading a growing corpus into memory."""
+        order = "creator,ordinal,step" if origin_order and self.origins.ledger else "ordinal,step"
         for target, step, count, exhausted in self._db.execute(
             "SELECT ordinal, step, witness_count, exhausted FROM steps "
-            "ORDER BY ordinal, step LIMIT ? OFFSET ?",
+            f"ORDER BY {order} LIMIT ? OFFSET ?",
             (limit, offset),
         ):
             yield target, step, self.record(target, step=step), count, bool(exhausted)
 
     def put_object(self, content: bytes) -> str:
-        if not isinstance(content, bytes) or not 0 < len(content) <= MAX_RECORD_BYTES:
-            raise ValueError("Survey object exceeds its size limit.")
-        digest = sha256_digest(content)
-        with self._db:
-            self._db.execute(
-                "INSERT OR IGNORE INTO objects VALUES (?, ?)", (digest, zlib.compress(content))
-            )
-        return digest
+        with self._transactions.write():
+            return self._objects.put(content, creator=self.origins.creating)
 
     def get_object(self, digest: str) -> bytes:
-        row = self._db.execute("SELECT content FROM objects WHERE digest=?", (digest,)).fetchone()
-        if row is None:
-            raise ValueError("Survey checkpoint references a missing object.")
-        raw = _inflate(row[0])
-        if sha256_digest(raw) != digest:
-            raise ValueError("Survey object integrity check failed.")
-        return raw
+        return self._objects.get(digest)
 
     def cached(self, key: str) -> bytes | None:
         row = self._db.execute("SELECT digest FROM cache WHERE key=?", (key,)).fetchone()
         return None if row is None else self.get_object(row[0])
 
     def cache(self, key: str, content: bytes) -> None:
-        digest = self.put_object(content)
-        with self._db:
-            self._db.execute("INSERT OR IGNORE INTO cache VALUES (?, ?)", (key, digest))
-        if self.cached(key) != content:
-            raise ValueError("Survey cache dependency identity has conflicting content.")
+        with self._transactions.write():
+            digest = self._objects.put(content, creator=self.origins.creating)
+            if self.origins.ledger is None:
+                self._db.execute("INSERT OR IGNORE INTO cache VALUES (?,?)", (key, digest))
+            else:
+                self._db.execute(
+                    "INSERT OR IGNORE INTO cache VALUES (?,?,?)",
+                    (key, digest, self.origins.creating),
+                )
+            if self.cached(key) != content:
+                raise ValueError("Survey cache dependency identity has conflicting content.")

@@ -46,11 +46,11 @@ authority; new proofs and steps use the current producer. Preserve historical
 canonical bytes and recheck their molecular obligations. Full verification must
 understand every supported creator segment before the transition is supported.
 
-The legacy index has one admitted `creator_producer`. Its reader now supplies
-that origin when replaying saved bundles, caches and exclusion proofs. A mixed-
-producer store needs a per-record/object origin resolver before new work can be
-appended; retaining this single-producer lookup is insufficient. A version label
-inside the result being checked cannot authorize a replay origin.
+The legacy index has one admitted `creator_producer`. The tracked format resolves
+the creator of each object, step and cached authority through an admitted ledger.
+Each transition seals its prior logical prefix and names the shipped declaration
+that admitted the new writer. A version label inside the result being checked
+cannot authorize a replay origin.
 
 In particular, test reading and retrieving an older preparation after the package
 version changes. Rewriting checkpoint metadata alone does not resolve the

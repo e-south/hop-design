@@ -128,6 +128,34 @@ def upgrade(
     typer.echo(json.dumps(result, sort_keys=True))
 
 
+@survey_app.command("migrate")
+def migrate(
+    request: Path,
+    index: Annotated[Path, typer.Option(help="Stopped source checkpoint; preserved unchanged.")],
+    output: Annotated[Path, typer.Option("--out", help="New compact checkpoint directory.")],
+    max_checkpoint_bytes: Annotated[int, typer.Option(min=1_048_576)] = 1_073_741_824,
+    minimum_free_bytes: Annotated[int, typer.Option(min=0)] = 0,
+) -> None:
+    """Convert stored bytes without rerunning the historical molecular search."""
+
+    def progress(count: int, size: int) -> None:
+        if count == 1 or count % 256 == 0:
+            typer.echo(f"Converted {count} objects ({size} decoded bytes).", err=True)
+
+    try:
+        result = construction.migrate_interface_survey(
+            request,
+            index,
+            destination=output,
+            max_checkpoint_bytes=max_checkpoint_bytes,
+            minimum_free_bytes=minimum_free_bytes,
+            on_converted=progress,
+        )
+    except (OSError, ValueError) as error:
+        raise typer.BadParameter(str(error)) from error
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
 @survey_app.command("query")
 def query_choices(
     request: Path,

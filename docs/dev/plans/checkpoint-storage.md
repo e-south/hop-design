@@ -4,11 +4,12 @@ Keep long discovery searches affordable by sharing repeated bytes within each
 evaluation and validating stored objects in a streaming scan. This is an
 implementation plan. The released checkpoint format and commands are unchanged.
 
-The first implementation separates authority creation metadata from the executing
-runtime during exact replay. Saved bundles retain their IDs and artifacts;
-exclusion proofs use the creator admitted against checkpoint metadata. Ordinary
-resume still requires the exact producer. A supported compatibility transition,
-mixed-creator history and block storage remain to implement before deployment.
+The working candidate implements shared blocks, mixed-creator history, exact
+historical replay and create-only migration through the API and CLI. Focused
+tests cover retained selections, cold continuation, exclusion proofs, rollback
+and failed migration. Distribution qualification and an approved exact producer
+transition remain required before deployment. See the
+[public operation](../../reference/interface-survey-search/checkpoint-storage.md).
 
 ## Ownership
 

@@ -60,6 +60,8 @@ def upgrade_interface_survey(
     before = _file_digest(path)
     saved, limits = open_survey(path, request=request, producer=source_producer)
     with saved:
+        if len(saved.creators) > 1:
+            raise ValueError("Mixed-creator checkpoints require supported storage migration.")
         output.parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.", dir=output.parent))
         try:

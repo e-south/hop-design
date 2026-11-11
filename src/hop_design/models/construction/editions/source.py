@@ -30,15 +30,20 @@ class RecordedDesignSource(HopModel):
             "PyYAML",
             "typer",
         }
-        if set(value) != required or any(not item for item in value.values()):
-            raise ValueError("Bind the complete recorded producer identity.")
-        content = value["package_content"]
-        if (
-            not content.startswith("sha256:")
-            or len(content) != 71
-            or any(character not in "0123456789abcdef" for character in content[7:])
+        if set(value) not in (required, required | {"package_code"}) or any(
+            not item for item in value.values()
         ):
-            raise ValueError("Recorded producer content must be a SHA-256 digest.")
+            raise ValueError("Bind the complete recorded producer identity.")
+        for key in ("package_content", "package_code"):
+            if key not in value:
+                continue
+            content = value[key]
+            if (
+                not content.startswith("sha256:")
+                or len(content) != 71
+                or any(character not in "0123456789abcdef" for character in content[7:])
+            ):
+                raise ValueError("Recorded producer content must be a SHA-256 digest.")
         return value
 
     @field_validator("files")

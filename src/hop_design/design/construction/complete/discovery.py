@@ -18,6 +18,7 @@ from hop_design.design.construction.verification import (
     VerifiedBasalNeighborhoodResult,
     VerifiedFoldbackNeighborhoodResult,
 )
+from hop_design.design.runtime import replay_authority
 from hop_design.models.construction.complete import (
     ConstructionDiscoveryRequest,
     ConstructionSpaceResult,
@@ -82,7 +83,8 @@ def _replay_construction_result(
         basal is not None and not isinstance(basal, VerifiedBasalNeighborhoodResult)
     ):
         raise TypeError("Construction replay requires verified local construction authorities.")
-    verify_hop_bundle_semantics(design)
+    with replay_authority(design.provenance.compiler_version):
+        verify_hop_bundle_semantics(design)
     foldback_result = foldback._verified_result()
     basal_result = None if basal is None else basal._verified_result()
     parsed = ConstructionSpaceResult.model_validate(result.model_dump(mode="python"))
@@ -113,7 +115,8 @@ def discover_constructions(
         basal is not None and not isinstance(basal, VerifiedBasalNeighborhoodResult)
     ):
         raise TypeError("Complete composition requires verified local construction authorities.")
-    verify_hop_bundle_semantics(design)
+    with replay_authority(design.provenance.compiler_version):
+        verify_hop_bundle_semantics(design)
     foldback_result = foldback._verified_result()
     basal_result = None if basal is None else basal._verified_result()
     raw = _discover_constructions_raw(

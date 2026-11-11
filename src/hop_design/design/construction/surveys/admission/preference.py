@@ -5,7 +5,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from hop_design.design.runtime import replay_creation
 from hop_design.models.construction.surveys.preference import SurveyPreparationReference
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
 from hop_design.serialization import sha256_digest
@@ -27,12 +26,16 @@ def create_survey_index(
     if request.preferred_preparation is None:
         if files:
             raise ValueError("Unrequested preparation inputs cannot enter a survey.")
-        return SurveyIndex.create(path, request=request, producer=producer, limits=limits)
+        return SurveyIndex.create(
+            path, request=request, producer=producer, limits=limits, format_version=2
+        )
     if path.exists() or path.is_symlink():
         raise FileExistsError(path)
     with tempfile.TemporaryDirectory(prefix=".hop-survey-input-", dir=path.parent) as directory:
         staged = Path(directory) / "survey.sqlite"
-        with SurveyIndex.create(staged, request=request, producer=producer, limits=limits) as index:
+        with SurveyIndex.create(
+            staged, request=request, producer=producer, limits=limits, format_version=2
+        ) as index:
             index.set_storage_limit(maximum_bytes)
             store_preference_files(index, files)
         # SQLite is closed before publication. A crash or failed import cannot
@@ -88,7 +91,10 @@ def load_preferred_preparation(index: SurveyIndex) -> VerifiedConstructionBundle
             path = root / entry.path
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
-        with replay_creation(index.creator_producer["package_version"]):
+        result = next(
+            entry.digest for entry in reference.files if entry.path == "construction-result.json"
+        )
+        with index.origins.replay(index.object_creator(result)):
             receipt = load_verified_construction_bundle(root)
     if (
         receipt.result_id != reference.result_id

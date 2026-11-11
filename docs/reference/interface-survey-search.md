@@ -10,6 +10,8 @@ This reference explains which choices a survey permits and how execution explore
 - [Execution, coverage and resume](interface-survey-search/execution-and-coverage.md)
   distinguishes coverage questions, explains execution limits and checkpoint
   accounting, and shows how to resume or inspect saved attempts.
+- [Checkpoint storage and migration](interface-survey-search/checkpoint-storage.md)
+  explains compact encoding, supported producer transitions and recovery.
 
 The [survey decision](../architecture/decisions/0052-resumable-interface-surveys.md)
 records implementation ownership, molecular admission and replay authority.

@@ -23,6 +23,7 @@ from hop_design.design.construction.verification import (
     verify_basal_neighborhood_result,
     verify_foldback_neighborhood_result,
 )
+from hop_design.design.runtime import replay_authority
 from hop_design.export.bundle import (
     BundleIntegrityError,
     verify_manifested_bundle_contents,
@@ -33,7 +34,7 @@ from hop_design.kernel.bundle_identity import (
     construction_bundle_id,
     manifest_digest_for_construction_bundle,
 )
-from hop_design.models.bundle import HopBundle
+from hop_design.models.bundle import HopBundle, ProvenanceRecord
 from hop_design.models.construction import ConstructionBundle
 from hop_design.models.construction.complete import ConstructionSpaceResult
 from hop_design.serialization import canonical_json_bytes, sha256_digest
@@ -275,7 +276,11 @@ def load_verified_construction_bundle(
         raise BundleIntegrityError("Construction bundle identifier does not match its content.")
     if sha256_digest(artifacts[RESULT_PATH]) != bundle.result_digest:
         raise BundleIntegrityError("Construction result digest does not match the root manifest.")
-    design = load_verified_bundle(root / DESIGN_ROOT)
+    design_origin = ProvenanceRecord.model_validate_json(
+        artifacts[f"{DESIGN_ROOT}/provenance.json"]
+    )
+    with replay_authority(design_origin.compiler_version):
+        design = load_verified_bundle(root / DESIGN_ROOT)
     if design.bundle != embedded_design or design.bundle.bundle_id != bundle.design_bundle_id:
         raise BundleIntegrityError("Construction design authority is inconsistent.")
     try:
@@ -285,12 +290,12 @@ def load_verified_construction_bundle(
     if result.result_id != bundle.result_id:
         raise BundleIntegrityError("Construction result identity is inconsistent.")
     try:
-        foldback = verify_foldback_neighborhood_result(result.foldback_authority)
-        basal = (
-            None
-            if result.basal_authority is None
-            else verify_basal_neighborhood_result(result.basal_authority)
-        )
+        with replay_authority(result.foldback_authority.neighborhood.provenance.hop_version):
+            foldback = verify_foldback_neighborhood_result(result.foldback_authority)
+        basal = None
+        if result.basal_authority is not None:
+            with replay_authority(result.basal_authority.discovery.provenance.hop_version):
+                basal = verify_basal_neighborhood_result(result.basal_authority)
         construction = verify_construction_space_result(
             result,
             foldback=foldback,

@@ -2,14 +2,17 @@
 
 import json
 import sqlite3
-import zlib
 from contextlib import closing
 
 from hop_design.design.construction.surveys.completion.domains import ContextCompletionPlan
+from hop_design.design.construction.surveys.index import SurveyIndex
+from hop_design.design.construction.surveys.storage.blocks import BlockStore
+from hop_design.design.construction.surveys.storage.legacy import ObjectStore
 from hop_design.models.construction.complete.source_preparation.policy import (
     ConstrainedSourceSsdnaPolicy,
 )
 from hop_design.models.construction.surveys.execution import DEFAULT_SEQUENCE_LIMITS
+from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
 from tests.unit.test_interface_survey_request import survey_document
 
 LIMITS = {"local_nodes": 100, "local_realizations": 100, "release_site_pairs": 100}
@@ -33,13 +36,47 @@ def request(tmp_path, name, *, completion):
 
 def records(index):
     with closing(sqlite3.connect(index)) as db:
+        store = (
+            BlockStore(db)
+            if db.execute("PRAGMA user_version").fetchone()[0] == 2
+            else ObjectStore(db, tracked=False)
+        )
         return [
-            json.loads(zlib.decompress(content))
-            for (content,) in db.execute(
-                "SELECT objects.content FROM steps JOIN objects ON record_digest=objects.digest "
-                "ORDER BY ordinal,step"
-            )
+            json.loads(store.get(digest))
+            for (digest,) in db.execute("SELECT record_digest FROM steps ORDER BY ordinal,step")
         ]
+
+
+def legacy_checkpoint(path):
+    """Make an old-layout fixture from one synthetic, single-producer checkpoint."""
+    legacy = path.with_suffix(".legacy.sqlite")
+    with closing(sqlite3.connect(path)) as db:
+        metadata = json.loads(db.execute("SELECT content FROM metadata").fetchone()[0])
+        tracked = db.execute("PRAGMA user_version").fetchone()[0] == 2
+        if not tracked:
+            return
+        assert db.execute("SELECT COUNT(*) FROM producers").fetchone() == (1,)
+        store = BlockStore(db)
+        with SurveyIndex.create(
+            legacy,
+            request=InterfaceSurveyRequest.model_validate_json(json.dumps(metadata["request"])),
+            producer=metadata["producer"],
+            limits=metadata["evaluation_limits"],
+            format_version=1,
+        ) as target:
+            for (digest,) in db.execute("SELECT digest FROM objects"):
+                assert target.put_object(store.get(digest)) == digest
+            for table, columns in (
+                ("steps", "ordinal,step,record_digest,witness_count,exhausted,digest"),
+                ("cache", "key,digest"),
+            ):
+                for row in db.execute(f"SELECT {columns} FROM {table}"):
+                    target._db.execute(
+                        f"INSERT INTO {table} VALUES ({','.join('?' for _ in row)})", row
+                    )
+            target._db.commit()
+            target._validate()
+    legacy.replace(path)
 
 
 def policy(spec):

@@ -284,7 +284,9 @@ def admit_population(
         if index is not None:
             index.cache(key, canonical_json_bytes(result))
     else:
-        result = verify_sequence_space(FoldbackSequenceResult.model_validate_json(content))
+        assert index is not None
+        with index.origins.replay(index.cache_creator(key)):
+            result = verify_sequence_space(FoldbackSequenceResult.model_validate_json(content))
         if result.request != request:
             raise ValueError("Cached foldback population does not match its request.")
     return FoldbackPopulation(result)

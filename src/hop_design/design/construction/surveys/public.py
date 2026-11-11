@@ -149,6 +149,7 @@ def inspect_interface_survey(
         return {
             "schema": "hop.interface-survey-inspection/v1",
             "validation": "index_integrity_only",
+            "storage": index.storage_info(),
             "coverage": index.coverage(),
             "total_evaluations": total,
             "evaluations": rows,

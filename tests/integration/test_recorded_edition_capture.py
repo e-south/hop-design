@@ -195,10 +195,10 @@ def test_recorded_capture_rejects_unsafe_or_corrupt_source(capture_pool, tmp_pat
         target.symlink_to(capture_pool._directory / "effort.json")
     else:
         with sqlite3.connect(root / "survey.sqlite") as db:
-            digest, raw = db.execute("SELECT digest, content FROM objects LIMIT 1").fetchone()
+            block, raw = db.execute("SELECT id, content FROM blocks LIMIT 1").fetchone()
             db.execute(
-                "UPDATE objects SET content=? WHERE digest=?",
-                (raw[:-1] + bytes([raw[-1] ^ 1]), digest),
+                "UPDATE blocks SET content=? WHERE id=?",
+                (raw[:-1] + bytes([raw[-1] ^ 1]), block),
             )
         path = root / "survey.sqlite"
         source["files"]["survey.sqlite"] = {

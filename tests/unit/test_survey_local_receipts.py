@@ -1,6 +1,7 @@
 """Bound admitted local reuse by bytes and entries, with independent cold admission."""
 
 from collections import Counter
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -43,7 +44,11 @@ def local_cache(monkeypatch, tmp_path):
     monkeypatch.setattr(module, "_discover_request", packet)
     monkeypatch.setattr(module, "_verify_result_mapping", admit)
     index = SimpleNamespace(
-        request=survey, cached=cached, cache=store, creator_producer=producer_identity()
+        request=survey,
+        cached=cached,
+        cache=store,
+        cache_creator=lambda key: producer_identity(),
+        origins=SimpleNamespace(replay=lambda producer: nullcontext()),
     )
 
     def owner():

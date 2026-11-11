@@ -24,3 +24,17 @@ def test_replay_origin_is_nested_scoped_and_does_not_change_runtime(monkeypatch)
 def test_invalid_creator_is_rejected(value):
     with pytest.raises(ValueError, match="creator"), creation.replay_creation(value):
         pass
+
+
+def test_child_authority_scope_requires_an_admitted_creator_set(monkeypatch):
+    monkeypatch.setattr(creation, "version", lambda _name: "current")
+    with creation.replay_authority("older"):
+        assert creation.creation_version() == "current"
+    with creation.admitted_creators(("older", "current")):
+        with creation.replay_authority("older"):
+            assert creation.creation_version() == "older"
+        assert creation.creation_version() == "current"
+        with pytest.raises(ValueError, match="creator"), creation.replay_authority("unrecognized"):
+            pass
+    with creation.replay_authority("older"):
+        assert creation.creation_version() == "current"

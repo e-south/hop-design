@@ -4,7 +4,6 @@ import json
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from hop_design.design.runtime import replay_creation
 from hop_design.models.construction.product_request import ProductRequest
 from hop_design.models.construction.surveys.execution import SurveyEvaluationLimits
 from hop_design.models.construction.surveys.request import InterfaceSurveyRequest
@@ -53,9 +52,9 @@ def recover_witness(
         artifact = root / name
         artifact.parent.mkdir(parents=True, exist_ok=True)
         artifact.write_bytes(index.get_object(digest))
-    # The admitted checkpoint supplies the creator, not a mutable label in the
-    # saved bundle. Every authority must replay exactly under that producer.
-    with replay_creation(index.creator_producer["package_version"]):
+    # Resolve the root object's creator; imported local authorities can retain
+    # their own earlier creator within the admitted history.
+    with index.origins.replay(index.object_creator(record["bundle"]["construction-result.json"])):
         receipt = load_verified_construction_bundle(root)
     authority = receipt._verified_source()
     source = product.construction_source()
