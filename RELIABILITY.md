@@ -40,9 +40,15 @@ supplied identity. This removes duplicate serialization during creation. It
 retains no validation authority after creation and offers no caller option to
 disable checks.
 
-Survey checkpoints remain bound to their exact producer. Ordinary resume and
-verification never accept another producer. An explicit `survey upgrade` replays
-every saved evaluation into a new checkpoint under the current producer. Results,
+Survey checkpoints remain bound to their current writer. Ordinary resume never
+changes that binding. `survey migrate` preserves all original bytes and creators
+in compact storage; a writer change requires a shipped compatibility declaration
+for the exact packages and unchanged runtime inputs. The creator ledger seals
+each prior prefix, and full verification replays its recorded creator segments.
+See [storage and migration](docs/reference/interface-survey-search/checkpoint-storage.md).
+
+An explicit `survey upgrade` replays every saved evaluation of a single-creator
+checkpoint into a new checkpoint under the current producer. Results,
 continuations, exclusion scope and molecular authorities must match; only
 regenerated exclusion certificates may change their producer digest and resulting
 references. The original checkpoint remains unchanged. The transition receipt

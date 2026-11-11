@@ -120,7 +120,10 @@ def test_endpoint_preservation_keeps_discarded_hairpin_differences_out_of_the_co
         max_evaluations=8,
         objective={"kind": "diversity", "parameters": ["adapter_annealing_min_nt"]},
     )
-    reference = choices.sample(seed=0)
+    # The longer association provides a distinct discarded basal region.
+    reference = choices.sample(
+        seed=0, query={"parameters": [{"key": "adapter_annealing_min_nt", "values": [24]}]}
+    )
     hairpin = choices.query(
         choices.preserve(reference, stage="hairpin", except_neighborhood="loop")
     )
