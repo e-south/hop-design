@@ -99,7 +99,7 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 #landscape{container-type:inline-size}
 #map-comparison{position:relative;flex:none;z-index:3;width:100%;padding:8px 18px 4px;background:transparent;font-size:var(--ui-small);line-height:1.2;overflow-x:auto}
 .similarity-context #map-comparison[hidden]{display:block!important;visibility:hidden}
-[data-comparison-values]{display:grid;grid-template-columns:38px repeat(var(--feature-count),minmax(var(--feature-min,35px),1fr)) 8px;grid-template-rows:22px 46px 104px;column-gap:2px;width:100%;min-width:calc(var(--feature-count)*(var(--feature-min,35px) + 2px) + 46px);margin-inline:auto}
+[data-comparison-values]{display:grid;grid-template-columns:38px repeat(var(--feature-count),minmax(var(--feature-min,35px),1fr)) 8px;grid-template-rows:22px 46px 104px;column-gap:2px;width:100%;min-width:calc(var(--feature-count)*(var(--feature-min,35px) + 2px) + 46px);max-width:calc(var(--feature-count)*(var(--feature-min,35px) + 15px) + 46px);margin-inline:auto}
 .comparison-vector-open,.comparison-vector-close{grid-row:2;align-self:center;white-space:nowrap;font:20px/46px var(--title-font)}
 .comparison-vector-open{grid-column:1}.comparison-vector-close{grid-column:-2}
 .comparison-group{grid-row:1;position:relative;background:var(--group-fill);border-radius:2px;text-align:center;font-size:var(--ui-small);line-height:22px;font-weight:400}
