@@ -100,6 +100,12 @@ uv run --locked hop-design design query family --member member-0001 --format tex
 uv run --locked hop-design design view family --member member-0001 --out member-view
 ```
 
+Readable member feedback keeps `--member` in its inspect, sample and JSON-query
+commands. A supplied query filter also stays in the sample and JSON commands.
+The browser opens the member's recorded pool. Before searching further, inspect
+**Family search bounds**: continuation remains attached to the required family's
+remaining budget, rather than the member's standalone search status.
+
 `max_members` bounds expansion before search. `max_total_evaluations` bounds the
 work reserved by family discovery and continuation. `--evaluations` is shared
 across the required members, not multiplied by their count. Unexamined or missing
