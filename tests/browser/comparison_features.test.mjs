@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const load=async()=>import('data:text/javascript;base64,'+Buffer.from(await readFile(new URL('../../src/hop_design/assets/design_explorer/comparison_features.js',import.meta.url))).toString('base64'));
-function element(){return {dataset:{},children:[],classList:{add(){}},setAttribute(){},addEventListener(){},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;}};}
+function element(){return {style:{values:{},setProperty(k,v){this.values[k]=v;}},dataset:{},children:[],classList:{add(){}},setAttribute(){},addEventListener(){},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;}};}
 const packet=()=>({algorithm:'umap',basis:{shape_scales:{five_prime_unpaired_nt:2},sequence_keys:['basal_pairs'],interface_keys:['left_word'],weights:[1,1,1]},columns:[
  {key:'shape.five_prime_unpaired_nt',parameters:['five_prime_unpaired_nt'],active:true,dictionary:[4,6],indices:[0,1]},
  {key:'shape.loop_nt',parameters:['loop_nt'],active:false,dictionary:[4],indices:[0,0]},
@@ -108,7 +108,7 @@ test('decoded strip shows scientific scalar values while retaining exact stored 
  const {comparisonStrip}=await load(),host=element(),strip=comparisonStrip(host,()=>{});
  const p=packet(),state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
  strip.prepare('B',state)();
- assert.equal(host.dataset.comparisonDisplay,'literal-row');
+ assert.equal(host.dataset.comparisonDisplay,'numeric-row');
  const fields=host.children[0].children.filter(e=>e.dataset.feature);
  assert.deepEqual(fields.map(e=>e.dataset.feature),['shape.five_prime_unpaired_nt','sequences.basal_pairs','interfaces.left_word']);
  const scalar=fields[0];
@@ -116,8 +116,9 @@ test('decoded strip shows scientific scalar values while retaining exact stored 
  const code=scalar.children.find(e=>e.className==='comparison-code');
  assert.equal(code.dataset.encoded,'6');assert.equal(code.hidden,true);
  const contacts=fields[1].children.find(e=>e.className==='comparison-value');
- const glyphs=contacts.children.find(e=>e.className==='comparison-contact-glyphs');
- assert.equal(glyphs.children[0].dataset.contactGlyph,'diamond');
+ assert.equal(contacts.textContent,'1');
+ assert.match(fields[1].title,/G:T gt wobble/);
+ assert.match(fields[1].title,/code magnitudes are not distances/);
 });
 
 test('literal scientific features retain the exact recorded values',async t=>{
@@ -126,7 +127,7 @@ test('literal scientific features retain the exact recorded values',async t=>{
  const {comparisonStrip}=await load(),host=element(),p=packet(),before=JSON.stringify(p);
  comparisonStrip(host,()=>{}).prepare('B',{presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}})();
  const panel=host.children[0];
- assert.equal(host.dataset.comparisonDisplay,'literal-row');
+ assert.equal(host.dataset.comparisonDisplay,'numeric-row');
  assert.equal(panel.children[0].textContent,'X = [');
  assert.deepEqual(panel.children.filter(e=>e.dataset.feature).map(e=>e.dataset.feature),['shape.five_prime_unpaired_nt','sequences.basal_pairs','interfaces.left_word']);
  assert.equal(JSON.stringify(p),before);
@@ -138,7 +139,26 @@ test('literal X keeps every active feature in one bracketed reading row',async t
  const {comparisonStrip}=await load(),host=element(),p=packet();
  comparisonStrip(host,()=>{}).prepare('B',{presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}})();
  const nodes=host.children[0].children;
- assert.equal(host.dataset.comparisonDisplay,'literal-row');
+ assert.equal(host.dataset.comparisonDisplay,'numeric-row');
  assert.equal(nodes[0].textContent,'X = [');assert.equal(nodes.at(-1).textContent,']');
  assert.deepEqual(nodes.filter(e=>e.dataset.feature).map(e=>e.dataset.feature),['shape.five_prime_unpaired_nt','sequences.basal_pairs','interfaces.left_word']);
+});
+
+
+test('numeric field codes keep exact meanings and shared group spans during hover',async t=>{
+ const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});
+ globalThis.document={createElement:element,createElementNS:element};
+ const {comparisonStrip}=await load(),host=element(),p=packet();
+ p.presentation={groups:{shape:{label:'Geometry',fill:'#E3EBE9'},sequences:{label:'Sequence',fill:'#D1E6FA'},interfaces:{label:'Ends',fill:'#FDEDD7'}}};
+ const state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
+ const before=JSON.stringify(p),strip=comparisonStrip(host,()=>{});
+ strip.prepare('A',state)();
+ assert.deepEqual(host.children[0].children.filter(e=>e.dataset.featureGroup).map(e=>e.textContent),['Geometry','Sequence','Ends']);
+ assert.equal(host.children[0].children.find(e=>e.dataset.featureGroup==='shape').style.values['grid-column'],'2 / 3');
+ assert.equal(host.children[0].children.find(e=>e.dataset.feature).style.values['grid-row'],'2 / 4');
+ const read=()=>host.children[0].children.filter(e=>e.dataset.feature).map(e=>e.children.find(n=>n.className==='comparison-value').textContent);
+ assert.deepEqual(read(),['4','0','0']);
+ const next=strip.prepare('B',state);assert.deepEqual(read(),['4','0','0']);next();
+ assert.deepEqual(read(),['6','1','1']);assert.equal(host.dataset.preparationId,'B');
+ assert.equal(JSON.stringify(p),before);
 });

@@ -58,6 +58,8 @@ def render_survey_plot(
             "width": f"{profile.physical_width_pt}pt",
             "font-size": str(font),
             "font-family": "Arial, Helvetica, sans-serif",
+            "data-selected-ink": "#233c43",
+            "data-selected-fill": "#e4f0ec",
             "role": "group",
             "aria-label": "Complete paths through declared molecular parameters",
         },
@@ -134,8 +136,9 @@ def render_survey_plot(
             x2=m["x"],
             y1=frame.top + m["band"] * frame.height,
             y2=frame.bottom + m["band"] * frame.height,
-            stroke="#c0cacc",
+            stroke="#465459",
             stroke_width=0.8,
+            data_axis_line=m["definition"]["key"],
         )
     for group in sorted(
         presentation["traces"] if include_traces else [],
@@ -148,9 +151,9 @@ def render_survey_plot(
             "path",
             d=trace_commands(axes, group[0]),
             fill="none",
-            stroke="#a55236" if selected else "#4b8b83" if matching else "#aab8bb",
+            stroke="#233c43" if selected else "#4b8b83" if matching else "#aab8bb",
             stroke_width=2.3 if selected else 0.8,
-            opacity=0.95 if selected else 0.3 if matching else 0.09,
+            opacity=0.95 if selected else 0.065 if matching else 0.025,
             data_members=json.dumps([p["materialized_realization_id"] for p in group]),
             data_selected=str(selected).lower(),
             tabindex=0,
@@ -281,6 +284,11 @@ def render_survey_plot(
                 data_node_label="true",
             )
             node_text(node_group, x, y, geometry, font)
+            if profile.rotated_labels and value not in selected_values and not pinned:
+                for paint in node_group:
+                    if paint.get("data-node-label"):
+                        paint.set("opacity", ".28")
+                node_group.set("data-context-value", "true")
             if pinned:
                 _element(
                     node_group,

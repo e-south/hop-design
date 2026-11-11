@@ -24,6 +24,28 @@ def test_browser_and_print_keep_the_shared_numeric_palette():
     assert stops == expected
 
 
+def test_larger_end_gap_color_requires_both_measurements_without_mutating_rows():
+    from copy import deepcopy
+
+    answer = {
+        "axes": [{"key": key, "applicable": True} for key in ("left_gap", "right_gap")],
+        "paths": [
+            {"materialized_realization_id": "a", "values": {"left_gap": 0, "right_gap": 0}},
+            {"materialized_realization_id": "b", "values": {"left_gap": 4, "right_gap": 1}},
+            {"materialized_realization_id": "c", "values": {"left_gap": 1, "right_gap": 4}},
+            {"materialized_realization_id": "missing", "values": {"left_gap": 0}},
+        ],
+    }
+    before = deepcopy(answer)
+    result = molecular_colors(answer, {"key": "max_end_gap"})
+    assert "Larger end gap" in result.label and "bp" in result.label
+    assert result.colors == {"a": "#66a8ed", "b": "#0c2043", "c": "#0c2043", "missing": None}
+    assert answer == before
+    answer["axes"][1]["applicable"] = False
+    with pytest.raises(ValueError, match="applicable"):
+        molecular_colors(answer, {"key": "max_end_gap"})
+
+
 def receipt(color):
     return {
         "schema": "hop.atlas-view/v5",
@@ -112,3 +134,21 @@ def test_print_color_keeps_full_pool_scale_and_exact_words_under_filtering():
     word = molecular_colors(answer, {"key": "left_end_word", "word": "AGTC"})
     assert word.colors == {"a": "#0073E6", "b": "#8D99A5", "c": "#0073E6", "d": None}
     assert "AGTC" in word.label
+
+
+def test_larger_gap_saved_view_validates_against_recorded_side_measurements():
+    from types import SimpleNamespace
+
+    from hop_design.design.construction.navigation.views import validate_color
+    from hop_design.models.construction.variants.view_color import AtlasColorLens
+
+    lens = AtlasColorLens(key="max_end_gap")
+
+    def choices(rows):
+        return SimpleNamespace(query=lambda: {"paths": [{"values": row} for row in rows]})
+
+    validate_color(choices([{"left_gap": 0, "right_gap": 0}]), lens)
+    with pytest.raises(ValueError, match="not applicable"):
+        validate_color(choices([{"left_gap": 0}]), lens)
+    with pytest.raises(ValueError, match="finite numeric"):
+        validate_color(choices([{"left_gap": True, "right_gap": 2}]), lens)

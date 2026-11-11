@@ -33,6 +33,7 @@ def render_molecular_atlas(
     rows = []
     continuation_start = None
     continuation_end = None
+    from_side = False
     for index, (block, position) in enumerate(zip(blocks, placement.positions, strict=True)):
         if (
             position.column == "0"
@@ -42,6 +43,26 @@ def render_molecular_atlas(
             arrow = next(e for e in block.element if e.get("data-operation-arrow"))
             x, y, width, height = map(float, arrow.attrib["data-drawing-box"].split())
             continuation_start = position.x + x + width / 2, position.y + y + height - 22
+            if block.extent.phase == "annealed_complex":
+                scene = next(e for e in block.element if e.get("data-scene-content"))
+                cap = [
+                    next(e for e in base if e.tag.endswith("}rect"))
+                    for base in scene.iter()
+                    if base.get("data-base-index") is not None
+                    and base.get("data-neighborhood") == "loop"
+                ]
+                if cap:
+                    continuation_start = (
+                        position.x
+                        + max(float(r.get("x")) + float(r.get("width")) for r in cap)
+                        + 18,
+                        position.y
+                        + float(scene.get("data-scene-y"))
+                        + sum(float(r.get("y")) + float(r.get("height")) / 2 for r in cap)
+                        / len(cap),
+                    )
+                    from_side = True
+                    block.element.remove(arrow)
             for element in list(block.element):
                 if element.get("data-operation-arrowhead"):
                     block.element.remove(element)
@@ -49,6 +70,26 @@ def render_molecular_atlas(
             continuation_end = (
                 position.x + float(block.element.get("data-scene-entry-x", "0")),
                 position.y + float(block.element.get("data-scene-entry-y", "100")),
+            )
+        if (
+            index + 1 < len(blocks)
+            and block.extent.phase == "adapter_ligated"
+            and blocks[index + 1].extent.phase == "hairpin_pcr_duplex"
+        ):
+            target = placement.positions[index + 1]
+            end_x = target.x + blocks[index + 1].extent.width / 2 - position.x
+            end_y = target.y - position.y - 24
+            arrow = next(e for e in block.element if e.get("data-operation-arrow"))
+            x, y, width, _ = map(float, arrow.get("data-drawing-box").split())
+            x += width / 2
+            arrow.set("d", f"M{x},{y} C{x},{y + 48} {end_x},{end_y - 64} {end_x},{end_y - 20}")
+            arrow.set("data-connector-target-phase", "hairpin_pcr_duplex")
+            arrow.set(
+                "data-drawing-box", f"{min(x, end_x) - 14} {y} {abs(x - end_x) + 28} {end_y - y}"
+            )
+            head = next(e for e in block.element if e.get("data-operation-arrowhead"))
+            head.set(
+                "d", f"M{end_x - 14},{end_y - 24} L{end_x},{end_y} L{end_x + 14},{end_y - 24} Z"
             )
         block.element.attrib.update(
             {
@@ -59,7 +100,9 @@ def render_molecular_atlas(
             }
         )
         rows.append(ET.tostring(block.element, encoding="unicode"))
-    rows.append(continuation_svg(placement, continuation_start, continuation_end))
+    rows.append(
+        continuation_svg(placement, continuation_start, continuation_end, from_side=from_side)
+    )
     y = placement.height + 14
     key, y = site_key(atlas, placement.width, y)
     rows.append(key)

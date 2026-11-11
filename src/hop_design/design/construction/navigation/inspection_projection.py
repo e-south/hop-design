@@ -93,4 +93,4 @@ class _InspectionProjection:
     map = staticmethod(map_index)
     families = staticmethod(molecular_families)
     distributions = staticmethod(render_choice_distributions)
-    axes = staticmethod(partial(render_survey_plot, include_traces=False, profile=INSPECTOR_FIGURE))
+    axes = staticmethod(partial(render_survey_plot, include_traces=True, profile=INSPECTOR_FIGURE))

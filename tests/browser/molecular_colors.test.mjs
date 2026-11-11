@@ -60,3 +60,13 @@ test('loop sequence and added pairing expose distinct molecular choices without 
  assert.deepEqual(extent.extent,[3,5]);assert.equal(extent.unit,'bp');assert.equal(extent.stage,'hairpin');
  assert.deepEqual(rows,before);
 });
+
+
+test('larger end-gap lens preserves side orientation and keeps missing distinct from zero',async()=>{
+ const {molecularColors}=await load(),before=structuredClone(paths);
+ const lens=molecularColors(paths,axes,{key:'max_end_gap'});
+ assert.deepEqual(lens.extent,[6,12]);assert.equal(lens.missing,1);
+ assert.equal(lens.color(paths[0]),lens.color(paths[1]));assert.equal(lens.color(paths[3]),null);
+ assert.deepEqual(paths,before);assert.equal(lens.label,'Larger end gap');
+ assert.throws(()=>molecularColors(paths,axes.filter(a=>a.key!=='right_gap'),{key:'max_end_gap'}),/parameter/);
+});

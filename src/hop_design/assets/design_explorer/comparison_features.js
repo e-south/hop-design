@@ -11,6 +11,9 @@ const names={
 export function comparisonReader(packet,members) {
  const index=new Map(members.map((identity,i)=>[identity,i]));
  if(index.size!==members.length||!packet?.basis||!Array.isArray(packet.columns))throw Error('Invalid map comparison.');
+ for(const style of Object.values(packet.presentation?.groups||{})) {
+  if(typeof style.label!=='string'||!/^#[0-9a-f]{6}$/i.test(style.fill))throw Error('Invalid comparison presentation group.');
+ }
  const active={shape:Object.keys(packet.basis.shape_scales),sequences:packet.basis.sequence_keys,interfaces:packet.basis.interface_keys};
  for(const column of packet.columns){
   const [block,key]=column.key.split('.');
@@ -24,11 +27,11 @@ export function comparisonReader(packet,members) {
   const i=index.get(identity);
   const features=packet.columns.map(c=>{
    const value=c.dictionary[c.indices[i]];
-   return {key:c.key,label:c.label,unit:c.unit,parameters:c.parameters,active:c.active,encoded:value,encoding:c.encoding,value:c.encoding==='contacts'?value.map(t=>packet.contacts[t]):value};
+   return {key:c.key,label:c.label,unit:c.unit,parameters:c.parameters,active:c.active,displayValue:c.key.startsWith('shape.')?value:c.indices[i],encoded:value,encoding:c.encoding,value:c.encoding==='contacts'?value.map(t=>packet.contacts[t]):value};
   });
   const vector=Object.entries(active).flatMap(([block,keys])=>keys.map(key=>features.find(f=>f.key===`${block}.${key}`)));
   if(vector.some(f=>!f))throw Error('Map comparison lacks an active feature.');
-  return {identity,algorithm:packet.algorithm,basis:packet.basis,features,vector};
+  return {identity,algorithm:packet.algorithm,basis:packet.basis,presentation:packet.presentation,features,vector};
  };
 }
 
@@ -49,34 +52,16 @@ export function distanceDescription(block,key,basis) {
 function field(feature,basis) {
  const [block,key]=feature.key.split('.'),label=feature.label||names[key][0],unit=feature.unit??names[key][1];
  const node=element('span',undefined,'comparison-feature');node.tabIndex=0;
- node.dataset.feature=feature.key;node.style?.setProperty('--comparison-weight',String(feature.encoding==='contacts'?Math.max(1,feature.value.length/6):1));node.dataset.parameterKeys=JSON.stringify(feature.parameters);node.dataset.active=String(feature.active);
+ node.dataset.feature=feature.key;node.dataset.parameterKeys=JSON.stringify(feature.parameters);node.dataset.active=String(feature.active);
  const title=element('span',undefined,'comparison-name'),value=element('span',undefined,'comparison-value');
- title.append(element('span',label));if(unit)title.append(element('span',unit));
+ title.append(element('span',label));if(unit)title.append(element('span',({positions:'pos',contacts:'ct'})[unit]||unit));
  node.append(title,value);
- let description;
- if(block==='sequences'&&['basal_pairs','foldback_pairs'].includes(key)){
-  // Both rows follow the descriptor's ordered contacts. These are not two
-  // independently authored strands, and contact classes remain part of the data.
-  const upper=element('span'),lower=element('span'),glyphs=element('span',undefined,'comparison-contact-glyphs');
-  feature.value.forEach(([a,b,kind])=>{
-   for(const [row,base] of [[upper,a],[lower,b]]){
-    const letter=element('span',base);letter.dataset.contactClass=kind;row.append(letter);
-   }
-   const glyph=document.createElementNS('http://www.w3.org/2000/svg','svg');
-   glyph.setAttribute('viewBox','0 0 8 12');glyph.setAttribute('aria-hidden','true');
-   glyph.dataset.contactGlyph=kind==='watson_crick'?'line':'diamond';glyph.dataset.contactClass=kind;
-   const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-   path.setAttribute('d',kind==='watson_crick'?'M4,0 V12':'M4,1 L7,6 L4,11 L1,6 Z');
-   path.setAttribute('fill','none');path.setAttribute('stroke','currentColor');path.setAttribute('stroke-width','1');
-   glyph.append(path);glyphs.append(glyph);
-  });
-  if(!feature.value.length)upper.textContent='∅';
-  value.append(upper,glyphs,lower);value.classList.add('comparison-pairs');
-  description=feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join('; ')||'No paired positions';
- } else {
-  const text=block==='sequences'?(feature.value.join('')||'∅'):key.endsWith('polarity')?({'five_prime':'5′','three_prime':'3′'}[feature.value]):String(feature.value);
-  value.textContent=text;description=`${text}${unit?' '+unit:''}`;
- }
+ const measurement=block==='shape';
+ node.dataset.displayKind=measurement?'measurement':'nominal-code';
+ value.textContent=String(feature.displayValue);
+ const description=['basal_pairs','foldback_pairs'].includes(key)?
+   feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join('; ')||'No paired positions':
+   Array.isArray(feature.value)?feature.value.join('')||'∅':String(feature.value);
  const encoded=JSON.stringify(feature.encoded),code=element('code',encoded,'comparison-code');
  code.dataset.encoded=encoded;code.hidden=true;code.setAttribute('aria-hidden','true');
  const connector=element('span',undefined,'comparison-encoding-link');connector.setAttribute('aria-hidden','true');
@@ -84,8 +69,8 @@ function field(feature,basis) {
  node.append(connector,code);
  const scale=feature.active?' '+distanceDescription(block,key,basis):'';
  const retention=key.includes('retained_tail')?' Hairpin-tail bases contributing through recorded copying or primer binding to either insert strand; each template base is counted once.':'';
- const encoding=feature.encoding==='contacts'?' Stored nominal IDs preserve these displayed ordered contacts and classes; they have no numerical ordering.':'';
- node.title=`${label}: ${description}. ${feature.active?'Used in molecular distance.':'Constant in this atlas; does not affect distance.'}${scale}${retention}${encoding}`;
+ const encoding=measurement?'':` Code ${feature.displayValue} identifies this exact field value in the atlas dictionary; code magnitudes are not distances.`;
+ node.title=`${label}: ${description}${measurement&&unit?' '+unit:''}. ${feature.active?'Used in molecular distance.':'Constant in this atlas; does not affect distance.'}${scale}${retention}${encoding}`;
  node.setAttribute('aria-label',node.title);return node;
 }
 
@@ -104,8 +89,20 @@ export function comparisonStrip(host,onFocus) {
    const reading=reader(identity),content=[];
    const heading=element('span','X = [','comparison-vector-open');
    heading.title='Molecular descriptors define dissimilarity; the layout uses that dissimilarity, not Euclidean distance on these displayed values. The supplied stem is held fixed; methods are excluded. '+(reading.basis.schema_id==='hop.molecular-comparison/v2'?'Only tail bases contributing through recorded copying or primer binding to the released insert affect distance; discarded handle changes do not move the scaffold.':'This saved comparison includes complete hairpin tail lengths.');
-   content.push(heading,...reading.vector.map(f=>field(f,reading.basis)),element('span',']','comparison-vector-close'));
-   return ()=>{panel.replaceChildren(...content);host.dataset.preparationId=identity;host.dataset.comparisonDisplay='literal-row';host.hidden=false;};
+   content.push(heading);
+   const groups=reading.presentation?.groups||{};
+   for(const [block,style] of Object.entries(groups)) {
+    const indices=reading.vector.flatMap((f,i)=>f.key.split('.')[0]===block?[i]:[]);
+    if(!indices.length)continue;
+    const band=element('span',style.label,'comparison-group');band.dataset.featureGroup=block;
+    band.style.setProperty('grid-column',`${indices[0]+2} / ${indices.at(-1)+3}`);
+    band.style.setProperty('--group-fill',style.fill);
+    content.push(band);
+   }
+   content.push(...reading.vector.map((f,i)=>{
+    const node=field(f,reading.basis);node.style.setProperty('grid-column',String(i+2));node.style.setProperty('grid-row','2 / 4');return node;
+   }),element('span',']','comparison-vector-close'));
+   return ()=>{panel.style?.setProperty('--feature-count',String(reading.vector.length));panel.replaceChildren(...content);host.dataset.preparationId=identity;host.dataset.comparisonDisplay='numeric-row';host.hidden=false;};
   },
   clear(){host.hidden=true;panel.replaceChildren();delete host.dataset.preparationId;},
  };

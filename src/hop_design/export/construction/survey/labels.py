@@ -28,10 +28,11 @@ def headings(
             {
                 "x": str(x),
                 "y": str(offset + frame.heading_y + profile.axis_font * 0.35),
-                "transform": f"rotate(-90 {x} {offset + frame.heading_y})",
-                "text-anchor": "start",
+                "transform": f"rotate(-45 {x} {offset + frame.heading_y})",
+                "text-anchor": "end",
+                "font-weight": "normal",
                 "fill": "#263b40",
-                "data-heading-angle": "-90",
+                "data-heading-angle": "-45",
             },
         ).text = label
     else:

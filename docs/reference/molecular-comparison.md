@@ -92,12 +92,31 @@ An existing `choices.figure(view="similarity", selection=selection)` export also
 contains `comparison-features.json` and `comparison-features.svg`. They describe
 that selected point using the same contact dictionary, active coordinate order
 and policy as the browser. The JSON retains constant features and the dictionary;
-the SVG draws a literal `X = [ … ]` row in captured feature order. It shows
-geometry with units, oriented words, and decoded contact rows with canonical
-lines and noncanonical diamonds. These values retain their scientific types;
-the displayed row is not a Euclidean embedding. Exact encodings remain in
-per-feature attributes and the embedded record; nominal IDs imply no numerical
-ordering. The browser uses the same horizontal reading within the map pane.
+the SVG draws a single numeric `X = [ … ]` row in captured feature order.
+Geometry keeps physical measurements and units. Each other number identifies
+one exact value in its field's cohort-wide dictionary. Dictionaries are ordered
+independently of member order, so hover, filtering and browser/export ordering
+cannot renumber a code within the same cohort. A different cohort can have a
+different dictionary. Codes have no numerical distance or ranking meaning.
+
+The row groups geometry, sequence and ends using shared presentation metadata.
+Regular-weight labels descend at 45 degrees. Exact oriented words, contacts,
+pairing classes and encodings remain in the JSON, SVG metadata and browser field
+explanations; the molecular inspector retains nucleotide resolution. The saved
+comparison policy, rather than Euclidean distance between these display codes,
+determines map proximity. An older saved comparison is never expanded merely to
+match the number of fields in another figure.
+
+The linked inspector uses the same molecular and parameter renderers as export.
+Its side-panel behavior and hover/pin lifecycle are independent of typography.
+The hairpin and trace keep a common fitted width; sparse alternative values use
+quieter versions of the same value cells. All declared support states and exact
+transition membership remain available.
+
+A saved color lens may use `{"key": "max_end_gap"}` to color the larger of the
+left and right end gaps, in bp. It requires both measurements; a missing side
+remains missing rather than becoming zero. The lens changes display color only,
+never a query, comparison field, coordinate, or preparation identity.
 
 For a column-width selected detail, request the physical width explicitly:
 
@@ -115,13 +134,16 @@ packet = edition.figure(
 and measured, context-shortened headings. Complete canonical labels remain in node
 titles and metadata. The column profile retains at least 7 pt type or reports the
 minimum required width; it never silently drops axes or reduces labels below that
-budget. `comparison-features.svg` retains a natural-width single row independently of
-the trace width, with 7.2 pt labels, 9 pt scalar/word values and 8.5 pt contacts.
-A longer record expands rather than dropping features or splitting tokens. The selected map, exact comparison JSON, materials and view identity
+budget. `comparison-features.svg` keeps a single numeric row within the requested detail
+width, with 7.2 pt angled labels and 9 pt values. Non-numeric values have
+field-specific dictionary codes, with their exact meanings embedded. The selected map, exact comparison JSON, materials and view identity
 are unchanged. The figure summary records the explicit width and presentation
 profile independently of the saved scientific view. The browser uses the same compact contextual headings in a fitted plate of at
 most seven inches; narrowing the inspector does not enlarge its molecule.
-Complete trace context remains embedded metadata without a visible status footer.
+Observed complete routes appear as quiet curves behind the selected route.
+Sparse context values use the same cell shape as selected values; dense values
+remain unlabeled rather than becoming a second visual grammar. Complete trace
+context also remains embedded metadata without a visible status footer.
 
 Parallel connections use cubic curves with shared mid-transition control points
 for identical adjacent endpoints. This is a presentation aid for following shared
@@ -141,3 +163,19 @@ mixed-dissimilarity approach described by
 The regional sequence terms make this a custom block-weighted comparison, not
 canonical Gower. UMAP receives the resulting distances or audited neighbor graph;
 the displayed descriptor is not treated as a Euclidean vector.
+
+
+Presentation maintenance stays separate from molecular rules. Role inks and the
+ordered population ramp belong to `export/construction/presentation/palette.py`;
+the browser ramp has an explicit parity test against that owner. Group spans
+come from `presentation/comparison.py`, physical budgets from `figure_profile.py`,
+and site visibility from `molecular/primitives/annotation_policy.py`. A later
+palette change should update this presentation layer, not molecular identities,
+sequence neighborhoods, search rules or manuscript-specific layout code.
+
+Later folded route states omit obsolete strand-exposure footprints on copying
+handles. The linear retained-strand scene omits the foldback-site fill around the
+fold cue and discarded-fragment reference. Exact recognition records and
+addresses remain present. A repeated enzyme at distinct molecular regions keeps
+its region-specific recognition callouts. Column turns can leave a loop cap
+horizontally; the copying connector curves toward the centered duplex finish.

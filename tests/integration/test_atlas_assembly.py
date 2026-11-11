@@ -480,3 +480,41 @@ def test_teaching_profiles_share_one_primer_and_site_annotation_tier(loop_pool, 
     ]
     assert annotations and {e.get("font-size") for e in annotations} == {str(profile.teaching_font)}
     assert not any(e.get("font-weight") == "600" for e in root.iter())
+
+
+def test_late_route_omits_discarded_handle_footprint_ink_but_retains_site_records(atlas):
+    from hop_design.export.construction.molecular.inspection_layout import inspection_points
+    from hop_design.export.construction.molecular.recognition_sites import recognition_site_overlays
+
+    selected = next(s for s in atlas.states if s.state.phase.value == "selected_fragments")
+    root = ET.fromstring(
+        '<svg xmlns="http://www.w3.org/2000/svg">'
+        + recognition_site_overlays(selected, inspection_points(selected))
+        + "</svg>"
+    )
+    foldback = [
+        e
+        for e in root
+        if e.get("data-site-role") in {"foldback_nick", "strand_exposure"}
+        and any(
+            b.neighborhood in {"closing", "loop"}
+            for b in selected.bases
+            if b.address
+            in next(
+                s for s in selected.recognition_sites if s.site_id == e.get("data-site-id")
+            ).recognition
+        )
+    ]
+    assert foldback
+    assert all(
+        not any(e.get("data-recognition-footprint") for e in site.iter()) for site in foldback
+    )
+    assert len([e for e in root if e.get("data-site-id")]) == len(selected.recognition_sites)
+
+
+def test_hairpin_pcr_connector_curves_toward_the_centered_finish(atlas):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    stage = next(e for e in root.iter() if e.get("data-atlas-phase") == "adapter_ligated")
+    arrow = next(e for e in stage if e.get("data-operation-arrow"))
+    assert "C" in arrow.get("d")
+    assert arrow.get("data-connector-target-phase") == "hairpin_pcr_duplex"

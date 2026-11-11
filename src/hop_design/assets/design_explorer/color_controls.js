@@ -1,4 +1,4 @@
-import {COLOR_KEYS,molecularColors} from './molecular_colors.js';
+import {COLOR_KEYS,molecularColors,colorAxes,colorValue} from './molecular_colors.js';
 
 // Paint locally; export the same explicit lens through the shared saved view.
 export function colorControls(host,onColor) {
@@ -10,7 +10,7 @@ export function colorControls(host,onColor) {
       if(!available.includes(candidate))continue;
       let first;
       for(const row of paths) {
-        const value=row.values[candidate];if(value===undefined||value===null)continue;
+        const value=colorValue(row,candidate);if(value===undefined||value===null)continue;
         if(first!==undefined&&value!==first)return candidate;
         first=value;
       }
@@ -45,7 +45,7 @@ export function colorControls(host,onColor) {
     host.dataset.colorKey=key;host.dataset.colorWord=word??'';onColor(lens);
   }
   const available=key=>Boolean(state&&state.presentation.landscape==='similarity'&&state.map_index&&
-    (key==='none'||COLOR_KEYS.includes(key)&&axes.some(a=>a.key===key&&a.applicable!==false)));
+    (key==='none'||COLOR_KEYS.includes(key)&&colorAxes(axes).some(a=>a.key===key&&a.applicable!==false)));
   function choose(nextKey,value=null) {
     if(!available(nextKey))throw Error('This molecular color view is not available.');
     const lens=molecularColors(paths,axes,{key:nextKey,word:typeof value==='string'?value:null});
@@ -66,14 +66,14 @@ export function colorControls(host,onColor) {
       paths=next.choices.paths;axes=next.choices.axes;
       if(prepared){key=prepared.key;word=prepared.word??null;neutralMessage='';}
       else if(restore){key=null;word=null;}
-      const available=COLOR_KEYS.filter(key=>axes.some(a=>a.key===key&&a.applicable!==false));
+      const available=COLOR_KEYS.filter(key=>colorAxes(axes).some(a=>a.key===key&&a.applicable!==false));
       if(!key||(key!=='none'&&!available.includes(key))){
         key=initialKey(available,next.presentation.display_axes??[]);
         const recorded=available.some(k=>paths.some(p=>p.values[k]!==null&&p.values[k]!==undefined));
         neutralMessage=key==='none'?(recorded?'Recorded color values are constant; inspect a point for values.':'No recorded color values.') : '';
       }
       if(word&&!paths.some(p=>p.values[key]===word))word=null;
-      select.replaceChildren(...available.map(key=>new Option(axes.find(a=>a.key===key).label,key)),new Option('No grouping','none'));select.value=key;show(prepared);
+      select.replaceChildren(...available.map(key=>new Option(colorAxes(axes).find(a=>a.key===key).label,key)),new Option('No grouping','none'));select.value=key;show(prepared);
     },
     close(){select.removeEventListener('change',change);words.removeEventListener('change',chooseWord);state=paths=axes=null;},
   };

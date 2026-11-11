@@ -94,3 +94,47 @@ def test_contact_codes_are_identical_for_browser_and_export_member_orders():
     for feature in static["vector"]:
         column = next(c for c in browser["columns"] if c["key"] == feature["key"])
         assert feature["encoded"] == column["dictionary"][column["indices"][0]]
+
+
+def test_compact_codes_are_stable_under_member_reordering_and_round_trip():
+    from hop_design.export.construction.survey.comparison_features import (
+        selected_comparison_features,
+    )
+
+    rows = (molecule(), molecule(identity="other", basal="GT", loop="AAAC", tail=6, end="GGAA"))
+    basis = comparison_basis(rows)
+    static = selected_comparison_features(rows, basis, "other")
+    reversed_pool = selected_comparison_features(tuple(reversed(rows)), basis, "other")
+    assert static["presentation"] == reversed_pool["presentation"]
+    for first, second in zip(static["vector"], reversed_pool["vector"], strict=True):
+        assert first["display_value"] == second["display_value"]
+        assert type(first["display_value"]) is int
+        if first["key"].startswith("shape."):
+            assert first["display_value"] == first["value"]
+        else:
+            projection = comparison_features(rows, basis, tuple(r.identity for r in rows))
+            column = next(c for c in projection["columns"] if c["key"] == first["key"])
+            assert column["dictionary"][first["display_value"]] == first["encoded"]
+
+
+def test_compact_export_has_grouped_single_numeric_row_with_angled_labels():
+    from xml.etree import ElementTree as ET
+
+    from hop_design.export.construction.survey.comparison_features import (
+        selected_comparison_features,
+    )
+    from hop_design.export.construction.survey.comparison_vector import render_comparison_vector
+
+    rows = (molecule(), molecule(identity="other", basal="GT", loop="AAAC", tail=6, end="GGAA"))
+    packet = selected_comparison_features(rows, comparison_basis(rows), "other")
+    root = ET.fromstring(render_comparison_vector(packet, width_pt=237))
+    assert float(root.get("width").removesuffix("pt")) == 237
+    values = [e for e in root.iter() if e.get("data-display-value")]
+    assert len(values) == len(packet["vector"])
+    assert len({e.get("y") for e in values}) == 1
+    assert all(e.text.isdecimal() for e in values)
+    groups = [e.get("data-feature-group") for e in root.iter() if e.get("data-feature-group")]
+    assert groups == ["shape", "sequences", "interfaces"]
+    labels = [e for e in root.iter() if e.get("data-feature-label")]
+    assert all(e.get("transform").startswith("rotate(-45 ") for e in labels)
+    assert all(e.get("font-weight") == "normal" for e in labels)

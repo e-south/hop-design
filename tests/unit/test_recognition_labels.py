@@ -7,6 +7,34 @@ from xml.etree import ElementTree as ET
 from hop_design.export.construction.molecular.recognition_sites import recognition_site_overlays
 
 
+def test_compact_overview_keeps_same_enzyme_names_at_both_molecular_regions(monkeypatch):
+    from hop_design.export.construction.molecular.teaching_annotations import layout
+
+    basal, closing = object(), object()
+    state = NS(
+        recognition_sites=[
+            NS(
+                enzyme_id="same",
+                site_id=key,
+                role="strand_exposure",
+                recognition=(address,),
+                presence="partial",
+            )
+            for key, address in (("basal", basal), ("foldback", closing))
+        ],
+        bases=[
+            NS(address=basal, neighborhood="assembly"),
+            NS(address=closing, neighborhood="closing"),
+        ],
+    )
+    captured = {}
+    monkeypatch.setattr(
+        layout, "recognition_site_overlays", lambda *args, **kwargs: captured.update(kwargs) or ""
+    )
+    layout.compact_recognition_overlays(state, {}, NS(placer=None, size=32))
+    assert captured["label_site_ids"] == frozenset({"basal", "foldback"})
+
+
 def test_repeated_sites_keep_both_addressed_footprints_and_names():
     sites = []
     points = {("strand", i): (100 + i * 16, 160) for i in range(20)}

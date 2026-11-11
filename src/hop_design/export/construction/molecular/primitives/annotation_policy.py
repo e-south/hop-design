@@ -25,6 +25,17 @@ def footprint_color(
     return site_color(role)
 
 
+def visible_footprint(state: MolecularStateInspection, role: str) -> bool:
+    """Quiet obsolete handle ink; exact site addresses remain in the drawing metadata."""
+    if role not in {"strand_exposure", "foldback_nick"}:
+        return True
+    phase = state.state.phase.value
+    if phase == "selected_fragments" and role == "foldback_nick":
+        return False  # The exposed strand, discard reference and fold cue carry this step.
+    folded = {"annealed_complex", "foldback_closed_hairpin", "adapter_annealed", "adapter_ligated"}
+    return not (phase in folded and role == "strand_exposure")
+
+
 def named_sites(
     state: MolecularStateInspection, policy: RouteSiteLabels, introduced: set[str]
 ) -> frozenset[str]:

@@ -3,6 +3,15 @@
 import json
 from xml.etree import ElementTree as ET
 
+from hop_design.export.construction.presentation.comparison import COMPARISON_GROUPS
+
+
+def display_packet(packet):
+    packet["presentation"] = {"groups": COMPARISON_GROUPS}
+    for field in packet["vector"]:
+        field["display_value"] = field["value"] if field["key"].startswith("shape.") else 0
+    return packet
+
 
 def test_column_trace_preserves_twelve_axes_at_readable_physical_type():
     from hop_design.export.construction.presentation.figure_profile import COLUMN_DETAIL_FIGURE
@@ -22,9 +31,23 @@ def test_column_trace_preserves_twelve_axes_at_readable_physical_type():
         ("Join offset", "2", "span"),
         ("Basal paired extent", "18", "span"),
     ]
+    keys = [
+        "basal_method",
+        "foldback_method",
+        "release_method",
+        "loop_word",
+        "left_end_word",
+        "right_end_word",
+        "left_gap",
+        "right_gap",
+        "loop_nt",
+        "foldback_arm_bp",
+        "join_offset_nt",
+        "open_side_paired_positions",
+    ]
     axes = [
         {
-            "key": str(i),
+            "key": keys[i],
             "label": label,
             "symbol": str(i),
             "kind": "categorical" if kind in {"recognition", "sequence"} else "numeric",
@@ -104,10 +127,10 @@ def test_literal_features_preserve_recorded_order_and_encoding():
         }
         for side in ["left", "right"]
     ]
-    packet = {"identity": "example", "vector": fields}
+    packet = display_packet({"identity": "example", "vector": fields})
     before = json.dumps(packet, sort_keys=True)
     root = ET.fromstring(render_comparison_vector(packet, width_pt=246))
-    assert root.get("data-comparison-display") == "literal-row"
+    assert root.get("data-comparison-display") == "numeric-row"
     assert float(root.get("viewBox").split()[2]) <= 504
     assert [g.get("data-feature") for g in root.iter() if g.get("data-feature")] == [
         f["key"] for f in fields
@@ -137,7 +160,7 @@ def test_column_categories_stay_horizontal_with_ink_bounded_headings():
     assert not geometry.get("rotation")
     assert geometry["height"] < geometry["width"]
     frame = plot_layout({"axes": [axis]}, profile=COLUMN_DETAIL_FIGURE).frame
-    assert frame.heading_y - frame.region_height < 125
+    assert frame.heading_y > frame.bottom
 
 
 def test_column_contact_blocks_share_a_reading_row():
@@ -154,10 +177,12 @@ def test_column_contact_blocks_share_a_reading_row():
 
     root = ET.fromstring(
         render_comparison_vector(
-            {
-                "identity": "example",
-                "vector": [contacts("basal_pairs", 18), contacts("foldback_pairs", 6)],
-            },
+            display_packet(
+                {
+                    "identity": "example",
+                    "vector": [contacts("basal_pairs", 18), contacts("foldback_pairs", 6)],
+                }
+            ),
             width_pt=246,
         )
     )
@@ -214,7 +239,7 @@ def test_inspector_trace_uses_shared_compact_language_at_fitted_width():
 
     root = ET.fromstring(render_survey_plot(choices(), profile=INSPECTOR_FIGURE))
     assert float(root.get("font-size")) * 672 / float(root.get("viewBox").split()[2]) >= 12
-    assert any(e.get("data-heading-angle") == "-90" for e in root.iter())
+    assert any(e.get("data-heading-angle") == "-45" for e in root.iter())
     assert not any(
         e.get("transform", "").startswith("rotate")
         for e in root.iter()
@@ -244,8 +269,9 @@ def test_literal_x_is_one_horizontal_row_with_lossless_values():
             },
         ],
     }
+    packet = display_packet(packet)
     root = ET.fromstring(render_comparison_vector(packet))
-    assert root.get("data-comparison-display") == "literal-row"
+    assert root.get("data-comparison-display") == "numeric-row"
     assert any(e.text == "X =" for e in root.iter() if e.tag.endswith("text"))
     assert len([e for e in root.iter() if e.get("data-vector-bracket")]) == 2
     fields = [e for e in root.iter() if e.get("data-feature")]

@@ -9,7 +9,7 @@ from hop_design.models.construction.projections.inspection import MolecularState
 
 from .complementary_row import complementary_row_offset
 from .label_layout import LabelPlacer
-from .primitives.annotation_policy import footprint_color
+from .primitives.annotation_policy import footprint_color, visible_footprint
 from .primitives.ribbon import footprint_envelope, rounded_path
 from .primitives.style import ANNOTATION_SIZE, object_id
 from .primitives.typography import text_width
@@ -76,7 +76,7 @@ def recognition_site_overlays(
                 cluster.extend(neighbors)
                 remaining.difference_update(neighbors)
             clusters.append(cluster)
-        for cluster in clusters:
+        for cluster in clusters if visible_footprint(projection, site.role) else []:
             positions = [points[key] for key in cluster]
             paired = [
                 points[other]

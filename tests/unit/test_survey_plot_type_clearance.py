@@ -16,6 +16,21 @@ from hop_design.export.construction.survey.traces import TraceProjection
 from tests.unit.test_survey_plot import choices
 
 
+def test_inspector_labels_are_regular_45_degree_runs_below_the_axes():
+    records = choices()
+    root = ET.fromstring(render_survey_plot(records, profile=INSPECTOR_FIGURE))
+    frame = __import__("json").loads(root.get("data-axis-frame"))
+    headings = [e for e in root.iter() if e.get("data-heading-angle")]
+    assert headings
+    assert all(e.get("data-heading-angle") == "-45" for e in headings)
+    assert all(float(e.get("y")) > frame["bottom"] for e in headings)
+    assert all(e.get("font-weight") == "normal" for e in headings)
+    axes = [e for e in root if e.get("data-axis-line")]
+    assert len(axes) == len(headings)
+    assert {e.get("stroke") for e in axes} == {"#465459"}
+    assert all(float(e.get("stroke-width")) <= 1 for e in axes)
+
+
 def test_publication_axes_remain_readable_in_a_full_width_trace():
     from hop_design.export.construction.presentation.figure_profile import LANDSCAPE_DETAIL_FIGURE
 
@@ -67,7 +82,12 @@ def test_measured_headings_clear_values_and_retain_exact_overlay(profile):
             if element.tag.endswith("}rect") and element.get("data-node-label")
         ]
         assert labels
-        assert min(float(element.get("y")) for element in labels) >= title_bottom + 6
+        if profile.rotated_labels:
+            assert max(float(e.get("y")) + float(e.get("height")) for e in labels) + 6 <= min(
+                float(e.get("y")) for e in text
+            )
+        else:
+            assert min(float(element.get("y")) for element in labels) >= title_bottom + 6
         band = int(axis.get("data-band"))
         top_by_band[band] = min(
             top_by_band.get(band, float("inf")),

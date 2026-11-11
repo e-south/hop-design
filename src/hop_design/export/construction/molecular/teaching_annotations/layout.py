@@ -8,6 +8,7 @@ from hop_design.models.construction.projections.inspection import MolecularState
 
 from ..label_layout import LabelPlacer, coalesce_horizontal
 from ..parameter_boundaries import boundary_point
+from ..primitives.annotation_policy import footprint_color
 from ..primitives.typography import text_width
 from ..printing.panels import base_box
 from ..recognition_sites import recognition_site_overlays
@@ -97,11 +98,16 @@ def compact_recognition_overlays(
     labels: OverviewLabels,
 ) -> str:
     """Name best-mapped sites without competing with the parameter overview."""
-    names: dict[tuple[str, bool], str] = {}
+    names: dict[tuple[str, str, bool], str] = {}
     for site in sorted(state.recognition_sites, key=lambda s: -len(s.recognition)):
         if site.recognition:
             names.setdefault(
-                (site.enzyme_id, site.presence in {"partial", "unresolved"}), site.site_id
+                (
+                    site.enzyme_id,
+                    footprint_color(state, site.role, site.recognition),
+                    site.presence in {"partial", "unresolved"},
+                ),
+                site.site_id,
             )
     return recognition_site_overlays(
         state,

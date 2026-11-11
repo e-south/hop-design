@@ -143,10 +143,18 @@ def test_long_descriptor_fits_article_width_without_losing_encoded_tokens():
         }
         for i in range(3)
     ]
-    packet = {"identity": "example", "vector": fields}
+    from hop_design.export.construction.presentation.comparison import COMPARISON_GROUPS
+
+    for field in fields:
+        field["display_value"] = field["value"] if field["key"].startswith("shape.") else 0
+    packet = {
+        "identity": "example",
+        "vector": fields,
+        "presentation": {"groups": COMPARISON_GROUPS},
+    }
     root = ET.fromstring(render_comparison_vector(packet))
     assert float(root.get("viewBox").split()[2]) <= 504
-    assert root.get("data-comparison-display") == "literal-row"
+    assert root.get("data-comparison-display") == "numeric-row"
     assert [json.loads(e.get("data-encoded")) for e in root.iter() if e.get("data-encoded")] == [
         f["encoded"] for f in fields
     ]

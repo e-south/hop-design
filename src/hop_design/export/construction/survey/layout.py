@@ -1,7 +1,7 @@
 """Stable axis coordinates and label allocation, independent of SVG interactions."""
 
 from dataclasses import dataclass, replace
-from itertools import groupby
+from itertools import groupby, pairwise
 from math import ceil
 from textwrap import wrap
 from typing import Any
@@ -71,7 +71,7 @@ def compact_heading(axis: dict[str, Any]) -> str:
     label = {
         "basal_method": "Nickase",
         "foldback_method": "Nickase",
-        "open_side_paired_positions": "Paired extent",
+        "open_side_paired_positions": "Basal span",
         "foldback_arm_bp": "Extension",
         "left_end_word": "Left end",
         "right_end_word": "Right end",
@@ -194,6 +194,20 @@ def plot_layout(
         widths.append(width)
     items = list(zip(axes, widths, strict=True))
     margin, minimum_gap = (6, 2) if profile.rotated_labels else (26, 6)
+    if profile.rotated_labels:
+        # Reserve the first descending label's measured left overhang.
+        margin = max(
+            6,
+            ceil(
+                max(
+                    (
+                        text_width(compact_heading(a), profile.axis_font) * 0.707 - w / 2
+                        for a, w in items[:1]
+                    ),
+                    default=0,
+                )
+            ),
+        )
     if profile.single_row:
         needed = (
             sum(_region_widths(items, profile)) + minimum_gap * max(0, len(items) - 1) + 2 * margin
@@ -225,16 +239,16 @@ def plot_layout(
             (node_geometry(a, n, profile=profile)["height"] for a in axes for n in a["nodes"]),
             default=profile.axis_font,
         )
-        heading_y = frame.region_height + longest + 6
-        top = heading_y + tallest / 2 + 8
+        top = frame.region_height + tallest / 2 + 12
         bottom = top + max(150, 6 * profile.axis_font)
+        heading_y = bottom + tallest / 2 + 14
         frame = AxisFrame(
             frame.region_baseline,
             frame.region_height,
             heading_y,
             top,
             bottom,
-            bottom + tallest / 2 + 12,
+            heading_y + longest * 0.707 + profile.axis_font + 8,
         )
     result = []
     for band, items in enumerate(bands):
@@ -266,6 +280,13 @@ def plot_layout(
                 {"definition": axis, "x": x, "y": positions, "band": band, "width": width}
             )
             left += width + gap
+    if profile.rotated_labels and len(result) > 1:
+        pitch = (result[-1]["x"] - result[0]["x"]) / (len(result) - 1)
+        required = max((a["width"] + b["width"]) / 2 + minimum_gap for a, b in pairwise(result))
+        if pitch >= required:
+            first_x = result[0]["x"]
+            for index, axis in enumerate(result):
+                axis["x"] = first_x + index * pitch
     return SurveyLayout(result, frame, profile.width)
 
 
