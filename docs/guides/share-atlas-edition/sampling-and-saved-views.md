@@ -127,8 +127,8 @@ these public objects instead of importing internal models or renderers.
 ## Save drawing and color settings
 
 Captured artwork remains the default, including during comparison. Under
-**Reproduce & inspect**, choose **Current glyphs · compact assembly** to use the
-shared assembly composition, or **Current glyphs · all states** to display every
+**View and reproduction**, choose **Current glyphs** and **Grouped cleanup** to use the
+shared assembly composition. Choose **All recorded states** to display every
 recorded state. If the schema
 cannot be interpreted, HOP retains the captured drawing and reports the effective
 policy, preserving the captured molecular records.

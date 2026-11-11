@@ -204,7 +204,7 @@ function closeInspector() {
 function definitions(axes) {
   $('definitions').replaceChildren(...axes.flatMap(axis=>{
     const title=document.createElement('dt'),description=document.createElement('dd');
-    title.textContent=axis.label; description.textContent=`${axis.measurement} ${axis.relationship || ''} Measured at ${axis.stage.replaceAll('_',' ')}.`;
+    title.textContent=axis.label; description.textContent=`${axis.measurement}${axis.relationship?' '+axis.relationship:''} State: ${axis.stage.replaceAll('_',' ')}.`;
     return [title,description];
   }));
 }
@@ -238,7 +238,7 @@ async function render(next,restore=false) {
   mode=state.presentation.landscape;
   for(const id of ['parameters','families','similarity']) $(id).setAttribute('aria-pressed',String(id===mode));
   $('similarity').disabled=!state.has_landscape;
-  $('map-scope').textContent=state.has_landscape?'Nearby points compare declared molecular shape, retained sequence and receiving interfaces. Coordinates stay fixed while filtering.':'Structural groups are shown. Capture molecular coordinates with design freeze --include-landscape for similarity navigation.';
+  $('map-scope').textContent=state.has_landscape?'Map proximity reflects molecular shape, retained sequence and assembly ends. Filtering leaves coordinates fixed.':'This collection has no saved map coordinates. Structural groups remain available.';
   $('family-stage-label').hidden=mode!=='families';
   if(mode!=='similarity')$('alternate-views').open=true;
   $('selection-actions').hidden=!state.preview;$('selection-details').hidden=!state.preview;
@@ -254,22 +254,21 @@ async function render(next,restore=false) {
   local.update(state);
   $('render-policy').value=state.render_policy;$('render-policy').disabled=!state.selection;
   $('route-presentation').value=state.presentation.route;$('route-presentation').disabled=!state.selection||current?.rendering?.effective!=='current';$('route-presentation').title=current?.rendering?.effective==='captured'?'Choose Current glyphs to change the recorded composition.':'';
-  $('render-info').textContent=current?.rendering?.notice || (current?.rendering?.effective==='current'?'Current shared glyphs over the same molecular record.':'Artwork retained from this recorded edition.');
+  $('render-info').textContent=current?.rendering?.notice || (current?.rendering?.effective==='current'?'Current glyphs drawn from the recorded molecules.':'Artwork saved with this collection.');
   const notices=comparison?.notices || [];
-  $('change').textContent=state.preview_status==='excluded_by_query' ? 'The inspected molecule is outside the current filters. Choose an eligible trace to retrieve it.' :
-    (state.sample_receipt?.explanation || comparison?.description || (state.selection ? 'One exact preparation drives this molecule, its route and its materials.' : state.explanation.guidance));
-  const changes=state.sample_receipt?.coordinate_changes || [];
-  $('comparison-detail').textContent=[state.sample_receipt?.explanation,...changes.map(c=>`${c.label}: ${c.before} → ${c.after}${c.unit?' '+c.unit:''}`),...notices.map(n=>typeof n==='string'?n:JSON.stringify(n))].filter(Boolean).join(' ');
-  if(state.sample_receipt?.status==='loop_alternative') {
-    const loop=changes.find(c=>c.key==='loop_word');
-    if(loop) $('change').textContent=`Loop ${loop.before} → ${loop.after}; other hairpin regions held.`;
-  } else if(changes.length) {
-    $('change').textContent+=' '+changes.slice(0,2).map(c=>`${c.label}: ${c.before} → ${c.after}${c.unit?' '+c.unit:''}`).join(' · ');
-  }
-  if(notices.length) $('change').textContent+=' Some base correspondence remains unresolved.';
-  const cost=current?.atlas.construction_cost;
-  $('cost').textContent=cost?`Added DNA ${Object.values(cost.added_nt_by_strand).join(' / ')} nt${Object.keys(cost.added_nt_by_strand).length>1?' per strand':''} · ${cost.distinct_orders} orders`:'';
-  $('cost-detail').textContent=cost?`${cost.distinct_orders} distinct oligo orders cover ${cost.material_roles} material roles, totaling ${cost.ordered_nt} ordered nucleotides.`:'';
+  const warnings=state.sample_receipt?.explanation?[state.sample_receipt.explanation]:[];
+  if(state.preview_status==='excluded_by_query')warnings.push('This preparation is outside the current filters. Select a matching preparation to retrieve its materials.');
+  if(notices.length)warnings.push('Some base correspondence remains unresolved.',...notices);
+  $('change').textContent=warnings.join(' ');
+  const changes=state.sample_receipt?.coordinate_changes || state.inspection_explanation?.coordinate_changes || [];
+  $('comparison-detail').replaceChildren(...changes.map(change=>{
+    const axis=state.choices.axes.find(a=>a.key===change.key);
+    const label=value=>axis?.nodes?.find(n=>n.value===value)?.label ?? String(value);
+    const item=document.createElement('li');
+    item.textContent=`${change.label}: ${label(change.before)} → ${label(change.after)}${change.unit?' '+change.unit:''}`;
+    return item;
+  }));
+  $('comparison-changes').hidden=!changes.length;
   const selectedStage=state.stage;
   $('stage').replaceChildren(new Option('All processing steps','all'),...state.stage_options.map(s=>new Option(s.label,s.value)));
   $('stage').value=selectedStage;
@@ -282,7 +281,8 @@ async function render(next,restore=false) {
   $('record').hidden=!current;if(current) $('record').href=state.preview.record;
   $('family-stage').value=state.family_stage;
   if(definitionsKey!==state.plots.parameters){definitions(state.choices.axes);definitionsKey=state.plots.parameters;}
-  $('recipe').textContent=state.commands+'\n\n'+JSON.stringify(state.sample_receipt || state.selection || state.choices.query,null,2);
+  $('recipe').textContent=state.commands;
+  $('selection-receipt').textContent=JSON.stringify(state.sample_receipt || state.selection || state.choices.query,null,2);
   $('coverage').textContent=state.explanation.guidance;
 }
 function download(name,value) {

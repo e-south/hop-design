@@ -20,16 +20,16 @@ def primer_outline(positions: list[Point], *, outward: int = 1) -> tuple[list[Po
     px, py = positions[-2] if len(positions) > 1 else (x - 16, y)
     length = max(1, hypot(x - px, y - py))
     ux, uy = (x - px) / length, (y - py) / length
-    # A short, centered tip avoids projecting back into the template where a
-    # diagonal binding span meets a straight duplex. The flare stays outward.
+    # Continue the template-facing shaft edge into the short tip. Keeping this
+    # edge parallel avoids a spurious upward slant; the flare stays outward.
     nx, ny = -uy * outward, ux * outward
     shoulder = (
         x + ux * PRIMER_SHOULDER_ADVANCE + nx * PRIMER_SHOULDER_HEIGHT,
         y + uy * PRIMER_SHOULDER_ADVANCE + ny * PRIMER_SHOULDER_HEIGHT,
     )
     tip = (
-        x + ux * PRIMER_HEAD_LENGTH,
-        y + uy * PRIMER_HEAD_LENGTH,
+        x + ux * PRIMER_HEAD_LENGTH - nx * PRIMER_HALF_WIDTH,
+        y + uy * PRIMER_HEAD_LENGTH - ny * PRIMER_HALF_WIDTH,
     )
     wedge = [shoulder, tip] if outward > 0 else [tip, shoulder]
     outline = [*contour[:split], *wedge, *contour[split:]]

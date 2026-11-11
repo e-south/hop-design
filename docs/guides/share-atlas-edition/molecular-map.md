@@ -26,11 +26,11 @@ hop-design design view molecular-edition --out inspection
 The map opens with one point per complete preparation. Hover or keyboard-focus
 previews its exact hairpin and parameter trace together; clicking or Enter pins
 it. Leaving the map or Escape restores the pinned molecule. **Show me another**
-samples the eligible pool without changing your requirements. **Fit map** restores
-the overview. **Refine choices** reveals parameter filtering and alternate views;
+samples the eligible pool without changing your requirements. **Fit atlas** restores
+the overview. **Atlas options** reveals parameter filtering and alternate views;
 the full route and its processing controls appear after selection.
 
-**Refine → Discover alternatives** starts an explicit, separate discovery branch.
+**Atlas options → Discover alternatives** starts an explicit, separate discovery branch.
 Its request uses the same exact-stem JSON as the API and CLI, initialized with the
 collection's recorded permissions. Set an evaluation budget, then start the search.
 The default omits preparation-order references owned by the original discovery.
@@ -66,7 +66,7 @@ search coverage separately from map distances, clusters and point density.
 Nearby points compare shape, retained scaffold sequence and applicable receiving
 ends. The fixed supplied stem and auxiliary primer-handle sequences do not determine
 position. Enzyme methods remain visible in the trace.
-Under **Preparation details → Nearby alternatives**, HOP describes changed
+Under **Preparation details → Similar preparations**, HOP describes changed
 coordinates. It labels loop surroundings preserved only after its regional
 preservation operation verifies that relationship.
 
@@ -106,8 +106,7 @@ distance. Preservation checks then examine only the returned candidates and thei
 reference. To rank without those additional proofs, use
 `edition.neighbors(preparation_id, verify_controls=False)` or
 `design neighbors ... --no-verify-controls`. These results report preservation as
-unestablished. The inspector uses this faster ranking first; **Check shared
-surroundings** requests verification explicitly.
+unestablished. The inspector uses this faster ranking first; **Check other hairpin regions** requests verification explicitly.
 
 Neighbor calls have a five-second default time budget, adjustable with
 `timeout_seconds` in Python or `--timeout-seconds` on the CLI. A stopped operation
@@ -120,16 +119,28 @@ exports the fixed map in `plot.svg`, the selected hairpin above its parameter
 trace in `figure.svg` and `figure.pdf`, separate SVGs, and the saved coordinates.
 Exact orders follow the selected preparation through `design retrieve`.
 
-The compact `x = […]` strip below the map shows the active descriptor fields in
-the saved comparison basis order. Each field connects its molecular value to its
-serialized value: counts, ordered contact codes, base lists or end words. Contact
-codes identify base pairs and contact classes; their integer differences have no
-meaning. Hover or focus a field to highlight the matching molecular span and
-parameter axes, or read its encoding and normalization in the tooltip. Constant
-features remain inspectable on the molecule and in the edition, but do not occupy
-vector fields. The strip changes atomically with the hairpin and trace and retains
-the previous view while loading. These descriptors define the saved molecular
-dissimilarity; map coordinates are recorded separately.
+The compact `X = […]` strip below the map shows the active fields in the saved
+comparison order. Geometry entries are measurements. Other entries are per-field
+lookup codes for exact contact sequences, bases or end words. Code 74 does not mean
+74 contacts, and subtracting two codes does not give a molecular distance. The
+[comparison reference](../../reference/molecular-comparison.md) defines how the
+decoded values are compared.
+
+**How X is read**, at the lower left of the atlas, explains the selected field's
+value and comparison rule. Click or keyboard-activate a field to open its
+explanation. Hover or focus highlights the corresponding molecular region and
+parameter axes. The strip and explanation update together with the hairpin and
+trace. Constant fields remain in the molecular record but do not occupy the strip.
+Viewing or filtering never refits the saved comparison or coordinates.
+
+**Preparation details** gives endpoint-labelled added DNA, exact oligo-order
+quantities and changes from the reference. **Similar preparations** ranks records
+by saved molecular dissimilarity, rather than distance on the screen; verification
+of other hairpin regions remains a separate action. **View and reproduction**
+provides the saved view, renderer and route controls, CLI commands and molecular
+record. **Scope and parameter definitions** describes the recorded collection and
+measurements; it does not establish exhaustive search coverage.
+
 The teaching hairpin shows the matched hairpin-PCR primer pair; source-PCR primers
 appear with source ssDNA in the complete route.
 

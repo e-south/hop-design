@@ -161,7 +161,7 @@ test('decoded strip shows scientific scalar values while retaining exact stored 
  const contacts=fields[1].children.find(e=>e.className==='comparison-value');
  assert.equal(contacts.textContent,'1');
  assert.match(fields[1].title,/G:T gt wobble/);
- assert.match(fields[1].title,/code magnitudes are not distances/);
+ assert.match(fields[1].title,/code magnitude is not a distance/);
 });
 
 test('literal scientific features retain the exact recorded values',async t=>{

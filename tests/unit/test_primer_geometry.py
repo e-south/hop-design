@@ -1,5 +1,8 @@
 """Incoming primers retain their silhouette when the nearest lane is occupied."""
 
+from itertools import pairwise
+from math import hypot
+
 import pytest
 
 from hop_design.export.construction.molecular.primitives.primer_geometry import (
@@ -17,7 +20,23 @@ def test_primer_stays_near_handle_where_template_straightens(outward):
     placed = position_primer(template, molecule, outward=outward)
 
     assert len(placed) == len(template)
-    assert outward * (placed[0][1] - template[0][1]) <= 48
+    # The flat inner edge adds 12 units of inward tip width. The nearest safe
+    # lane can move ten units outward; keep that explicit geometric allowance.
+    assert outward * (placed[0][1] - template[0][1]) <= 58
+    outline, _ = primer_outline(placed, outward=outward)
+    distances = []
+    for a, b in pairwise([*outline, outline[0]]):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        length_squared = dx * dx + dy * dy
+        for x, y in molecule:
+            fraction = (
+                min(1, max(0, ((x - a[0]) * dx + (y - a[1]) * dy) / length_squared))
+                if length_squared
+                else 0
+            )
+            distances.append(hypot(a[0] + fraction * dx - x, a[1] + fraction * dy - y))
+    # Analytic segment distance is stricter than sampling the changed contour.
+    assert min(distances) >= 18
 
 
 @pytest.mark.parametrize("outward", [-1, 1])
