@@ -69,6 +69,14 @@ class AtlasNavigation:
 
         return molecular_landscape(cast(ChoiceSource, self))
 
+    def recorded_overview(self) -> dict[str, Any] | None:
+        """Return the admitted saved preparation comparison and coordinates, if present."""
+        from ..editions.overview import recorded_overview
+        from .types import ChoiceSource
+
+        result = recorded_overview(cast(ChoiceSource, self))
+        return None if result is None else result.model_dump(mode="json", by_alias=True)
+
     def freeze(
         self,
         destination: str | Path,

@@ -54,6 +54,15 @@ def inspector_packet(packet: MolecularAtlasPacket) -> MolecularAtlasPacket:
 
 
 def map_index(choices: ChoiceSource, answer: Record) -> Record:
+    from hop_design.export.construction.survey.recorded_overview import overview_map_index
+
+    from ..editions.overview import recorded_overview
+
+    overview = recorded_overview(choices, answer)
+    if overview is not None:
+        return overview_map_index(
+            overview, tuple(p["materialized_realization_id"] for p in answer["paths"])
+        )
     landscape, digest = inspection_landscape(choices, answer=answer)
     geometry = landscape_geometry(landscape)
     members = {p["materialized_realization_id"]: i for i, p in enumerate(answer["paths"])}

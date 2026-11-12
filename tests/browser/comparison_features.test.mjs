@@ -9,6 +9,17 @@ const packet=()=>({algorithm:'umap',basis:{shape_scales:{five_prime_unpaired_nt:
  {key:'sequences.basal_pairs',parameters:['open_side_paired_positions'],active:true,dictionary:[[['A','T','watson_crick']],[['G','T','gt_wobble']]],indices:[0,1]},
  {key:'interfaces.left_word',parameters:['left_end_word'],active:true,dictionary:['AGTC','GGAA'],indices:[0,1]},
 ]});
+test('recorded preparation maps retain enzyme codes and explain identity comparisons',async()=>{
+ const {comparisonReader,comparisonExplanation}=await load(),p=packet();
+ p.basis.processing_keys=['release_method'];p.basis.weights=[1,1,1,1];
+ p.columns.push({key:'processing.release_method',label:'Release enzyme',unit:'',parameters:['release_method'],active:true,dictionary:['enzyme-a','enzyme-b'],display_dictionary:['Enzyme A','Enzyme B'],indices:[0,1]});
+ const read=comparisonReader(p,['A','B'])('B');
+ assert.equal(read.vector.length,4);assert.equal(read.vector.at(-1).displayValue,1);
+ assert.equal(read.vector.at(-1).value,'enzyme-b');
+ const help=comparisonExplanation(read.vector.at(-1),read.basis);
+ assert.equal(help.decoded,'Enzyme B');assert.match(help.formula,/0 if a = b, otherwise 1/);
+ assert.match(help.variables,/enzyme identities/);assert.doesNotMatch(help.meaning,/nt sequence/);
+});
 test('distance explanations follow the saved policy without adding controls',async()=>{
  const {distanceDescription}=await load(),basis=packet().basis;
  assert.match(distanceDescription('shape','five_prime_unpaired_nt',basis),/observed range.*2/);

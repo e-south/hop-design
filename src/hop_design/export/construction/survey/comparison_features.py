@@ -124,9 +124,14 @@ def selected_comparison_features(
 ) -> dict[str, Any]:
     """Decode one browser-equivalent vector; keep omitted constants in its record."""
     members = tuple(row.identity for row in rows)
+    return select_projected_features(comparison_features(rows, basis, members), members, identity)
+
+
+def select_projected_features(
+    projected: dict[str, Any], members: tuple[str, ...], identity: str
+) -> dict[str, Any]:
     if identity not in members:
         raise ValueError("Selected comparison identity is outside the captured atlas.")
-    projected = comparison_features(rows, basis, members)
     index = members.index(identity)
     features = []
     for column in projected["columns"]:
@@ -145,10 +150,16 @@ def selected_comparison_features(
             }
         )
     indexed = {feature["key"]: feature for feature in features}
+    basis = projected["basis"]
     keys = [
-        *[f"shape.{key}" for key in basis.shape_scales],
-        *[f"sequences.{key}" for key in basis.sequence_keys],
-        *[f"interfaces.{key}" for key in basis.interface_keys],
+        f"{block}.{key}"
+        for block, names in (
+            ("shape", basis["shape_scales"]),
+            ("sequences", basis["sequence_keys"]),
+            ("interfaces", basis["interface_keys"]),
+            ("processing", basis.get("processing_keys", ())),
+        )
+        for key in names
     ]
     return {
         "schema": "hop.selected-comparison-features/v1",

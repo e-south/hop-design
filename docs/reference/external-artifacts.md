@@ -191,3 +191,31 @@ the source contract and current exporter identity. Aggregate discovery replay
 remains a separately recorded operation. This import supports exact-stem
 released-insert discoveries, compact capture and ordinary parameter filters;
 use the original producer for family or preservation-query capture.
+
+## Saved preparation overviews
+
+A compact collection may include a manifested `overview.json` using
+`hop.preparation-overview/v1`. This is a saved comparison and coordinate packet
+from a caller's analysis. Browsing it does not fit another map.
+
+The packet binds the collection snapshot, ordered preparation identities, one
+coordinate pair per identity, exact field dictionaries and per-member codes.
+Its four groups describe geometry, regional sequences, assembly ends and
+processing-enzyme identities. The supported comparison uses observed-range
+geometry differences, normalized regional edit distance, equal-length end
+mismatch fractions and enzyme identity differences, averaged within groups and
+combined with declared positive group weights. Codes identify exact values;
+their numerical separation is not used as distance.
+
+HOP checks membership, scales and decoded values against the captured molecular
+descriptors and preparation metadata before exposing the map. Every preparation
+retains its own point, including preparations with identical compared fields.
+Saved coordinates remain unchanged. Their fit and scientific rationale belong
+to the packet's provenance; admission does not repeat or independently qualify
+the fit.
+
+The browser, `design figure` and `edition.figure()` use this same packet for the
+map and X strip. `edition.recorded_overview()` returns its admitted data. The
+native `edition.landscape()` operation rejects a collection with a recorded
+overview rather than silently fitting a different comparison. Original
+collections without this artifact retain their existing behavior.

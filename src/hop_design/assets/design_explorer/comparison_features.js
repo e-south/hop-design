@@ -1,5 +1,6 @@
 // A reading of the saved comparison basis, not a second embedding or distance model.
 const names={
+ basal_method:['Basal nickase',''],foldback_method:['Foldback nickase',''],release_method:['Release enzyme',''],
  loop_nt:['Loop','nt'],loop_side_paired_bp:['Added pairing','bp'],open_side_paired_positions:['Basal','positions'],
  five_prime_unpaired_nt:['5′ tail','nt'],three_prime_unpaired_nt:['3′ tail','nt'],left_gap:['Left gap','bp'],right_gap:['Right gap','bp'],
  five_prime_retained_tail_nt:['Retained from 5′ tail','nt'],three_prime_retained_tail_nt:['Retained from 3′ tail','nt'],
@@ -14,7 +15,7 @@ export function comparisonReader(packet,members) {
  for(const style of Object.values(packet.presentation?.groups||{})) {
   if(typeof style.label!=='string'||!/^#[0-9a-f]{6}$/i.test(style.fill))throw Error('Invalid comparison presentation group.');
  }
- const active={shape:Object.keys(packet.basis.shape_scales),sequences:packet.basis.sequence_keys,interfaces:packet.basis.interface_keys};
+ const active={shape:Object.keys(packet.basis.shape_scales),sequences:packet.basis.sequence_keys,interfaces:packet.basis.interface_keys,processing:packet.basis.processing_keys||[]};
  for(const column of packet.columns){
   const [block,key]=column.key.split('.');
   if(!names[key]||!active[block]||column.active!==active[block].includes(key)||
@@ -27,7 +28,7 @@ export function comparisonReader(packet,members) {
   const i=index.get(identity);
   const features=packet.columns.map(c=>{
    const value=c.dictionary[c.indices[i]];
-   return {key:c.key,label:c.label,unit:c.unit,parameters:c.parameters,active:c.active,displayValue:c.key.startsWith('shape.')?value:c.indices[i],encoded:value,encoding:c.encoding,value:c.encoding==='contacts'?value.map(t=>packet.contacts[t]):value};
+   return {key:c.key,label:c.label,unit:c.unit,parameters:c.parameters,active:c.active,displayValue:c.key.startsWith('shape.')?value:c.indices[i],encoded:value,encoding:c.encoding,displayLabel:c.display_dictionary?.[c.indices[i]],value:c.encoding==='contacts'?value.map(t=>packet.contacts[t]):value};
   });
   const vector=Object.entries(active).flatMap(([block,keys])=>keys.map(key=>features.find(f=>f.key===`${block}.${key}`)));
   if(vector.some(f=>!f))throw Error('Map comparison lacks an active feature.');
@@ -40,6 +41,7 @@ function element(tag,text,className) {
 }
 export function distanceDescription(block,key,basis) {
  const policy=basis.distance_policy||{};
+ if(block==='processing')return 'Matching enzyme identities contribute 0; different identities contribute 1.';
  if(block==='shape')return `Absolute difference divided by the ${policy.numeric_scaling==='declared'?'declared scale':'observed range'} of ${basis.shape_scales[key]}.`;
  if(block==='sequences')return policy.regional_metric==='normalized_edit'?
   'Edit distance divided by the longer region length.':
@@ -52,14 +54,14 @@ export function distanceDescription(block,key,basis) {
 export function comparisonExplanation(feature,basis) {
  const [block,key]=feature.key.split('.'),measurement=block==='shape',contacts=['basal_pairs','foldback_pairs'].includes(key);
  const label=feature.label||names[key][0],unit=feature.unit??names[key][1],policy=basis.distance_policy||{};
- const decoded=contacts?feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join(', ')||'0 contacts':Array.isArray(feature.value)?feature.value.join('')||'0 bases':String(feature.value);
- const count=contacts?`${feature.value.length} ordered contact${feature.value.length===1?'':'s'}`:key.endsWith('_polarity')?'strand polarity':`${feature.value.length}-nt sequence`;
+ const decoded=block==='processing'?(feature.displayLabel||String(feature.value)):contacts?feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join(', ')||'0 contacts':Array.isArray(feature.value)?feature.value.join('')||'0 bases':String(feature.value);
+ const count=block==='processing'?'enzyme':contacts?`${feature.value.length} ordered contact${feature.value.length===1?'':'s'}`:key.endsWith('_polarity')?'strand polarity':`${feature.value.length}-nt sequence`;
  const meaning=measurement?`${label}: ${feature.value}${unit?' '+unit:''}.`:
   `Code ${feature.displayValue} identifies the ${contacts?'contact list':count} shown below${contacts?' ('+count+')':''}.`;
  const formula=measurement?`abs(a − b) / ${basis.shape_scales[key]}`:block==='sequences'?
   (policy.regional_metric==='normalized_edit'?'edit(a, b) / max(1, m, n)':'min(1, max(0, edit(a, b) − abs(m − n)) / max(1, min(m, n)))'):
   key.endsWith('_word')?(policy.end_word_metric==='hamming'?'mismatches(a, b) / length(a)':'edit(a, b) / max(1, m, n)'):'0 if a = b, otherwise 1';
- const variables=measurement?'a and b are measurements from two preparations.':key.endsWith('_polarity')?'a and b are the two recorded strand polarities.':key.endsWith('_word')&&policy.end_word_metric==='hamming'?'a and b are the two end sequences, each read 5′→3′.':'a and b are the two oriented regions; m and n are their lengths. An edit adds, removes or replaces one base or ordered contact.';
+ const variables=block==='processing'?'a and b are enzyme identities from two preparations.':measurement?'a and b are measurements from two preparations.':key.endsWith('_polarity')?'a and b are the two recorded strand polarities.':key.endsWith('_word')&&policy.end_word_metric==='hamming'?'a and b are the two end sequences, each read 5′→3′.':'a and b are the two oriented regions; m and n are their lengths. An edit adds, removes or replaces one base or ordered contact.';
  return {label,display:String(feature.displayValue),kind:measurement?'Measurement':'Dictionary code',decoded,meaning,formula,variables,rule:distanceDescription(block,key,basis)};
 }
 function field(feature,basis) {
@@ -92,7 +94,7 @@ export function comparisonStrip(host,onFocus,help=null) {
   if(!help||help.panel.hidden||!displayed)return;
   if(!displayed.vector.some(f=>f.key===explained))explained=displayed.vector[0]?.key;
   help.content.replaceChildren();help.panel.dataset.preparationId=displayed.identity;
-  const intro=element('p',`X lists the ${displayed.vector.length} fields used to compare these preparations. Geometry entries are measurements; sequence and end entries are integer codes for exact molecular values. Select a field to see its value and comparison rule.`);
+  const intro=element('p',`X lists the ${displayed.vector.length} fields used to compare these preparations. Geometry entries are measurements; sequence, end${displayed.basis.processing_keys?.length?' and enzyme':''} entries are integer codes for exact molecular values. Select a field to see its value and comparison rule.`);
   const select=element('select');select.setAttribute('aria-label','Feature explained');
   displayed.vector.forEach((f,i)=>{const option=element('option',`${i+1}. ${f.label||names[f.key.split('.')[1]][0]} = ${f.displayValue}`);option.value=f.key;select.append(option);});
   select.value=explained;select.addEventListener('change',()=>{explained=select.value;explain();help.content.querySelector('select').focus();});
@@ -101,7 +103,7 @@ export function comparisonStrip(host,onFocus,help=null) {
   const f=displayed.vector.find(f=>f.key===explained),reading=comparisonExplanation(f,displayed.basis);
   help.content.append(element('h3',`${reading.label} · X${displayed.vector.indexOf(f)+1} = ${reading.display}`),element('p',reading.meaning),element('p',reading.decoded,'comparison-decoded'),element('code',reading.formula,'comparison-formula'),element('p',reading.rule));
   help.content.append(element('p',reading.variables));
-  help.content.append(element('p',`Average the field differences within each group, then combine the group means with the saved weights (geometry : sequence : ends) ${displayed.basis.weights.join(' : ')}. D is this weighted mean.`, 'comparison-policy'),element('code','D(a, b) = sum(w × group mean) / sum(active w)','comparison-formula'));
+  help.content.append(element('p',`Average the field differences within each group, then combine the group means with the saved weights (geometry : sequence : ends${displayed.basis.processing_keys?.length?' : enzymes':''}) ${displayed.basis.weights.join(' : ')}. D is this weighted mean.`, 'comparison-policy'),element('code','D(a, b) = sum(w × group mean) / sum(active w)','comparison-formula'));
  }
  function dismiss(restore=false) {if(!help)return false;const open=!help.panel.hidden;help.panel.hidden=true;help.button.setAttribute('aria-expanded','false');if(open&&restore)help.button.focus();return open;}
  function reveal(key=null) {if(!help||!displayed)return;explained=key||explained;help.panel.hidden=false;help.button.setAttribute('aria-expanded','true');explain();}
@@ -123,7 +125,7 @@ export function comparisonStrip(host,onFocus,help=null) {
    if(packet!==next){reader=comparisonReader(next,state.choices.paths.map(p=>p.materialized_realization_id));packet=next;}
    const reading=reader(identity),content=[];
    const heading=element('span','X = [','comparison-vector-open');
-   heading.title='Map proximity uses geometry, retained sequences and assembly ends around the fixed stem. Enzyme choices appear in the preparation record. '+(reading.basis.schema_id==='hop.molecular-comparison/v2'?'Tail fields cover bases contributing to the released insert through recorded copying or primer binding.':'Tail fields cover the complete hairpin tails.');
+   heading.title=reading.basis.processing_keys?.length?'Map proximity uses the saved geometry, sequence, assembly-end and enzyme comparison around the fixed stem.':'Map proximity uses geometry, retained sequences and assembly ends around the fixed stem. Enzyme choices appear in the preparation record. '+(reading.basis.schema_id==='hop.molecular-comparison/v2'?'Tail fields cover bases contributing to the released insert through recorded copying or primer binding.':'Tail fields cover the complete hairpin tails.');
    content.push(heading);
    const groups=reading.presentation?.groups||{};
    for(const [block,style] of Object.entries(groups)) {

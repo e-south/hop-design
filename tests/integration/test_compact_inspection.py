@@ -1,5 +1,6 @@
 """Compact inspection is a browser transport, never a second public query."""
 
+import gzip
 import json
 from xml.etree import ElementTree as ET
 
@@ -66,7 +67,9 @@ def test_compact_map_preserves_public_query_selection_and_shared_coordinates(
             # Printed member expansions carry explicit display offsets; the
             # interactive overview uses their same underlying comparison position.
             assert [x, y] == positions[members[index]]
-        axes = (session.root / compact["plots"]["parameters"].removeprefix("/files/")).read_bytes()
+        axes = gzip.decompress(
+            (session.root / compact["plots"]["parameters"].removeprefix("/files/")).read_bytes()
+        )
         # The shared inspector retains selectable context traces. Coalescing
         # identical paths must preserve every preparation exactly once.
         context = [node for node in ET.fromstring(axes).iter() if node.get("data-members")]
