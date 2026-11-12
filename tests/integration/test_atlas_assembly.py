@@ -560,6 +560,21 @@ def test_route_quiets_spent_sites_but_retains_every_recognition_record(atlas):
     assert next(e for e in cue if e.get("stroke")).get("stroke") == INK
 
 
+def test_fold_cue_leaves_lower_strand_and_points_above_the_upper_ghost(atlas):
+    import re
+
+    from hop_design.export.construction.molecular.assembly.foldback import foldback_cue
+    from hop_design.export.construction.molecular.assembly.placement import assembly_points
+
+    state = next(s for s in atlas.states if s.state.phase.value == "selected_fragments")
+    points = assembly_points(atlas)[state.state.state_id]
+    cue = ET.fromstring(foldback_cue(atlas, state, points))
+    tail = list(map(float, re.findall(r"[-\d.]+", cue[1].get("d"))))[:2]
+    tip = list(map(float, re.findall(r"[-\d.]+", cue[2].get("d"))))[:2]
+    assert tail[1] == max(y for _, y in points.values())
+    assert tip[1] == min(y for _, y in points.values()) - 24
+
+
 @pytest.mark.parametrize(
     ("presentation", "phase", "origin"),
     [

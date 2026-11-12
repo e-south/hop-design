@@ -97,3 +97,42 @@ def test_cut_marks_are_strand_specific_and_site_bands_remain_translucent(loop_po
             assert not bands
         assert all(e.tag == SVG + "path" and e.get("fill") != "none" for e in bands)
         assert all(0 < float(e.get("fill-opacity")) <= 0.2 for e in bands)
+
+
+def test_watson_crick_links_stay_registered_to_their_recorded_base_centers(loop_pool):
+    import re
+
+    import pytest
+
+    from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
+
+    choices, request = atlas_request(loop_pool)
+    packet = construction.inspect_scaffold_atlas(loop_pool, choices, request)
+    summary = json.loads(packet.json_bytes)
+    route = ET.fromstring(packet.svg_bytes)
+    views = [e for e in route.iter() if e.get("data-atlas-state")]
+    views.append(ET.fromstring(render_teaching_overview(summary)))
+    for view in views:
+        centers = {}
+        for base in (e for e in view.iter() if e.get("data-base-index") is not None):
+            rect = base.find(SVG + "rect")
+            text = base.find(SVG + "text")
+            centers[base.get("data-strand-id"), int(base.get("data-base-index"))] = (
+                float(rect.get("x")) + float(rect.get("width")) / 2,
+                float(text.get("y")) - 5,
+            )
+        for link in (e for e in view.iter() if e.get("data-pair-kind") == "watson_crick"):
+            a = centers[tuple(json.loads(link.get("data-from")))[-2:]]
+            b = centers[tuple(json.loads(link.get("data-to")))[-2:]]
+            x, y, u, v = map(float, re.findall(r"[-\d.]+", link.get("d")))
+            length = hypot(b[0] - a[0], b[1] - a[1])
+            # The contact remains on the line between its own two base centers,
+            # with the existing ten-unit inset at each nucleotide tile.
+            assert (x - a[0]) * (b[1] - a[1]) - (y - a[1]) * (b[0] - a[0]) == pytest.approx(
+                0, abs=1e-6
+            )
+            assert (u - b[0]) * (b[1] - a[1]) - (v - b[1]) * (b[0] - a[0]) == pytest.approx(
+                0, abs=1e-6
+            )
+            assert hypot(x - a[0], y - a[1]) == pytest.approx(min(10, length / 2))
+            assert hypot(u - b[0], v - b[1]) == pytest.approx(min(10, length / 2))

@@ -41,12 +41,13 @@ def foldback_cue(atlas: MolecularAtlas, state: MolecularStateInspection, points:
             break
     if endpoints is None:
         return ""
-    (x, y), (target, target_y) = endpoints
+    (x, y), (target, _target_y) = endpoints
     direction = 1 if target > x else -1
     start, end = x - direction * 10, target - direction * 16
-    start_y = y + 18
-    peak = min(y, target_y) - 90
-    end_y = target_y + 12
+    upper_row = min(py for _, py in points.values())
+    start_y = y
+    peak = upper_row - 70
+    end_y = upper_row - 24
     dx, dy = direction * 80, end_y - peak
     length = hypot(dx, dy)
     ux, uy = dx / length, dy / length
