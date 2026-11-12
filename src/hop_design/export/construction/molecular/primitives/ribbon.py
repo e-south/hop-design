@@ -46,6 +46,17 @@ def rounded_path(
     """Shallow corner rounding contained inside the original polygon."""
     original = points
     points = simple_outline(points)
+    # Dense samples along a straight edge must not cap the visible end radius
+    # at half a sample interval. Keep bends and remove only collinear samples.
+    points = [
+        p
+        for i, p in enumerate(points)
+        if abs(
+            (p[0] - points[i - 1][0]) * (points[(i + 1) % len(points)][1] - p[1])
+            - (p[1] - points[i - 1][1]) * (points[(i + 1) % len(points)][0] - p[0])
+        )
+        > 1e-7
+    ]
     sharp = frozenset(i for i, p in enumerate(points) if any(p == original[j] for j in sharp))
     rows = []
     for i, (x, y) in enumerate(points):
@@ -76,6 +87,7 @@ def ribbon_path(
     end: int | None = None,
     *,
     terminal_extension: float = 8,
+    radius: float = 2,
 ) -> str:
     outline = ribbon_points(points, half_width, start, end, terminal_extension=terminal_extension)
     n = len(outline) // 2
@@ -85,7 +97,7 @@ def ribbon_path(
         sharp.update((0, len(outline) - 1))
     if end is not None and end < len(points) - 1:
         sharp.update((n - 1, n))
-    return rounded_path(outline, sharp=frozenset(sharp))
+    return rounded_path(outline, radius=radius, sharp=frozenset(sharp))
 
 
 def simple_outline(points: list[tuple[float, float]]) -> list[tuple[float, float]]:

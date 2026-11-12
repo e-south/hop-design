@@ -67,8 +67,12 @@ def test_bound_primers_show_the_exact_ordered_sequence_without_becoming_state_ba
             rect = template[index].find(SVG + "rect")
             text = template[index].find(SVG + "text")
             path.append((float(rect.get("x")) + 7, float(text.get("y")) - 5))
-        for glyph in bases[-len(indices) :]:
+        register_dx, register_dy = path[1][0] - path[0][0], path[1][1] - path[0][1]
+        for glyph, (tx, ty) in zip(bases[-len(indices) :], path, strict=True):
             x, y = float(glyph.get("x")), float(glyph.get("y")) - 5
+            # Literal cognate bases keep their template register. An offset
+            # contour may kink; its letters cannot slide along that contour.
+            assert abs((x - tx) * register_dx + (y - ty) * register_dy) < 1e-6
             distances = []
             for (ax, ay), (bx, by) in pairwise(path):
                 dx, dy = bx - ax, by - ay

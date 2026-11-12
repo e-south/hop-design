@@ -8,7 +8,7 @@ from math import hypot
 from hop_design.models.construction.projections.inspection import MolecularStateInspection
 
 from .primitives.ribbon import ribbon_path
-from .primitives.style import BACKBONE, CONTACT, REGION_COLORS, REGION_OPACITY
+from .primitives.style import BACKBONE, CONTACT, REGION_COLORS, REGION_OPACITY, STRAND_END_RADIUS
 
 Points = dict[tuple[str, int], tuple[float, float]]
 
@@ -52,7 +52,12 @@ def region_spans(projection: MolecularStateInspection, points: Points) -> str:
                         context.append(neighbor)
             start, end = context.index(run[0]), context.index(run[-1])
             curve = ribbon_path(
-                [points[strand, index] for index in context], 13, start, end, terminal_extension=6
+                [points[strand, index] for index in context],
+                13,
+                start,
+                end,
+                terminal_extension=6,
+                radius=STRAND_END_RADIUS,
             )
             members = escape(json.dumps([[strand, index] for index in run]), quote=True)
             path_members = escape(json.dumps([[strand, index] for index in context]), quote=True)
@@ -61,6 +66,7 @@ def region_spans(projection: MolecularStateInspection, points: Points) -> str:
                 f'data-path-members="{path_members}" '
                 f'data-path-start="{start}" data-path-end="{end}" '
                 f'data-region-width="13" data-ribbon-contour="true" data-terminal-extension="6" '
+                f'data-terminal-radius="{STRAND_END_RADIUS}" '
                 f'd="{curve}" fill="{REGION_COLORS.get(region, "#AAB2B8")}" '
                 f'fill-opacity="{REGION_OPACITY}" stroke="{BACKBONE}" '
                 'stroke-opacity=".6" stroke-width="1"/>'

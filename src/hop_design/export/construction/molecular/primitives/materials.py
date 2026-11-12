@@ -17,9 +17,9 @@ from .style import (
     INK,
     REGION_COLORS,
     REGION_OPACITY,
-    TERMINAL_SIZE,
     base_ink,
 )
+from .terminal_labels import terminal_label_glyph
 from .typography import base_ink_shift, fitted_base_size
 
 
@@ -89,12 +89,16 @@ def staged_materials(
             ]:
                 x, y = positions[index]
                 label = terminal_label(prime, end).removesuffix("OH")
-                markup = labels.text("input-terminus", x - 42, y + 8, label, INK, TERMINAL_SIZE)
+                neighbor = positions[1 if index == 0 else -2] if len(positions) > 1 else (x + 16, y)
                 rows.append(
-                    markup.replace(
-                        'data-label-kind="input-terminus"',
-                        f'data-label-kind="input-terminus" data-input-terminus="{key}" '
-                        f'data-terminal-chemistry="{terminal_label(prime, end)}"',
+                    terminal_label_glyph(
+                        labels,
+                        (x, y),
+                        neighbor,
+                        label,
+                        chemistry=terminal_label(prime, end),
+                        kind="input-terminus",
+                        attributes={"data-input-terminus": key},
                     )
                 )
         rows.append(

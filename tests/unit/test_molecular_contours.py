@@ -45,18 +45,20 @@ def test_primer_inner_arrow_edge_remains_parallel_to_its_terminal_segment(side, 
     assert points == before
 
 
-def test_primer_clearance_is_normal_to_both_straight_and_diagonal_handle():
+def test_primer_translation_preserves_both_straight_and_diagonal_handle():
     from hop_design.export.construction.molecular.primitives.primer_geometry import (
-        parallel_positions,
+        registered_positions,
     )
 
     path = [(0, 0), (16, 0), (32, 0), (48, 0), (64, 16), (80, 32), (96, 48)]
     for side in (-1, 1):
-        result = parallel_positions(path, side * 40)
+        result = registered_positions(path, side * 40)
         assert len(result) == len(path)
+        assert [x for x, _ in result] == [x for x, _ in path]
         assert result[0][1] == pytest.approx(side * 40)
-        x, y = result[-1]
-        assert (y - x + 48) / 2**0.5 == pytest.approx(side * 40)
+        assert [
+            y - before[1] for (_, y), before in zip(result, path, strict=True)
+        ] == pytest.approx([side * 40] * len(path))
         assert all(
             ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5 > 10 for a, b in pairwise(result)
         )

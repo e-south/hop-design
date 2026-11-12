@@ -12,17 +12,17 @@ from ..labels import terminal_label
 from .label_layout import LabelPlacer
 from .material_bindings import material_binding_overlays
 from .primitives.annotation_policy import FootprintScope, footprint_color
+from .primitives.bond_marks import bond_bridge
 from .primitives.materials import PlacedInput, input_box, staged_materials
 from .primitives.style import (
     ANNOTATION_SIZE,
     CUT_HALF_WIDTH,
     CUT_REACH,
     FONT_FAMILY,
-    INK,
-    TERMINAL_SIZE,
     TITLE_SIZE,
     object_id,
 )
+from .primitives.terminal_labels import terminal_label_glyph
 from .recognition_sites import recognition_site_overlays
 
 
@@ -86,9 +86,12 @@ def inspection_overlays(
                     CUT_REACH + 6,
                 )
             )
-    for join in projection.formed_bond_boundaries:
-        jx, jy = boundary(join)
-        labels.occupied.append((jx - 16, jy - 38 if jy <= middle else jy - 3, 32, 42))
+    bonds = [bond_bridge(projection, points, join) for join in projection.formed_bond_boundaries]
+    labels.occupied.extend(box for _, box in bonds)
+    # Reserve the actual incoming silhouettes before docking end chemistry.
+    # A terminus may use a nearby alternative dock, never a distant free label.
+    rows.append(material_binding_overlays(material_inputs, points, labels))
+    rows.append(staged_materials(staged_inputs, labels))
     for strand in projection.state.molecules:
         for index, chemistry in (
             (0, terminal_label("5\u2032", strand.five_prime_end)),
@@ -104,20 +107,20 @@ def inspection_overlays(
                 continue
             x, y = points[strand.strand_id, index]
             neighbor = 1 if index == 0 else index - 1
-            nx, _ = points.get((strand.strand_id, neighbor), (x + 16, y))
-            outside_x = x - len(label) * TERMINAL_SIZE * 0.64 - 18 if nx > x else x + 18
+            neighbor_point = points.get((strand.strand_id, neighbor), (x + 16, y))
             rows.append(
-                labels.text("terminus", outside_x, y + 7, label, INK, TERMINAL_SIZE)
-                .replace(
-                    'data-label-kind="terminus"',
-                    f'data-label-kind="terminus" data-terminal-chemistry="{chemistry}" '
-                    f'data-terminal-strand="{escape(strand.strand_id)}" '
-                    f'data-terminal-index="{index}"',
+                terminal_label_glyph(
+                    labels,
+                    (x, y),
+                    neighbor_point,
+                    label,
+                    chemistry=chemistry,
+                    attributes={
+                        "data-terminal-strand": strand.strand_id,
+                        "data-terminal-index": str(index),
+                    },
                 )
-                .replace(f">{label}</text>", f">{label}<title>{chemistry}</title></text>")
             )
-    rows.append(material_binding_overlays(material_inputs, points, labels))
-    rows.append(staged_materials(staged_inputs, labels))
     rows.append(
         recognition_site_overlays(
             projection,
@@ -132,20 +135,7 @@ def inspection_overlays(
     def text(x: float, y: float, label: str, color: str) -> None:
         rows.append(labels.text("cut-or-dimension", x, y, label, color, ANNOTATION_SIZE))
 
-    for join in projection.formed_bond_boundaries:
-        x, y = boundary(join)
-        assert join.before is not None and join.after is not None
-        outside = -1 if y <= middle else 1
-        near, far = y + outside * 19, y + outside * 34
-        rows.append(
-            f'<g data-formed-bond="{join.after.index}" data-event-glyph="bond-bridge" '
-            f'data-bond-strand="{escape(join.after.strand_id)}" '
-            f'data-drawing-box="{x - 14} {min(y, far) - 3} 28 40">'
-            "<title>Recorded ligation bond</title>"
-            f'<path d="M{x},{y} V{far}" stroke="{INK}" stroke-width="1.8"/>'
-            f'<path d="M{x - 12},{near} V{far} H{x + 12} V{near}" '
-            f'fill="none" stroke="{INK}" stroke-width="3.2" stroke-linejoin="round"/></g>'
-        )
+    rows.extend(drawing for drawing, _ in bonds)
 
     for operation in projection.operations:
         positions = [point(a) for a in operation.recognition]

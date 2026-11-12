@@ -58,7 +58,12 @@ def test_ordinary_transition_is_centered_between_content_and_next_title(atlas):
             continue
         arrow = next(e for e in source if e.get("data-operation-arrow"))
         scene = next(e for e in source if e.get("data-scene-content"))
-        _, top, _, height = scene_bounds(scene)
+        ax, _, aw, _ = map(float, arrow.get("data-drawing-box").split())
+        label = next(e for e in source if e.get("data-operation"))
+        from hop_design.export.construction.molecular.primitives.typography import text_width
+
+        right = float(label.get("x")) + text_width(label.text, float(label.get("font-size")))
+        _, top, _, height = scene_bounds(scene, horizontal_span=(ax, max(ax + aw, right)))
         bottom = top + height
         title = next(e for e in target if e.get("data-stage-title"))
         title_top = (
@@ -295,6 +300,53 @@ def test_input_annotations_keep_modifications_without_repeating_ordinary_oh(atla
         assert "OH" in " ".join(e.text or "" for e in glyph.iter() if e.tag.endswith("}title"))
     assert "after copying" in "".join(root.itertext())
     assert any("5\u2032P" in "".join(e.itertext()) for e in glyphs)
+
+
+def test_closed_hairpin_bond_mark_faces_out_of_its_local_helix(atlas):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    row = next(e for e in root.iter() if e.get("data-atlas-phase") == "foldback_closed_hairpin")
+    bases = {
+        (e.get("data-strand-id"), int(e.get("data-base-index"))): (
+            float(next(t for t in e if t.tag.endswith("}text")).get("x")),
+            float(next(t for t in e if t.tag.endswith("}text")).get("y")) - 5,
+        )
+        for e in row.iter()
+        if e.get("data-base-index") is not None
+    }
+    for mark in (e for e in row.iter() if e.get("data-formed-bond")):
+        sid, index = mark.get("data-bond-strand"), int(mark.get("data-formed-bond"))
+        a, b = bases[sid, index - 1], bases[sid, index]
+        center = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        paired = []
+        for link in (e for e in row.iter() if e.get("data-pair-kind")):
+            p, q = (bases[tuple(json.loads(link.get(k)))[-2:]] for k in ("data-from", "data-to"))
+            paired.append(((p[0] + q[0]) / 2, (p[1] + q[1]) / 2))
+        near = min(paired, key=lambda p: (p[0] - center[0]) ** 2 + (p[1] - center[1]) ** 2)
+        x, y, w, h = map(float, mark.get("data-drawing-box").split())
+        assert (x + w / 2 - center[0]) * (center[0] - near[0]) + (y + h / 2 - center[1]) * (
+            center[1] - near[1]
+        ) > 0
+
+
+def test_visible_terminal_labels_stay_close_to_their_literal_ends(atlas):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    for row in (e for e in root.iter() if e.get("data-atlas-state")):
+        for label in (
+            e for e in row.iter() if e.get("data-terminal-index") and e.get("data-label-box")
+        ):
+            base = next(
+                e
+                for e in row.iter()
+                if e.get("data-strand-id") == label.get("data-terminal-strand")
+                and e.get("data-base-index") == label.get("data-terminal-index")
+            )
+            text = next(e for e in base if e.tag.endswith("}text"))
+            px, py = float(text.get("x")), float(text.get("y")) - 5
+            x, y, w, h = json.loads(label.get("data-label-box"))
+            # Minimum edge-to-terminal clearance, rather than distance to the
+            # label's left edge or an arbitrary scene-wide position.
+            dx, dy = max(x - px, 0, px - x - w), max(y - py, 0, py - y - h)
+            assert (dx * dx + dy * dy) ** 0.5 <= 24
 
 
 def test_partial_route_draws_only_requested_scenes_with_complete_route_context(atlas, monkeypatch):

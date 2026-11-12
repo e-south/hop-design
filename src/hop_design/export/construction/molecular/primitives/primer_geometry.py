@@ -1,4 +1,4 @@
-"""Parallel input glyphs; their bases annotate an input, not a paired state."""
+"""Registered input glyphs; their bases annotate an input, not a paired state."""
 
 from collections import defaultdict
 from itertools import pairwise
@@ -17,55 +17,23 @@ def outward_side(points: list[Point], center: Point) -> int:
     return 1 if -dy * x + dx * y >= 0 else -1
 
 
-def parallel_positions(
-    points: list[Point], distance: float, *, end_inset: float = 0
-) -> list[Point]:
-    """Offset a handle's segments normally, then space its input letters evenly.
+def registered_positions(points: list[Point], distance: float) -> list[Point]:
+    """Translate the entire cognate template path once, without new bends.
 
-    Offset segment intersections keep one clearance through a bend. Resampling
-    avoids overlapping letters near an inside corner. An explicit end inset
-    reserves the directional tip on this same parallel path, fitting the
-    ordered letters before the tip without shortening their pitch. Molecular addresses
-    and the recorded binding interval are unchanged.
+    The displacement is normal to its entrance. Every relative base position,
+    pitch and bend is identical to the template; only the contour gains a tip.
     """
-    if len(points) == 1:
-        return [(points[0][0], points[0][1] + distance)]
-    corners = [points[0]]
-    for a, b, c in zip(points, points[1:], points[2:], strict=False):
-        u, v = (b[0] - a[0], b[1] - a[1]), (c[0] - b[0], c[1] - b[1])
-        if abs(u[0] * v[1] - u[1] * v[0]) > 1e-6:
-            corners.append(b)
-    corners.append(points[-1])
-    normals = []
-    for a, b in pairwise(corners):
-        length = max(hypot(b[0] - a[0], b[1] - a[1]), 1e-9)
-        normals.append((-(b[1] - a[1]) / length, (b[0] - a[0]) / length))
-    offset = []
-    for i, (x, y) in enumerate(corners):
-        a, b = normals[max(0, i - 1)], normals[min(i, len(normals) - 1)]
-        denominator = max(0.5, 1 + a[0] * b[0] + a[1] * b[1])
-        offset.append(
-            (x + (a[0] + b[0]) * distance / denominator, y + (a[1] + b[1]) * distance / denominator)
-        )
-    lengths = [hypot(b[0] - a[0], b[1] - a[1]) for a, b in pairwise(offset)]
-    total = sum(lengths)
-    result = []
-    for i in range(len(points)):
-        remaining = total * i / (len(points) - 1) - min(end_inset, total / 2)
-        for j, length in enumerate(lengths):
-            if remaining <= length or j == len(lengths) - 1:
-                t = remaining / max(length, 1e-9)
-                a, b = offset[j : j + 2]
-                result.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
-                break
-            remaining -= length
-    return result
+    following = points[1] if len(points) > 1 else (points[0][0] + 16, points[0][1])
+    dx, dy = following[0] - points[0][0], following[1] - points[0][1]
+    length = max(hypot(dx, dy), 1e-9)
+    nx, ny = -dy / length, dx / length
+    return [(x + nx * distance, y + ny * distance) for x, y in points]
 
 
 def position_primer(
     template: list[Point], molecule: list[Point], *, outward: int, leading: int = 0
 ) -> list[Point]:
-    """Find the nearest normal offset clearing the complete directional outline.
+    """Find the nearest registered lane clearing the complete directional outline.
 
     Sample the outline, including its wedge, against the recorded base centers.
     A 18-unit exclusion radius covers a 13-unit strand half-width, half-pitch
@@ -74,7 +42,7 @@ def position_primer(
     If nearby lanes are occupied, translate the preferred silhouette beyond the
     scene's outward boundary instead of rejecting a valid molecular preparation.
     """
-    from .primer_shape import PRIMER_HEAD_LENGTH, primer_outline
+    from .primer_shape import primer_outline
     from .style import PRIMER_CLEARANCE
 
     # Invocation-local spatial bins retain the exact exclusion test while
@@ -95,10 +63,7 @@ def position_primer(
 
     preferred: list[Point] = []
     for offset in range(0, 65, 2):
-        # Keep the head and its half-base end cap on the same parallel path.
-        positions = parallel_positions(
-            template, outward * (PRIMER_CLEARANCE + offset), end_inset=PRIMER_HEAD_LENGTH + 8
-        )
+        positions = registered_positions(template, outward * (PRIMER_CLEARANCE + offset))
         a, b = (
             positions[:2]
             if len(positions) > 1

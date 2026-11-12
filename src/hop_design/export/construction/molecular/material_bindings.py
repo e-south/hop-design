@@ -44,14 +44,13 @@ def material_binding_overlays(
         positions = position_primer(template, list(points.values()), outward=side, leading=extra)
         bound = positions[extra:]
         left, top, width, height = input_box(tuple(positions), primer=True, outward=side)
-        right, bottom = left + width, top + height
-        labels.occupied.append((left - 16, top, right - left + 32, bottom - top))
+        labels.occupied.append((left, top, width, height))
         rows.append(
             f'<g id="{object_id("primer", item.binding_state_id or "", item.material_use.use_id)}" '
             f'data-primer-binding="{escape(item.material_use.use_id)}" '
             f'data-material-role="{item.material_use.role.value}" '
             f'data-template-state="{escape(item.binding_state_id or "")}" '
-            f'data-drawing-box="{left - 16} {top} {right - left + 32} {bottom - top}" '
+            f'data-drawing-box="{left} {top} {width} {height}" '
             'data-binding-annotation="true">'
         )
         for (tx, ty), (bx, by) in zip(
