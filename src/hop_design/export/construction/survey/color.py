@@ -6,9 +6,9 @@ from typing import Any
 
 from hop_design.models.construction.variants.view_color import AtlasColorLens
 
-from ..presentation.palette import BASAL, NUMERIC_BLUE
+from ..presentation.palette import NUMERIC_BLUE, POPULATION_ACCENT
 
-ACCENT, NEUTRAL = BASAL, "#8D99A5"
+ACCENT, NEUTRAL = POPULATION_ACCENT, "#8D99A5"
 RAMP = tuple(tuple(int(color[i : i + 2], 16) for i in (1, 3, 5)) for color in NUMERIC_BLUE)
 
 

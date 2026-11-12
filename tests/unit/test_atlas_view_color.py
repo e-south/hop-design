@@ -24,6 +24,19 @@ def test_browser_and_print_keep_the_shared_numeric_palette():
     assert stops == expected
 
 
+def test_population_accent_is_independent_of_molecular_role_fills():
+    import re
+    from importlib.resources import files
+
+    from hop_design.export.construction.presentation.palette import BASAL, POPULATION_ACCENT
+
+    answer = {"paths": [{"materialized_realization_id": "one", "values": {}}], "axes": []}
+    assert molecular_colors(answer, {"key": "none"}).colors == {"one": POPULATION_ACCENT}
+    assert POPULATION_ACCENT != BASAL
+    source = files("hop_design").joinpath("assets/design_explorer/molecular_colors.js").read_text()
+    assert re.search(r"const accent='([^']+)'", source).group(1) == POPULATION_ACCENT
+
+
 def test_larger_end_gap_color_requires_both_measurements_without_mutating_rows():
     from copy import deepcopy
 

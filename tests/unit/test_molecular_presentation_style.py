@@ -2,6 +2,8 @@
 
 from xml.etree import ElementTree as ET
 
+import pytest
+
 from hop_design.export.construction.molecular.atlas_placement import BlockExtent, place_route
 from hop_design.export.construction.molecular.atlas_reading_order import continuation_svg
 from hop_design.export.construction.molecular.primitives.operations import draw_operation
@@ -17,6 +19,27 @@ def test_region_nucleotides_keep_small_type_contrast():
         assert contrast_ratio(base_ink(region), color) >= 4.5
     assert base_ink("unmapped") != "#FFFFFF"
     assert base_ink("stem", "#DED2EC") != "#FFFFFF"
+
+
+def test_compass_pastel_roles_are_shared_by_molecular_views():
+    assert REGION_COLORS == {
+        "stem": "#F9CF95",
+        "assembly": "#85BCF3",
+        "closing": "#94D3BC",
+        "loop": "#94D3BC",
+    }
+    for region in REGION_COLORS:
+        assert base_ink(region) != "#FFFFFF"
+
+
+@pytest.mark.parametrize("color", ["#1234567", "#112233extra", "#ABC", "blue"])
+def test_palette_rejects_incomplete_or_trailing_color_data(color):
+    from hop_design.export.construction.presentation.palette import MolecularPalette, pale
+
+    with pytest.raises(ValueError, match="six-digit"):
+        MolecularPalette("invalid", color, "#F9CF95", "#94D3BC")
+    with pytest.raises(ValueError, match="six-digit"):
+        pale(color)
 
 
 def test_route_transport_uses_one_short_arrow_vocabulary():

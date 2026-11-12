@@ -600,6 +600,38 @@ def test_captured_scene_keeps_inherited_ink_font_and_definitions(captured_choice
     assert result["rendering"] == "captured"
 
 
+def test_current_hairpin_and_lazy_trace_redraw_historical_colors(captured_choices, tmp_path):
+    from hop_design.api import _InspectionProjection
+    from hop_design.export.construction.molecular.primitives.style import REGION_COLORS
+
+    root = tmp_path / "edition"
+    edition = captured_choices.freeze(root)
+    identity = edition.sample(seed=0)["materialized_realization_id"]
+    path = edition._prefix(identity) + "/atlas/projection.svg"
+    drawing = ET.fromstring((root / path).read_bytes())
+    for node in drawing.iter():
+        if node.get("data-region-fill") in REGION_COLORS:
+            node.set("fill", "#0073E6")
+    content = ET.tostring(drawing)
+    (root / path).write_bytes(content)
+    manifest = json.loads((root / "edition.json").read_bytes())
+    manifest["artifacts"][path] = {"sha256": sha256_digest(content), "bytes": len(content)}
+    (root / "edition.json").write_bytes(canonical_json_bytes(manifest))
+    edition = construction.load_atlas_edition(root)
+    answer = edition.query()
+    overview, _ = _InspectionProjection.preview(edition, identity, answer, render_policy="current")
+    scenes, report = _InspectionProjection.scenes(
+        edition, identity, answer, phases=("duplex",), render_policy="current"
+    )
+    assert report["rendering"] == "current"
+    for data in (overview, *scenes.values()):
+        fills = [
+            n for n in ET.fromstring(data).iter() if n.get("data-region-fill") in REGION_COLORS
+        ]
+        assert fills
+        assert all(n.get("fill") == REGION_COLORS[n.get("data-region-fill")] for n in fills)
+
+
 def test_broken_current_scene_projection_is_not_relabelled_captured(captured_choices, monkeypatch):
     from pydantic import ValidationError
 

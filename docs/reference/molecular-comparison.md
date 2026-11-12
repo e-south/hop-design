@@ -198,6 +198,16 @@ and site visibility from `molecular/primitives/annotation_policy.py`. A later
 palette change should update this presentation layer, not molecular identities,
 sequence neighborhoods, search rules or manuscript-specific layout code.
 
+The molecular preset is the immutable `MOLECULAR_PALETTE` record, currently
+`compass-pastel`. Its three opaque six-digit hex fills determine basal, stem and
+foldback/loop colors; malformed colors fail before drawing. Recognition ink and
+pale region headings derive from those fills. Small nucleotide text uses white
+when its fill provides at least 4.5:1 contrast, and black otherwise. Population
+ramps and `POPULATION_ACCENT` have their own meaning and do not change when a
+molecular fill changes. Color-vision simulations are review aids, not palettes
+or molecular transformations. Current rendering redraws saved facts with these
+tokens; captured rendering intentionally retains the original artwork.
+
 Later folded route states omit obsolete strand-exposure footprints on copying
 handles. The linear retained-strand scene omits the foldback-site fill around the
 fold cue and discarded-fragment reference. Exact recognition records and

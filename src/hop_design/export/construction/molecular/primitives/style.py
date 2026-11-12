@@ -2,7 +2,7 @@
 
 from hashlib import sha256
 
-from ...presentation.palette import BASAL, FOLDBACK, STEM
+from ...presentation.palette import BASAL, FOLDBACK, STEM, annotation_ink, rgb_channels
 
 INK = "#182B34"
 BACKBONE = "#334B58"
@@ -30,7 +30,7 @@ OPERATION_STROKE = 5
 
 
 def luminance(color: str) -> float:
-    channels = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    channels = [channel / 255 for channel in rgb_channels(color)]
     linear = [
         value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
         for value in channels
@@ -46,11 +46,11 @@ def contrast_ratio(a: str, b: str) -> float:
 
 
 def base_ink(region: str, tile_fill: str | None = None) -> str:
-    """Choose small nucleotide ink against its actual opaque region or change tile."""
+    """Use white on dark fills at 4.5:1 or better; use black on lighter fills."""
     background = (
         tile_fill if tile_fill and tile_fill != "none" else REGION_COLORS.get(region, "#AAB2B8")
     )
-    return max((INK, "#FFFFFF"), key=lambda ink: contrast_ratio(ink, background))
+    return "#FFFFFF" if contrast_ratio("#FFFFFF", background) >= 4.5 else "#000000"
 
 
 def object_id(kind: str, *identity: str) -> str:
@@ -61,7 +61,7 @@ def object_id(kind: str, *identity: str) -> str:
 
 def site_color(role: str) -> str:
     if role in {"basal_nick", "strand_exposure"}:
-        return "#176487"
+        return annotation_ink(BASAL)
     if role == "foldback_nick":
-        return "#146F54"
-    return "#965A13"
+        return annotation_ink(FOLDBACK)
+    return annotation_ink(STEM)
