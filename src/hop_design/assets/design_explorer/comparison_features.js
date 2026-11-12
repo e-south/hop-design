@@ -45,21 +45,22 @@ export function distanceDescription(block,key,basis) {
   'Edit distance divided by the longer region length.':
   'Edit distance with the length difference subtracted, divided by the shorter region length and bounded to [0, 1].';
  if(key.endsWith('_word'))return policy.end_word_metric==='hamming'?
-  'Equal-length end words compared by positionwise mismatch fraction, in recorded strand orientation.':
+  'Compare the two 5′→3′ end sequences base by base, then divide the mismatch count by their length.':
   'Edit distance divided by the longer end-word length, in recorded strand orientation.';
- return 'Polarity is nominal: equal or different.';
+ return 'Matching strand polarities contribute 0; differing polarities contribute 1.';
 }
 export function comparisonExplanation(feature,basis) {
  const [block,key]=feature.key.split('.'),measurement=block==='shape',contacts=['basal_pairs','foldback_pairs'].includes(key);
  const label=feature.label||names[key][0],unit=feature.unit??names[key][1],policy=basis.distance_policy||{};
- const decoded=contacts?feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join(', ')||'No contacts':Array.isArray(feature.value)?feature.value.join('')||'Empty region':String(feature.value);
- const count=contacts?`${feature.value.length} ordered contact${feature.value.length===1?'':'s'}`:key.endsWith('_polarity')?'a strand polarity':`${feature.value.length} nt`;
+ const decoded=contacts?feature.value.map(([a,b,kind])=>`${a}:${b} ${kind.replaceAll('_',' ')}`).join(', ')||'0 contacts':Array.isArray(feature.value)?feature.value.join('')||'0 bases':String(feature.value);
+ const count=contacts?`${feature.value.length} ordered contact${feature.value.length===1?'':'s'}`:key.endsWith('_polarity')?'strand polarity':`${feature.value.length}-nt sequence`;
  const meaning=measurement?`${label}: ${feature.value}${unit?' '+unit:''}.`:
-  `Code ${feature.displayValue} looks up ${count} in this field's dictionary. It is not a count or rank. The comparison uses the decoded value below, not differences between codes.`;
+  `Code ${feature.displayValue} identifies the ${contacts?'contact list':count} shown below${contacts?' ('+count+')':''}.`;
  const formula=measurement?`abs(a − b) / ${basis.shape_scales[key]}`:block==='sequences'?
   (policy.regional_metric==='normalized_edit'?'edit(a, b) / max(1, m, n)':'min(1, max(0, edit(a, b) − abs(m − n)) / max(1, min(m, n)))'):
   key.endsWith('_word')?(policy.end_word_metric==='hamming'?'mismatches(a, b) / length(a)':'edit(a, b) / max(1, m, n)'):'0 if a = b, otherwise 1';
- return {label,display:String(feature.displayValue),kind:measurement?'Measurement':'Dictionary code',decoded,meaning,formula,rule:distanceDescription(block,key,basis)};
+ const variables=measurement?'a and b are measurements from two preparations.':key.endsWith('_polarity')?'a and b are the two recorded strand polarities.':key.endsWith('_word')&&policy.end_word_metric==='hamming'?'a and b are the two end sequences, each read 5′→3′.':'a and b are the two oriented regions; m and n are their lengths. An edit adds, removes or replaces one base or ordered contact.';
+ return {label,display:String(feature.displayValue),kind:measurement?'Measurement':'Dictionary code',decoded,meaning,formula,variables,rule:distanceDescription(block,key,basis)};
 }
 function field(feature,basis) {
  const [block,key]=feature.key.split('.'),label=feature.label||names[key][0],unit=feature.unit??names[key][1];
@@ -77,10 +78,10 @@ function field(feature,basis) {
  const connector=element('span',undefined,'comparison-encoding-link');connector.setAttribute('aria-hidden','true');
  connector.hidden=true;
  node.append(connector,code);
- const scale=feature.active?' '+distanceDescription(block,key,basis):'';
- const retention=key.includes('retained_tail')?' Hairpin-tail bases contributing through recorded copying or primer binding to either insert strand; each template base is counted once.':'';
- const encoding=measurement?'':` Lookup code ${feature.displayValue} identifies this exact value; code magnitude is not a distance.`;
- node.title=`${label}: ${description}${measurement&&unit?' '+unit:''}. ${feature.active?'Used in molecular distance.':'Constant in this atlas; does not affect distance.'}${scale}${retention}${encoding}`;
+ const contacts=['basal_pairs','foldback_pairs'].includes(key);
+ const retention=key.includes('retained_tail')?' These tail bases contribute to the released insert through copying or primer binding.':'';
+ const valueDescription=measurement?`${label}: ${description}${unit?' '+unit:''}.`:contacts?`${label} · code ${feature.displayValue} · ${feature.value.length} ordered contact${feature.value.length===1?'':'s'}.`:`${label} · code ${feature.displayValue} = ${description}${key.endsWith('_word')?' (5′→3′)':''}.`;
+ node.title=valueDescription+(feature.active?(measurement?' '+distanceDescription(block,key,basis):''):' All preparations share this value.')+retention;
  node.setAttribute('aria-label',node.title);return node;
 }
 
@@ -91,16 +92,16 @@ export function comparisonStrip(host,onFocus,help=null) {
   if(!help||help.panel.hidden||!displayed)return;
   if(!displayed.vector.some(f=>f.key===explained))explained=displayed.vector[0]?.key;
   help.content.replaceChildren();help.panel.dataset.preparationId=displayed.identity;
-  const intro=element('p',`${displayed.vector.length} fields define the saved map comparison. Geometry entries are measurements. Sequence and end entries are lookup codes; select one to see its exact value and comparison rule.`);
+  const intro=element('p',`X lists the ${displayed.vector.length} fields used to compare these preparations. Geometry entries are measurements; sequence and end entries are integer codes for exact molecular values. Select a field to see its value and comparison rule.`);
   const select=element('select');select.setAttribute('aria-label','Feature explained');
   displayed.vector.forEach((f,i)=>{const option=element('option',`${i+1}. ${f.label||names[f.key.split('.')[1]][0]} = ${f.displayValue}`);option.value=f.key;select.append(option);});
   select.value=explained;select.addEventListener('change',()=>{explained=select.value;explain();help.content.querySelector('select').focus();});
   help.content.append(intro,select);
   if(!explained)return;
   const f=displayed.vector.find(f=>f.key===explained),reading=comparisonExplanation(f,displayed.basis);
-  help.content.append(element('h3',`X${displayed.vector.indexOf(f)+1} = ${reading.display} · ${reading.kind}`),element('p',reading.meaning),element('p',reading.decoded,'comparison-decoded'),element('code',reading.formula,'comparison-formula'),element('p',reading.rule));
-  help.content.append(element('p',`a and b are ${f.key.startsWith('shape.')?'measurements':'decoded values'} from any two preparations; neither is a fixed reference.${f.key.startsWith('shape.')?'':' m and n are their lengths. An edit adds, removes or substitutes one base or ordered contact token; strand orientation is retained.'}`));
-  help.content.append(element('p',`Field distances are averaged within each group, then combined using the saved weights (geometry : sequence : ends) ${displayed.basis.weights.join(' : ')}. The map uses these combined distances. Integer differences between lookup codes have no meaning.`, 'comparison-policy'),element('code','D(a, b) = sum(w × group mean) / sum(active w)','comparison-formula'));
+  help.content.append(element('h3',`${reading.label} · X${displayed.vector.indexOf(f)+1} = ${reading.display}`),element('p',reading.meaning),element('p',reading.decoded,'comparison-decoded'),element('code',reading.formula,'comparison-formula'),element('p',reading.rule));
+  help.content.append(element('p',reading.variables));
+  help.content.append(element('p',`Average the field differences within each group, then combine the group means with the saved weights (geometry : sequence : ends) ${displayed.basis.weights.join(' : ')}. D is this weighted mean.`, 'comparison-policy'),element('code','D(a, b) = sum(w × group mean) / sum(active w)','comparison-formula'));
  }
  function dismiss(restore=false) {if(!help)return false;const open=!help.panel.hidden;help.panel.hidden=true;help.button.setAttribute('aria-expanded','false');if(open&&restore)help.button.focus();return open;}
  function reveal(key=null) {if(!help||!displayed)return;explained=key||explained;help.panel.hidden=false;help.button.setAttribute('aria-expanded','true');explain();}
@@ -122,7 +123,7 @@ export function comparisonStrip(host,onFocus,help=null) {
    if(packet!==next){reader=comparisonReader(next,state.choices.paths.map(p=>p.materialized_realization_id));packet=next;}
    const reading=reader(identity),content=[];
    const heading=element('span','X = [','comparison-vector-open');
-   heading.title='X lists the fields used for the saved molecular comparison. Geometry values are measurements; other values are dictionary codes. The comparison uses decoded molecular values. The supplied stem is fixed and enzyme methods are excluded. '+(reading.basis.schema_id==='hop.molecular-comparison/v2'?'Only tail bases contributing through recorded copying or primer binding to the released insert affect distance; discarded handle changes do not move the scaffold.':'This saved comparison includes complete hairpin tail lengths.');
+   heading.title='Map proximity uses geometry, retained sequences and assembly ends around the fixed stem. Enzyme choices appear in the preparation record. '+(reading.basis.schema_id==='hop.molecular-comparison/v2'?'Tail fields cover bases contributing to the released insert through recorded copying or primer binding.':'Tail fields cover the complete hairpin tails.');
    content.push(heading);
    const groups=reading.presentation?.groups||{};
    for(const [block,style] of Object.entries(groups)) {

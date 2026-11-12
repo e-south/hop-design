@@ -66,7 +66,7 @@ export function routeScenes(host,scroll,request,artifacts,progress) {
     };
   },{
     pending(job) {
-      for(const phase of job.phases) slots.get(phase)?.status.begin('Preparing matching scene…',job.identity);
+      for(const phase of job.phases) slots.get(phase)?.status.begin('Loading step…',job.identity);
       updateProgress();
     },
     ready(job) {if(contextKey(context)===contextKey(job)){lastRequest=null;schedule();}},
@@ -75,7 +75,7 @@ export function routeScenes(host,scroll,request,artifacts,progress) {
       for(const phase of job.phases) {
         const slot=slots.get(phase);if(!slot)continue;
         slot.failed=drawingKey(job,phase);
-        slot.status.begin('',job.identity).fail('Scene unavailable. Reinspect this point to retry.');
+        slot.status.begin('',job.identity).fail('Step did not load. Reinspect this point to retry.');
       }
       lastRequest=null;updateProgress();schedule();
     },
@@ -155,7 +155,7 @@ export function routeScenes(host,scroll,request,artifacts,progress) {
   function invalidate(identity) {
     work.clear();lastRequest=null;ready=false;
     for(const slot of slots.values()) {
-      slot.failed=null;slot.status.begin('',identity||'').idle('Preparing matching route…');
+      slot.failed=null;slot.status.begin('',identity||'').idle('Loading route…');
     }
     updateProgress();
   }
@@ -187,7 +187,7 @@ export function routeScenes(host,scroll,request,artifacts,progress) {
     pending:invalidate,
     previewFailed(identity) {
       for(const slot of slots.values()) if(slot.element.dataset.pendingIdentity===identity)
-        slot.status.begin('',identity).fail('Preview unavailable. Reinspect this point to retry.');
+        slot.status.begin('',identity).fail('Preview did not load. Reinspect this point to retry.');
       updateProgress();
     },
     previewPhases(teaching) {

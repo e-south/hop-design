@@ -23,23 +23,23 @@ export function colorControls(host,onColor) {
     words.hidden=lens.kind!=='word'||!lens.values.length;
     if(!words.hidden) {
       words.setAttribute('aria-label',`${lens.label} to highlight`);
-      words.title='Counts show matching preparations; / total recorded when filters exclude preparations.';
+      words.title='Counts show matching preparations. A second count gives the total before filtering.';
       words.replaceChildren(...lens.values.map(v=>new Option(`${v.value} · ${v.eligible.toLocaleString()}${v.eligible===v.total?'':` / ${v.total.toLocaleString()}`}`,v.value)));
       words.value=word;
     }
     legend.replaceChildren();
     if(lens.kind==='numeric'&&lens.extent) {
       const caption=document.createElement('span');
-      if(lens.constant) caption.textContent=`${lens.extent[0]} ${lens.unit} ${lens.missing?'where applicable':'throughout this edition'}`;
+      if(lens.constant) caption.textContent=`${lens.extent[0]} ${lens.unit} ${lens.missing?'where recorded':'throughout this edition'}`;
       else {
         const bar=document.createElement('i');bar.className='color-ramp';bar.setAttribute('aria-hidden','true');
         bar.style.background=`linear-gradient(to right,${lens.stops.join(',')})`;legend.append(bar);
         caption.textContent=`${lens.extent[0]}–${lens.extent[1]} ${lens.unit}`;
       }
       legend.append(caption);
-    } else if(lens.kind!=='none'&&(lens.kind!=='word'||!word)) legend.textContent='Not applicable to these preparations';
+    } else if(lens.kind!=='none'&&(lens.kind!=='word'||!word)) legend.textContent='No values recorded for this property';
     else if(neutralMessage)legend.textContent=neutralMessage;
-    if(lens.missing&&lens.values.length){const missing=document.createElement('span');missing.textContent=`× ${lens.missing.toLocaleString()} without this coordinate`;legend.append(missing);}
+    if(lens.missing&&lens.values.length){const missing=document.createElement('span');missing.textContent=`× ${lens.missing.toLocaleString()}: no value recorded`;legend.append(missing);}
     const outside=paths.filter(p=>!p.matches).length;
     if(outside){const text=document.createElement('span');text.textContent='Hollow: outside filters';legend.append(text);}
     host.dataset.colorKey=key;host.dataset.colorWord=word??'';onColor(lens);

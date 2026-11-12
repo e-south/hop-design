@@ -98,10 +98,10 @@ const hover=hoverPreview(async id=>{
   current:()=>state?.preview?.summary.atlas.materialized_realization_id,
   pending(identity){
     local.suspend();scenes.pending(identity);loading.pending(identity);transient.show();$('inspector').hidden=false;
-    $('preview-label').textContent='Preparing preview…';
+    $('preview-label').textContent='Loading preview…';
   },
   ready:identity=>loading.ready(identity),
-  failed(error,identity){scenes.previewFailed(identity);loading.failed(error,identity);$('preview-label').textContent='Preview unavailable';},
+  failed(error,identity){scenes.previewFailed(identity);loading.failed(error,identity);$('preview-label').textContent='Preview did not load';},
   clear:()=>loading.clear(),
 });
 function showHover(identity) {
@@ -130,7 +130,7 @@ async function rememberCamera(includeColor=false) {
 async function act(action,payload={},remember=true) {
   if(!state || busy || rendering.blocked) return false; hover.invalidate();busy=true;$('status').textContent='';
   local.suspend();scenes.pending(payload.materialized_realization_id);loading.beginAction(action,payload);
-  if(['select','sample','restore','inspect-discovery'].includes(action)) {inspectorDismissed=false;delete $('inspector').dataset.dismissed;$('inspector').hidden=false;$('preview-label').textContent='Preparing selection…';}
+  if(['select','sample','restore','inspect-discovery'].includes(action)) {inspectorDismissed=false;delete $('inspector').dataset.dismissed;$('inspector').hidden=false;$('preview-label').textContent='Loading preparation…';}
   try {
     if(remember && action!=='view') await rememberCamera();
     const next=await post(action,payload);
@@ -159,7 +159,7 @@ function pendingControls() {
     for(const id of ['another','back','retrieve','bookmark','open-view','stage','route-view','family-stage','clear','similarity','parameters','families']) {
       const control=$(id);if(!suspendedControls.has(control)) suspendedControls.set(control,control.disabled);control.disabled=true;
     }
-    $('status').textContent='The new preparation is saved; its drawing could not load. Retry to display it.';
+    $('status').textContent='Preparation saved. Retry loading its drawing.';
   }
 }
 $('retry-render').addEventListener('click',async()=>{

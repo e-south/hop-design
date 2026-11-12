@@ -16,8 +16,8 @@ test('distance explanations follow the saved policy without adding controls',asy
  basis.distance_policy={regional_metric:'normalized_edit',end_word_metric:'hamming',numeric_scaling:'declared'};
  assert.match(distanceDescription('shape','five_prime_unpaired_nt',basis),/declared scale.*2/);
  assert.match(distanceDescription('sequences','basal_pairs',basis),/longer region/);
- assert.match(distanceDescription('interfaces','left_word',basis),/positionwise/);
- assert.match(distanceDescription('interfaces','left_polarity',basis),/nominal/);
+ assert.match(distanceDescription('interfaces','left_word',basis),/base by base/);
+ assert.match(distanceDescription('interfaces','left_polarity',basis),/strand polarities/);
 });
 
 test('feature explanations distinguish physical values from exact dictionary lookups',async()=>{
@@ -27,13 +27,26 @@ test('feature explanations distinguish physical values from exact dictionary loo
  assert.match(geometry.formula,/abs\(a − b\) \/ 2/);
  const contact=comparisonExplanation(reading.vector[1],reading.basis);
  assert.equal(contact.kind,'Dictionary code');assert.match(contact.decoded,/G:T/);
- assert.match(contact.meaning,/1 ordered contact/);assert.match(contact.meaning,/not a count/);
+ assert.match(contact.meaning,/Code 1 identifies the contact list/);assert.match(contact.meaning,/1 ordered contact/);
  assert.match(contact.formula,/edit\(a, b\)/);assert.match(contact.formula,/abs\(m − n\)/);
  const end=comparisonExplanation(reading.vector[2],reading.basis);
- assert.equal(end.decoded,'GGAA');assert.match(end.meaning,/4 nt/);
+ assert.equal(end.decoded,'GGAA');assert.match(end.meaning,/4-nt sequence/);
  p.basis.distance_policy={regional_metric:'normalized_edit',end_word_metric:'hamming'};
  assert.equal(comparisonExplanation(reading.vector[2],p.basis).formula,'mismatches(a, b) / length(a)');
  assert.equal(JSON.stringify(p.columns[2].dictionary[1]),'[["G","T","gt_wobble"]]');
+});
+
+test('the end mismatch explanation defines only the variables used by its formula',async t=>{
+ const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});globalThis.document={createElement:element};
+ const {comparisonStrip}=await load(),host=element(),help={button:element(),close:element(),panel:element(),content:element()};
+ help.panel.id='help';help.panel.hidden=true;
+ const p=packet();p.basis.distance_policy={regional_metric:'normalized_edit',end_word_metric:'hamming'};
+ const state={presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}};
+ comparisonStrip(host,()=>{},help).prepare('B',state)();help.button.handlers.get('click')();
+ const select=help.content.querySelector('select');select.value='interfaces.left_word';select.handlers.get('change')();
+ const text=help.content.children.map(e=>e.textContent||'').join(' ');
+ assert.match(text,/GGAA/);assert.match(text,/mismatches\(a, b\) \/ length\(a\)/);
+ assert.doesNotMatch(text,/m and n|An edit/);
 });
 
 test('optional X explanation follows committed hover values, retains its field and closes before clearing',async t=>{
@@ -46,7 +59,7 @@ test('optional X explanation follows committed hover values, retains its field a
  const select=help.content.querySelector('select');select.value='sequences.basal_pairs';select.handlers.get('change')();
  const pending=strip.prepare('B',state);assert.equal(help.panel.dataset.preparationId,'A');
  pending();assert.equal(help.panel.dataset.preparationId,'B');assert.equal(help.content.querySelector('select').value,'sequences.basal_pairs');
- assert.match(help.content.children.find(e=>e.tag==='h3').textContent,/= 1.*Dictionary code/);
+ assert.match(help.content.children.find(e=>e.tag==='h3').textContent,/Basal contacts.*X2 = 1/);
  assert.match(help.content.children.find(e=>e.className==='comparison-policy').textContent,/2 : 1 : 3/);
  assert.match(help.content.children.at(-1).textContent,/sum\(active w\)/);
  assert.ok(strip.dismiss(true));assert.equal(help.button.focused,true);assert.equal(help.panel.hidden,true);
@@ -115,8 +128,8 @@ test('retained terminal fields remain exact and do not masquerade as complete ha
  assert.equal(read('B').features[0].value,2);
  const host=element(),strip=comparisonStrip(host,()=>{});
  strip.prepare('A',{presentation:{landscape:'similarity'},map_index:{comparison:p},choices:{paths:['A','B'].map(materialized_realization_id=>({materialized_realization_id}))}})();
- assert.match(host.children[0].children[0].title,/discarded handle changes do not move/);
- assert.doesNotMatch(host.children[0].children[0].title,/includes complete hairpin tail/);
+ assert.match(host.children[0].children[0].title,/Tail fields cover bases contributing to the released insert/);
+ assert.doesNotMatch(host.children[0].children[0].title,/cover the complete hairpin tails/);
 });
 
 test('strip prepares without changing visible identity, commits atomically and restores the pin',async t=>{
@@ -160,8 +173,8 @@ test('decoded strip shows scientific scalar values while retaining exact stored 
  assert.equal(code.dataset.encoded,'6');assert.equal(code.hidden,true);
  const contacts=fields[1].children.find(e=>e.className==='comparison-value');
  assert.equal(contacts.textContent,'1');
- assert.match(fields[1].title,/G:T gt wobble/);
- assert.match(fields[1].title,/code magnitude is not a distance/);
+ assert.match(fields[1].title,/Basal contacts · code 1 · 1 ordered contact/);
+ assert.equal(fields[1].children.find(e=>e.className==='comparison-code').dataset.encoded,'[["G","T","gt_wobble"]]');
 });
 
 test('literal scientific features retain the exact recorded values',async t=>{
