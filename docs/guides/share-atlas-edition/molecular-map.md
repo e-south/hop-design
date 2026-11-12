@@ -66,9 +66,11 @@ search coverage separately from map distances, clusters and point density.
 Nearby points compare shape, retained scaffold sequence and applicable receiving
 ends. The fixed supplied stem and auxiliary primer-handle sequences do not determine
 position. Enzyme methods remain visible in the trace.
-Under **Preparation details → Similar preparations**, HOP describes changed
-coordinates. It labels loop surroundings preserved only after its regional
-preservation operation verifies that relationship.
+The inspector keeps the molecular views and exact preparation downloads together.
+**Atlas options** retains saved-view export and restoration. Detailed comparisons,
+costs, correspondence diagnostics and reproduction commands remain available in
+records, exports and the API/CLI; they are not repeated below the drawings.
+Rendering and route-composition policies remain explicit API/CLI options.
 
 Coordinates stay fixed while filtering. Preparations with identical comparison
 descriptors share a position. Select that position to inspect its members;

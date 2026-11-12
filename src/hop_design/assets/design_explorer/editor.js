@@ -9,13 +9,11 @@ import {hoverPreview} from './hover_preview.js';
 import {mapCamera} from './map_camera.js';
 import {mapRaster} from './map_raster.js';
 import {inspectionOverlay,transientInspector,escapeInspection} from './inspection_overlay.js';
-import {persistentScene} from './persistent_scene.js';
 import {pendingRender} from './pending_render.js';
 import {hydrateCohort} from './cohort_state.js';
-import {neighboringChoices} from './neighbors.js';
 import {inspectionLoading} from './inspection_loading.js';
 import {colorControls} from './color_controls.js';
-import {inspectionFacts} from './inspection_facts.js';
+import {validateInspectionFacts} from './inspection_facts.js';
 import {routeScenes} from './route_scenes.js';
 import {resizableInspector} from './inspector_resize.js';
 import {comparisonStrip} from './comparison_features.js';
@@ -23,20 +21,16 @@ import {discoveryControls} from './discovery.js';
 
 const $ = id => document.getElementById(id), token = document.querySelector('meta[name=hop-token]').content;
 let state=null, mode='families', molecularMode='molecule', busy=false, teachingURL=null;
-let inspectorDismissed=false, figureScroll=0, figureReturn=null, definitionsKey=null, hoverLayout=null;
+let inspectorDismissed=false, figureScroll=0, figureReturn=null, hoverLayout=null;
 const rendering=pendingRender(render);
 const figure=figureLayout($('figure-one-plate'),$('molecular-area'),$('trace-context'));
-const facts=inspectionFacts($('inspection-facts'));
-let pinnedFacts=()=>facts.clear();
 let pinnedComparison=()=>comparisonView.clear();
 const transient=transientInspector($('inspector'),$('inspector-scroll'));
 const selectedTrace=inspectionOverlay($('trace-context'));
-const distributionScene=persistentScene($('distributions'));
 const artifacts=artifactLoader();
 const loading=inspectionLoading($);
 const scenes=routeScenes($('route-scenes'),$('inspector-scroll'),job=>post('scenes',{materialized_realization_id:job.identity,phases:job.phases}),artifacts,$('route-progress'));
 const resizing=resizableInspector($('object'),$('inspector'),$('inspector-scroll'),$('inspector-resize'),()=>{connect();scenes.refresh();},()=>showHover(null));
-const nearby=neighboringChoices($('nearby'),$('neighbor-options'),post,()=>state,id=>act('select',{materialized_realization_id:id}));
 const discovery=discoveryControls($,post,{inspect:async job_id=>{
   if(!await act('inspect-discovery',{job_id}))throw Error($('status').textContent||'Finish the current drawing update before opening results.');
 }});
@@ -83,11 +77,11 @@ const hover=hoverPreview(async id=>{
   if(a.dataset.preparationId!==value.materialized_realization_id) throw Error('Preview identity disagrees with its molecule.');
   if(value.trace.materialized_realization_id!==value.materialized_realization_id) throw Error('Preview identity disagrees with its trace.');
   const trace=selectedTrace.prepare(value.trace,state.trace_projection);
-  const factCommit=facts.prepare(value.materialized_realization_id,value.inspection_explanation,value.construction_cost,{preview:true,referencePinned:Boolean(state.selection),productLabel:value.product_label});
+  validateInspectionFacts(value.materialized_realization_id,value.inspection_explanation,value.construction_cost);
   const comparisonCommit=comparisonView.prepare(value.materialized_realization_id,state);
   validateFigureLayout(value.figure_layout);
   return ()=>{
-    hoverLayout=value.figure_layout;$('hover-molecule').replaceChildren(a);$('hover-molecule').hidden=false;trace();factCommit();
+    hoverLayout=value.figure_layout;$('hover-molecule').replaceChildren(a);$('hover-molecule').hidden=false;trace();
     $('preview-label').textContent=value.eligible?'Preparation':'Preview · outside current filters';
     $('molecular-area').classList.add('previewing');transient.show();$('inspector').hidden=false;
     sceneCommit();comparisonCommit();
@@ -96,7 +90,7 @@ const hover=hoverPreview(async id=>{
 },()=>{
   clearHoverDrawing();
   selectedTrace.show(state?.selected_trace,state?.trace_projection);
-  pinnedFacts();pinnedComparison();scenes.restore();local.update(state);
+  pinnedComparison();scenes.restore();local.update(state);
   $('preview-label').textContent='Preparation';
   $('inspector').hidden=inspectorDismissed||!state?.preview;
   connect();
@@ -162,7 +156,7 @@ function pendingControls() {
   $('retry-render').hidden=!rendering.blocked;
   document.body.classList.toggle('render-pending',rendering.blocked);
   if(rendering.blocked) {
-    for(const id of ['another','back','retrieve','bookmark','open-view','stage','route-view','render-policy','route-presentation','family-stage','clear','similarity','parameters','families']) {
+    for(const id of ['another','back','retrieve','bookmark','open-view','stage','route-view','family-stage','clear','similarity','parameters','families']) {
       const control=$(id);if(!suspendedControls.has(control)) suspendedControls.set(control,control.disabled);control.disabled=true;
     }
     $('status').textContent='The new preparation is saved; its drawing could not load. Retry to display it.';
@@ -201,48 +195,37 @@ function returnToAtlas() {
 function closeInspector() {
   showHover(null);returnToAtlas();inspectorDismissed=true;$('inspector').dataset.dismissed='true';$('inspector').hidden=true;scenes.pending();$('plot').focus();
 }
-function definitions(axes) {
-  $('definitions').replaceChildren(...axes.flatMap(axis=>{
-    const title=document.createElement('dt'),description=document.createElement('dd');
-    title.textContent=axis.label; description.textContent=`${axis.measurement}${axis.relationship?' '+axis.relationship:''} State: ${axis.stage.replaceAll('_',' ')}.`;
-    return [title,description];
-  }));
-}
 async function render(next,restore=false) {
   if(!Array.isArray(next.stage_options))throw Error('Inspection state lacks its recorded processing-stage labels. Reload the browser.');
   const previousMode=molecularMode, previousStage=state?.stage;
   const mapNeeded=!next.map_index&&plots.needsMap(next.plots[next.presentation.landscape]);
   const traceNeeded=plots.needsTrace(next.plots.inspection);
-  const distributionNeeded=!distributionScene.matches(next.plots.distributions);
-  const [plot,trace,distribution]=await Promise.all([
+  const [plot,trace]=await Promise.all([
     mapNeeded?artifacts.text(next.plots[next.presentation.landscape]):null,
     traceNeeded?artifacts.text(next.plots.inspection):null,
-    distributionNeeded?artifacts.text(next.plots.distributions):null,
   ]);
   if(next.figure_layout) validateFigureLayout(next.figure_layout);
-  const distributionDrawing=distributionNeeded?svgDocument(distribution):null;
   // Validate all incoming drawings and overlay authority before committing any view.
   if(mapNeeded) svgDocument(plot);
   if(traceNeeded) svgDocument(trace);
   if(next.selected_trace && (next.selected_trace.projection!==next.trace_projection.projection || next.selected_trace.frame!==next.trace_projection.frame)) throw Error('Selected trace does not match the parameter projection.');
   next={...next,landscape_svg:plot,plot_svg:trace};
-  const factCommit=facts.prepare(next.preview?.summary.atlas.materialized_realization_id,next.inspection_explanation,next.preview?.summary.atlas.construction_cost,{productLabel:next.product_label});
+  validateInspectionFacts(next.preview?.summary.atlas.materialized_realization_id,next.inspection_explanation,next.preview?.summary.atlas.construction_cost);
   const comparisonCommit=comparisonView.prepare(next.preview?.summary.atlas.materialized_realization_id,next);
   if(next.preview) await views.show(next.preview,next.presentation.molecule==='route'?'both':'molecule',()=>setMolecularMode(next.presentation.molecule));
   else views.clear();
   clearHoverDrawing();
-  state=next;scenes.pin(state);nearby.clear();pinnedFacts=factCommit;pinnedFacts();
+  state=next;scenes.pin(state);
   discovery.update(state);
   pinnedComparison=comparisonCommit;pinnedComparison();
-  if(distributionDrawing) distributionScene.update(next.plots.distributions,()=>distributionDrawing);
   mode=state.presentation.landscape;
   for(const id of ['parameters','families','similarity']) $(id).setAttribute('aria-pressed',String(id===mode));
   $('similarity').disabled=!state.has_landscape;
   $('map-scope').textContent=state.has_landscape?'Map proximity reflects molecular shape, retained sequence and assembly ends. Filtering leaves coordinates fixed.':'This collection has no saved map coordinates. Structural groups remain available.';
   $('family-stage-label').hidden=mode!=='families';
   if(mode!=='similarity')$('alternate-views').open=true;
-  $('selection-actions').hidden=!state.preview;$('selection-details').hidden=!state.preview;
-  $('preview-label').textContent='Preparation';
+  $('selection-actions').hidden=!state.preview;
+  $('preview-label').textContent=state.preview_status==='excluded_by_query'?'Preparation · outside current filters':'Preparation';
   setMolecularMode(state.presentation.molecule);
   $('figure-two').hidden=!state.preview;$('inspector').dataset.hasPin=String(Boolean(state.preview));$('inspector').hidden=inspectorDismissed||!state.preview;
   const counts=state.cohort_summary||{products:state.families.products.length,eligible_products:state.families.products.filter(p=>p.eligible_preparations.length).length,product:state.families.product};
@@ -250,25 +233,8 @@ async function render(next,restore=false) {
   plots.draw(state,mode);colors.update(state,{restore});delete state.landscape_svg;delete state.plot_svg;mapView.attach();raster.attach(mode);selectedTrace.show(state.selected_trace,state.trace_projection);connect(); $('another').disabled=!state.choices.matching_preparations;
   $('back').disabled=!state.can_back;$('retrieve').disabled=!state.selection;$('bookmark').disabled=!state.selection;
   $('clear').hidden=!state.choices.query.parameters.length && !state.choices.query.membership;
-  const current=state.preview?.summary, comparison=current?.comparison;
+  const current=state.preview?.summary;
   local.update(state);
-  $('render-policy').value=state.render_policy;$('render-policy').disabled=!state.selection;
-  $('route-presentation').value=state.presentation.route;$('route-presentation').disabled=!state.selection||current?.rendering?.effective!=='current';$('route-presentation').title=current?.rendering?.effective==='captured'?'Choose Current glyphs to change the recorded composition.':'';
-  $('render-info').textContent=current?.rendering?.notice || (current?.rendering?.effective==='current'?'Current glyphs drawn from the recorded molecules.':'Artwork saved with this collection.');
-  const notices=comparison?.notices || [];
-  const warnings=state.sample_receipt?.explanation?[state.sample_receipt.explanation]:[];
-  if(state.preview_status==='excluded_by_query')warnings.push('This preparation is outside the current filters. Select a matching preparation to retrieve its materials.');
-  if(notices.length)warnings.push('Some base correspondence remains unresolved.',...notices);
-  $('change').textContent=warnings.join(' ');
-  const changes=state.sample_receipt?.coordinate_changes || state.inspection_explanation?.coordinate_changes || [];
-  $('comparison-detail').replaceChildren(...changes.map(change=>{
-    const axis=state.choices.axes.find(a=>a.key===change.key);
-    const label=value=>axis?.nodes?.find(n=>n.value===value)?.label ?? String(value);
-    const item=document.createElement('li');
-    item.textContent=`${change.label}: ${label(change.before)} → ${label(change.after)}${change.unit?' '+change.unit:''}`;
-    return item;
-  }));
-  $('comparison-changes').hidden=!changes.length;
   const selectedStage=state.stage;
   $('stage').replaceChildren(new Option('All processing steps','all'),...state.stage_options.map(s=>new Option(s.label,s.value)));
   $('stage').value=selectedStage;
@@ -280,10 +246,6 @@ async function render(next,restore=false) {
   $('download').hidden=!state.handoff;if(state.handoff) {$('download').href=state.handoff.archive;$('download').download='hop-preparation.zip';}
   $('record').hidden=!current;if(current) $('record').href=state.preview.record;
   $('family-stage').value=state.family_stage;
-  if(definitionsKey!==state.plots.parameters){definitions(state.choices.axes);definitionsKey=state.plots.parameters;}
-  $('recipe').textContent=state.commands;
-  $('selection-receipt').textContent=JSON.stringify(state.sample_receipt || state.selection || state.choices.query,null,2);
-  $('coverage').textContent=state.explanation.guidance;
 }
 function download(name,value) {
   const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));
@@ -310,14 +272,12 @@ $('bookmark').addEventListener('click',async()=>{
     $('view-link').href=`#view=${fragment}`;$('view-link').hidden=false;
   }catch(error){$('status').textContent=error.message;pendingControls();}
 });
-$('render-policy').addEventListener('change',()=>act('view',{stage:state.stage,camera:null,render_policy:$('render-policy').value}));
-$('route-presentation').addEventListener('change',()=>act('view',{stage:state.stage,camera:null,presentation:{...currentPresentation(),route:$('route-presentation').value}}));
 $('open-view').addEventListener('click',()=>$('view-file').click());
 $('view-file').addEventListener('change',async()=>{try{const file=$('view-file').files[0];if(file) await act('restore',{receipt:JSON.parse(await file.text())},false);}catch(error){$('status').textContent=error.message;}});
 async function restoreHash(){if(location.hash.startsWith('#view=')){const receipt=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));await act('restore',{receipt},false);}}
 window.addEventListener('hashchange',()=>restoreHash().catch(e=>{$('status').textContent=e.message;}));
 const observer=new ResizeObserver(()=>{connect();scenes.refresh();});observer.observe($('object'));
-window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();nearby.close();raster.close();mapView.close();comparisonView.close();views.clear();figure.clear();selectedTrace.clear();plots.close();distributionScene.clear();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
+window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();raster.close();mapView.close();comparisonView.close();views.clear();figure.clear();selectedTrace.clear();plots.close();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
 window.addEventListener('blur',()=>showHover(null));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')escapeInspection($('inspector'),{dismissRefinement:()=>{if(comparisonView.dismiss(true))return true;if(!$('refinement').open)return false;$('refinement').open=false;$('refine').focus();return true;},restorePreview:()=>showHover(null),returnToMap:returnToAtlas,close:closeInspector});});
 $('refine').addEventListener('click',()=>{$('refinement').open=!$('refinement').open;});
