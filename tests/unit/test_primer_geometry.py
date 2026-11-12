@@ -11,6 +11,13 @@ from hop_design.export.construction.molecular.primitives.primer_geometry import 
 from hop_design.export.construction.molecular.primitives.primer_shape import primer_outline
 
 
+def test_arrowhead_room_does_not_compress_ordered_primer_letters():
+    template = [(16.0 * i, 0.0) for i in range(12)]
+    positions = position_primer(template, template, outward=-1)
+    assert len(positions) == len(template)
+    assert all(hypot(b[0] - a[0], b[1] - a[1]) >= 16 - 1e-6 for a, b in pairwise(positions))
+
+
 @pytest.mark.parametrize("outward", [-1, 1])
 def test_primer_stays_near_handle_where_template_straightens(outward):
     template = [(16.0 * i, outward * 64.0) for i in range(11)]

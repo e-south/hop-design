@@ -310,12 +310,17 @@ def _render_projected_teaching(
     label_backplates(root)
     x, y, width, content_height = scene_bounds(root)
     root.set("data-content-frame", f"{x - 8:g} {y - 8:g} {width + 16:g} {content_height + 16:g}")
-    root.set("viewBox", f"0 0 {WIDTH} {height}")
+    view_left = min(0, x - 8)
+    view_width = WIDTH - view_left
+    root.set("viewBox", f"{view_left:g} 0 {view_width:g} {height}")
     root.set(
         "height",
-        f"{7 * height / WIDTH}in"
+        f"{7 * height / view_width}in"
         if physical_width == 504
-        else f"{physical_width * height / WIDTH:g}pt",
+        else f"{physical_width * height / view_width:g}pt",
     )
     next(e for e in root if e.tag.endswith("}rect")).set("height", str(height))
+    background = next(e for e in root if e.tag.endswith("}rect"))
+    background.set("x", str(view_left))
+    background.set("width", str(view_width))
     return bytes(ET.tostring(root, encoding="utf-8"))

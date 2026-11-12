@@ -17,6 +17,7 @@ from .inspection_overlays import inspection_overlays
 from .inspection_scene import edge, region_spans
 from .parameter_boundaries import mark_parameter_locations
 from .primitives.annotation_policy import FootprintScope
+from .primitives.extent import scene_bounds
 from .primitives.materials import PlacedInput
 from .primitives.strands import strand_primitives
 from .primitives.style import FONT_FAMILY, TITLE_SIZE, base_ink
@@ -267,10 +268,11 @@ def molecular_inspection_element(
         (json.loads(e.attrib["data-label-box"])[1] for e in root.iter() if e.get("data-label-box")),
         default=TITLE_SIZE + 18,
     )
-    if label_top < TITLE_SIZE + 18 - 1e-7:
+    left, _, _, _ = scene_bounds(root)
+    dx, dy = max(0, 18 - left), max(0, TITLE_SIZE + 18 - label_top)
+    if dx > 1e-7 or dy > 1e-7:
         # Above-primer names own their side; grow the molecular frame rather
         # than clipping them or moving them onto the template.
-        dy = TITLE_SIZE + 18 - label_top
         return molecular_inspection_element(
             projection,
             comparison=comparison,
@@ -280,10 +282,10 @@ def molecular_inspection_element(
             site_labels=site_labels,
             label_site_ids=label_site_ids,
             staged_inputs=tuple(
-                replace(item, positions=tuple((x, y + dy) for x, y in item.positions))
+                replace(item, positions=tuple((x + dx, y + dy) for x, y in item.positions))
                 for item in staged_inputs
             ),
-            layout_points={key: (x, y + dy) for key, (x, y) in points.items()},
+            layout_points={key: (x + dx, y + dy) for key, (x, y) in points.items()},
             interface_labels=interface_labels,
             footprint_scope=footprint_scope,
         )

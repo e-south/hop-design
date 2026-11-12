@@ -11,6 +11,8 @@ from .atlas_blocks import route_blocks
 from .atlas_placement import place_route
 from .atlas_reading_order import continuation_svg
 from .primitives.annotation_policy import RouteSiteLabels, site_key
+from .primitives.extent import scene_extent
+from .primitives.operations import center_operation
 from .primitives.style import ANNOTATION_SIZE, FONT_FAMILY, SCENE_CLEARANCE, TITLE_SIZE
 
 
@@ -36,6 +38,16 @@ def render_molecular_atlas(
     from_side = False
     side_origin: Literal["loop-cap", "retained-foldback"] = "loop-cap"
     for index, (block, position) in enumerate(zip(blocks, placement.positions, strict=True)):
+        if index + 1 < len(blocks) and position.column == placement.positions[index + 1].column:
+            following_element = blocks[index + 1].element
+            title = next(e for e in following_element if e.get("data-stage-title"))
+            center_operation(
+                block.element,
+                placement.positions[index + 1].y
+                - position.y
+                + float(title.attrib["y"])
+                - TITLE_SIZE,
+            )
         if (
             position.column == "0"
             and index + 1 < len(blocks)
@@ -125,6 +137,10 @@ def render_molecular_atlas(
             )
         block.element.attrib.update(
             {
+                # Packing advance and visible extent differ when an operation
+                # uses the next scene's empty title headroom.
+                "data-atlas-advance": str(block.extent.height),
+                "data-atlas-height": str(scene_extent(block.element)[1]),
                 "data-atlas-x": str(position.x),
                 "data-atlas-y": str(position.y),
                 "data-atlas-column": position.column,

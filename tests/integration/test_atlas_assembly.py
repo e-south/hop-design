@@ -46,6 +46,32 @@ def test_assembly_view_collapses_cleanup_without_changing_the_record(atlas):
     assert len([e for e in complete.iter() if e.get("data-atlas-state")]) == 11
 
 
+def test_ordinary_transition_is_centered_between_content_and_next_title(atlas):
+    from itertools import pairwise
+
+    from hop_design.export.construction.molecular.primitives.extent import scene_bounds
+
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    rows = [e for e in root.iter() if e.get("data-atlas-state")]
+    for source, target in pairwise(rows):
+        if source.get("data-atlas-column") != target.get("data-atlas-column"):
+            continue
+        arrow = next(e for e in source if e.get("data-operation-arrow"))
+        scene = next(e for e in source if e.get("data-scene-content"))
+        _, top, _, height = scene_bounds(scene)
+        bottom = top + height
+        title = next(e for e in target if e.get("data-stage-title"))
+        title_top = (
+            float(target.get("data-atlas-y"))
+            - float(source.get("data-atlas-y"))
+            + float(title.get("y"))
+            - float(title.get("font-size"))
+        )
+        _, arrow_top, _, arrow_height = map(float, arrow.get("data-drawing-box").split())
+        assert arrow_top - bottom == pytest.approx(title_top - arrow_top - arrow_height)
+        assert arrow_top - bottom >= 18 - 1e-6
+
+
 def _base_points(root, state):
     elements = {
         (e.get("data-strand-id"), int(e.get("data-base-index"))): e
@@ -223,7 +249,10 @@ def test_assembly_titles_and_site_bands_explain_without_numbering_or_label_arrow
 def test_complete_primer_silhouettes_clear_the_molecule_and_fit_their_bounds(atlas):
     """Arrowheads must clear strands too, not merely their nucleotide centers."""
     import re
+    from itertools import pairwise
     from math import hypot
+
+    from hop_design.export.construction.molecular.primitives.typography import text_width
 
     root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
     for row in (e for e in root.iter() if e.get("data-atlas-state")):
@@ -238,6 +267,14 @@ def test_complete_primer_silhouettes_clear_the_molecule_and_fit_their_bounds(atl
             contour = next((e for e in glyph if e.get("data-primer-contour")), None)
             if contour is None:
                 continue
+            letters = [e for e in glyph.iter() if e.get("data-input-base-index") is not None]
+            for a, b in pairwise(letters):
+                pitch = hypot(
+                    float(b.get("x")) - float(a.get("x")), float(b.get("y")) - float(a.get("y"))
+                )
+                assert (
+                    pitch >= sum(text_width(t.text, float(t.get("font-size"))) for t in (a, b)) / 2
+                )
             outline = [
                 tuple(map(float, p))
                 for p in re.findall(r"(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)", contour.get("d"))

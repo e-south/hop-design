@@ -25,7 +25,7 @@ def parallel_positions(
     Offset segment intersections keep one clearance through a bend. Resampling
     avoids overlapping letters near an inside corner. An explicit end inset
     reserves the directional tip on this same parallel path, fitting the
-    ordered letters before the tip instead of changing normal clearance. Molecular addresses
+    ordered letters before the tip without shortening their pitch. Molecular addresses
     and the recorded binding interval are unchanged.
     """
     if len(points) == 1:
@@ -51,7 +51,7 @@ def parallel_positions(
     total = sum(lengths)
     result = []
     for i in range(len(points)):
-        remaining = (total - min(end_inset, total / 2)) * i / (len(points) - 1)
+        remaining = total * i / (len(points) - 1) - min(end_inset, total / 2)
         for j, length in enumerate(lengths):
             if remaining <= length or j == len(lengths) - 1:
                 t = remaining / max(length, 1e-9)

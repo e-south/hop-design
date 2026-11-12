@@ -59,6 +59,38 @@ def test_wide_scene_uses_coordinate_continuations_at_seven_inches():
     assert paginate_atlas(wide_route()) == (pages, layout)
 
 
+def test_centered_input_letters_outside_the_molecule_fit_their_print_clips():
+    root = ET.fromstring(wide_route())
+    row = next(e for e in root.iter() if e.get("data-atlas-state"))
+    group = ET.SubElement(row, "{http://www.w3.org/2000/svg}g", {"data-staged-material": "input"})
+    for i, x in enumerate((-20, 2300)):
+        ET.SubElement(
+            group,
+            "{http://www.w3.org/2000/svg}text",
+            {
+                "data-input-base-index": str(i),
+                "x": str(x),
+                "y": "150",
+                "font-size": "16",
+                "text-anchor": "middle",
+            },
+        ).text = "A"
+    pages, _ = paginate_atlas(ET.tostring(root))
+    letters = []
+    for page in pages:
+        document = ET.fromstring(page)
+        clips = {e.get("id"): e[0] for e in document.iter() if e.tag.endswith("}clipPath")}
+        for panel in (e for e in document.iter() if e.get("data-scene-panel")):
+            viewport = next(e for e in panel.iter() if e.get("clip-path"))
+            clip = clips[viewport.get("clip-path").removeprefix("url(#").removesuffix(")")]
+            lo, width = float(clip.get("x")), float(clip.get("width"))
+            for letter in (e for e in panel.iter() if e.get("data-input-base-index") is not None):
+                x = float(letter.get("x"))
+                assert lo <= x - 7 and x + 7 <= lo + width
+                letters.append(letter.get("data-input-base-index"))
+    assert letters == ["0", "1"]
+
+
 def test_continued_editable_groups_have_unique_svg_ids_on_each_page():
     svg = wide_route().replace(
         b"<path data-edge-kind=", b'<g id="strand-edit"><path data-edge-kind=', 1

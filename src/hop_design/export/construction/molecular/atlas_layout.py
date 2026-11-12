@@ -15,7 +15,7 @@ from .assembly.placement import assembly_points
 from .inspection import molecular_inspection_element
 from .inspection_overlays import inspection_overlays
 from .primitives.annotation_policy import FootprintScope, RouteSiteLabels, named_sites
-from .primitives.extent import scene_extent
+from .primitives.extent import scene_bounds, scene_extent
 from .primitives.style import TITLE_SIZE
 
 
@@ -48,7 +48,7 @@ def atlas_scenes(
         for index, state in enumerate(atlas.states)
         if index in record_indices
     )
-    headroom = 0.0
+    headroom, leftroom = 0.0, 0.0
     for state in atlas.states:
         sid = state.state.state_id
         if not needs_folded_frame or state.state.phase.value not in folded or sid not in frames:
@@ -76,11 +76,14 @@ def atlas_scenes(
             default=TITLE_SIZE + 18,
         )
         headroom = max(headroom, TITLE_SIZE + 18 - low)
-    if headroom > 1e-7:
+        leftroom = max(leftroom, 18 - scene_bounds(overlay)[0])
+    if headroom > 1e-7 or leftroom > 1e-7:
         for state in atlas.states:
             sid = state.state.state_id
             if state.state.phase.value in folded and sid in frames:
-                frames[sid] = {key: (x, y + headroom) for key, (x, y) in frames[sid].items()}
+                frames[sid] = {
+                    key: (x + leftroom, y + headroom) for key, (x, y) in frames[sid].items()
+                }
         staged = {
             state.state.state_id: incoming_materials(atlas, state, frames) for state in atlas.states
         }

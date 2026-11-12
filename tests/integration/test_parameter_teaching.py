@@ -120,11 +120,11 @@ def test_inspector_overview_retains_every_base_and_fits_larger_annotations(captu
             assert letter.get("fill") == base_ink(glyph.get("data-neighborhood"))
     assert len([e for e in narrow.iter() if e.get("data-teaching-frame")]) == 1
     assert not any(e.get("data-teaching-continuation") for e in narrow.iter())
-    width, height = map(float, narrow.get("viewBox").split()[2:])
+    left, _top, width, height = map(float, narrow.get("viewBox").split())
     boxes = [json.loads(e.get("data-label-box")) for e in narrow.iter() if e.get("data-label-box")]
     assert len(boxes) >= 5
     for a, b, w, h in boxes:
-        assert 0 <= a < a + w <= width
+        assert left <= a < a + w <= left + width
         assert 0 <= b < b + h <= height
     for i, (a, b, w, h) in enumerate(boxes):
         for x, y, sw, sh in boxes[i + 1 :]:
@@ -136,7 +136,7 @@ def test_inspector_overview_retains_every_base_and_fits_larger_annotations(captu
             e.get("data-staged-material") or e.get("data-primer-binding")
         ):
             a, b, w, h = map(float, e.get("data-drawing-box").split())
-            assert 0 <= a < a + w <= width
+            assert left <= a < a + w <= left + width
             assert 0 <= b < b + h <= height
 
 

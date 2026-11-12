@@ -24,7 +24,10 @@ def base_box(base: ET.Element) -> tuple[float, float, float, float]:
     if rect is not None:
         return tuple(float(rect.get(k, "0")) for k in ("x", "y", "width", "height"))  # type: ignore[return-value]
     text = next((e for e in base if e.tag.endswith("}text")), base)
-    return float(text.get("x", "0")), float(text.get("y", "16")) - 16, 14, 20
+    x = float(text.get("x", "0"))
+    if text.get("text-anchor") == "middle":
+        x -= 7
+    return x, float(text.get("y", "16")) - 16, 14, 20
 
 
 def _windows(
@@ -83,7 +86,10 @@ def scene_panels(row: ET.Element, width: float) -> tuple[ScenePanel, ...]:
     bases = [e for e in row.iter() if e.get("data-base-index") is not None]
     if not bases:
         raise ValueError("A molecular scene needs addressed nucleotide glyphs.")
-    windows = _windows([base_box(b) for b in bases], width - 24)
+    # Incoming materials can extend beyond the molecule's terminal base. Their
+    # letters share the same clipping contract as incorporated nucleotides.
+    inputs = [e for e in row.iter() if e.get("data-input-base-index") is not None]
+    windows = _windows([base_box(b) for b in [*bases, *inputs]], width - 24)
     title = next(
         (e.text for e in row.iter() if e.get("data-stage-title")), row.get("data-atlas-state")
     )
@@ -102,7 +108,12 @@ def _panel(
 ) -> ScenePanel:
     lo, hi = windows[ordinal - 1]
     owned = [b for b in bases if lo <= base_box(b)[0] + base_box(b)[2] / 2 < hi]
-    occupied = [base_box(b) for b in owned]
+    occupied = [base_box(b) for b in owned] + [
+        base_box(e)
+        for e in row.iter()
+        if e.get("data-input-base-index") is not None
+        and lo <= base_box(e)[0] + base_box(e)[2] / 2 < hi
+    ]
     placer = LabelPlacer(occupied, horizontal_bounds=(lo + 12, lo + width - 24))
     label_bottom = 0.0
     labels: list[ET.Element] = []
@@ -143,7 +154,7 @@ def _panel(
             x, _, w, _ = base_box(element)
             return deepcopy(element) if lo <= x + w / 2 < hi else None
         if element.get("data-input-base-index") is not None:
-            x = float(element.attrib["x"]) + 5
+            x = float(element.attrib["x"])
             return deepcopy(element) if lo <= x < hi else None
         if any(
             element.get(k)

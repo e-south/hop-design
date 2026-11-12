@@ -2,6 +2,7 @@
 
 from xml.etree import ElementTree as ET
 
+from .extent import scene_bounds
 from .style import (
     ANNOTATION_SIZE,
     INK,
@@ -13,6 +14,34 @@ from .style import (
 from .typography import text_width
 
 SVG = "http://www.w3.org/2000/svg"
+
+
+def center_operation(root: ET.Element, next_title_top: float) -> None:
+    """Use adjacent visible boundaries, including the next title's headroom.
+
+    The operation may occupy otherwise empty headroom in the following scene;
+    it remains separate from that scene's molecular content. Explicit input
+    lists retain their existing operation/input reading order.
+    """
+    if any(e.get("data-atlas-input") for e in root.iter()):
+        return
+    scene = next(e for e in root if e.get("data-scene-content"))
+    _, top, _, height = scene_bounds(scene)
+    bottom = top + height
+    clearance = (next_title_top - bottom - OPERATION_ARROW_LENGTH) / 2
+    if clearance < SCENE_CLEARANCE - 1e-7:
+        raise ValueError("An operation requires clearance between content and the next title.")
+    y = bottom + clearance
+    end = y + OPERATION_ARROW_LENGTH
+    arrow = next(e for e in root if e.get("data-operation-arrow"))
+    x, _, width, _ = map(float, arrow.attrib["data-drawing-box"].split())
+    center = x + width / 2
+    arrow.set("d", f"M{center},{y} V{end - 22}")
+    arrow.set("data-drawing-box", f"{x} {y} {width} {OPERATION_ARROW_LENGTH}")
+    head = next(e for e in root if e.get("data-operation-arrowhead"))
+    head.set("d", f"M{center - 14},{end - 24} L{center},{end} L{center + 14},{end - 24} Z")
+    label = next(e for e in root if e.get("data-operation"))
+    label.set("y", str(y + OPERATION_ARROW_LENGTH / 2 + ANNOTATION_SIZE * 0.35))
 
 
 def draw_operation(

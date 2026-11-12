@@ -31,20 +31,27 @@ def test_atlas_packs_columns_and_centers_the_wide_finishing_states(loop_pool):
     assert all(groups)
     assert float(groups[0][0].get("data-atlas-y")) == float(groups[1][0].get("data-atlas-y"))
     bottoms = [
-        float(g[-1].get("data-atlas-y")) + float(g[-1].get("data-atlas-height")) for g in groups
+        float(g[-1].get("data-atlas-y")) + float(g[-1].get("data-atlas-advance")) for g in groups
     ]
     for group in groups:
         for previous, following in pairwise(group):
             gap = (
                 float(following.get("data-atlas-y"))
                 - float(previous.get("data-atlas-y"))
-                - float(previous.get("data-atlas-height"))
+                - float(previous.get("data-atlas-advance"))
             )
             # Clearance is inside each measured block; do not add another gap.
             assert gap == pytest.approx(0)
             arrow = next(e for e in previous.iter() if e.get("data-operation-arrow"))
             _, top, _, height = map(float, arrow.get("data-drawing-box").split())
-            assert float(previous.get("data-atlas-height")) - top - height >= SCENE_CLEARANCE - 1e-9
+            title = next(e for e in following if e.get("data-stage-title"))
+            title_top = (
+                float(following.get("data-atlas-y"))
+                - float(previous.get("data-atlas-y"))
+                + float(title.get("y"))
+                - float(title.get("font-size"))
+            )
+            assert title_top - top - height >= SCENE_CLEARANCE - 1e-9
     assert float(rows[-2].get("data-atlas-y")) > max(bottoms)
     width = float(root.get("viewBox").split()[2])
     for row in rows[-2:]:
