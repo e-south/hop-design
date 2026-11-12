@@ -22,6 +22,17 @@ def test_primer_stays_near_handle_where_template_straightens(outward):
     assert len(placed) == len(template)
     # Tip clearance must not displace the whole horizontal binding span.
     assert outward * (placed[0][1] - template[0][1]) <= 34
+    clearance = outward * (placed[0][1] - template[0][1])
+    # Every center follows the same parallel horizontal/diagonal handle.
+    # A local tip bulge would move intermediate centers off both offset lines.
+    for x, y in placed:
+        assert (
+            min(
+                abs(outward * y - (64 + clearance)),
+                abs((x + outward * y - 224) / 2**0.5 - clearance),
+            )
+            < 1e-6
+        )
     outline, _ = primer_outline(placed, outward=outward)
     distances = []
     for a, b in pairwise([*outline, outline[0]]):

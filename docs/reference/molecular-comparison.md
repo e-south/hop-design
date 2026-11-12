@@ -215,8 +215,8 @@ fragments. Structural teaching views retain the contextual footprints needed to
 locate features. Both views keep every recognition record and address. Stage
 titles clear nearby content; distant raised handles do not force a blank title
 row. Column turns and the copying connector use rounded horizontal/vertical
-segments. Bent primer tips receive bounded local clearance before the whole
-binding span moves away from its template.
+segments. Primer glyphs follow one constant-offset path through the handle bend,
+with space reserved for the directional tip before the letters are placed.
 
 The parameter-region strip is an explicit `FigureProfile.region_strip` setting:
 publication profiles keep it above the axes; the inspector places it below the

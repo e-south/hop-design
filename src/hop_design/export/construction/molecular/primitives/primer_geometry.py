@@ -1,7 +1,6 @@
 """Parallel input glyphs; their bases annotate an input, not a paired state."""
 
 from collections import defaultdict
-from collections.abc import Iterator
 from itertools import pairwise
 from math import floor, hypot
 
@@ -18,12 +17,16 @@ def outward_side(points: list[Point], center: Point) -> int:
     return 1 if -dy * x + dx * y >= 0 else -1
 
 
-def parallel_positions(points: list[Point], distance: float) -> list[Point]:
+def parallel_positions(
+    points: list[Point], distance: float, *, end_inset: float = 0
+) -> list[Point]:
     """Offset a handle's segments normally, then space its input letters evenly.
 
     Offset segment intersections keep one clearance through a bend. Resampling
-    avoids overlapping letters near an inside corner; it changes no binding
-    interval or molecular coordinates.
+    avoids overlapping letters near an inside corner. An explicit end inset
+    reserves the directional tip on this same parallel path, fitting the
+    ordered letters before the tip instead of changing normal clearance. Molecular addresses
+    and the recorded binding interval are unchanged.
     """
     if len(points) == 1:
         return [(points[0][0], points[0][1] + distance)]
@@ -48,7 +51,7 @@ def parallel_positions(points: list[Point], distance: float) -> list[Point]:
     total = sum(lengths)
     result = []
     for i in range(len(points)):
-        remaining = total * i / (len(points) - 1)
+        remaining = (total - min(end_inset, total / 2)) * i / (len(points) - 1)
         for j, length in enumerate(lengths):
             if remaining <= length or j == len(lengths) - 1:
                 t = remaining / max(length, 1e-9)
@@ -71,7 +74,8 @@ def position_primer(
     If nearby lanes are occupied, translate the preferred silhouette beyond the
     scene's outward boundary instead of rejecting a valid molecular preparation.
     """
-    from .primer_shape import primer_outline
+    from .primer_shape import PRIMER_HEAD_LENGTH, primer_outline
+    from .style import PRIMER_CLEARANCE
 
     # Invocation-local spatial bins retain the exact exclusion test while
     # avoiding a scan of the whole molecule for every outline sample.
@@ -90,7 +94,11 @@ def position_primer(
         )
 
     preferred: list[Point] = []
-    for candidate, positions in enumerate(_primer_lanes(template, outward)):
+    for offset in range(0, 65, 2):
+        # Keep the head and its half-base end cap on the same parallel path.
+        positions = parallel_positions(
+            template, outward * (PRIMER_CLEARANCE + offset), end_inset=PRIMER_HEAD_LENGTH + 8
+        )
         a, b = (
             positions[:2]
             if len(positions) > 1
@@ -101,7 +109,7 @@ def position_primer(
             (a[0] - (b[0] - a[0]) / length * 16 * i, a[1] - (b[1] - a[1]) / length * 16 * i)
             for i in reversed(range(1, leading + 1))
         ] + positions
-        if candidate == 0:
+        if offset == 0:
             preferred = positions
         outline, _ = primer_outline(positions, outward=outward)
         samples: list[Point] = []
@@ -125,30 +133,3 @@ def position_primer(
         0, max(x * nx + y * ny for x, y in molecule) + 19 - min(x * nx + y * ny for x, y in outline)
     )
     return [(x + nx * shift, y + ny * shift) for x, y in preferred]
-
-
-def _primer_lanes(template: list[Point], outward: int) -> Iterator[list[Point]]:
-    """Clear a bent 3-prime tip locally before moving the whole binding span away.
-
-    The same half-arrow contour is retained. Bounded relief grows smoothly
-    toward the tip; the 5-prime handle stays at the nearest collision-free clearance.
-    Straight or fully blocked handles keep the existing rigid-lane behavior.
-    """
-    from .style import PRIMER_CLEARANCE
-
-    bent = any(
-        abs((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])) > 1e-6
-        for a, b, c in zip(template, template[1:], template[2:], strict=False)
-    )
-    for offset in range(0, 65, 2):
-        distance = PRIMER_CLEARANCE + offset
-        near = parallel_positions(template, outward * distance)
-        yield near
-        if not bent:
-            continue
-        for relief in (16, 32):
-            far = parallel_positions(template, outward * (distance + relief))
-            yield [
-                (x + (a - x) * (i / (len(near) - 1)) ** 2, y + (b - y) * (i / (len(near) - 1)) ** 2)
-                for i, ((x, y), (a, b)) in enumerate(zip(near, far, strict=True))
-            ]
