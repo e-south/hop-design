@@ -6,7 +6,7 @@ from xml.etree import ElementTree as ET
 from hop_design.models.construction.projections.atlas import MolecularAtlas
 from hop_design.models.construction.projections.inspection import MolecularStateInspection
 
-from ..primitives.style import OPERATION_STROKE, REGION_COLORS
+from ..primitives.style import INK, OPERATION_STROKE
 from .placement import Points, origin_points
 
 
@@ -43,21 +43,22 @@ def foldback_cue(atlas: MolecularAtlas, state: MolecularStateInspection, points:
         return ""
     (x, y), (target, target_y) = endpoints
     direction = 1 if target > x else -1
-    start, end = x - direction * 24, target - direction * 16
-    peak = min(y, target_y) - 108
-    end_y = target_y - 34
+    start, end = x - direction * 10, target - direction * 16
+    start_y = y + 18
+    peak = min(y, target_y) - 90
+    end_y = target_y + 12
     dx, dy = direction * 80, end_y - peak
     length = hypot(dx, dy)
     ux, uy = dx / length, dy / length
     base_x, base_y = end - ux * 26, end_y - uy * 26
-    color = REGION_COLORS["closing"]
+    color = INK
     left, right = min(start, end) - 18, max(start, end) + 66
     return (
         f'<g data-foldback-cue="true" data-cue-phase="before-folding" '
-        f'data-drawing-box="{left} {peak - 6} {right - left} {max(y, target_y) - peak + 24}">'
+        f'data-drawing-box="{left} {peak - 6} {right - left} {max(start_y, end_y) - peak + 12}">'
         "<title>Fold the exposed retained end toward its recorded pairing partner; "
         "schematic cue</title>"
-        f'<path d="M{start},{y - 24} C{start - direction * 48},{peak} '
+        f'<path d="M{start},{start_y} C{start - direction * 48},{peak} '
         f'{end - direction * 80},{peak} {end},{end_y}" fill="none" '
         f'stroke="{color}" stroke-width="{OPERATION_STROKE}" '
         'stroke-dasharray="14 8" stroke-linecap="round"/>'

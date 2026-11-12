@@ -16,6 +16,7 @@ from .inspection_layout import inspection_points
 from .inspection_overlays import inspection_overlays
 from .inspection_scene import edge, region_spans
 from .parameter_boundaries import mark_parameter_locations
+from .primitives.annotation_policy import FootprintScope
 from .primitives.materials import PlacedInput
 from .primitives.strands import strand_primitives
 from .primitives.style import FONT_FAMILY, TITLE_SIZE, base_ink
@@ -33,6 +34,7 @@ def _annotate_inspection_element(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     interface_labels: bool = True,
+    footprint_scope: FootprintScope = "processing",
 ) -> ET.Element:
     """Mutate only this new drawing; preserve the authoritative projection."""
     bases = {(b.strand_index, b.address.index): b for b in projection.bases}
@@ -82,6 +84,7 @@ def _annotate_inspection_element(
             label_site_ids=label_site_ids,
             staged_inputs=staged_inputs,
             interface_labels=interface_labels,
+            footprint_scope=footprint_scope,
         )
     )
     regions = ET.fromstring(
@@ -155,6 +158,7 @@ def render_molecular_inspection(
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
     interface_labels: bool = True,
+    footprint_scope: FootprintScope = "processing",
 ) -> bytes:
     """Serialize one scene at the export boundary."""
     root = molecular_inspection_element(
@@ -168,6 +172,7 @@ def render_molecular_inspection(
         staged_inputs=staged_inputs,
         layout_points=layout_points,
         interface_labels=interface_labels,
+        footprint_scope=footprint_scope,
     )
     return cast(bytes, ET.tostring(root, encoding="utf-8"))
 
@@ -184,6 +189,7 @@ def molecular_inspection_element(
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
     interface_labels: bool = True,
+    footprint_scope: FootprintScope = "processing",
 ) -> ET.Element:
     state = projection.state
     points = layout_points if layout_points is not None else _points(projection)
@@ -255,6 +261,7 @@ def molecular_inspection_element(
         label_site_ids=label_site_ids,
         staged_inputs=staged_inputs,
         interface_labels=interface_labels,
+        footprint_scope=footprint_scope,
     )
     label_top = min(
         (json.loads(e.attrib["data-label-box"])[1] for e in root.iter() if e.get("data-label-box")),
@@ -278,6 +285,7 @@ def molecular_inspection_element(
             ),
             layout_points={key: (x, y + dy) for key, (x, y) in points.items()},
             interface_labels=interface_labels,
+            footprint_scope=footprint_scope,
         )
     if parameter_locations is not None:
         mark_parameter_locations(root, parameter_locations, projection)

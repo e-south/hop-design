@@ -512,13 +512,15 @@ def test_late_route_omits_discarded_handle_footprint_ink_but_retains_site_record
     assert len([e for e in root if e.get("data-site-id")]) == len(selected.recognition_sites)
 
 
-def test_hairpin_pcr_connector_curves_toward_the_centered_finish(atlas):
+def test_hairpin_pcr_connector_uses_vertical_legs_and_rounded_orthogonal_turns(atlas):
     import re
 
     root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
     stage = next(e for e in root.iter() if e.get("data-atlas-phase") == "adapter_ligated")
     arrow = next(e for e in stage if e.get("data-operation-arrow"))
-    assert re.fullmatch(r"M[-\d.]+,[-\d.]+ V[-\d.]+ C[-\d., ]+ V[-\d.]+", arrow.get("d"))
+    assert re.fullmatch(
+        r"M[-\d.]+,[-\d.]+ V[-\d.]+ Q[-\d., ]+ H[-\d.]+ Q[-\d., ]+ V[-\d.]+", arrow.get("d")
+    )
     assert arrow.get("data-connector-target-phase") == "hairpin_pcr_duplex"
     target = next(e for e in root.iter() if e.get("data-atlas-phase") == "hairpin_pcr_duplex")
     title = next(e for e in target if e.get("data-stage-title"))
@@ -527,6 +529,35 @@ def test_hairpin_pcr_connector_curves_toward_the_centered_finish(atlas):
     assert tip_x + float(stage.get("data-atlas-x")) == pytest.approx(
         float(target.get("data-atlas-x")) + float(title.get("x"))
     )
+
+
+def test_route_quiets_spent_sites_but_retains_every_recognition_record(atlas):
+    root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
+    quiet = {
+        "selected_fragments",
+        "annealed_complex",
+        "foldback_closed_hairpin",
+        "clone_ready_duplex",
+    }
+    for stage in (e for e in root.iter() if e.get("data-atlas-phase")):
+        state = next(s for s in atlas.states if s.state.state_id == stage.get("data-atlas-state"))
+        sites = [e for e in stage.iter() if e.get("data-site-id")]
+        assert {e.get("data-site-id") for e in sites} == {
+            s.site_id for s in state.recognition_sites
+        }
+        if state.state.phase.value in quiet:
+            assert not any(e.get("data-recognition-footprint") for e in stage.iter())
+        if state.state.phase.value in {
+            "source_ssdna",
+            "duplex",
+            "adapter_ligated",
+            "hairpin_pcr_duplex",
+        }:
+            assert any(e.get("data-recognition-footprint") for e in stage.iter())
+    cue = next(e for e in root.iter() if e.get("data-foldback-cue"))
+    from hop_design.export.construction.molecular.primitives.style import INK
+
+    assert next(e for e in cue if e.get("stroke")).get("stroke") == INK
 
 
 @pytest.mark.parametrize(

@@ -59,7 +59,7 @@ def test_repeated_sites_keep_both_addressed_footprints_and_names():
     projection = NS(
         operations=(),
         recognition_sites=sites,
-        state=NS(state_id="state", pairings=()),
+        state=NS(state_id="state", pairings=(), phase=NS(value="duplex")),
         bases=(),
         layout_frame=None,
     )
@@ -104,7 +104,7 @@ def test_strand_aware_names_preserve_every_site_status_and_side():
     projection = NS(
         operations=(),
         recognition_sites=sites,
-        state=NS(state_id="state", pairings=()),
+        state=NS(state_id="state", pairings=(), phase=NS(value="duplex")),
         bases=(),
         layout_frame=None,
     )

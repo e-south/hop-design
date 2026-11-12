@@ -12,6 +12,7 @@ from .style import TERMINAL_SIZE, site_color
 from .typography import text_width
 
 RouteSiteLabels = Literal["all", "operations", "narrative"]
+FootprintScope = Literal["processing", "structural"]
 
 
 def footprint_region(
@@ -35,15 +36,25 @@ def footprint_color(
     return site_color(role)
 
 
-def visible_footprint(state: MolecularStateInspection, role: str) -> bool:
+def visible_footprint(
+    state: MolecularStateInspection, role: str, *, scope: FootprintScope = "processing"
+) -> bool:
     """Quiet obsolete handle ink; exact site addresses remain in the drawing metadata."""
-    if role not in {"strand_exposure", "foldback_nick"}:
+    if scope not in {"processing", "structural"}:
+        raise ValueError("Unknown recognition-footprint scope.")
+    if scope == "structural":
         return True
     phase = state.state.phase.value
-    if phase == "selected_fragments" and role == "foldback_nick":
-        return False  # The exposed strand, discard reference and fold cue carry this step.
-    folded = {"annealed_complex", "foldback_closed_hairpin", "adapter_annealed", "adapter_ligated"}
-    return not (phase in folded and role == "strand_exposure")
+    if phase in {
+        "selected_fragments",
+        "annealed_complex",
+        "foldback_closed_hairpin",
+        "clone_ready_duplex",
+    }:
+        return False
+    if phase in {"adapter_annealed", "adapter_ligated", "hairpin_pcr_duplex"}:
+        return role == "end_generation"
+    return True
 
 
 def named_sites(

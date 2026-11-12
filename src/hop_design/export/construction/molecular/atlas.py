@@ -11,7 +11,7 @@ from .atlas_blocks import route_blocks
 from .atlas_placement import place_route
 from .atlas_reading_order import continuation_svg
 from .primitives.annotation_policy import RouteSiteLabels, site_key
-from .primitives.style import FONT_FAMILY
+from .primitives.style import ANNOTATION_SIZE, FONT_FAMILY, SCENE_CLEARANCE, TITLE_SIZE
 
 
 def render_molecular_atlas(
@@ -94,20 +94,28 @@ def render_molecular_atlas(
             target = placement.positions[index + 1]
             title = next(e for e in blocks[index + 1].element if e.get("data-stage-title"))
             end_x = target.x + float(title.attrib["x"]) - position.x
-            end_y = target.y - position.y - 24
+            end_y = target.y + float(title.attrib["y"]) - TITLE_SIZE - position.y - SCENE_CLEARANCE
             arrow = next(e for e in block.element if e.get("data-operation-arrow"))
             x, y, width, _ = map(float, arrow.attrib["data-drawing-box"].split())
             x += width / 2
             end = end_y - 20
-            leg = min(32.0, (end - y) / 4)
-            if leg <= 0:
+            if end <= y:
                 raise ValueError("The hairpin PCR connector requires downward clearance.")
+            direction = 1 if end_x > x else -1
+            radius = min(32.0, abs(end_x - x) / 2, (end - y) / 4)
+            middle = (y + end) / 2
             arrow.set(
                 "d",
-                f"M{x},{y} V{y + leg} "
-                f"C{x},{y + 2 * leg} {end_x},{end - 2 * leg} {end_x},{end - leg} V{end}",
+                f"M{x},{y} V{middle - radius} "
+                f"Q{x},{middle} {x + direction * radius},{middle} "
+                f"H{end_x - direction * radius} "
+                f"Q{end_x},{middle} {end_x},{middle + radius} V{end}",
             )
             arrow.set("data-connector-target-phase", "hairpin_pcr_duplex")
+            arrow.set("data-connector-target-x", str(end_x))
+            arrow.set("data-connector-corner-radius", str(radius))
+            label = next(e for e in block.element if e.get("data-operation"))
+            label.set("y", str((y + middle - radius) / 2 + ANNOTATION_SIZE * 0.35))
             arrow.set(
                 "data-drawing-box", f"{min(x, end_x) - 14} {y} {abs(x - end_x) + 28} {end_y - y}"
             )

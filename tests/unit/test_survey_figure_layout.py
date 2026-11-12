@@ -21,7 +21,7 @@ KEY = b"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1008 280">
 <g data-parameter-anchor="loop_word" data-anchor-box="[800,100,40,30]"/>
 </svg>"""
 PLOT = b"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700"
-data-landscape-frame="0 0 1200 660"><g data-axis="loop_word" data-band="0">
+data-landscape-frame="0 0 1200 660" data-axis-landing-y="0"><g data-axis="loop_word" data-band="0">
 <g data-axis-title="loop_word"><text x="600" y="66">Loop</text></g></g></svg>"""
 
 

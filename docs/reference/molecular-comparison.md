@@ -208,9 +208,18 @@ molecular fill changes. Color-vision simulations are review aids, not palettes
 or molecular transformations. Current rendering redraws saved facts with these
 tokens; captured rendering intentionally retains the original artwork.
 
-Later folded route states omit obsolete strand-exposure footprints on copying
-handles. The linear retained-strand scene omits the foldback-site fill around the
-fold cue and discarded-fragment reference. Exact recognition records and
-addresses remain present. A repeated enzyme at distinct molecular regions keeps
-its region-specific recognition callouts. Column turns can leave a loop cap
-horizontally; the copying connector curves toward the centered duplex finish.
+Processing views show recognition footprints before cleavage, quiet spent sites
+through retention and folding, and introduce release sites with the adapter.
+The released insert retains site metadata without painting residual nickase
+fragments. Structural teaching views retain the contextual footprints needed to
+locate features. Both views keep every recognition record and address. Stage
+titles clear nearby content; distant raised handles do not force a blank title
+row. Column turns and the copying connector use rounded horizontal/vertical
+segments. Bent primer tips receive bounded local clearance before the whole
+binding span moves away from its template.
+
+The parameter-region strip is an explicit `FigureProfile.region_strip` setting:
+publication profiles keep it above the axes; the inspector places it below the
+angled labels. Unsupported placements fail before drawing. The same measured
+axis frame supplies SVG exports and live inspection links; this setting changes
+neither the parameter values nor selection behavior.

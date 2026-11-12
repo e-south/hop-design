@@ -1,6 +1,7 @@
 """Parallel input glyphs; their bases annotate an input, not a paired state."""
 
 from collections import defaultdict
+from collections.abc import Iterator
 from itertools import pairwise
 from math import floor, hypot
 
@@ -71,26 +72,25 @@ def position_primer(
     scene's outward boundary instead of rejecting a valid molecular preparation.
     """
     from .primer_shape import primer_outline
-    from .style import PRIMER_CLEARANCE
 
     # Invocation-local spatial bins retain the exact exclusion test while
     # avoiding a scan of the whole molecule for every outline sample.
     bins: dict[tuple[int, int], list[Point]] = defaultdict(list)
+    exclusion = 18.2  # Sampling tolerance preserves the analytic 18-unit clearance.
     for x, y in molecule:
-        bins[floor(x / 18), floor(y / 18)].append((x, y))
+        bins[floor(x / exclusion), floor(y / exclusion)].append((x, y))
 
     def clear(x: float, y: float) -> bool:
-        i, j = floor(x / 18), floor(y / 18)
+        i, j = floor(x / exclusion), floor(y / exclusion)
         return all(
-            (x - a) ** 2 + (y - b) ** 2 >= 18**2
+            (x - a) ** 2 + (y - b) ** 2 >= exclusion**2
             for dx in (-1, 0, 1)
             for dy in (-1, 0, 1)
             for a, b in bins.get((i + dx, j + dy), ())
         )
 
     preferred: list[Point] = []
-    for offset in range(0, 65, 2):
-        positions = parallel_positions(template, outward * (PRIMER_CLEARANCE + offset))
+    for candidate, positions in enumerate(_primer_lanes(template, outward)):
         a, b = (
             positions[:2]
             if len(positions) > 1
@@ -101,7 +101,7 @@ def position_primer(
             (a[0] - (b[0] - a[0]) / length * 16 * i, a[1] - (b[1] - a[1]) / length * 16 * i)
             for i in reversed(range(1, leading + 1))
         ] + positions
-        if offset == 0:
+        if candidate == 0:
             preferred = positions
         outline, _ = primer_outline(positions, outward=outward)
         samples: list[Point] = []
@@ -125,3 +125,30 @@ def position_primer(
         0, max(x * nx + y * ny for x, y in molecule) + 19 - min(x * nx + y * ny for x, y in outline)
     )
     return [(x + nx * shift, y + ny * shift) for x, y in preferred]
+
+
+def _primer_lanes(template: list[Point], outward: int) -> Iterator[list[Point]]:
+    """Clear a bent 3-prime tip locally before moving the whole binding span away.
+
+    The same half-arrow contour is retained. Bounded relief grows smoothly
+    toward the tip; the 5-prime handle stays at the nearest collision-free clearance.
+    Straight or fully blocked handles keep the existing rigid-lane behavior.
+    """
+    from .style import PRIMER_CLEARANCE
+
+    bent = any(
+        abs((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])) > 1e-6
+        for a, b, c in zip(template, template[1:], template[2:], strict=False)
+    )
+    for offset in range(0, 65, 2):
+        distance = PRIMER_CLEARANCE + offset
+        near = parallel_positions(template, outward * distance)
+        yield near
+        if not bent:
+            continue
+        for relief in (16, 32):
+            far = parallel_positions(template, outward * (distance + relief))
+            yield [
+                (x + (a - x) * (i / (len(near) - 1)) ** 2, y + (b - y) * (i / (len(near) - 1)) ** 2)
+                for i, ((x, y), (a, b)) in enumerate(zip(near, far, strict=True))
+            ]

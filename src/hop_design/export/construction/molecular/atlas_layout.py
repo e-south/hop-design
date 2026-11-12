@@ -14,7 +14,7 @@ from .assembly.inputs import incoming_materials
 from .assembly.placement import assembly_points
 from .inspection import molecular_inspection_element
 from .inspection_overlays import inspection_overlays
-from .primitives.annotation_policy import RouteSiteLabels, named_sites
+from .primitives.annotation_policy import FootprintScope, RouteSiteLabels, named_sites
 from .primitives.extent import scene_extent
 from .primitives.style import TITLE_SIZE
 
@@ -30,6 +30,7 @@ def atlas_scenes(
     *,
     site_labels: RouteSiteLabels = "narrative",
     presentation: RoutePresentation = "complete",
+    footprint_scope: FootprintScope = "processing",
     record_indices: tuple[int, ...] | None = None,
 ) -> MeasuredScenes:
     scenes = {}
@@ -95,6 +96,7 @@ def atlas_scenes(
         root = molecular_inspection_element(
             state,
             interface_labels=presentation != "assembly",
+            footprint_scope=footprint_scope,
             layout_points=frames.get(state.state.state_id),
             staged_inputs=staged[state.state.state_id],
             label_site_ids=labels,

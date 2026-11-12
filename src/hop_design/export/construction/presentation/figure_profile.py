@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from math import ceil, isfinite
+from typing import Literal
 
 from .print_contract import PUBLICATION
 
@@ -25,6 +26,11 @@ class FigureProfile:
     rotated_labels: bool = False
     physical_width_pt: float = 504
     node_padding: int = 4
+    region_strip: Literal["above", "below"] = "above"
+
+    def __post_init__(self) -> None:
+        if self.region_strip not in {"above", "below"}:
+            raise ValueError("The parameter region strip must be above or below the axes.")
 
 
 PUBLICATION_FIGURE = FigureProfile("publication/v1")
@@ -55,6 +61,7 @@ INSPECTOR_FIGURE = FigureProfile(
     teaching_slot_step=60,
     heading_columns=10,
     stable_teaching_slot=True,
+    region_strip="below",
 )
 
 

@@ -64,3 +64,31 @@ def test_larger_nucleotides_preserve_the_iupac_pitch_budget():
         assert text_width(base, size) < 16
     assert all(fitted_base_size(base, 20) == 20 for base in "ACGT")
     assert fitted_base_size("W", 20, pitch=0.1) > 0
+
+
+def test_stage_title_clears_local_content_without_following_a_distant_raised_handle():
+    from xml.etree import ElementTree as ET
+
+    from hop_design.export.construction.molecular.primitives.scene_header import attach_scene_header
+
+    ns = "{http://www.w3.org/2000/svg}"
+    root = ET.Element(ns + "g")
+    title = ET.SubElement(
+        root,
+        ns + "text",
+        {"data-stage-title": "true", "x": "500", "text-anchor": "middle", "font-size": "40"},
+    )
+    title.text = "Closed hairpin"
+    ET.SubElement(root, ns + "g", {"data-drawing-box": "440 200 120 40"})
+    ET.SubElement(root, ns + "g", {"data-drawing-box": "10 20 100 100"})
+    base = ET.SubElement(root, ns + "g", {"data-base-index": "0"})
+    ET.SubElement(base, ns + "rect", {"x": "480", "y": "214", "width": "14", "height": "20"})
+    ET.SubElement(base, ns + "text", {"x": "487", "y": "229"}).text = "A"
+    attach_scene_header(root)
+    content = next(e for e in root if e.get("data-scene-content"))
+    offset = float(content.get("data-scene-y"))
+    # A remote handle can sit above the title; the nearby molecule keeps the
+    # same 18-unit title clearance without adding a blank row across the scene.
+    assert float(title.get("y")) > 40
+    assert 200 + offset - float(title.get("y")) == 18
+    assert 20 + offset >= 0

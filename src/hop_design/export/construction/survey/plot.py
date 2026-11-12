@@ -55,6 +55,7 @@ def render_survey_plot(
         {
             "viewBox": f"0 0 {width} {layout.height:g}",
             "data-axis-frame": json.dumps(asdict(frame), separators=(",", ":")),
+            "data-axis-landing-y": str(layout.landing_y),
             "width": f"{profile.physical_width_pt}pt",
             "font-size": str(font),
             "font-family": "Arial, Helvetica, sans-serif",
@@ -110,7 +111,7 @@ def render_survey_plot(
             root,
             "rect",
             x=left,
-            y=band * frame.height + 4,
+            y=band * frame.height + frame.region_baseline - font,
             width=right - left,
             height=len(region_labels) * font + 8,
             rx=3,

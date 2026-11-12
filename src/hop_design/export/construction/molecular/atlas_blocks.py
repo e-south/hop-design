@@ -12,7 +12,7 @@ from .assembly.composition import RoutePresentation, assembly_scenes
 from .atlas_layout import atlas_scenes
 from .atlas_placement import BlockExtent
 from .parameter_boundaries import mark_parameter_locations
-from .primitives.annotation_policy import RouteSiteLabels
+from .primitives.annotation_policy import FootprintScope, RouteSiteLabels
 from .primitives.extent import scene_extent
 from .primitives.inputs import draw_inputs
 from .primitives.operations import draw_operation
@@ -35,6 +35,7 @@ def route_blocks(
     *,
     site_labels: RouteSiteLabels = "narrative",
     presentation: RoutePresentation = "complete",
+    footprint_scope: FootprintScope = "processing",
     state_ids: tuple[str, ...] | None = None,
 ) -> tuple[RouteBlock, ...]:
     roster = assembly_scenes(atlas, presentation)
@@ -77,6 +78,7 @@ def route_blocks(
         atlas,
         site_labels=site_labels,
         presentation=presentation,
+        footprint_scope=footprint_scope,
         record_indices=tuple(scene.record_index for _, scene in selected),
     )
     for index, scene in selected:

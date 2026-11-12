@@ -7,7 +7,6 @@ from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 from ..presentation.parameter_labels import LABEL_CATALOG_DIGEST
-from .figure_layout import AXIS_LANDING_Y
 from .layout import node_geometry, node_label, plot_layout
 from .presentation import present_choices
 
@@ -52,7 +51,7 @@ class TraceProjection:
         self.figure_geometry = {
             "frame": self.frame,
             "anchors": {
-                a["definition"]["key"]: [a["x"], AXIS_LANDING_Y]
+                a["definition"]["key"]: [a["x"], layout.landing_y]
                 for a in self.axes
                 if a["band"] == 0
             },

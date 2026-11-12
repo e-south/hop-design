@@ -17,7 +17,9 @@ def test_partial_upper_handle_site_uses_recorded_complementary_row(atlas):  # no
         for s in state.recognition_sites
         if s.role == "end_generation" and s.presence == "partial" and s.recognition
     )
-    root = ET.fromstring("<svg>" + recognition_site_overlays(state, points) + "</svg>")
+    root = ET.fromstring(
+        "<svg>" + recognition_site_overlays(state, points, footprint_scope="structural") + "</svg>"
+    )
     group = next(e for e in root.iter() if e.get("data-site-id") == site.site_id)
     band = next(e for e in group if e.get("data-envelope-box"))
     y = min(points[a.strand_id, a.index][1] for a in site.recognition)

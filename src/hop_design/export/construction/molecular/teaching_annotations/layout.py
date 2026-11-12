@@ -117,6 +117,7 @@ def compact_recognition_overlays(
         strand_labels=True,
         site_leaders=True,
         label_site_ids=frozenset(names.values()),
+        footprint_scope="structural",
     )
 
 

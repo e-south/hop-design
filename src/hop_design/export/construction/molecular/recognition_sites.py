@@ -9,7 +9,7 @@ from hop_design.models.construction.projections.inspection import MolecularState
 
 from .complementary_row import complementary_row_offset
 from .label_layout import LabelPlacer
-from .primitives.annotation_policy import footprint_color, visible_footprint
+from .primitives.annotation_policy import FootprintScope, footprint_color, visible_footprint
 from .primitives.ribbon import footprint_envelope, rounded_path
 from .primitives.style import ANNOTATION_SIZE, object_id
 from .primitives.typography import text_width
@@ -25,6 +25,7 @@ def recognition_site_overlays(
     label_size: int = ANNOTATION_SIZE,
     strand_labels: bool = False,
     site_leaders: bool = True,
+    footprint_scope: FootprintScope = "processing",
 ) -> str:
     if site_labels not in ("all", "operations"):
         raise ValueError("Unknown site-label policy.")
@@ -44,12 +45,13 @@ def recognition_site_overlays(
         ):
             points_right = (path[-1][0] > path[0][0]) == (site.orientation == "forward")
             direction = "right" if points_right else "left"
-        painted = visible_footprint(projection, site.role)
+        painted = visible_footprint(projection, site.role, scope=footprint_scope)
         addresses = escape(
             json.dumps([(a.strand_id, a.index) for a in site.recognition]), quote=True
         )
+        display = "absent" if not site.recognition else "painted" if painted else "metadata"
         rows.append(
-            f'<g data-footprint-display="{"painted" if painted else "metadata"}" '
+            f'<g data-footprint-display="{display}" '
             f'data-recognition-addresses="{addresses}" '
             f'id="{object_id("site", projection.state.state_id, site.site_id)}" '
             f'data-site-id="{escape(site.site_id)}" data-presence="{site.presence}" '

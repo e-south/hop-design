@@ -11,7 +11,7 @@ from hop_design.models.construction.variants.inspection import MolecularAddress
 from ..labels import terminal_label
 from .label_layout import LabelPlacer
 from .material_bindings import material_binding_overlays
-from .primitives.annotation_policy import footprint_color
+from .primitives.annotation_policy import FootprintScope, footprint_color
 from .primitives.materials import PlacedInput, input_box, staged_materials
 from .primitives.style import (
     ANNOTATION_SIZE,
@@ -42,6 +42,7 @@ def inspection_overlays(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     interface_labels: bool = True,
+    footprint_scope: FootprintScope = "processing",
 ) -> str:
     rows = [
         '<g xmlns="http://www.w3.org/2000/svg" data-inspection-overlays="true" '
@@ -119,7 +120,12 @@ def inspection_overlays(
     rows.append(staged_materials(staged_inputs, labels))
     rows.append(
         recognition_site_overlays(
-            projection, points, labels, site_labels=site_labels, label_site_ids=label_site_ids
+            projection,
+            points,
+            labels,
+            site_labels=site_labels,
+            label_site_ids=label_site_ids,
+            footprint_scope=footprint_scope,
         )
     )
 
