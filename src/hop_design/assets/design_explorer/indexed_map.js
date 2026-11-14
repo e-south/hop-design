@@ -4,7 +4,7 @@ import {cloudPointRadius,mapTransform} from './map_raster.js';
 // Two canvases and one camera frame replace one DOM node per preparation.
 export function indexedMap(host,onInspect,onSelect) {
   let svg=null,data=null,rows=null,index=null,byIdentity=new Map(),pin=null,hover=null,active=-1;
-  let ticket=null,dirty=false,transform=null,cloud=null,overlay=null,option=null,lens=null;
+  let ticket=null,dirty=false,transform=null,cloud=null,overlay=null,option=null,lens=null,focused=null;
   const originalRole=host.getAttribute('role');
   function schedule(full=false){dirty ||= full;if(svg&&ticket===null)ticket=requestAnimationFrame(paint);}
   const restored=()=>schedule(true);
@@ -16,6 +16,7 @@ export function indexedMap(host,onInspect,onSelect) {
   }
   function markRadius(){return cloudPointRadius(data.radius,transform.ratio/transform.scale);}
   function cloudAlpha(row) {
+    if(focused)return focused.has(row.materialized_realization_id)?.85:.045;
     if(!row.matches)return .35;
     if(lens?.kind==='word')return row.values[lens.key]===lens.word ? .5 : .18;
     return .28;
@@ -53,9 +54,9 @@ export function indexedMap(host,onInspect,onSelect) {
       const ctx=setup(cloud);
       // Every preparation contributes alpha, including exact coincident positions.
       // Paint the requested word last so its emphasis survives background overlap.
-      const word=lens?.kind==='word';
-      for(const emphasized of word?[false,true]:[false])for(const p of index.points) {
-        if(word&&(p.row.values[lens.key]===lens.word)!==emphasized)continue;
+      const word=lens?.kind==='word',group=focused!==null;
+      for(const emphasized of group||word?[false,true]:[false])for(const p of index.points) {
+        if(group?focused.has(p.row.materialized_realization_id)!==emphasized:word&&(p.row.values[lens.key]===lens.word)!==emphasized)continue;
         point(ctx,p);
       }
       dirty=false;
@@ -93,7 +94,7 @@ export function indexedMap(host,onInspect,onSelect) {
     changes.disconnect();if(ticket!==null)cancelAnimationFrame(ticket);ticket=null;
     for(const canvas of [cloud,overlay])if(canvas){canvas.removeEventListener('contextrestored',restored);canvas.remove();canvas.width=canvas.height=0;}
     svg?.remove();option?.remove();svg=data=rows=index=cloud=overlay=option=transform=null;byIdentity.clear();hover=pin=null;active=-1;
-    host.removeAttribute('aria-activedescendant');if(originalRole)host.setAttribute('role',originalRole);else host.removeAttribute('role');
+    focused=null;host.removeAttribute('aria-activedescendant');if(originalRole)host.setAttribute('role',originalRole);else host.removeAttribute('role');
   }
   return {
     update(next,paths,selected) {
@@ -113,7 +114,7 @@ export function indexedMap(host,onInspect,onSelect) {
       pin=selected;if(active>=0)describe(index.points[active]);schedule();
     },
     color(value){lens=value;if(active>=0)describe(index.points[active]);schedule(true);},
-    focus(ids){hover=ids?.length===1?ids[0]:null;schedule();},
+    focus(ids){const next=ids?.length>1?new Set(ids):null;const changed=Boolean(focused)!==Boolean(next)||(next&&focused&&(next.size!==focused.size||[...next].some(id=>!focused.has(id))));focused=next;hover=ids?.length===1?ids[0]:null;schedule(changed);},
     clear,
     close(){clear();lens=null;resize.disconnect();host.removeEventListener('pointermove',move);host.removeEventListener('click',click);host.removeEventListener('keydown',key);},
   };

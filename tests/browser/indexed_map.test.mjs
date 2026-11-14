@@ -42,5 +42,13 @@ test('color repaints existing points without changing the camera, exact picking 
  host.handlers.get('keydown')({target:host,key:'Home',preventDefault(){}});
  host.handlers.get('keydown')({target:host,key:'Enter',preventDefault(){}});
  assert.deepEqual(selected.at(-1),['A'],'keyboard traversal still selects individual exact preparations');
+ const camera=svg.getAttribute('viewBox');
+ map.focus(['A','B']);flush();
+ assert.deepEqual(contexts.at(-2).alphas,[.045,.85],'A cohort focus dims nonmembers and paints matching preparations last');
+ assert.equal(svg.getAttribute('viewBox'),camera,'Frequency focus must retain the map camera');
+ const stable=contexts.length;map.focus(['B','A']);flush();
+ assert.equal(contexts.length,stable+1,'The same highlighted membership reuses the density cloud');
+ map.focus(null);flush();
+ assert.ok(contexts.at(-2).alphas.every(a=>a===.28),'Clearing a cohort restores ordinary eligible cloud opacity');
  map.close();assert.equal(frames.size,0);assert.ok(observers.every(o=>o.closed));assert.equal(host.handlers.size,0);
 });

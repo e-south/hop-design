@@ -60,6 +60,15 @@ figures share molecular glyphs, with separate layouts for inspector and print
 widths. Print exports include a full-resolution route plate and readable
 continuation pages; the recorded physical dimensions show the effect of scaling.
 
+Below the preparation, **Choice frequencies** counts recorded preparations using
+each parameter value or oligo material. Choose a component, hover a bar to
+highlight its preparations in the map and parameter traces, or click to keep
+that highlight. **Clear highlight** or Escape removes it. These highlights do
+not change filters or select a preparation. The last bar groups choices outside
+the twelve most frequent; its highlight includes every preparation in that group.
+Counts include recorded preparations outside the current filters, with the
+eligible count shown separately.
+
 The molecular map arranges recorded preparations for navigation. Read the saved
 search coverage separately from map distances, clusters and point density.
 

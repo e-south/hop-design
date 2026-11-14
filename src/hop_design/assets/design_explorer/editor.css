@@ -114,3 +114,6 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 #map-color label,[data-color-legend]{justify-content:flex-end}#map-color select{pointer-events:auto;background:transparent}
 #map-color [data-word]{margin-left:auto}.atlas-brand{max-width:44%}
 @container(max-width:700px){.comparison-name{font-size:10px}.comparison-value,.comparison-code{font-size:11px}#map-comparison{padding-inline:10px}[data-comparison-values]{gap:5px}}
+
+/* Exact choice frequencies share preparation memberships with the atlas and traces. */
+#choice-frequencies{padding:16px 0;border-top:1px solid var(--line)}#choice-frequencies header{justify-content:space-between}#choice-frequencies h2{font-size:15px;font-weight:600;margin:0}#choice-frequencies label{display:flex;gap:9px;align-items:center;margin-top:12px;font-size:13px}#choice-frequencies select{min-width:0;max-width:calc(100% - 90px);font-size:13px}#choice-frequencies p{font-size:13px;color:var(--muted);margin:9px 0}#choice-frequencies svg{display:block;width:100%;height:auto;overflow:visible;font-family:Arial,Helvetica,sans-serif}#choice-frequencies [role=button]{cursor:pointer}#choice-frequencies [role=button]:hover>rect:last-of-type,#choice-frequencies [role=button][aria-pressed=true]>rect:last-of-type{stroke:#203b43;stroke-width:2}#choice-frequencies button{font-size:12px}

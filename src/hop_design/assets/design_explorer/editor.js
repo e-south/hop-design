@@ -20,6 +20,7 @@ import {routeScenes} from './route_scenes.js';
 import {resizableInspector} from './inspector_resize.js';
 import {comparisonStrip} from './comparison_features.js';
 import {discoveryControls} from './discovery.js';
+import {choiceFrequencies} from './choice_frequencies.js';
 
 const $ = id => document.getElementById(id), token = document.querySelector('meta[name=hop-token]').content;
 let state=null, mode='families', molecularMode='molecule', busy=false, teachingURL=null;
@@ -49,6 +50,7 @@ const local=localChoices($('molecular-area'),{
 });
 const viewport=molecularViewport($('route'),$('fit'),keys=>plots.focusParameters(keys));
 const plots=landscape($('plot'),$('members'),q=>act('query',{query:q}),id=>act('select',{materialized_realization_id:id}),keys=>viewport.highlight(keys),showHover);
+const frequencies=choiceFrequencies($('choice-frequencies'),(ids,options)=>plots.focusPreparations(ids,options));
 const comparisonView=comparisonStrip($('map-comparison'),keys=>plots.focusParameters(keys));
 const colors=colorControls($('map-color'),lens=>plots.color(lens));
 for(const event of ['pointerover','focusin']) $('teaching').addEventListener(event,e=>{
@@ -245,7 +247,7 @@ async function render(next,restore=false) {
   $('figure-two').hidden=!state.preview;$('inspector').dataset.hasPin=String(Boolean(state.preview));$('inspector').hidden=inspectorDismissed||!state.preview;
   const counts=state.cohort_summary||{products:state.families.products.length,eligible_products:state.families.products.filter(p=>p.eligible_preparations.length).length,product:state.families.product};
   $('counts').textContent=`${state.choices.matching_preparations.toLocaleString()} preparations · ${counts.eligible_products.toLocaleString()} ${counts.product.replaceAll('_',' ')} products`;
-  plots.draw(state,mode);colors.update(state,{restore});delete state.landscape_svg;delete state.plot_svg;mapView.attach();raster.attach(mode);selectedTrace.show(state.selected_trace,state.trace_projection);connect(); $('another').disabled=!state.choices.matching_preparations;
+  plots.draw(state,mode);frequencies.update(state);colors.update(state,{restore});delete state.landscape_svg;delete state.plot_svg;mapView.attach();raster.attach(mode);selectedTrace.show(state.selected_trace,state.trace_projection);connect(); $('another').disabled=!state.choices.matching_preparations;
   $('back').disabled=!state.can_back;$('retrieve').disabled=!state.selection;$('bookmark').disabled=!state.selection;
   $('clear').hidden=!state.choices.query.parameters.length && !state.choices.query.membership;
   const current=state.preview?.summary, comparison=current?.comparison;
@@ -313,7 +315,7 @@ $('view-file').addEventListener('change',async()=>{try{const file=$('view-file')
 async function restoreHash(){if(location.hash.startsWith('#view=')){const receipt=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));await act('restore',{receipt},false);}}
 window.addEventListener('hashchange',()=>restoreHash().catch(e=>{$('status').textContent=e.message;}));
 const observer=new ResizeObserver(()=>{connect();scenes.refresh();});observer.observe($('object'));
-window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();nearby.close();raster.close();mapView.close();views.clear();figure.clear();selectedTrace.clear();plots.close();distributionScene.clear();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
+window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();nearby.close();raster.close();mapView.close();views.clear();figure.clear();selectedTrace.clear();frequencies.close();plots.close();distributionScene.clear();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
 window.addEventListener('blur',()=>showHover(null));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')escapeInspection($('inspector'),{restorePreview:()=>showHover(null),returnToMap:returnToAtlas,close:closeInspector});});
 $('refine').addEventListener('click',()=>{$('refinement').open=!$('refinement').open;});
