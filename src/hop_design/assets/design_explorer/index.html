@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="hop-token" content="__SESSION_TOKEN__"><title>Hairpin Oligonucleotide Processing · Molecular choices</title><link rel="stylesheet" href="/editor.css"><script type="module" src="/editor.js"></script></head>
 <body><main>
 <section id="object" aria-label="Molecular landscape and selected preparation">
+<section id="landscape" aria-label="Conditional molecular landscape">
 <details id="refinement"><summary>Atlas options</summary><div class="actions"><button id="open-view">Open saved view</button><button id="bookmark" disabled title="Download the exact view as a JSON file">Save view</button><input type="file" accept=".json,application/json" id="view-file" hidden><a id="view-link" hidden>Link to this view</a><button id="back" disabled aria-label="Previous inspection">← Back</button><button id="clear" hidden>Clear filters</button></div>
 <p id="counts">Opening atlas…</p>
 <details id="alternate-views"><summary>Other population views</summary><p>These views summarize the population. The inspector shows one preparation.</p><div class="viewbar"><div role="group" aria-label="Landscape view"><button id="similarity" aria-pressed="false">Molecular atlas</button><button id="parameters" aria-pressed="false">Population parameter traces</button><button id="families" aria-pressed="false">Structural groups</button></div><label id="family-stage-label" hidden>Products at <select id="family-stage"><option value="endpoint">Requested endpoint</option><option value="hairpin">Hairpin</option></select></label></div></details>
@@ -13,7 +14,6 @@
 <div id="discovery-result" hidden><p>Saved results remain available through the CLI:</p><pre id="discovery-command"></pre></div>
 </details>
 </details>
-<section id="landscape" aria-label="Conditional molecular landscape">
 <header class="atlas-brand"><h1>Hairpin Oligonucleotide Processing</h1></header>
 <div id="landscape-panels"><div id="plot" tabindex="0" aria-label="Molecular map. Drag background to pan; pinch or use plus and minus to zoom; zero fits the map."></div></div>
 <section id="map-comparison" aria-label="Molecular features used for map proximity" hidden></section>

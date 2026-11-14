@@ -115,7 +115,15 @@ def test_compact_axes_use_compressed_storage_with_bounded_expansion(tmp_path, mo
     monkeypatch.setattr(
         _InspectionProjection,
         "families",
-        lambda *args, **kwargs: {"products": [], "product": {}, "distributions": {}},
+        lambda *args, **kwargs: pytest.fail("The UMAP does not consume structural groups"),
+    )
+    monkeypatch.setattr(
+        _InspectionProjection,
+        "population",
+        lambda *args, **kwargs: {
+            "summary": {"product": "hairpin", "products": 0, "eligible_products": 0},
+            "distributions": {},
+        },
     )
     monkeypatch.setattr(_InspectionProjection, "display", lambda answer: answer)
     monkeypatch.setattr(_InspectionProjection, "map", lambda *args: {})

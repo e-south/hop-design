@@ -70,15 +70,16 @@ class InspectionPlots:
             try:
                 path.mkdir()
                 urls = {}
-                families = (
-                    _InspectionProjection.families(
+                population = (
+                    _InspectionProjection.population(
                         state["choices"],
                         stage=stage,
                         endpoint=choices.resolution["intent"]["product"],
                     )
                     if compact
-                    else choices.families(query=query, stage=stage)
+                    else None
                 )
+                families = None if compact else choices.families(query=query, stage=stage)
                 # The active map and its linked parameter trace are visible.
                 # Other layouts are generated only when the presentation changes.
                 modes = dict.fromkeys(("parameters",) if compact else ("parameters", active))
@@ -106,8 +107,8 @@ class InspectionPlots:
                     urls["inspection"] = "/files/" + target.relative_to(self.root.parent).as_posix()
                 target = path / "distributions.svg"
                 target.write_bytes(
-                    _InspectionProjection.distributions(families["distributions"])
-                    if compact
+                    _InspectionProjection.distributions(population["distributions"])
+                    if population is not None
                     else choices.plot_svg_bytes(
                         query, selected_identity=None, view="distributions", stage=stage
                     )
@@ -120,16 +121,11 @@ class InspectionPlots:
                     "explanation": choices.explain(query),
                 }
                 if compact:
+                    assert population is not None
                     value.update(
                         compact=compact_choices(_InspectionProjection.display(state["choices"])),
                         map_index=_InspectionProjection.map(choices, state["choices"]),
-                        cohort_summary={
-                            "product": families["product"],
-                            "products": len(families["products"]),
-                            "eligible_products": sum(
-                                bool(p["eligible_preparations"]) for p in families["products"]
-                            ),
-                        },
+                        cohort_summary=population["summary"],
                         families=None,
                     )
                     (path / "cohort.json").write_text(

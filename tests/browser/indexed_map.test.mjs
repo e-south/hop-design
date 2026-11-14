@@ -40,6 +40,9 @@ test('color repaints existing points without changing the camera, exact picking 
  assert.equal(contexts.at(-2).fills.length,2,'Coincident complete preparations both contribute to density');
  host.handlers.get('pointermove')({clientX:100,clientY:0,buttons:0});
  assert.deepEqual(inspected.at(-1),['C'],'hover keeps the pinned member when its coordinates coincide');
+ const inspectedCount=inspected.length;
+ host.handlers.get('pointermove')({clientX:200,clientY:100,buttons:0});
+ assert.equal(inspected.length,inspectedCount,'Crossing a map gap retains the last preview rather than flashing the pin');
  const beforeFocus=contexts.length;flush();
  assert.equal(contexts.length,beforeFocus+1,'Hover redraws only the overlay, not the density cloud');
  host.handlers.get('click')({clientX:100,clientY:0});

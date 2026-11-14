@@ -12,6 +12,7 @@ route separately: deferring artwork does not remove molecular verification.
 Hover keeps one active preview and only the latest waiting choice. Leaving the
 map, selecting a preparation or closing the page discards waiting previews;
 already-running server work can finish but cannot replace the current view.
+Crossing empty space within the map retains the last inspected preparation.
 Inspection starts immediately through that bounded controller; a second debounce
 timer must not add latency before a point can be inspected. Rapid target changes
 replace waiting work instead of growing a request queue.
@@ -19,11 +20,11 @@ Clearing the browser artifact cache also invalidates pending cache admissions.
 Measure server work and retained browser memory separately from stale-display
 protection.
 
-Panel-local loading preserves layout. Molecular panels retain the previous drawing
-and trace in grey, with an explicit previous-preparation label and a top-left loading
-indicator. These references are inert until the matching replacement commits;
-materials and failed or empty panels remain covered. The existing drawing nodes
-are reused without extra rendering, cloning or requests.
+Loading preserves the last coherent drawing and layout. The molecule becomes
+muted and inert while its replacement loads; parameter-trace controls remain
+interactive. Progress uses the fixed inspector heading rather than cards over
+the molecule or X. Errors remain visible at the affected panel. Existing drawing
+nodes are reused without extra rendering, cloning or requests.
 Pinning freezes the displayed preview until the committed drawing is ready,
 including the first pin when there is no previous selection. Leaving a point while
 that mutation is pending cannot clear the reference or expose an unfinished result.
@@ -139,8 +140,10 @@ changes do not. Hover supplies one exact trace over the retained axes, using the
 same full-cohort parameter values as the publication SVG. The public preview
 packet still includes its complete trace drawing. Closing
 the inspection removes its owned drawing files and clears cache accounting.
-Compact inspection derives family counts and distributions once from its admitted
-query answer. Its transport dictionaries reuse scalar keys without serializing
+Compact inspection derives product counts and distributions directly from its
+admitted query answer, without constructing unused family graphs. Each distinct
+parameter definition is resolved once within that calculation. Transport
+dictionaries reuse scalar keys without serializing
 each repeated word or count; numeric, boolean and string values remain distinct.
 These are internal projections. Public query results and figure exports retain
 their existing contracts.
@@ -240,8 +243,8 @@ The local browser transport sends cohort facts once per query. Later responses
 may omit them only when the client names the matching cohort digest. This is a
 transfer optimization: action tokens, selection checks and authority reads still
 apply. Dependent panels immediately disable superseded content while retaining their
-bounds and scroll position. A previous molecular drawing is shown only as a labelled,
-subdued reference. Hairpin and trace adopt the new preparation together after their exact
+bounds and scroll position. The previous molecule stays subdued while the
+parameter controls remain available. Hairpin and trace adopt the new preparation together after their exact
 identities agree. Local loading indicators have no minimum display
 time, add no network work, and respect reduced-motion preferences. A route or
 material handoff that has not been requested uses a pin prompt rather than a
@@ -270,7 +273,8 @@ not imply ongoing work; the cue clears on completion, failure, restoration or cl
 The optional atlas X explanation decodes only the inspected member from the
 already-loaded comparison packet. It adds no requests or fitting work, and stays
 closed until requested. Its content commits with the matching hairpin and X;
-Escape closes it before changing the inspector. Atlas options retain alternate
+Escape closes it before changing the inspector. Atlas options stay within the
+map column, below its legend in narrow windows. They retain alternate
 population views and saved-view loading; Fit atlas resets the existing camera.
 The color legend and feature explanation occupy the left of the atlas. Numeric
 X meanings and arithmetic are defined in [molecular comparison](../../reference/molecular-comparison.md).

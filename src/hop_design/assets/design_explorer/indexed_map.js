@@ -79,6 +79,9 @@ export function indexedMap(host,onInspect,onSelect) {
     option.dataset.preparation=p.row.materialized_realization_id;
   }
   const move=e=>{if(!svg||e.buttons)return;const found=hit(e),p=found?representative(found):null;const id=p?.row.materialized_realization_id??null;
+    // Gaps between marks are part of the same exploration gesture. The owning
+    // landscape clears the preview when the pointer leaves that surface.
+    if(!p)return;
     if(id!==hover){hover=id;active=p?.order??active;if(p)describe(p);onInspect(p?[id]:null);schedule();}};
   const click=e=>{if(!svg)return;const p=hit(e);if(p){active=p.order;describe(p);onSelect(p.group.points.map(m=>m.row.materialized_realization_id));}};
   const key=e=>{

@@ -30,7 +30,7 @@ from ..packets.atlas import MolecularAtlasPacket
 from .features.vocabulary import describe_parameters
 from .landscape_source import inspection_landscape
 from .local_contrast import explain_choice
-from .molecular_groups import molecular_families
+from .molecular_groups import molecular_families, molecular_population
 from .neighbor_work import NeighborWork
 from .neighbors import neighboring_preparations
 from .preview import preview_components
@@ -120,5 +120,6 @@ class _InspectionProjection:
     neighbors = staticmethod(neighboring_preparations)
     map = staticmethod(map_index)
     families = staticmethod(molecular_families)
+    population = staticmethod(molecular_population)
     distributions = staticmethod(render_choice_distributions)
     axes = staticmethod(partial(render_survey_plot, include_traces=True, profile=INSPECTOR_FIGURE))

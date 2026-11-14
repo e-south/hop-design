@@ -1,9 +1,14 @@
 """Reversible structural groups over exact stage-qualified molecular identities."""
 
 from collections import defaultdict
+from collections.abc import Callable
+from functools import cache
 from typing import Any
 
-from hop_design.models.construction.variants.parameters import parameter_definition
+from hop_design.models.construction.variants.parameters import (
+    ParameterDefinition,
+    parameter_definition,
+)
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from .distributions import geometry_distributions
@@ -24,7 +29,11 @@ def _words(rows: list[dict[str, Any]], key: str) -> str:
     )
 
 
-def _family_labels(families: list[dict[str, Any]], keys: list[str]) -> None:
+def _family_labels(
+    families: list[dict[str, Any]],
+    keys: list[str],
+    definition_for: Callable[[str], ParameterDefinition],
+) -> None:
     """Name extra features only where the leading measurements are ambiguous."""
     groups: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
     for family in families:
@@ -40,7 +49,7 @@ def _family_labels(families: list[dict[str, Any]], keys: list[str]) -> None:
         for family in group:
             labels = []
             for key in named:
-                definition = parameter_definition(key)
+                definition = definition_for(key)
                 values = family["features"].get(key)
                 value = "/".join(map(str, values)) if values else "not recorded"
                 unit = definition.unit if values else ""
@@ -48,16 +57,13 @@ def _family_labels(families: list[dict[str, Any]], keys: list[str]) -> None:
             family["label"] = " · ".join(labels) or "Geometry not recorded"
 
 
-def molecular_families(
+def _grouped_preparations(
     choices: dict[str, Any],
-    *,
-    stage: str = "endpoint",
-    endpoint: str = "released_insert",
-) -> dict[str, Any]:
+    stage: str,
+    definition_for: Callable[[str], ParameterDefinition],
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, dict[str, Any]]]:
     if stage not in {"hairpin", "endpoint"}:
         raise ValueError("Molecular families require the hairpin or endpoint identity stage.")
-    hairpin = stage == "hairpin" or endpoint in {"hairpin", "adapter_ligated_hairpin"}
-    keys = HAIRPIN_FEATURES if hairpin else INSERT_FEATURES
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     preparations: dict[str, dict[str, Any]] = {}
     for source in choices["paths"]:
@@ -76,11 +82,42 @@ def molecular_families(
     for path in preparations.values():
         values = dict(path["values"])
         for key, value in path["values"].items():
-            canonical = parameter_definition(key).canonical_key
+            canonical = definition_for(key).canonical_key
             if canonical in values and values[canonical] != value:
                 raise ValueError("Equivalent molecular coordinates disagree.")
             values[canonical] = value
         path["values"] = values
+    return grouped, preparations
+
+
+def molecular_population(
+    choices: dict[str, Any], *, stage: str = "endpoint", endpoint: str = "released_insert"
+) -> dict[str, Any]:
+    """Count exact products and geometry without constructing unused family graphs."""
+    grouped, preparations = _grouped_preparations(choices, stage, cache(parameter_definition))
+    hairpin = stage == "hairpin" or endpoint in {"hairpin", "adapter_ligated_hairpin"}
+    return {
+        "summary": {
+            "product": "hairpin" if stage == "hairpin" else endpoint,
+            "products": len(grouped),
+            "eligible_products": sum(any(p["matches"] for p in rows) for rows in grouped.values()),
+        },
+        "distributions": geometry_distributions(
+            list(preparations.values()),
+            ("loop_nt", "foldback_arm_bp") if hairpin else ("left_gap", "right_gap"),
+        ),
+    }
+
+
+def molecular_families(
+    choices: dict[str, Any], *, stage: str = "endpoint", endpoint: str = "released_insert"
+) -> dict[str, Any]:
+    # Keep the immutable-definition lookup local: arbitrary position keys never
+    # accumulate globally, and every contact resolves once across this population.
+    definition_for = cache(parameter_definition)
+    grouped, preparations = _grouped_preparations(choices, stage, definition_for)
+    hairpin = stage == "hairpin" or endpoint in {"hairpin", "adapter_ligated_hairpin"}
+    keys = HAIRPIN_FEATURES if hairpin else INSERT_FEATURES
     products: list[dict[str, Any]] = []
     families: dict[str, dict[str, Any]] = {}
     for identity, rows in sorted(grouped.items()):
@@ -162,7 +199,7 @@ def molecular_families(
                 "preparations": sorted(members),
             },
         }
-    _family_labels(list(families.values()), varied or list(keys))
+    _family_labels(list(families.values()), varied or list(keys), definition_for)
     return {
         "schema": "hop.molecular-families/v1",
         "stage": stage,
@@ -170,7 +207,7 @@ def molecular_families(
         "basis": "exact_products_grouped_by_recorded_structure",
         "products": products,
         "families": sorted(families.values(), key=lambda family: family["identity"]),
-        "features": [parameter_definition(k).model_dump(mode="json") for k in keys],
+        "features": [definition_for(k).model_dump(mode="json") for k in keys],
         "distributions": geometry_distributions(
             list(preparations.values()),
             ("loop_nt", "foldback_arm_bp") if hairpin else ("left_gap", "right_gap"),

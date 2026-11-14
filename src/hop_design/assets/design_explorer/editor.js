@@ -103,7 +103,6 @@ const hover=hoverPreview(async id=>{
   current:()=>state?.preview?.summary.atlas.materialized_realization_id,
   pending(identity){
     local.suspend();scenes.pending(identity);loading.pending(identity);transient.show();$('inspector').hidden=false;
-    $('preview-label').textContent='Loading preview…';
   },
   ready:identity=>loading.ready(identity),
   failed(error,identity){scenes.previewFailed(identity);loading.failed(error,identity);$('preview-label').textContent='Preview did not load';},
@@ -135,7 +134,7 @@ async function rememberCamera(includeColor=false) {
 async function act(action,payload={},remember=true) {
   if(!state || busy || rendering.blocked) return false; hover.invalidate();busy=true;$('status').textContent='';
   local.suspend();scenes.pending(payload.materialized_realization_id);loading.beginAction(action,payload);
-  if(['select','sample','restore','inspect-discovery'].includes(action)) {inspectorDismissed=false;delete $('inspector').dataset.dismissed;$('inspector').hidden=false;$('preview-label').textContent='Loading preparation…';}
+  if(['select','sample','restore','inspect-discovery'].includes(action)) {inspectorDismissed=false;delete $('inspector').dataset.dismissed;$('inspector').hidden=false;}
   try {
     if(remember && action!=='view') await rememberCamera();
     const next=await post(action,payload);

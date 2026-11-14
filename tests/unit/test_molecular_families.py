@@ -111,3 +111,47 @@ def test_same_end_words_do_not_hide_recorded_loop_differences_between_insert_pro
         "AGTC · AACC · loop TTTC",
     }
     assert len(atlas["families"]) == 1
+
+
+def test_repeated_contacts_resolve_each_parameter_once_per_grouping(monkeypatch):
+    from collections import Counter
+
+    from hop_design.design.construction.navigation import molecular_groups as owner
+
+    original = owner.parameter_definition
+    calls = Counter()
+
+    def counted(key):
+        calls[key] += 1
+        return original(key)
+
+    rows = [path(str(i), str(i), loop=3 + i % 3) for i in range(30)]
+    for row in rows:
+        row["values"]["basal_pair_class_0"] = "canonical"
+    expected = molecular_families(choices(rows), stage="hairpin")
+    monkeypatch.setattr(owner, "parameter_definition", counted)
+    assert molecular_families(choices(rows), stage="hairpin") == expected
+    assert all(count == 1 for count in calls.values())
+
+
+def test_population_counts_and_distributions_match_groups_without_building_labels(monkeypatch):
+    from hop_design.design.construction.navigation import molecular_groups as owner
+
+    rows = [
+        path("a", "one"),
+        path("b", "one", matches=False),
+        path("c", "two", loop=6),
+        path("d", "three", matches=False),
+    ]
+    pool = choices([*rows, rows[0]])
+    full = molecular_families(pool, stage="hairpin")
+
+    def no_labels(*args, **kwargs):
+        raise AssertionError("A population summary must not build structural group labels")
+
+    monkeypatch.setattr(owner, "_family_labels", no_labels)
+    result = owner.molecular_population(pool, stage="hairpin")
+    assert result == {
+        "summary": {"product": "hairpin", "products": 3, "eligible_products": 2},
+        "distributions": full["distributions"],
+    }

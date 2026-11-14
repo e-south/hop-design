@@ -3,13 +3,14 @@ import {panelStatus} from './panel_status.js';
 // Inspection feedback is presentation-only. Request ownership stays with the
 // hover and committed-render controllers; neither can expose half an update.
 export function inspectionLoading(get) {
-  const hairpinHost=get('figure-one-canvas');
-  const hairpin=panelStatus(hairpinHost,{retainPrevious:()=>Boolean(hairpinHost.querySelector('svg[data-preparation-id]'))});
+  // Only the old molecule is stale. Parameter controls must stay available.
+  const hairpinHost=get('molecular-area');
+  const hairpin=panelStatus(hairpinHost,{quietProgress:true,retainPrevious:()=>Boolean(hairpinHost.querySelector('svg[data-preparation-id]'))});
   const route=panelStatus(get('route-focus'));
   const materials=panelStatus(get('preparation-info'));
   const map=panelStatus(get('landscape-panels'),{retainPrevious:()=>Boolean(get('plot').querySelector('svg,canvas')),previousLabel:'Previous atlas'});
   const comparisonHost=get('map-comparison');
-  const comparison=panelStatus(comparisonHost,{retainPrevious:()=>Boolean(comparisonHost.dataset.preparationId)});
+  const comparison=panelStatus(comparisonHost,{quietProgress:true,retainPrevious:()=>Boolean(comparisonHost.dataset.preparationId)});
   let hover=null,action=[];
   function clearHover() {
     if(!hover) return;

@@ -67,3 +67,11 @@ test('an excluded preview with eligible alternatives keeps its trace-selection g
  assert.equal(ui.get('preview-label').textContent,'Preview · outside current filters');
  assert.match(ui.get('preview-recovery').textContent,/Choose an eligible trace/);
 });
+
+test('selection retains the stable preparation heading while the next drawing loads',async()=>{
+ const ui=editor();await ui.context.render(fixture(false,1));
+ let finish;ui.context.post=()=>new Promise(resolve=>{finish=resolve;});
+ const pending=ui.context.act('select',{materialized_realization_id:'B'},false);
+ assert.equal(ui.get('preview-label').textContent,'Preparation');
+ finish(fixture(false,1));await pending;
+});
