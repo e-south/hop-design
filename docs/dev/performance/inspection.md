@@ -145,6 +145,8 @@ admitted query answer, without constructing unused family graphs. Each distinct
 parameter definition is resolved once within that calculation. Transport
 dictionaries reuse scalar keys without serializing
 each repeated word or count; numeric, boolean and string values remain distinct.
+The captured-edition explanation also uses that admitted answer, so formatting
+guidance does not recalculate the conditional query counts.
 These are internal projections. Public query results and figure exports retain
 their existing contracts.
 
@@ -274,7 +276,8 @@ The optional atlas X explanation decodes only the inspected member from the
 already-loaded comparison packet. It adds no requests or fitting work, and stays
 closed until requested. Its content commits with the matching hairpin and X;
 Escape closes it before changing the inspector. Atlas options stay within the
-map column, below its legend in narrow windows. They retain alternate
+plotting area, below its legend in narrow windows. Expanded controls scroll
+inside that area and leave the X row visible in short windows. They retain alternate
 population views and saved-view loading; Fit atlas resets the existing camera.
 The color legend and feature explanation occupy the left of the atlas. Numeric
 X meanings and arithmetic are defined in [molecular comparison](../../reference/molecular-comparison.md).

@@ -110,15 +110,9 @@ class AtlasEdition(AtlasNavigation):
         )
 
     def explain(self, query: Source | None = None) -> dict[str, Any]:
-        from ..variants.explanation import explain_choices
+        from ..variants.explanation import explain_captured_choices
 
-        answer = explain_choices(self.resolution, self.query(query), can_continue=False)
-        answer["actions"] = [a for a in answer["actions"] if a in {"select", "refine_query"}]
-        answer["guidance"] += (
-            " This frozen edition supports viewing and retrieval; "
-            "new search belongs to the original discovery."
-        )
-        return answer
+        return explain_captured_choices(self.resolution, self.query(query))
 
     def member(self, name: str) -> Never:
         raise ValueError("An atlas edition contains one experimental stem; open its named edition.")

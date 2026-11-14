@@ -3,6 +3,8 @@
 <body><main>
 <section id="object" aria-label="Molecular landscape and selected preparation">
 <section id="landscape" aria-label="Conditional molecular landscape">
+<header class="atlas-brand"><h1>Hairpin Oligonucleotide Processing</h1></header>
+<div id="landscape-panels"><div id="plot" tabindex="0" aria-label="Molecular map. Drag background to pan; pinch or use plus and minus to zoom; zero fits the map."></div>
 <details id="refinement"><summary>Atlas options</summary><div class="actions"><button id="open-view">Open saved view</button><button id="bookmark" disabled title="Download the exact view as a JSON file">Save view</button><input type="file" accept=".json,application/json" id="view-file" hidden><a id="view-link" hidden>Link to this view</a><button id="back" disabled aria-label="Previous inspection">← Back</button><button id="clear" hidden>Clear filters</button></div>
 <p id="counts">Opening atlas…</p>
 <details id="alternate-views"><summary>Other population views</summary><p>These views summarize the population. The inspector shows one preparation.</p><div class="viewbar"><div role="group" aria-label="Landscape view"><button id="similarity" aria-pressed="false">Molecular atlas</button><button id="parameters" aria-pressed="false">Population parameter traces</button><button id="families" aria-pressed="false">Structural groups</button></div><label id="family-stage-label" hidden>Products at <select id="family-stage"><option value="endpoint">Requested endpoint</option><option value="hairpin">Hairpin</option></select></label></div></details>
@@ -14,8 +16,7 @@
 <div id="discovery-result" hidden><p>Saved results remain available through the CLI:</p><pre id="discovery-command"></pre></div>
 </details>
 </details>
-<header class="atlas-brand"><h1>Hairpin Oligonucleotide Processing</h1></header>
-<div id="landscape-panels"><div id="plot" tabindex="0" aria-label="Molecular map. Drag background to pan; pinch or use plus and minus to zoom; zero fits the map."></div></div>
+</div>
 <section id="map-comparison" aria-label="Molecular features used for map proximity" hidden></section>
 <button id="comparison-help" aria-controls="comparison-help-panel" aria-expanded="false" hidden>How X is read</button><section id="comparison-help-panel" role="region" aria-labelledby="comparison-help-title" hidden><header><h2 id="comparison-help-title">How X is read</h2><button id="close-comparison-help" class="icon-close" aria-label="Close X explanation">×</button></header><div id="comparison-help-content"></div></section>
 <div id="map-color" hidden><label>Color <select data-lens aria-label="Color by molecular property"></select></label><select data-word aria-label="Exact sticky-end word to highlight" hidden></select><div data-color-legend aria-live="polite"></div></div>

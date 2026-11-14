@@ -118,7 +118,7 @@ class InspectionPlots:
                     "plots": urls,
                     "has_landscape": choices.has_landscape,
                     "families": families,
-                    "explanation": choices.explain(query),
+                    "explanation": _InspectionProjection.explanation(choices, state["choices"]),
                 }
                 if compact:
                     assert population is not None

@@ -9,6 +9,24 @@ from hop_design.commands.design.inspection import DesignInspectionSession
 from tests.integration.test_atlas_edition import captured_choices  # noqa: F401
 
 
+def test_captured_explanation_reuses_admitted_query_without_running_facets_again(
+    captured_choices,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    edition = captured_choices.freeze(tmp_path / "edition")
+    for query in (None, {"parameters": [{"key": "loop_nt", "values": [99]}]}):
+        answer = edition.query(query)
+        expected = edition.explain(query)
+
+        def duplicate_query(*args, **kwargs):
+            raise AssertionError("Explanation must reuse the inspector's admitted query")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(edition, "query", duplicate_query)
+            assert _InspectionProjection.explanation(edition, answer) == expected
+
+
 def test_compact_map_preserves_public_query_selection_and_shared_coordinates(
     captured_choices,  # noqa: F811
     tmp_path,

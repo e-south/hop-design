@@ -81,6 +81,16 @@ def map_index(choices: ChoiceSource, answer: Record) -> Record:
     }
 
 
+def inspection_explanation(choices: ChoiceSource, answer: Record) -> Record:
+    """Reuse captured query facts; live discovery retains its search-policy owner."""
+    from ..editions.reader import AtlasEdition
+    from ..variants.explanation import explain_captured_choices
+
+    if isinstance(choices, AtlasEdition):
+        return explain_captured_choices(choices.resolution, answer)
+    return choices.explain(answer["query"])
+
+
 def product_label(cost: Record | None) -> str | None:
     """Display the measured endpoint without changing its scientific cost record."""
     return None if cost is None else endpoint_label(ConstructionEndpoint(cost["endpoint"]))
@@ -116,6 +126,7 @@ class _InspectionProjection:
     scenes = staticmethod(scene_previews)
     packet = staticmethod(inspector_packet)
     explain = staticmethod(explain_choice)
+    explanation = staticmethod(inspection_explanation)
     neighbor_work = NeighborWork
     neighbors = staticmethod(neighboring_preparations)
     map = staticmethod(map_index)
