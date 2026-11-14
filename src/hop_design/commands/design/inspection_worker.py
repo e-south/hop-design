@@ -9,25 +9,7 @@ from threading import Event, Lock
 from time import monotonic
 from typing import cast
 
-
-def _invoke[Request, Result](
-    function: Callable[[Request], Result], request: Request
-) -> tuple[bool, Result | str]:
-    try:
-        return True, function(request)
-    except Exception as error:
-        # Validation exceptions need not be pickleable to reach the local inspector.
-        return False, f"{type(error).__name__}: {error}"
-
-
-def _serve[Request, Result](connection: Connection, function: Callable[[Request], Result]) -> None:
-    try:
-        while True:
-            connection.send(_invoke(function, connection.recv()))
-    except EOFError:
-        pass
-    finally:
-        connection.close()
+from hop_design.api import _InspectionProjection
 
 
 class SingleWorker[Request, Result]:
@@ -50,7 +32,10 @@ class SingleWorker[Request, Result]:
                 if self._process is None:
                     context = multiprocessing.get_context("spawn")
                     parent, child = context.Pipe()
-                    process = context.Process(target=_serve, args=(child, self._function))
+                    process = context.Process(
+                        target=_InspectionProjection.serve_preview_jobs,
+                        args=(child, self._function),
+                    )
                     try:
                         process.start()
                     except BaseException:

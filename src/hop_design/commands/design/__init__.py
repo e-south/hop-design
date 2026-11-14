@@ -145,7 +145,7 @@ def query(
 ) -> None:
     """Filter existing choices without running a search."""
     with errors():
-        emit_choices(load_choices(directory, member), directory, format, query)
+        emit_choices(load_choices(directory, member), directory, format, query, member=member)
 
 
 @design_app.command("sample")

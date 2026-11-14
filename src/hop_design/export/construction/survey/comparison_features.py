@@ -8,7 +8,12 @@ from hop_design.models.construction.variants.similarity import (
     MolecularDescriptor,
 )
 
+from ..presentation.comparison import COMPARISON_GROUPS
+
 _FEATURE_NAMES = {
+    "open_side_paired_positions": "Basal span",
+    "loop_side_paired_bp": "Extension",
+    "loop_nt": "Loop length",
     "basal_pairs": "Basal contacts",
     "foldback_pairs": "Foldback contacts",
     "loop": "Loop",
@@ -74,14 +79,13 @@ def comparison_features(
             for row in ordered
         ]
         for key in values[0] or {}:
-            dictionary: list[Any] = []
-            positions: dict[Any, int] = {}
+            # Stable field codes must not depend on pointer order, filters or
+            # the caller's member order. They identify words, not magnitudes.
+            dictionary: list[Any] = sorted({row[key] for row in values})
+            positions: dict[Any, int] = {value: i for i, value in enumerate(dictionary)}
             indices = []
             for row in values:
                 value = row[key]
-                if value not in positions:
-                    positions[value] = len(dictionary)
-                    dictionary.append(value)
                 indices.append(positions[value])
             paired = block == "sequences" and key in {"basal_pairs", "foldback_pairs"}
             if paired:
@@ -108,6 +112,7 @@ def comparison_features(
                 }
             )
     return {
+        "presentation": {"groups": {key: dict(value) for key, value in COMPARISON_GROUPS.items()}},
         "basis": basis.model_dump(mode="json", exclude={"comparison_keys"}),
         "columns": columns,
         "contacts": contacts,
@@ -119,9 +124,14 @@ def selected_comparison_features(
 ) -> dict[str, Any]:
     """Decode one browser-equivalent vector; keep omitted constants in its record."""
     members = tuple(row.identity for row in rows)
+    return select_projected_features(comparison_features(rows, basis, members), members, identity)
+
+
+def select_projected_features(
+    projected: dict[str, Any], members: tuple[str, ...], identity: str
+) -> dict[str, Any]:
     if identity not in members:
         raise ValueError("Selected comparison identity is outside the captured atlas.")
-    projected = comparison_features(rows, basis, members)
     index = members.index(identity)
     features = []
     for column in projected["columns"]:
@@ -130,6 +140,9 @@ def selected_comparison_features(
             {
                 **{key: column[key] for key in ("key", "parameters", "label", "unit", "active")},
                 "encoded": encoded,
+                "display_value": encoded
+                if column["key"].startswith("shape.")
+                else column["indices"][index],
                 "value": [projected["contacts"][code] for code in encoded]
                 if column.get("encoding") == "contacts"
                 else encoded,
@@ -137,14 +150,21 @@ def selected_comparison_features(
             }
         )
     indexed = {feature["key"]: feature for feature in features}
+    basis = projected["basis"]
     keys = [
-        *[f"shape.{key}" for key in basis.shape_scales],
-        *[f"sequences.{key}" for key in basis.sequence_keys],
-        *[f"interfaces.{key}" for key in basis.interface_keys],
+        f"{block}.{key}"
+        for block, names in (
+            ("shape", basis["shape_scales"]),
+            ("sequences", basis["sequence_keys"]),
+            ("interfaces", basis["interface_keys"]),
+            ("processing", basis.get("processing_keys", ())),
+        )
+        for key in names
     ]
     return {
         "schema": "hop.selected-comparison-features/v1",
         "identity": identity,
+        "presentation": projected["presentation"],
         "basis": projected["basis"],
         "contacts": projected["contacts"],
         "features": features,

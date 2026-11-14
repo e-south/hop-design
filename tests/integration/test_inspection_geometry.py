@@ -274,8 +274,10 @@ def test_scene_carries_fitted_regions_and_addressed_edges(inspected_route):
         "assembly",
     }
     assert all(r.attrib.get("data-members") for r in regions)
+    from hop_design.export.construction.molecular.primitives.style import REGION_COLORS
+
     assert {r.attrib["fill"] for r in regions if r.attrib["data-region-fill"] == "stem"} == {
-        "#B95300"
+        REGION_COLORS["stem"]
     }
     assert all(r.tag.endswith("}path") and r.get("data-path-members") for r in regions)
     edges = root.findall(".//*[@data-edge-kind]")
@@ -285,6 +287,23 @@ def test_scene_carries_fitted_regions_and_addressed_edges(inspected_route):
     assert all(e.attrib.get("data-from") and e.attrib.get("data-to") for e in edges)
     bases = root.findall(".//*[@data-base-index]")
     assert all(b.find("{http://www.w3.org/2000/svg}rect").attrib["fill"] == "none" for b in bases)
+
+
+@pytest.mark.parametrize("phase", ["hairpin", "clone_ready_duplex"])
+def test_pairing_strokes_are_behind_strand_fills(inspected_route, phase):
+    from xml.etree import ElementTree as ET
+
+    from hop_design.export.construction.molecular.inspection import render_molecular_inspection
+
+    projection = project_molecular_inspection(inspected_route, phase)
+    root = ET.fromstring(render_molecular_inspection(projection))
+    order = {id(node): index for index, node in enumerate(root.iter())}
+    pairs = root.findall('.//*[@data-edge-kind="pair"]')
+    fills = root.findall(".//*[@data-region-fill]")
+    assert len(pairs) == len(projection.state.pairings) > 0
+    assert fills
+    first_fill = min(order[id(node)] for node in fills)
+    assert all(order[id(node)] < first_fill for node in pairs)
 
 
 def test_persistent_site_orientation_follows_its_folded_strand(inspected_route):

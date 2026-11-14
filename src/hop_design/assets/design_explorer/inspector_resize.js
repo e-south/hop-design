@@ -1,7 +1,7 @@
 // Local composition only: never persist a new query, molecular camera or selection.
 export function resizableInspector(surface,inspector,scroll,handle,changed,before=()=>{}) {
   let chosen=null,pending=null,frame=null,gesture=null,closed=false;
-  const bounds=()=>[440,Math.min(760,surface.clientWidth-320)];
+  const bounds=()=>[440,Math.min(900,surface.clientWidth-320)];
   const width=()=>inspector.getBoundingClientRect().width;
   function anchor() {
     const view=scroll.getBoundingClientRect();
@@ -30,7 +30,7 @@ export function resizableInspector(surface,inspector,scroll,handle,changed,befor
     pending=value;if(frame===null)frame=requestAnimationFrame(flush);
   }
   function request(value) {
-    chosen=Math.max(440,Math.min(760,value));
+    chosen=Math.max(440,Math.min(900,value));
     const [min,max]=bounds();schedule(Math.max(min,Math.min(max,chosen)));
   }
   function end() {

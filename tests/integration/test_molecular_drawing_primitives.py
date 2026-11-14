@@ -67,8 +67,12 @@ def test_bound_primers_show_the_exact_ordered_sequence_without_becoming_state_ba
             rect = template[index].find(SVG + "rect")
             text = template[index].find(SVG + "text")
             path.append((float(rect.get("x")) + 7, float(text.get("y")) - 5))
-        for glyph in bases[-len(indices) :]:
+        register_dx, register_dy = path[1][0] - path[0][0], path[1][1] - path[0][1]
+        for glyph, (tx, ty) in zip(bases[-len(indices) :], path, strict=True):
             x, y = float(glyph.get("x")), float(glyph.get("y")) - 5
+            # Literal cognate bases keep their template register. An offset
+            # contour may kink; its letters cannot slide along that contour.
+            assert abs((x - tx) * register_dx + (y - ty) * register_dy) < 1e-6
             distances = []
             for (ax, ay), (bx, by) in pairwise(path):
                 dx, dy = bx - ax, by - ay
@@ -88,9 +92,51 @@ def test_cut_marks_are_strand_specific_and_site_bands_remain_translucent(loop_po
     assert sites and all(e.get("id") for e in sites)
     for site in sites:
         bands = [e for e in site.iter() if e.get("data-recognition-footprint")]
-        if site.get("data-presence") in {"present", "partial"}:
+        if site.get("data-footprint-display") == "metadata":
+            assert not bands
+            assert json.loads(site.get("data-recognition-addresses"))
+        elif site.get("data-presence") in {"present", "partial"}:
             assert bands
         if site.get("data-presence") in {"not_yet_present", "removed"}:
             assert not bands
         assert all(e.tag == SVG + "path" and e.get("fill") != "none" for e in bands)
         assert all(0 < float(e.get("fill-opacity")) <= 0.2 for e in bands)
+
+
+def test_watson_crick_links_stay_registered_to_their_recorded_base_centers(loop_pool):
+    import re
+
+    import pytest
+
+    from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
+
+    choices, request = atlas_request(loop_pool)
+    packet = construction.inspect_scaffold_atlas(loop_pool, choices, request)
+    summary = json.loads(packet.json_bytes)
+    route = ET.fromstring(packet.svg_bytes)
+    views = [e for e in route.iter() if e.get("data-atlas-state")]
+    views.append(ET.fromstring(render_teaching_overview(summary)))
+    for view in views:
+        centers = {}
+        for base in (e for e in view.iter() if e.get("data-base-index") is not None):
+            rect = base.find(SVG + "rect")
+            text = base.find(SVG + "text")
+            centers[base.get("data-strand-id"), int(base.get("data-base-index"))] = (
+                float(rect.get("x")) + float(rect.get("width")) / 2,
+                float(text.get("y")) - 5,
+            )
+        for link in (e for e in view.iter() if e.get("data-pair-kind") == "watson_crick"):
+            a = centers[tuple(json.loads(link.get("data-from")))[-2:]]
+            b = centers[tuple(json.loads(link.get("data-to")))[-2:]]
+            x, y, u, v = map(float, re.findall(r"[-\d.]+", link.get("d")))
+            length = hypot(b[0] - a[0], b[1] - a[1])
+            # The contact remains on the line between its own two base centers,
+            # with the existing ten-unit inset at each nucleotide tile.
+            assert (x - a[0]) * (b[1] - a[1]) - (y - a[1]) * (b[0] - a[0]) == pytest.approx(
+                0, abs=1e-6
+            )
+            assert (u - b[0]) * (b[1] - a[1]) - (v - b[1]) * (b[0] - a[0]) == pytest.approx(
+                0, abs=1e-6
+            )
+            assert hypot(x - a[0], y - a[1]) == pytest.approx(min(10, length / 2))
+            assert hypot(u - b[0], v - b[1]) == pytest.approx(min(10, length / 2))

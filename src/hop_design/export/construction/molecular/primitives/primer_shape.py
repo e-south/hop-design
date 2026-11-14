@@ -7,7 +7,7 @@ from .style import INK
 
 Point = tuple[float, float]
 PRIMER_HALF_WIDTH = 12
-PRIMER_HEAD_LENGTH = 32
+PRIMER_HEAD_LENGTH = 20
 PRIMER_SHOULDER_HEIGHT = 24
 PRIMER_SHOULDER_ADVANCE = 8
 
@@ -20,8 +20,8 @@ def primer_outline(positions: list[Point], *, outward: int = 1) -> tuple[list[Po
     px, py = positions[-2] if len(positions) > 1 else (x - 16, y)
     length = max(1, hypot(x - px, y - py))
     ux, uy = (x - px) / length, (y - py) / length
-    # The template-facing edge continues flat to the tip. Only the outer edge
-    # flares; mirroring the flare never reverses sequence or extension direction.
+    # Continue the template-facing shaft edge into the short tip. Keeping this
+    # edge parallel avoids a spurious upward slant; the flare stays outward.
     nx, ny = -uy * outward, ux * outward
     shoulder = (
         x + ux * PRIMER_SHOULDER_ADVANCE + nx * PRIMER_SHOULDER_HEIGHT,

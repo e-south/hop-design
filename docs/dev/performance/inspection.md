@@ -48,6 +48,10 @@ scenes together so they share one molecular admission and projection. An absent
 or ambiguous phase is explicitly unavailable. Only requested scenes are drawn,
 while label introduction and incoming-material placement retain the whole route's
 context. Measure authority access, scene drawing and cache reuse separately.
+For an isolated linear/early scene request, skip the folded-frame headroom prepass.
+Full-route and mixed/folded requests retain their shared measurement pass. Exact
+SVG bytes and scene metadata must agree with the corresponding full projection;
+a performance change cannot bypass molecular admission or change input placement.
 Scene composition keeps a native element tree through annotation, measurement
 and placement. Serialization occurs at the export boundary, avoiding a second
 document representation and a serialize/reparse cycle for each route scene.
@@ -88,6 +92,15 @@ Shutdown allows one second after terminate and one second after kill. There is n
 silent fallback or alternate molecular authority. Measure cold process startup,
 warm cache misses, parent-plus-child CPU and memory separately. Route-scene drawing
 does not yet use this worker.
+
+The console entrypoint defers CLI registration until invoked. Its standard
+`__main__` module stays under the CLI dependency rules. The detached pipe target
+is colocated with the existing preview job and exposed through the inspection
+facade; the command adapter still owns process startup, deadlines and disposal.
+Spawned renderers must not import command registration. Benchmark the installed
+console command as well as a guarded Python caller: spawn re-executes the launch
+script, and bytecode-cache differences can reverse an apparent startup gain.
+No extra process, prewarming, admission cache or fallback is introduced.
 
 `test_inspection_worker.py` checks failure, timeout, concurrent work and teardown.
 `test_isolated_preview.py` compares exact drawings and summaries and rejects altered
@@ -182,6 +195,12 @@ connection. Scene drawings share the existing bounded hover cache and are remove
 with it; captured editions retain their original scene artwork and provenance.
 The browser's private packet is composed before its manifest is written. Public
 figure exports and material retrieval retain their existing defaults.
+Compact pinning passes its already-typed molecular atlas to the same teaching
+renderer used by preview. It does not serialize that generated atlas and validate
+it again merely to draw the overview. Archive/snapshot admission, descriptor
+validation, reference comparison and saved-view validation still run at their
+existing boundaries. Verify exact overview bytes and complete summary parity,
+including the inspector profile, before accepting a timing change.
 Private molecule packets draw the inspector composition directly and record that
 profile. The inspector reuses a matching composition instead of first drawing a
 publication overview and replacing it. Captured artwork keeps its original profile;
@@ -240,3 +259,34 @@ route-render request. Escape restores a transient preview before leaving figure
 focus or closing the inspector.
 Returning to the already-inspected point restores its existing drawing immediately,
 without another preview request or loading indicator.
+
+Complete preparation uses one compact loading cue in the fixed inspector heading
+for visible pending steps. Individual scene slots keep their phase labels and measured bounds,
+without repeated loading cards or screen-reader announcements. Retained drawings
+remain subdued and inactive while updating. Failures and unavailable states still
+show and announce their specific notice at the affected step. Offscreen steps do
+not imply ongoing work; the cue clears on completion, failure, restoration or close.
+
+The optional atlas X explanation decodes only the inspected member from the
+already-loaded comparison packet. It adds no requests or fitting work, and stays
+closed until requested. Its content commits with the matching hairpin and X;
+Escape closes it before changing the inspector. Atlas options retain alternate
+population views and saved-view loading; Fit atlas resets the existing camera.
+The color legend and feature explanation occupy the left of the atlas. Numeric
+X meanings and arithmetic are defined in [molecular comparison](../../reference/molecular-comparison.md).
+
+Renderer version and route composition are separate saved-view choices. The
+browser's Renderer control selects captured or current glyphs; Route view selects
+all recorded states or grouped cleanup. Neither control changes the other choice.
+The route control follows the effective renderer: captured artwork cannot be
+recomposed, while compact editions draw their recorded molecular authority on
+demand. The recorded preference can therefore use current glyphs when no artwork
+was captured; the rendering receipt states this explicitly. Both route
+profiles retain the complete molecular record and use the same processing
+renderers as API and CLI exports. Grouped cleanup aggregates cleavage, separation
+and retention, without removing their recorded states or transition identities.
+
+The hover wrapper is transparent: FigureLayout already removes SVG page backgrounds
+and hides the prior molecule before showing a preview. Its link layer can therefore
+remain behind molecular ink without an opaque rectangle masking the molecular
+origin. Highlighted links use a quiet translucent fill, with no decorative shadow.

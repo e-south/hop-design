@@ -45,6 +45,8 @@ test('coincident candidates use the pinned reference without shadowing the cohor
   });
   const state={plots:{parameters:'plot'},plot_svg:'svg',choices:{paths:[a,b],axes:[],query:{parameters:[]}},families:{products:[{preparations:['A','B'],features:{loop_nt:[4],foldback_arm_bp:[6]}}],families:[]},selection:a};
   view.draw(state,'parameters');drawing=false;
+  globalThis.testActions.context('Recorded preparations remain inspectable.');
+  assert.equal(element('#focus').textContent,'Recorded preparations remain inspectable.','Parameter context uses the current atlas status surface');
   assert.deepEqual(previews,[],'Pinned reload does not restore before initial axes mount');
   globalThis.testActions.path([a,b]);
   assert.deepEqual(element('#member-options').children.map(b=>b.textContent),['loop AAAA','loop AAAA']);

@@ -1,5 +1,6 @@
 """Bounded cohort drawings; inspecting a preparation does not invalidate the landscape."""
 
+import gzip
 import json
 import shutil
 from collections import OrderedDict
@@ -90,8 +91,12 @@ class InspectionPlots:
                             query, selected_identity=None, view=mode, **options
                         )
                     )
-                    target = path / (mode + ".svg")
-                    target.write_bytes(svg)
+                    if compact and len(svg) > self.byte_limit:
+                        raise ValueError("Choice drawings exceed the bounded inspection cache.")
+                    # Browser SVGs are decoded by HTTP content encoding. Bound
+                    # expanded bytes as well as retained bytes; keep every trace.
+                    target = path / (mode + (".svg.gz" if compact else ".svg"))
+                    target.write_bytes(gzip.compress(svg, mtime=0) if compact else svg)
                     urls[mode] = "/files/" + target.relative_to(self.root.parent).as_posix()
                 if compact:
                     urls["inspection"] = urls["parameters"]

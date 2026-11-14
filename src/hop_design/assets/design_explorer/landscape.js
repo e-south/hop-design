@@ -96,7 +96,7 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
       if(compact){indexed.update(next.map_index,state.choices.paths,state.selection?.materialized_realization_id);return null;}
       indexed.clear();
       if(mode==='parameters') {
-        drawPlot(host,state.choices,state.landscape_svg,{...actions,context:text=>{document.querySelector('#coverage').textContent=text;}});
+        drawPlot(host,state.choices,state.landscape_svg,{...actions,context:text=>{note.textContent=text;}});
         return null;
       }
       const doc=new DOMParser().parseFromString(state.landscape_svg||state.family_svg,'image/svg+xml');

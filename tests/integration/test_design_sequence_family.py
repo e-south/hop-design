@@ -1,6 +1,7 @@
 """One explicit stem family shares the ordinary intent-to-preparation lifecycle."""
 
 import json
+import shlex
 import shutil
 
 import pytest
@@ -48,10 +49,9 @@ def test_family_preview_is_bounded_and_preserves_optional_ends(tmp_path):
     assert not (tmp_path / "bad-policy").exists()
 
 
-def test_family_members_roundtrip_without_another_search_engine(tmp_path):
-    choices = construction.discover_designs(
-        family_intent(), tmp_path / "family", max_evaluations=16
-    )
+def test_family_members_roundtrip_without_another_search_engine(tmp_path, monkeypatch):
+    directory = tmp_path / "family results"
+    choices = construction.discover_designs(family_intent(), directory, max_evaluations=16)
     answer = choices.query()
     assert answer["required_members"] == 4
     assert answer["missing_members"] == []
@@ -77,7 +77,7 @@ def test_family_members_roundtrip_without_another_search_engine(tmp_path):
         [
             "design",
             "query",
-            str(tmp_path / "family"),
+            str(directory),
             "--member",
             "member-0001",
             "--format",
@@ -86,6 +86,70 @@ def test_family_members_roundtrip_without_another_search_engine(tmp_path):
     )
     assert queried.exit_code == 0, queried.output
     assert json.loads(queried.output) == choices.member("member-0001").query()
+    # Readable feedback must preserve the same required stem and query when followed.
+    member = choices.member("member-0001")
+    filtering = {"parameters": [{"key": "left_end_word", "values": ["AAAC"]}]}
+    query_path = tmp_path / "selected ends.json"
+    query_path.write_text(json.dumps(filtering))
+    readable = runner.invoke(
+        app,
+        [
+            "design",
+            "query",
+            str(directory),
+            "--member",
+            "member-0001",
+            "--query",
+            str(query_path),
+            "--format",
+            "text",
+        ],
+    )
+    assert readable.exit_code == 0, readable.output
+    commands = {
+        prefix: shlex.split(line.split(": ", 1)[1])[1:]
+        for line in readable.output.splitlines()
+        for prefix in ("Inspect", "Sample", "Full records and coverage", "Family search bounds")
+        if line.startswith(prefix + ": ")
+    }
+    for prefix in ("Inspect", "Sample", "Full records and coverage"):
+        assert "--member" in commands[prefix], readable.output
+        assert commands[prefix][commands[prefix].index("--member") + 1] == "member-0001"
+    assert commands["Inspect"][2] == str(directory)
+    sampled = commands["Sample"]
+    sampled[sampled.index("--out") + 1] = str(tmp_path / "suggested selection.json")
+    result = runner.invoke(app, sampled)
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == member.sample(seed=1, query=filtering)
+    records = runner.invoke(app, commands["Full records and coverage"])
+    assert records.exit_code == 0, records.output
+    assert json.loads(records.output) == member.query(filtering)
+    # Member feedback cannot promise an evaluation beyond its family's bound.
+    assert "Search further:" not in readable.output
+    bounds = commands["Family search bounds"]
+    assert "--member" not in bounds and bounds[2] == str(directory)
+    result = runner.invoke(app, bounds)
+    assert result.exit_code == 0, result.output
+    assert choices.explain()["headline"] in result.output
+
+    # Admit the printed inspect command normally; only the blocking server loop is replaced.
+    from hop_design.commands import design as design_cli
+
+    create_server = design_cli.create_design_server
+    inspected = []
+
+    def bounded_server(*args, **kwargs):
+        server = create_server(*args, **kwargs)
+        inspected.append(server.session.state()["explanation"])
+        server.serve_forever = lambda: None
+        return server
+
+    monkeypatch.setattr(design_cli, "create_design_server", bounded_server)
+    inspect = commands["Inspect"]
+    inspect[inspect.index("--out") + 1] = str(tmp_path / "suggested inspection")
+    result = runner.invoke(app, inspect)
+    assert result.exit_code == 0, result.output
+    assert inspected == [member.explain()]
     path = tmp_path / "membership.json"
     path.write_text(json.dumps(members))
     selected_cli = runner.invoke(
@@ -93,7 +157,7 @@ def test_family_members_roundtrip_without_another_search_engine(tmp_path):
         [
             "design",
             "select-members",
-            str(tmp_path / "family"),
+            str(directory),
             "--members",
             str(path),
             "--baseline",
@@ -104,7 +168,7 @@ def test_family_members_roundtrip_without_another_search_engine(tmp_path):
     assert json.loads(selected_cli.output) == selected
     with pytest.raises(ValueError, match="every required member"):
         choices.select_members({"member-0001": members["member-0001"]}, baseline="member-0001")
-    shutil.copytree(tmp_path / "family", tmp_path / "relocated")
+    shutil.copytree(directory, tmp_path / "relocated")
     restored = construction.load_design_choices(tmp_path / "relocated")
     receipt = restored.retrieve(selected, tmp_path / "handoff")
     assert len(receipt.materialized_realization_ids) == 4

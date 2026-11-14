@@ -86,10 +86,14 @@ class EditorHandler(BaseHTTPRequestHandler):
         super().setup()
         self.connection.settimeout(15)
 
-    def _respond(self, status: int, body: bytes, content_type: str) -> None:
+    def _respond(
+        self, status: int, body: bytes, content_type: str, *, content_encoding: str | None = None
+    ) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        if content_encoding is not None:
+            self.send_header("Content-Encoding", content_encoding)
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
@@ -169,6 +173,7 @@ class EditorHandler(BaseHTTPRequestHandler):
                 200,
                 target.read_bytes(),
                 mimetypes.guess_type(relative)[0] or "application/octet-stream",
+                content_encoding="gzip" if relative.endswith(".svg.gz") else None,
             )
         else:
             self._json(404, {"error": "No such editor operation."})

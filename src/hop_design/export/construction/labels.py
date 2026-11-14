@@ -37,6 +37,7 @@ def drawing_material_label(role: MaterialUseRole) -> str:
         MaterialUseRole.SOURCE_MATERIALIZATION_REVERSE_PRIMER: "Source reverse",
         MaterialUseRole.ENDPOINT_FORWARD_PRIMER: "Hairpin forward",
         MaterialUseRole.ENDPOINT_REVERSE_PRIMER: "Hairpin reverse",
+        MaterialUseRole.LIGATION_ADAPTER: "Y adapter",
     }.get(role, material_role_label(role).capitalize())
 
 

@@ -1,4 +1,5 @@
 import {pointIndex} from './map_index.js';
+import {colorValue} from './molecular_colors.js';
 import {cloudPointRadius,mapTransform} from './map_raster.js';
 
 // Two canvases and one camera frame replace one DOM node per preparation.
@@ -70,7 +71,7 @@ export function indexedMap(host,onInspect,onSelect) {
   }
   function hit(event){const xy=coordinates(event);return xy?index.nearest(...xy,Math.max(markRadius(),7*transform.ratio/transform.scale)):null;}
   function describe(p) {
-    const value=lens&&lens.key!=='none'?`${lens.label}: ${p.row.values[lens.key]??'not applicable'} ${lens.unit??''}; `:'';
+    const value=lens&&lens.key!=='none'?`${lens.label}: ${colorValue(p.row,lens.key)??'not applicable'} ${lens.unit??''}; `:'';
     option.textContent=`${value}Loop ${p.row.values.loop_word??'unspecified'}; ${p.row.matches?'eligible':'outside current filters'}; preparation ${p.order+1} of ${index.points.length}`;
     if(p.group.points.length>1)option.textContent+=`; ${p.group.points.length} preparations at this plotted position; click to inspect members`;
     option.setAttribute('aria-posinset',p.order+1);option.setAttribute('aria-setsize',index.points.length);

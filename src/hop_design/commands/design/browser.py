@@ -21,8 +21,11 @@ def create_design_server(
     session = DesignInspectionSession(choices, output)
     try:
         if receipt is not None:
-            session.restore(
-                {"token": session.state()["token"], "receipt": choices.restore_view(receipt)}
+            session.response(
+                lambda: session.restore(
+                    {"token": session.state()["token"], "receipt": choices.restore_view(receipt)}
+                ),
+                format="compact-v1",
             )
         return EditorServer(session, port)
     except BaseException:

@@ -149,13 +149,22 @@ class InsertDesignChoices(DesignChoices):
         render_policy: str | None = None,
         reference_selection: Source | None = None,
         display_axes: tuple[str, ...] | None = None,
+        detail_width_pt: float | None = None,
     ) -> SourceBoundConstructionPacket:
         """Draw the landscape and selected path from this same snapshot."""
         from ..navigation.figure_context import figure_context
         from ..navigation.landscape_figure import landscape_figure
 
         context = figure_context(
-            self, selection, view, stage, layout, render_policy, reference_selection, display_axes
+            self,
+            selection,
+            view,
+            stage,
+            layout,
+            render_policy,
+            reference_selection,
+            display_axes,
+            detail_width_pt,
         )
         selection, view, stage, layout = (
             context.selection,
@@ -176,6 +185,7 @@ class InsertDesignChoices(DesignChoices):
                     view=view,
                     display_axes=context.display_axes,
                     color=context.color,
+                    detail_width_pt=context.detail_width_pt,
                 ),
                 atlas,
             )

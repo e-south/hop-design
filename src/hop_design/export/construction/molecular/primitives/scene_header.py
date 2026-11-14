@@ -4,6 +4,7 @@ from xml.etree import ElementTree as ET
 
 from .extent import scene_bounds
 from .style import SCENE_CLEARANCE, TITLE_SIZE
+from .typography import text_width
 
 SVG = "http://www.w3.org/2000/svg"
 
@@ -19,10 +20,18 @@ def attach_scene_header(root: ET.Element) -> None:
     for child in list(root):
         root.remove(child)
     left, top, _, _ = scene_bounds(content)
-    offset = TITLE_SIZE + SCENE_CLEARANCE - top
+    center = float(title.attrib["x"])
+    half_width = text_width(title.text or "", TITLE_SIZE) / 2 + SCENE_CLEARANCE
+    _, local_top, _, _ = scene_bounds(
+        content, horizontal_span=(center - half_width, center + half_width)
+    )
+    baseline = local_top - SCENE_CLEARANCE
+    # Clear what is beneath the title, while allowing distant raised handles
+    # beside it. Normalize the combined scene once; bases remain in register.
+    offset = -min(top, baseline - TITLE_SIZE)
     content.set("transform", f"translate(0 {offset})")
     content.set("data-scene-y", str(offset))
-    title.set("y", str(TITLE_SIZE))
+    title.set("y", str(baseline + offset))
     root.extend((title, content))
     centers = [
         float(next(t for t in e if t.tag.endswith("}text")).attrib["y"]) - 5

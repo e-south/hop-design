@@ -1,7 +1,9 @@
 """Detached single-preparation jobs; cohort admission stays in the parent."""
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
+from multiprocessing.connection import Connection
 from typing import cast
 
 from hop_design.export.construction.molecular.assembly.composition import RoutePresentation
@@ -20,6 +22,25 @@ from .compact_projection import _projection_context, _teaching_summary, teaching
 from .descriptors import descriptor_index
 from .materials import member_materials, route_record_from_materials
 from .reader import AtlasEdition
+
+
+def serve_preview_jobs[Request, Result](
+    connection: Connection, function: Callable[[Request], Result]
+) -> None:
+    """Detached pipe target; command registration stays in the parent process."""
+    try:
+        while True:
+            request = connection.recv()
+            try:
+                response: tuple[bool, Result | str] = True, function(request)
+            except Exception as error:
+                # Validation exceptions need not be pickleable across the pipe.
+                response = False, f"{type(error).__name__}: {error}"
+            connection.send(response)
+    except EOFError:
+        pass
+    finally:
+        connection.close()
 
 
 @dataclass(frozen=True)
@@ -51,10 +72,11 @@ def preview_job(
         return None  # Live discovery and captured artwork retain their existing paths.
     if not any(p["materialized_realization_id"] == identity for p in answer["paths"]):
         raise ValueError("Preview must name a preparation in the recorded pool.")
-    path, _ = _projection_context(choices, identity, answer)
+    path, names = _projection_context(choices, identity, answer)
     context: Record = {
         **{k: answer[k] for k in ("snapshot_digest", "axes", "context", "coverage") if k in answer},
         "paths": [path],
+        "enzyme_names": names,
     }
     # These reads check bytes on every cache miss. Never send the cohort graph or
     # a live edition object to the worker, and never use file mtimes as authority.
@@ -82,12 +104,7 @@ def render_preview_job(job: PreviewJob) -> tuple[bytes, Record]:
         or path["materialized_realization_id"] != job.identity
     ):
         raise ValueError("Preview job disagrees with the selected molecular authority.")
-    names = {
-        node["value"]: node["label"]
-        for axis in answer["axes"]
-        if axis["key"].endswith("method")
-        for node in axis["nodes"]
-    }
+    names = answer["enzyme_names"]
     scenes: Record = {}
     atlas: MolecularScenes
     if job.phases is not None:

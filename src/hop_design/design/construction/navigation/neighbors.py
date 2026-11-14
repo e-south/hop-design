@@ -1,8 +1,11 @@
 """Explain local alternatives; only the existing preservation query certifies a control."""
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from heapq import nsmallest
 from pathlib import Path
+
+from hop_design.models.construction.variants.overview import PreparationDissimilarity
+from hop_design.models.construction.variants.similarity import MolecularDissimilarity
 
 from .landscape_source import molecular_landscape
 from .local_contrast import (
@@ -48,6 +51,33 @@ def _neighbors(
     work.check()
     if answer is not None and answer["query"] != query:
         raise ValueError("Admitted neighbor context disagrees with its query.")
+    from ..editions.overview import recorded_overview
+    from .numerical.overview import overview_difference
+
+    overview = recorded_overview(choices, answer)
+    if overview is not None:
+        answer = choices.query(query) if answer is None else answer
+        indices = {member: i for i, member in enumerate(overview.members)}
+        if identity not in indices:
+            raise ValueError("Reference must belong to the saved preparation overview.")
+        paths = {p["materialized_realization_id"]: p for p in answer["paths"]}
+
+        def overview_distances() -> Iterator[tuple[float, str, PreparationDissimilarity]]:
+            for member, path in paths.items():
+                work.check()
+                if member != identity and path["matches"]:
+                    difference = overview_difference(overview, indices[identity], indices[member])
+                    yield difference.total, member, difference
+
+        overview_ranked: list[tuple[MolecularDissimilarity, str]] = [
+            (difference, member)
+            for _, member, difference in nsmallest(
+                limit, overview_distances(), key=lambda item: (item[0], item[1])
+            )
+        ]
+        return _explain_neighbors(
+            choices, identity, answer, overview_ranked, verify_controls, work, overview.digest
+        )
     # The local inspector already owns a query-bound answer. Reuse it only inside
     # that operation; captured landscape bytes and membership are still checked.
     landscape = (
@@ -60,7 +90,6 @@ def _neighbors(
     answer = choices.query(query) if answer is None else answer
     work.check()
     paths = {p["materialized_realization_id"]: p for p in answer["paths"]}
-    old = paths[identity]
     rows = tuple(descriptors.values())
     index = {row.identity: i for i, row in enumerate(rows)}
     with PreparedComparison(rows, landscape.basis) as comparison:
@@ -81,6 +110,22 @@ def _neighbors(
         (dissimilarity(descriptors[identity], descriptors[key], landscape.basis), key)
         for _, key in ranked_ids
     ]
+    return _explain_neighbors(
+        choices, identity, answer, ranked, verify_controls, work, landscape.digest
+    )
+
+
+def _explain_neighbors(
+    choices: ChoiceSource,
+    identity: str,
+    answer: Record,
+    ranked: Sequence[tuple[MolecularDissimilarity, str]],
+    verify_controls: bool,
+    work: NeighborWork,
+    digest: str,
+) -> Record:
+    paths = {p["materialized_realization_id"]: p for p in answer["paths"]}
+    old = paths[identity]
     verified: set[str] = set()
     notice = None
     if verify_controls and any(
@@ -118,7 +163,7 @@ def _neighbors(
         )
     return {
         "reference_identity": identity,
-        "landscape_digest": landscape.digest,
+        "landscape_digest": digest,
         "neighbors": neighbors,
         "preservation_notice": notice,
         "preservation_requested": verify_controls,

@@ -22,10 +22,11 @@ test('no grouping survives filters and view changes without changing the chosen 
  controls.update(filtered);assert.equal(host.hidden,false);assert.equal(select.value,'none');
  controls.close();assert.equal(select.handlers.size,0);
 });
-test('constant legend does not claim a coordinate exists on every preparation',async t=>{
+test('constant color legends distinguish recorded from missing property values',async t=>{
  const {controls,legend}=await setup(t);controls.update(state());controls.choose('left_gap');
- assert.match(legend.children.map(n=>n.textContent).join(' '),/0 bp where applicable/);
- assert.doesNotMatch(legend.children.map(n=>n.textContent).join(' '),/throughout this edition/);
+ assert.match(legend.children.map(n=>n.textContent).join(' '),/0 bp where recorded/);
+ assert.doesNotMatch(legend.children.map(n=>n.textContent).join(' '),/throughout this edition|without this coordinate/);
+ assert.match(legend.children.map(n=>n.textContent).join(' '),/× 1: no value recorded/);
  controls.close();
 });
 

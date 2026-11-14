@@ -18,23 +18,23 @@ export function inspectionLoading(get) {
   return {
     pending(identity) {
       if(hover?.identity===identity) return;
-      hover={identity,ticket:hairpin.begin('Loading next preparation…',identity),comparison:comparison.begin('Loading…',identity)};
+      hover={identity,ticket:hairpin.begin('Loading preview…',identity),comparison:comparison.begin('Loading…',identity)};
       route.begin('',identity).idle('Pin this preparation to open its route.');
       materials.begin('',identity).idle('Pin this preparation to inspect its materials.');
     },
     ready(identity) {if(hover?.identity===identity) {hover.ticket.ready();hover.comparison.ready();}},
-    failed(error,identity) {if(hover?.identity===identity) {hover.ticket.fail('Preview unavailable. Move to another point or leave to restore the pinned preparation.');hover.comparison.fail('Preview unavailable');}},
+    failed(error,identity) {if(hover?.identity===identity) {hover.ticket.fail('Preview did not load. Hover another point or restore the pinned preparation.');hover.comparison.fail('Preview did not load');}},
     clear:clearHover,
     beginAction(kind,payload={}) {
       clearHover();
       const identity=payload.materialized_realization_id||'';
-      if(kind==='retrieve') action=[materials.begin('Preparing oligos and route files…',identity)];
-      else if(kind==='view' && payload.presentation?.molecule==='route') action=[route.begin('Preparing route…',identity)];
-      else action=[hairpin.begin('Loading preparation…',identity),comparison.begin('Loading…',identity),route.begin('Preparing route…',identity),materials.begin('Preparing details…',identity)];
+      if(kind==='retrieve') action=[materials.begin('Loading oligo files…',identity)];
+      else if(kind==='view' && payload.presentation?.molecule==='route') action=[route.begin('Loading route…',identity)];
+      else action=[hairpin.begin('Loading preparation…',identity),comparison.begin('Loading…',identity),route.begin('Loading route…',identity),materials.begin('Loading materials…',identity)];
       if(kind==='inspect-discovery')action.push(map.begin('Opening saved preparations…'));
     },
     readyAction(){for(const ticket of action) ticket.ready();action=[];map.clear();},
-    failedAction(){for(const ticket of action) ticket.fail('Drawing unavailable. Use Retry drawing to finish this selection.');},
+    failedAction(){for(const ticket of action) ticket.fail('Drawing did not load. Select Retry drawing to show this preparation.');},
     opening(){return map.begin('Opening atlas…');},
     close(){for(const panel of [hairpin,route,materials,map,comparison]) panel.close();},
   };

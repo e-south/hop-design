@@ -23,7 +23,7 @@ function environment(t){
 }
 test('indexed canvas recovery preserves camera, selection, foreground-only hover and clean remount',async t=>{
  const {frames,element,flush}=environment(t);let s=await source('indexed_map');
- for(const name of ['map_index','map_raster'])s=s.replace(`'./${name}.js'`,JSON.stringify(uri(await source(name))));
+ for(const name of ['map_index','map_raster','molecular_colors'])s=s.replace(`'./${name}.js'`,JSON.stringify(uri(await source(name))));
  const {indexedMap}=await import(uri(s)),host=element('div'),actions=[];
  const map=indexedMap(host,ids=>actions.push(ids),ids=>actions.push(ids));t.after(()=>map.close());
  const rows=['A','B'].map(id=>({materialized_realization_id:id,matches:true,values:{loop_word:'AAAA'}}));

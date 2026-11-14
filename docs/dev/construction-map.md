@@ -20,7 +20,10 @@ Use these owners before reaching for the lower-level discovery contracts below.
 | Descriptor and molecular similarity | `design/construction/navigation/molecular_descriptor.py`, `similarity.py`, `numerical/` | Project verified molecules; distance and layout do not establish construction validity |
 | Frozen atlas capture and inspection | `design/construction/editions/capture.py`, `compact_capture.py`, `reader.py`, `authority.py` | Distinguish original molecular producer from current rendering |
 | Shared glyphs and figure composition | `export/construction/molecular/`, `export/construction/survey/` | Render recorded facts and addresses without new chemistry |
-| Browser selection and asynchronous preview | `commands/design/inspection.py`, `inspection_hover.py`, `inspection_worker.py`; `assets/design_explorer/` | Adapt public choices; keep preview separate from committed selection and own teardown |
+| Browser selection and asynchronous preview | `commands/design/inspection.py`, `inspection_hover.py`, `inspection_worker.py`; `design/construction/editions/preview_job.py`; `assets/design_explorer/` | Adapters own lifecycle; detached jobs avoid command registration and retain molecular admission |
+| Browser display names | `design/construction/navigation/inspection_projection.py`, `route_presentation.py` consume `export/construction/labels.py` | Share product/stage labels across controls, scene wrappers and waiting slots; retain exact IDs |
+| Visible route scenes | `design/construction/navigation/route_presentation.py`, `export/construction/molecular/atlas_layout.py` | Reuse exact records; measure shared folded headroom only when a requested state consumes that frame |
+| Browser typography | `assets/design_explorer/editor.css` | Banner-style heading is separate from data type and molecular/PDF font budgets |
 
 Companions call public `hop_design.construction` operations and
 `hop_design.api.runtime_identity`. They own selected inputs, captions and plate
@@ -169,6 +172,27 @@ primer-input context, stable focus, query preservation and CLI/API parity.
 `variant_motion.test.mjs` cover camera arithmetic, complete-route filtering,
 state-qualified animation keys and superseded responses. Browser cache entries
 remain bound to verified result/query/preview identities; retrieval re-admits.
+
+## Saved results and browser presentation
+
+Start at the owner of the changed behavior; the browser consumes admitted public
+objects and shared molecular drawings. Study requests, selected paper inputs and
+editorial composition remain outside HOP.
+
+| Responsibility | Owner relative to `src/hop_design/` |
+| --- | --- |
+| Saved live choices and frozen editions | `design/construction/variants/`, `design/construction/editions/` |
+| Public command parsing and readable next actions | `commands/design/__init__.py`, `commands/design/presentation.py` |
+| Browser session, exact selection and downloads | `commands/design/inspection.py` and its adjacent `inspection_*` owners |
+| Browser reproduction commands | `commands/design_commands.py` |
+| Shared molecular glyphs and composition profiles | `export/construction/molecular/`, `export/construction/presentation/figure_profile.py` |
+| Atlas, hover, side inspector and X interactions | `assets/design_explorer/`; wiring in `editor.js`, behavior in adjacent controllers |
+| Reused browser modules and explicit asset routes | `commands/construction/editor/assets.py`; shared files remain under `assets/survey_explorer/` and `assets/variant_explorer/` |
+
+`test_lazy_route_inspection.py` checks the generated pin/hover composition;
+`test_design_sequence_family.py` checks member-aware CLI handoffs. Browser logic
+uses `node --test tests/browser/*.test.mjs`. For cache, worker, loading and owned
+browser journeys, start at [Browser inspection](performance/inspection.md).
 
 ## Focused checks, then the repository gate
 

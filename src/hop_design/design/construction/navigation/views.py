@@ -162,7 +162,7 @@ def validate_color(
         else (path["values"] for path in (index if index is not None else choices.query())["paths"])
     )
     if not any(
-        row.get(lens.key) is not None and (lens.word is None or row[lens.key] == lens.word)
+        lens.value_in(row) is not None and (lens.word is None or lens.value_in(row) == lens.word)
         for row in values
     ):
         raise ValueError(

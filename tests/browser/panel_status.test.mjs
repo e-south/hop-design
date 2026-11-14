@@ -29,6 +29,22 @@ test('panel status releases detached content and preserves an existing inert bou
   panel.close();assert.equal(host.children.at(-1).removed,true);assert.equal(host.dataset.panelState,undefined);
 });
 
+test('quiet scene progress suppresses repeated announcements but keeps terminal notices accessible',async t=>{
+ const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});globalThis.document={createElement:element};
+ const {panelStatus}=await load(),host=element(),drawing=element();drawing.inert=false;host.append(drawing);
+ const panel=panelStatus(host,{quietProgress:true,retainPrevious:()=>true});
+ const ticket=panel.begin('Loading scene…','A');
+ assert.equal(host.dataset.panelFeedback,'quiet');assert.equal(host.announcement.textContent,'');
+ assert.equal(host.getAttribute('aria-busy'),'true');assert.equal(drawing.inert,true);
+ ticket.idle('Waiting for matching route…');assert.equal(host.announcement.textContent,'');
+ ticket.unavailable('No unique corresponding state.');
+ assert.equal(host.dataset.panelState,'unavailable');assert.equal(host.getAttribute('aria-busy'),'false');
+ assert.equal(host.announcement.textContent,'No unique corresponding state.');assert.equal(drawing.inert,true);
+ panel.begin('Loading scene…','B').fail('Scene unavailable.');
+ assert.equal(host.announcement.textContent,'Scene unavailable.');
+ panel.close();assert.equal(host.dataset.panelFeedback,undefined);
+});
+
 test('a previous drawing remains identified and inert until the matching replacement is ready',async t=>{
   const previous=globalThis.document;t.after(()=>{globalThis.document=previous;});globalThis.document={createElement:element};
   const {panelStatus}=await load(),host=element(),drawing=element();drawing.inert=false;host.append(drawing);
