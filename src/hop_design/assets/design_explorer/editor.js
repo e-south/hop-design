@@ -310,7 +310,7 @@ $('bookmark').addEventListener('click',async()=>{
   }catch(error){$('status').textContent=error.message;pendingControls();}
 });
 $('render-policy').addEventListener('change',()=>{const choice=$('render-policy').value;act('view',{stage:state.stage,camera:null,render_policy:choice==='captured'?'captured':'current',presentation:{...state.presentation,route:choice==='assembly'?'assembly':'complete'}});});
-$('open-view').addEventListener('click',()=>$('view-file').click());
+$('open-view').addEventListener('click',()=>{$('view-file').value='';$('view-file').click();});
 $('view-file').addEventListener('change',async()=>{try{const file=$('view-file').files[0];if(file) await act('restore',{receipt:JSON.parse(await file.text())},false);}catch(error){$('status').textContent=error.message;}});
 async function restoreHash(){if(location.hash.startsWith('#view=')){const receipt=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));await act('restore',{receipt},false);}}
 window.addEventListener('hashchange',()=>restoreHash().catch(e=>{$('status').textContent=e.message;}));
