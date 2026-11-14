@@ -73,6 +73,9 @@ function svgDocument(text) {
   if(doc.querySelector('parsererror')) throw Error('Invalid molecular preview drawing.');
   return doc.documentElement;
 }
+function pinnedPreviewLabel() {
+  return state?.preview_status==='excluded_by_query'?'Preview · outside current filters':'Preparation';
+}
 function clearHoverDrawing() {
   hoverLayout=null;$('hover-molecule').hidden=true;$('hover-molecule').replaceChildren();
   $('molecular-area').classList.remove('previewing');transient.clear();
@@ -99,7 +102,7 @@ const hover=hoverPreview(async id=>{
   clearHoverDrawing();
   selectedTrace.show(state?.selected_trace,state?.trace_projection);
   pinnedFacts();pinnedComparison();scenes.restore();local.update(state);
-  $('preview-label').textContent='Preparation';
+  $('preview-label').textContent=pinnedPreviewLabel();
   $('inspector').hidden=inspectorDismissed||!state?.preview;
   connect();
 },error=>{$('status').textContent=error.message;},{
@@ -151,7 +154,7 @@ async function act(action,payload={},remember=true) {
   finally {
     busy=false;
     if(rendering.blocked) loading.failedAction();
-    else {hover.clear();loading.readyAction();scenes.restore();local.update(state);$('preview-label').textContent='Preparation';$('inspector').hidden=inspectorDismissed||!state.preview;}
+    else {hover.clear();loading.readyAction();scenes.restore();local.update(state);$('preview-label').textContent=pinnedPreviewLabel();$('inspector').hidden=inspectorDismissed||!state.preview;}
     pendingControls();
   }
 }
@@ -242,7 +245,7 @@ async function render(next,restore=false) {
   $('map-scope').textContent=state.has_landscape?'Nearby points compare declared molecular shape, retained sequence and receiving interfaces. Coordinates stay fixed while filtering.':'Structural groups are shown. Capture molecular coordinates with design freeze --include-landscape for similarity navigation.';
   $('family-stage-label').hidden=mode!=='families';
   $('selection-actions').hidden=!state.preview;$('selection-details').hidden=!state.preview;
-  $('preview-label').textContent='Preparation';
+  $('preview-label').textContent=pinnedPreviewLabel();
   setMolecularMode(state.presentation.molecule);
   $('figure-two').hidden=!state.preview;$('inspector').dataset.hasPin=String(Boolean(state.preview));$('inspector').hidden=inspectorDismissed||!state.preview;
   const counts=state.cohort_summary||{products:state.families.products.length,eligible_products:state.families.products.filter(p=>p.eligible_preparations.length).length,product:state.families.product};
@@ -255,7 +258,8 @@ async function render(next,restore=false) {
   $('render-policy').value=state.render_policy==='current' && state.presentation.route==='assembly'?'assembly':state.render_policy;$('render-policy').disabled=!state.selection;
   $('render-info').textContent=current?.rendering?.notice || (current?.rendering?.effective==='current'?'Current shared glyphs over the same molecular record.':'Artwork retained from this recorded edition.');
   const notices=comparison?.notices || [];
-  $('change').textContent=state.preview_status==='excluded_by_query' ? 'The inspected molecule is outside the current filters. Choose an eligible trace to retrieve it.' :
+  $('change').textContent=state.preview_status==='excluded_by_query' ?
+    (state.choices.matching_preparations ? 'The inspected molecule is outside the current filters. Choose an eligible trace to retrieve it.' : 'The inspected molecule is outside the current filters. Clear or revise the filters to find eligible preparations.') :
     (state.sample_receipt?.explanation || comparison?.description || (state.selection ? 'One exact preparation drives this molecule, its route and its materials.' : state.explanation.guidance));
   const changes=state.sample_receipt?.coordinate_changes || [];
   $('comparison-detail').textContent=[state.sample_receipt?.explanation,...changes.map(c=>`${c.label}: ${c.before} → ${c.after}${c.unit?' '+c.unit:''}`),...notices.map(n=>typeof n==='string'?n:JSON.stringify(n))].filter(Boolean).join(' ');
