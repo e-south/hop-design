@@ -9,8 +9,8 @@ For the Python operations, import `construction` as in the
 load `edition` with `construction.load_atlas_edition("molecular-edition")`.
 Set `query` to the eligibility filter (`{}` includes every member), retain the
 selection returned by `edition.sample(seed=7, query=query)` as `selected`, and
-use an exact preparation ID from `design query molecular-edition --format text`
-as `preparation_id`. These objects must refer to the same edition.
+set `preparation_id = selected["materialized_realization_id"]`. These objects
+must refer to the same edition.
 
 ## Explore molecules, then their preparations
 
