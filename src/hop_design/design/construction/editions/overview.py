@@ -1,4 +1,13 @@
-"""Admit a captured preparation overview against its actual molecular records."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/src/hop_design/design/construction/editions/overview.py
+
+Check a captured preparation overview against its molecular records.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from typing import Any, cast
 
@@ -22,21 +31,32 @@ def validate_overview(
         axis["key"]: {node["value"]: node["label"] for node in axis.get("nodes", ())}
         for axis in answer["axes"]
     }
-    actual = {identity: row.model_dump(mode="json") for identity, row in descriptors.items()}
     for column in overview.columns:
         block, key = column.key.split(".")
+        # External JSON arrays represent the descriptor's immutable sequence
+        # tuples. Normalize each dictionary entry once, preserving contact order.
+        decoded = (
+            [
+                tuple(tuple(item) if isinstance(item, list) else item for item in value)
+                if isinstance(value, list)
+                else value
+                for value in column.dictionary
+            ]
+            if block == "sequences"
+            else column.dictionary
+        )
         for i, identity in enumerate(overview.members):
-            encoded = column.dictionary[column.indices[i]]
+            encoded = decoded[column.indices[i]]
             if block in {"sequences", "interfaces"}:
                 descriptor = descriptors.get(identity)
                 if descriptor is None:
                     raise ValueError("Overview needs the captured molecular descriptor.")
-                values: Any = actual[identity][block]
+                values: Any = getattr(descriptor, block)
                 expected = values[key]
             elif block == "shape":
                 descriptor = descriptors.get(identity)
                 expected = (
-                    actual[identity]["shape"][key]
+                    descriptor.shape[cast(ShapeKey, key)]
                     if descriptor is not None
                     else paths[identity]["values"][key]
                 )
