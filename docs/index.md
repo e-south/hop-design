@@ -55,6 +55,8 @@ compilation to check their combination and materials.
 
 ### Inspect and share
 
+- [Return to saved results](guides/discover-designs.md#return-to-saved-results):
+  query or reopen recorded choices, or restore a downloaded view.
 - [Save and share preparations](guides/share-atlas-edition.md): reopen recorded
   choices and retrieve their figures and materials without repeating discovery.
 - [Render molecular views](guides/render-component-views.md).

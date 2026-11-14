@@ -61,16 +61,30 @@ hop-design design view designs --out browser-view
 ```
 
 Open the printed local address. Select a supported path to inspect its molecular
-route. Filtering only narrows the recorded pool. To search further, run
-`design continue` explicitly and reload the view. Selection carries through to
-preparation retrieval without copying record coordinates.
+route. Filtering only narrows the recorded pool. The viewer keeps the terminal
+occupied until you press **Ctrl+C**. It loads choices when it starts; refreshing
+the browser does not load later search results. To search further, stop the
+viewer, continue discovery, then reopen with a new output directory:
+
+```bash
+# After Ctrl+C, advance the saved search and open its updated choices.
+hop-design design continue designs --evaluations 64 --format text
+hop-design design view designs --out browser-view-continued
+```
 
 ## Inspect one route and retrieve its oligos
 
 Continue only if discovery has recorded a complete preparation. Otherwise,
 [interpret the result](#when-no-preparation-is-recorded) before sampling.
-Select one preparation with a reproducible seed and use that same selection for
-both figures and materials.
+For the preparation pinned in the browser, choose **Prepare oligo files**, then
+**Download preparation (.zip)**. To use that exact choice in CLI exports, choose
+**Download view**, save `hop-view.json`, and pass its path as `--selection`
+instead of `selection.json` below. Stop the viewer with **Ctrl+C** before running
+commands in the same terminal.
+
+Alternatively, sample a preparation with a reproducible seed. This is a separate
+selection from the browser pin. Use the resulting selection for both figures and
+materials:
 
 ```bash
 # Record one reproducible selection. Every export below uses that same preparation.
@@ -126,9 +140,27 @@ else:
         print("Continue with choices.find_more(max_evaluations=64).")
 ```
 
+## Return to saved results
+
+Replace `designs` below with your existing discovery directory. Query and view
+read its recorded preparations without starting another search. Use a new output
+directory each time you open the viewer.
+
+```bash
+# Read the saved answer, then open its recorded choices.
+hop-design design query designs --format text
+hop-design design view designs --out reopened-view
+```
+
+To restore an exact saved inspection, stop the viewer with **Ctrl+C**, then use
+`hop-design design view designs --receipt hop-view.json --out restored-view`.
+Here `hop-view.json` is the **Download view** file saved from the same choices.
+See [saved views](share-atlas-edition/sampling-and-saved-views.md#save-drawing-and-color-settings)
+for the settings and selection it retains.
+
 ### Inspect saved choices
 
-Replace `python-designs` below with your existing discovery directory.
+In Python, replace `python-designs` below with your existing discovery directory:
 
 ```python
 # Reopen a saved result for read-only filtering.
