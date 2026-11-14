@@ -149,3 +149,29 @@ def test_compact_axes_use_compressed_storage_with_bounded_expansion(tmp_path, mo
         assert gzip.decompress(target.read_bytes()) == svg
     finally:
         plots.close()
+
+
+def test_default_cache_accepts_a_medium_compact_cohort(tmp_path, monkeypatch):
+    # A complete compact cohort can exceed 16 MiB without oversized drawings.
+    monkeypatch.setattr(
+        _InspectionProjection,
+        "population",
+        lambda *args, **kwargs: {"summary": {}, "distributions": {}},
+    )
+    monkeypatch.setattr(_InspectionProjection, "display", lambda answer: answer)
+    monkeypatch.setattr(_InspectionProjection, "map", lambda *args: {})
+    monkeypatch.setattr(_InspectionProjection, "distributions", lambda value: b"<svg/>")
+    monkeypatch.setattr(
+        "hop_design.commands.design.inspection_plots.compact_choices",
+        lambda answer: {"members": "x" * (17 * 1024 * 1024)},
+    )
+    choices = Choices()
+    choices.resolution = {"intent": {"product": "hairpin"}}
+    plots = InspectionPlots(tmp_path)
+    try:
+        result = plots.get(choices, state("similarity"), compact=True)
+        assert result["compact"]["members"].count("x") == 17 * 1024 * 1024
+        assert 16 * 1024 * 1024 < plots.bytes <= plots.byte_limit
+    finally:
+        plots.close()
+    assert not plots.root.exists()

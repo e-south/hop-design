@@ -16,7 +16,7 @@ from .inspection_transport import compact_choices
 
 
 class InspectionPlots:
-    def __init__(self, root: Path, *, entries: int = 4, byte_limit: int = 16 * 1024 * 1024):
+    def __init__(self, root: Path, *, entries: int = 4, byte_limit: int = 32 * 1024 * 1024):
         self._temporary = TemporaryDirectory(prefix=".plots-", dir=root)
         self.root = Path(self._temporary.name)
         self.entries, self.byte_limit, self.bytes = entries, byte_limit, 0
