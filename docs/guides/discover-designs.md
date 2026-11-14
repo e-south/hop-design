@@ -36,10 +36,20 @@ The default **context** declares the available enzymes, allowed lengths and
 positions, and which source, adapter and primer bases may be designed or reused.
 You can inspect these before adding optional constraints. Read
 `designs/intent/report.md` for the context and `designs/intent/request.json` for
-its effective settings. To inspect those settings before searching, use the same
-flags with `design resolve --out intent`.
+its effective settings. To inspect them before searching, resolve the request
+into a new directory:
 
-The answer lists complete preparations, their loop and end features, and next
+```bash
+# Inspect permissions without starting discovery.
+hop-design design resolve \
+  --stem ATAACTTCGTATAGCATACATTATACGAAGTTAT \
+  --product released_insert --out intent
+```
+
+Read `intent/report.md` and `intent/request.json`. The `resolve` command does
+not accept the discovery command's `--format` option.
+
+The discovery answer lists complete preparations, their loop and end features, and next
 commands. It leaves selection to you. `--format text` keeps the summary readable.
 `--format json` includes the full parameter domains and coverage. The default is
 text on a terminal and JSON when piped.
@@ -78,7 +88,7 @@ Continue only if discovery has recorded a complete preparation. Otherwise,
 [interpret the result](#when-no-preparation-is-recorded) before sampling.
 For the preparation pinned in the browser, choose **Prepare oligo files**, then
 **Download preparation (.zip)**. To use that exact choice in CLI exports, choose
-**Download view**, save `hop-view.json`, and pass its path as `--selection`
+**Atlas options → Save view**, save `hop-view.json`, and pass its path as `--selection`
 instead of `selection.json` below. Stop the viewer with **Ctrl+C** before running
 commands in the same terminal.
 
@@ -154,7 +164,7 @@ hop-design design view designs --out reopened-view
 
 To restore an exact saved inspection, stop the viewer with **Ctrl+C**, then use
 `hop-design design view designs --receipt hop-view.json --out restored-view`.
-Here `hop-view.json` is the **Download view** file saved from the same choices.
+Here `hop-view.json` is the inspection saved as JSON from the same choices.
 See [saved views](share-atlas-edition/sampling-and-saved-views.md#save-drawing-and-color-settings)
 for the settings and selection it retains.
 

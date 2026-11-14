@@ -41,7 +41,16 @@ when continuing a saved search.
 
 ## Use Python
 
-Add HOP to your own uv project, then open Python in that environment.
+Run these commands from a uv project directory containing `pyproject.toml`.
+If this is your first project, create one in a new folder:
+
+```bash
+# Optional: create and enter a Python project.
+uv init --python 3.12 hop-example
+cd hop-example
+```
+
+Add HOP to the project, then open Python in its environment:
 
 ```bash
 # Add the same package as a project dependency.
