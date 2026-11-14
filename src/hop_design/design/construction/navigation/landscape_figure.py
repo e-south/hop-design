@@ -25,7 +25,7 @@ from hop_design.serialization import canonical_json_bytes
 from ..intents.base import Source
 from ..packets.atlas import MolecularAtlasPacket
 from ..packets.publication import SourceBoundConstructionPacket
-from .guided_sampling import selection_source
+from .selection.sources import selection_source
 from .types import ChoiceSource
 
 

@@ -194,7 +194,7 @@ class AtlasEdition(AtlasNavigation):
         ).model_dump(mode="json", by_alias=True)
 
     def _selected(self, selection: Source) -> EditionSelection:
-        from ..navigation.guided_sampling import selection_source
+        from ..navigation.selection.sources import selection_source
 
         selected = EditionSelection.model_validate_json(
             canonical_json_bytes(selection_source(self, selection))
@@ -224,7 +224,7 @@ class AtlasEdition(AtlasNavigation):
         history: tuple[str, ...] = (),
         after: Source | None = None,
     ) -> dict[str, Any]:
-        from ..navigation.guided_sampling import sample_choices
+        from ..navigation.selection.sampling import sample_choices
 
         return sample_choices(
             self,

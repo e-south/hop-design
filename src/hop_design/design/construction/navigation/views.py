@@ -19,9 +19,9 @@ from hop_design.models.construction.variants.view_color import AtlasColorLens
 from hop_design.serialization import canonical_json_bytes
 
 from ..intents.base import Source
-from .guided_sampling import selection_source
 from .landscape_source import has_molecular_landscape
 from .landscape_source import landscape_digest as saved_landscape_digest
+from .selection.sources import selection_source
 from .types import Camera, ChoiceSource, Record
 
 

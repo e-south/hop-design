@@ -13,7 +13,10 @@ from typing import ClassVar
 
 import pytest
 
-from hop_design.design.construction.navigation.guided_sampling import guided_sample, sample_choices
+from hop_design.design.construction.navigation.selection.sampling import (
+    guided_sample,
+    sample_choices,
+)
 from tests.unit.test_molecular_families import path
 
 

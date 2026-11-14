@@ -191,7 +191,7 @@ class InsertDesignChoices(DesignChoices):
             )
         if view != "parameters" or stage != "endpoint" or layout != "auto":
             raise ValueError("Choose parameters, or families with its stage and layout.")
-        from ..navigation.guided_sampling import selection_source
+        from ..navigation.selection.sources import selection_source
         from .comparisons import source_value
         from .inserts.figure import refined_figure
 
@@ -244,8 +244,8 @@ class InsertDesignChoices(DesignChoices):
         draw_route: bool = False,
     ) -> MolecularAtlasPacket:
         """Replay and draw every molecular stage of the exact selected preparation."""
-        from ..navigation.guided_sampling import selection_source
         from ..navigation.render_policy import render_context
+        from ..navigation.selection.sources import selection_source
         from .comparisons import source_value
 
         context = render_context(
@@ -282,7 +282,7 @@ class InsertDesignChoices(DesignChoices):
         self, selection: Source, destination: str | Path
     ) -> VerifiedConstructionBundle | InsertSetHandoff:
         """Replay and export the selected route and its exact oligos."""
-        from ..navigation.guided_sampling import selection_source
+        from ..navigation.selection.sources import selection_source
         from .comparisons import source_value
 
         selection = selection_source(self, selection)

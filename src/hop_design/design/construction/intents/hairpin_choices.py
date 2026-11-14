@@ -12,7 +12,7 @@ from hop_design.models.construction.variants.objective import DesignSearchObject
 from hop_design.models.construction.variants.query import MolecularStage
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from ..navigation.guided_sampling import selection_source
+from ..navigation.selection.sources import selection_source
 from ..packets.atlas import MolecularAtlasPacket
 from ..packets.publication import SourceBoundConstructionPacket
 from ..search.diversity import diversity_summary
