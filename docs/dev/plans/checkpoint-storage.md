@@ -1,15 +1,12 @@
 # Compact discovery checkpoint storage
 
-Keep long discovery searches affordable by sharing repeated bytes within each
-evaluation and validating stored objects in a streaming scan. This is an
-implementation plan. The released checkpoint format and commands are unchanged.
+Shared blocks, mixed-creator history and create-only migration shipped in
+`0.1.0a11`. Use the [public storage guide](../../reference/interface-survey-search/checkpoint-storage.md)
+for supported operations and producer compatibility. The design and acceptance
+criteria below explain that implementation; they are not pending launch steps.
 
-The working candidate implements shared blocks, mixed-creator history, exact
-historical replay and create-only migration through the API and CLI. Focused
-tests cover retained selections, cold continuation, exclusion proofs, rollback
-and failed migration. Distribution qualification and an approved exact producer
-transition remain required before deployment. See the
-[public operation](../../reference/interface-survey-search/checkpoint-storage.md).
+The first increment preserves every original object byte. Compact failure
+records and incremental continuation state remain separate future work.
 
 ## Ownership
 
@@ -35,7 +32,7 @@ Compact failed-attempt records, cache eviction and incremental continuation stat
 are later increments. They need their own contracts; none is required to share
 repeated bytes in the existing records.
 
-## Implementation order
+## Delivered implementation
 
 1. **Prove cross-version use first.** Build a small legacy fixture with a complete
    preparation, a committed exclusion proof and pending work. Test inspection,
