@@ -41,7 +41,11 @@ export function choiceFrequencies(host,onFocus) {
     }
     chart.replaceChildren(drawing);summary.textContent=`${profile.choices.toLocaleString()} distinct values · ${profile.total.toLocaleString()} recorded preparations`;
   }
-  const change=()=>{reset();draw();},leave=restore,focusout=e=>{if(!chart.contains(e.relatedTarget))restore();},escape=e=>{if(e.key==='Escape'){reset();draw();}};
+  const change=()=>{reset();draw();},leave=restore,focusout=e=>{if(!chart.contains(e.relatedTarget))restore();},escape=e=>{if(e.key==='Escape'){
+    e.preventDefault();e.stopPropagation();reset();
+    for(const row of chart.querySelectorAll('[data-frequency-row]'))row.setAttribute('aria-pressed','false');
+    restore();if(e.target===clear)select.focus();
+  }};
   select.addEventListener('change',change);clear.addEventListener('click',change);chart.addEventListener('pointerleave',leave);chart.addEventListener('focusout',focusout);host.addEventListener('keydown',escape);
   return {
     update(state) {

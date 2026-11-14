@@ -102,6 +102,9 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
       const doc=new DOMParser().parseFromString(state.landscape_svg||state.family_svg,'image/svg+xml');
       if(doc.querySelector('parsererror')) throw Error('Invalid molecular-family drawing.');
       const svg=doc.documentElement;
+      // Browser controls need a group root; the source figure remains an image.
+      svg.setAttribute('role','group');
+      svg.setAttribute('aria-label',svg.getAttribute('aria-label')||svg.querySelector('title').textContent);
       for(const target of svg.querySelectorAll('[data-family-ids]')) {
         const ids=JSON.parse(target.dataset.familyIds),filter=()=>families(ids);
         target.addEventListener('click',filter);
