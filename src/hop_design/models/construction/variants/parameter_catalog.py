@@ -24,7 +24,7 @@ PARAMETERS = (
     ),
     dimension(
         "foldback_arm_bp",
-        "Loop-side extension",
+        "Loop-side pairing",
         "foldback",
         "hairpin",
         "closing",
@@ -62,7 +62,7 @@ PARAMETERS = (
     ),
     dimension(
         "loop_nt",
-        "Loop size",
+        "Loop length",
         "foldback",
         "hairpin",
         "loop",
@@ -153,7 +153,7 @@ PARAMETERS = (
     ),
     dimension(
         "loop_side_paired_bp",
-        "Loop-side extension",
+        "Loop-side pairing",
         "scaffold",
         "hairpin",
         "closing",
@@ -166,7 +166,7 @@ PARAMETERS = (
     ),
     dimension(
         "open_side_paired_positions",
-        "Basal paired extent",
+        "Basal contacts",
         "scaffold",
         "hairpin",
         "assembly",
@@ -201,7 +201,7 @@ PARAMETERS = (
         for definition in (
             dimension(
                 f"{side}_gap",
-                f"{side.title()} gap",
+                f"{side.title()} insert spacer",
                 "interfaces",
                 "released_insert",
                 "interfaces",

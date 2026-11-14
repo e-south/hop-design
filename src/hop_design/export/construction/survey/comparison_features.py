@@ -9,18 +9,67 @@ from hop_design.models.construction.variants.similarity import (
 )
 
 from ..presentation.comparison import COMPARISON_GROUPS
+from ..presentation.comparison_glyphs import comparison_glyph_presentation
 
 _FEATURE_NAMES = {
-    "open_side_paired_positions": "Basal span",
-    "loop_side_paired_bp": "Extension",
-    "loop_nt": "Loop length",
-    "basal_pairs": "Basal contacts",
-    "foldback_pairs": "Foldback contacts",
-    "loop": "Loop",
+    "basal_pairs": "Basal pattern",
+    "foldback_pairs": "Loop-side pattern",
     "five_prime_retained_tail": "5\u2032 tail contribution",
     "three_prime_retained_tail": "3\u2032 tail contribution",
     "five_prime_retained_tail_nt": "Retained 5\u2032 tail",
     "three_prime_retained_tail_nt": "Retained 3\u2032 tail",
+}
+_FEATURE_DEFINITIONS = {
+    "open_side_paired_positions": (
+        "Folded hairpin: recorded basal contact positions beyond the supplied stem, "
+        "including permitted noncanonical contacts. Excludes unpaired terminal tails; it is "
+        "not an insert-end spacer."
+    ),
+    "loop_side_paired_bp": (
+        "Folded hairpin: paired extension between the supplied stem and the loop. "
+        "On insert release, this region remains internal to the cloning fragment."
+    ),
+    "loop_nt": (
+        "Folded hairpin: number of unpaired bases in the loop. Loop-side pairing measures "
+        "the adjoining paired extension separately."
+    ),
+    "left_gap": (
+        "Released insert: paired bases between the left sticky-end boundary and its "
+        "supplied-stem-arm boundary. Excludes the sticky-end bases; zero places the end "
+        "directly beside the stem."
+    ),
+    "right_gap": (
+        "Released insert: paired bases between the right sticky-end boundary and its "
+        "supplied-stem-arm boundary. Excludes the sticky-end bases; zero places the end "
+        "directly beside the stem."
+    ),
+    "basal_pairs": (
+        "Folded hairpin: ordered base identities and contact classes in the basal region. "
+        "Basal contacts gives the number of these positions."
+    ),
+    "foldback_pairs": (
+        "Folded hairpin: ordered base identities and contact classes in the loop-side "
+        "paired extension. Loop-side pairing gives its length."
+    ),
+    "loop": (
+        "Folded hairpin: the loop bases in strand order, read 5\u2032 to 3\u2032. "
+        "Loop length gives their count."
+    ),
+    "left_word": (
+        "Released insert: the left sticky-end sequence on its protruding strand, read 5\u2032 to "
+        "3\u2032. These bases are separate from the left insert spacer."
+    ),
+    "right_word": (
+        "Released insert: the right sticky-end sequence on its protruding strand, read 5\u2032 "
+        "to 3\u2032. These bases are separate from the right insert spacer."
+    ),
+    "basal_method": ("Preparation: nickase used for basal-side processing."),
+    "foldback_method": (
+        "Preparation: nickase used for foldback processing at the loop-side region."
+    ),
+    "release_method": (
+        "Preparation: restriction enzyme used to release the duplex cloning insert."
+    ),
 }
 
 # These are links to the existing molecular spans, not additional design controls.
@@ -40,6 +89,17 @@ _PARAMETERS = {
 }
 
 
+def comparison_field_definition(key: str) -> dict[str, str]:
+    """Current reading vocabulary; recorded keys, values and codes stay unchanged."""
+    block, name = key.split(".")
+    parameter = parameter_definition(_PARAMETERS.get(name, [name])[0])
+    return {
+        "label": _FEATURE_NAMES.get(name, parameter.label),
+        "unit": parameter.unit if block == "shape" else "",
+        "definition": _FEATURE_DEFINITIONS.get(name, parameter.measurement),
+    }
+
+
 def comparison_features(
     rows: tuple[MolecularDescriptor, ...],
     basis: MolecularComparisonBasis,
@@ -54,7 +114,7 @@ def comparison_features(
     if len(indexed) != len(members) or set(indexed) != set(members):
         raise ValueError("Comparison features disagree with map membership.")
     ordered = [indexed[identity] for identity in members]
-    columns = []
+    columns: list[dict[str, Any]] = []
     # Codes label contacts, so an API query order must not change the displayed x.
     # Both browser and publication projections use this cohort-wide dictionary.
     contacts = sorted(
@@ -100,11 +160,7 @@ def comparison_features(
                 {
                     "key": f"{block}.{key}",
                     "parameters": _PARAMETERS.get(key, [key]),
-                    "label": _FEATURE_NAMES.get(key)
-                    or parameter_definition(_PARAMETERS.get(key, [key])[0]).label,
-                    "unit": parameter_definition(_PARAMETERS.get(key, [key])[0]).unit
-                    if block == "shape"
-                    else "",
+                    **comparison_field_definition(f"{block}.{key}"),
                     "active": key in active,
                     "dictionary": dictionary,
                     "indices": indices,
@@ -112,7 +168,10 @@ def comparison_features(
                 }
             )
     return {
-        "presentation": {"groups": {key: dict(value) for key, value in COMPARISON_GROUPS.items()}},
+        "presentation": {
+            "groups": {key: dict(value) for key, value in COMPARISON_GROUPS.items()},
+            **comparison_glyph_presentation(c["key"] for c in columns if c["active"]),
+        },
         "basis": basis.model_dump(mode="json", exclude={"comparison_keys"}),
         "columns": columns,
         "contacts": contacts,
@@ -139,6 +198,7 @@ def select_projected_features(
         features.append(
             {
                 **{key: column[key] for key in ("key", "parameters", "label", "unit", "active")},
+                **({"definition": column["definition"]} if "definition" in column else {}),
                 "encoded": encoded,
                 "display_value": encoded
                 if column["key"].startswith("shape.")

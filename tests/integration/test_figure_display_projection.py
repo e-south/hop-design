@@ -206,6 +206,7 @@ def test_selected_landscape_accepts_explicit_column_detail_width(captured_choice
         "plot.svg",
         "landscape.json",
         "comparison-features.json",
+        "comparison-features.svg",
         "selection.json",
         "display-projection.json",
     ):
@@ -215,7 +216,10 @@ def test_selected_landscape_accepts_explicit_column_detail_width(captured_choice
     assert float(trace.get("font-size")) * 246 / float(trace.get("viewBox").split()[2]) >= 7
     assert {e.get("data-band") for e in trace.iter() if e.get("data-axis")} == {"0"}
     assert [e.get("data-axis") for e in trace.iter() if e.get("data-axis")] == list(axes)
-    assert ET.fromstring(files["comparison-features.svg"]).get("width") == "504pt"
+    assert (
+        ET.fromstring(files["comparison-features.svg"]).get("data-comparison-display")
+        == "schematic-glyphs"
+    )
     assert json.loads(packet.json_bytes)["figure_presentation"]["detail_width_pt"] == 246
     for width in (True, 0, 179, 721, float("nan")):
         with pytest.raises(ValueError, match="width"):

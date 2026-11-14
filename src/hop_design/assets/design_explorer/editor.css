@@ -138,3 +138,12 @@ button,select{font:inherit;border:1px solid var(--line);border-radius:6px;backgr
 [data-frequency-row][aria-pressed="true"] rect:first-of-type{fill:#dfede8}
 #preview-recovery{margin:0 0 12px;font-size:var(--ui-small);color:var(--muted)}
 #inspector[data-transient="true"] #preview-recovery{display:none}
+
+/* Field-type schematics use native pitch ratios; exact values stay in inspection. */
+#map-comparison[data-comparison-display="schematic-glyphs"] [data-comparison-values]{font-size:calc(var(--ui-small)*var(--schema-font-scale));--schema-pitch:calc(1em*var(--schema-field-ratio));grid-template-rows:22px 46px 84px;grid-template-columns:38px repeat(var(--feature-count),var(--schema-pitch)) 8px;width:max-content;min-width:0;max-width:none;padding-inline:36px 4px;box-sizing:content-box}
+[data-comparison-display="schematic-glyphs"] .comparison-name{top:calc(23px + .45em);transform:rotate(var(--schema-label-angle));font-size:inherit}
+[data-comparison-display="schematic-glyphs"] .comparison-glyph{grid-row:1;align-self:center;justify-self:center;width:calc(var(--ui-small)*var(--glyph-width-ratio));height:calc(var(--ui-small)*var(--glyph-height-ratio));overflow:visible;pointer-events:none}
+[data-comparison-display="schematic-glyphs"] .comparison-group{background:transparent;white-space:nowrap;font-size:inherit}
+[data-comparison-display="schematic-glyphs"] .comparison-change-cue{position:absolute;top:7px;left:-2px;right:-2px;height:32px;border-radius:3px;background:#a7bcb1;opacity:0;pointer-events:none}
+[data-comparison-display="schematic-glyphs"] .comparison-feature:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+@media(prefers-reduced-motion:reduce){.comparison-change-cue{display:none}}

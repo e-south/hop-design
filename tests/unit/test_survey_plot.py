@@ -94,7 +94,7 @@ def test_design_view_prints_plain_labels_and_methods_and_keeps_fixed_context_off
     assert "self_paired_arm_bp" not in axes
     assert "release_method" not in axes
     assert "BsaI-HFv2" in text
-    assert "Loop size" in text and "Left gap" in text
+    assert "Loop length" in text and "Left insert spacer" in text
     assert "eR1" not in text
     assert float(drawing.get("font-size")) * 504 / float(drawing.get("viewBox").split()[2]) >= 9
 

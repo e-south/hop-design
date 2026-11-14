@@ -8,7 +8,7 @@ from hop_design.models.construction.variants.parameters import PARAMETERS, param
 def test_equivalent_arm_measurements_share_a_product_concept_without_losing_coordinates():
     arm = parameter_definition("foldback_arm_bp")
     extension = parameter_definition("loop_side_paired_bp")
-    assert arm.label == extension.label == "Loop-side extension"
+    assert arm.label == extension.label == "Loop-side pairing"
     assert arm.canonical_key == extension.canonical_key == "foldback_arm_bp"
     assert arm.design_role == extension.design_role == "product"
     assert arm.boundaries == extension.boundaries == ("supplied_stem_end", "loop_start")

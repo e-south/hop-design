@@ -12,6 +12,36 @@ derived count. `choice_space.axes` adds the
 captured request domain and observed values. Neither an axis nor a drawing grants
 permission to combine independently available parts.
 
+## Read the comparison inputs
+
+Comparison fields describe geometry, sequences, assembly ends and processing
+enzymes. The glyph strip names each field; selecting it reveals its value, units
+and boundaries. These names also appear on parameter axes and in exported figures.
+Basal and loop-side refer to the folded hairpin; left and right refer to the
+released insert. The saved comparison determines which fields are included.
+Updating display names leaves its coordinates, field order and dictionary codes
+unchanged.
+
+| Input | Display name | Meaning and units |
+| --- | --- | --- |
+| `open_side_paired_positions` | Basal contacts | Recorded basal contact positions beyond the supplied stem, including permitted noncanonical contacts; excludes unpaired terminal tails (positions). |
+| `loop_side_paired_bp` / `foldback_arm_bp` | Loop-side pairing | Paired extension between the supplied stem and loop, separate from terminal insert spacers (bp). |
+| `loop_nt` | Loop length | Unpaired loop bases; excludes adjoining loop-side pairing (nt). |
+| `left_gap` | Left insert spacer | Paired bases from the left sticky-end boundary to its supplied-stem-arm boundary, excluding sticky-end bases (bp). |
+| `right_gap` | Right insert spacer | Paired bases from the right sticky-end boundary to its supplied-stem-arm boundary, excluding sticky-end bases (bp). |
+| `basal_pairs` | Basal pattern | Ordered base identities and contact classes in the basal region; Basal contacts counts its positions. |
+| `foldback_pairs` | Loop-side pattern | Ordered base identities and contact classes in the loop-side paired extension; Loop-side pairing gives its length. |
+| `loop` / `loop_word` | Loop sequence | Loop bases in strand order, read 5′→3′; Loop length gives their count. |
+| `left_word` / `left_end_word` | Left sticky end | Left released-insert end sequence on its protruding strand, read 5′→3′. |
+| `right_word` / `right_end_word` | Right sticky end | Right released-insert end sequence on its protruding strand, read 5′→3′. |
+| `basal_method` | Basal nickase | Nickase used for basal-side processing. |
+| `foldback_method` | Foldback nickase | Nickase used for foldback processing at the loop-side region. |
+| `release_method` | Release enzyme | Restriction enzyme used to release the duplex cloning insert. |
+
+A zero insert spacer places the sticky end directly beside the stem. Dictionary
+codes identify exact values within one field; differences between codes do not
+measure molecular distance. The saved comparison policy defines that distance.
+
 The opening plot teaches product features in plain language. The full registry
 remains available through API explanations, the exported parameter guide and
 domain records. Changing the displayed axes does not change query eligibility,

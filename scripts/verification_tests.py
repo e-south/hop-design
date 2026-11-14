@@ -16,6 +16,9 @@ PRESENTATION = (
     "tests/unit/test_survey_plot*.py",
     "tests/unit/test_survey_figure_layout.py",
     "tests/unit/test_survey_trace_projection.py",
+    "tests/unit/test_comparison_features.py",
+    "tests/unit/test_comparison_glyphs.py",
+    "tests/unit/test_recorded_overview.py",
     "tests/unit/test_inspection_cache.py",
     "tests/unit/test_inspection_worker.py",
     # Background-job transport/lifecycle; real discovery remains source scope.

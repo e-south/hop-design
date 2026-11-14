@@ -3,6 +3,8 @@
 import json
 from xml.etree import ElementTree as ET
 
+import pytest
+
 from hop_design.export.construction.presentation.comparison import COMPARISON_GROUPS
 
 
@@ -57,11 +59,18 @@ def test_column_trace_preserves_twelve_axes_at_readable_physical_type():
         }
         for i, (label, value, kind) in enumerate(labels)
     ]
-    plotted = plot_axes({"axes": axes}, profile=COLUMN_DETAIL_FIGURE)
+    from hop_design.export.construction.presentation.figure_profile import column_detail_profile
+
+    # Full stage-qualified names retain the font and need an explicit wider budget.
+    with pytest.raises(ValueError, match=r"at least .* points for readable labels"):
+        plot_axes({"axes": axes}, profile=COLUMN_DETAIL_FIGURE)
+    profile = column_detail_profile(266)
+    plotted = plot_axes({"axes": axes}, profile=profile)
     assert [p["definition"]["key"] for p in plotted] == [a["key"] for a in axes]
     assert {p["band"] for p in plotted} == {0}
-    assert COLUMN_DETAIL_FIGURE.axis_font * 246 / COLUMN_DETAIL_FIGURE.width >= 7
-    assert max(p["x"] + p["width"] / 2 for p in plotted) <= COLUMN_DETAIL_FIGURE.width
+    assert profile.axis_font == COLUMN_DETAIL_FIGURE.axis_font
+    assert profile.axis_font * profile.physical_width_pt / profile.width >= 7
+    assert max(p["x"] + p["width"] / 2 for p in plotted) <= profile.width
 
 
 def test_smooth_trace_keeps_exact_endpoints_and_transition_membership():

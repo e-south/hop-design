@@ -68,15 +68,7 @@ def heading_lines(
 
 def compact_heading(axis: dict[str, Any]) -> str:
     """Context comes from the region strip; canonical titles remain attached."""
-    label = {
-        "basal_method": "Nickase",
-        "foldback_method": "Nickase",
-        "open_side_paired_positions": "Basal span",
-        "foldback_arm_bp": "Extension",
-        "left_end_word": "Left end",
-        "right_end_word": "Right end",
-        "release_method": "Release enzyme",
-    }.get(axis["key"], axis.get("label", axis["symbol"]))
+    label = axis.get("label", axis["symbol"])
     unit = {"positions": "pos", "contacts": "ct"}.get(axis["unit"], axis["unit"])
     return str(label) + (f" ({unit})" if unit else "")
 
