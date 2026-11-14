@@ -75,7 +75,10 @@ Both objects expose `parameters(query=None)`, `families(query=None, stage="endpo
 Use `stage="hairpin"` to group the folded intermediate. Exact product identities
 remain separate from structural families and preparation identities. A guided
 sample receipt is accepted wherever an ordinary exact selection is accepted;
-its inputs are replayed first. Default `sample(seed=...)` behavior is unchanged.
+its inputs are replayed first. Omit `strategy`, or use `"preparations"`, to sample
+exact preparations. Use `"families"` to visit structural groups, or
+[sample another loop](../../guides/share-atlas-edition/sampling-and-saved-views.md#change-a-loop-while-keeping-its-surroundings)
+while keeping the selected hairpin's other regions fixed.
 
 `parameters(query=None)` returns the same stage-qualified definitions and operation
 guidance used by the browser and `design parameters`. Each definition includes

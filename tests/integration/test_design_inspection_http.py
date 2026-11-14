@@ -1,4 +1,13 @@
-"""One inspection lifecycle preserves selection and transport boundaries."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/tests/integration/test_design_inspection_http.py
+
+Check inspection selection, validation and HTTP transport behavior.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 import json
 import threading
@@ -66,6 +75,43 @@ def test_invalid_view_file_is_rejected_before_creating_browser_output(
     with pytest.raises(ValueError, match="root must be a mapping"):
         create_design_server(captured_edition._directory, output, receipt=receipt)
     assert not output.exists(), "A corrected view must be able to retry the same output path"
+
+
+def test_invalid_sampling_strategy_returns_json_error_and_preserves_selection(
+    captured_edition,  # noqa: F811
+    tmp_path,
+):
+    session = DesignInspectionSession(captured_edition, tmp_path / "invalid-strategy")
+    server = EditorServer(session, 0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        initial = call(server, "/api/state")
+        selected = call(server, "/api/sample", {"token": initial["token"], "seed": 0})
+        for strategy in ([], {}, False, 0, "", "unknown"):
+            with pytest.raises(ValueError, match="Sampling strategy must be"):
+                captured_edition.sample(seed=0, strategy=strategy)
+            with pytest.raises(HTTPError) as failure:
+                call(
+                    server,
+                    "/api/sample",
+                    {"token": selected["token"], "seed": 0, "strategy": strategy},
+                )
+            assert failure.value.code == 400
+            assert "Sampling strategy must be" in json.loads(failure.value.read())["error"]
+            assert call(server, "/api/state") == selected
+        expected = captured_edition.sample(seed=0, strategy="preparations")
+        retried = call(
+            server,
+            "/api/sample",
+            {"token": selected["token"], "seed": 0, "strategy": "preparations"},
+        )
+        assert retried["selection"] == expected
+    finally:
+        server.shutdown()
+        server.server_close()
+        session.close()
+        thread.join(timeout=5)
 
 
 def test_shared_http_preserves_query_and_rejects_unauthorized_actions(captured_edition, tmp_path):  # noqa: F811
