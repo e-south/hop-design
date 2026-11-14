@@ -1,4 +1,13 @@
-"""Conditional coordinates over committed complete witnesses; no new molecular search."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/construction/surveys/choices.py
+
+Project conditional coordinates over committed complete witnesses without new search.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 import json
 from dataclasses import dataclass
@@ -57,6 +66,7 @@ def _project(
         }
         for row in records
     ]
+    filtered_keys = {selection.key for selection in query.parameters}
     axes = []
     for key in keys:
         domain = domains.get(key, {"basis": "observed_only"})
@@ -71,12 +81,20 @@ def _project(
         nodes = []
         for value in sorted(values):
             witnesses = grouped.get(value, [])
-            conditional = [
-                p
-                for p in witnesses
-                if query.includes_preparation(p["materialized_realization_id"])
-                and all(s.key == key or s.accepts(p["values"].get(s.key)) for s in query.parameters)
-            ]
+            # Only a filtered axis omits its own predicate. Every other axis
+            # uses the complete match already calculated for this path.
+            conditional = (
+                [p for p in witnesses if p["matches"]]
+                if key not in filtered_keys
+                else [
+                    p
+                    for p in witnesses
+                    if query.includes_preparation(p["materialized_realization_id"])
+                    and all(
+                        s.key == key or s.accepts(p["values"].get(s.key)) for s in query.parameters
+                    )
+                ]
+            )
             nodes.append(
                 {
                     "value": value,
