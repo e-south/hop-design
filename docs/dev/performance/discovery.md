@@ -84,6 +84,19 @@ for integrity and continuity; append rejects stale steps and exhausted targets.
 This adds no cached cursor or schema change. Measure append cost separately from
 checkpoint admission and molecular search, including deep single-target histories.
 
+Evaluation streaming reads the object digest with each step instead of looking
+up the same address again. The existing object reader still checks ranges and
+hashes, and checkpoint admission, pagination and creator order are unchanged.
+On 20,000 synthetic 100-byte records, three alternating trials reduced SELECTs
+from 40,001 to 20,001. Median stream time fell from 0.105 to 0.080 seconds;
+fresh-reader admission plus streaming fell from 0.245 to 0.222 seconds
+(Python 3.12.14, macOS arm64). These measurements cover storage reads only.
+
+```bash
+# Reproduce the synthetic reader comparison from a development checkout.
+PYTHONPATH=. uv run --locked python scripts/benchmarks/survey_stream.py --records 20000
+```
+
 ## Prioritize requested diversity
 
 Conditional handle completion records observed diversity classes in its versioned
