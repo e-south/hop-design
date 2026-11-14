@@ -27,6 +27,8 @@ that mutation is pending cannot clear the reference or expose an unfinished resu
 The hairpin, exact trace and difference explanation commit together; route and
 material panels cannot present another preparation as current. Loading adds no
 request, timer or minimum display duration. Cached inspection can appear immediately.
+The trace is parsed before this commit; its drawing adapter mounts the same
+validated tree rather than parsing it again.
 Measure loading feedback separately from time to usable content.
 If a combined preview fails, visible route slots enter the same explicit error
 state instead of remaining in preparation. A stale failure cannot replace the

@@ -1,0 +1,47 @@
+// HOP Design
+// hop-design/tests/browser/plot_admission.test.mjs
+// Preserve validated plot trees and their selection actions through mounting.
+// Module Author(s): Eric J. South
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+
+const uri=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+const source=await readFile(new URL('../../src/hop_design/assets/survey_explorer/plot.js',import.meta.url),'utf8');
+const {drawPlot}=await import(uri(source.replace('"./grouped_navigation.js"',JSON.stringify(uri('export const groupedNavigation=()=>{};')))));
+
+function plot(t) {
+  const previous=globalThis.DOMParser;
+  t.after(()=>{globalThis.DOMParser=previous;});
+  let parses=0,broken=false;
+  const handlers=new Map(),path={dataset:{members:'["A"]'},addEventListener:(name,fn)=>handlers.set(name,fn)};
+  const svg={dataset:{},querySelector:()=>null,querySelectorAll:selector=>selector==='[data-members]'?[path]:[]};
+  const document={documentElement:svg,querySelector:()=>broken?{}:null};
+  svg.ownerDocument=document;
+  globalThis.DOMParser=class{parseFromString(){parses++;return document;}};
+  const container={children:['old'],replaceChildren(...children){this.children=children;}};
+  const record={materialized_realization_id:'A',values:{loop_nt:4}};
+  return {container,record,svg,handlers,parses:()=>parses,break:()=>{broken=true;}};
+}
+
+for(const prepared of [false,true])test(`${prepared?'Admitted SVG':'SVG text'} retains exact paths and keyboard selection without reparsing`,t=>{
+  const p=plot(t),selected=[],hovered=[];
+  const drawing=prepared?new DOMParser().parseFromString('<svg/>','image/svg+xml').documentElement:'<svg/>';
+  drawPlot(p.container,{axes:[],paths:[p.record]},drawing,{path:rows=>selected.push(rows),hover:rows=>hovered.push(rows)});
+  assert.equal(p.parses(),1,'The admitted SVG must be parsed only once before mounting');
+  assert.equal(p.container.children[0],p.svg,'Mount the same tree without cloning or changing paths');
+  p.handlers.get('pointerenter')();
+  let prevented=false;
+  p.handlers.get('keydown')({key:'Enter',preventDefault(){prevented=true;}});
+  assert.equal(prevented,true);
+  assert.deepEqual(selected,[[p.record]]);
+  assert.deepEqual(hovered,[[p.record]]);
+});
+
+for(const prepared of [false,true])test(`${prepared?'Admitted SVG':'SVG text'} rejects a parse error before replacing the previous plot`,t=>{
+  const p=plot(t);
+  const drawing=prepared?new DOMParser().parseFromString('<svg','image/svg+xml').documentElement:'<svg';
+  p.break();
+  assert.throws(()=>drawPlot(p.container,{axes:[],paths:[p.record]},drawing,{}),/Invalid survey drawing/);
+  assert.deepEqual(p.container.children,['old']);
+});

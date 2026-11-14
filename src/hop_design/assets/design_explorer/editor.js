@@ -211,9 +211,9 @@ async function render(next,restore=false) {
   if(next.figure_layout) validateFigureLayout(next.figure_layout);
   // Validate all incoming drawings and overlay authority before committing any view.
   if(mapNeeded) svgDocument(plot);
-  if(traceNeeded) svgDocument(trace);
+  const traceSVG=traceNeeded?svgDocument(trace):null;
   if(next.selected_trace && (next.selected_trace.projection!==next.trace_projection.projection || next.selected_trace.frame!==next.trace_projection.frame)) throw Error('Selected trace does not match the parameter projection.');
-  next={...next,landscape_svg:plot,plot_svg:trace};
+  next={...next,landscape_svg:plot,plot_svg:traceSVG};
   validateInspectionFacts(next.preview?.summary.atlas.materialized_realization_id,next.inspection_explanation,next.preview?.summary.atlas.construction_cost);
   const comparisonCommit=comparisonView.prepare(next.preview?.summary.atlas.materialized_realization_id,next);
   if(next.preview) await views.show(next.preview,next.presentation.molecule==='route'?'both':'molecule',()=>setMolecularMode(next.presentation.molecule));

@@ -10,9 +10,12 @@ function activate(element, callback) {
   });
 }
 export function plotDrawing(drawing, contextText=()=>{}) {
-  const document = new DOMParser().parseFromString(drawing, "image/svg+xml");
+  // Inspector admission already parsed this tree before committing its panels.
+  const text = typeof drawing === "string";
+  const document = text
+    ? new DOMParser().parseFromString(drawing, "image/svg+xml") : drawing.ownerDocument;
   if (document.querySelector("parsererror")) throw Error("Invalid survey drawing.");
-  const svg = document.documentElement;
+  const svg = text ? document.documentElement : drawing;
   // The exported caption stays exact; the browser discloses it outside the plot.
   const context = svg.querySelector("[data-plot-context]");
   if (context && svg.dataset.landscapeFrame) {
