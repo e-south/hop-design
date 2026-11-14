@@ -1,7 +1,8 @@
 # Install HOP
 
 Use [uv](https://docs.astral.sh/uv/getting-started/installation/) with Python
-3.12–3.14. It gives HOP its own environment.
+3.12–3.14. It gives HOP its own environment. The commands below install the
+published `0.1.0a11` package; a development checkout can have a newer version.
 
 ```bash
 # Install HOP in its own environment.
@@ -67,7 +68,7 @@ uv sync --locked
 
 # Run this checkout rather than a separately installed command.
 uv run hop-design --version
-# hop-design 0.1.0a11
+# hop-design 0.1.0a12.dev0
 ```
 
 For the earlier GitHub-only package, use its
