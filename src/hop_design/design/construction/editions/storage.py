@@ -1,5 +1,15 @@
-"""Integrity-checked, lazy edition reads and bounded-memory publication."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/construction/editions/storage.py
 
+Integrity-checked, lazy edition reads and bounded-memory publication.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
+
+import os
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 
@@ -31,13 +41,18 @@ def inventory(root: Path) -> set[str]:
     if root.is_symlink() or not root.is_dir():
         raise ValueError("Edition root must be an ordinary directory.")
     names = set()
-    for path in root.rglob("*"):
-        if path.is_symlink():
-            raise ValueError("Edition artifacts cannot be symlinks.")
-        if path.is_file():
-            names.add(artifact_path(path.relative_to(root).as_posix()))
-        elif not path.is_dir():
-            raise ValueError("Edition artifacts must be ordinary files.")
+    base = os.fspath(root)
+    for directory, folders, files in os.walk(base, followlinks=False):
+        parent = Path(directory)
+        prefix = directory[len(base) :].lstrip(os.sep).replace(os.sep, "/")
+        for name in (*folders, *files):
+            path = parent / name
+            if path.is_symlink():
+                raise ValueError("Edition artifacts cannot be symlinks.")
+            if path.is_file():
+                names.add(artifact_path(f"{prefix}/{name}" if prefix else name))
+            elif not path.is_dir():
+                raise ValueError("Edition artifacts must be ordinary files.")
     return names
 
 
