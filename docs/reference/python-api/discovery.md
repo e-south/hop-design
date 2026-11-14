@@ -22,6 +22,14 @@ The returned `DesignChoices` lets you filter recorded preparations with `query`,
 read their meaning and coverage with `explain`, choose one with `select` or
 `sample`, and export it with `figure`, `atlas` and `retrieve`.
 Pass one selection to both figures and retrieval.
+
+Query inputs accept a mapping or a JSON/YAML mapping file. `None` and `{}` mean
+no filters; Boolean, numeric and list roots raise `ValueError`. An explicit empty
+membership still matches no preparations. When drawing a saved inspection with
+`figure(selection=view)`, only an omitted query inherits that view's selection
+query. An explicitly supplied query must agree with the selected preparation's
+recorded query, including when the supplied mapping is empty.
+
 `select` accepts a returned path or exact preparation identity. Filtering a
 retained pool performs no search. `load_design_choices(directory)` reopens the
 whole discovery directory and validates its request and producer bindings. Keep
