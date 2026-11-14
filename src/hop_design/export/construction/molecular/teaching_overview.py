@@ -24,12 +24,11 @@ from .parameter_boundaries import boundary_point
 from .primitives.extent import scene_bounds
 from .primitives.materials import input_box, staged_materials
 from .primitives.style import FONT_FAMILY, INK, base_ink
-from .primitives.typography import fitted_base_size, text_width
-from .recognition_sites import recognition_site_overlays
+from .primitives.typography import base_ink_shift, fitted_base_size, text_width
 from .teaching_annotations import (
     OverviewLabels,
+    compact_recognition_overlays,
     label_backplates,
-    local_dimensions,
     projected_end_spans,
 )
 
@@ -103,7 +102,6 @@ def _render_projected_teaching(
         for k, (x, y) in raw.items()
     }
     labels = OverviewLabels(points, width=WIDTH, size=profile.teaching_font)
-    annotation = labels.text
     # Reserve actual uppercase glyph width within the horizontal nucleotide pitch.
     # Large annotation type must not compress neighboring letters into each other.
     widest_base = max(text_width(base, 1) for base in "ACGT")
@@ -116,12 +114,13 @@ def _render_projected_teaching(
     ]
     pitch = min(horizontal_steps, default=float(profile.teaching_base_font))
     font = min(float(profile.teaching_base_font), max(0.1, pitch - 0.5) / widest_base)
+    physical_width = profile.physical_width_pt
     root = ET.Element(
         f"{{{SVG}}}svg",
         {
             "viewBox": f"0 0 {WIDTH} {HEIGHT}",
-            "width": "7in",
-            "height": f"{7 * HEIGHT / WIDTH}in",
+            "width": "7in" if physical_width == 504 else f"{physical_width:g}pt",
+            "height": f"{physical_width * HEIGHT / WIDTH:g}pt",
             "role": "img",
             "aria-label": "Selected hairpin and its parameter locations",
             "font-family": FONT_FAMILY,
@@ -145,6 +144,7 @@ def _render_projected_teaching(
     # Shared contours, palette and footprint geometry; composition stays local.
     shared = ET.fromstring(f'<g xmlns="{SVG}">' + region_spans(state, points) + "</g>")
     group.extend(list(shared))
+    site_layer_index = len(group)
     for pair in state.state.pairings:
         group.append(
             ET.fromstring(
@@ -191,6 +191,7 @@ def _render_projected_teaching(
             text_anchor="middle",
             font_family=FONT_FAMILY,
             font_size=fitted_base_size(base.base, font, pitch=pitch),
+            dy=base_ink_shift(fitted_base_size(base.base, font, pitch=pitch)),
             fill=base_ink(base.neighborhood or "unmapped"),
         )
         element(
@@ -267,51 +268,28 @@ def _render_projected_teaching(
         if i.pre_state_id == state.state.state_id and i.binding_state_id == state.state.state_id
     )
     overlays = material_binding_overlays(
-        bindings, points, labels.placer, base_size=font
-    ) + staged_materials(staged, labels.placer, base_size=font)
-    regions = (("assembly", "Basal"), ("stem", "Supplied stem"), ("closing", "Foldback"))
-    for neighborhood, name in regions:
-        xs = [
-            points[b.address.strand_id, b.address.index][0]
-            for b in state.bases
-            if b.neighborhood == neighborhood
-        ]
-        if xs:
-            annotation(
-                group,
-                (min(xs) + max(xs)) / 2,
-                20 + label_delta,
-                name,
-                text_anchor="middle",
-                font_weight=600,
-            )
+        bindings, points, labels.placer, base_size=font, label_size=profile.teaching_font
+    ) + staged_materials(staged, labels.placer, base_size=font, label_size=profile.teaching_font)
     for strand in state.state.molecules:
-        for i, label, dy in ((0, "5\u2032", -18), (len(strand.sequence) - 1, "3\u2032", 18)):
+        for i, label, _dy in ((0, "5\u2032", -18), (len(strand.sequence) - 1, "3\u2032", 18)):
             x, y = points[strand.strand_id, i]
-            annotation(group, x - 8, y + dy, label, text_anchor="end", font_size=18)
-    values = {p["key"]: p["value_label"] for p in teaching["parameters"] if p["value"] is not None}
-    loop_points = [
-        points[b.address.strand_id, b.address.index]
-        for b in state.bases
-        if b.neighborhood == "loop"
-    ]
-    if loop_points:
-        annotation(
-            root,
-            max(x for x, _ in loop_points) + (-10 if profile.loop_label_below else 25),
-            max(y for _, y in loop_points) + 50
-            if profile.loop_label_below
-            else sum(y for _, y in loop_points) / len(loop_points) + profile.teaching_font / 3,
-            f"{values.get('loop_nt', '')} nt",
-            text_anchor="end" if profile.loop_label_below else "start",
-            data_teaching_note="loop",
-            data_teaching_keys=json.dumps(["loop_nt", "loop_word"]),
-        )
-    overlays += recognition_site_overlays(
-        state, points, labels.placer, label_size=profile.teaching_font, strand_labels=True
-    )
-    root.extend(list(ET.fromstring(f'<g xmlns="{SVG}">' + overlays + "</g>")))
-    local_dimensions(root, scene["state_id"], points, teaching, locations, labels)
+            text(
+                group,
+                x - 18,
+                y + 6,
+                label,
+                text_anchor="end",
+                font_size=24,
+                data_teaching_terminal=label,
+            )
+    overlays += compact_recognition_overlays(state, points, labels)
+    overlay_tree = ET.fromstring(f'<g xmlns="{SVG}">' + overlays + "</g>")
+    for site in list(overlay_tree):
+        if site.get("data-site-id"):
+            overlay_tree.remove(site)
+            group.insert(site_layer_index, site)
+            site_layer_index += 1
+    root.extend(list(overlay_tree))
     projected_end_spans(root, labels)
     element(root, "metadata", data_teaching_parameters="true").text = json.dumps(
         teaching["parameters"], sort_keys=bool(label_delta)
@@ -332,7 +310,17 @@ def _render_projected_teaching(
     label_backplates(root)
     x, y, width, content_height = scene_bounds(root)
     root.set("data-content-frame", f"{x - 8:g} {y - 8:g} {width + 16:g} {content_height + 16:g}")
-    root.set("viewBox", f"0 0 {WIDTH} {height}")
-    root.set("height", f"{7 * height / WIDTH}in")
+    view_left = min(0, x - 8)
+    view_width = WIDTH - view_left
+    root.set("viewBox", f"{view_left:g} 0 {view_width:g} {height}")
+    root.set(
+        "height",
+        f"{7 * height / view_width}in"
+        if physical_width == 504
+        else f"{physical_width * height / view_width:g}pt",
+    )
     next(e for e in root if e.tag.endswith("}rect")).set("height", str(height))
+    background = next(e for e in root if e.tag.endswith("}rect"))
+    background.set("x", str(view_left))
+    background.set("width", str(view_width))
     return bytes(ET.tostring(root, encoding="utf-8"))

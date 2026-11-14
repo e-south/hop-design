@@ -119,6 +119,7 @@ class DesignFamilyChoices(DesignChoices):
         render_policy: str | None = None,
         reference_selection: Source | None = None,
         display_axes: tuple[str, ...] | None = None,
+        detail_width_pt: float | None = None,
     ) -> SourceBoundConstructionPacket:
         raise ValueError("Choose member(name) to draw its scaffold options.")
 

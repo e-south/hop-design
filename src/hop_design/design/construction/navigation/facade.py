@@ -51,12 +51,16 @@ class AtlasNavigation:
             work=NeighborWork(timeout_seconds),
         )
 
-    def preview(self, identity: str, *, query: "Source | None" = None) -> "MolecularPreview":
+    def preview(
+        self, identity: str, *, query: "Source | None" = None, detail_width_pt: float | None = None
+    ) -> "MolecularPreview":
         """Inspect one recorded hairpin and trace without committing a selection."""
         from .preview import preview_preparation
         from .types import ChoiceSource
 
-        return preview_preparation(cast(ChoiceSource, self), identity, query=query)
+        return preview_preparation(
+            cast(ChoiceSource, self), identity, query=query, detail_width_pt=detail_width_pt
+        )
 
     def landscape(self) -> "MolecularLandscape":
         """Return fixed molecular coordinates for the complete recorded choice pool."""
@@ -64,6 +68,14 @@ class AtlasNavigation:
         from .types import ChoiceSource
 
         return molecular_landscape(cast(ChoiceSource, self))
+
+    def recorded_overview(self) -> dict[str, Any] | None:
+        """Return the admitted saved preparation comparison and coordinates, if present."""
+        from ..editions.overview import recorded_overview
+        from .types import ChoiceSource
+
+        result = recorded_overview(cast(ChoiceSource, self))
+        return None if result is None else result.model_dump(mode="json", by_alias=True)
 
     def freeze(
         self,

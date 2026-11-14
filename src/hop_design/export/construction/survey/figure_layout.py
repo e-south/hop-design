@@ -12,7 +12,6 @@ from xml.etree import ElementTree as ET
 from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 
 SVG = "http://www.w3.org/2000/svg"
-AXIS_LANDING_Y = 0
 
 
 def teaching_geometry(content: bytes | ET.Element, *, fit_content: bool = False) -> dict[str, Any]:
@@ -42,7 +41,7 @@ def plot_geometry(content: bytes | ET.Element) -> dict[str, Any]:
             if label is not None:
                 anchors[axis.attrib["data-axis"]] = [
                     float(label.attrib["x"]),
-                    AXIS_LANDING_Y,
+                    float(root.attrib["data-axis-landing-y"]),
                 ]
     return {"frame": root.get("data-landscape-frame", root.attrib["viewBox"]), "anchors": anchors}
 

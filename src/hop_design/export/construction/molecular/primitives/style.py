@@ -2,15 +2,18 @@
 
 from hashlib import sha256
 
+from ...presentation.palette import BASAL, FOLDBACK, STEM, annotation_ink, rgb_channels
+
 INK = "#182B34"
 BACKBONE = "#334B58"
 CONTACT = "#70838A"
+DUPLEX_ROW_GAP = 44
 BASE_SIZE = 20
-ANNOTATION_SIZE = 48
+ANNOTATION_SIZE = 40
 TERMINAL_SIZE = 32
-TITLE_SIZE = 56
+TITLE_SIZE = 40
 FONT_FAMILY = "Helvetica, Arial, sans-serif"
-REGION_COLORS = {"stem": "#B95300", "assembly": "#005F9E", "closing": "#006B52", "loop": "#006B52"}
+REGION_COLORS = {"stem": STEM, "assembly": BASAL, "closing": FOLDBACK, "loop": FOLDBACK}
 REGION_OPACITY = 1
 SITE_HALF_WIDTH = 18
 CUT_HALF_WIDTH = 16
@@ -19,15 +22,17 @@ LABEL_CLEARANCE = 6
 SCENE_TOP = 160
 STAGE_GAP = 0
 SCENE_CLEARANCE = 18
-PRIMER_CLEARANCE = 36
+PRIMER_CLEARANCE = 30
 ADAPTER_APPROACH = 52
 OPERATION_GAP = 28
 OPERATION_ARROW_LENGTH = 64
 OPERATION_STROKE = 5
+OPERATION_LABEL_INK = "#5E6B73"
+STRAND_END_RADIUS = 5
 
 
 def luminance(color: str) -> float:
-    channels = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    channels = [channel / 255 for channel in rgb_channels(color)]
     linear = [
         value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
         for value in channels
@@ -43,11 +48,11 @@ def contrast_ratio(a: str, b: str) -> float:
 
 
 def base_ink(region: str, tile_fill: str | None = None) -> str:
-    """Choose small nucleotide ink against its actual opaque region or change tile."""
+    """Use white on dark fills at 4.5:1 or better; use black on lighter fills."""
     background = (
         tile_fill if tile_fill and tile_fill != "none" else REGION_COLORS.get(region, "#AAB2B8")
     )
-    return max((INK, "#FFFFFF"), key=lambda ink: contrast_ratio(ink, background))
+    return "#FFFFFF" if contrast_ratio("#FFFFFF", background) >= 4.5 else "#000000"
 
 
 def object_id(kind: str, *identity: str) -> str:
@@ -58,7 +63,7 @@ def object_id(kind: str, *identity: str) -> str:
 
 def site_color(role: str) -> str:
     if role in {"basal_nick", "strand_exposure"}:
-        return "#176487"
+        return annotation_ink(BASAL)
     if role == "foldback_nick":
-        return "#146F54"
-    return "#965A13"
+        return annotation_ink(FOLDBACK)
+    return annotation_ink(STEM)

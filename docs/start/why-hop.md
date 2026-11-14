@@ -1,7 +1,7 @@
 # Why HOP
 
 The region being tested should not have to change to accommodate its
-construction sequence. For a unimolecular DNA hairpin, that means preserving
+construction sequence. For a DNA hairpin, that means preserving
 the duplex payload while arranging the flanking recognition sites, exposed
 strands, pairing regions, and joining bonds needed to assemble it.
 
@@ -19,6 +19,8 @@ even when both local junctions are feasible.
 The output is an inspectable sequence and material specification, built from
 copying, cleavage, association, and joining operations.
 
-Start with [the molecular steps](mental-model.md), then
-[search a construction](../guides/compile-construction.md) or
+Follow [Discover designs around your stem](../guides/discover-designs.md) for a
+complete workflow from one stem arm to a selected preparation and its oligos.
+Read [the molecular steps](mental-model.md) for the underlying regions and
+processing. To compile sequence anatomy without a preparation route,
 [define a substrate space](../guides/substrate-spaces.md).

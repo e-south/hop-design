@@ -113,3 +113,10 @@ test('compact sequence labels retain the exact word in their accessible name and
   assert.ok(label.getAttribute('aria-label')?.includes(word));
   assert.equal(label.children.find(e=>e.localName==='title')?.textContent,word);
 });
+
+test('Escape dismisses the refinement panel before changing the inspected preparation',async()=>{
+ const {escapeInspection}=await load(),events=[];
+ const actions={dismissRefinement:()=>{events.push('refine');return true;},restorePreview:()=>events.push('restore'),returnToMap:()=>events.push('map'),close:()=>events.push('close')};
+ escapeInspection({dataset:{transient:'true'}},actions);
+ assert.deepEqual(events,['refine']);
+});

@@ -7,7 +7,6 @@ from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 from ..presentation.parameter_labels import LABEL_CATALOG_DIGEST
-from .figure_layout import AXIS_LANDING_Y
 from .layout import node_geometry, node_label, plot_layout
 from .presentation import present_choices
 
@@ -17,7 +16,15 @@ def trace_commands(axes: list[dict[str, Any]], path: dict[str, Any]) -> str:
     for i, axis in enumerate(axes):
         value = path["values"][axis["definition"]["key"]]
         move = i == 0 or axis["band"] != axes[i - 1]["band"]
-        commands.append(f"{'M' if move else 'L'}{axis['x']:.4f} {axis['y'][value]:.4f}")
+        x, y = axis["x"], axis["y"][value]
+        if move:
+            commands.append(f"M{x:.4f} {y:.4f}")
+        else:
+            previous = axes[i - 1]
+            px, py = previous["x"], previous["y"][path["values"][previous["definition"]["key"]]]
+            middle = (px + x) / 2
+            commands.append(f"C{middle:.4f} {py:.4f} {middle:.4f} {y:.4f} {x:.4f} {y:.4f}")
+
     return " ".join(commands)
 
 
@@ -40,11 +47,11 @@ class TraceProjection:
             axis["definition"]["key"]: {n["value"]: n for n in axis["definition"]["nodes"]}
             for axis in self.axes
         }
-        self.frame = f"0 0 {profile.width} {layout.height:g}"
+        self.frame = f"0 0 {layout.width} {layout.height:g}"
         self.figure_geometry = {
             "frame": self.frame,
             "anchors": {
-                a["definition"]["key"]: [a["x"], AXIS_LANDING_Y]
+                a["definition"]["key"]: [a["x"], layout.landing_y]
                 for a in self.axes
                 if a["band"] == 0
             },

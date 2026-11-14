@@ -5,6 +5,21 @@ const uri=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
 const file=name=>readFile(new URL(`../../src/hop_design/assets/design_explorer/${name}.js`,import.meta.url),'utf8');
 function element(){return {children:[],dataset:{},attributes:new Map(),querySelector(){return null;},append(...items){this.children.push(...items);},before(item){this.announcement=item;},setAttribute(k,v){this.attributes.set(k,v);},removeAttribute(k){this.attributes.delete(k);},remove(){}};}
 
+test('hover loading retains the molecule quietly without disabling parameter trace controls',async t=>{
+  const old=globalThis.document;t.after(()=>{globalThis.document=old;});globalThis.document={createElement:element};
+  const module=(await file('inspection_loading')).replace("'./panel_status.js'",JSON.stringify(uri(await file('panel_status'))));
+  const {inspectionLoading}=await import(uri(module)),hosts=new Map();
+  const get=id=>{if(!hosts.has(id))hosts.set(id,element());return hosts.get(id);};
+  const drawing=element(),trace=element(),molecule=get('molecular-area');
+  molecule.append(drawing);molecule.querySelector=()=>drawing;trace.inert=false;
+  get('figure-one-canvas').append(molecule,trace);
+  const loading=inspectionLoading(get);loading.pending('A');
+  assert.equal(trace.inert,false,'Hover feedback must not swallow the next parameter click');
+  assert.equal(molecule.dataset.panelRetained,'previous');
+  assert.equal(molecule.dataset.panelFeedback,'quiet');
+  loading.ready('A');loading.clear();loading.close();
+});
+
 test('leaving a point cannot uncover panels while a pin is still loading',async t=>{
   const old=globalThis.document;t.after(()=>{globalThis.document=old;});globalThis.document={createElement:element};
   const module=(await file('inspection_loading')).replace("'./panel_status.js'",JSON.stringify(uri(await file('panel_status'))));
@@ -14,14 +29,14 @@ test('leaving a point cannot uncover panels while a pin is still loading',async 
   loading.pending('A');loading.ready('A');
   assert.equal(get('route-focus').dataset.panelState,'waiting','No spinner implies a route request that has not started');
   loading.clear();loading.beginAction('select',{materialized_realization_id:'B'});loading.clear();
-  assert.equal(get('figure-one-canvas').dataset.panelState,'loading');
+  assert.equal(get('molecular-area').dataset.panelState,'loading');
   assert.equal(get('preparation-info').dataset.pendingIdentity,'B');
-  loading.failedAction();assert.equal(get('figure-one-canvas').dataset.panelState,'error');
-  loading.beginAction('retry');loading.readyAction();assert.equal(get('figure-one-canvas').dataset.panelState,undefined);
+  loading.failedAction();assert.equal(get('molecular-area').dataset.panelState,'error');
+  loading.beginAction('retry');loading.readyAction();assert.equal(get('molecular-area').dataset.panelState,undefined);
   const opening=loading.opening();opening.fail('Could not open');
   loading.beginAction('retry');loading.readyAction();
   assert.equal(get('landscape-panels').dataset.panelState,undefined,'Successful initial drawing retry uncovers the map');
-  loading.beginAction('retrieve');assert.equal(get('figure-one-canvas').dataset.panelState,undefined);
+  loading.beginAction('retrieve');assert.equal(get('molecular-area').dataset.panelState,undefined);
   assert.equal(get('preparation-info').dataset.panelState,'loading');loading.readyAction();loading.close();
 });
 

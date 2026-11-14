@@ -24,9 +24,9 @@ def draw_inputs(
         role = material_role_label(item.material_use.role)
         name = drawing_material_label(item.material_use.role)
         if comparison and item.material_use.role.value in comparison.material_roles:
-            role += " · changed versus reference"
-            name += " · changed"
-        label = f"{name} · {len(item.material.sequence_5prime)} nt"
+            role += ", changed versus reference"
+            name += ", changed"
+        label = f"{name}, {len(item.material.sequence_5prime)} nt"
         sequence = (
             terminal_label("5\u2032", item.material.five_prime_end)
             + " "

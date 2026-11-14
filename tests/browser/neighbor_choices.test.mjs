@@ -19,7 +19,7 @@ test('nearby ranking is separate from deliberate verification and exact selectio
     const nearby=neighboringChoices(details,host,async(action,payload)=>{calls.push({action,payload});return answer;},()=>state,id=>selected.push(id));
     details.open=true;await details.listeners.toggle();
     assert.equal(calls[0].payload.verify_controls,false);
-    assert.equal(host.children[1].textContent,'Check shared surroundings');
+    assert.equal(host.children[1].textContent,'Check other hairpin regions');
     await host.children[1].listeners.click();
     assert.equal(calls[1].payload.verify_controls,true);
     assert.equal(host.children.length,1);

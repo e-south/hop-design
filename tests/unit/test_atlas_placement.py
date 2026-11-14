@@ -82,3 +82,17 @@ def test_column_transport_matches_local_processing_arrows():
 
     root = ET.fromstring(continuation_svg(place_route((block(), block()))))
     assert float(root[0].get("stroke-width")) == 5
+
+
+def test_loop_cap_column_connector_starts_horizontally_with_a_generous_turn():
+    from xml.etree import ElementTree as ET
+
+    from hop_design.export.construction.molecular.atlas_reading_order import continuation_svg
+
+    root = ET.fromstring(
+        continuation_svg(place_route((block(), block())), (650, 190), (900, 60), from_side=True)
+    )
+    path = root[0].get("d")
+    assert path.startswith("M650,190 H")
+    assert path.count("Q") == 2
+    assert root.get("data-continuation-start") == "loop-cap"

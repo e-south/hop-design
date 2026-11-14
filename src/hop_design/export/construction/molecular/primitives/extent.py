@@ -8,7 +8,9 @@ from .style import SCENE_CLEARANCE
 from .typography import text_width
 
 
-def scene_bounds(root: ET.Element) -> tuple[float, float, float, float]:
+def scene_bounds(
+    root: ET.Element, *, horizontal_span: tuple[float, float] | None = None
+) -> tuple[float, float, float, float]:
     """Include exact base boxes, input arrows and collision-placed annotations."""
     left, top, right, bottom = float("inf"), float("inf"), 0.0, 0.0
 
@@ -22,6 +24,8 @@ def scene_bounds(root: ET.Element) -> tuple[float, float, float, float]:
         box = None
         if node.get("data-label-box"):
             box = json.loads(node.attrib["data-label-box"])
+        elif node.get("data-envelope-box"):
+            box = json.loads(node.attrib["data-envelope-box"])
         elif node.get("data-drawing-box"):
             box = [float(v) for v in node.attrib["data-drawing-box"].split()]
         elif node.get("data-base-index") is not None:
@@ -38,6 +42,8 @@ def scene_bounds(root: ET.Element) -> tuple[float, float, float, float]:
             box = [x, float(node.get("y", "0")) - size, width, size + 5]
         if box:
             x, y, width, height = box
+            if horizontal_span and (x + width < horizontal_span[0] or x > horizontal_span[1]):
+                continue
             y += offset_y
             left, top = min(left, x), min(top, y)
             right, bottom = max(right, x + width), max(bottom, y + height)

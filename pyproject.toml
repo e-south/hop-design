@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hop-design"
-version = "0.1.0a11"
+version = "0.1.0a12.dev0"
 description = "Discover complete DNA hairpin preparations and retrieve exact oligos"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -41,7 +41,7 @@ Issues = "https://github.com/e-south/hop-design/issues"
 Repository = "https://github.com/e-south/hop-design"
 
 [project.scripts]
-hop-design = "hop_design.cli:app"
+hop-design = "hop_design.__main__:main"
 
 [dependency-groups]
 dev = [

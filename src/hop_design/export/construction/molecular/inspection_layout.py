@@ -6,7 +6,8 @@ from hop_design.models.construction.complete.state import ConstructionState
 from hop_design.models.construction.projections.inspection import MolecularStateInspection
 from hop_design.models.molecular_state import MaterialBaseLineage
 
-from .primitives.style import SCENE_TOP
+from ..presentation.loop_arc import LoopArc
+from .primitives.style import DUPLEX_ROW_GAP, SCENE_TOP
 
 
 def _state_points(state: ConstructionState) -> dict[tuple[str, int], tuple[float, float]]:
@@ -30,20 +31,21 @@ def _state_points(state: ConstructionState) -> dict[tuple[str, int], tuple[float
             turn_left = max(a for a, _ in self_pairs) + 1
             turn_right = min(b for _, b in self_pairs)
             pair_sum = self_pairs[0][0] + self_pairs[0][1]
+            cap = LoopArc(
+                100 + (turn_left - 1) * 16,
+                cursor,
+                DUPLEX_ROW_GAP,
+                turn_right - turn_left,
+                16,
+            )
             point: tuple[float, float]
             for i in range(len(strand.sequence)):
                 if i < turn_left:
                     point = (100 + i * 16, cursor)
                 elif i >= turn_right:
-                    point = (100 + (pair_sum - i) * 16, cursor + 44)
+                    point = (100 + (pair_sum - i) * 16, cursor + DUPLEX_ROW_GAP)
                 else:
-                    angle = -math.pi / 2 + math.pi * (i - turn_left + 1) / (
-                        turn_right - turn_left + 1
-                    )
-                    point = (
-                        100 + (turn_left - 1) * 16 + 28 * math.cos(angle),
-                        cursor + 22 + 22 * math.sin(angle),
-                    )
+                    point = cap.point(i - turn_left + 1)
                 points[strand.strand_id, i] = point
             cursor += 120
             continue
@@ -63,7 +65,7 @@ def _state_points(state: ConstructionState) -> dict[tuple[str, int], tuple[float
             first, last = contacts[0], contacts[-1]
             direction = 1 if last[1][0] > first[1][0] else -1
             offset = first[1][0] - direction * first[0] * 16
-            y = first[1][1] + 44
+            y = first[1][1] + DUPLEX_ROW_GAP
         for i in range(len(strand.sequence)):
             points[strand.strand_id, i] = (offset + direction * i * 16, y)
         cursor = max(cursor + 80, y + 80)

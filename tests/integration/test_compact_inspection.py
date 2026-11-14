@@ -1,10 +1,30 @@
 """Compact inspection is a browser transport, never a second public query."""
 
+import gzip
+import json
 from xml.etree import ElementTree as ET
 
 from hop_design.api import _InspectionProjection
 from hop_design.commands.design.inspection import DesignInspectionSession
 from tests.integration.test_atlas_edition import captured_choices  # noqa: F401
+
+
+def test_captured_explanation_reuses_admitted_query_without_running_facets_again(
+    captured_choices,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    edition = captured_choices.freeze(tmp_path / "edition")
+    for query in (None, {"parameters": [{"key": "loop_nt", "values": [99]}]}):
+        answer = edition.query(query)
+        expected = edition.explain(query)
+
+        def duplicate_query(*args, **kwargs):
+            raise AssertionError("Explanation must reuse the inspector's admitted query")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(edition, "query", duplicate_query)
+            assert _InspectionProjection.explanation(edition, answer) == expected
 
 
 def test_compact_map_preserves_public_query_selection_and_shared_coordinates(
@@ -65,8 +85,17 @@ def test_compact_map_preserves_public_query_selection_and_shared_coordinates(
             # Printed member expansions carry explicit display offsets; the
             # interactive overview uses their same underlying comparison position.
             assert [x, y] == positions[members[index]]
-        axes = (session.root / compact["plots"]["parameters"].removeprefix("/files/")).read_bytes()
-        assert b"data-members=" not in axes
+        axes = gzip.decompress(
+            (session.root / compact["plots"]["parameters"].removeprefix("/files/")).read_bytes()
+        )
+        # The shared inspector retains selectable context traces. Coalescing
+        # identical paths must preserve every preparation exactly once.
+        context = [node for node in ET.fromstring(axes).iter() if node.get("data-members")]
+        context_members = [
+            identity for node in context for identity in json.loads(node.get("data-members"))
+        ]
+        assert sorted(context_members) == sorted(members)
+        assert all(node.get("role") == "button" for node in context)
         identity = members[0]
         selected = session.response(
             lambda: session.select(

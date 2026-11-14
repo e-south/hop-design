@@ -1,4 +1,13 @@
-"""Deterministic family/product sampling over existing complete preparations."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/src/hop_design/design/construction/navigation/guided_sampling.py
+
+Sample existing complete preparations with deterministic family and product choices.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from collections.abc import Callable
 from pathlib import Path
@@ -143,6 +152,10 @@ def sample_choices(
     history: tuple[str, ...] = (),
     after: Source | None = None,
 ) -> dict[str, Any]:
+    if strategy is not None and (
+        not isinstance(strategy, str) or strategy not in {"families", "preparations", "loop"}
+    ):
+        raise ValueError("Sampling strategy must be families, preparations or loop.")
     if after is not None:
         if history:
             raise ValueError("A saved view already specifies its sampling history.")
@@ -159,7 +172,7 @@ def sample_choices(
         query = view["selection"].get("query") if query is None else query
     if seed is None:
         raise ValueError("Supply a sampling seed or a saved view with its next seed.")
-    strategy = strategy or "preparations"
+    strategy = "preparations" if strategy is None else strategy
     stage = stage or "endpoint"
     if strategy in {"families", "loop"}:
         return guided_sample(

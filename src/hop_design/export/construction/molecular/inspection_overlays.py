@@ -11,19 +11,26 @@ from hop_design.models.construction.variants.inspection import MolecularAddress
 from ..labels import terminal_label
 from .label_layout import LabelPlacer
 from .material_bindings import material_binding_overlays
-from .primitives.annotation_policy import footprint_color
+from .primitives.annotation_policy import FootprintScope, footprint_color
+from .primitives.bond_marks import bond_bridge
 from .primitives.materials import PlacedInput, input_box, staged_materials
 from .primitives.style import (
     ANNOTATION_SIZE,
     CUT_HALF_WIDTH,
     CUT_REACH,
     FONT_FAMILY,
-    INK,
-    TERMINAL_SIZE,
     TITLE_SIZE,
     object_id,
 )
+from .primitives.terminal_labels import terminal_label_glyph
 from .recognition_sites import recognition_site_overlays
+
+
+def cleavage_geometry(offsets: tuple[int, ...]) -> Literal["nick", "blunt", "staggered"]:
+    """Name the cut icon from recorded, common-precursor boundary offsets."""
+    if len(offsets) == 1:
+        return "nick"
+    return "blunt" if offsets[0] == offsets[1] else "staggered"
 
 
 def inspection_overlays(
@@ -34,6 +41,8 @@ def inspection_overlays(
     site_labels: Literal["all", "operations"] = "all",
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
+    interface_labels: bool = True,
+    footprint_scope: FootprintScope = "processing",
 ) -> str:
     rows = [
         '<g xmlns="http://www.w3.org/2000/svg" data-inspection-overlays="true" '
@@ -77,64 +86,67 @@ def inspection_overlays(
                     CUT_REACH + 6,
                 )
             )
-    for join in projection.formed_bond_boundaries:
-        jx, jy = boundary(join)
-        labels.occupied.append((jx - 16, jy - 38 if jy <= middle else jy - 3, 32, 42))
+    bonds = [bond_bridge(projection, points, join) for join in projection.formed_bond_boundaries]
+    labels.occupied.extend(box for _, box in bonds)
+    # Reserve the actual incoming silhouettes before docking end chemistry.
+    # A terminus may use a nearby alternative dock, never a distant free label.
+    rows.append(material_binding_overlays(material_inputs, points, labels))
+    rows.append(staged_materials(staged_inputs, labels))
     for strand in projection.state.molecules:
         for index, chemistry in (
             (0, terminal_label("5\u2032", strand.five_prime_end)),
             (len(strand.sequence) - 1, terminal_label("3\u2032", strand.three_prime_end)),
         ):
             label = chemistry.removesuffix("OH")
+            if projection.state.phase.value == "selected_fragments" and label == "3\u2032":
+                rows.append(
+                    f'<g data-terminal-display="metadata" data-terminal-chemistry="{chemistry}" '
+                    f'data-terminal-strand="{escape(strand.strand_id)}" '
+                    f'data-terminal-index="{index}"><title>{chemistry}</title></g>'
+                )
+                continue
             x, y = points[strand.strand_id, index]
             neighbor = 1 if index == 0 else index - 1
-            nx, _ = points.get((strand.strand_id, neighbor), (x + 16, y))
-            outside_x = x - len(label) * TERMINAL_SIZE * 0.64 - 18 if nx > x else x + 18
+            neighbor_point = points.get((strand.strand_id, neighbor), (x + 16, y))
             rows.append(
-                labels.text("terminus", outside_x, y + 7, label, INK, TERMINAL_SIZE)
-                .replace(
-                    'data-label-kind="terminus"',
-                    f'data-label-kind="terminus" data-terminal-chemistry="{chemistry}" '
-                    f'data-terminal-strand="{escape(strand.strand_id)}" '
-                    f'data-terminal-index="{index}"',
+                terminal_label_glyph(
+                    labels,
+                    (x, y),
+                    neighbor_point,
+                    label,
+                    chemistry=chemistry,
+                    attributes={
+                        "data-terminal-strand": strand.strand_id,
+                        "data-terminal-index": str(index),
+                    },
                 )
-                .replace(f">{label}</text>", f">{label}<title>{chemistry}</title></text>")
             )
-    rows.append(material_binding_overlays(material_inputs, points, labels))
-    rows.append(staged_materials(staged_inputs, labels))
     rows.append(
         recognition_site_overlays(
-            projection, points, labels, site_labels=site_labels, label_site_ids=label_site_ids
+            projection,
+            points,
+            labels,
+            site_labels=site_labels,
+            label_site_ids=label_site_ids,
+            footprint_scope=footprint_scope,
         )
     )
 
     def text(x: float, y: float, label: str, color: str) -> None:
         rows.append(labels.text("cut-or-dimension", x, y, label, color, ANNOTATION_SIZE))
 
-    for join in projection.formed_bond_boundaries:
-        x, y = boundary(join)
-        assert join.before is not None and join.after is not None
-        outside = -1 if y <= middle else 1
-        near, far = y + outside * 19, y + outside * 34
-        rows.append(
-            f'<g data-formed-bond="{join.after.index}" data-event-glyph="bond-bridge" '
-            f'data-bond-strand="{escape(join.after.strand_id)}" '
-            f'data-drawing-box="{x - 14} {min(y, far) - 3} 28 40">'
-            "<title>Recorded ligation bond</title>"
-            f'<path d="M{x},{y} V{far}" stroke="{INK}" stroke-width="1.8"/>'
-            f'<path d="M{x - 12},{near} V{far} H{x + 12} V{near}" '
-            f'fill="none" stroke="{INK}" stroke-width="3.2" stroke-linejoin="round"/></g>'
-        )
+    rows.extend(drawing for drawing, _ in bonds)
 
     for operation in projection.operations:
         positions = [point(a) for a in operation.recognition]
         x, z = min(p[0] for p in positions) - 8, max(p[0] for p in positions) + 8
         y, w = min(p[1] for p in positions) - 16, max(p[1] for p in positions) + 16
         color = footprint_color(projection, operation.role, operation.recognition)
+        geometry = cleavage_geometry(tuple(cut.precursor_offset for cut in operation.cuts))
         rows.append(
             f'<g id="{object_id("operation", projection.state.state_id, operation.operation_id)}" '
             f'data-operation-id="{escape(operation.operation_id)}" '
-            f'data-timing="{operation.timing}">'
+            f'data-timing="{operation.timing}" data-cleavage-geometry="{geometry}">'
         )
         if not projection.recognition_sites:
             rows.append(
@@ -183,26 +195,35 @@ def inspection_overlays(
                 f'<path d="M{cx},{cy + outside * 10} L{cx},{cy}" '
                 f'stroke="{color}" stroke-width="3.2"{dash}/></g>'
             )
+            if len(operation.cuts) == 1:
+                rows.append(
+                    f'<path data-cleavage-edge="nick" d="M{cx},{cy - 15} V{cy + 15}" '
+                    f'fill="none" stroke="{color}" stroke-width="4"{dash}/>'
+                )
         if len(cuts) == 2:
             (cx, cy), (dx, dy) = cuts
             rows.append(
                 f'<path d="M{cx},{cy} V{(cy + dy) / 2} H{dx} V{dy}" fill="none" '
-                f'stroke="{color}" stroke-width="3.2" stroke-dasharray="6 3" '
+                f'stroke="{color}" stroke-width="4"{dash} '
+                f'data-cleavage-edge="{geometry}" '
                 'data-paired-cut-boundary="true"/>'
             )
         rows.append("</g>")
     for interface in projection.interfaces:
-        x, y = boundary(interface.paired_start)
-        z, _ = boundary(interface.paired_end)
-        by = min(v for _, v in points.values()) - 33
         rows.append(
             f'<g data-interface="{interface.side}" data-gap-bp="{interface.distance_bp}" '
             f'data-end-polarity="{interface.polarity}" data-end-word="{interface.sequence}">'
             f"<title>{interface.side} end; {interface.polarity}; word 5\u2032 to 3\u2032; "
             f"{interface.distance_bp} bp to the supplied stem</title>"
         )
-        rows.append(f'<path d="M{x},{by + 5} V{by} H{z} V{by + 5}" fill="none" stroke="#AE6820"/>')
-        text(min(x, z), by - 8, f"{interface.sequence} · {interface.distance_bp} bp", "#8C5318")
+        if interface_labels:
+            x, _ = boundary(interface.paired_start)
+            z, _ = boundary(interface.paired_end)
+            by = min(v for _, v in points.values()) - 33
+            rows.append(
+                f'<path d="M{x},{by + 5} V{by} H{z} V{by + 5}" fill="none" stroke="#AE6820"/>'
+            )
+            text(min(x, z), by - 8, f"{interface.sequence}, {interface.distance_bp} bp", "#8C5318")
         overhang = [point(a) for a in interface.overhang]
         lo, hi = min(a for a, _ in overhang) - 7, max(a for a, _ in overhang) + 7
         top = min(b for _, b in overhang) - 12

@@ -1,10 +1,19 @@
-"""Guided samples teach distinct molecules while preserving complete witnesses."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/tests/unit/test_guided_sampling.py
+
+Check sampling options and deterministic choices among complete preparations.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from typing import ClassVar
 
 import pytest
 
-from hop_design.design.construction.navigation.guided_sampling import guided_sample
+from hop_design.design.construction.navigation.guided_sampling import guided_sample, sample_choices
 from tests.unit.test_molecular_families import path
 
 
@@ -23,6 +32,20 @@ class Choices:
 
     def select(self, identity, *, query=None):
         return {"materialized_realization_id": identity, "query": query or {"parameters": []}}
+
+
+@pytest.mark.parametrize("strategy", [[], {}, False, True, 0, 1, "", "unknown", ["families"]])
+@pytest.mark.parametrize("after", [None, "saved-view.json"])
+def test_invalid_strategy_fails_before_sampling_or_reading_a_saved_view(strategy, after):
+    class UnreadChoices(Choices):
+        def restore_view(self, source):
+            pytest.fail("Invalid sampling options must not read a saved view")
+
+    def ordinary(**kwargs):
+        pytest.fail("Invalid sampling options must not choose a preparation")
+
+    with pytest.raises(ValueError, match="Sampling strategy must be"):
+        sample_choices(UnreadChoices([]), ordinary=ordinary, seed=0, strategy=strategy, after=after)
 
 
 def test_guidance_visits_another_family_without_counting_routes_as_products():

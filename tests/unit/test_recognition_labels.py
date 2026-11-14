@@ -7,6 +7,38 @@ from xml.etree import ElementTree as ET
 from hop_design.export.construction.molecular.recognition_sites import recognition_site_overlays
 
 
+def test_compact_overview_keeps_same_enzyme_names_at_both_molecular_regions(monkeypatch):
+    from hop_design.export.construction.molecular.primitives import annotation_policy
+    from hop_design.export.construction.molecular.teaching_annotations import layout
+
+    # Changing a presentation palette cannot merge distinct molecular regions.
+    monkeypatch.setattr(annotation_policy, "site_color", lambda role: "#112233")
+
+    basal, closing = object(), object()
+    state = NS(
+        recognition_sites=[
+            NS(
+                enzyme_id="same",
+                site_id=key,
+                role="strand_exposure",
+                recognition=(address,),
+                presence="partial",
+            )
+            for key, address in (("basal", basal), ("foldback", closing))
+        ],
+        bases=[
+            NS(address=basal, neighborhood="assembly"),
+            NS(address=closing, neighborhood="closing"),
+        ],
+    )
+    captured = {}
+    monkeypatch.setattr(
+        layout, "recognition_site_overlays", lambda *args, **kwargs: captured.update(kwargs) or ""
+    )
+    layout.compact_recognition_overlays(state, {}, NS(placer=None, size=32))
+    assert captured["label_site_ids"] == frozenset({"basal", "foldback"})
+
+
 def test_repeated_sites_keep_both_addressed_footprints_and_names():
     sites = []
     points = {("strand", i): (100 + i * 16, 160) for i in range(20)}
@@ -24,7 +56,13 @@ def test_repeated_sites_keep_both_addressed_footprints_and_names():
                 recognition=addresses,
             )
         )
-    projection = NS(operations=(), recognition_sites=sites, state=NS(state_id="state"))
+    projection = NS(
+        operations=(),
+        recognition_sites=sites,
+        state=NS(state_id="state", pairings=(), phase=NS(value="duplex")),
+        bases=(),
+        layout_frame=None,
+    )
     root = ET.fromstring("<svg>" + recognition_site_overlays(projection, points) + "</svg>")
     assert len([e for e in root.iter() if e.get("data-site-id")]) == 2
     assert len([e for e in root.iter() if e.get("data-members")]) == 2
@@ -63,7 +101,13 @@ def test_strand_aware_names_preserve_every_site_status_and_side():
                 recognition=addresses,
             )
         )
-    projection = NS(operations=(), recognition_sites=sites, state=NS(state_id="state"))
+    projection = NS(
+        operations=(),
+        recognition_sites=sites,
+        state=NS(state_id="state", pairings=(), phase=NS(value="duplex")),
+        bases=(),
+        layout_frame=None,
+    )
     root = ET.fromstring(
         "<svg>" + recognition_site_overlays(projection, points, strand_labels=True) + "</svg>"
     )
@@ -76,7 +120,7 @@ def test_strand_aware_names_preserve_every_site_status_and_side():
     assert len([e for e in root.iter() if e.get("data-recognition-footprint")]) == 4
     assert sorted(e.text for e in root.iter() if e.get("data-label-kind") == "recognition") == [
         "Nickase",
-        "Nickase *",
-        "Nickase *",
-        "Nickase *",
+        "Nickase*",
+        "Nickase*",
+        "Nickase*",
     ]

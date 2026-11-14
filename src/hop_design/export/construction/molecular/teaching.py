@@ -36,7 +36,7 @@ def render_parameter_teaching(
     )
     blocks = {
         b.element.attrib["data-atlas-state"]: b
-        for b in route_blocks(selected, comparison, locations)
+        for b in route_blocks(selected, comparison, locations, footprint_scope="structural")
     }
     root = ET.Element(
         f"{{{SVG}}}svg",

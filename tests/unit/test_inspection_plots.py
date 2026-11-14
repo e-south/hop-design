@@ -1,6 +1,7 @@
 """An inspection renders its visible drawing set, retaining bounded cache ownership."""
 
 import copy
+import gzip
 
 import pytest
 
@@ -104,5 +105,47 @@ def test_pin_changes_do_not_regenerate_the_cohort_or_its_axes(tmp_path):
             pinned["selection"] = {"materialized_realization_id": identity}
             assert plots.get(choices, pinned)["plots"] == first["plots"]
         assert choices.drawn == ["parameters", "similarity", "distributions"]
+    finally:
+        plots.close()
+
+
+def test_compact_axes_use_compressed_storage_with_bounded_expansion(tmp_path, monkeypatch):
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg">' + b" " * 1300 + b"</svg>"
+    monkeypatch.setattr(_InspectionProjection, "axes", lambda answer: svg)
+    monkeypatch.setattr(
+        _InspectionProjection,
+        "families",
+        lambda *args, **kwargs: pytest.fail("The UMAP does not consume structural groups"),
+    )
+    monkeypatch.setattr(
+        _InspectionProjection,
+        "population",
+        lambda *args, **kwargs: {
+            "summary": {"product": "hairpin", "products": 0, "eligible_products": 0},
+            "distributions": {},
+        },
+    )
+    monkeypatch.setattr(_InspectionProjection, "display", lambda answer: answer)
+    monkeypatch.setattr(_InspectionProjection, "map", lambda *args: {})
+    monkeypatch.setattr(_InspectionProjection, "distributions", lambda value: b"<svg/>")
+    monkeypatch.setattr(
+        "hop_design.commands.design.inspection_plots.compact_choices",
+        lambda answer: {"x": "c" * 900},
+    )
+    choices = Choices()
+    choices.resolution = {"intent": {"product": "hairpin"}}
+    plots = InspectionPlots(tmp_path, byte_limit=1600)
+    try:
+        result = plots.get(choices, state(), compact=True)
+        url = result["plots"]["parameters"]
+        assert url == result["plots"]["inspection"] and url.endswith(".svg.gz")
+        target = tmp_path / url.removeprefix("/files/")
+        assert gzip.decompress(target.read_bytes()) == svg
+        assert plots.bytes <= plots.byte_limit
+        assert len(svg) + target.with_name("cohort.json").stat().st_size > plots.byte_limit
+        monkeypatch.setattr(_InspectionProjection, "axes", lambda answer: svg * 2)
+        with pytest.raises(ValueError, match="bounded inspection cache"):
+            plots.get(choices, state("similarity"), compact=True)
+        assert gzip.decompress(target.read_bytes()) == svg
     finally:
         plots.close()

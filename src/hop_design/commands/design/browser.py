@@ -18,11 +18,13 @@ def create_design_server(
     choices = load_choices(directory, member)
     if choices.resolution.get("schema") == "hop.design-family-preview/v1":
         raise ValueError("Choose a required stem with --member; design query lists the family.")
+    restored = choices.restore_view(receipt) if receipt is not None else None
     session = DesignInspectionSession(choices, output)
     try:
-        if receipt is not None:
-            session.restore(
-                {"token": session.state()["token"], "receipt": choices.restore_view(receipt)}
+        if restored is not None:
+            session.response(
+                lambda: session.restore({"token": session.state()["token"], "receipt": restored}),
+                format="compact-v1",
             )
         return EditorServer(session, port)
     except BaseException:

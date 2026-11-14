@@ -84,6 +84,29 @@ for integrity and continuity; append rejects stale steps and exhausted targets.
 This adds no cached cursor or schema change. Measure append cost separately from
 checkpoint admission and molecular search, including deep single-target histories.
 
+Evaluation streaming reads the object digest with each step instead of looking
+up the same address again. The existing object reader still checks ranges and
+hashes, and checkpoint admission, pagination and creator order are unchanged.
+On 20,000 synthetic 100-byte records, three alternating trials reduced SELECTs
+from 40,001 to 20,001. Median stream time fell from 0.105 to 0.080 seconds;
+fresh-reader admission plus streaming fell from 0.245 to 0.222 seconds
+(Python 3.12.14, macOS arm64). These measurements cover storage reads only.
+
+```bash
+# Reproduce the synthetic reader comparison from a development checkout.
+PYTHONPATH=. uv run --locked python scripts/benchmarks/survey_stream.py --records 20000
+```
+
+Conditional facet counts reuse each path's full query match for axes without an
+active predicate. Filtered axes still omit only their own predicate, retaining
+membership and all other filters. On 16,384 synthetic repetitions of public-fixture
+projection facts, three alternating trials reduced median warm-query time from
+0.793 to 0.699 seconds unfiltered and from 1.071 to 0.734 seconds with three active
+predicates (Python 3.12.14, macOS arm64, HOP 0.1.0a12.dev0). The comparison retained
+identical canonical query output. These measurements exclude cold admission,
+molecular search and replay; the repeated facts do not establish more molecular
+authorities. No persistent query or authority cache is added.
+
 ## Prioritize requested diversity
 
 Conditional handle completion records observed diversity classes in its versioned

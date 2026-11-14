@@ -21,6 +21,7 @@ class FigureContext:
     layout: str
     receipt: Record | None
     display_axes: tuple[str, ...] | None = None
+    detail_width_pt: float | None = None
 
     @property
     def color(self) -> Record | None:
@@ -60,6 +61,7 @@ def figure_context(
     render_policy: str | None,
     reference: Source | None,
     display_axes: tuple[str, ...] | None = None,
+    detail_width_pt: float | None = None,
 ) -> FigureContext:
     raw = load_source_mapping(selection) if isinstance(selection, str | Path) else selection
     receipt = (
@@ -99,6 +101,12 @@ def figure_context(
     mode = presentation.get("landscape", "parameters")
     if display_axes is not None and mode != "parameters" and selection is None:
         raise ValueError("Display axes require a parameter figure or a selected landscape trace.")
+    if detail_width_pt is not None:
+        from hop_design.export.construction.presentation.figure_profile import column_detail_profile
+
+        column_detail_profile(detail_width_pt)
+        if mode != "similarity" or selection is None:
+            raise ValueError("Detail width requires a selected similarity figure.")
     return FigureContext(
         selection,
         mode,
@@ -107,4 +115,5 @@ def figure_context(
         layout or (presentation.get("layout", "auto") if mode == "families" else "auto"),
         receipt,
         display_axes,
+        detail_width_pt,
     )

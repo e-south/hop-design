@@ -33,13 +33,22 @@ def edition_figure(
     render_policy: str | None = None,
     reference_selection: "Source | None" = None,
     display_axes: tuple[str, ...] | None = None,
+    detail_width_pt: float | None = None,
 ) -> SourceBoundConstructionPacket:
     """Resolve the view recipe at the presentation boundary, then draw its packet."""
     from ..navigation.figure_context import figure_context
     from ..navigation.landscape_figure import landscape_figure
 
     context = figure_context(
-        edition, selection, view, stage, layout, render_policy, reference_selection, display_axes
+        edition,
+        selection,
+        view,
+        stage,
+        layout,
+        render_policy,
+        reference_selection,
+        display_axes,
+        detail_width_pt,
     )
     atlas = context.atlas(edition)
     if context.view in {"families", "similarity"}:
@@ -53,6 +62,7 @@ def edition_figure(
             view=context.view,
             display_axes=context.display_axes,
             color=context.color,
+            detail_width_pt=context.detail_width_pt,
         )
     else:
         if context.view != "parameters" or context.stage != "endpoint" or context.layout != "auto":

@@ -2,6 +2,8 @@
 
 from xml.etree import ElementTree as ET
 
+import pytest
+
 from hop_design.export.construction.molecular.atlas_placement import BlockExtent, place_route
 from hop_design.export.construction.molecular.atlas_reading_order import continuation_svg
 from hop_design.export.construction.molecular.primitives.operations import draw_operation
@@ -15,9 +17,29 @@ from hop_design.export.construction.molecular.primitives.style import (
 def test_region_nucleotides_keep_small_type_contrast():
     for region, color in REGION_COLORS.items():
         assert contrast_ratio(base_ink(region), color) >= 4.5
-        assert base_ink(region) == "#FFFFFF"
     assert base_ink("unmapped") != "#FFFFFF"
     assert base_ink("stem", "#DED2EC") != "#FFFFFF"
+
+
+def test_compass_pastel_roles_are_shared_by_molecular_views():
+    assert REGION_COLORS == {
+        "stem": "#F9CF95",
+        "assembly": "#85BCF3",
+        "closing": "#94D3BC",
+        "loop": "#94D3BC",
+    }
+    for region in REGION_COLORS:
+        assert base_ink(region) != "#FFFFFF"
+
+
+@pytest.mark.parametrize("color", ["#1234567", "#112233extra", "#ABC", "blue"])
+def test_palette_rejects_incomplete_or_trailing_color_data(color):
+    from hop_design.export.construction.presentation.palette import MolecularPalette, pale
+
+    with pytest.raises(ValueError, match="six-digit"):
+        MolecularPalette("invalid", color, "#F9CF95", "#94D3BC")
+    with pytest.raises(ValueError, match="six-digit"):
+        pale(color)
 
 
 def test_route_transport_uses_one_short_arrow_vocabulary():
@@ -42,3 +64,31 @@ def test_larger_nucleotides_preserve_the_iupac_pitch_budget():
         assert text_width(base, size) < 16
     assert all(fitted_base_size(base, 20) == 20 for base in "ACGT")
     assert fitted_base_size("W", 20, pitch=0.1) > 0
+
+
+def test_stage_title_clears_local_content_without_following_a_distant_raised_handle():
+    from xml.etree import ElementTree as ET
+
+    from hop_design.export.construction.molecular.primitives.scene_header import attach_scene_header
+
+    ns = "{http://www.w3.org/2000/svg}"
+    root = ET.Element(ns + "g")
+    title = ET.SubElement(
+        root,
+        ns + "text",
+        {"data-stage-title": "true", "x": "500", "text-anchor": "middle", "font-size": "40"},
+    )
+    title.text = "Closed hairpin"
+    ET.SubElement(root, ns + "g", {"data-drawing-box": "440 200 120 40"})
+    ET.SubElement(root, ns + "g", {"data-drawing-box": "10 20 100 100"})
+    base = ET.SubElement(root, ns + "g", {"data-base-index": "0"})
+    ET.SubElement(base, ns + "rect", {"x": "480", "y": "214", "width": "14", "height": "20"})
+    ET.SubElement(base, ns + "text", {"x": "487", "y": "229"}).text = "A"
+    attach_scene_header(root)
+    content = next(e for e in root if e.get("data-scene-content"))
+    offset = float(content.get("data-scene-y"))
+    # A remote handle can sit above the title; the nearby molecule keeps the
+    # same 18-unit title clearance without adding a blank row across the scene.
+    assert float(title.get("y")) > 40
+    assert 200 + offset - float(title.get("y")) == 18
+    assert 20 + offset >= 0

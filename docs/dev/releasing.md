@@ -23,6 +23,11 @@ stored API token. Build and GitHub publication jobs cannot publish to PyPI.
 
 ## Publish a version
 
+After a release, advance the checkout to the next development version, such as
+`0.1.0a12.dev0` after `0.1.0a11`, and refresh `uv.lock`. Keep released checkpoint
+compatibility declarations unchanged. A new code revision needs its own qualified
+declaration before it can continue a checkpoint from a different producer.
+
 Before tagging, check that the repository Actions policy allows every external
 action in `release.yaml` at its pinned commit. Release tags cannot be updated or
 deleted. If GitHub refuses to retry a startup failure, correct its cause and use

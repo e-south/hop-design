@@ -1,9 +1,11 @@
 """Shared region names and colors link teaching geometry to parameter axes."""
 
+from .palette import BASAL, FOLDBACK, STEM, pale
+
 REGIONS = {
-    "assembly": ("Basal", "#BDD9EC"),
-    "closing": ("Foldback", "#CDE1D2"),
-    "interfaces": ("Released insert", "#E3D3B8"),
+    "assembly": ("Basal", pale(BASAL)),
+    "closing": ("Foldback", pale(FOLDBACK)),
+    "interfaces": ("Released insert", pale(STEM)),
     "whole": ("Construction", "#E3E7E8"),
 }
 

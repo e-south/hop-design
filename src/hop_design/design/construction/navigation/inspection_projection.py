@@ -8,6 +8,7 @@ import json
 from dataclasses import asdict
 from functools import partial
 
+from hop_design.export.construction.labels import atlas_state_label, endpoint_label
 from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
 from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
 from hop_design.export.construction.presentation.parameter_labels import (
@@ -21,14 +22,15 @@ from hop_design.export.construction.survey.figure_layout import figure_layout, t
 from hop_design.export.construction.survey.plot import render_survey_plot
 from hop_design.export.construction.survey.similarity import landscape_geometry
 from hop_design.export.construction.survey.traces import TraceProjection
+from hop_design.models.construction import ConstructionEndpoint
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from ..editions.preview_job import preview_job, render_preview_job
+from ..editions.preview_job import preview_job, render_preview_job, serve_preview_jobs
 from ..packets.atlas import MolecularAtlasPacket
 from .features.vocabulary import describe_parameters
 from .landscape_source import inspection_landscape
 from .local_contrast import explain_choice
-from .molecular_groups import molecular_families
+from .molecular_groups import molecular_families, molecular_population
 from .neighbor_work import NeighborWork
 from .neighbors import neighboring_preparations
 from .preview import preview_components
@@ -52,6 +54,15 @@ def inspector_packet(packet: MolecularAtlasPacket) -> MolecularAtlasPacket:
 
 
 def map_index(choices: ChoiceSource, answer: Record) -> Record:
+    from hop_design.export.construction.survey.recorded_overview import overview_map_index
+
+    from ..editions.overview import recorded_overview
+
+    overview = recorded_overview(choices, answer)
+    if overview is not None:
+        return overview_map_index(
+            overview, tuple(p["materialized_realization_id"] for p in answer["paths"])
+        )
     landscape, digest = inspection_landscape(choices, answer=answer)
     geometry = landscape_geometry(landscape)
     members = {p["materialized_realization_id"]: i for i, p in enumerate(answer["paths"])}
@@ -70,8 +81,34 @@ def map_index(choices: ChoiceSource, answer: Record) -> Record:
     }
 
 
+def inspection_explanation(choices: ChoiceSource, answer: Record) -> Record:
+    """Reuse captured query facts; live discovery retains its search-policy owner."""
+    from ..editions.reader import AtlasEdition
+    from ..variants.explanation import explain_captured_choices
+
+    if isinstance(choices, AtlasEdition):
+        return explain_captured_choices(choices.resolution, answer)
+    return choices.explain(answer["query"])
+
+
+def product_label(cost: Record | None) -> str | None:
+    """Display the measured endpoint without changing its scientific cost record."""
+    return None if cost is None else endpoint_label(ConstructionEndpoint(cost["endpoint"]))
+
+
+def stage_options(states: list[Record]) -> list[Record]:
+    """Use the export vocabulary while preserving the exact recorded state IDs."""
+    return [
+        {"value": entry["state"]["state_id"], "label": atlas_state_label(entry["state"]["phase"])}
+        for entry in states
+    ]
+
+
 class _InspectionProjection:
     type Trace = TraceProjection
+
+    product_label = staticmethod(product_label)
+    stage_options = staticmethod(stage_options)
 
     profile = sha256_digest(
         canonical_json_bytes({"figure": asdict(INSPECTOR_FIGURE), "labels": LABEL_CATALOG_DIGEST})
@@ -85,12 +122,15 @@ class _InspectionProjection:
     preview = staticmethod(partial(preview_components, profile=INSPECTOR_FIGURE))
     preview_job = staticmethod(preview_job)
     render_preview_job = staticmethod(render_preview_job)
+    serve_preview_jobs = staticmethod(serve_preview_jobs)
     scenes = staticmethod(scene_previews)
     packet = staticmethod(inspector_packet)
     explain = staticmethod(explain_choice)
+    explanation = staticmethod(inspection_explanation)
     neighbor_work = NeighborWork
     neighbors = staticmethod(neighboring_preparations)
     map = staticmethod(map_index)
     families = staticmethod(molecular_families)
+    population = staticmethod(molecular_population)
     distributions = staticmethod(render_choice_distributions)
-    axes = staticmethod(partial(render_survey_plot, include_traces=False, profile=INSPECTOR_FIGURE))
+    axes = staticmethod(partial(render_survey_plot, include_traces=True, profile=INSPECTOR_FIGURE))

@@ -83,6 +83,9 @@ def state_response(
         else None
     )
     result.update(command_context({**result, "choices": answer}, designs._directory, root))
+    atlas = result["preview"]["summary"]["atlas"] if result["preview"] else {}
+    result["product_label"] = _InspectionProjection.product_label(atlas.get("construction_cost"))
+    result["stage_options"] = _InspectionProjection.stage_options(atlas.get("states", []))
     result["can_back"] = can_back
     return result
 
@@ -121,6 +124,7 @@ def preview_response(
             preview["teaching_geometry"], projection.figure_geometry
         ),
         "trace": trace,
+        "product_label": _InspectionProjection.product_label(preview.get("construction_cost")),
         "inspection_explanation": _InspectionProjection.explain(
             state["choices"],
             identity,

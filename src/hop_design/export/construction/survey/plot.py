@@ -12,11 +12,12 @@ from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 from ..presentation.regions import REGIONS, teaching_region
 from .display_projection import append_display_metadata
 from .guide import plot_context
+from .labels import headings as draw_headings
+from .labels import node_text
 from .layout import (
     FONT,
     STATES,
     WIDTH,
-    heading_lines,
     node_geometry,
     plot_layout,
     visible_labels,
@@ -48,15 +49,18 @@ def render_survey_plot(
     presentation = present_choices(choices, display_axes=display_axes)
     layout = plot_layout(presentation, profile=profile)
     axes, frame = layout.axes, layout.frame
-    width, font = profile.width, profile.axis_font
+    width, font = layout.width, profile.axis_font
     root = ET.Element(
         f"{{{SVG}}}svg",
         {
             "viewBox": f"0 0 {width} {layout.height:g}",
             "data-axis-frame": json.dumps(asdict(frame), separators=(",", ":")),
-            "width": "7in",
+            "data-axis-landing-y": str(layout.landing_y),
+            "width": f"{profile.physical_width_pt}pt",
             "font-size": str(font),
             "font-family": "Arial, Helvetica, sans-serif",
+            "data-selected-ink": "#233c43",
+            "data-selected-fill": "#e4f0ec",
             "role": "group",
             "aria-label": "Complete paths through declared molecular parameters",
         },
@@ -107,7 +111,7 @@ def render_survey_plot(
             root,
             "rect",
             x=left,
-            y=band * frame.height + 4,
+            y=band * frame.height + frame.region_baseline - font,
             width=right - left,
             height=len(region_labels) * font + 8,
             rx=3,
@@ -133,8 +137,9 @@ def render_survey_plot(
             x2=m["x"],
             y1=frame.top + m["band"] * frame.height,
             y2=frame.bottom + m["band"] * frame.height,
-            stroke="#c0cacc",
+            stroke="#465459",
             stroke_width=0.8,
+            data_axis_line=m["definition"]["key"],
         )
     for group in sorted(
         presentation["traces"] if include_traces else [],
@@ -147,9 +152,9 @@ def render_survey_plot(
             "path",
             d=trace_commands(axes, group[0]),
             fill="none",
-            stroke="#a55236" if selected else "#4b8b83" if matching else "#aab8bb",
+            stroke="#233c43" if selected else "#4b8b83" if matching else "#aab8bb",
             stroke_width=2.3 if selected else 0.8,
-            opacity=0.95 if selected else 0.3 if matching else 0.09,
+            opacity=0.95 if selected else 0.065 if matching else 0.025,
             data_members=json.dumps([p["materialized_realization_id"] for p in group]),
             data_selected=str(selected).lower(),
             tabindex=0,
@@ -195,27 +200,7 @@ def render_survey_plot(
             role="button",
             aria_label=f"Choose {axis['label']}",
         )
-        headings = heading_lines(axis, profile=profile)
-        for i, line in enumerate(headings):
-            _element(
-                title,
-                "text",
-                line,
-                x=x,
-                y=offset + frame.heading_y + i * font,
-                text_anchor="middle",
-                fill="#263b40",
-            )
-        unit = {"positions": "pos", "contacts": "ct"}.get(axis["unit"], axis["unit"])
-        _element(
-            title,
-            "text",
-            unit,
-            x=x,
-            y=offset + frame.heading_y + 3 + len(headings) * font,
-            text_anchor="middle",
-            fill="#617277",
-        )
+        draw_headings(title, axis, x, offset, frame, profile)
         _element(title, "title", f"{axis['symbol']}: {axis['label']}. {axis['measurement']}")
         selected_values = {
             p["values"][axis["key"]]
@@ -284,7 +269,7 @@ def render_survey_plot(
                 continue
             labeled += 1
             geometry = node_geometry(axis, node, profile=profile)
-            lines, height, node_width = geometry["lines"], geometry["height"], geometry["width"]
+            height, node_width = geometry["height"], geometry["width"]
             _element(
                 node_group,
                 "rect",
@@ -299,17 +284,12 @@ def render_survey_plot(
                 stroke_width=0.8,
                 data_node_label="true",
             )
-            for j, text in enumerate(lines):
-                _element(
-                    node_group,
-                    "text",
-                    text,
-                    x=x,
-                    y=y + (j - (len(lines) - 1) / 2) * font + font * 0.35,
-                    text_anchor="middle",
-                    fill="#263b40",
-                    data_node_label="true",
-                )
+            node_text(node_group, x, y, geometry, font)
+            if profile.rotated_labels and value not in selected_values and not pinned:
+                for paint in node_group:
+                    if paint.get("data-node-label"):
+                        paint.set("opacity", ".28")
+                node_group.set("data-context-value", "true")
             if pinned:
                 _element(
                     node_group,
@@ -333,14 +313,16 @@ def render_survey_plot(
             _element(caption, "text", line, x=26, y=y, fill="#53696d", **attrs)
             y += font + 5
 
-    for text, attributes in plot_context(
-        presentation, choices.get("fully_enumerated", False), len(context)
-    ):
-        note(text, **attributes)
+    notes = plot_context(presentation, choices.get("fully_enumerated", False), len(context))
+    if profile.compact_context:
+        _element(caption, "metadata", json.dumps(notes), data_complete_plot_context="true")
+    else:
+        for text, attributes in notes:
+            note(text, **attributes)
     root.set("data-domain-values", str(total))
     root.set("data-visible-labels", str(labeled))
-    height = y + 8
+    height = layout.height if profile.compact_context else y + 8
     background.set("height", str(height))
-    root.set("viewBox", f"0 0 {width} {height}")
-    root.set("height", f"{7 * height / width}in")
+    root.set("viewBox", f"0 0 {width} {height:g}")
+    root.set("height", f"{profile.physical_width_pt * height / width}pt")
     return cast(bytes, ET.tostring(root, encoding="utf-8"))
