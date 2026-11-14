@@ -27,7 +27,8 @@ The map opens with one point per complete preparation. Hover or keyboard-focus
 previews its exact hairpin and parameter trace together; clicking or Enter pins
 it. Leaving the map or Escape restores the pinned molecule. **Show me another**
 samples the eligible pool without changing your requirements. **Fit atlas** restores
-the overview. **Atlas options** reveals parameter filtering and alternate views;
+the overview. **Atlas options → Other population views** reveals structural groups
+and population parameter traces;
 the full route and its processing controls appear after selection.
 
 **Atlas options → Discover alternatives** starts an explicit, separate discovery branch.
@@ -75,8 +76,10 @@ search coverage separately from map distances, clusters and point density.
 Nearby points compare shape, retained scaffold sequence and applicable receiving
 ends. The fixed supplied stem and auxiliary primer-handle sequences do not determine
 position. Enzyme methods remain visible in the trace.
-The inspector keeps the molecular views and exact preparation downloads together.
-**Atlas options** retains saved-view export and restoration. Detailed comparisons,
+Click a labeled molecular feature and choose **Meaning** to read its measurement
+and molecular stage. **Atlas options → Save view** downloads the current inspection;
+**Open saved view** restores it. **Download molecular record (.json)** provides the
+selected preparation's record. Detailed comparisons,
 costs, correspondence diagnostics and reproduction commands remain available in
 records, exports and the API/CLI; they are not repeated below the drawings.
 Rendering and route-composition policies remain explicit API/CLI options.
@@ -117,13 +120,13 @@ distance. Preservation checks then examine only the returned candidates and thei
 reference. To rank without those additional proofs, use
 `edition.neighbors(preparation_id, verify_controls=False)` or
 `design neighbors ... --no-verify-controls`. These results report preservation as
-unestablished. The inspector uses this faster ranking first; **Check other hairpin regions** requests verification explicitly.
+unestablished. Use `verify_controls=True` or omit `--no-verify-controls` to request
+the preservation checks.
 
 Neighbor calls have a five-second default time budget, adjustable with
 `timeout_seconds` in Python or `--timeout-seconds` on the CLI. A stopped operation
-reports an error, not an empty solution set. The inspector cancels obsolete work
-without holding the lock used for preview and closing. Cancellation takes effect
-at computation boundaries; one in-progress molecular verification can finish first.
+reports an error, not an empty solution set. Cancellation takes effect at
+computation boundaries; one in-progress molecular verification can finish first.
 
 Previewing does not select, search or change a query. The similarity figure
 exports the fixed map in `plot.svg`, the selected hairpin above its parameter
@@ -143,14 +146,6 @@ explanation. Hover or focus highlights the corresponding molecular region and
 parameter axes. The strip and explanation update together with the hairpin and
 trace. Constant fields remain in the molecular record but do not occupy the strip.
 Viewing or filtering never refits the saved comparison or coordinates.
-
-**Preparation details** gives endpoint-labelled added DNA, exact oligo-order
-quantities and changes from the reference. **Similar preparations** ranks records
-by saved molecular dissimilarity, rather than distance on the screen; verification
-of other hairpin regions remains a separate action. **View and reproduction**
-provides the saved view, renderer and route controls, CLI commands and molecular
-record. **Scope and parameter definitions** describes the recorded collection and
-measurements; it does not establish exhaustive search coverage.
 
 The teaching hairpin shows the matched hairpin-PCR primer pair; source-PCR primers
 appear with source ssDNA in the complete route.

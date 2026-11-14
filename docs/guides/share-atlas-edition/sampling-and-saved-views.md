@@ -76,8 +76,8 @@ behavior. Neither operation starts search or relaxes a requirement.
 
 ## Change a loop while keeping its surroundings
 
-Hover or focus the loop in the teaching molecule, then choose **Another loop,
-same surroundings**. HOP looks for a different loop word while preserving the
+Click the loop label in the pinned teaching molecule, or focus it and press Enter,
+then choose **Another loop**. HOP looks for a different loop word while preserving the
 other hairpin regions' sequences, contacts and terminal chemistry. Active filters
 remain in force. A fixed loop filter can therefore leave no alternative.
 
@@ -126,14 +126,16 @@ these public objects instead of importing internal models or renderers.
 
 ## Save drawing and color settings
 
-Captured artwork remains the default, including during comparison. Under
-**View and reproduction**, choose **Current glyphs** and **Grouped cleanup** to use the
-shared assembly composition. Choose **All recorded states** to display every
-recorded state. If the schema
-cannot be interpreted, HOP retains the captured drawing and reports the effective
-policy, preserving the captured molecular records.
+Use **Atlas options → Save view** to download the current inspection, and **Open
+saved view** to restore it. The browser's **Full figure** action opens the complete
+route; renderer and route-composition choices are set through the API or a saved
+view.
 
-The same choice belongs to the saved inspection:
+Captured artwork remains the default, including during comparison. For current
+glyphs with grouped cleanup, record `render_policy="current"` and
+`presentation.route="assembly"` as below. Use `"complete"` for every recorded
+state. If the schema cannot be interpreted, HOP retains the captured drawing and
+reports the effective policy, preserving the captured molecular records.
 
 ```python
 # Save a view tied to the current preparation and query.
@@ -191,7 +193,7 @@ Use a word recorded in the edition. Numeric keys are `left_gap`, `right_gap`,
 and `right_end_word`. `{"key": "none"}` records no grouping. Labels, units and
 stage meanings come from the molecular parameter catalog. Numeric scales use
 the full recorded pool, so filtering does not move colors or coordinates.
-The browser repaints color locally; **Download view** validates and records it through
+The browser repaints color locally; **Save view** validates and records it through
 the same API. `design figure --selection view.json` reproduces the colored map.
 Unknown properties, absent words and inapplicable coordinates are rejected.
 Older receipts remain readable without a saved color choice.

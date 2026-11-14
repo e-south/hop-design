@@ -7,6 +7,25 @@ from hop_design.export.construction.survey.color import molecular_colors
 from hop_design.models.construction.variants.view import parse_view_receipt
 
 
+@pytest.mark.parametrize("raw", [None, False, True, 0, 1.5, "", "saved", [], [{}]])
+def test_saved_view_rejects_non_object_roots(raw):
+    with pytest.raises(ValueError, match="Saved view must be a JSON object"):
+        parse_view_receipt(raw)
+
+
+@pytest.mark.parametrize("field", ["presentation", "exploration"])
+@pytest.mark.parametrize("raw", [False, True, 0, 1.5, "", "saved", [], [{}]])
+def test_view_options_reject_non_object_values_instead_of_defaulting(field, raw):
+    with pytest.raises(ValueError, match=f"{field.capitalize()} must be a JSON object"):
+        inspection_settings(**{field: raw})
+
+
+def test_omitted_view_options_keep_the_same_defaults_as_empty_objects():
+    assert inspection_settings(presentation=None, exploration=None) == inspection_settings(
+        presentation={}, exploration={}
+    )
+
+
 def test_browser_and_print_keep_the_shared_numeric_palette():
     import json
     import re

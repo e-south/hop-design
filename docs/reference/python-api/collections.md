@@ -95,6 +95,8 @@ or pass `design parameters --member NAME`.
 `view(selection, stage="all", reference_identity=None, camera=None)` records an
 inspection. `restore_view(receipt)` validates snapshot, membership and stage before
 returning the normalized receipt. It does not change the query or start search.
+Malformed receipts or presentation/exploration settings are rejected without
+changing caller inputs; receipt strings and `Path` values are interpreted as file paths.
 `presentation={"landscape": "similarity", "color": {"key": "left_gap"}}`
 records an edition-wide numeric color view. Exact sequence highlighting uses,
 for example, `{"key": "loop_word", "word": "AACA"}` for a recorded word.

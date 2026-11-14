@@ -17,10 +17,15 @@ a 5′ phosphate.
 2. [Discover designs around your stem](https://github.com/e-south/hop-design/blob/main/docs/guides/discover-designs.md): define the
    product, inspect a preparation, and retrieve its oligos.
 
+To return to an existing discovery directory, [reopen saved choices](https://github.com/e-south/hop-design/blob/main/docs/guides/discover-designs.md#return-to-saved-results).
+Inspect or retrieve recorded preparations without starting another search.
+
 ## Documentation
 
 - [How construction works](https://github.com/e-south/hop-design/blob/main/docs/start/mental-model.md): inputs, construction steps and
   search limits.
+- [Navigate a molecular map](https://github.com/e-south/hop-design/blob/main/docs/guides/share-atlas-edition/molecular-map.md): capture
+  fixed coordinates, then browse complete preparations and their materials.
 - [Task index](https://github.com/e-south/hop-design/blob/main/docs/index.md), [CLI commands](https://github.com/e-south/hop-design/blob/main/docs/reference/cli.md), and
   [Python API](https://github.com/e-south/hop-design/blob/main/docs/reference/python-api.md).
 - For sequence anatomy without a preparation route, [compile an exact or DNA

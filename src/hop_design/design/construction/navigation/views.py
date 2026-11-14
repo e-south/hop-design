@@ -25,6 +25,14 @@ from .landscape_source import landscape_digest as saved_landscape_digest
 from .types import Camera, ChoiceSource, Record
 
 
+def _view_mapping(value: Record | None, label: str) -> Record:
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be a JSON object.")
+    return value
+
+
 def inspection_settings(
     *,
     presentation: Record | None = None,
@@ -32,17 +40,19 @@ def inspection_settings(
     choices: ChoiceSource | None = None,
 ) -> Record:
     """Validate presentation independently of selection or molecular identity."""
+    presentation = _view_mapping(presentation, "Presentation")
+    exploration = _view_mapping(exploration, "Exploration")
     settings = {
         "presentation": (
             ColoredAtlasPresentation
-            if "color" in (presentation or {})
+            if "color" in presentation
             else ProjectedAtlasPresentation
-            if "display_axes" in (presentation or {})
+            if "display_axes" in presentation
             else AtlasPresentation
         )
-        .model_validate_json(json.dumps(presentation or {}))
+        .model_validate_json(json.dumps(presentation))
         .model_dump(mode="json"),
-        "exploration": AtlasExploration.model_validate(exploration or {}).model_dump(mode="json"),
+        "exploration": AtlasExploration.model_validate(exploration).model_dump(mode="json"),
     }
     if choices is not None and "color" in settings["presentation"]:
         validate_color(choices, AtlasColorLens.model_validate(settings["presentation"]["color"]))
@@ -60,14 +70,14 @@ def view_receipt(
     exploration: Record | None = None,
     render_policy: str = "captured",
 ) -> Record:
-    if (presentation or {}).get("landscape") == "similarity" and not has_molecular_landscape(
-        choices
-    ):
+    presentation = _view_mapping(presentation, "Presentation")
+    exploration = _view_mapping(exploration, "Exploration")
+    if presentation.get("landscape") == "similarity" and not has_molecular_landscape(choices):
         raise ValueError("Create or capture molecular coordinates before saving a similarity view.")
     index = _view_membership(choices)
     landscape_digest = (
         saved_landscape_digest(choices, answer=index)
-        if (presentation or {}).get("landscape") == "similarity"
+        if presentation.get("landscape") == "similarity"
         else None
     )
     raw = {
@@ -76,8 +86,8 @@ def view_receipt(
         "stage": stage,
         "reference_identity": reference_identity,
         "camera": camera,
-        "presentation": presentation or {},
-        "exploration": exploration or {},
+        "presentation": presentation,
+        "exploration": exploration,
         "render_policy": render_policy,
         **(
             {"schema": "hop.atlas-view/v3", "landscape_digest": landscape_digest}
@@ -85,9 +95,9 @@ def view_receipt(
             else {}
         ),
     }
-    if "display_axes" in (presentation or {}):
+    if "display_axes" in presentation:
         raw["schema"] = "hop.atlas-view/v4"
-    if "color" in (presentation or {}):
+    if "color" in presentation:
         raw["schema"] = "hop.atlas-view/v5"
     view = parse_view_receipt(json.loads(canonical_json_bytes(raw)))
     return _validated_view(choices, view, index, landscape_digest)
