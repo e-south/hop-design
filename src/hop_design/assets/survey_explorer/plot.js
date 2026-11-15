@@ -26,9 +26,16 @@ export function plotDrawing(drawing, contextText=()=>{}) {
   }
   return svg;
 }
-export function drawPlot(container, choices, drawing, actions) {
+export function drawPlot(container, choices, drawing, actions, {compactSequences=false}={}) {
   const svg=plotDrawing(drawing,actions.context);
   const axes = new Map(choices.axes.map((axis) => [axis.key, axis]));
+  if(compactSequences) {
+    // Keep readable values and query pins; dense domain ticks add an opaque
+    // stripe at inspector width. Remove them before keyboard targets bind.
+    for(const node of svg.querySelectorAll('[data-node-value]'))
+      if(axes.get(node.dataset.parameter)?.representation==='sequence' &&
+          !node.querySelector('[data-node-label],[data-query-pin]'))node.remove();
+  }
   const records = new Map();
   for (const record of choices.paths) {
     if (!records.has(record.materialized_realization_id))

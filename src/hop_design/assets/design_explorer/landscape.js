@@ -19,7 +19,6 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
     if(ids===null&&!(keys||[]).length)ids=pinnedFocus;
     const focus = ids === null ? null : index.focus(ids);
     marks?.focus(focus);
-    context?.style?.setProperty("--trace-focus-opacity",String(Math.min(.15,4/Math.max(1,focus?.preparations.length??1)**.8)));
     indexed.focus(ids);
     // Point inspection identifies a preparation; only explicit axis/region focus
     // should decorate molecular parameters throughout the route.
@@ -75,7 +74,6 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
   function draw(next, view=mode) {
     picker.dismiss(false,false);state=next;mode=view;members.hidden=true;
     const key=next.plots.inspection;
-    context?.style?.setProperty("--trace-opacity",String(Math.min(.03,4/Math.max(1,next.choices.paths.length)**.8)));
     if((next.cohort??key)!==cohortKey) {index=preparationIndex(state);cohortKey=next.cohort??key;pinnedFocus=null;}
     // The caller commits the selected overlay after these axes are mounted.
     // Clearing transient marks here must not restore a preview into old axes.
@@ -90,7 +88,7 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
     root.classList.toggle('family-context',mode==='families');
     root.classList.toggle('similarity-context',mode==='similarity');
     const traceChanged=traceScene.update(key,()=>{
-      drawPlot(context,state.choices,state.plot_svg,actions);
+      drawPlot(context,state.choices,state.plot_svg,actions,{compactSequences:true});
       return null;
     });
     const compact=mode==='similarity'&&next.map_index;

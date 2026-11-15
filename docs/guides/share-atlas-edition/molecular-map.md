@@ -26,8 +26,8 @@ hop-design design view molecular-edition --out inspection
 The map opens with one point per complete preparation. Hover or keyboard-focus
 previews its exact hairpin and parameter trace together; clicking or Enter pins
 it. Leaving the map or Escape restores the pinned molecule. **Show me another**
-samples the eligible pool without changing your requirements. **Fit atlas** restores
-the overview. **Atlas options** opens saved-view and filter controls.
+samples the eligible pool without changing your requirements. **Fit atlas** (diagonal arrows) restores
+the overview. **Atlas options** (gear) opens saved-view and filter controls.
 The full route and its processing controls appear after selection.
 
 Generate or extend results through the [discovery CLI/API](../discover-designs.md),
