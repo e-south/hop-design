@@ -45,7 +45,9 @@ def node_geometry(
     axis: dict[str, Any], node: dict[str, Any], *, profile: FigureProfile = PUBLICATION_FIGURE
 ) -> dict[str, Any]:
     """One label contour for the static figure and its exact inspection overlay."""
-    lines = [node_label(axis, node)] if profile.rotated_labels else node_lines(axis, node)
+    lines = node.get("display_lines") or (
+        [node_label(axis, node)] if profile.rotated_labels else node_lines(axis, node)
+    )
     return {
         "lines": lines,
         "width": max(
@@ -68,6 +70,8 @@ def heading_lines(
 
 def compact_heading(axis: dict[str, Any]) -> str:
     """Context comes from the region strip; canonical titles remain attached."""
+    if axis.get("heading_label"):
+        return str(axis["heading_label"])
     label = axis.get("label", axis["symbol"])
     unit = {"positions": "pos", "contacts": "ct"}.get(axis["unit"], axis["unit"])
     return str(label) + (f" ({unit})" if unit else "")

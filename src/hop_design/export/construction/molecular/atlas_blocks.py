@@ -15,7 +15,7 @@ from .parameter_boundaries import mark_parameter_locations
 from .primitives.annotation_policy import FootprintScope, RouteSiteLabels
 from .primitives.extent import scene_extent
 from .primitives.inputs import draw_inputs
-from .primitives.operations import draw_operation
+from .primitives.operations import center_operation, draw_operation
 from .primitives.scene_header import attach_scene_header
 from .primitives.style import ANNOTATION_SIZE, TITLE_SIZE, base_ink, object_id
 
@@ -169,5 +169,9 @@ def route_blocks(
                 )
         root.set("data-atlas-width", str(width))
         root.set("data-atlas-height", str(height))
+        if scene.transition_indices:
+            # Isolated browser scenes have no surrounding plate to position
+            # this arrow. Balance it within the same measured step boundary.
+            center_operation(root, height)
         blocks.append(RouteBlock(root, BlockExtent(width, height, anchor, state.state.phase.value)))
     return tuple(blocks)

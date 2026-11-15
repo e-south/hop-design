@@ -61,7 +61,9 @@ export function drawPlot(container, choices, drawing, actions, {compactSequences
     const value = JSON.parse(group.dataset.nodeValue);
     const description = group.querySelector("title").textContent;
     group.setAttribute("aria-label", description);
-    activate(group, () => actions.value(axis.key, value));
+    activate(group, () => axis.read_only
+      ? actions.path([...records.values()].filter(row=>row.values[axis.key]===value))
+      : actions.value(axis.key, value));
     group.addEventListener("pointerenter", () => actions.focus(axis, description, value));
     group.addEventListener("focus", () => actions.focus(axis, description, value));
   }
@@ -81,7 +83,9 @@ export function drawPlot(container, choices, drawing, actions, {compactSequences
     });
     hit.addEventListener("pointerup", (event) => {
       if (start !== null) {
-        actions.range(hit.dataset.brushAxis, start, nearest(event));
+        const key=hit.dataset.brushAxis,end=nearest(event);
+        if(axes.get(key).read_only)actions.path([...records.values()].filter(row=>row.values[key]>=Math.min(start,end)&&row.values[key]<=Math.max(start,end)));
+        else actions.range(key, start, end);
         start = null;
       }
     });

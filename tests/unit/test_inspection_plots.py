@@ -12,7 +12,7 @@ from hop_design.commands.design.inspection_plots import InspectionPlots
 @pytest.fixture(autouse=True)
 def axes_stub(monkeypatch):
     # These tests own cache lifetime; shared renderer geometry has separate tests.
-    monkeypatch.setattr(_InspectionProjection, "axes", lambda answer: b"x" * 20)
+    monkeypatch.setattr(_InspectionProjection, "axes", lambda answer, **kwargs: b"x" * 20)
 
 
 class Choices:
@@ -175,3 +175,36 @@ def test_default_cache_accepts_a_medium_compact_cohort(tmp_path, monkeypatch):
     finally:
         plots.close()
     assert not plots.root.exists()
+
+
+def test_compact_plot_and_selected_overlay_use_the_same_x_fields(tmp_path, monkeypatch):
+    from tests.unit.test_survey_plot_comparison_trace import choices as rows
+    from tests.unit.test_survey_plot_comparison_trace import packet
+
+    monkeypatch.setattr(
+        _InspectionProjection, "population", lambda *a, **k: {"summary": {}, "distributions": {}}
+    )
+    monkeypatch.setattr(_InspectionProjection, "display", lambda answer: answer)
+    monkeypatch.setattr(_InspectionProjection, "map", lambda *args: {"comparison": packet()})
+    monkeypatch.setattr(_InspectionProjection, "distributions", lambda value: b"<svg/>")
+    choices = Choices()
+    choices.resolution = {"intent": {"product": "hairpin"}}
+    view = state("similarity")
+    view["choices"] = rows()
+    plots = InspectionPlots(tmp_path)
+    try:
+        result = plots.get(choices, view, compact=True)
+        assert result["compact"]["choices"]["axes"] == view["choices"]["axes"]
+        assert [a["key"] for a in result["compact"]["choices"]["trace_axes"]] == packet()[
+            "presentation"
+        ]["display_order"]
+        projection = plots.projection(view["choices"])
+        assert [v["label"] for v in projection.trace("a")["values"]] == [
+            "Basal pattern",
+            "Loop length",
+        ]
+        assert projection.figure_geometry["parameter_aliases"]["sequences.basal_pairs"] == [
+            "open_side_paired_positions"
+        ]
+    finally:
+        plots.close()

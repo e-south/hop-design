@@ -110,6 +110,24 @@ def test_ordinary_transition_is_centered_between_content_and_next_title(atlas):
         assert arrow_top - bottom >= 18 - 1e-6
 
 
+def test_isolated_scene_centers_its_operation_above_the_next_step_boundary(atlas):
+    from hop_design.export.construction.molecular.atlas_blocks import route_blocks
+    from hop_design.export.construction.molecular.primitives.extent import scene_bounds
+    from hop_design.export.construction.molecular.primitives.typography import text_width
+
+    for block in route_blocks(atlas, None, []):
+        row = block.element
+        if not row.get("data-transition-ids") or any(e.get("data-atlas-input") for e in row.iter()):
+            continue
+        scene = next(e for e in row if e.get("data-scene-content"))
+        arrow = next(e for e in row if e.get("data-operation-arrow"))
+        label = next(e for e in row if e.get("data-operation"))
+        x, y, width, height = map(float, arrow.get("data-drawing-box").split())
+        right = float(label.get("x")) + text_width(label.text, float(label.get("font-size")))
+        _, top, _, content_height = scene_bounds(scene, horizontal_span=(x, max(x + width, right)))
+        assert y - top - content_height == pytest.approx(block.extent.height - y - height)
+
+
 def _base_points(root, state):
     elements = {
         (e.get("data-strand-id"), int(e.get("data-base-index"))): e

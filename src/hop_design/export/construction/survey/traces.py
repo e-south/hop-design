@@ -56,6 +56,10 @@ class TraceProjection:
                 if a["band"] == 0
             },
         }
+        if choices.get("comparison_trace"):
+            self.figure_geometry["parameter_aliases"] = {
+                a["definition"]["key"]: a["definition"].get("parameters", []) for a in self.axes
+            }
         self.projection = sha256_digest(
             canonical_json_bytes(
                 {
@@ -98,6 +102,11 @@ class TraceProjection:
                 {
                     "key": key,
                     "label": definition["label"],
+                    **(
+                        {"parameters": definition["parameters"]}
+                        if definition.get("parameters")
+                        else {}
+                    ),
                     "value": value,
                     "display": node_label(definition, self._nodes[key][value]),
                     "node_label": node_geometry(

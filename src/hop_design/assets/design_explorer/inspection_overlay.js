@@ -54,6 +54,7 @@ export function inspectionOverlay(host) {
           ![geometry.width,geometry.height,value.x,value.y].every(Number.isFinite) ||
           geometry.width<=0 || geometry.height<=0) throw Error('Molecular trace lacks shared label geometry.');
         const label=document.createElementNS(ns,'g');label.dataset.inspectionParameter=value.key;
+        if(value.parameters)label.dataset.parameterKeys=JSON.stringify(value.parameters);
         label.setAttribute('aria-label',`${value.label}: ${value.display}${value.unit?' '+value.unit:''}`);
         const rect=document.createElementNS(ns,'rect');
         const box={x:value.x-geometry.width/2,y:value.y-geometry.height/2,width:geometry.width,height:geometry.height};

@@ -6,6 +6,16 @@ HOP discovers complete hairpin preparations around a supplied stem. This roadmap
 maps the current checkout's capabilities and remaining work. For an installed
 release, use its tagged documentation and record the runtime identity.
 
+## Open correctness issue
+
+`source_cleanup` currently verifies fragment-length limits only when recovering
+an extra actionable-site conflict. Ordinary accepted candidates bypass that
+certificate. Apply the declared removal rule to every candidate that requests
+cleanup, preserving exact survivors and reporting expected infeasibility through
+the shared CLI/API. A successful ordinary compilation alone does not establish
+the requested fragment-length selection. The owning implementation is
+`design/construction/execution/cleanup.py`.
+
 ## Current workflows
 
 The current workflows include complete scaffold discovery, stage-specific

@@ -75,7 +75,7 @@ def initial_state(
         "landscape": "similarity" if choices.has_landscape else "families"
     }
     axes = _InspectionProjection.display_axes(answer)
-    if axes:
+    if axes and not choices.has_landscape:
         presentation["display_axes"] = axes
     return {
         "mode": "design",

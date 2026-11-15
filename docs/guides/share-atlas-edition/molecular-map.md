@@ -42,6 +42,13 @@ figures share molecular glyphs, with separate layouts for inspector and print
 widths. Print exports include a full-resolution route plate and readable
 continuation pages; the recorded physical dimensions show the effect of scaling.
 
+The parallel plot uses the same field names and order as X, including its basal
+and loop-side pairing patterns. Each pattern value shows its two ordered base
+rows; inspecting X reveals the exact contact classes. Clicking a plotted value
+opens its recorded preparations. The default similarity-figure export uses this
+same comparison trace. Explicit API/CLI `display_axes` still selects a custom
+preparation-parameter plot.
+
 Below the preparation, **Choice frequencies** counts recorded preparations using
 each parameter value or oligo material. Choose a component, hover a bar to
 highlight its preparations in the map and parameter traces, or click to keep
