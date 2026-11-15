@@ -5,19 +5,18 @@
 import {frequencyIndex} from './choice_frequencies_model.js';
 
 export function choiceFrequencies(host,onFocus) {
-  const select=host.querySelector('select'),chart=host.querySelector('[data-frequency-chart]'),summary=host.querySelector('[data-frequency-summary]'),clear=host.querySelector('button');
+  const select=host.querySelector('select'),chart=host.querySelector('[data-frequency-chart]'),clear=host.querySelector('button');
   let choices=null,index=null,pinned=null;
   const ns='http://www.w3.org/2000/svg';
   function svg(tag,attrs={},text=null) {
     const node=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);
     if(text!==null)node.textContent=text;return node;
   }
-  function restore(){onFocus(pinned?.members??null,{pin:Boolean(pinned)});if(index&&select.value)summary.textContent=pinned?`${pinned.count.toLocaleString()} recorded preparations · ${pinned.eligible.toLocaleString()} eligible · highlight kept`:`${index.profile(select.value).choices.toLocaleString()} distinct values · ${choices.paths.length.toLocaleString()} recorded preparations`;}
+  function restore(){onFocus(pinned?.members??null,{pin:Boolean(pinned)});}
   function highlight(row,pin=false) {
     if(pin)pinned=pinned?.key===row.key?null:row;
     const value=pin?pinned:row;onFocus(value?.members??null,{pin});clear.hidden=!pinned;
     for(const node of chart.querySelectorAll('[data-frequency-row]'))node.setAttribute('aria-pressed',String(node.dataset.frequencyRow===pinned?.key));
-    summary.textContent=value?`${value.count.toLocaleString()} recorded preparations · ${value.eligible.toLocaleString()} eligible${value.key===pinned?.key?' · highlight kept':''}`:`${index.profile(select.value).choices.toLocaleString()} distinct values · ${choices.paths.length.toLocaleString()} recorded preparations`;
   }
   function reset(){pinned=null;onFocus(null,{pin:true});clear.hidden=true;}
   function draw() {
@@ -32,14 +31,14 @@ export function choiceFrequencies(host,onFocus) {
     const step=size/Math.max(rows.length,1);
     for(const [i,row] of rows.entries()) {
       const y=top+(i+.5)*step,width=size*row.count/Math.max(profile.total,1);
-      const group=svg('g',{'data-frequency-row':row.key,role:'button',tabindex:0,'aria-pressed':String(pinned?.key===row.key),'aria-label':`${row.label}: ${row.count} preparations; ${row.eligible} eligible. Click to keep highlight.`});
-      group.append(svg('title',{},`${row.label}\n${row.count.toLocaleString()} preparations; ${row.eligible.toLocaleString()} eligible`),svg('rect',{x:0,y:y-step/2,width:510,height:step,fill:'transparent'}),svg('text',{x:left-9,y:y+4.5,'text-anchor':'end','font-size':13,fill:'#203b43'},row.label.length>23?row.label.slice(0,22)+'…':row.label),svg('line',{x1:left-4,x2:left,y1:y,y2:y,stroke:'#627477'}),svg('rect',{x:left,y:y-step*.3,width:Math.max(width,.8),height:step*.6,fill:row.other?'#cad5d3':'#0072B2'}),svg('text',{x:left+width+6,y:y+4.5,'font-size':13,fill:'#203b43'},row.count.toLocaleString()));
+      const group=svg('g',{'data-frequency-row':row.key,role:'button',tabindex:0,'aria-pressed':String(pinned?.key===row.key),'aria-label':`${row.label}: ${row.count} preparations; ${row.eligible} matching filters. Click to keep highlight.`});
+      group.append(svg('title',{},`${row.label}\n${row.count.toLocaleString()} preparations; ${row.eligible.toLocaleString()} matching filters`),svg('rect',{x:0,y:y-step/2,width:510,height:step,fill:'transparent'}),svg('text',{x:left-9,y:y+4.5,'text-anchor':'end','font-size':13,fill:'#203b43'},row.label.length>23?row.label.slice(0,22)+'…':row.label),svg('line',{x1:left-4,x2:left,y1:y,y2:y,stroke:'#627477'}),svg('rect',{x:left,y:y-step*.3,width:Math.max(width,.8),height:step*.6,fill:row.other?'#cad5d3':'#0072B2'}),svg('text',{x:left+width+6,y:y+4.5,'font-size':13,fill:'#203b43'},row.count.toLocaleString()));
       for(const event of ['pointerenter','focus'])group.addEventListener(event,()=>highlight(row));
       group.addEventListener('click',()=>highlight(row,true));
       group.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();highlight(row,true);}});
       drawing.append(group);
     }
-    chart.replaceChildren(drawing);summary.textContent=`${profile.choices.toLocaleString()} distinct values · ${profile.total.toLocaleString()} recorded preparations`;
+    chart.replaceChildren(drawing);
   }
   const change=()=>{reset();draw();},leave=restore,focusout=e=>{if(!chart.contains(e.relatedTarget))restore();},escape=e=>{if(e.key==='Escape'){
     e.preventDefault();e.stopPropagation();reset();

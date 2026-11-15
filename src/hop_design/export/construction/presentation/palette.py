@@ -32,6 +32,19 @@ BASAL, STEM, FOLDBACK = (
     MOLECULAR_PALETTE.foldback,
 )
 NUMERIC_BLUE = ("#66A8ED", "#338DE9", "#0073E6", "#0056AA", "#0C2043")
+NUMERIC_DIVERGING = (
+    "#313695",
+    "#4575B4",
+    "#74ADD1",
+    "#ABD9E9",
+    "#E0F3F8",
+    "#FFFFBF",
+    "#FEE090",
+    "#FDAE61",
+    "#F46D43",
+    "#D73027",
+    "#A50026",
+)
 POPULATION_ACCENT = NUMERIC_BLUE[2]
 
 

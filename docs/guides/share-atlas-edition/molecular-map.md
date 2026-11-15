@@ -27,31 +27,11 @@ The map opens with one point per complete preparation. Hover or keyboard-focus
 previews its exact hairpin and parameter trace together; clicking or Enter pins
 it. Leaving the map or Escape restores the pinned molecule. **Show me another**
 samples the eligible pool without changing your requirements. **Fit atlas** restores
-the overview. **Atlas options → Other population views** reveals structural groups
-and population parameter traces;
-the full route and its processing controls appear after selection.
+the overview. **Atlas options** opens saved-view and filter controls.
+The full route and its processing controls appear after selection.
 
-**Atlas options → Discover alternatives** starts an explicit, separate discovery branch.
-Its request uses the same exact-stem JSON as the API and CLI, initialized with the
-collection's recorded permissions. Set an evaluation budget, then start the search.
-The default omits preparation-order references owned by the original discovery.
-To reuse one deliberately, add `prefer_preparation` with paths valid from the
-launch directory; HOP verifies and captures those files for the new branch.
-Progress counts committed evaluations within that invocation, not a percentage
-of molecular space. You can keep inspecting the original atlas while it runs.
-
-**Stop** requests a cooperative stop after the current evaluation. Saved work
-remains available, and **Continue saved search** appears when continuation is
-supported. **Inspect results** explicitly opens a finished, nonempty branch in
-this tab. HOP verifies the saved choices and prepares their drawings before
-switching; admission failure leaves the original inspector intact. The existing
-pin is retained when it belongs to the new pool; otherwise HOP selects a
-reproducible example. New results open as structural groups, without fitting UMAP.
-The original edition and saved view remain unchanged on disk; reopen them to
-return. A public CLI command also opens the saved branch independently.
-Search directories stay under the inspection output. Closing the local server
-stops and reaps its worker. This control supports exact-stem discovery; use the existing
-CLI/API workflows for families or staged revisions.
+Generate or extend results through the [discovery CLI/API](../discover-designs.md),
+then open the saved collection in the browser.
 
 The map stays in place while the side inspector scrolls. Its first figure pairs
 the exact hairpin with the parameter trace; processing scenes load as they enter
@@ -67,8 +47,7 @@ highlight its preparations in the map and parameter traces, or click to keep
 that highlight. **Clear highlight** or Escape removes it. These highlights do
 not change filters or select a preparation. The last bar groups choices outside
 the twelve most frequent; its highlight includes every preparation in that group.
-Counts include recorded preparations outside the current filters, with the
-eligible count shown separately.
+Bar counts include all recorded preparations, including those outside the current filters.
 
 The molecular map arranges recorded preparations for navigation. Read the saved
 search coverage separately from map distances, clusters and point density.

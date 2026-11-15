@@ -103,10 +103,8 @@ hop-design design parameters atlas-edition
 ```
 
 The same local viewer opens live hairpin choices, insert choices and frozen editions.
-**Show me another** samples a complete eligible preparation. **Atlas options →
-Other population views → Structural groups** changes the landscape view;
-**Full figure** focuses the route. Neither action
-changes the request. Filtering to an empty set leaves the last molecule visible
+**Show me another** samples a complete preparation matching the filters.
+**Full figure** focuses its route. These actions leave the request unchanged. Filtering to an empty set leaves the last molecule visible
 as outside the query, with retrieval disabled. Clear the filters to recover it.
 
 The inspector opens with a compact shape/interface trace: basal

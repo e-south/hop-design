@@ -47,7 +47,7 @@ def landscape_geometry(landscape: MolecularLandscape) -> dict[str, Any]:
         right = max(p["x"] for p in points) + mark_radius
         top = min(p["y"] for p in points) - mark_radius
         bottom = max(p["y"] for p in points) + mark_radius
-        padding = max(12, max(right - left, bottom - top) * 0.08)
+        padding = max(12, max(right - left, bottom - top) * 0.04)
         frame = [
             left - padding,
             top - padding,

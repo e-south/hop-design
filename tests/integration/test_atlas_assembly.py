@@ -571,7 +571,7 @@ def test_teaching_profiles_share_one_primer_and_site_annotation_tier(loop_pool, 
     assert not any(e.get("font-weight") == "600" for e in root.iter())
 
 
-def test_late_route_omits_discarded_handle_footprint_ink_but_retains_site_records(atlas):
+def test_late_route_keeps_mapped_handle_footprints_and_site_records(atlas):
     from hop_design.export.construction.molecular.inspection_layout import inspection_points
     from hop_design.export.construction.molecular.recognition_sites import recognition_site_overlays
 
@@ -595,9 +595,7 @@ def test_late_route_omits_discarded_handle_footprint_ink_but_retains_site_record
         )
     ]
     assert foldback
-    assert all(
-        not any(e.get("data-recognition-footprint") for e in site.iter()) for site in foldback
-    )
+    assert all(any(e.get("data-recognition-footprint") for e in site.iter()) for site in foldback)
     assert len([e for e in root if e.get("data-site-id")]) == len(selected.recognition_sites)
 
 
@@ -620,7 +618,7 @@ def test_hairpin_pcr_connector_uses_vertical_legs_and_rounded_orthogonal_turns(a
     )
 
 
-def test_route_quiets_spent_sites_but_retains_every_recognition_record(atlas):
+def test_route_keeps_mapped_sites_visible_at_every_processing_stage(atlas):
     root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
     quiet = {
         "selected_fragments",
@@ -635,7 +633,11 @@ def test_route_quiets_spent_sites_but_retains_every_recognition_record(atlas):
             s.site_id for s in state.recognition_sites
         }
         if state.state.phase.value in quiet:
-            assert not any(e.get("data-recognition-footprint") for e in stage.iter())
+            assert all(
+                bool(e.get("data-recognition-addresses") != "[]")
+                == any(n.get("data-recognition-footprint") for n in e.iter())
+                for e in sites
+            )
         if state.state.phase.value in {
             "source_ssdna",
             "duplex",

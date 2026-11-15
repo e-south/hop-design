@@ -35,7 +35,7 @@ def route_blocks(
     *,
     site_labels: RouteSiteLabels = "narrative",
     presentation: RoutePresentation = "complete",
-    footprint_scope: FootprintScope = "processing",
+    footprint_scope: FootprintScope = "structural",
     state_ids: tuple[str, ...] | None = None,
 ) -> tuple[RouteBlock, ...]:
     roster = assembly_scenes(atlas, presentation)

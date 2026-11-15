@@ -25,7 +25,7 @@ def recognition_site_overlays(
     label_size: int = ANNOTATION_SIZE,
     strand_labels: bool = False,
     site_leaders: bool = True,
-    footprint_scope: FootprintScope = "processing",
+    footprint_scope: FootprintScope = "structural",
 ) -> str:
     if site_labels not in ("all", "operations"):
         raise ValueError("Unknown site-label policy.")
@@ -46,6 +46,8 @@ def recognition_site_overlays(
             points_right = (path[-1][0] > path[0][0]) == (site.orientation == "forward")
             direction = "right" if points_right else "left"
         painted = visible_footprint(projection, site.role, scope=footprint_scope)
+        reference_count = getattr(site, "reference_base_count", 2 * len(site.recognition))
+        mapped_count = getattr(site, "mapped_reference_bases", len(site.recognition))
         addresses = escape(
             json.dumps([(a.strand_id, a.index) for a in site.recognition]), quote=True
         )
@@ -65,7 +67,8 @@ def recognition_site_overlays(
         }.get(site.site_id, site.role.replace("_", " "))
         rows.append(
             f"<title>{escape(site.enzyme_name)}; {role}; {site.orientation}; "
-            f"{site.presence}; substrate eligibility: {site.substrate_eligibility}</title>"
+            f"{site.presence}; {mapped_count} of {reference_count} precursor bases "
+            f"mapped to this state</title>"
         )
         members = [(a.strand_id, a.index) for a in site.recognition]
         boxes = []

@@ -166,6 +166,19 @@ def validate_color(
 
     if lens.key == "none":
         return
+    if lens.key == "released_non_stem_nt":
+        if isinstance(choices, AtlasEdition):
+            if choices._inspection_context is None:
+                choices.query()
+            assert choices._inspection_context is not None
+            rows = (json.loads(raw) for raw in choices._inspection_context.rows.values())
+        else:
+            rows = iter((index if index is not None else choices.query())["paths"])
+        if not any(
+            lens.value_in(p["values"], overhead=p.get("overhead")) is not None for p in rows
+        ):
+            raise ValueError("Released-insert color requires recorded strand nucleotide counts.")
+        return
     values = (
         (json.loads(raw) for rows in choices._selection_index.coordinates.values() for raw in rows)
         if isinstance(choices, AtlasEdition)

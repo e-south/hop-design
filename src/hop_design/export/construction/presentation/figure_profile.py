@@ -26,6 +26,8 @@ class FigureProfile:
     rotated_labels: bool = False
     physical_width_pt: float = 504
     node_padding: int = 4
+    minimum_axis_gap: float = 2
+    heading_pitch_em: float = 0
     region_strip: Literal["above", "below"] = "above"
 
     def __post_init__(self) -> None:
@@ -62,6 +64,8 @@ INSPECTOR_FIGURE = FigureProfile(
     heading_columns=10,
     stable_teaching_slot=True,
     region_strip="below",
+    minimum_axis_gap=6,
+    heading_pitch_em=1.6,
 )
 
 

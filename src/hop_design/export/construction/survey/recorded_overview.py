@@ -63,7 +63,7 @@ def overview_geometry(overview: PreparationOverview) -> dict[str, Any]:
         )
     left, right = min(p["x"] for p in points) - radius, max(p["x"] for p in points) + radius
     top, bottom = min(p["y"] for p in points) - radius, max(p["y"] for p in points) + radius
-    padding = max(12, max(right - left, bottom - top) * 0.08)
+    padding = max(12, max(right - left, bottom - top) * 0.04)
     return {
         "points": points,
         "radius": radius,

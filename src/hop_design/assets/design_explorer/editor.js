@@ -17,7 +17,6 @@ import {validateInspectionFacts} from './inspection_facts.js';
 import {routeScenes} from './route_scenes.js';
 import {resizableInspector} from './inspector_resize.js';
 import {comparisonStrip} from './comparison_features.js';
-import {discoveryControls} from './discovery.js';
 import {choiceFrequencies} from './choice_frequencies.js';
 
 const $ = id => document.getElementById(id), token = document.querySelector('meta[name=hop-token]').content;
@@ -32,9 +31,6 @@ const artifacts=artifactLoader();
 const loading=inspectionLoading($);
 const scenes=routeScenes($('route-scenes'),$('inspector-scroll'),job=>post('scenes',{materialized_realization_id:job.identity,phases:job.phases}),artifacts,$('route-progress'));
 const resizing=resizableInspector($('object'),$('inspector'),$('inspector-scroll'),$('inspector-resize'),()=>{connect();scenes.refresh();},()=>showHover(null));
-const discovery=discoveryControls($,post,{inspect:async job_id=>{
-  if(!await act('inspect-discovery',{job_id}))throw Error($('status').textContent||'Finish the current drawing update before opening results.');
-}});
 const mapView=mapCamera($('plot'),$('fit-map'));
 const raster=mapRaster($('plot'));
 const local=localChoices($('molecular-area'),{
@@ -68,7 +64,7 @@ function svgDocument(text) {
   return doc.documentElement;
 }
 function pinnedPreviewLabel() {
-  return state?.preview_status==='excluded_by_query'?'Preview · outside current filters':'Preparation';
+  return state?.preview_status==='excluded_by_query'?'Preview · outside current filters':'';
 }
 function clearHoverDrawing() {
   hoverLayout=null;$('hover-molecule').hidden=true;$('hover-molecule').replaceChildren();
@@ -87,7 +83,7 @@ const hover=hoverPreview(async id=>{
   validateFigureLayout(value.figure_layout);
   return ()=>{
     hoverLayout=value.figure_layout;$('hover-molecule').replaceChildren(a);$('hover-molecule').hidden=false;trace();
-    $('preview-label').textContent=value.eligible?'Preparation':'Preview · outside current filters';
+    $('preview-label').textContent=value.eligible?'':'Preview · outside current filters';
     $('molecular-area').classList.add('previewing');transient.show();$('inspector').hidden=false;
     sceneCommit();comparisonCommit();
     connect();
@@ -160,7 +156,7 @@ function pendingControls() {
   $('retry-render').hidden=!rendering.blocked;
   document.body.classList.toggle('render-pending',rendering.blocked);
   if(rendering.blocked) {
-    for(const id of ['another','back','retrieve','bookmark','open-view','stage','route-view','family-stage','clear','similarity','parameters','families']) {
+    for(const id of ['another','back','retrieve','bookmark','open-view','stage','route-view','clear']) {
       const control=$(id);if(!suspendedControls.has(control)) suspendedControls.set(control,control.disabled);control.disabled=true;
     }
     $('status').textContent='Preparation saved. Retry loading its drawing.';
@@ -220,14 +216,8 @@ async function render(next,restore=false) {
   else views.clear();
   clearHoverDrawing();
   state=next;scenes.pin(state);
-  discovery.update(state);
   pinnedComparison=comparisonCommit;pinnedComparison();
   mode=state.presentation.landscape;
-  for(const id of ['parameters','families','similarity']) $(id).setAttribute('aria-pressed',String(id===mode));
-  $('similarity').disabled=!state.has_landscape;
-  $('map-scope').textContent=state.has_landscape?'Map proximity reflects molecular shape, retained sequence and assembly ends. Filtering leaves coordinates fixed.':'This collection has no saved map coordinates. Structural groups remain available.';
-  $('family-stage-label').hidden=mode!=='families';
-  if(mode!=='similarity')$('alternate-views').open=true;
   $('selection-actions').hidden=!state.preview;
   $('preview-label').textContent=pinnedPreviewLabel();
   $('preview-recovery').hidden=state.preview_status!=='excluded_by_query';
@@ -251,7 +241,6 @@ async function render(next,restore=false) {
   }
   $('download').hidden=!state.handoff;if(state.handoff) {$('download').href=state.handoff.archive;$('download').download='hop-preparation.zip';}
   $('record').hidden=!current;if(current) $('record').href=state.preview.record;
-  $('family-stage').value=state.family_stage;
 }
 function download(name,value) {
   const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));
@@ -260,7 +249,6 @@ function download(name,value) {
 function changePresentation(change) {
   return act('view',{stage:state.stage,camera:state.selection?(molecularMode==='route'?viewport.camera():state.view_receipt.camera):null,presentation:{...currentPresentation(),...change}});
 }
-for(const view of ['parameters','families','similarity']) $(view).addEventListener('click',()=>changePresentation({landscape:view}));
 $('focus-route').addEventListener('click',()=>focusFigure('figure-two',$('focus-route')));
 $('return-map').addEventListener('click',returnToAtlas);
 $('close-inspector').addEventListener('click',closeInspector);
@@ -269,7 +257,6 @@ $('another').addEventListener('click',()=>act('sample',{strategy:'families'}));
 $('back').addEventListener('click',()=>act('back',{},false));
 $('retrieve').addEventListener('click',()=>act('retrieve',{selection:state.selection}));
 $('clear').addEventListener('click',()=>{const {membership,...query}=state.choices.query;act('query',{query:{...query,parameters:[]}});});
-$('family-stage').addEventListener('change',()=>act('family-stage',{stage:$('family-stage').value}));
 $('stage').addEventListener('change',()=>act('view',{stage:$('stage').value,camera:null}));
 $('bookmark').addEventListener('click',async()=>{
   if(busy || rendering.blocked) return;
@@ -283,7 +270,7 @@ $('view-file').addEventListener('change',async()=>{try{const file=$('view-file')
 async function restoreHash(){if(location.hash.startsWith('#view=')){const receipt=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));await act('restore',{receipt},false);}}
 window.addEventListener('hashchange',()=>restoreHash().catch(e=>{$('status').textContent=e.message;}));
 const observer=new ResizeObserver(()=>{connect();scenes.refresh();});observer.observe($('object'));
-window.addEventListener('pagehide',()=>{discovery.close();hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();raster.close();mapView.close();comparisonView.close();views.clear();figure.clear();selectedTrace.clear();frequencies.close();plots.close();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
+window.addEventListener('pagehide',()=>{hover.close();local.close();resizing.close();scenes.close();loading.close();colors.close();raster.close();mapView.close();comparisonView.close();views.clear();figure.clear();selectedTrace.clear();frequencies.close();plots.close();artifacts.clear();rendering.clear();state=null;observer.disconnect();});
 window.addEventListener('blur',()=>showHover(null));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')escapeInspection($('inspector'),{dismissRefinement:()=>{if(comparisonView.dismiss(true))return true;if(!$('refinement').open)return false;$('refinement').open=false;$('refine').focus();return true;},restorePreview:()=>showHover(null),returnToMap:returnToAtlas,close:closeInspector});});
 $('refine').addEventListener('click',()=>{$('refinement').open=!$('refinement').open;});

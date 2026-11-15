@@ -6,10 +6,10 @@ from typing import Any
 
 from hop_design.models.construction.variants.view_color import AtlasColorLens
 
-from ..presentation.palette import NUMERIC_BLUE, POPULATION_ACCENT
+from ..presentation.palette import NUMERIC_DIVERGING, POPULATION_ACCENT
 
 ACCENT, NEUTRAL = POPULATION_ACCENT, "#8D99A5"
-RAMP = tuple(tuple(int(color[i : i + 2], 16) for i in (1, 3, 5)) for color in NUMERIC_BLUE)
+RAMP = tuple(tuple(int(color[i : i + 2], 16) for i in (1, 3, 5)) for color in NUMERIC_DIVERGING)
 
 
 @dataclass(frozen=True)
@@ -47,8 +47,11 @@ def molecular_colors(answer: dict[str, Any], raw: dict[str, Any]) -> MolecularCo
             raise ValueError("Larger end gap is not applicable to this endpoint.")
         axis = {"label": "Larger end gap", "unit": "bp"}
 
+    if lens.key == "released_non_stem_nt":
+        axis = {"label": "Released non-stem DNA", "unit": "nt total"}
+
     def value(row: dict[str, Any]) -> Any:
-        return lens.value_in(row["values"])
+        return lens.value_in(row["values"], overhead=row.get("overhead"))
 
     if axis is None or axis.get("applicable") is False:
         raise ValueError("Color parameter is not applicable to this endpoint.")
@@ -63,7 +66,7 @@ def molecular_colors(answer: dict[str, Any], raw: dict[str, Any]) -> MolecularCo
         palette = {v: ACCENT if lo == hi else _shade((v - lo) / (hi - lo)) for v in values}
         measure = f"{lo}" if lo == hi else f"{lo}\u2013{hi}"
         label = f"{axis['label']} · {measure} {axis['unit']}"
-        label += "; constant" if lo == hi else "; pale → dark"
+        label += "; constant" if lo == hi else "; low → high"
     return MolecularColors(
         lens,
         label,

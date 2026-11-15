@@ -35,7 +35,7 @@ def _annotate_inspection_element(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     interface_labels: bool = True,
-    footprint_scope: FootprintScope = "processing",
+    footprint_scope: FootprintScope = "structural",
 ) -> ET.Element:
     """Mutate only this new drawing; preserve the authoritative projection."""
     bases = {(b.strand_index, b.address.index): b for b in projection.bases}
@@ -166,7 +166,7 @@ def render_molecular_inspection(
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
     interface_labels: bool = True,
-    footprint_scope: FootprintScope = "processing",
+    footprint_scope: FootprintScope = "structural",
 ) -> bytes:
     """Serialize one scene at the export boundary."""
     root = molecular_inspection_element(
@@ -197,7 +197,7 @@ def molecular_inspection_element(
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
     interface_labels: bool = True,
-    footprint_scope: FootprintScope = "processing",
+    footprint_scope: FootprintScope = "structural",
 ) -> ET.Element:
     state = projection.state
     points = layout_points if layout_points is not None else _points(projection)

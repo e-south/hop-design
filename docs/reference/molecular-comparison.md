@@ -128,6 +128,12 @@ left and right end gaps, in bp. It requires both measurements; a missing side
 remains missing rather than becoming zero. The lens changes display color only,
 never a query, comparison field, coordinate, or preparation identity.
 
+Use `{"key": "released_non_stem_nt"}` for the total non-stem nucleotides
+across both strands of the released insert. HOP sums the recorded strand counts,
+including sticky ends and excluding discarded handles. This measurement is
+separate from the comparison vector. Numeric lenses share the RdYlBu color scale
+in browser and exported maps.
+
 To export a column-width hairpin and parameter trace without fitting a map:
 
 ```python

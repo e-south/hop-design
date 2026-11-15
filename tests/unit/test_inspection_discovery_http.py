@@ -65,7 +65,7 @@ def test_discovery_http_is_authorized_and_independent_of_inspection_lock():
             return response.read()
 
     try:
-        assert b"discoveryControls" in call("/discovery.js")
+        assert b"discovery-request" not in call("/")
         payload = {
             "token": "pin-token",
             "request": {"stem_arm": "ACGT", "product": "hairpin"},

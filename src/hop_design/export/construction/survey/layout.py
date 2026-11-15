@@ -184,9 +184,12 @@ def plot_layout(
             if profile.rotated_labels
             else max(18, max(text_width(label, profile.axis_font) for label in labels) + 4)
         )
+        if profile.rotated_labels:
+            # Adjacent one-digit axes still need a full diagonal text line.
+            width = max(width, profile.axis_font * profile.heading_pitch_em)
         widths.append(width)
     items = list(zip(axes, widths, strict=True))
-    margin, minimum_gap = (6, 2) if profile.rotated_labels else (26, 6)
+    margin, minimum_gap = (6, profile.minimum_axis_gap) if profile.rotated_labels else (26, 6)
     if profile.rotated_labels:
         # Reserve the first descending label's measured left overhang.
         margin = max(

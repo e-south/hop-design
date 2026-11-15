@@ -20,6 +20,10 @@ def test_compact_cohort_preserves_values_methods_and_material_differences():
                 "methods": [{"name": "Nickase"}],
                 "material_roles": {"source": {"material_id": material, "length_nt": 70}},
                 "molecular_identity": {"endpoint": name + "-product"},
+                "overhead": {
+                    "endpoint_non_payload_nt_by_strand": {"top": 13, "bottom": 15},
+                    "discarded_material": "not needed by the browser",
+                },
             }
             for name, available, loop, material in (
                 ("one", True, "AAAA", "source-one"),
@@ -36,6 +40,10 @@ def test_compact_cohort_preserves_values_methods_and_material_differences():
     assert result["roles"]["source"]["indices"] == [0, 1, 0]
     assert result["roles"]["source"]["dictionary"][1]["material_id"] == "source-two"
     assert result["methods"]["dictionary"] == [[{"name": "Nickase"}]]
+    assert result["overhead"] == {
+        "dictionary": [{"endpoint_non_payload_nt_by_strand": {"top": 13, "bottom": 15}}],
+        "indices": [0, 0, 0],
+    }
     assert result["choices"]["axes"] == answer["axes"]
     assert "paths" not in result["choices"]
     assert answer == before

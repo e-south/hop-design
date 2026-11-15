@@ -54,7 +54,7 @@ for(const location of ['focused row','kept row','clear button'])test(`Escape fro
  const {choiceFrequencies}=await import(uri(widget.replace("'./choice_frequencies_model.js'",JSON.stringify(uri(source)))));
  const inspector=element(),host=element(),select=element('select'),chart=element(),summary=element(),clear=element('button'),outside=element('button'),focus=[];
  inspector.append(host,outside);host.append(select,chart,summary,clear);
- host.querySelector=selector=>({'select':select,'[data-frequency-chart]':chart,'[data-frequency-summary]':summary,'button':clear}[selector]);
+ host.querySelector=selector=>({'select':select,'[data-frequency-chart]':chart,'button':clear}[selector]);
  inspector.addEventListener('keydown',e=>{if(e.key==='Escape')inspector.hidden=true;});
  const frequencies=choiceFrequencies(host,(...args)=>focus.push(args));frequencies.update({choices,preview:true});
  const row=chart.querySelectorAll('[data-frequency-row]')[0];row.focus();if(location!=='focused row')row.dispatch('click');if(location==='clear button')clear.focus();
@@ -65,7 +65,7 @@ for(const location of ['focused row','kept row','clear button'])test(`Escape fro
  assert.equal(document.activeElement,location==='clear button'?select:row,'clearing feedback must retain visible usable focus');
  assert.equal(chart.contains(row),true);assert.equal(row.attrs['aria-pressed'],'false');
  assert.deepEqual(focus.at(-1),[null,{pin:false}]);assert.equal(clear.hidden,true);
- assert.match(summary.textContent,/2 distinct values · 3 recorded preparations/);
+ assert.equal(summary.textContent,'','linked highlighting does not create changing status prose');
  outside.dispatch('keydown',{key:'Escape'});assert.equal(inspector.hidden,true,'Escape outside the widget keeps its global behavior');
  frequencies.close();
 });
