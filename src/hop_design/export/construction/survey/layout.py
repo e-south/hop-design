@@ -235,18 +235,19 @@ def plot_layout(
             (node_geometry(a, n, profile=profile)["height"] for a in axes for n in a["nodes"]),
             default=profile.axis_font,
         )
-        below = profile.region_strip == "below"
+        below = profile.region_strip != "above"
+        region_height = 0 if profile.region_strip == "none" else frame.region_height
         top = (0 if below else frame.region_height) + tallest / 2 + (8 if below else 12)
         bottom = top + max(150, 6 * profile.axis_font)
         heading_y = bottom + tallest / 2 + 14
         label_bottom = heading_y + longest * 0.707 + profile.axis_font + 8
         frame = AxisFrame(
             label_bottom + profile.axis_font if below else frame.region_baseline,
-            frame.region_height,
+            region_height,
             heading_y,
             top,
             bottom,
-            label_bottom + frame.region_height + 8 if below else label_bottom,
+            label_bottom + region_height + 8 if below else label_bottom,
         )
     result = []
     for band, items in enumerate(bands):
@@ -286,7 +287,7 @@ def plot_layout(
             for index, axis in enumerate(result):
                 axis["x"] = first_x + index * pitch
     return SurveyLayout(
-        result, frame, profile.width, frame.top if profile.region_strip == "below" else 0
+        result, frame, profile.width, frame.top if profile.region_strip != "above" else 0
     )
 
 

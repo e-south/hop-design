@@ -19,6 +19,17 @@ test('failed bundled preview gives its visible route a terminal error; obsolete 
  const {routeScenes}=await import(uri(text)),host=element(),scroll=element(),progress=element();
  scenes=routeScenes(host,scroll,async()=>{requests++;throw Error('No independent request is needed for this failed bundle');},{},progress);
  const state={token:'token',choices:{snapshot_digest:'snapshot'},render_policy:'current',presentation:{route:'assembly'},stage_options:[{value:'released-state',label:'Released insert'}],preview:{summary:{atlas:{materialized_realization_id:'A',states:[{state:{state_id:'released-state',phase:'clone_ready_duplex'}}]}}}};
+ const stages=['source_ssdna','duplex','cleaved_duplex','denatured_fragments','selected_fragments','annealed_complex','foldback_closed_hairpin','adapter_annealed','adapter_ligated','hairpin_pcr_duplex','clone_ready_duplex'];
+ const complete={...state,stage_options:stages.map(value=>({value,label:value})),preview:{summary:{atlas:{materialized_realization_id:'A',states:stages.map(phase=>({state:{phase,state_id:phase}}))}}}};
+ const initial=[];
+ scenes.close();
+ scenes=routeScenes(host,scroll,async job=>{initial.push(job);throw Error('Bounded scheduling probe');},{},progress);
+ scenes.pin(complete);
+ host.children.forEach((slot,index)=>{slot.getBoundingClientRect=()=>({top:index*400,bottom:index*400+300});});
+ for(const [id,fn] of frames){frames.delete(id);fn();}
+ assert.deepEqual(initial[0]?.phases,stages,'A pin must prepare its complete finite route before scrolling');
+ scenes.close();
+ scenes=routeScenes(host,scroll,async()=>{requests++;throw Error('No independent request is needed for this failed bundle');},{},progress);
  scenes.pin(state);
  const slot=host.children[0],body=slot.children[0],previous=element();previous.dataset.preparationId='A';body.append(previous);
  assert.equal(slot.getAttribute('aria-label'),'Released insert');

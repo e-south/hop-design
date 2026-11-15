@@ -25,8 +25,8 @@ export function previewScenePhases(view,teaching,phases) {
   return teaching.bottom>view.top && teaching.top<view.bottom?[]:phases;
 }
 
-// One stable slot per processing phase. Only visible slots acquire drawings;
-// the pin retains at most four scene nodes for immediate restoration.
+// Prepare one pinned route together; keep its finite roster ready for scrolling.
+// Hover still requests only visible steps and cannot change the pin's geometry.
 export function routeScenes(host,scroll,request,artifacts,progress) {
   const slots=new Map(),pinnedNodes=new Map();
   let pinned=null,context=null,ready=false,closed=false,frame=null,lastRequest=null,pinnedRoster=null;
@@ -52,7 +52,6 @@ export function routeScenes(host,scroll,request,artifacts,progress) {
         slot.body.replaceChildren(svg);slot.shown=drawingKey(job,phase);slot.failed=null;slot.unavailable=null;slot.status.clear();
         if(pinnedResult) {
           const key=drawingKey(job,phase);pinnedNodes.delete(key);pinnedNodes.set(key,svg);
-          while(pinnedNodes.size>4)pinnedNodes.delete(pinnedNodes.keys().next().value);
         }
       }
       for(const phase of value.unavailable||[]) {
@@ -137,15 +136,16 @@ export function routeScenes(host,scroll,request,artifacts,progress) {
     const visible=visibleSlots();
     for(const slot of slots.values()) if(!visible.includes(slot)) slot.body.replaceChildren();
     const needed=[];
-    for(const slot of visible) {
+    const candidates=contextKey(context)===contextKey(pinned)?[...slots.values()]:visible;
+    for(const slot of candidates) {
       const key=drawingKey(context,slot.phase),saved=contextKey(context)===contextKey(pinned)?pinnedNodes.get(key):null;
-      if(saved) {slot.body.replaceChildren(saved);slot.shown=key;slot.status.clear();}
+      if(saved) {if(visible.includes(slot))slot.body.replaceChildren(saved);slot.shown=key;slot.status.clear();}
       else if(slot.shown===key && !slot.body.firstElementChild && slot.failed!==key && slot.unavailable?.key!==key) slot.shown=null;
       if(slot.shown!==key && slot.failed!==key && slot.unavailable?.key!==key)needed.push(slot.phase);
     }
     updateProgress();
-    // One visible viewport shares one verified molecular context. The server
-    // bounds phases to its finite recorded vocabulary; hidden slots stay lazy.
+    // One selected preparation shares its verified projection across all steps.
+    // Transient hover never starts a whole-route prefetch.
     const phases=needed;
     if(!phases.length) {if(lastRequest){work.clear();lastRequest=null;}return;}
     const key=JSON.stringify([contextKey(context),phases]);if(key===lastRequest)return;

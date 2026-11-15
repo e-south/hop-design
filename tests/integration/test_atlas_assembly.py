@@ -46,6 +46,39 @@ def test_assembly_view_collapses_cleanup_without_changing_the_record(atlas):
     assert len([e for e in complete.iter() if e.get("data-atlas-state")]) == 11
 
 
+def test_browser_scenes_keep_every_repeated_cleanup_site(tmp_path):
+    from collections import Counter
+
+    from hop_design.export.construction.molecular.atlas_blocks import route_blocks
+    from tests.integration.test_design_source_cleanup import cleanup_intent
+
+    designs = construction.discover_designs(
+        cleanup_intent(maximum=24),
+        tmp_path / "cleanup",
+        max_evaluations=1,
+        effort={"local_nodes": 100, "local_realizations": 16, "release_site_pairs": 100},
+    )
+    packet = designs.atlas(designs.sample(seed=1))
+    atlas = MolecularAtlas.model_validate_json(json.dumps(json.loads(packet.json_bytes)["atlas"]))
+    before = atlas.model_dump_json()
+    blocks = route_blocks(atlas, None, [])
+    for state, block in zip(atlas.states, blocks, strict=True):
+        sites = {e.get("data-site-id"): e for e in block.element.iter() if e.get("data-site-id")}
+        assert set(sites) == {s.site_id for s in state.recognition_sites}
+        for site in state.recognition_sites:
+            painted = any(e.get("data-recognition-footprint") for e in sites[site.site_id].iter())
+            assert painted == bool(site.recognition)
+        if state.state.phase.value in {"duplex", "cleaved_duplex"}:
+            # Two upstream repeats and the required basal site are separate
+            # physical operations, even though the enzyme name is shared.
+            repeated = Counter(o.enzyme_id for o in state.operations)
+            enzyme = next(key for key, count in repeated.items() if count == 3)
+            ids = {o.operation_id for o in state.operations if o.enzyme_id == enzyme}
+            names = {e.get("data-label-for-site") for e in block.element.iter()}
+            assert ids <= names
+    assert atlas.model_dump_json() == before
+
+
 def test_ordinary_transition_is_centered_between_content_and_next_title(atlas):
     from itertools import pairwise
 

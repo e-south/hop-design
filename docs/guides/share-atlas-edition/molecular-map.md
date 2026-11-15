@@ -34,8 +34,9 @@ Generate or extend results through the [discovery CLI/API](../discover-designs.m
 then open the saved collection in the browser.
 
 The map stays in place while the side inspector scrolls. Its first figure pairs
-the exact hairpin with the parameter trace; processing scenes load as they enter
-view. **Full figure** opens the complete route. **Prepare oligo files** creates
+the exact hairpin with the parameter trace. Selecting a preparation prepares its
+complete route for scrolling. Map-hover previews load the visible steps.
+**Full figure** opens the complete route. **Prepare oligo files** creates
 the selected preparation's downloadable materials. Browser and exported teaching
 figures share molecular glyphs, with separate layouts for inspector and print
 widths. Print exports include a full-resolution route plate and readable

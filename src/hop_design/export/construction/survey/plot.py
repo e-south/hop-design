@@ -95,7 +95,7 @@ def render_survey_plot(
     )
     root.set("data-projected-traces", str(len(presentation["traces"])))
     for (band, region), members in groupby(
-        axes,
+        axes if profile.region_strip != "none" else [],
         key=lambda m: (m["band"], teaching_region(m["definition"]["neighborhood"])),
     ):
         columns = list(members)
