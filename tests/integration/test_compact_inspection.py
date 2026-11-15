@@ -37,15 +37,10 @@ def test_compact_map_preserves_public_query_selection_and_shared_coordinates(
         public = edition.query()
         compact = session.response(session.state, format="compact-v1")
         assert compact["families"] is None
-        assert compact["presentation"]["display_axes"] == [
-            "open_side_paired_positions",
-            "left_end_word",
-            "left_gap",
-            "right_gap",
-            "right_end_word",
-            "foldback_arm_bp",
-            "loop_nt",
-        ]
+        # A saved molecular map derives its trace from the shared comparison
+        # schema rather than imposing the non-map inspector's seven-axis view.
+        assert compact["presentation"]["landscape"] == "similarity"
+        assert "display_axes" not in compact["presentation"]
         assert "choices" not in compact and "similarity" not in compact["plots"]
         members = compact["compact"]["members"]
         assert members == [p["materialized_realization_id"] for p in public["paths"]]
@@ -107,7 +102,7 @@ def test_compact_map_preserves_public_query_selection_and_shared_coordinates(
         assert selected["cohort_unchanged"]
         assert "compact" not in selected and "map_index" not in selected
         assert selected["selection"] == edition.select(identity)
-        assert selected["view_receipt"]["schema"] == "hop.atlas-view/v4"
+        assert selected["view_receipt"]["schema"] == "hop.atlas-view/v3"
         assert selected["view_receipt"]["presentation"] == compact["presentation"]
         assert edition.query() == public
         assert session.state()["choices"] == _InspectionProjection.display(public)

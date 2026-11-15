@@ -262,13 +262,20 @@ def test_inspection_transports_share_current_labels_without_rewriting_admitted_a
             session.state, format="compact-v1" if compact_transport else None
         )
         shown = response["compact"]["choices"] if compact_transport else response["choices"]
-        assert next(a for a in shown["axes"] if a["key"] == "left_gap")["label"] == "Left gap"
+        assert (
+            next(a for a in shown["axes"] if a["key"] == "left_gap")["label"]
+            == "Left insert spacer"
+        )
         assert (
             next(a for a in session._state["choices"]["axes"] if a["key"] == "left_gap")["label"]
             == "Left end-to-stem gap"
         )
         assert shown["parameter_label_projection"]["renamed"] == [
-            {"key": "left_gap", "captured_label": "Left end-to-stem gap", "label": "Left gap"}
+            {
+                "key": "left_gap",
+                "captured_label": "Left end-to-stem gap",
+                "label": "Left insert spacer",
+            }
         ]
         again = session.response(
             session.state,
