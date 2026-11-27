@@ -59,7 +59,6 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
     normalized = " ".join(readme.split())
-    assert "finds ways to construct DNA hairpins" in normalized
     docs_index = (REPO_ROOT / "docs/index.md").read_text(encoding="utf-8")
     for route in (
         "guides/discover-product-scaffolds.md",
@@ -95,7 +94,10 @@ def test_landing_page_opens_with_one_short_product_paragraph() -> None:
 
     assert len(paragraphs) == 1
     assert len(paragraphs[0].split()) <= 90
-    assert paragraphs[0].startswith("Hairpin Oligonucleotide Processing (HOP)")
+    overview = " ".join(paragraphs[0].split())
+    assert "Hairpin Oligonucleotide Processing (HOP)" in overview
+    for term in ("stem", "hairpin", "duplex insert"):
+        assert term in overview.lower()
 
 
 def test_landing_page_routes_tasks_and_ends_with_versioned_citation_guidance() -> None:
