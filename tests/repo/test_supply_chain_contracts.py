@@ -32,7 +32,7 @@ def test_distribution_metadata_allows_pypi_and_names_public_home() -> None:
         "Issues": "https://github.com/e-south/hop-design/issues",
         "Repository": "https://github.com/e-south/hop-design",
     }
-    assert config["tool"]["uv"]["required-version"] == ">=0.12.3,<0.13"
+    assert config["tool"]["uv"]["required-version"] == ">=0.12.3,<0.14"
     assert config["tool"]["coverage"]["report"] == {
         "fail_under": 90,
         "precision": 2,
