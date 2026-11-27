@@ -5,11 +5,10 @@
 [![Python 3.12–3.14](https://img.shields.io/badge/python-3.12%E2%80%933.14-264653)](https://github.com/e-south/hop-design/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2a9d8f)](https://github.com/e-south/hop-design/blob/main/LICENSE)
 
-Hairpin Oligonucleotide Processing (HOP) Design finds ways to construct DNA
-hairpins and released duplex inserts around a supplied stem. Compare compatible
-sequences and enzyme choices, inspect each processing step, and retrieve the
-source, adapter and primer sequences with their required end chemistry, such as
-a 5′ phosphate.
+Given a stem sequence, Hairpin Oligonucleotide Processing (HOP) Design finds
+compatible ways to construct a DNA hairpin and release a duplex insert.
+Compare the alternatives, inspect the predicted products, or retrieve the
+source, adapter and primer sequences with their required end chemistry.
 
 ## Start here
 
@@ -17,8 +16,7 @@ a 5′ phosphate.
 2. [Discover designs around your stem](https://github.com/e-south/hop-design/blob/main/docs/guides/discover-designs.md): define the
    product, inspect a preparation, and retrieve its oligos.
 
-To return to an existing discovery directory, [reopen saved choices](https://github.com/e-south/hop-design/blob/main/docs/guides/discover-designs.md#return-to-saved-results).
-Inspect or retrieve recorded preparations without starting another search.
+If you already have a discovery directory, [reopen its saved choices](https://github.com/e-south/hop-design/blob/main/docs/guides/discover-designs.md#return-to-saved-results) to inspect or retrieve a preparation without repeating the search.
 
 ## Documentation
 
