@@ -16,6 +16,7 @@ from hop_design.export.construction.presentation.parameter_labels import (
     display_parameters,
 )
 from hop_design.export.construction.survey.comparison_features import comparison_features
+from hop_design.export.construction.survey.comparison_trace import comparison_trace_choices
 from hop_design.export.construction.survey.display_projection import inspector_display_axes
 from hop_design.export.construction.survey.distributions import render_choice_distributions
 from hop_design.export.construction.survey.figure_layout import figure_layout, teaching_geometry
@@ -111,11 +112,18 @@ class _InspectionProjection:
     stage_options = staticmethod(stage_options)
 
     profile = sha256_digest(
-        canonical_json_bytes({"figure": asdict(INSPECTOR_FIGURE), "labels": LABEL_CATALOG_DIGEST})
+        canonical_json_bytes(
+            {
+                "figure": asdict(INSPECTOR_FIGURE),
+                "labels": LABEL_CATALOG_DIGEST,
+                "trace": "saved-comparison/v1",
+            }
+        )
     )
     display = staticmethod(display_parameters)
     parameters = staticmethod(describe_parameters)
     display_axes = staticmethod(inspector_display_axes)
+    comparison_choices = staticmethod(comparison_trace_choices)
     trace = staticmethod(partial(TraceProjection, profile=INSPECTOR_FIGURE))
     layout = staticmethod(partial(figure_layout, profile=INSPECTOR_FIGURE))
     teaching = staticmethod(teaching_geometry)

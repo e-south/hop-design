@@ -48,8 +48,8 @@ def test_inspection_explanation_deduplicates_aliases_and_keeps_reference_explici
     assert result["reference_identity"] == "a"
     assert result["basis"] == "recorded_parameters"
     assert [c["key"] for c in result["coordinate_changes"]] == ["foldback_arm_bp", "left_gap"]
-    assert "Loop-side extension: 5 → 6 bp" in result["description"]
-    assert "Left gap: 0 → 2 bp" in result["description"]
+    assert "Loop-side pairing: 5 → 6 bp" in result["description"]
+    assert "Left insert spacer: 0 → 2 bp" in result["description"]
     assert "preserved" not in result["description"]
 
 

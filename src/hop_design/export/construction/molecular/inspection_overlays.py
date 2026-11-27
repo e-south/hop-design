@@ -42,7 +42,7 @@ def inspection_overlays(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     interface_labels: bool = True,
-    footprint_scope: FootprintScope = "processing",
+    footprint_scope: FootprintScope = "structural",
 ) -> str:
     rows = [
         '<g xmlns="http://www.w3.org/2000/svg" data-inspection-overlays="true" '

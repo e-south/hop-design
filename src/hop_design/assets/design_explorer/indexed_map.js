@@ -20,7 +20,7 @@ export function indexedMap(host,onInspect,onSelect) {
     if(focused)return focused.has(row.materialized_realization_id)?.85:.045;
     if(!row.matches)return .35;
     if(lens?.kind==='word')return row.values[lens.key]===lens.word ? .5 : .18;
-    return .28;
+    return lens?.kind==='numeric'?.9:.28;
   }
   function point(ctx,p,highlight=null) {
     const tone=lens?lens.color(p.row):'#216e72',pixel=transform.ratio/transform.scale;

@@ -19,9 +19,9 @@ from hop_design.models.construction.variants.view_color import AtlasColorLens
 from hop_design.serialization import canonical_json_bytes
 
 from ..intents.base import Source
-from .guided_sampling import selection_source
 from .landscape_source import has_molecular_landscape
 from .landscape_source import landscape_digest as saved_landscape_digest
+from .selection.sources import selection_source
 from .types import Camera, ChoiceSource, Record
 
 
@@ -165,6 +165,19 @@ def validate_color(
     from ..editions.reader import AtlasEdition
 
     if lens.key == "none":
+        return
+    if lens.key == "released_non_stem_nt":
+        if isinstance(choices, AtlasEdition):
+            if choices._inspection_context is None:
+                choices.query()
+            assert choices._inspection_context is not None
+            rows = (json.loads(raw) for raw in choices._inspection_context.rows.values())
+        else:
+            rows = iter((index if index is not None else choices.query())["paths"])
+        if not any(
+            lens.value_in(p["values"], overhead=p.get("overhead")) is not None for p in rows
+        ):
+            raise ValueError("Released-insert color requires recorded strand nucleotide counts.")
         return
     values = (
         (json.loads(raw) for rows in choices._selection_index.coordinates.values() for raw in rows)

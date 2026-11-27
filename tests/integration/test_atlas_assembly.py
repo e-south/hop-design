@@ -46,6 +46,39 @@ def test_assembly_view_collapses_cleanup_without_changing_the_record(atlas):
     assert len([e for e in complete.iter() if e.get("data-atlas-state")]) == 11
 
 
+def test_browser_scenes_keep_every_repeated_cleanup_site(tmp_path):
+    from collections import Counter
+
+    from hop_design.export.construction.molecular.atlas_blocks import route_blocks
+    from tests.integration.test_design_source_cleanup import cleanup_intent
+
+    designs = construction.discover_designs(
+        cleanup_intent(maximum=24),
+        tmp_path / "cleanup",
+        max_evaluations=1,
+        effort={"local_nodes": 100, "local_realizations": 16, "release_site_pairs": 100},
+    )
+    packet = designs.atlas(designs.sample(seed=1))
+    atlas = MolecularAtlas.model_validate_json(json.dumps(json.loads(packet.json_bytes)["atlas"]))
+    before = atlas.model_dump_json()
+    blocks = route_blocks(atlas, None, [])
+    for state, block in zip(atlas.states, blocks, strict=True):
+        sites = {e.get("data-site-id"): e for e in block.element.iter() if e.get("data-site-id")}
+        assert set(sites) == {s.site_id for s in state.recognition_sites}
+        for site in state.recognition_sites:
+            painted = any(e.get("data-recognition-footprint") for e in sites[site.site_id].iter())
+            assert painted == bool(site.recognition)
+        if state.state.phase.value in {"duplex", "cleaved_duplex"}:
+            # Two upstream repeats and the required basal site are separate
+            # physical operations, even though the enzyme name is shared.
+            repeated = Counter(o.enzyme_id for o in state.operations)
+            enzyme = next(key for key, count in repeated.items() if count == 3)
+            ids = {o.operation_id for o in state.operations if o.enzyme_id == enzyme}
+            names = {e.get("data-label-for-site") for e in block.element.iter()}
+            assert ids <= names
+    assert atlas.model_dump_json() == before
+
+
 def test_ordinary_transition_is_centered_between_content_and_next_title(atlas):
     from itertools import pairwise
 
@@ -75,6 +108,24 @@ def test_ordinary_transition_is_centered_between_content_and_next_title(atlas):
         _, arrow_top, _, arrow_height = map(float, arrow.get("data-drawing-box").split())
         assert arrow_top - bottom == pytest.approx(title_top - arrow_top - arrow_height)
         assert arrow_top - bottom >= 18 - 1e-6
+
+
+def test_isolated_scene_centers_its_operation_above_the_next_step_boundary(atlas):
+    from hop_design.export.construction.molecular.atlas_blocks import route_blocks
+    from hop_design.export.construction.molecular.primitives.extent import scene_bounds
+    from hop_design.export.construction.molecular.primitives.typography import text_width
+
+    for block in route_blocks(atlas, None, []):
+        row = block.element
+        if not row.get("data-transition-ids") or any(e.get("data-atlas-input") for e in row.iter()):
+            continue
+        scene = next(e for e in row if e.get("data-scene-content"))
+        arrow = next(e for e in row if e.get("data-operation-arrow"))
+        label = next(e for e in row if e.get("data-operation"))
+        x, y, width, height = map(float, arrow.get("data-drawing-box").split())
+        right = float(label.get("x")) + text_width(label.text, float(label.get("font-size")))
+        _, top, _, content_height = scene_bounds(scene, horizontal_span=(x, max(x + width, right)))
+        assert y - top - content_height == pytest.approx(block.extent.height - y - height)
 
 
 def _base_points(root, state):
@@ -571,7 +622,7 @@ def test_teaching_profiles_share_one_primer_and_site_annotation_tier(loop_pool, 
     assert not any(e.get("font-weight") == "600" for e in root.iter())
 
 
-def test_late_route_omits_discarded_handle_footprint_ink_but_retains_site_records(atlas):
+def test_late_route_keeps_mapped_handle_footprints_and_site_records(atlas):
     from hop_design.export.construction.molecular.inspection_layout import inspection_points
     from hop_design.export.construction.molecular.recognition_sites import recognition_site_overlays
 
@@ -595,9 +646,7 @@ def test_late_route_omits_discarded_handle_footprint_ink_but_retains_site_record
         )
     ]
     assert foldback
-    assert all(
-        not any(e.get("data-recognition-footprint") for e in site.iter()) for site in foldback
-    )
+    assert all(any(e.get("data-recognition-footprint") for e in site.iter()) for site in foldback)
     assert len([e for e in root if e.get("data-site-id")]) == len(selected.recognition_sites)
 
 
@@ -620,7 +669,7 @@ def test_hairpin_pcr_connector_uses_vertical_legs_and_rounded_orthogonal_turns(a
     )
 
 
-def test_route_quiets_spent_sites_but_retains_every_recognition_record(atlas):
+def test_route_keeps_mapped_sites_visible_at_every_processing_stage(atlas):
     root = ET.fromstring(render_molecular_atlas(atlas, presentation="assembly"))
     quiet = {
         "selected_fragments",
@@ -635,7 +684,11 @@ def test_route_quiets_spent_sites_but_retains_every_recognition_record(atlas):
             s.site_id for s in state.recognition_sites
         }
         if state.state.phase.value in quiet:
-            assert not any(e.get("data-recognition-footprint") for e in stage.iter())
+            assert all(
+                bool(e.get("data-recognition-addresses") != "[]")
+                == any(n.get("data-recognition-footprint") for n in e.iter())
+                for e in sites
+            )
         if state.state.phase.value in {
             "source_ssdna",
             "duplex",

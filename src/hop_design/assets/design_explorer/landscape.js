@@ -55,7 +55,7 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
     note.textContent = description || `${axis.label}: ${axis.measurement}${axis.relationship ? ' '+axis.relationship : ''}`;
     const ids = value === undefined ? null : state.choices.paths
       .filter(p => p.values[axis.key] === value).map(p => p.materialized_realization_id);
-    highlight([axis.key], ids);
+    highlight([axis.key,...(axis.parameters||[])], ids);
   }
   function families(ids) {
     picker.dismiss(false,false);
@@ -88,7 +88,8 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
     root.classList.toggle('family-context',mode==='families');
     root.classList.toggle('similarity-context',mode==='similarity');
     const traceChanged=traceScene.update(key,()=>{
-      drawPlot(context,state.choices,state.plot_svg,actions);
+      const traceChoices=state.choices.trace_axes?{...state.choices,axes:state.choices.trace_axes}:state.choices;
+      drawPlot(context,traceChoices,state.plot_svg,actions,{compactSequences:true});
       return null;
     });
     const compact=mode==='similarity'&&next.map_index;

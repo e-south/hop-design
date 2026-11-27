@@ -74,7 +74,7 @@ browser-only changes still use the
 ## Cache and export limits
 
 Full-route previews retain at most four packets and 128 MiB of files; plot artifacts
-use a separate four-entry, 16-MiB cache. The browser loads the visible molecular
+use a separate four-entry, 32-MiB cache. The browser loads the visible molecular
 view and keeps a six-entry, 8-MiB artifact cache. Closing the server removes its
 temporary previews and plots. Lightweight teaching previews and visible route
 scenes each retain up to 12 entries within one shared 8-MiB file budget. They

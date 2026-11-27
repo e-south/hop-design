@@ -63,6 +63,74 @@ Call `edition.verify_integrity()` to check every captured file and archive in a
 compact edition. Capture performs this complete byte check before publication;
 neither operation repeats molecular compilation.
 
+## Use the same objects from Python
+
+```python
+# Open and query the frozen edition through Python.
+from shutil import copytree
+
+from hop_design import construction
+
+choices = construction.load_design_choices("designs")
+edition = choices.freeze("atlas-edition")
+selected = edition.sample(seed=7, strategy="families", stage="hairpin")
+edition.figure(selection=selected, view="families", stage="hairpin").write("family-figure")
+edition.atlas(selected).write("route")
+edition.retrieve(selected, "materials")
+
+view = edition.view(selected, stage="all")
+# Copy the whole edition to a new directory before reopening it.
+copytree("atlas-edition", "copied-atlas-edition")
+relocated = construction.load_atlas_edition("copied-atlas-edition")
+relocated.restore_view(view)
+```
+
+The original producer is recorded in `edition.json`; newly rendered figure packets
+identify their display renderer separately. Loading checks file inventory and
+digests. Selection checks membership and query eligibility; guided receipts replay
+their sampling inputs. The current installation checks captured files and
+selections; the edition retains the original producer's molecular verification.
+
+Use the original discovery for new evaluations or revised construction permissions.
+The frozen edition is a reusable viewing and retrieval surface.
+
+## Inspect without changing the request
+
+```bash
+# Open the saved edition without starting new discovery.
+hop-design design view atlas-edition --out inspection
+hop-design design parameters atlas-edition
+```
+
+The same local viewer opens live hairpin choices, insert choices and frozen editions.
+**Show me another** samples a complete preparation matching the filters.
+**Full figure** focuses its route. These actions leave the request unchanged. Filtering to an empty set leaves the last molecule visible
+as outside the query, with retrieval disabled. Clear the filters to recover it.
+
+The inspector opens with a compact shape/interface trace: basal
+paired extent, both end words and gaps, loop-side extension and loop size, where
+applicable. Fixed values stay visible. The full parameter data and query remain
+available; this drawing choice does not restrict the preparations in the map.
+
+**Atlas options → Save view** records the query, exact preparation, reference, inspected stage,
+camera, landscape and molecular modes, family grouping stage, drawing policy,
+ordered display axes when specified, the color property and highlighted word,
+and next sampling seed/history.
+**Open saved view** restores that receipt against
+the same edition. A local link includes the receipt in its fragment; share the
+edition directory as well.
+
+## Explore and save an inspection
+
+Use the [molecular map](share-atlas-edition/molecular-map.md) to inspect nearby
+preparations, read the saved distance definition, or start an explicit discovery
+branch from the collection.
+
+Use [structural sampling and saved views](share-atlas-edition/sampling-and-saved-views.md)
+to sample different products, change a loop with verified surroundings, or save
+drawing and color settings. These inspection choices retain the exact
+preparation and material identities.
+
 ## Combine independent discovery jobs
 
 For parallel exploration, divide the requested end pairs into disjoint jobs using
@@ -101,68 +169,3 @@ After updating HOP, capture existing records with an explicit source contract.
 See [recorded capture](../reference/external-artifacts.md#capture-a-recorded-discovery-with-an-updated-exporter)
 for the command, required bindings and supported scope. This exports recorded
 preparations; it does not resume their search under a different producer.
-
-## Use the same objects from Python
-
-```python
-# Open and query the frozen edition through Python.
-from hop_design import construction
-
-choices = construction.load_design_choices("designs")
-edition = choices.freeze("atlas-edition")
-selected = edition.sample(seed=7, strategy="families", stage="hairpin")
-edition.figure(selection=selected, view="families", stage="hairpin").write("family-figure")
-edition.atlas(selected).write("route")
-edition.retrieve(selected, "materials")
-
-view = edition.view(selected, stage="all")
-relocated = construction.load_atlas_edition("copied-atlas-edition")
-relocated.restore_view(view)
-```
-
-The original producer is recorded in `edition.json`; newly rendered figure packets
-identify their display renderer separately. Loading checks file inventory and
-digests. Selection checks membership and query eligibility; guided receipts replay
-their sampling inputs. The current installation checks captured files and
-selections; the edition retains the original producer's molecular verification.
-
-Use the original discovery for new evaluations or revised construction permissions.
-The frozen edition is a reusable viewing and retrieval surface.
-
-## Inspect without changing the request
-
-```bash
-# Open the saved edition without starting new discovery.
-hop-design design view atlas-edition --out inspection
-hop-design design parameters atlas-edition
-```
-
-The same local viewer opens live hairpin choices, insert choices and frozen editions.
-**Show me another** samples a complete eligible preparation. **Structural groups**
-changes the landscape view; **Full preparation** focuses the route. Neither action
-changes the request. Filtering to an empty set leaves the last molecule visible
-as outside the query, with retrieval disabled. Clear the filters to recover it.
-
-The inspector opens with a compact shape/interface trace: basal
-paired extent, both end words and gaps, loop-side extension and loop size, where
-applicable. Fixed values stay visible. The full parameter data and query remain
-available; this drawing choice does not restrict the preparations in the map.
-
-**Download view** records the query, exact preparation, reference, inspected stage,
-camera, landscape and molecular modes, family grouping stage, drawing policy,
-ordered display axes when specified, the color property and highlighted word,
-and next sampling seed/history.
-**Open saved view** restores that receipt against
-the same edition. A local link includes the receipt in its fragment; share the
-edition directory as well.
-
-## Explore and save an inspection
-
-Use the [molecular map](share-atlas-edition/molecular-map.md) to inspect nearby
-preparations, read the saved distance definition, or start an explicit discovery
-branch from the collection.
-
-Use [structural sampling and saved views](share-atlas-edition/sampling-and-saved-views.md)
-to sample different products, change a loop with verified surroundings, or save
-drawing and color settings. These inspection choices retain the exact
-preparation and material identities.

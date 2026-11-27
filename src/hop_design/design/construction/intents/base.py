@@ -174,7 +174,7 @@ class DesignChoices(AtlasNavigation, ABC):
         after: Source | None = None,
     ) -> dict[str, Any]:
         """Sample preparations, or return a replayable family-guided selection receipt."""
-        from ..navigation.guided_sampling import sample_choices
+        from ..navigation.selection.sampling import sample_choices
 
         return sample_choices(
             self,

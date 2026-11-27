@@ -9,7 +9,9 @@ from hop_design.models.construction.variants.overview import PreparationOverview
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ..presentation.comparison import COMPARISON_GROUPS
+from ..presentation.comparison_glyphs import comparison_glyph_presentation
 from ..presentation.palette import FOLDBACK, pale
+from .comparison_features import comparison_field_definition
 from .layout import WIDTH
 from .similarity import HEIGHT, render_map_geometry
 
@@ -25,11 +27,13 @@ def comparison_packet(overview: PreparationOverview, members: tuple[str, ...]) -
             "groups": {
                 **COMPARISON_GROUPS,
                 "processing": {"label": "Enzymes", "fill": pale(FOLDBACK)},
-            }
+            },
+            **comparison_glyph_presentation(column.key for column in overview.columns),
         },
         "columns": [
             {
                 **column.model_dump(mode="json", exclude_none=True),
+                **comparison_field_definition(column.key),
                 "indices": [column.indices[index[identity]] for identity in members],
             }
             for column in overview.columns
@@ -59,7 +63,7 @@ def overview_geometry(overview: PreparationOverview) -> dict[str, Any]:
         )
     left, right = min(p["x"] for p in points) - radius, max(p["x"] for p in points) + radius
     top, bottom = min(p["y"] for p in points) - radius, max(p["y"] for p in points) + radius
-    padding = max(12, max(right - left, bottom - top) * 0.08)
+    padding = max(12, max(right - left, bottom - top) * 0.04)
     return {
         "points": points,
         "radius": radius,

@@ -23,3 +23,9 @@ test('invalid compact references fail before an inspector can use them',async()=
     const p=packet();change(p);assert.throws(()=>hydrateCohort({cohort:'a',compact:p},null),/cohort|column|member/i);
   }
 });
+test('compact cohort keeps recorded strand counts for aggregate coloring',async()=>{
+  const {hydrateCohort}=await load(),p=packet();
+  p.overhead=column([{endpoint_non_payload_nt_by_strand:{top:13,bottom:15}}],[0,0]);
+  const decoded=hydrateCohort({cohort:'a',compact:p},null);
+  assert.deepEqual(decoded.choices.paths[1].overhead,{endpoint_non_payload_nt_by_strand:{top:13,bottom:15}});
+});

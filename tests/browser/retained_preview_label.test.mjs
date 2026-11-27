@@ -57,9 +57,9 @@ test('query completion and hover restoration retain exclusion feedback until fil
  assert.equal(ui.get('preview-label').textContent,'Preview · outside current filters','leaving hover must restore the pinned status');
  assert.equal(ui.get('inspector').hidden,false);assert.equal(ui.cleared.length,0);
  ui.context.post=async()=>fixture(false,1);await ui.context.act('query',{},false);ui.context.restorePreview();
- assert.equal(ui.get('preview-label').textContent,'Preparation');assert.equal(ui.get('preview-recovery').hidden,true);assert.equal(ui.get('retrieve').disabled,false);
+ assert.equal(ui.get('preview-label').textContent,'');assert.equal(ui.get('preview-recovery').hidden,true);assert.equal(ui.get('retrieve').disabled,false);
  await ui.context.act('select',{materialized_realization_id:'A'},false);
- assert.equal(ui.get('preview-label').textContent,'Preparation','pinning recovers the persistent eligible label');
+ assert.equal(ui.get('preview-label').textContent,'','pinning clears the exclusion label');
 });
 
 test('an excluded preview with eligible alternatives keeps its trace-selection guidance',async()=>{
@@ -68,10 +68,10 @@ test('an excluded preview with eligible alternatives keeps its trace-selection g
  assert.match(ui.get('preview-recovery').textContent,/Choose an eligible trace/);
 });
 
-test('selection retains the stable preparation heading while the next drawing loads',async()=>{
+test('selection avoids a redundant heading while the next drawing loads',async()=>{
  const ui=editor();await ui.context.render(fixture(false,1));
  let finish;ui.context.post=()=>new Promise(resolve=>{finish=resolve;});
  const pending=ui.context.act('select',{materialized_realization_id:'B'},false);
- assert.equal(ui.get('preview-label').textContent,'Preparation');
+ assert.equal(ui.get('preview-label').textContent,'');
  finish(fixture(false,1));await pending;
 });

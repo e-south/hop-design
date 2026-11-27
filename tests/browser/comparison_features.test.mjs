@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-const load=async()=>import('data:text/javascript;base64,'+Buffer.from(await readFile(new URL('../../src/hop_design/assets/design_explorer/comparison_features.js',import.meta.url))).toString('base64'));
+const load=async()=>{const helper='data:text/javascript;base64,'+Buffer.from(await readFile(new URL('../../src/hop_design/assets/design_explorer/comparison_schema.js',import.meta.url))).toString('base64');const source=(await readFile(new URL('../../src/hop_design/assets/design_explorer/comparison_features.js',import.meta.url),'utf8')).replace("'./comparison_schema.js'",JSON.stringify(helper));return import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));};
 function element(tag){return {tag,hidden:false,attributes:{},handlers:new Map(),style:{values:{},setProperty(k,v){this.values[k]=v;}},dataset:{},children:[],classList:{add(){}},setAttribute(k,v){this.attributes[k]=v;},addEventListener(k,v){this.handlers.set(k,v);},removeEventListener(k){this.handlers.delete(k);},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;},querySelector(tag){return this.children.find(e=>e.tag===tag);},focus(){this.focused=true;}};}
 const packet=()=>({algorithm:'umap',basis:{shape_scales:{five_prime_unpaired_nt:2},sequence_keys:['basal_pairs'],interface_keys:['left_word'],weights:[1,1,1]},columns:[
  {key:'shape.five_prime_unpaired_nt',parameters:['five_prime_unpaired_nt'],active:true,dictionary:[4,6],indices:[0,1]},
@@ -70,7 +70,7 @@ test('optional X explanation follows committed hover values, retains its field a
  const select=help.content.querySelector('select');select.value='sequences.basal_pairs';select.handlers.get('change')();
  const pending=strip.prepare('B',state);assert.equal(help.panel.dataset.preparationId,'A');
  pending();assert.equal(help.panel.dataset.preparationId,'B');assert.equal(help.content.querySelector('select').value,'sequences.basal_pairs');
- assert.match(help.content.children.find(e=>e.tag==='h3').textContent,/Basal contacts.*X2 = 1/);
+ assert.match(help.content.children.find(e=>e.tag==='h3').textContent,/Basal pattern.*X2 = 1/);
  assert.match(help.content.children.find(e=>e.className==='comparison-policy').textContent,/2 : 1 : 3/);
  assert.match(help.content.children.at(-1).textContent,/sum\(active w\)/);
  assert.ok(strip.dismiss(true));assert.equal(help.button.focused,true);assert.equal(help.panel.hidden,true);
@@ -164,7 +164,7 @@ test('descriptor names and units have separate lines without fragmenting either 
  comparisonStrip(host,()=>{}).prepare('A',state)();
  const fields=host.children[0].children.filter(e=>e.dataset.feature);
  assert.deepEqual(fields[0].children[0].children.map(n=>n.textContent),['Retained from 5′ tail','nt']);
- assert.deepEqual(fields[1].children[0].children.map(n=>n.textContent),['Basal contacts']);
+ assert.deepEqual(fields[1].children[0].children.map(n=>n.textContent),['Basal pattern']);
  assert.equal(fields[0].children[3].dataset.encoded,'4');
  assert.match(fields[0].title,/Retained from 5′ tail: 4 nt/);
 });
@@ -184,7 +184,7 @@ test('decoded strip shows scientific scalar values while retaining exact stored 
  assert.equal(code.dataset.encoded,'6');assert.equal(code.hidden,true);
  const contacts=fields[1].children.find(e=>e.className==='comparison-value');
  assert.equal(contacts.textContent,'1');
- assert.match(fields[1].title,/Basal contacts · code 1 · 1 ordered contact/);
+ assert.match(fields[1].title,/Basal pattern · code 1 · 1 ordered contact/);
  assert.equal(fields[1].children.find(e=>e.className==='comparison-code').dataset.encoded,'[["G","T","gt_wobble"]]');
 });
 
@@ -227,5 +227,17 @@ test('numeric field codes keep exact meanings and shared group spans during hove
  assert.deepEqual(read(),['4','0','0']);
  const next=strip.prepare('B',state);assert.deepEqual(read(),['4','0','0']);next();
  assert.deepEqual(read(),['6','1','1']);assert.equal(host.dataset.preparationId,'B');
+ assert.equal(JSON.stringify(p),before);
+});
+
+test('current stage definitions accompany saved field codes without changing their values',async()=>{
+ const {comparisonReader,comparisonExplanation}=await load(),p=packet();
+ p.columns[2].label='Basal pattern';
+ p.columns[2].definition='Folded hairpin: ordered base identities and contact classes in the basal region.';
+ const before=JSON.stringify(p),reading=comparisonReader(p,['A','B'])('B'),field=reading.features[2];
+ assert.equal(field.label,'Basal pattern');
+ assert.equal(field.displayValue,1);
+ assert.deepEqual(field.value,[['G','T','gt_wobble']]);
+ assert.match(comparisonExplanation(field,reading.basis).meaning,/Folded hairpin: ordered base identities/);
  assert.equal(JSON.stringify(p),before);
 });

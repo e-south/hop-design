@@ -85,6 +85,11 @@ def render_survey_plot(
         ),
     )
     append_display_metadata(root, presentation)
+    if choices.get("comparison_trace"):
+        root.set(
+            "data-parameter-aliases",
+            json.dumps({a["key"]: a.get("parameters", []) for a in presentation["axes"]}),
+        )
     query_keys = {p["key"] for p in choices["query"]["parameters"]}
     context = [a["key"] for a in presentation["detail"] if a["key"] in query_keys]
     root.set("data-context-parameters", json.dumps(context))
@@ -95,7 +100,7 @@ def render_survey_plot(
     )
     root.set("data-projected-traces", str(len(presentation["traces"])))
     for (band, region), members in groupby(
-        axes,
+        axes if profile.region_strip != "none" else [],
         key=lambda m: (m["band"], teaching_region(m["definition"]["neighborhood"])),
     ):
         columns = list(members)
@@ -192,6 +197,8 @@ def render_survey_plot(
             data_band=m["band"],
             data_region=teaching_region(axis["neighborhood"]),
         )
+        if axis.get("parameters"):
+            container.set("data-parameter-keys", json.dumps(axis["parameters"]))
         title = _element(
             container,
             "g",

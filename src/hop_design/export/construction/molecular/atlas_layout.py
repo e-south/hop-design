@@ -30,7 +30,7 @@ def atlas_scenes(
     *,
     site_labels: RouteSiteLabels = "narrative",
     presentation: RoutePresentation = "complete",
-    footprint_scope: FootprintScope = "processing",
+    footprint_scope: FootprintScope = "structural",
     record_indices: tuple[int, ...] | None = None,
 ) -> MeasuredScenes:
     scenes = {}

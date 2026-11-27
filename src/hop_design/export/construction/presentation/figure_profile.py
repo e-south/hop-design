@@ -26,11 +26,13 @@ class FigureProfile:
     rotated_labels: bool = False
     physical_width_pt: float = 504
     node_padding: int = 4
-    region_strip: Literal["above", "below"] = "above"
+    minimum_axis_gap: float = 2
+    heading_pitch_em: float = 0
+    region_strip: Literal["above", "below", "none"] = "above"
 
     def __post_init__(self) -> None:
-        if self.region_strip not in {"above", "below"}:
-            raise ValueError("The parameter region strip must be above or below the axes.")
+        if self.region_strip not in {"above", "below", "none"}:
+            raise ValueError("The parameter region strip must be above, below or omitted.")
 
 
 PUBLICATION_FIGURE = FigureProfile("publication/v1")
@@ -61,7 +63,9 @@ INSPECTOR_FIGURE = FigureProfile(
     teaching_slot_step=60,
     heading_columns=10,
     stable_teaching_slot=True,
-    region_strip="below",
+    region_strip="none",
+    minimum_axis_gap=6,
+    heading_pitch_em=1.6,
 )
 
 

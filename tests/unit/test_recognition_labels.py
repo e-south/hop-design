@@ -124,3 +124,33 @@ def test_strand_aware_names_preserve_every_site_status_and_side():
         "Nickase*",
         "Nickase*",
     ]
+
+
+def test_short_partial_sites_keep_their_mapped_span_and_normal_band_height():
+    address = NS(strand_id="source", index=0)
+    site = NS(
+        site_id="later-cut",
+        role="end_generation",
+        enzyme_name="Type IIS",
+        orientation="forward",
+        presence="partial",
+        substrate_eligibility="unassessed",
+        orientation_path=(),
+        recognition=(address,),
+        reference_base_count=12,
+        mapped_reference_bases=1,
+    )
+    projection = NS(
+        operations=(),
+        recognition_sites=(site,),
+        bases=(),
+        layout_frame=None,
+        state=NS(state_id="source", pairings=(), phase=NS(value="source_ssdna")),
+    )
+    root = ET.fromstring(
+        "<svg>" + recognition_site_overlays(projection, {("source", 0): (80, 100)}) + "</svg>"
+    )
+    assert root.findall(".//*[@data-recognition-footprint]")
+    assert root.find(".//*[@data-recognition-remnant]") is None
+    assert "1 of 12 precursor bases" in root.find(".//title").text
+    assert root.findall('.//*[@data-label-kind="recognition"]')

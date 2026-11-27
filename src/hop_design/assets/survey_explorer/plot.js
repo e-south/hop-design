@@ -26,9 +26,16 @@ export function plotDrawing(drawing, contextText=()=>{}) {
   }
   return svg;
 }
-export function drawPlot(container, choices, drawing, actions) {
+export function drawPlot(container, choices, drawing, actions, {compactSequences=false}={}) {
   const svg=plotDrawing(drawing,actions.context);
   const axes = new Map(choices.axes.map((axis) => [axis.key, axis]));
+  if(compactSequences) {
+    // Keep readable values and query pins; dense domain ticks add an opaque
+    // stripe at inspector width. Remove them before keyboard targets bind.
+    for(const node of svg.querySelectorAll('[data-node-value]'))
+      if(axes.get(node.dataset.parameter)?.representation==='sequence' &&
+          !node.querySelector('[data-node-label],[data-query-pin]'))node.remove();
+  }
   const records = new Map();
   for (const record of choices.paths) {
     if (!records.has(record.materialized_realization_id))
@@ -54,7 +61,9 @@ export function drawPlot(container, choices, drawing, actions) {
     const value = JSON.parse(group.dataset.nodeValue);
     const description = group.querySelector("title").textContent;
     group.setAttribute("aria-label", description);
-    activate(group, () => actions.value(axis.key, value));
+    activate(group, () => axis.read_only
+      ? actions.path([...records.values()].filter(row=>row.values[axis.key]===value))
+      : actions.value(axis.key, value));
     group.addEventListener("pointerenter", () => actions.focus(axis, description, value));
     group.addEventListener("focus", () => actions.focus(axis, description, value));
   }
@@ -74,7 +83,9 @@ export function drawPlot(container, choices, drawing, actions) {
     });
     hit.addEventListener("pointerup", (event) => {
       if (start !== null) {
-        actions.range(hit.dataset.brushAxis, start, nearest(event));
+        const key=hit.dataset.brushAxis,end=nearest(event);
+        if(axes.get(key).read_only)actions.path([...records.values()].filter(row=>row.values[key]>=Math.min(start,end)&&row.values[key]<=Math.max(start,end)));
+        else actions.range(key, start, end);
         start = null;
       }
     });

@@ -1,15 +1,23 @@
-"""Carry an inspection's display and comparison choices through publication packets."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/src/hop_design/design/construction/navigation/figure_context.py
+
+Carry inspection display and comparison choices through publication packets.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
 
-from hop_design.design.source_documents import load_source_mapping
 from hop_design.serialization import canonical_json_bytes
 
 from ..intents.base import Source
 from ..packets.atlas import MolecularAtlasPacket
 from ..packets.publication import SourceBoundConstructionPacket
+from .selection.sources import selection_document, selection_source
 from .types import ChoiceSource, Record
 
 
@@ -63,7 +71,8 @@ def figure_context(
     display_axes: tuple[str, ...] | None = None,
     detail_width_pt: float | None = None,
 ) -> FigureContext:
-    raw = load_source_mapping(selection) if isinstance(selection, str | Path) else selection
+    raw = None if selection is None else selection_document(selection)
+    selection = raw
     receipt = (
         choices.restore_view(raw)
         if raw and raw.get("schema", "").startswith("hop.atlas-view/")
@@ -82,8 +91,6 @@ def figure_context(
         if value is not None:
             presentation[key] = value
     if receipt is not None:
-        from .guided_sampling import selection_source
-
         receipt = choices.view(
             receipt["selection"],
             stage=receipt["stage"],

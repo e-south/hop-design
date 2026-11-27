@@ -1,4 +1,13 @@
-"""The visible map descriptor is a projection of the fitted comparison, not new math."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/tests/unit/test_comparison_features.py
+
+Keep visible comparison fields faithful to the saved basis and exact codebooks.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from hop_design.design.construction.navigation.similarity import comparison_basis
 from hop_design.export.construction.survey.comparison_features import comparison_features
@@ -117,7 +126,7 @@ def test_compact_codes_are_stable_under_member_reordering_and_round_trip():
             assert column["dictionary"][first["display_value"]] == first["encoded"]
 
 
-def test_compact_export_has_grouped_single_numeric_row_with_angled_labels():
+def test_compact_export_has_grouped_schematic_glyphs_with_angled_labels():
     from xml.etree import ElementTree as ET
 
     from hop_design.export.construction.survey.comparison_features import (
@@ -129,12 +138,12 @@ def test_compact_export_has_grouped_single_numeric_row_with_angled_labels():
     packet = selected_comparison_features(rows, comparison_basis(rows), "other")
     root = ET.fromstring(render_comparison_vector(packet, width_pt=237))
     assert float(root.get("width").removesuffix("pt")) == 237
-    values = [e for e in root.iter() if e.get("data-display-value")]
-    assert len(values) == len(packet["vector"])
-    assert len({e.get("y") for e in values}) == 1
-    assert all(e.text.isdecimal() for e in values)
+    glyphs = [e for e in root.iter() if e.get("data-input-glyph")]
+    assert len(glyphs) == len(packet["vector"])
+    assert all(e.get("transform").endswith(" 31)") for e in glyphs)
+    assert not any(e.get("data-display-value") for e in root.iter())
     groups = [e.get("data-feature-group") for e in root.iter() if e.get("data-feature-group")]
-    assert groups == ["shape", "sequences", "interfaces"]
+    assert groups == ["shape", "sequence"]
     labels = [e for e in root.iter() if e.get("data-feature-label")]
     assert all(e.get("transform").startswith("rotate(-45 ") for e in labels)
     assert all(e.get("font-weight") == "normal" for e in labels)
@@ -142,5 +151,43 @@ def test_compact_export_has_grouped_single_numeric_row_with_angled_labels():
     assert [e.get("data-feature-span") for e in spans] == groups
     for span in spans:
         assert float(span.get("x2")) > float(span.get("x1"))
-        assert float(span.get("y1")) < float(values[0].get("y")) - 5
+        assert float(span.get("y1")) < 31 - 5
         assert span.get("stroke") == "#8a9699"
+
+
+def test_comparison_labels_use_stage_specific_parameter_vocabulary():
+    from hop_design.export.construction.survey.layout import compact_heading
+    from hop_design.models.construction.variants.parameters import parameter_definition
+
+    expected = {
+        "open_side_paired_positions": ("Basal contacts", "positions"),
+        "foldback_arm_bp": ("Loop-side pairing", "bp"),
+        "loop_side_paired_bp": ("Loop-side pairing", "bp"),
+        "loop_nt": ("Loop length", "nt"),
+        "left_gap": ("Left insert spacer", "bp"),
+        "right_gap": ("Right insert spacer", "bp"),
+        "loop_word": ("Loop sequence", ""),
+        "left_end_word": ("Left sticky end", ""),
+        "right_end_word": ("Right sticky end", ""),
+        "basal_method": ("Basal nickase", ""),
+        "foldback_method": ("Foldback nickase", ""),
+        "release_method": ("Release enzyme", ""),
+    }
+    for key, (label, unit) in expected.items():
+        definition = parameter_definition(key)
+        assert (definition.label, definition.unit) == (label, unit)
+        axis = definition.model_dump(mode="json")
+        short_unit = "pos" if unit == "positions" else unit
+        assert compact_heading(axis) == label + (f" ({short_unit})" if unit else "")
+    rows = (molecule(), molecule(identity="other", basal="GT", loop="AAAC"))
+    packet = comparison_features(rows, comparison_basis(rows), tuple(r.identity for r in rows))
+    fields = {c["key"]: c for c in packet["columns"]}
+    for key, label in {
+        "sequences.basal_pairs": "Basal pattern",
+        "sequences.foldback_pairs": "Loop-side pattern",
+        "sequences.loop": "Loop sequence",
+        "interfaces.left_word": "Left sticky end",
+        "interfaces.right_word": "Right sticky end",
+    }.items():
+        assert fields[key]["label"] == label
+        assert fields[key]["definition"]

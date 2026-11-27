@@ -27,6 +27,11 @@ UV_PYTHON=3.14 COVERAGE_CORE=sysmon bash scripts/agent-verify --workers 4
 
 Choose one command for the task; do not run these gates in sequence.
 
+Discovery, capture and replay fixtures bind to the packaged source and assets.
+Finish those edits before running the fixtures or timing comparisons. Concurrent
+edits can change producer identity during a test; parallel implementation needs
+separate checkouts. Use a stable checkout for final checks.
+
 - **Repository-only maintenance:** for documentation and repository checks when
   runtime source, packaged assets, dependencies, build rules and verification
   routing are unchanged. Run strict preflight, the affected checker regression

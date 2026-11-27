@@ -31,6 +31,19 @@ def test_inspector_labels_are_regular_45_degree_runs_below_the_axes():
     assert all(float(e.get("stroke-width")) <= 1 for e in axes)
 
 
+def test_adjacent_rotated_headings_have_room_for_their_full_line_height():
+    from itertools import pairwise
+    from math import sqrt
+
+    from hop_design.export.construction.survey.layout import plot_layout
+
+    layout = plot_layout(choices(), profile=INSPECTOR_FIGURE)
+    for a, b in pairwise(layout.axes):
+        # Parallel 45-degree text lines need their font height perpendicular
+        # to the baseline, even when adjacent axes contain one-digit values.
+        assert (b["x"] - a["x"]) / sqrt(2) >= INSPECTOR_FIGURE.axis_font * 1.2 + 2
+
+
 def test_publication_axes_remain_readable_in_a_full_width_trace():
     from hop_design.export.construction.presentation.figure_profile import LANDSCAPE_DETAIL_FIGURE
 

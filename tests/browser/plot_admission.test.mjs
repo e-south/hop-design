@@ -45,3 +45,36 @@ for(const prepared of [false,true])test(`${prepared?'Admitted SVG':'SVG text'} r
   assert.throws(()=>drawPlot(p.container,{axes:[],paths:[p.record]},drawing,{}),/Invalid survey drawing/);
   assert.deepEqual(p.container.children,['old']);
 });
+
+test('a comparison value selects its recorded members without authoring a query',t=>{
+ const p=plot(t),handlers=new Map(),selected=[];
+ const node={dataset:{parameter:'sequences.basal_pairs',nodeValue:'3'},setAttribute(){},
+  querySelector:()=>({textContent:'Exact pairing pattern'}),addEventListener:(key,fn)=>handlers.set(key,fn)};
+ const query=p.svg.querySelectorAll;
+ p.svg.querySelectorAll=selector=>selector==='[data-node-value]'?[node]:query(selector);
+ p.record.values['sequences.basal_pairs']=3;
+ drawPlot(p.container,{axes:[{key:'sequences.basal_pairs',read_only:true}],paths:[p.record]},p.svg,
+  {path:rows=>selected.push(rows),value:()=>assert.fail('Comparison codes are not query parameters')});
+ handlers.get('click')();
+ assert.deepEqual(selected,[[p.record]]);
+});
+
+for(const compactSequences of [false,true])test(`compact sequence domains ${compactSequences?'omit':'retain'} unlabeled coverage ticks without changing recorded paths`,t=>{
+  const p=plot(t),groups=[];
+  function node(parameter,label,pinned=false){
+    const handlers=new Map();
+    const group={dataset:{parameter,nodeValue:'"AAAA"'},removed:false,
+      querySelector:selector=>selector==='title'?{textContent:'Recorded value'}:(label||pinned?{}:null),
+      setAttribute(){},addEventListener:(key,fn)=>handlers.set(key,fn),remove(){this.removed=true;},handlers};
+    groups.push(group);return group;
+  }
+  const dense=node('loop_word',false),visible=node('loop_word',true),pin=node('loop_word',false,true),numeric=node('loop_nt',false);
+  const old=p.svg.querySelectorAll;
+  p.svg.querySelectorAll=selector=>selector==='[data-node-value]'?groups.filter(g=>!g.removed):old(selector);
+  const choices={axes:[{key:'loop_word',representation:'sequence'},{key:'loop_nt',representation:'span'}],paths:[p.record]},before=structuredClone(choices);
+  drawPlot(p.container,choices,p.svg,{}, {compactSequences});
+  assert.equal(dense.removed,compactSequences);
+  assert.equal(dense.handlers.has('focus'),!compactSequences,'unpainted values must not become invisible keyboard stops');
+  for(const group of [visible,pin,numeric])assert.equal(group.removed,false);
+  assert.deepEqual(choices,before);assert.equal(p.handlers.has('click'),true);
+});

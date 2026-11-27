@@ -111,10 +111,8 @@ error. Equivalent measurements must agree: a 6-bp foldback arm and a 7-bp loop-s
 extension describe conflicting requirements for this construction. HOP identifies
 the conflict before filtering. Further search cannot resolve it.
 
-The browser's CLI block uses the actual discovery directory and a saved copy of
-the applied query. Run those commands from a fresh output directory while the
-browser's files remain available. Selection, route and preparation exports use
-that same query. The block offers further search only when the result supports it.
+Run further discovery through the CLI or API, then reopen the saved results in
+the browser. The inspection browser filters and retrieves the recorded collection.
 
 ## Control the construction context
 

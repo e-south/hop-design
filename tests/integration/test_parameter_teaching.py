@@ -380,6 +380,6 @@ def test_current_teaching_uses_catalog_names_without_rewriting_captured_measurem
     before = copy.deepcopy(summary)
     tree = ET.fromstring(render_teaching_overview(summary))
     anchor = tree.find(".//*[@data-parameter-anchor='foldback_arm_bp']")
-    assert anchor.get("data-parameter-label") == "Loop-side extension"
-    assert anchor.find("{http://www.w3.org/2000/svg}title").text.startswith("Loop-side extension:")
+    assert anchor.get("data-parameter-label") == "Loop-side pairing"
+    assert anchor.find("{http://www.w3.org/2000/svg}title").text.startswith("Loop-side pairing:")
     assert summary == before

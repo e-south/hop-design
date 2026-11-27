@@ -45,7 +45,9 @@ def node_geometry(
     axis: dict[str, Any], node: dict[str, Any], *, profile: FigureProfile = PUBLICATION_FIGURE
 ) -> dict[str, Any]:
     """One label contour for the static figure and its exact inspection overlay."""
-    lines = [node_label(axis, node)] if profile.rotated_labels else node_lines(axis, node)
+    lines = node.get("display_lines") or (
+        [node_label(axis, node)] if profile.rotated_labels else node_lines(axis, node)
+    )
     return {
         "lines": lines,
         "width": max(
@@ -68,15 +70,9 @@ def heading_lines(
 
 def compact_heading(axis: dict[str, Any]) -> str:
     """Context comes from the region strip; canonical titles remain attached."""
-    label = {
-        "basal_method": "Nickase",
-        "foldback_method": "Nickase",
-        "open_side_paired_positions": "Basal span",
-        "foldback_arm_bp": "Extension",
-        "left_end_word": "Left end",
-        "right_end_word": "Right end",
-        "release_method": "Release enzyme",
-    }.get(axis["key"], axis.get("label", axis["symbol"]))
+    if axis.get("heading_label"):
+        return str(axis["heading_label"])
+    label = axis.get("label", axis["symbol"])
     unit = {"positions": "pos", "contacts": "ct"}.get(axis["unit"], axis["unit"])
     return str(label) + (f" ({unit})" if unit else "")
 
@@ -192,9 +188,12 @@ def plot_layout(
             if profile.rotated_labels
             else max(18, max(text_width(label, profile.axis_font) for label in labels) + 4)
         )
+        if profile.rotated_labels:
+            # Adjacent one-digit axes still need a full diagonal text line.
+            width = max(width, profile.axis_font * profile.heading_pitch_em)
         widths.append(width)
     items = list(zip(axes, widths, strict=True))
-    margin, minimum_gap = (6, 2) if profile.rotated_labels else (26, 6)
+    margin, minimum_gap = (6, profile.minimum_axis_gap) if profile.rotated_labels else (26, 6)
     if profile.rotated_labels:
         # Reserve the first descending label's measured left overhang.
         margin = max(
@@ -240,18 +239,19 @@ def plot_layout(
             (node_geometry(a, n, profile=profile)["height"] for a in axes for n in a["nodes"]),
             default=profile.axis_font,
         )
-        below = profile.region_strip == "below"
+        below = profile.region_strip != "above"
+        region_height = 0 if profile.region_strip == "none" else frame.region_height
         top = (0 if below else frame.region_height) + tallest / 2 + (8 if below else 12)
         bottom = top + max(150, 6 * profile.axis_font)
         heading_y = bottom + tallest / 2 + 14
         label_bottom = heading_y + longest * 0.707 + profile.axis_font + 8
         frame = AxisFrame(
             label_bottom + profile.axis_font if below else frame.region_baseline,
-            frame.region_height,
+            region_height,
             heading_y,
             top,
             bottom,
-            label_bottom + frame.region_height + 8 if below else label_bottom,
+            label_bottom + region_height + 8 if below else label_bottom,
         )
     result = []
     for band, items in enumerate(bands):
@@ -291,7 +291,7 @@ def plot_layout(
             for index, axis in enumerate(result):
                 axis["x"] = first_x + index * pitch
     return SurveyLayout(
-        result, frame, profile.width, frame.top if profile.region_strip == "below" else 0
+        result, frame, profile.width, frame.top if profile.region_strip != "above" else 0
     )
 
 

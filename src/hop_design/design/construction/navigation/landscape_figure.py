@@ -12,6 +12,7 @@ from hop_design.export.construction.presentation.figure_profile import (
 from hop_design.export.construction.scaffold.report_pdf import render_report_pdf
 from hop_design.export.construction.survey.color import molecular_colors
 from hop_design.export.construction.survey.comparison_features import selected_comparison_features
+from hop_design.export.construction.survey.comparison_trace import comparison_trace_choices
 from hop_design.export.construction.survey.comparison_vector import render_comparison_vector
 from hop_design.export.construction.survey.display_projection import display_projection_files
 from hop_design.export.construction.survey.distributions import render_choice_distributions
@@ -25,7 +26,7 @@ from hop_design.serialization import canonical_json_bytes
 from ..intents.base import Source
 from ..packets.atlas import MolecularAtlasPacket
 from ..packets.publication import SourceBoundConstructionPacket
-from .guided_sampling import selection_source
+from .selection.sources import selection_source
 from .types import ChoiceSource
 
 
@@ -122,6 +123,7 @@ def landscape_figure(
         if stage != "endpoint" or layout != "auto":
             raise ValueError("Molecular similarity uses its frozen hairpin/interface comparison.")
         from hop_design.export.construction.survey.recorded_overview import (
+            comparison_packet,
             render_recorded_overview,
             selected_overview_features,
         )
@@ -130,6 +132,9 @@ def landscape_figure(
 
         overview = recorded_overview(choices, result)
         if overview is not None:
+            comparison = comparison_packet(
+                overview, tuple(p["materialized_realization_id"] for p in result["paths"])
+            )
             plot = render_recorded_overview(
                 overview,
                 eligible={
@@ -150,6 +155,15 @@ def landscape_figure(
                 files["comparison-features.svg"] = render_comparison_vector(features)
         else:
             landscape = choices.landscape()
+            from hop_design.export.construction.survey.comparison_features import (
+                comparison_features,
+            )
+
+            comparison = comparison_features(
+                landscape.preparations,
+                landscape.basis,
+                tuple(p["materialized_realization_id"] for p in result["paths"]),
+            )
             plot = render_molecular_landscape(
                 landscape,
                 eligible={
@@ -195,6 +209,14 @@ def landscape_figure(
         files["teaching.json"] = canonical_json_bytes(json.loads(atlas.json_bytes)["teaching"])
         files["selection.json"] = canonical_json_bytes(selected)
         if view == "similarity" or display_axes is not None:
+            trace_result = result
+            if (
+                view == "similarity"
+                and display_axes is None
+                and any(c["active"] for c in comparison["columns"])
+            ):
+                trace_result = comparison_trace_choices(result, comparison)
+                display_axes = tuple(a["key"] for a in trace_result["axes"])
             profile = (
                 (
                     column_detail_profile(detail_width_pt)
@@ -210,13 +232,13 @@ def landscape_figure(
                 else captured["overview.svg"]
             )
             files["trace.svg"] = render_survey_plot(
-                result, selected_identity=identity, display_axes=display_axes, profile=profile
+                trace_result, selected_identity=identity, display_axes=display_axes, profile=profile
             )
             files.update(display_projection_files(files["trace.svg"]))
             files["figure.svg"] = compose_figure(
                 files["overview.svg"],
                 files["trace.svg"],
-                result,
+                trace_result,
                 selected_identity=identity,
                 profile=profile,
             )

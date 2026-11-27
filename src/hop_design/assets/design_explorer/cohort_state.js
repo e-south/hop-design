@@ -14,9 +14,10 @@ function decodeCompact(packet) {
   }
   const values=Object.entries(packet.values).map(([key,c])=>[key,column(c)]);
   const roles=Object.entries(packet.roles).map(([key,c])=>[key,column(c)]),methods=column(packet.methods);
+  const overhead=packet.overhead?column(packet.overhead):()=>undefined;
   const row=(columns,i)=>Object.fromEntries(columns.map(([key,get])=>[key,get(i)]).filter(([,v])=>v!==null));
   return {...packet.choices,paths:packet.members.map((id,i)=>({materialized_realization_id:id,matches:packet.matches[i],
-    values:row(values,i),methods:methods(i),material_roles:row(roles,i)}))};
+    values:row(values,i),...(packet.overhead?{overhead:overhead(i)}:{}),methods:methods(i),material_roles:row(roles,i)}))};
 }
 export function hydrateCohort(value, previous) {
   if(value.compact) {const {compact,...rest}=value;return {...rest,choices:decodeCompact(compact)};}

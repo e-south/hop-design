@@ -294,3 +294,17 @@ def test_standalone_export_fits_the_saved_coordinate_extent():
     units_per_pixel = max(width / 1200, height / 480)
     assert all(float(p.get("r")) / units_per_pixel == pytest.approx(1.35) for p in points)
     assert not any(node.get("data-map-context") for node in svg.iter())
+
+
+def test_current_presentation_updates_saved_labels_without_changing_the_record():
+    from hop_design.export.construction.survey.recorded_overview import comparison_packet
+
+    overview = PreparationOverview.model_validate_json(json.dumps(document()))
+    original = overview.model_dump(mode="json")
+    packet = comparison_packet(overview, overview.members)
+    assert packet["columns"][0]["label"] == "Left insert spacer"
+    assert "Excludes the sticky-end bases" in packet["columns"][0]["definition"]
+    for captured, displayed in zip(original["columns"], packet["columns"], strict=True):
+        scientific = {k: v for k, v in displayed.items() if k not in {"label", "definition"}}
+        assert scientific == {k: v for k, v in captured.items() if v is not None and k != "label"}
+    assert overview.model_dump(mode="json") == original
