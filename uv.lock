@@ -528,7 +528,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "pyyaml", specifier = ">=6.0.2,<7" },
     { name = "reportlab", specifier = ">=4.4,<5" },
-    { name = "svglib", specifier = ">=2,<3" },
+    { name = "svglib", specifier = ">=2.3.1,<3" },
     { name = "typer", specifier = ">=0.16,<1" },
     { name = "umap-learn", marker = "extra == 'atlas'", specifier = ">=0.5.12,<0.6" },
     { name = "zstandard", specifier = ">=0.25,<0.26" },
@@ -1839,7 +1839,7 @@ wheels = [
 
 [[package]]
 name = "svglib"
-version = "2.2.0"
+version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cssselect2" },
@@ -1848,9 +1848,9 @@ dependencies = [
     { name = "reportlab" },
     { name = "tinycss2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/92/3556caee194b318d7daff8d7bf4a1e16d3fca548f322b6b9bae3bc353897/svglib-2.2.0.tar.gz", hash = "sha256:bde5c5f9b0e091f1e210b8aafdda07a49bd8ebf21c0e90d67383a665c83597ac", size = 1373629, upload-time = "2026-08-14T12:02:25.803Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/7e/5ed26f713ec34bf59b19fefe9bfef9cd5038fe2d1c7fd97157c2f0f5a9b1/svglib-2.5.0.tar.gz", hash = "sha256:d7c908f6c942ba0b60f494939a80a6f5db35d28f73dffcfbc4ecabc58a2c6394", size = 1416450, upload-time = "2026-11-27T08:19:54.462Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/c6/6c1d8b1899be627dada5650a24d8f3cb86a7cd2dd24c59edd1de0cc273e5/svglib-2.2.0-py3-none-any.whl", hash = "sha256:b0f07af5f1c8c77fa4e5788825af9aa4e21e005127997f02031b11edadca96f9", size = 49530, upload-time = "2026-08-14T12:02:24.351Z" },
+    { url = "https://files.pythonhosted.org/packages/00/2d/8129b09b8f5790bc1f01696a8d34ebb5b2abfb47c2d37edd704aff4563ae/svglib-2.5.0-py3-none-any.whl", hash = "sha256:778a111c63100504c0b10381efdd999bf140cf96585c51714d407813ae1d54c5", size = 63624, upload-time = "2026-11-27T08:19:53.265Z" },
 ]
 
 [[package]]
