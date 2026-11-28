@@ -143,9 +143,11 @@ ViewReceipt = (
 
 
 def parse_view_receipt(
-    raw: dict[str, Any],
+    raw: object,
 ) -> ViewReceipt:
     """Validate v1 before migrating; unknown fields and schemas never disappear."""
+    if not isinstance(raw, dict):
+        raise ValueError("Saved view must be a JSON object.")
     if raw.get("schema") == "hop.atlas-view/v1":
         old = LegacyAtlasViewReceipt.model_validate_json(json.dumps(raw))
         raw = {**old.model_dump(mode="json", by_alias=True), "schema": "hop.atlas-view/v2"}

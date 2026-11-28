@@ -1,19 +1,26 @@
-"""Deterministic family/product sampling over existing complete preparations."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/src/hop_design/design/construction/navigation/selection/sampling.py
+
+Sample existing complete preparations with deterministic family and product choices.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from collections.abc import Callable
-from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-from hop_design.design.source_documents import load_source_mapping
 from hop_design.models.construction.variants.sampling import (
     GuidedSampleReceipt,
     GuidedSampleRequest,
 )
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from ..intents.base import Source
-from .molecular_groups import molecular_families
-from .types import ChoiceSource
+from ...intents.base import Source
+from ..molecular_groups import molecular_families
+from ..types import ChoiceSource
 
 
 def guided_sample(
@@ -37,7 +44,7 @@ def guided_sample(
     result = choices.query(query)
     input_query = result["query"]
     if different_loop:
-        from .local_contrast import loop_alternatives
+        from ..local_contrast import loop_alternatives
 
         result = loop_alternatives(choices, result, request.history)
     atlas = molecular_families(
@@ -106,7 +113,7 @@ def guided_sample(
             f"Loop {old_word} → {new_word}. "
             "Other hairpin regions retain their sequence, contacts and terminal chemistry."
         )
-    from .local_contrast import coordinate_changes
+    from ..local_contrast import coordinate_changes
 
     changes = (
         coordinate_changes(rows[current]["values"], rows[identity]["values"]) if current else []
@@ -143,6 +150,10 @@ def sample_choices(
     history: tuple[str, ...] = (),
     after: Source | None = None,
 ) -> dict[str, Any]:
+    if strategy is not None and (
+        not isinstance(strategy, str) or strategy not in {"families", "preparations", "loop"}
+    ):
+        raise ValueError("Sampling strategy must be families, preparations or loop.")
     if after is not None:
         if history:
             raise ValueError("A saved view already specifies its sampling history.")
@@ -159,7 +170,7 @@ def sample_choices(
         query = view["selection"].get("query") if query is None else query
     if seed is None:
         raise ValueError("Supply a sampling seed or a saved view with its next seed.")
-    strategy = strategy or "preparations"
+    strategy = "preparations" if strategy is None else strategy
     stage = stage or "endpoint"
     if strategy in {"families", "loop"}:
         return guided_sample(
@@ -175,26 +186,3 @@ def sample_choices(
             "Use the families strategy for stage-qualified guided sampling and history."
         )
     return ordinary(seed=seed, query=query)
-
-
-def selection_source(choices: ChoiceSource, source: Source) -> dict[str, Any]:
-    """Replay guided receipts before admitting their ordinary selection."""
-    raw = load_source_mapping(source) if isinstance(source, str | Path) else source
-    if raw.get("schema", "").startswith("hop.atlas-view/"):
-        return cast(dict[str, Any], choices.restore_view(raw)["selection"])
-    if raw.get("schema") != "hop.guided-sample/v1":
-        return raw
-    receipt = GuidedSampleReceipt.model_validate_json(canonical_json_bytes(raw))
-    replay = guided_sample(
-        choices,
-        seed=receipt.seed,
-        query=receipt.query,
-        stage=receipt.stage,
-        history=receipt.history,
-        different_loop=receipt.strategy == "loop/v1",
-    )
-    if replay != receipt.model_dump(mode="json", by_alias=True):
-        raise ValueError(
-            "Guided sample receipt disagrees with its recorded pool or sampling inputs."
-        )
-    return receipt.selection

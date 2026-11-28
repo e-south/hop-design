@@ -1,9 +1,17 @@
-"""Transactional sparse survey index; molecular records remain the authority.
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/construction/surveys/index.py
+
+Index exact evaluation records, target coverage and continuation transactionally.
 
 This private storage layer indexes verified evaluator outcomes. It does not admit
 molecular evidence. Retrieval must replay the referenced construction authority.
 One transaction commits a step and its deduplicated record together. The complete
 target domain is bound once, including targets with no evaluation yet.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
 """
 
 from __future__ import annotations
@@ -288,12 +296,13 @@ class SurveyIndex:
     ) -> Iterator[tuple[int, int, bytes, int, bool]]:
         """Stream exact addresses, without loading a growing corpus into memory."""
         order = "creator,ordinal,step" if origin_order and self.origins.ledger else "ordinal,step"
-        for target, step, count, exhausted in self._db.execute(
-            "SELECT ordinal, step, witness_count, exhausted FROM steps "
+        for target, step, count, exhausted, digest in self._db.execute(
+            "SELECT ordinal, step, witness_count, exhausted, record_digest FROM steps "
             f"ORDER BY {order} LIMIT ? OFFSET ?",
             (limit, offset),
         ):
-            yield target, step, self.record(target, step=step), count, bool(exhausted)
+            self.request.targets.pair_at(target)
+            yield target, step, self.get_object(digest), count, bool(exhausted)
 
     def put_object(self, content: bytes) -> str:
         with self._transactions.write():

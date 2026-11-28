@@ -94,7 +94,7 @@ def test_design_view_prints_plain_labels_and_methods_and_keeps_fixed_context_off
     assert "self_paired_arm_bp" not in axes
     assert "release_method" not in axes
     assert "BsaI-HFv2" in text
-    assert "Loop size" in text and "Left gap" in text
+    assert "Loop length" in text and "Left insert spacer" in text
     assert "eR1" not in text
     assert float(drawing.get("font-size")) * 504 / float(drawing.get("viewBox").split()[2]) >= 9
 
@@ -340,7 +340,7 @@ def test_single_base_links_mark_their_exact_origin_behind_the_labels():
         '<g data-parameter-anchor="base" data-anchor-box="[100,80,14,20]"/></svg>'
     )
     plot = ET.fromstring(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300">'
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" data-axis-landing-y="0">'
         '<g data-axis="base" data-band="0"><g data-axis-title="true">'
         '<text x="200" y="30">Source base</text></g></g></svg>'
     )

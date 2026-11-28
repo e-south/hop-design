@@ -38,6 +38,14 @@ def compact_choices(answer: dict[str, Any]) -> dict[str, Any]:
         "members": members,
         "matches": [p["matches"] for p in paths],
         "values": {key: _column(p["values"].get(key) for p in paths) for key in keys},
+        "overhead": _column(
+            {
+                "endpoint_non_payload_nt_by_strand": p.get("overhead", {}).get(
+                    "endpoint_non_payload_nt_by_strand"
+                )
+            }
+            for p in paths
+        ),
         "methods": _column(p.get("methods", []) for p in paths),
         "roles": {
             key: _column(p.get("material_roles", {}).get(key) for p in paths) for key in roles

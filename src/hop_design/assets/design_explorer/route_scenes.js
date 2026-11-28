@@ -25,9 +25,9 @@ export function previewScenePhases(view,teaching,phases) {
   return teaching.bottom>view.top && teaching.top<view.bottom?[]:phases;
 }
 
-// One stable slot per processing phase. Only visible slots acquire drawings;
-// the pin retains at most four scene nodes for immediate restoration.
-export function routeScenes(host,scroll,request,artifacts) {
+// Prepare one pinned route together; keep its finite roster ready for scrolling.
+// Hover still requests only visible steps and cannot change the pin's geometry.
+export function routeScenes(host,scroll,request,artifacts,progress) {
   const slots=new Map(),pinnedNodes=new Map();
   let pinned=null,context=null,ready=false,closed=false,frame=null,lastRequest=null,pinnedRoster=null;
   const contextKey=c=>c?JSON.stringify([c.identity,c.token,c.snapshot,c.policy,c.presentation]):'';
@@ -52,20 +52,21 @@ export function routeScenes(host,scroll,request,artifacts) {
         slot.body.replaceChildren(svg);slot.shown=drawingKey(job,phase);slot.failed=null;slot.unavailable=null;slot.status.clear();
         if(pinnedResult) {
           const key=drawingKey(job,phase);pinnedNodes.delete(key);pinnedNodes.set(key,svg);
-          while(pinnedNodes.size>4)pinnedNodes.delete(pinnedNodes.keys().next().value);
         }
       }
       for(const phase of value.unavailable||[]) {
         const slot=slots.get(phase);if(!slot)continue;
         slot.shown=drawingKey(job,phase);slot.body.replaceChildren();
         slot.unavailable={key:slot.shown,message:value.notice || 'No unique corresponding state in this preparation.'};
-        slot.status.begin('',job.identity).idle(slot.unavailable.message);
+        slot.status.begin('',job.identity).unavailable(slot.unavailable.message);
       }
       restoreAnchor(saved);
+      updateProgress();
     };
   },{
     pending(job) {
-      for(const phase of job.phases) slots.get(phase)?.status.begin('Preparing matching scene…',job.identity);
+      for(const phase of job.phases) slots.get(phase)?.status.begin('Loading step…',job.identity);
+      updateProgress();
     },
     ready(job) {if(contextKey(context)===contextKey(job)){lastRequest=null;schedule();}},
     failed(error,job) {
@@ -73,9 +74,9 @@ export function routeScenes(host,scroll,request,artifacts) {
       for(const phase of job.phases) {
         const slot=slots.get(phase);if(!slot)continue;
         slot.failed=drawingKey(job,phase);
-        slot.status.begin('',job.identity).fail('Scene unavailable. Reinspect this point to retry.');
+        slot.status.begin('',job.identity).fail('Step did not load. Reinspect this point to retry.');
       }
-      lastRequest=null;schedule();
+      lastRequest=null;updateProgress();schedule();
     },
   });
   const observer=new IntersectionObserver(schedule,{root:scroll,threshold:0});
@@ -85,6 +86,17 @@ export function routeScenes(host,scroll,request,artifacts) {
     return [...slots.values()].filter(slot=>{
       const box=slot.element.getBoundingClientRect();return box.bottom>view.top && box.top<view.bottom;
     });
+  }
+  function updateProgress() {
+    const pending=visibleSlots().filter(s=>s.element.dataset.panelState==='loading'||(s.element.dataset.panelState==='waiting'&&s.element.dataset.pendingIdentity));
+    const retained=pending.some(s=>s.element.dataset.panelRetained==='previous');
+    const message=pending.length?(retained?'Updating…':'Loading…'):'';
+    if(progress.textContent!==message)progress.textContent=message;
+    if(message) {
+      progress.dataset.busy='true';
+      const label=retained?'Previous preparation shown while visible steps update.':'Loading visible processing steps.';
+      if(progress.getAttribute('aria-label')!==label)progress.setAttribute('aria-label',label);
+    } else {delete progress.dataset.busy;progress.removeAttribute('aria-label');}
   }
   function anchor(phases) {
     const current=visibleSlots()[0]?.phase;
@@ -96,6 +108,8 @@ export function routeScenes(host,scroll,request,artifacts) {
   }
   function setRoster(roster) {
     const phases=[...new Set(roster.map(s=>s.phase))];
+    const labels=new Map(roster.map(s=>[s.phase,s.label]));
+    if(phases.some(phase=>typeof labels.get(phase)!=='string'||!labels.get(phase).trim()))throw Error('Route scene lacks its recorded display label. Reload the browser.');
     if(JSON.stringify([...slots.keys()])===JSON.stringify(phases)) return;
     const saved=anchor(phases),keep=new Set(phases);
     for(const [phase,slot] of slots) if(!keep.has(phase)) {
@@ -106,10 +120,10 @@ export function routeScenes(host,scroll,request,artifacts) {
       let slot=slots.get(phase);
       if(!slot) {
         const element=document.createElement('div'),body=document.createElement('div');
-        element.className='route-scene';element.dataset.scenePhase=phase;element.setAttribute('aria-label',phase.replaceAll('_',' '));
+        element.className='route-scene';element.dataset.scenePhase=phase;element.setAttribute('aria-label',labels.get(phase));
         body.className='route-scene-drawing';element.append(body);host.append(element);
-        slot={phase,element,body,status:panelStatus(element,{retainPrevious:()=>Boolean(body.firstElementChild)}),shown:null,failed:null,unavailable:null,geometry:null};
-        slot.status.begin('').idle(phase.replaceAll('_',' '));observer.observe(element);
+        slot={phase,element,body,status:panelStatus(element,{quietProgress:true,retainPrevious:()=>Boolean(body.firstElementChild)}),shown:null,failed:null,unavailable:null,geometry:null};
+        slot.status.begin('').idle(labels.get(phase));observer.observe(element);
       }
       ordered.push([phase,slot]);host.append(slot.element);
     }
@@ -117,18 +131,21 @@ export function routeScenes(host,scroll,request,artifacts) {
     restoreAnchor(saved);
   }
   function pump() {
-    frame=null;if(closed || !ready || !context)return;
+    frame=null;if(closed)return;
+    if(!ready || !context){updateProgress();return;}
     const visible=visibleSlots();
     for(const slot of slots.values()) if(!visible.includes(slot)) slot.body.replaceChildren();
     const needed=[];
-    for(const slot of visible) {
+    const candidates=contextKey(context)===contextKey(pinned)?[...slots.values()]:visible;
+    for(const slot of candidates) {
       const key=drawingKey(context,slot.phase),saved=contextKey(context)===contextKey(pinned)?pinnedNodes.get(key):null;
-      if(saved) {slot.body.replaceChildren(saved);slot.shown=key;slot.status.clear();}
+      if(saved) {if(visible.includes(slot))slot.body.replaceChildren(saved);slot.shown=key;slot.status.clear();}
       else if(slot.shown===key && !slot.body.firstElementChild && slot.failed!==key && slot.unavailable?.key!==key) slot.shown=null;
       if(slot.shown!==key && slot.failed!==key && slot.unavailable?.key!==key)needed.push(slot.phase);
     }
-    // One visible viewport shares one verified molecular context. The server
-    // bounds phases to its finite recorded vocabulary; hidden slots stay lazy.
+    updateProgress();
+    // One selected preparation shares its verified projection across all steps.
+    // Transient hover never starts a whole-route prefetch.
     const phases=needed;
     if(!phases.length) {if(lastRequest){work.clear();lastRequest=null;}return;}
     const key=JSON.stringify([contextKey(context),phases]);if(key===lastRequest)return;
@@ -138,8 +155,9 @@ export function routeScenes(host,scroll,request,artifacts) {
   function invalidate(identity) {
     work.clear();lastRequest=null;ready=false;
     for(const slot of slots.values()) {
-      slot.failed=null;slot.status.begin('',identity||'').idle('Preparing matching route…');
+      slot.failed=null;slot.status.begin('',identity||'').idle('Loading route…');
     }
+    updateProgress();
   }
   function show(next) {
     if(contextKey(context)!==contextKey(next))invalidate(next?.identity);
@@ -148,24 +166,29 @@ export function routeScenes(host,scroll,request,artifacts) {
       const key=drawingKey(context,slot.phase),saved=contextKey(context)===contextKey(pinned)?pinnedNodes.get(key):null;
       if(saved){slot.body.replaceChildren(saved);slot.shown=key;slot.status.clear();}
       else if(slot.shown===key && slot.body.firstElementChild)slot.status.clear();
-      else if(slot.unavailable?.key===key)slot.status.begin('',context.identity).idle(slot.unavailable.message);
+      else if(slot.unavailable?.key===key)slot.status.begin('',context.identity).unavailable(slot.unavailable.message);
     }
+    updateProgress();
     schedule();
   }
   scroll.addEventListener('scroll',schedule,{passive:true});
   return {
     pin(state) {
+      const labels=new Map(state.stage_options.map(s=>[s.value,s.label]));
+      const roster=(state.preview?.summary.atlas.states||[]).map(s=>({...s.state,label:labels.get(s.state.state_id)}));
+      if(roster.some(s=>typeof s.label!=='string'||!s.label.trim()))throw Error('Route scene lacks its recorded display label. Reload the browser.');
       const identity=state.preview?.summary.atlas.materialized_realization_id;
       const next=identity?{identity,token:state.token,snapshot:state.choices.snapshot_digest,policy:state.render_policy,presentation:state.presentation.route}:null;
       if(!pinned || !next || drawingKey(pinned,'')!==drawingKey(next,'')){pinnedNodes.clear();pinnedRoster=null;}
       pinned=next;
-      setRoster(pinnedRoster||(state.preview?.summary.atlas.states||[]).map(s=>s.state));
+      setRoster(pinnedRoster||roster);
       show(pinned);
     },
     pending:invalidate,
     previewFailed(identity) {
       for(const slot of slots.values()) if(slot.element.dataset.pendingIdentity===identity)
-        slot.status.begin('',identity).fail('Preview unavailable. Reinspect this point to retry.');
+        slot.status.begin('',identity).fail('Preview did not load. Reinspect this point to retry.');
+      updateProgress();
     },
     previewPhases(teaching) {
       return previewScenePhases(scroll.getBoundingClientRect(),teaching.getBoundingClientRect(),visibleSlots().map(slot=>slot.phase));
@@ -178,6 +201,6 @@ export function routeScenes(host,scroll,request,artifacts) {
     },
     restore(){show(pinned);},
     refresh:schedule,
-    close(){closed=true;work.close();observer.disconnect();scroll.removeEventListener('scroll',schedule);if(frame!==null)cancelAnimationFrame(frame);for(const slot of slots.values())slot.status.close();slots.clear();pinnedNodes.clear();host.replaceChildren();pinned=context=null;},
+    close(){closed=true;work.close();observer.disconnect();scroll.removeEventListener('scroll',schedule);if(frame!==null)cancelAnimationFrame(frame);for(const slot of slots.values())slot.status.close();slots.clear();pinnedNodes.clear();host.replaceChildren();pinned=context=null;progress.textContent='';delete progress.dataset.busy;progress.removeAttribute('aria-label');},
   };
 }

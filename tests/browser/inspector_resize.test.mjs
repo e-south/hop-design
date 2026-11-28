@@ -39,7 +39,7 @@ test('dragging bounds inspector width, batches layout and preserves the visible 
  assert.equal(x.surface.properties.size,0,'No per-event layout before the animation frame');
  x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'650px');assert.equal(x.scroll.scrollTop,before+210);
  assert.equal(x.changes(),1);assert.equal(x.begins(),1);
- x.handle.emit('pointermove',{pointerId:1,clientX:0});x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'760px');
+ x.handle.emit('pointermove',{pointerId:1,clientX:0});x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'780px');
  x.handle.emit('pointerup',{pointerId:1});assert.equal(x.handle.pointer,null);
  x.control.close();assert.ok(x.watchers.every(w=>!w.active));assert.equal(x.handle.events.size,0);
 });
@@ -48,11 +48,11 @@ test('keyboard, focus disclosure and viewport constraints are local and accessib
  const x=setup(t);assert.equal(x.handle.hidden,false);assert.equal(x.handle.attributes.get('aria-valuenow'),'440');
  x.handle.emit('keydown',{key:'ArrowLeft'});x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'464px');
  x.handle.emit('keydown',{key:'Home'});x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'440px');
- x.handle.emit('keydown',{key:'End'});x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'760px');
+ x.handle.emit('keydown',{key:'End'});x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'780px');
  x.inspector.dataset.focus='figure-one';x.watchers.forEach(w=>w.fn());assert.equal(x.handle.hidden,true);
  delete x.inspector.dataset.focus;x.surface.clientWidth=800;x.watchers.forEach(w=>w.fn());x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'480px');
  x.surface.clientWidth=600;x.watchers.forEach(w=>w.fn());assert.equal(x.handle.hidden,true);assert.equal(x.surface.properties.has('--inspector-width'),false);
- x.surface.clientWidth=1100;x.watchers.forEach(w=>w.fn());x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'760px','Restore the chosen width when space returns');
+ x.surface.clientWidth=1100;x.watchers.forEach(w=>w.fn());x.flush();assert.equal(x.surface.properties.get('--inspector-width'),'780px','Restore the chosen width when space returns');
  x.control.close();assert.equal(x.frames.size,0);
 });
 

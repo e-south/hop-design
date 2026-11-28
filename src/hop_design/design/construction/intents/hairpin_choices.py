@@ -12,7 +12,7 @@ from hop_design.models.construction.variants.objective import DesignSearchObject
 from hop_design.models.construction.variants.query import MolecularStage
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
-from ..navigation.guided_sampling import selection_source
+from ..navigation.selection.sources import selection_source
 from ..packets.atlas import MolecularAtlasPacket
 from ..packets.publication import SourceBoundConstructionPacket
 from ..search.diversity import diversity_summary
@@ -292,6 +292,7 @@ class HairpinDesignChoices(DesignChoices):
         render_policy: str | None = None,
         reference_selection: Source | None = None,
         display_axes: tuple[str, ...] | None = None,
+        detail_width_pt: float | None = None,
     ) -> SourceBoundConstructionPacket:
         if selection is not None:
             owner = self._for_selection(selection)
@@ -305,19 +306,24 @@ class HairpinDesignChoices(DesignChoices):
                     render_policy=render_policy,
                     reference_selection=reference_selection,
                     display_axes=display_axes,
+                    detail_width_pt=detail_width_pt,
                 )
         from ..navigation.figure_context import figure_context
         from ..navigation.landscape_figure import landscape_figure
 
         context = figure_context(
-            self, selection, view, stage, layout, render_policy, reference_selection, display_axes
+            self,
+            selection,
+            view,
+            stage,
+            layout,
+            render_policy,
+            reference_selection,
+            display_axes,
+            detail_width_pt,
         )
-        selection, view, stage, layout = (
-            context.selection,
-            context.view,
-            context.stage,
-            context.layout,
-        )
+        selection, view = context.selection, context.view
+        stage, layout = context.stage, context.layout
         atlas = context.atlas(self)
         if view in {"families", "similarity"}:
             return context.attach(
@@ -331,6 +337,7 @@ class HairpinDesignChoices(DesignChoices):
                     view=view,
                     display_axes=context.display_axes,
                     color=context.color,
+                    detail_width_pt=context.detail_width_pt,
                 ),
                 atlas,
             )

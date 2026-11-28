@@ -44,6 +44,8 @@ export function inspectionOverlay(host) {
       path.setAttribute('pointer-events','none');
       for(const [key,value] of Object.entries({d:trace.path,fill:'none',stroke:'#a55236','stroke-width':3,opacity:1})) path.setAttribute(key,value);
       const font=Number(svg.getAttribute('font-size'))||22;
+      const ink=svg.getAttribute('data-selected-ink')||'#a55236',fill=svg.getAttribute('data-selected-fill')||'#fff';
+      path.setAttribute('stroke',ink);
       const boxes=[];
       for(const value of trace.values) {
         const geometry=value.node_label;
@@ -52,15 +54,16 @@ export function inspectionOverlay(host) {
           ![geometry.width,geometry.height,value.x,value.y].every(Number.isFinite) ||
           geometry.width<=0 || geometry.height<=0) throw Error('Molecular trace lacks shared label geometry.');
         const label=document.createElementNS(ns,'g');label.dataset.inspectionParameter=value.key;
+        if(value.parameters)label.dataset.parameterKeys=JSON.stringify(value.parameters);
         label.setAttribute('aria-label',`${value.label}: ${value.display}${value.unit?' '+value.unit:''}`);
         const rect=document.createElementNS(ns,'rect');
         const box={x:value.x-geometry.width/2,y:value.y-geometry.height/2,width:geometry.width,height:geometry.height};
         boxes.push(box);
-        for(const [key,v] of Object.entries({...box,rx:3,fill:'#fff',stroke:'#a55236','stroke-width':1.4})) rect.setAttribute(key,v);
+        for(const [key,v] of Object.entries({...box,rx:3,fill,stroke:ink,'stroke-width':1.4})) rect.setAttribute(key,v);
         label.append(rect);
         geometry.lines.forEach((line,index)=>{
           const text=document.createElementNS(ns,'text');
-          for(const [key,v] of Object.entries({x:value.x,y:value.y+(index-(geometry.lines.length-1)/2)*font+font*.35,'text-anchor':'middle',fill:'#74351f','font-size':font})) text.setAttribute(key,v);
+          for(const [key,v] of Object.entries({x:value.x,y:value.y+(index-(geometry.lines.length-1)/2)*font+font*.35,'text-anchor':'middle',fill:ink,'font-size':font})) text.setAttribute(key,v);
           text.textContent=line;label.append(text);
         });
         const title=document.createElementNS(ns,'title');title.textContent=value.display;label.append(title);
@@ -95,7 +98,8 @@ export function transientInspector(inspector,scroll) {
   };
 }
 
-export function escapeInspection(inspector,{restorePreview,returnToMap,close}) {
+export function escapeInspection(inspector,{restorePreview,returnToMap,close,dismissRefinement=()=>false}) {
+  if(dismissRefinement())return;
   if(inspector.dataset.transient) restorePreview();
   else if(inspector.dataset.focus) returnToMap();
   else close();

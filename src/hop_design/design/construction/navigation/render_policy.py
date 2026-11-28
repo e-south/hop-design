@@ -1,15 +1,24 @@
-"""Rendering preferences are explicit and never replace the molecular producer."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/src/hop_design/design/construction/navigation/render_policy.py
+
+Resolve rendering preferences while retaining the molecular producer.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 import json
 from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path
 
-from hop_design.design.source_documents import load_source_mapping
 from hop_design.serialization import canonical_json_bytes, sha256_digest
 
 from ..intents.base import Source
 from ..packets.atlas import MolecularAtlasPacket
+from .selection.sources import selection_document
 from .types import ChoiceSource
 
 
@@ -72,7 +81,8 @@ def render_context(
     presentation: str | None = None,
     stage: str | None = None,
 ) -> RenderContext:
-    raw = load_source_mapping(selection) if isinstance(selection, str | Path) else selection
+    raw = selection_document(selection)
+    selection = raw
     if raw.get("schema", "").startswith("hop.atlas-view/"):
         view = choices.restore_view(raw)
         selection = view["selection"]

@@ -9,20 +9,20 @@ export function neighboringChoices(details, host, post, current, select) {
   const open=async(verify=false)=>{
     if(!details.open) {cancel();return;}
     const ticket=++serial,state=current(),token=state.token;
-    if(!state.has_landscape){host.textContent='Capture molecular coordinates to inspect nearby alternatives.';return;}
+    if(!state.has_landscape){host.textContent='This collection has no saved molecular comparison.';return;}
     const request_id=crypto.randomUUID();pending=request_id;
-    host.textContent=verify?'Checking shared surroundings…':'Finding nearby constructions…';
+    host.textContent=verify?'Checking other hairpin regions…':'Comparing recorded preparations…';
     try {
       const result=await post('neighbors',{verify_controls:verify,request_id});
       if(ticket!==serial || current().token!==token || !details.open) return;
       const rows=result.neighbors.slice(0,3);
-      if(!rows.length){host.textContent='No other eligible preparation in this recorded pool.';return;}
+      if(!rows.length){host.textContent='No other preparation matches the current filters.';return;}
       host.replaceChildren(...rows.map(row=>{
         const button=document.createElement('button');button.textContent=row.description;
         button.addEventListener('click',()=>select(row.materialized_realization_id));return button;
       }));
       if(!verify && rows.some(row=>row.coordinate_changes.some(change=>change.key==='loop_word'))) {
-        const check=document.createElement('button');check.textContent='Check shared surroundings';
+        const check=document.createElement('button');check.textContent='Check other hairpin regions';
         check.addEventListener('click',()=>open(true));host.append(check);
       }
       if(result.preservation_notice){const note=document.createElement('p');note.textContent=result.preservation_notice;host.append(note);}

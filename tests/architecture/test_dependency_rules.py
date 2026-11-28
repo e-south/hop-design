@@ -37,6 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
         ("api.py", "from hop_design.cli import app"),
         ("cli.py", "from hop_design.design import compile_spec"),
         ("cli.py", "from hop_design.models import HopSpec"),
+        ("__main__.py", "from hop_design.design import compile_spec"),
         ("commands/bad.py", "from hop_design.design import compile_spec"),
         ("commands/bad.py", "from hop_design.models import HopSpec"),
         ("commands/bad.py", "from hop_design.cli import app"),
@@ -53,6 +54,7 @@ def test_forbidden_absolute_relative_and_root_imports_fail(path: str, source: st
     [
         ("design/good.py", "from hop_design.kernel import bundle_identity"),
         ("cli.py", "from hop_design.api import compile"),
+        ("__main__.py", "from hop_design.cli import app"),
         (
             "commands/good.py",
             "from hop_design.construction import load_verified_construction_bundle",

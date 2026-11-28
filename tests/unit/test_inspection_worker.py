@@ -3,14 +3,38 @@
 import multiprocessing
 import os
 import signal
+import subprocess
+import sys
 import time
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Event, RLock
 from types import SimpleNamespace
 
 import pytest
 
 from hop_design.commands.design.inspection_worker import SingleWorker
+
+
+def test_console_spawn_does_not_register_commands_in_the_render_child(tmp_path):
+    metadata = tomllib.loads(Path("pyproject.toml").read_text())
+    module, name = metadata["project"]["scripts"]["hop-design"].split(":")
+    script = tmp_path / "console_spawn.py"
+    script.write_text(
+        f"from {module} import {name}\n"
+        "if __name__ == '__main__':\n"
+        "    from hop_design.commands.design.inspection_worker import SingleWorker\n"
+        "    worker = SingleWorker(eval)\n"
+        "    try:\n"
+        "        print(worker.call(\"'hop_design.commands' in __import__('sys').modules\"))\n"
+        "    finally:\n"
+        "        worker.close()\n"
+    )
+    result = subprocess.run(
+        [sys.executable, str(script)], check=True, text=True, capture_output=True, timeout=15
+    )
+    assert result.stdout.strip() == "False", "Spawned rendering must not register CLI commands"
 
 
 @pytest.mark.parametrize("timeout", [0, -1, float("nan"), float("inf")])

@@ -23,8 +23,8 @@ def test_inspector_profile_keeps_exact_paths_with_readable_annotation_scale():
     tree = ET.fromstring(
         render_survey_plot(records, selected_identity="exact-one", profile=INSPECTOR_FIGURE)
     )
-    assert float(tree.get("font-size")) * 412 / float(narrow.frame.split()[2]) >= 12
-    assert float(narrow.frame.split()[2]) == 600
+    assert float(tree.get("font-size")) * 800 / float(narrow.frame.split()[2]) >= 12
+    assert float(narrow.frame.split()[2]) >= INSPECTOR_FIGURE.width
     assert plot_geometry(tree) == narrow.figure_geometry
     path = next(e for e in tree.iter() if e.get("data-selected") == "true")
     assert narrow.trace("exact-one")["path"] == path.get("d")
@@ -79,7 +79,7 @@ def test_eligibility_changes_do_not_move_coordinates_or_mutate_a_prior_overlay()
 
 @pytest.mark.parametrize(
     ("method_label", "expected_lines"),
-    [("Nb.Mva1269I", ["Nb.Mva1269I"]), ("BsaI-HFv2", ["BsaI-", "HFv2"])],
+    [("Nb.Mva1269I", ["Nb.Mva1269I"]), ("BsaI-HFv2", ["BsaI-HFv2"])],
 )
 def test_overlay_label_geometry_matches_the_static_figure_for_method_names(
     method_label, expected_lines

@@ -27,6 +27,8 @@ def emit_choices(
     directory: Path,
     format: OutputFormat,
     query: Path | None = None,
+    *,
+    member: str | None = None,
 ) -> None:
     if not use_text(format):
         emit(choices.query(query))
@@ -34,10 +36,10 @@ def emit_choices(
     answer = choices.explain(query)
     typer.echo(answer["headline"])
     if "required_members" in answer:
-        for member in answer["members"]:
+        for required_member in answer["members"]:
             typer.echo(
-                f"  {member['name']}: {member['stem_arm']} — "
-                f"{member['complete_preparations']} complete preparations."
+                f"  {required_member['name']}: {required_member['stem_arm']} — "
+                f"{required_member['complete_preparations']} complete preparations."
             )
         typer.echo("Inspect one stem's choices with --member NAME.")
         if "select_members" in answer["actions"]:
@@ -73,18 +75,22 @@ def emit_choices(
             typer.echo("  " + "; ".join(facts + list(choice["methods"])))
     typer.echo(f"Saved choices: {directory}")
     root = shlex.quote(str(directory))
+    scoped = root if member is None else f"{root} --member {shlex.quote(member)}"
     filtering = "" if query is None else f" --query {shlex.quote(str(query))}"
     if "select" in answer["actions"]:
-        typer.echo(f"Inspect: hop-design design view {root} --out ./design-view")
+        typer.echo(f"Inspect: hop-design design view {scoped} --out ./design-view")
         typer.echo(
-            f"Sample: hop-design design sample {root}{filtering} --seed 1 --out ./selection.json"
+            f"Sample: hop-design design sample {scoped}{filtering} --seed 1 --out ./selection.json"
         )
     if "refine_query" in answer["actions"]:
         typer.echo("Refine the filter to inspect other recorded choices; no search is run.")
     if "continue_search" in answer["actions"]:
-        typer.echo(
-            f"Search further: hop-design design continue {root} --evaluations 64 --format text"
-        )
+        if member is None:
+            typer.echo(
+                f"Search further: hop-design design continue {root} --evaluations 64 --format text"
+            )
+        else:
+            typer.echo(f"Family search bounds: hop-design design query {root} --format text")
     if "revise_request" in answer["actions"]:
         typer.echo(
             "Continuing unchanged cannot resolve this exclusion. "
@@ -93,5 +99,5 @@ def emit_choices(
     if "inspect_permissions" in answer["actions"]:
         typer.echo(f"Inspect permissions: {directory / 'intent' / 'summary.json'}")
     typer.echo(
-        f"Full records and coverage: hop-design design query {root}{filtering} --format json"
+        f"Full records and coverage: hop-design design query {scoped}{filtering} --format json"
     )

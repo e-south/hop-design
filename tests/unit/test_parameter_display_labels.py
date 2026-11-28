@@ -27,7 +27,7 @@ def test_static_and_interactive_traces_share_current_labels_without_changing_sou
     before = copy.deepcopy(answer)
     tree = ET.fromstring(render_survey_plot(answer))
     axis = tree.find(".//*[@data-axis-title='left_gap']")
-    assert " ".join(e.text for e in axis if e.tag.endswith("}text")) == "Left gap bp"
+    assert " ".join(e.text for e in axis if e.tag.endswith("}text")) == "Left insert spacer bp"
     trace = TraceProjection(answer).trace("exact-one")
     for value in trace["values"]:
         assert value["label"] == parameter_definition(value["key"]).label

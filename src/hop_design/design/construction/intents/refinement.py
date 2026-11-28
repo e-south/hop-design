@@ -1,4 +1,13 @@
-"""Translate public preservation into the existing verified variant query."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/construction/intents/refinement.py
+
+Admit public query mappings and bind preservation to verified variant references.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 import json
 from pathlib import Path
@@ -13,7 +22,15 @@ from hop_design.serialization import canonical_json_bytes, sha256_digest
 def load_design_query(
     source: str | Path | dict[str, Any] | None,
 ) -> InterfaceSurveyQuery | DesignRefinementQuery:
-    value = load_source_mapping(source) if isinstance(source, str | Path) else source or {}
+    value = (
+        load_source_mapping(source)
+        if isinstance(source, str | Path)
+        else {}
+        if source is None
+        else source
+    )
+    if not isinstance(value, dict):
+        raise ValueError("Design query must be a mapping.")
     model = (
         DesignRefinementQuery
         if value.get("schema") == "hop.design-refinement/v1"

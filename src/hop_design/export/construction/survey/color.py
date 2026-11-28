@@ -6,8 +6,10 @@ from typing import Any
 
 from hop_design.models.construction.variants.view_color import AtlasColorLens
 
-ACCENT, NEUTRAL = "#216e72", "#c5cecf"
-RAMP = ((223, 235, 230), (83, 153, 151), (26, 62, 75))
+from ..presentation.palette import NUMERIC_DIVERGING, POPULATION_ACCENT
+
+ACCENT, NEUTRAL = POPULATION_ACCENT, "#8D99A5"
+RAMP = tuple(tuple(int(color[i : i + 2], 16) for i in (1, 3, 5)) for color in NUMERIC_DIVERGING)
 
 
 @dataclass(frozen=True)
@@ -18,8 +20,9 @@ class MolecularColors:
 
 
 def _shade(t: float) -> str:
-    index = min(1, floor(t * 2))
-    fraction = t * 2 - index
+    last = len(RAMP) - 1
+    index = min(last - 1, floor(t * last))
+    fraction = t * last - index
     return "#" + "".join(
         f"{floor(v + (RAMP[index + 1][i] - v) * fraction + 0.5):02x}"
         for i, v in enumerate(RAMP[index])
@@ -35,9 +38,24 @@ def molecular_colors(answer: dict[str, Any], raw: dict[str, Any]) -> MolecularCo
             lens, "No grouping", {p["materialized_realization_id"]: ACCENT for p in rows}
         )
     axis = next((a for a in answer["axes"] if a["key"] == lens.key), None)
+    if lens.key == "max_end_gap":
+        sides = [
+            next((a for a in answer["axes"] if a["key"] == key), None)
+            for key in ("left_gap", "right_gap")
+        ]
+        if any(side is None or side.get("applicable") is False for side in sides):
+            raise ValueError("Larger end gap is not applicable to this endpoint.")
+        axis = {"label": "Larger end gap", "unit": "bp"}
+
+    if lens.key == "released_non_stem_nt":
+        axis = {"label": "Released non-stem DNA", "unit": "nt total"}
+
+    def value(row: dict[str, Any]) -> Any:
+        return lens.value_in(row["values"], overhead=row.get("overhead"))
+
     if axis is None or axis.get("applicable") is False:
         raise ValueError("Color parameter is not applicable to this endpoint.")
-    values = {p["values"].get(lens.key) for p in rows} - {None}
+    values = {value(p) for p in rows} - {None}
     if not values or (lens.word is not None and lens.word not in values):
         raise ValueError("Color view has no matching value in this recorded pool.")
     if lens.word is not None:
@@ -48,9 +66,9 @@ def molecular_colors(answer: dict[str, Any], raw: dict[str, Any]) -> MolecularCo
         palette = {v: ACCENT if lo == hi else _shade((v - lo) / (hi - lo)) for v in values}
         measure = f"{lo}" if lo == hi else f"{lo}\u2013{hi}"
         label = f"{axis['label']} · {measure} {axis['unit']}"
-        label += "; constant" if lo == hi else "; pale → dark"
+        label += "; constant" if lo == hi else "; low → high"
     return MolecularColors(
         lens,
         label,
-        {p["materialized_realization_id"]: palette.get(p["values"].get(lens.key)) for p in rows},
+        {p["materialized_realization_id"]: palette.get(value(p)) for p in rows},
     )

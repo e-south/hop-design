@@ -47,7 +47,7 @@ def landscape_geometry(landscape: MolecularLandscape) -> dict[str, Any]:
         right = max(p["x"] for p in points) + mark_radius
         top = min(p["y"] for p in points) - mark_radius
         bottom = max(p["y"] for p in points) + mark_radius
-        padding = max(12, max(right - left, bottom - top) * 0.08)
+        padding = max(12, max(right - left, bottom - top) * 0.04)
         frame = [
             left - padding,
             top - padding,
@@ -64,7 +64,25 @@ def render_molecular_landscape(
     selected_identity: str | None = None,
     colors: MolecularColors | None = None,
 ) -> bytes:
-    identities = {p.identity for p in landscape.preparations}
+    return render_map_geometry(
+        landscape_geometry(landscape),
+        {p.identity for p in landscape.preparations},
+        landscape.digest,
+        eligible=eligible,
+        selected_identity=selected_identity,
+        colors=colors,
+    )
+
+
+def render_map_geometry(
+    geometry: dict[str, Any],
+    identities: set[str],
+    digest: str,
+    *,
+    eligible: set[str],
+    selected_identity: str | None = None,
+    colors: MolecularColors | None = None,
+) -> bytes:
     if not eligible <= identities or (selected_identity and selected_identity not in identities):
         raise ValueError("Molecular map eligibility and selection must belong to this edition.")
     root = ET.Element(
@@ -77,7 +95,7 @@ def render_molecular_landscape(
             "aria-label": "Molecular similarity of complete preparations",
             "font-family": "Arial, Helvetica, sans-serif",
             "font-size": str(FONT),
-            "data-landscape-digest": landscape.digest,
+            "data-landscape-digest": digest,
         },
     )
     _element(root, "rect", x=0, y=0, width=WIDTH, height=HEIGHT, fill="white")
@@ -99,14 +117,13 @@ def render_molecular_landscape(
     _element(
         root,
         "text",
-        f"{len(landscape.preparations)} complete preparations",
+        f"{len(identities)} complete preparations",
         x=24,
         y=34,
         fill=INK,
         font_weight="bold",
         data_map_context="true",
     )
-    geometry = landscape_geometry(landscape)
     # Keep the visible cloud light; frozen coordinates and interaction geometry
     # remain independent of the publication mark's size.
     mark_radius = min(1.35, geometry["radius"])

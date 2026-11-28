@@ -1,10 +1,33 @@
 """A pressured local socket must neither truncate nor duplicate molecular artwork."""
 
 import errno
+import gzip
+import threading
+from types import SimpleNamespace
+from urllib.request import urlopen
 
 import pytest
 
 from hop_design.commands.construction.editor import server
+
+
+def test_precompressed_svg_has_browser_decoding_headers_and_preserves_bytes(tmp_path):
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0L1 1"/></svg>'
+    encoded = gzip.compress(svg, mtime=0)
+    (tmp_path / "parameters.svg.gz").write_bytes(encoded)
+    http = server.EditorServer(SimpleNamespace(root=tmp_path), 0)
+    thread = threading.Thread(target=http.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urlopen(http.origin + "/files/parameters.svg.gz", timeout=2) as response:
+            assert response.headers["Content-Type"] == "image/svg+xml"
+            assert response.headers["Content-Encoding"] == "gzip"
+            assert int(response.headers["Content-Length"]) == len(encoded)
+            assert gzip.decompress(response.read()) == svg
+    finally:
+        http.shutdown()
+        http.server_close()
+        thread.join(timeout=2)
 
 
 def test_large_response_preserves_exact_bytes_across_partial_send_and_buffer_pressure(monkeypatch):

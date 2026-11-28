@@ -1,5 +1,6 @@
 """Bounded cohort drawings; inspecting a preparation does not invalidate the landscape."""
 
+import gzip
 import json
 import shutil
 from collections import OrderedDict
@@ -15,23 +16,37 @@ from .inspection_transport import compact_choices
 
 
 class InspectionPlots:
-    def __init__(self, root: Path, *, entries: int = 4, byte_limit: int = 16 * 1024 * 1024):
+    def __init__(self, root: Path, *, entries: int = 4, byte_limit: int = 32 * 1024 * 1024):
         self._temporary = TemporaryDirectory(prefix=".plots-", dir=root)
         self.root = Path(self._temporary.name)
         self.entries, self.byte_limit, self.bytes = entries, byte_limit, 0
-        self._items: OrderedDict[str, tuple[dict[str, Any], Path, int]] = OrderedDict()
+        self._items: OrderedDict[str, tuple[dict[str, Any], Path, int, dict[str, Any]]] = (
+            OrderedDict()
+        )
+        self._trace_answer: dict[str, Any] | None = None
         self._projection_key: str | None = None
         self._projection: _InspectionProjection.Trace | None = None
 
     def projection(
         self, answer: dict[str, Any], display_axes: tuple[str, ...] | None = None
     ) -> _InspectionProjection.Trace:
+        if (
+            self._trace_answer is not None
+            and self._trace_answer.get("comparison_trace")
+            and all(
+                self._trace_answer.get(k) == answer.get(k)
+                for k in ("snapshot_digest", "query_digest")
+            )
+        ):
+            answer = self._trace_answer
+            display_axes = tuple(a["key"] for a in answer["axes"])
         key = state_key(
             [
                 answer["snapshot_digest"],
                 answer["query_digest"],
                 display_axes,
                 _InspectionProjection.profile,
+                answer.get("comparison_trace"),
             ]
         )
         if self._projection_key != key:
@@ -69,29 +84,46 @@ class InspectionPlots:
             try:
                 path.mkdir()
                 urls = {}
-                families = (
-                    _InspectionProjection.families(
+                map_index = (
+                    _InspectionProjection.map(choices, state["choices"]) if compact else None
+                )
+                trace_answer = (
+                    _InspectionProjection.comparison_choices(
+                        state["choices"], map_index["comparison"]
+                    )
+                    if map_index and map_index.get("comparison")
+                    else state["choices"]
+                )
+                if trace_answer.get("comparison_trace"):
+                    drawing = {"display_axes": tuple(a["key"] for a in trace_answer["axes"])}
+                population = (
+                    _InspectionProjection.population(
                         state["choices"],
                         stage=stage,
                         endpoint=choices.resolution["intent"]["product"],
                     )
                     if compact
-                    else choices.families(query=query, stage=stage)
+                    else None
                 )
+                families = None if compact else choices.families(query=query, stage=stage)
                 # The active map and its linked parameter trace are visible.
                 # Other layouts are generated only when the presentation changes.
                 modes = dict.fromkeys(("parameters",) if compact else ("parameters", active))
                 for mode in modes:
                     options = {"stage": stage, "layout": layout} if mode == "families" else {}
                     svg = (
-                        _InspectionProjection.axes(state["choices"], **drawing)
+                        _InspectionProjection.axes(trace_answer, **drawing)
                         if compact
                         else choices.plot_svg_bytes(
                             query, selected_identity=None, view=mode, **options
                         )
                     )
-                    target = path / (mode + ".svg")
-                    target.write_bytes(svg)
+                    if compact and len(svg) > self.byte_limit:
+                        raise ValueError("Choice drawings exceed the bounded inspection cache.")
+                    # Browser SVGs are decoded by HTTP content encoding. Bound
+                    # expanded bytes as well as retained bytes; keep every trace.
+                    target = path / (mode + (".svg.gz" if compact else ".svg"))
+                    target.write_bytes(gzip.compress(svg, mtime=0) if compact else svg)
                     urls[mode] = "/files/" + target.relative_to(self.root.parent).as_posix()
                 if compact:
                     urls["inspection"] = urls["parameters"]
@@ -101,8 +133,8 @@ class InspectionPlots:
                     urls["inspection"] = "/files/" + target.relative_to(self.root.parent).as_posix()
                 target = path / "distributions.svg"
                 target.write_bytes(
-                    _InspectionProjection.distributions(families["distributions"])
-                    if compact
+                    _InspectionProjection.distributions(population["distributions"])
+                    if population is not None
                     else choices.plot_svg_bytes(
                         query, selected_identity=None, view="distributions", stage=stage
                     )
@@ -112,19 +144,23 @@ class InspectionPlots:
                     "plots": urls,
                     "has_landscape": choices.has_landscape,
                     "families": families,
-                    "explanation": choices.explain(query),
+                    "explanation": _InspectionProjection.explanation(choices, state["choices"]),
                 }
                 if compact:
+                    assert population is not None
+                    browser_answer = (
+                        {
+                            **trace_answer,
+                            "axes": state["choices"]["axes"],
+                            "trace_axes": trace_answer["axes"],
+                        }
+                        if trace_answer.get("comparison_trace")
+                        else trace_answer
+                    )
                     value.update(
-                        compact=compact_choices(_InspectionProjection.display(state["choices"])),
-                        map_index=_InspectionProjection.map(choices, state["choices"]),
-                        cohort_summary={
-                            "product": families["product"],
-                            "products": len(families["products"]),
-                            "eligible_products": sum(
-                                bool(p["eligible_preparations"]) for p in families["products"]
-                            ),
-                        },
+                        compact=compact_choices(_InspectionProjection.display(browser_answer)),
+                        map_index=map_index,
+                        cohort_summary=population["summary"],
                         families=None,
                     )
                     (path / "cohort.json").write_text(
@@ -136,20 +172,22 @@ class InspectionPlots:
                 size = sum(p.stat().st_size for p in path.iterdir())
                 if size > self.byte_limit:
                     raise ValueError("Choice drawings exceed the bounded inspection cache.")
-                self._items[key] = value, path, size
+                self._items[key] = value, path, size, trace_answer
                 self.bytes += size
             except BaseException:
                 shutil.rmtree(path, ignore_errors=True)
                 raise
         self._items.move_to_end(key)
         while len(self._items) > self.entries or self.bytes > self.byte_limit:
-            _, (_, path, size) = self._items.popitem(last=False)
+            _, (_, path, size, _) = self._items.popitem(last=False)
             self.bytes -= size
             shutil.rmtree(path)
+        self._trace_answer = self._items[key][3]
         return self._items[key][0]
 
     def close(self) -> None:
         self._projection = None
+        self._trace_answer = None
         self._projection_key = None
         self._items.clear()
         self.bytes = 0

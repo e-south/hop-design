@@ -65,6 +65,7 @@ FORBIDDEN_BY_LAYER = {
     },
 }
 ROOT_MODULE_LAYERS = {
+    "__main__.py": "cli",
     "api.py": "api",
     "cli.py": "cli",
     "construction.py": "api",

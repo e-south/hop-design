@@ -75,7 +75,10 @@ Both objects expose `parameters(query=None)`, `families(query=None, stage="endpo
 Use `stage="hairpin"` to group the folded intermediate. Exact product identities
 remain separate from structural families and preparation identities. A guided
 sample receipt is accepted wherever an ordinary exact selection is accepted;
-its inputs are replayed first. Default `sample(seed=...)` behavior is unchanged.
+its inputs are replayed first. Omit `strategy`, or use `"preparations"`, to sample
+exact preparations. Use `"families"` to visit structural groups, or
+[sample another loop](../../guides/share-atlas-edition/sampling-and-saved-views.md#change-a-loop-while-keeping-its-surroundings)
+while keeping the selected hairpin's other regions fixed.
 
 `parameters(query=None)` returns the same stage-qualified definitions and operation
 guidance used by the browser and `design parameters`. Each definition includes
@@ -95,6 +98,8 @@ or pass `design parameters --member NAME`.
 `view(selection, stage="all", reference_identity=None, camera=None)` records an
 inspection. `restore_view(receipt)` validates snapshot, membership and stage before
 returning the normalized receipt. It does not change the query or start search.
+Malformed receipts or presentation/exploration settings are rejected without
+changing caller inputs; receipt strings and `Path` values are interpreted as file paths.
 `presentation={"landscape": "similarity", "color": {"key": "left_gap"}}`
 records an edition-wide numeric color view. Exact sequence highlighting uses,
 for example, `{"key": "loop_word", "word": "AACA"}` for a recorded word.

@@ -11,6 +11,7 @@ Module Author(s): Eric J. South
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 
@@ -63,15 +64,20 @@ def test_governance_and_release_routes_exist() -> None:
         assert (REPO_ROOT / relative_path).is_file(), relative_path
 
 
-def test_installation_examples_report_the_current_package_version() -> None:
+def test_installation_distinguishes_published_examples_from_checkout_version() -> None:
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
         version = tomllib.load(handle)["project"]["version"]
     install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
-    assert f"# hop-design {version}" in install
-    assert f"'{version}'" in install
+    published, checkout = install.split("## Work from source", maxsplit=1)
+    release = re.search(r'uv tool install "hop-design==([^\"]+)"', published)
+    assert release is not None
+    released_version = release.group(1)
+    assert ".dev" not in released_version
+    assert f"# hop-design {released_version}" in published
+    assert f"'{released_version}'" in published
+    assert f'uv add "hop-design=={released_version}"' in published
+    assert f"# hop-design {version}" in checkout
     assert "tree/v0.1.0a8" in install  # Older APIs retain their matching documentation.
-    assert f'uv tool install "hop-design=={version}"' in install
-    assert f'uv add "hop-design=={version}"' in install
 
 
 def test_source_layout_has_explicit_sprawl_limits() -> None:

@@ -8,7 +8,7 @@ import {indexedMap} from './indexed_map.js';
 import {memberChoices} from './member_choices.js';
 
 export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=()=>{}) {
-  let state, index, marks, cohortKey=null, mode = 'parameters';
+  let state, index, marks, cohortKey=null, mode = 'parameters', pinnedFocus=null;
   const note = document.querySelector('#focus');
   const root = host.closest('#landscape');
   const context = document.querySelector('#trace-context');
@@ -16,6 +16,7 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
   const indexed=indexedMap(host,ids=>ids?inspect(ids):clear(),ids=>candidates(ids));
   const picker=memberChoices({panel:members,title:document.querySelector('#member-title'),options:document.querySelector('#member-options'),close:document.querySelector('#close-members')},onSelect,id=>id?inspect([id]):clear());
   function highlight(keys, ids=null) {
+    if(ids===null&&!(keys||[]).length)ids=pinnedFocus;
     const focus = ids === null ? null : index.focus(ids);
     marks?.focus(focus);
     indexed.focus(ids);
@@ -54,7 +55,7 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
     note.textContent = description || `${axis.label}: ${axis.measurement}${axis.relationship ? ' '+axis.relationship : ''}`;
     const ids = value === undefined ? null : state.choices.paths
       .filter(p => p.values[axis.key] === value).map(p => p.materialized_realization_id);
-    highlight([axis.key], ids);
+    highlight([axis.key,...(axis.parameters||[])], ids);
   }
   function families(ids) {
     picker.dismiss(false,false);
@@ -73,7 +74,7 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
   function draw(next, view=mode) {
     picker.dismiss(false,false);state=next;mode=view;members.hidden=true;
     const key=next.plots.inspection;
-    if((next.cohort??key)!==cohortKey) {index=preparationIndex(state);cohortKey=next.cohort??key;}
+    if((next.cohort??key)!==cohortKey) {index=preparationIndex(state);cohortKey=next.cohort??key;pinnedFocus=null;}
     // The caller commits the selected overlay after these axes are mounted.
     // Clearing transient marks here must not restore a preview into old axes.
     highlight([], null);
@@ -87,7 +88,8 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
     root.classList.toggle('family-context',mode==='families');
     root.classList.toggle('similarity-context',mode==='similarity');
     const traceChanged=traceScene.update(key,()=>{
-      drawPlot(context,state.choices,state.plot_svg,actions);
+      const traceChoices=state.choices.trace_axes?{...state.choices,axes:state.choices.trace_axes}:state.choices;
+      drawPlot(context,traceChoices,state.plot_svg,actions,{compactSequences:true});
       return null;
     });
     const compact=mode==='similarity'&&next.map_index;
@@ -95,12 +97,15 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
       if(compact){indexed.update(next.map_index,state.choices.paths,state.selection?.materialized_realization_id);return null;}
       indexed.clear();
       if(mode==='parameters') {
-        drawPlot(host,state.choices,state.landscape_svg,{...actions,context:text=>{document.querySelector('#coverage').textContent=text;}});
+        drawPlot(host,state.choices,state.landscape_svg,{...actions,context:text=>{note.textContent=text;}});
         return null;
       }
       const doc=new DOMParser().parseFromString(state.landscape_svg||state.family_svg,'image/svg+xml');
       if(doc.querySelector('parsererror')) throw Error('Invalid molecular-family drawing.');
       const svg=doc.documentElement;
+      // Browser controls need a group root; the source figure remains an image.
+      svg.setAttribute('role','group');
+      svg.setAttribute('aria-label',svg.getAttribute('aria-label')||svg.querySelector('title').textContent);
       for(const target of svg.querySelectorAll('[data-family-ids]')) {
         const ids=JSON.parse(target.dataset.familyIds),filter=()=>families(ids);
         target.addEventListener('click',filter);
@@ -126,5 +131,7 @@ export function landscape(host, members, onQuery, onSelect, onFocus, onPreview=(
     marks.pin(state.selection?.materialized_realization_id);
     return mapChanged;
   }
-  return {draw, color:lens=>indexed.color(lens), needsMap:key=>!mapScene.matches(key), needsTrace:key=>!traceScene.matches(key), focusParameters: keys => highlight(keys), clear, close(){picker.close();indexed.close();marks?.close();mapScene.clear();traceScene.clear();index=null;state=null;cohortKey=null;}};
+  return {draw, color:lens=>indexed.color(lens), needsMap:key=>!mapScene.matches(key), needsTrace:key=>!traceScene.matches(key), focusParameters: keys => highlight(keys),
+    focusPreparations(ids,{pin=false}={}){if(!state)return;if(pin)pinnedFocus=ids?.length?[...ids]:null;onPreview(null);highlight([],ids);},
+    clear, close(){picker.close();indexed.close();marks?.close();mapScene.clear();traceScene.clear();index=null;state=null;cohortKey=null;pinnedFocus=null;}};
 }

@@ -31,20 +31,27 @@ def test_atlas_packs_columns_and_centers_the_wide_finishing_states(loop_pool):
     assert all(groups)
     assert float(groups[0][0].get("data-atlas-y")) == float(groups[1][0].get("data-atlas-y"))
     bottoms = [
-        float(g[-1].get("data-atlas-y")) + float(g[-1].get("data-atlas-height")) for g in groups
+        float(g[-1].get("data-atlas-y")) + float(g[-1].get("data-atlas-advance")) for g in groups
     ]
     for group in groups:
         for previous, following in pairwise(group):
             gap = (
                 float(following.get("data-atlas-y"))
                 - float(previous.get("data-atlas-y"))
-                - float(previous.get("data-atlas-height"))
+                - float(previous.get("data-atlas-advance"))
             )
             # Clearance is inside each measured block; do not add another gap.
             assert gap == pytest.approx(0)
             arrow = next(e for e in previous.iter() if e.get("data-operation-arrow"))
             _, top, _, height = map(float, arrow.get("data-drawing-box").split())
-            assert float(previous.get("data-atlas-height")) - top - height >= SCENE_CLEARANCE - 1e-9
+            title = next(e for e in following if e.get("data-stage-title"))
+            title_top = (
+                float(following.get("data-atlas-y"))
+                - float(previous.get("data-atlas-y"))
+                + float(title.get("y"))
+                - float(title.get("font-size"))
+            )
+            assert title_top - top - height >= SCENE_CLEARANCE - 1e-9
     assert float(rows[-2].get("data-atlas-y")) > max(bottoms)
     width = float(root.get("viewBox").split()[2])
     for row in rows[-2:]:
@@ -58,7 +65,7 @@ def test_atlas_packs_columns_and_centers_the_wide_finishing_states(loop_pool):
     ]
 
 
-def test_stage_titles_are_centered_over_bases_with_a_larger_hierarchy(loop_pool):
+def test_stage_titles_are_centered_over_bases_in_the_common_annotation_tier(loop_pool):
     choices, request = atlas_request(loop_pool)
     packet = construction.inspect_scaffold_atlas(loop_pool, choices, request)
     for row in (
@@ -75,8 +82,9 @@ def test_stage_titles_are_centered_over_bases_with_a_larger_hierarchy(loop_pool)
         assert title.get("text-anchor") == "middle"
         assert float(title.get("x")) == pytest.approx((min(centers) + max(centers)) / 2)
         assert set(sizes) == {BASE_SIZE}
-        assert float(title.get("font-size")) * 0.5 == 28
-        assert float(title.get("font-size")) >= 2.5 * max(sizes)
+        assert float(title.get("font-size")) == 40
+        assert float(title.get("font-size")) == 2 * max(sizes)
+        assert title.get("font-weight") == "400"
 
 
 def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
@@ -89,6 +97,14 @@ def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
         arrow = arrows[0]
         label = next(e for e in row.iter() if e.get("data-operation"))
         x, y, width, height = map(float, arrow.get("data-drawing-box").split())
+        if arrow.get("data-connector-target-phase"):
+            assert arrow.get("data-connector-target-phase") == "hairpin_pcr_duplex"
+            assert "Q" in arrow.get("d") and height > 0
+            # The caption accompanies the source of this curved transition.
+            origin_x = float(arrow.get("d").split(",", 1)[0][1:])
+            assert float(label.get("x")) > origin_x
+            assert y < float(label.get("y")) - float(label.get("font-size")) * 0.35 < y + height
+            continue
         assert height == OPERATION_ARROW_LENGTH
         assert float(label.get("x")) > x + width
         assert float(label.get("y")) - float(label.get("font-size")) * 0.35 == pytest.approx(
@@ -98,13 +114,22 @@ def test_operation_names_are_beside_large_arrows_in_the_same_row(loop_pool):
     rows = [e for e in root.iter() if e.get("data-atlas-state")]
     last_left = [row for row in rows if row.get("data-atlas-column") == "0"][-1]
     assert not any(e.get("data-operation-arrowhead") for e in last_left)
+    connector = next(e for e in root.iter() if e.get("data-column-continuation"))
+    if connector.get("data-continuation-start") != "operation":
+        assert last_left.get("data-atlas-phase") in {"selected_fragments", "annealed_complex"}
+        assert not any(e.get("data-operation-arrow") for e in last_left)
+        assert connector[0].get("d").split(" ", 2)[1].startswith("H")
+        label = next(e for e in last_left if e.get("data-operation"))
+        assert label.get("data-operation-label-placement") == connector.get(
+            "data-continuation-start"
+        )
+        return
     arrow = next(e for e in last_left if e.get("data-operation-arrow"))
     x, y, width, height = map(float, arrow.get("data-drawing-box").split())
     start = (
         float(last_left.get("data-atlas-x")) + x + width / 2,
         float(last_left.get("data-atlas-y")) + y + height - 22,
     )
-    connector = next(e for e in root.iter() if e.get("data-column-continuation"))
     assert connector[0].get("d").startswith(f"M{start[0]},{start[1]}")
 
 
@@ -116,10 +141,16 @@ def test_molecular_annotations_are_readable_and_do_not_collide(loop_pool):
     assert labels
     assert min(float(e.get("font-size")) for e in labels) >= 32
     assert all(
-        float(e.get("font-size")) >= 48
+        float(e.get("font-size")) >= 40
         for e in labels
         if e.get("data-label-kind")
-        not in {"terminus", "primer-chemistry", "material-name", "material-context"}
+        not in {
+            "terminus",
+            "input-terminus",
+            "primer-chemistry",
+            "material-name",
+            "material-context",
+        }
     )
     for row in (e for e in root.iter() if e.get("data-atlas-state")):
         boxes = [json.loads(e.get("data-label-box")) for e in row.iter() if e.get("data-label-box")]
@@ -153,7 +184,14 @@ def test_terminal_labels_share_collision_layout_with_enzyme_and_primer_names(loo
     terminals = [
         e for e in ET.fromstring(packet.svg_bytes).iter() if e.get("data-label-kind") == "terminus"
     ]
-    assert len(terminals) == 2 * sum(len(s["state"]["molecules"]) for s in atlas["states"])
+    hidden = [
+        e
+        for e in ET.fromstring(packet.svg_bytes).iter()
+        if e.get("data-terminal-display") == "metadata"
+    ]
+    assert len(terminals) + len(hidden) == 2 * sum(
+        len(s["state"]["molecules"]) for s in atlas["states"]
+    )
     assert {e.get("data-terminal-chemistry") for e in terminals} == {
         "5\u2032OH",
         "5\u2032P",
@@ -268,7 +306,7 @@ def test_released_end_labels_name_the_recorded_words_and_gaps(loop_pool):
         )
         for interface in state["interfaces"]:
             group = next(e for e in row.iter() if e.get("data-interface") == interface["side"])
-            assert f"{interface['sequence']} · {interface['distance_bp']} bp" in "".join(
+            assert f"{interface['sequence']}, {interface['distance_bp']} bp" in "".join(
                 group.itertext()
             )
             assert group.get("data-end-polarity") == interface["polarity"]

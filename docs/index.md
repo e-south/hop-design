@@ -5,14 +5,18 @@ Choose a task, then follow its guide through the CLI or Python API. The
 
 ## Start here
 
-[Install HOP](guides/install.md), then choose the task that matches your input:
+[Install HOP](guides/install.md), then follow [Discover designs around your stem](guides/discover-designs.md)
+through a complete CLI or Python workflow: supply one stem arm, choose a product,
+inspect a preparation and retrieve its oligos. Ends, scaffold properties and
+methods can be constrained as needed.
+
+For more specific inputs or comparisons:
 
 | I want to… | Guide |
 | --- | --- |
-| Preserve my stem and see complete designs | [Discover designs](guides/discover-designs.md), optionally constrain ends or scaffold properties, then retrieve a preparation |
-| Discover complete hairpin or insert options | [Specify desired scaffolds](guides/discover-product-scaffolds.md) by dimensions, terminal form and permitted methods |
+| Prescribe scaffold dimensions or terminal form | [Specify desired scaffolds](guides/discover-product-scaffolds.md) and permitted preparation changes |
 | Make a controlled set of molecules | [Specify a molecular comparison](guides/specify-a-comparison.md) with required members and shared properties |
-| Work through one preparation request | [Design one construction](guides/design-a-construction.md), from materials to endpoint |
+| Author a complete construction request | [Design one construction](guides/design-a-construction.md), from materials to endpoint |
 
 Read [Understand the construction](start/mental-model.md) for the regions and steps.
 Use the [concept index](language/ontology.md) to look up a molecular feature,
@@ -55,6 +59,8 @@ compilation to check their combination and materials.
 
 ### Inspect and share
 
+- [Return to saved results](guides/discover-designs.md#return-to-saved-results):
+  query or reopen recorded choices, or restore a downloaded view.
 - [Save and share preparations](guides/share-atlas-edition.md): reopen recorded
   choices and retrieve their figures and materials without repeating discovery.
 - [Render molecular views](guides/render-component-views.md).

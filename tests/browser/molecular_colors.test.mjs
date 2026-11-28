@@ -60,3 +60,25 @@ test('loop sequence and added pairing expose distinct molecular choices without 
  assert.deepEqual(extent.extent,[3,5]);assert.equal(extent.unit,'bp');assert.equal(extent.stage,'hairpin');
  assert.deepEqual(rows,before);
 });
+
+
+test('larger end-gap lens preserves side orientation and keeps missing distinct from zero',async()=>{
+ const {molecularColors}=await load(),before=structuredClone(paths);
+ const lens=molecularColors(paths,axes,{key:'max_end_gap'});
+ assert.deepEqual(lens.extent,[6,12]);assert.equal(lens.missing,1);
+ assert.equal(lens.color(paths[0]),lens.color(paths[1]));assert.equal(lens.color(paths[3]),null);
+ assert.deepEqual(paths,before);assert.equal(lens.label,'Larger end gap');
+ assert.throws(()=>molecularColors(paths,axes.filter(a=>a.key!=='right_gap'),{key:'max_end_gap'}),/parameter/);
+});
+
+test('released insert color sums both recorded strands and uses the shared diverging scale',async()=>{
+ const {molecularColors}=await load();
+ const rows=[
+  {materialized_realization_id:'a',matches:true,values:{},overhead:{endpoint_non_payload_nt_by_strand:{top:13,bottom:14}}},
+  {materialized_realization_id:'b',matches:true,values:{},overhead:{endpoint_non_payload_nt_by_strand:{top:28,bottom:28}}},
+  {materialized_realization_id:'missing',matches:true,values:{}},
+ ];
+ const lens=molecularColors(rows,[],{key:'released_non_stem_nt'});
+ assert.deepEqual(lens.extent,[27,56]);assert.equal(lens.unit,'nt total');
+ assert.equal(lens.color(rows[0]),'#313695');assert.equal(lens.color(rows[1]),'#a50026');assert.equal(lens.color(rows[2]),null);
+});

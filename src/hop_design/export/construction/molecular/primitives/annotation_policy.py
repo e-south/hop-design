@@ -12,6 +12,17 @@ from .style import TERMINAL_SIZE, site_color
 from .typography import text_width
 
 RouteSiteLabels = Literal["all", "operations", "narrative"]
+FootprintScope = Literal["processing", "structural"]
+
+
+def footprint_region(
+    projection: MolecularStateInspection, role: str, addresses: tuple[MolecularAddress, ...]
+) -> str:
+    """Recognition labels group by physical region, independently of its palette."""
+    if role == "end_generation":
+        return "interfaces"
+    neighborhoods = {base.neighborhood for base in projection.bases if base.address in addresses}
+    return "closing" if neighborhoods and neighborhoods <= {"closing", "loop"} else "assembly"
 
 
 def footprint_color(
@@ -23,6 +34,27 @@ def footprint_color(
         if neighborhoods and neighborhoods <= {"closing", "loop"}:
             return site_color("foldback_nick")
     return site_color(role)
+
+
+def visible_footprint(
+    state: MolecularStateInspection, role: str, *, scope: FootprintScope = "processing"
+) -> bool:
+    """Quiet obsolete handle ink; exact site addresses remain in the drawing metadata."""
+    if scope not in {"processing", "structural"}:
+        raise ValueError("Unknown recognition-footprint scope.")
+    if scope == "structural":
+        return True
+    phase = state.state.phase.value
+    if phase in {
+        "selected_fragments",
+        "annealed_complex",
+        "foldback_closed_hairpin",
+        "clone_ready_duplex",
+    }:
+        return False
+    if phase in {"adapter_annealed", "adapter_ligated", "hairpin_pcr_duplex"}:
+        return role == "end_generation"
+    return True
 
 
 def named_sites(
@@ -85,13 +117,13 @@ def draw_site_key(
         )
         x += extent
     captions: tuple[str, ...] = (
-        "Dashed site: partial / unresolved · Hollow / filled cut: planned / applied.",
-        "Unmarked termini: OH · P: phosphate.",
-        "Diamond: noncanonical · Bridge: joined · End words: 5\u2032→3\u2032; gap in bp.",
+        "Dashed site: partial / unresolved, Hollow / filled cut: planned / applied.",
+        "Unmarked termini: OH, P: phosphate.",
+        "Diamond: noncanonical, Bridge: joined, End words: 5\u2032→3\u2032; gap in bp.",
     )
     if not include_events:
         captions = (
-            "Dashed site: partial / unresolved · Diamond: noncanonical · "
+            "Dashed site: partial / unresolved, Diamond: noncanonical, "
             "P: phosphate; unmarked termini: OH.",
         )
     for caption in captions:

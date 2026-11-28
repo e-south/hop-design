@@ -1,15 +1,23 @@
-"""Carry an inspection's display and comparison choices through publication packets."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/src/hop_design/design/construction/navigation/figure_context.py
+
+Carry inspection display and comparison choices through publication packets.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
 
-from hop_design.design.source_documents import load_source_mapping
 from hop_design.serialization import canonical_json_bytes
 
 from ..intents.base import Source
 from ..packets.atlas import MolecularAtlasPacket
 from ..packets.publication import SourceBoundConstructionPacket
+from .selection.sources import selection_document, selection_source
 from .types import ChoiceSource, Record
 
 
@@ -21,6 +29,7 @@ class FigureContext:
     layout: str
     receipt: Record | None
     display_axes: tuple[str, ...] | None = None
+    detail_width_pt: float | None = None
 
     @property
     def color(self) -> Record | None:
@@ -60,8 +69,10 @@ def figure_context(
     render_policy: str | None,
     reference: Source | None,
     display_axes: tuple[str, ...] | None = None,
+    detail_width_pt: float | None = None,
 ) -> FigureContext:
-    raw = load_source_mapping(selection) if isinstance(selection, str | Path) else selection
+    raw = None if selection is None else selection_document(selection)
+    selection = raw
     receipt = (
         choices.restore_view(raw)
         if raw and raw.get("schema", "").startswith("hop.atlas-view/")
@@ -80,8 +91,6 @@ def figure_context(
         if value is not None:
             presentation[key] = value
     if receipt is not None:
-        from .guided_sampling import selection_source
-
         receipt = choices.view(
             receipt["selection"],
             stage=receipt["stage"],
@@ -99,6 +108,12 @@ def figure_context(
     mode = presentation.get("landscape", "parameters")
     if display_axes is not None and mode != "parameters" and selection is None:
         raise ValueError("Display axes require a parameter figure or a selected landscape trace.")
+    if detail_width_pt is not None:
+        from hop_design.export.construction.presentation.figure_profile import column_detail_profile
+
+        column_detail_profile(detail_width_pt)
+        if mode != "similarity" or selection is None:
+            raise ValueError("Detail width requires a selected similarity figure.")
     return FigureContext(
         selection,
         mode,
@@ -107,4 +122,5 @@ def figure_context(
         layout or (presentation.get("layout", "auto") if mode == "families" else "auto"),
         receipt,
         display_axes,
+        detail_width_pt,
     )

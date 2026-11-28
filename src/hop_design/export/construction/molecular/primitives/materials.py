@@ -11,8 +11,16 @@ from .material_labels import material_label
 from .primer_shape import outline_box, primer_outline
 from .primer_shape import primer_contour as primer_contour
 from .ribbon import ribbon_path, ribbon_points
-from .style import BASE_SIZE, INK, REGION_COLORS, REGION_OPACITY, base_ink
-from .typography import fitted_base_size
+from .style import (
+    ANNOTATION_SIZE,
+    BASE_SIZE,
+    INK,
+    REGION_COLORS,
+    REGION_OPACITY,
+    base_ink,
+)
+from .terminal_labels import terminal_label_glyph
+from .typography import base_ink_shift, fitted_base_size
 
 
 @dataclass(frozen=True)
@@ -36,7 +44,11 @@ def input_box(
 
 
 def staged_materials(
-    inputs: tuple[PlacedInput, ...], labels: LabelPlacer, *, base_size: float = BASE_SIZE
+    inputs: tuple[PlacedInput, ...],
+    labels: LabelPlacer,
+    *,
+    base_size: float = BASE_SIZE,
+    label_size: int = ANNOTATION_SIZE,
 ) -> str:
     rows = []
     for placed in inputs:
@@ -61,7 +73,8 @@ def staged_materials(
         ):
             rows.append(
                 f'<text data-input-base-index="{index}" x="{x}" y="{y + 5}" '
-                f'font-size="{fitted_base_size(base, base_size):g}" text-anchor="middle" '
+                f'font-size="{fitted_base_size(base, base_size):g}" '
+                f'dy="{base_ink_shift(fitted_base_size(base, base_size)):g}" text-anchor="middle" '
                 f'fill="{INK if item.binding is not None else base_ink("assembly")}">{base}</text>'
             )
         chemistry = (
@@ -69,7 +82,36 @@ def staged_materials(
             + " → "
             + terminal_label("3\u2032", item.material.three_prime_end)
         )
-        rows.append(material_label(item, box, labels, cue=placed.cue, above=placed.label_above))
+        if item.binding is None:
+            for index, prime, end, key in [
+                (0, "5\u2032", item.material.five_prime_end, "five_prime"),
+                (-1, "3\u2032", item.material.three_prime_end, "three_prime"),
+            ]:
+                x, y = positions[index]
+                label = terminal_label(prime, end).removesuffix("OH")
+                neighbor = positions[1 if index == 0 else -2] if len(positions) > 1 else (x + 16, y)
+                rows.append(
+                    terminal_label_glyph(
+                        labels,
+                        (x, y),
+                        neighbor,
+                        label,
+                        chemistry=terminal_label(prime, end),
+                        kind="input-terminus",
+                        attributes={"data-input-terminus": key},
+                    )
+                )
+        rows.append(
+            material_label(
+                item,
+                box,
+                labels,
+                cue=placed.cue,
+                above=placed.label_above,
+                label_size=label_size,
+                positions=positions,
+            )
+        )
         rows.append(
             f"<title>Incoming {escape(drawing_material_label(item.material_use.role))}; "
             f"{chemistry}; {escape(placed.cue or 'not yet associated')}</title></g>"

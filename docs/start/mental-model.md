@@ -10,8 +10,9 @@ require, and whether they can be combined into the requested product.
 ## What do you specify?
 
 Author one payload arm as exact DNA or a sequence containing fixed and degenerate
-positions. HOP derives its complementary arm. Compiling this anatomy gives the
-intended hairpin sequence; discovery finds construction procedures. See
+positions. Write it 5′→3′ from the open (basal) end toward the loop, omitting the
+loop and complementary arm. HOP derives the complement. Compiling this anatomy
+gives the intended hairpin sequence; discovery finds construction procedures. See
 [substrate spaces](../guides/substrate-spaces.md) for sequence compilation.
 
 The **product** is the exact molecule at a named processing stage. A **route**
@@ -22,8 +23,9 @@ preparations can make the same product.
 For construction, start with the stem and intended product using
 [design discovery](../guides/discover-designs.md). End words, scaffold properties
 and methods are optional constraints. A versioned context declares the available
-enzymes, geometry and material permissions. The physical starting material is a
-source ssDNA oligo with construction flanks around the payload. Its sequence and
+enzymes, allowed lengths and positions, and which materials HOP may design or must
+preserve. The physical starting material is a source ssDNA oligo with construction
+flanks around the payload. Its sequence and
 required auxiliary materials depend on the chosen route.
 
 HOP calls the two construction regions **local neighborhoods**. The foldback

@@ -6,14 +6,16 @@ from xml.etree import ElementTree as ET
 
 from hop_design.models.construction.projections.atlas import MolecularAtlas
 
+from .assembly.annotations import avoid_reference_label_collisions
 from .assembly.composition import RoutePresentation
 from .assembly.foldback import append_cue, foldback_cue
+from .assembly.ghosts import append_discarded_ghosts
 from .assembly.inputs import incoming_materials
 from .assembly.placement import assembly_points
 from .inspection import molecular_inspection_element
 from .inspection_overlays import inspection_overlays
-from .primitives.annotation_policy import RouteSiteLabels, named_sites
-from .primitives.extent import scene_extent
+from .primitives.annotation_policy import FootprintScope, RouteSiteLabels, named_sites
+from .primitives.extent import scene_bounds, scene_extent
 from .primitives.style import TITLE_SIZE
 
 
@@ -28,6 +30,7 @@ def atlas_scenes(
     *,
     site_labels: RouteSiteLabels = "narrative",
     presentation: RoutePresentation = "complete",
+    footprint_scope: FootprintScope = "structural",
     record_indices: tuple[int, ...] | None = None,
 ) -> MeasuredScenes:
     scenes = {}
@@ -38,10 +41,17 @@ def atlas_scenes(
     # Reserve above-primer names against the common folded frame once, even
     # for an isolated scene request. Shared ancestral bases stay in register.
     folded = {"annealed_complex", "foldback_closed_hairpin", "adapter_annealed", "adapter_ligated"}
-    headroom = 0.0
+    # Only shared folded scenes consume this frame. Linear viewport requests
+    # must not measure four unrequested overlays before drawing their own state.
+    needs_folded_frame = record_indices is None or any(
+        state.state.phase.value in folded
+        for index, state in enumerate(atlas.states)
+        if index in record_indices
+    )
+    headroom, leftroom = 0.0, 0.0
     for state in atlas.states:
         sid = state.state.state_id
-        if state.state.phase.value not in folded or sid not in frames:
+        if not needs_folded_frame or state.state.phase.value not in folded or sid not in frames:
             continue
         overlay = ET.fromstring(
             inspection_overlays(
@@ -66,11 +76,14 @@ def atlas_scenes(
             default=TITLE_SIZE + 18,
         )
         headroom = max(headroom, TITLE_SIZE + 18 - low)
-    if headroom > 1e-7:
+        leftroom = max(leftroom, 18 - scene_bounds(overlay)[0])
+    if headroom > 1e-7 or leftroom > 1e-7:
         for state in atlas.states:
             sid = state.state.state_id
             if state.state.phase.value in folded and sid in frames:
-                frames[sid] = {key: (x, y + headroom) for key, (x, y) in frames[sid].items()}
+                frames[sid] = {
+                    key: (x + leftroom, y + headroom) for key, (x, y) in frames[sid].items()
+                }
         staged = {
             state.state.state_id: incoming_materials(atlas, state, frames) for state in atlas.states
         }
@@ -85,6 +98,8 @@ def atlas_scenes(
             continue
         root = molecular_inspection_element(
             state,
+            interface_labels=presentation != "assembly",
+            footprint_scope=footprint_scope,
             layout_points=frames.get(state.state.state_id),
             staged_inputs=staged[state.state.state_id],
             label_site_ids=labels,
@@ -96,7 +111,9 @@ def atlas_scenes(
             ),
         )
         if state.state.state_id in frames:
+            append_discarded_ghosts(root, atlas, state)
             append_cue(root, foldback_cue(atlas, state, frames[state.state.state_id]))
+            avoid_reference_label_collisions(root)
         width, height = scene_extent(root)
         positions = []
         for element in root.iter():

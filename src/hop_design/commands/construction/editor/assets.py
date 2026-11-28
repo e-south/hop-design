@@ -73,10 +73,13 @@ def asset_response(mode: str, route: str, token: str) -> tuple[bytes, str] | Non
             "color_controls.js",
             "inspection_facts.js",
             "comparison_features.js",
+            "comparison_schema.js",
             "route_scenes.js",
             "route_scene_work.js",
             "inspector_resize.js",
             "discovery.js",
+            "choice_frequencies.js",
+            "choice_frequencies_model.js",
         }
         if name in {f"{n}.js" for n in _SURVEY_MODULES}:
             return files("hop_design").joinpath(

@@ -106,6 +106,17 @@ def explain_choices(
     return answer.model_dump(mode="json", by_alias=True)
 
 
+def explain_captured_choices(resolution: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+    """Describe a filtered frozen edition from its already-admitted choices."""
+    answer = explain_choices(resolution, result, can_continue=False)
+    answer["actions"] = [a for a in answer["actions"] if a in {"select", "refine_query"}]
+    answer["guidance"] += (
+        " This frozen edition supports viewing and retrieval; "
+        "new search belongs to the original discovery."
+    )
+    return answer
+
+
 def _excluded(result: dict[str, Any]) -> bool:
     """Use recorded exclusion evidence, never absence of a matching witness."""
     coverage = result["coverage"]

@@ -16,6 +16,8 @@ from .inspection_layout import inspection_points
 from .inspection_overlays import inspection_overlays
 from .inspection_scene import edge, region_spans
 from .parameter_boundaries import mark_parameter_locations
+from .primitives.annotation_policy import FootprintScope
+from .primitives.extent import scene_bounds
 from .primitives.materials import PlacedInput
 from .primitives.strands import strand_primitives
 from .primitives.style import FONT_FAMILY, TITLE_SIZE, base_ink
@@ -32,6 +34,8 @@ def _annotate_inspection_element(
     site_labels: Literal["all", "operations"] = "all",
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
+    interface_labels: bool = True,
+    footprint_scope: FootprintScope = "structural",
 ) -> ET.Element:
     """Mutate only this new drawing; preserve the authoritative projection."""
     bases = {(b.strand_index, b.address.index): b for b in projection.bases}
@@ -80,6 +84,8 @@ def _annotate_inspection_element(
             site_labels=site_labels,
             label_site_ids=label_site_ids,
             staged_inputs=staged_inputs,
+            interface_labels=interface_labels,
+            footprint_scope=footprint_scope,
         )
     )
     regions = ET.fromstring(
@@ -87,10 +93,17 @@ def _annotate_inspection_element(
         + region_spans(projection, positions)
         + "</g>"
     )
-    # Behind the glyphs, after the background; no imported/cloned document trees.
+    # Contacts sit behind ribbon fills so their ends cannot draw over the DNA.
     first = next(i for i, child in enumerate(root) if child.tag == SVG + "g")
-    root.insert(first, regions)
-    root.insert(first + 1, overlay)
+    pairings = ET.Element(SVG + "g", {"data-pairings": "true"})
+    for parent in tuple(root.iter()):
+        for child in tuple(parent):
+            if child.get("data-edge-kind") == "pair":
+                parent.remove(child)
+                pairings.append(child)
+    root.insert(first, pairings)
+    root.insert(first + 1, regions)
+    root.insert(first + 2, overlay)
     for group in root.iter(SVG + "g"):
         label = ""
         if "data-strand-primitive" in group.attrib:
@@ -152,6 +165,8 @@ def render_molecular_inspection(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
+    interface_labels: bool = True,
+    footprint_scope: FootprintScope = "structural",
 ) -> bytes:
     """Serialize one scene at the export boundary."""
     root = molecular_inspection_element(
@@ -164,6 +179,8 @@ def render_molecular_inspection(
         label_site_ids=label_site_ids,
         staged_inputs=staged_inputs,
         layout_points=layout_points,
+        interface_labels=interface_labels,
+        footprint_scope=footprint_scope,
     )
     return cast(bytes, ET.tostring(root, encoding="utf-8"))
 
@@ -179,6 +196,8 @@ def molecular_inspection_element(
     label_site_ids: frozenset[str] | None = None,
     staged_inputs: tuple[PlacedInput, ...] = (),
     layout_points: dict[tuple[str, int], tuple[float, float]] | None = None,
+    interface_labels: bool = True,
+    footprint_scope: FootprintScope = "structural",
 ) -> ET.Element:
     state = projection.state
     points = layout_points if layout_points is not None else _points(projection)
@@ -249,15 +268,18 @@ def molecular_inspection_element(
         site_labels=site_labels,
         label_site_ids=label_site_ids,
         staged_inputs=staged_inputs,
+        interface_labels=interface_labels,
+        footprint_scope=footprint_scope,
     )
     label_top = min(
         (json.loads(e.attrib["data-label-box"])[1] for e in root.iter() if e.get("data-label-box")),
         default=TITLE_SIZE + 18,
     )
-    if label_top < TITLE_SIZE + 18 - 1e-7:
+    left, _, _, _ = scene_bounds(root)
+    dx, dy = max(0, 18 - left), max(0, TITLE_SIZE + 18 - label_top)
+    if dx > 1e-7 or dy > 1e-7:
         # Above-primer names own their side; grow the molecular frame rather
         # than clipping them or moving them onto the template.
-        dy = TITLE_SIZE + 18 - label_top
         return molecular_inspection_element(
             projection,
             comparison=comparison,
@@ -267,10 +289,12 @@ def molecular_inspection_element(
             site_labels=site_labels,
             label_site_ids=label_site_ids,
             staged_inputs=tuple(
-                replace(item, positions=tuple((x, y + dy) for x, y in item.positions))
+                replace(item, positions=tuple((x + dx, y + dy) for x, y in item.positions))
                 for item in staged_inputs
             ),
-            layout_points={key: (x, y + dy) for key, (x, y) in points.items()},
+            layout_points={key: (x + dx, y + dy) for key, (x, y) in points.items()},
+            interface_labels=interface_labels,
+            footprint_scope=footprint_scope,
         )
     if parameter_locations is not None:
         mark_parameter_locations(root, parameter_locations, projection)

@@ -1,4 +1,13 @@
-"""One admitted choice object connects discovery, selection, figures and materials."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+src/hop_design/design/construction/intents/results.py
+
+Connect admitted insert choices to query, selection, figure and material operations.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
@@ -140,13 +149,22 @@ class InsertDesignChoices(DesignChoices):
         render_policy: str | None = None,
         reference_selection: Source | None = None,
         display_axes: tuple[str, ...] | None = None,
+        detail_width_pt: float | None = None,
     ) -> SourceBoundConstructionPacket:
         """Draw the landscape and selected path from this same snapshot."""
         from ..navigation.figure_context import figure_context
         from ..navigation.landscape_figure import landscape_figure
 
         context = figure_context(
-            self, selection, view, stage, layout, render_policy, reference_selection, display_axes
+            self,
+            selection,
+            view,
+            stage,
+            layout,
+            render_policy,
+            reference_selection,
+            display_axes,
+            detail_width_pt,
         )
         selection, view, stage, layout = (
             context.selection,
@@ -167,12 +185,13 @@ class InsertDesignChoices(DesignChoices):
                     view=view,
                     display_axes=context.display_axes,
                     color=context.color,
+                    detail_width_pt=context.detail_width_pt,
                 ),
                 atlas,
             )
         if view != "parameters" or stage != "endpoint" or layout != "auto":
             raise ValueError("Choose parameters, or families with its stage and layout.")
-        from ..navigation.guided_sampling import selection_source
+        from ..navigation.selection.sources import selection_source
         from .comparisons import source_value
         from .inserts.figure import refined_figure
 
@@ -183,7 +202,7 @@ class InsertDesignChoices(DesignChoices):
             return context.attach(
                 refined_figure(
                     self,
-                    query or context.receipt["selection"]["query"],
+                    context.receipt["selection"]["query"] if query is None else query,
                     selection,
                     atlas=atlas,
                     display_axes=context.display_axes,
@@ -201,7 +220,7 @@ class InsertDesignChoices(DesignChoices):
             selection is not None
             and source_value(selection).get("schema") == "hop.insert-design-selection/v1"
         ):
-            query = query or {}
+            query = {} if query is None else query
             return refined_figure(self, query, selection, display_axes=context.display_axes)
         resolved = (
             None
@@ -225,8 +244,8 @@ class InsertDesignChoices(DesignChoices):
         draw_route: bool = False,
     ) -> MolecularAtlasPacket:
         """Replay and draw every molecular stage of the exact selected preparation."""
-        from ..navigation.guided_sampling import selection_source
         from ..navigation.render_policy import render_context
+        from ..navigation.selection.sources import selection_source
         from .comparisons import source_value
 
         context = render_context(
@@ -263,7 +282,7 @@ class InsertDesignChoices(DesignChoices):
         self, selection: Source, destination: str | Path
     ) -> VerifiedConstructionBundle | InsertSetHandoff:
         """Replay and export the selected route and its exact oligos."""
-        from ..navigation.guided_sampling import selection_source
+        from ..navigation.selection.sources import selection_source
         from .comparisons import source_value
 
         selection = selection_source(self, selection)

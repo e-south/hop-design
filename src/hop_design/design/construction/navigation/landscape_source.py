@@ -29,8 +29,12 @@ def landscape_digest(choices: ChoiceSource, *, answer: Record) -> str:
     recorded membership must agree before reusing it; eligibility is not membership.
     No mutable molecular model or caller-supplied validation evidence is retained.
     """
+    from ..editions.overview import recorded_overview_digest
     from ..editions.reader import AtlasEdition
 
+    captured = recorded_overview_digest(choices, answer)
+    if captured is not None:
+        return captured
     if not (
         isinstance(choices, AtlasEdition) and "landscape.json" in choices._store.manifest.artifacts
     ):
@@ -82,7 +86,8 @@ def has_molecular_landscape(choices: ChoiceSource) -> bool:
     from ..editions.reader import AtlasEdition
 
     return bool(getattr(choices, "_landscape_bytes", None)) or (
-        isinstance(choices, AtlasEdition) and "landscape.json" in choices._store.manifest.artifacts
+        isinstance(choices, AtlasEdition)
+        and bool({"landscape.json", "overview.json"} & choices._store.manifest.artifacts.keys())
     )
 
 
@@ -126,6 +131,11 @@ def molecular_landscape(
     from .similarity_layout import build_molecular_landscape
 
     answer = choices.query() if answer is None else answer
+    if isinstance(choices, AtlasEdition) and "overview.json" in choices._store.manifest.artifacts:
+        raise ValueError(
+            "This collection uses a recorded preparation overview. "
+            "Read recorded_overview() for its saved comparison and coordinates."
+        )
     captured = (
         isinstance(choices, AtlasEdition) and "landscape.json" in choices._store.manifest.artifacts
     )

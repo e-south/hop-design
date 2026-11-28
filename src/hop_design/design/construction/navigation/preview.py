@@ -37,12 +37,16 @@ def _current_record(choices: ChoiceSource, path: Record, answer: Record) -> Reco
     from ..surveys.witness import recover_witness
 
     identity = path["materialized_realization_id"]
+    catalog_names: dict[str, str] = {}
     if isinstance(choices, HairpinDesignChoices):
         route = next(
             r for _, r in choices._pool._routes if r.materialized_realization_id == identity
         )
     elif isinstance(choices, InsertDesignChoices):
         pool = choices._pool
+        catalog_names = {
+            e.enzyme_id: e.canonical_name for e in pool._request.enzyme_catalog.enzymes
+        }
         index, limits = open_survey(
             choices._directory / "survey.sqlite",
             request=pool._request,
@@ -73,6 +77,7 @@ def _current_record(choices: ChoiceSource, path: Record, answer: Record) -> Reco
         if axis["key"].endswith("method")
         for node in axis["nodes"]
     }
+    names.update(catalog_names)
     atlas = project_molecular_atlas(route, enzyme_names=names)
     locations = parameter_locations(route, atlas, path["values"])
     teaching = parameter_teaching(
@@ -158,14 +163,38 @@ def preview_components(
 
 
 def preview_preparation(
-    choices: ChoiceSource, identity: str, *, query: str | Path | Record | None = None
+    choices: ChoiceSource,
+    identity: str,
+    *,
+    query: str | Path | Record | None = None,
+    detail_width_pt: float | None = None,
 ) -> MolecularPreview:
+    from hop_design.export.construction.presentation.figure_profile import column_detail_profile
+
+    profile = (
+        PUBLICATION_FIGURE if detail_width_pt is None else column_detail_profile(detail_width_pt)
+    )
     answer = choices.query(query)
-    overview, summary = preview_components(choices, identity, answer)
+    overview, summary = preview_components(
+        choices,
+        identity,
+        answer,
+        profile=profile,
+        render_policy="captured" if detail_width_pt is None else "current",
+    )
+    if detail_width_pt is not None:
+        if summary["rendering"] != "current":
+            raise ValueError(
+                "Requested detail width requires a supported current molecular projection."
+            )
+        summary["figure_presentation"] = {
+            "detail_width_pt": detail_width_pt,
+            "detail_profile": profile.key,
+        }
     packet = MolecularPreview._create(
         {
             "overview.svg": overview,
-            "trace.svg": render_survey_plot(answer, selected_identity=identity),
+            "trace.svg": render_survey_plot(answer, selected_identity=identity, profile=profile),
         },
         summary,
         "# Molecular preview\n\nOne recorded hairpin and its exact parameter trace. "

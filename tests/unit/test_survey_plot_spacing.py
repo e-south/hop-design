@@ -67,6 +67,7 @@ def test_primary_molecular_choices_keep_methods_on_the_same_connected_row():
 
 
 def test_narrow_region_heading_fits_a_single_interface_axis():
+    from dataclasses import replace
     from xml.etree import ElementTree as ET
 
     from hop_design.export.construction.molecular.primitives.typography import text_width
@@ -76,7 +77,9 @@ def test_narrow_region_heading_fits_a_single_interface_axis():
 
     answer = choices()
     answer["axes"] = [a for a in answer["axes"] if a["key"] == "left_end_word"]
-    root = ET.fromstring(render_survey_plot(answer, profile=INSPECTOR_FIGURE))
+    root = ET.fromstring(
+        render_survey_plot(answer, profile=replace(INSPECTOR_FIGURE, region_strip="below"))
+    )
     children = list(root)
     band = next(e for e in children if e.get("data-axis-region"))
     headings = []
@@ -157,3 +160,109 @@ def test_recognition_name_does_not_wrap_a_single_character_suffix():
     node = {"label": "Nt.Bpu10I", "value": "example:enzyme/nt.bpu10i@1"}
     contour = node_geometry(axis, node)
     assert contour["lines"] == ["Nt.Bpu10I"]
+
+
+def test_selected_all_axis_recipe_stays_on_one_row_with_measured_widths():
+    from hop_design.export.construction.presentation.figure_profile import LANDSCAPE_DETAIL_FIGURE
+
+    labels = [
+        ("Basal nickase", "Nb.BssSI", "recognition"),
+        ("Foldback nickase", "Nt.Bpu10I", "recognition"),
+        ("Release enzyme", "BsaI-HFv2", "recognition"),
+        ("Loop sequence", "AAAACG", "sequence"),
+        ("Left sticky end", "CGAG", "sequence"),
+        ("Right sticky end", "CAAG", "sequence"),
+        ("Left gap", "0", "span"),
+        ("Right gap", "0", "span"),
+        ("Loop size", "4", "span"),
+        ("Loop-side extension", "6", "span"),
+        ("Join offset", "2", "span"),
+        ("Basal paired extent", "18", "span"),
+    ]
+    axes = [
+        {
+            "key": str(i),
+            "label": name,
+            "symbol": "",
+            "kind": "categorical",
+            "representation": kind,
+            "unit": "",
+            "nodes": [{"value": value, "label": value, "supported_preparations": 1}],
+        }
+        for i, (name, value, kind) in enumerate(labels)
+    ]
+    for profile in [LANDSCAPE_DETAIL_FIGURE, INSPECTOR_FIGURE]:
+        plotted = plot_axes({"axes": axes}, profile=profile)
+        assert len(plotted) == len(axes)
+        assert {a["band"] for a in plotted} == {0}
+        for left, right in pairwise(plotted):
+            assert right["x"] - right["width"] / 2 >= left["x"] + left["width"] / 2 + 6 - 1e-8
+
+
+def test_rotated_trace_regions_follow_axis_labels_and_links_land_on_axis_tops():
+    import json
+    from dataclasses import replace
+    from xml.etree import ElementTree as ET
+
+    from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
+    from hop_design.export.construction.survey.figure_layout import plot_geometry
+    from hop_design.export.construction.survey.plot import render_survey_plot
+    from tests.unit.test_survey_plot import choices
+
+    root = ET.fromstring(
+        render_survey_plot(choices(), profile=replace(INSPECTOR_FIGURE, region_strip="below"))
+    )
+    frame = json.loads(root.get("data-axis-frame"))
+    bands = [e for e in root.iter() if e.get("data-axis-region")]
+    assert bands and all(float(e.get("y")) > frame["heading_y"] for e in bands)
+    lines = [e for e in root.iter() if e.get("data-axis-line")]
+    assert min(float(e.get("y1")) for e in lines) < 40
+    assert {p[1] for p in plot_geometry(root)["anchors"].values()} == {frame["top"]}
+
+
+def test_region_strip_placement_is_an_explicit_profile_contract():
+    import json
+    from dataclasses import replace
+    from xml.etree import ElementTree as ET
+
+    import pytest
+
+    from hop_design.export.construction.presentation.figure_profile import (
+        COLUMN_DETAIL_FIGURE,
+        INSPECTOR_FIGURE,
+    )
+    from hop_design.export.construction.survey.plot import render_survey_plot
+    from tests.unit.test_survey_plot import choices
+
+    paper = ET.fromstring(
+        render_survey_plot(choices(), profile=replace(COLUMN_DETAIL_FIGURE, physical_width_pt=504))
+    )
+    frame = json.loads(paper.get("data-axis-frame"))
+    assert all(float(e.get("y")) < frame["top"] for e in paper.iter() if e.get("data-axis-region"))
+    with pytest.raises(ValueError, match="region"):
+        replace(INSPECTOR_FIGURE, region_strip="middle")
+
+
+def test_inspector_omits_region_strip_and_reclaims_its_height():
+    import json
+    from dataclasses import replace
+    from xml.etree import ElementTree as ET
+
+    from hop_design.export.construction.presentation.figure_profile import INSPECTOR_FIGURE
+    from hop_design.export.construction.survey.plot import render_survey_plot
+    from tests.unit.test_survey_plot import choices
+
+    compact = ET.fromstring(render_survey_plot(choices(), profile=INSPECTOR_FIGURE))
+    labeled = ET.fromstring(
+        render_survey_plot(choices(), profile=replace(INSPECTOR_FIGURE, region_strip="below"))
+    )
+    assert not any(e.get("data-axis-region") for e in compact.iter())
+    assert not {"Basal", "Released insert", "Foldback"} & {
+        e.text for e in compact.iter() if e.tag.endswith("}text")
+    }
+    frame = json.loads(compact.get("data-axis-frame"))
+    labeled_frame = json.loads(labeled.get("data-axis-frame"))
+    assert frame["region_height"] == 0
+    assert labeled_frame["height"] - frame["height"] == labeled_frame["region_height"]
+    assert frame["top"] == labeled_frame["top"]
+    assert frame["bottom"] == labeled_frame["bottom"]

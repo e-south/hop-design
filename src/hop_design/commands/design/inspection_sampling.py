@@ -1,4 +1,13 @@
-"""Sampling an admitted pool while preserving query and selection history."""
+"""
+--------------------------------------------------------------------------------
+HOP Design
+hop-design/src/hop_design/commands/design/inspection_sampling.py
+
+Sample an admitted pool while preserving its query and selection history.
+
+Module Author(s): Eric J. South
+--------------------------------------------------------------------------------
+"""
 
 from typing import TYPE_CHECKING, Any
 
@@ -25,7 +34,7 @@ def sample_preparation(
             seed=seed,
             query=session._state["choices"]["query"],
             strategy=strategy,
-            **({"stage": stage, "history": history} if strategy in {"families", "loop"} else {}),
+            **({"stage": stage, "history": history} if strategy in ("families", "loop") else {}),
         )
         selected = sampled.get("selection", sampled)
         session._remember()

@@ -1,43 +1,39 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="hop-token" content="__SESSION_TOKEN__"><title>Hairpin Oligonucleotide Processing · Molecular choices</title><link rel="stylesheet" href="/editor.css"><script type="module" src="/editor.js"></script></head>
 <body><main>
-<header class="atlas-brand"><h1>Hairpin Oligonucleotide Processing</h1></header>
 <section id="object" aria-label="Molecular landscape and selected preparation">
-<details id="refinement"><summary>Refine the atlas</summary><div class="actions"><button id="open-view">Open saved view</button><button id="back" disabled aria-label="Previous inspection">← Back</button></div>
-<div class="viewbar"><div role="group" aria-label="Landscape view"><button id="similarity" aria-pressed="false">Molecular similarity</button><button id="parameters" aria-pressed="false">Parameter traces</button><button id="families" aria-pressed="false">Structural groups</button></div><label id="family-stage-label" hidden>Products at <select id="family-stage"><option value="endpoint">Requested endpoint</option><option value="hairpin">Hairpin</option></select></label><button id="clear" hidden>Clear filters</button></div>
-<p id="map-scope"></p><p>Filter complete preparations here. Further search and changed construction permissions are separate operations.</p>
-<details id="discovery-controls"><summary>Discover alternatives</summary>
-<details><summary>Request · same syntax as the API and CLI</summary><label for="discovery-request">Exact-stem request</label><textarea id="discovery-request" spellcheck="false" rows="8"></textarea></details>
-<div class="actions"><label>Evaluations <input id="discovery-evaluations" type="number" min="1" step="1" value="64"></label><button id="discovery-start" disabled>Start separate search</button><button id="discovery-continue" hidden>Continue saved search</button><button id="discovery-stop" hidden>Stop</button><button id="discovery-inspect" hidden>Inspect results</button></div>
-<p id="discovery-status" role="status" aria-live="polite"></p><progress id="discovery-progress" aria-label="Committed evaluations within this invocation" hidden></progress>
-<div id="discovery-result" hidden><p>Saved results remain available through the CLI:</p><pre id="discovery-command"></pre></div>
-</details>
-</details>
 <section id="landscape" aria-label="Conditional molecular landscape">
-<div id="landscape-panels"><div id="plot" tabindex="0" aria-label="Molecular map. Drag background to pan; pinch or use plus and minus to zoom; zero fits the map."></div></div>
+<header class="atlas-brand"><h1>Hairpin Oligonucleotide Processing</h1></header>
+<div id="landscape-panels"><div id="plot" tabindex="0" aria-label="Molecular map. Drag background to pan; pinch or use plus and minus to zoom; zero fits the map."></div>
+<details id="refinement"><summary>Atlas options</summary><div class="actions"><button id="open-view">Open saved view</button><button id="bookmark" disabled title="Download the exact view as a JSON file">Save view</button><input type="file" accept=".json,application/json" id="view-file" hidden><a id="view-link" hidden>Link to this view</a><button id="back" disabled aria-label="Previous inspection">← Back</button><button id="clear" hidden>Clear filters</button></div>
+<p id="counts">Opening atlas…</p>
+<p>Filters select preparations from this collection.</p>
+</details>
+</div>
 <section id="map-comparison" aria-label="Molecular features used for map proximity" hidden></section>
-<div id="map-color" hidden><label>Color <select data-lens aria-label="Color by molecular property"></select></label><select data-word aria-label="Exact sticky-end word to highlight" hidden></select><div data-color-legend aria-live="polite"></div></div>
-<div class="map-tools"><div class="actions"><button id="fit-map" aria-label="Fit molecular landscape" title="Fit map">⤢</button><button id="refine">Refine</button><button id="another">⚄ Show me another</button></div><p id="counts">Opening atlas…</p></div>
+<section id="comparison-help-panel" role="region" aria-labelledby="comparison-help-title" hidden><header><h2 id="comparison-help-title">How X is read</h2><button id="close-comparison-help" class="icon-close" aria-label="Close X explanation">×</button></header><div id="comparison-help-content"></div></section>
+<div id="map-color" hidden><label><select data-lens aria-label="Color by molecular property"></select></label><select data-word aria-label="Exact sticky-end word to highlight" hidden></select><div data-color-legend aria-live="polite"></div></div>
+<div class="map-tools"><div class="actions"><button id="fit-map" title="Fit atlas" aria-label="Fit atlas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H3v6m0-6 7 7m5 11h6v-6m0 6-7-7"/></svg></button><button id="refine" aria-controls="refinement" aria-expanded="false" title="Atlas options" aria-label="Atlas options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.7 4.5.6-2.5h3.4l.6 2.5 2.2 1.3L19 5l1.7 3-1.8 1.7v2.6l1.8 1.7-1.7 3-2.5-.8-2.2 1.3-.6 2.5h-3.4l-.6-2.5-2.2-1.3L5 17l-1.7-3 1.8-1.7V9.7L3.3 8 5 5l2.5.8Z"/><circle cx="12" cy="11" r="3"/></svg></button><button id="another" title="Show me another" aria-label="Show me another"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><g fill="currentColor" stroke="none"><circle cx="8" cy="8" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="16" cy="16" r="1.2"/></g></svg></button><button id="comparison-help" aria-controls="comparison-help-panel" aria-expanded="false" hidden title="How X is read" aria-label="How X is read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.3 8.4a2.8 2.8 0 0 1 5.4 1c0 2-2.7 2.1-2.7 4.1"/><circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/></svg></button></div></div>
 <p id="focus" class="sr-only">Hover to inspect a preparation; click to pin it.</p>
 <section id="members" aria-labelledby="member-title" hidden><header><h2 id="member-title">Choose a preparation</h2><button id="close-members" class="icon-close" aria-label="Close choices" title="Close choices">×</button></header><div id="member-options"></div></section>
 </section>
 <div id="inspector-resize" hidden tabindex="0" role="separator" aria-orientation="vertical" aria-controls="inspector" aria-label="Preparation inspector width" title="Drag to resize; arrow keys adjust width"></div>
 <aside id="inspector" hidden aria-label="Selected molecular preparation">
-<header id="preview-heading"><span id="preview-label">Preparation</span><div class="actions"><button id="return-map" hidden>← Atlas</button><button id="close-inspector" class="icon-close" aria-label="Close preparation inspector" title="Close inspector">×</button></div></header>
+<header id="preview-heading"><span><span id="preview-label"></span><span id="route-progress" role="status" aria-live="polite" aria-atomic="true"></span></span><div class="actions"><button id="return-map" hidden>← Atlas</button><button id="close-inspector" class="icon-close" aria-label="Close preparation inspector" title="Close inspector">×</button></div></header>
 <div id="inspector-scroll">
+<p id="preview-recovery" role="status" hidden></p>
 <figure id="figure-one" class="figure-cell">
-<figcaption>Selected hairpin</figcaption><p class="figure-premise">See how the flanks around your supplied stem support this preparation.</p>
+<figcaption><span>Parameterized DNA around a fixed stem</span></figcaption>
 <div id="figure-one-canvas"><div id="figure-one-plate"><div id="molecular-area"><div id="teaching"></div><div id="hover-molecule" hidden></div></div><div id="trace-preview"><div id="trace-context" aria-label="Exact parameter trace of the inspected preparation"></div></div></div><div id="feature-details"></div></div>
 </figure>
 <figure id="figure-two" class="figure-cell" hidden>
 <figcaption><span>Complete preparation</span><div class="actions"><button id="route-view">Full figure</button><button id="focus-route" hidden>Focus figure</button></div></figcaption>
 <div id="route-content"><div id="route-scenes" aria-label="Processing scenes of the inspected preparation"></div><div id="route-focus" hidden><label id="stage-label" hidden>Processing state <select id="stage"><option value="all">All processing steps</option></select></label>
-<div id="route-frame" tabindex="0" aria-label="Exact preparation. Pinch to zoom, drag to pan; press 0 to fit." hidden><div id="route"></div><button id="fit">Fit route</button></div>
+<div id="route-frame" tabindex="0" aria-label="Complete preparation. Pinch to zoom, drag to pan; press 0 to fit." hidden><div id="route"></div><button id="fit">Fit route</button></div>
 </div></div>
 </figure>
-<div id="preparation-info"><div id="selection-actions" class="actions" hidden><button id="retrieve" disabled>Prepare oligo files</button><a id="download" hidden title="Oligo sequences and modifications, preparation report and molecular records">Download preparation (.zip)</a></div>
-<details id="selection-details" hidden><summary>Preparation details</summary><div id="inspection-facts"><p class="inspection-difference"><span data-reference></span><span data-description></span></p><p data-cost></p></div><div id="object-caption"><p id="change" aria-live="polite"></p><p id="cost"></p><div id="distributions" aria-label="Selected geometry within the recorded preparations"></div></div><details id="nearby"><summary>Nearby alternatives</summary><div id="neighbor-options"></div></details></details>
-<footer><details><summary>Reproduce &amp; inspect</summary><div class="actions"><button id="bookmark" disabled title="Download the exact view as a JSON file">Save this view (.json)</button><input type="file" accept=".json,application/json" id="view-file" hidden><a id="view-link" hidden>Link to this view</a></div><p>Sampling browses this recorded pool. It does not start a search or change your requirements.</p><label>Artwork <select id="render-policy"><option value="captured">As recorded</option><option value="current">Current glyphs · all states</option><option value="assembly">Current glyphs · compact assembly</option></select></label><p id="render-info"></p><p id="comparison-detail"></p><p id="cost-detail"></p><pre id="recipe"></pre><a id="record" hidden>Molecular record</a><details><summary>Coverage and parameter definitions</summary><p id="coverage"></p><dl id="definitions"></dl></details></details></footer></div>
+<details id="choice-frequencies" hidden><summary>Choice frequencies</summary><header><button type="button" hidden>Clear highlight</button></header><label>Component <select aria-label="Frequency component"></select></label><p>Hover to highlight preparations in the atlas and traces. Click to keep the highlight.</p><div data-frequency-chart></div></details>
+<div id="preparation-info"><div id="selection-actions" class="actions" hidden><button id="retrieve" disabled>Prepare oligo files</button><a id="download" hidden title="Oligo sequences and modifications, preparation report and molecular records">Download preparation (.zip)</a><a id="record" hidden>Download molecular record (.json)</a></div></div>
 </div></aside>
 </section><div id="status-row"><p id="status" role="status" aria-live="polite"></p><button id="retry-render" hidden>Retry drawing</button></div>
 </main></body></html>

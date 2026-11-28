@@ -4,8 +4,50 @@ import json
 from collections import Counter
 from xml.etree import ElementTree as ET
 
+import pytest
+
 from hop_design import construction
 from tests.integration.test_atlas_edition import captured_choices, captured_edition  # noqa: F401
+
+
+@pytest.mark.parametrize("profile_name", ["LANDSCAPE_DETAIL_FIGURE", "INSPECTOR_FIGURE"])
+def test_overview_compacts_repeated_enzyme_names_and_clears_materials(
+    captured_edition,  # noqa: F811
+    profile_name,
+):
+    from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
+    from hop_design.export.construction.presentation import figure_profile
+
+    summary = json.loads(
+        captured_edition._inspection_packet(captured_edition.sample(seed=0)).json_bytes
+    )
+    before = json.dumps(summary, sort_keys=True)
+    root = ET.fromstring(
+        render_teaching_overview(summary, profile=getattr(figure_profile, profile_name))
+    )
+    names = [e.text for e in root.iter() if e.get("data-label-kind") == "recognition"]
+    assert names and len(names) == len(set(names))
+    assert all(" *" not in name for name in names)
+    sid = root.find(".//*[@data-teaching-frame='hairpin']").get("data-state-id")
+    state = next(s for s in summary["atlas"]["states"] if s["state"]["state_id"] == sid)
+    assert {e.get("data-site-id") for e in root.iter() if e.get("data-site-id")} == {
+        site["site_id"] for site in state["recognition_sites"]
+    }
+    protected = [
+        json.loads(e.get("data-label-box"))
+        for e in root.iter()
+        if e.get("data-label-box") and e.get("data-label-kind") != "recognition"
+    ] + [
+        list(map(float, e.get("data-drawing-box").split()))
+        for e in root.iter()
+        if e.get("data-primer-binding") or e.get("data-staged-material")
+    ]
+    assert any(e.get("data-site-leader") for e in root.iter())
+    for label in (e for e in root.iter() if e.get("data-label-kind") == "recognition"):
+        a, b, width, height = json.loads(label.get("data-label-box"))
+        for x, y, w, h in protected:
+            assert a + width <= x or x + w <= a or b + height <= y or y + h <= b
+    assert json.dumps(summary, sort_keys=True) == before
 
 
 def test_overview_teaches_local_relationships_and_both_primer_inputs(captured_edition):  # noqa: F811
@@ -16,7 +58,7 @@ def test_overview_teaches_local_relationships_and_both_primer_inputs(captured_ed
     drawing = ET.fromstring(render_teaching_overview(summary))
     assert not any(e.get("data-site-key") for e in drawing.iter())
     assert not any(e.get("data-teaching-note") == "release" for e in drawing.iter())
-    assert "R = A \u2212 D" in "".join(drawing.itertext())
+    assert not any(e.get("data-teaching-bracket") for e in drawing.iter())
     hairpin_id = next(
         s["state_id"] for s in summary["teaching"]["scenes"] if s["frame"] == "hairpin"
     )
@@ -78,11 +120,11 @@ def test_inspector_overview_retains_every_base_and_fits_larger_annotations(captu
             assert letter.get("fill") == base_ink(glyph.get("data-neighborhood"))
     assert len([e for e in narrow.iter() if e.get("data-teaching-frame")]) == 1
     assert not any(e.get("data-teaching-continuation") for e in narrow.iter())
-    width, height = map(float, narrow.get("viewBox").split()[2:])
+    left, _top, width, height = map(float, narrow.get("viewBox").split())
     boxes = [json.loads(e.get("data-label-box")) for e in narrow.iter() if e.get("data-label-box")]
-    assert len(boxes) >= 6
+    assert len(boxes) >= 5
     for a, b, w, h in boxes:
-        assert 0 <= a < a + w <= width
+        assert left <= a < a + w <= left + width
         assert 0 <= b < b + h <= height
     for i, (a, b, w, h) in enumerate(boxes):
         for x, y, sw, sh in boxes[i + 1 :]:
@@ -94,7 +136,7 @@ def test_inspector_overview_retains_every_base_and_fits_larger_annotations(captu
             e.get("data-staged-material") or e.get("data-primer-binding")
         ):
             a, b, w, h = map(float, e.get("data-drawing-box").split())
-            assert 0 <= a < a + w <= width
+            assert left <= a < a + w <= left + width
             assert 0 <= b < b + h <= height
 
 
@@ -117,13 +159,19 @@ def test_publication_overview_measures_complete_glyphs_and_labels(captured_editi
             a, b, w, h = box
             assert x <= a < a + w <= x + width
             assert y <= b < b + h <= y + height
-    loop = next(node for node in drawing.iter() if node.get("data-teaching-note") == "loop")
-    value = next(p["value"] for p in summary["teaching"]["parameters"] if p["key"] == "loop_nt")
-    assert loop.text == f"{value} nt"
-    assert set(json.loads(loop.get("data-teaching-keys"))) == {"loop_nt", "loop_word"}
+    anchors = {
+        node.get("data-parameter-anchor")
+        for node in drawing.iter()
+        if node.get("data-parameter-anchor")
+    }
+    assert {"loop_nt", "loop_word"} <= anchors
+    parameters = json.loads(
+        next(node.text for node in drawing.iter() if node.get("data-teaching-parameters"))
+    )
+    assert parameters == summary["teaching"]["parameters"]
 
 
-def test_teaching_neighborhood_names_clear_complete_primer_contours(captured_edition):  # noqa: F811
+def test_teaching_omits_duplicate_headers_and_keeps_integrated_primer_contours(captured_edition):  # noqa: F811
     from hop_design.export.construction.molecular.teaching_overview import render_teaching_overview
 
     summary = json.loads(
@@ -135,12 +183,12 @@ def test_teaching_neighborhood_names_clear_complete_primer_contours(captured_edi
         for node in root.iter()
         if node.get("data-staged-material") or node.get("data-primer-binding")
     ]
-    headings = [node for node in root.iter() if node.get("font-weight") == "600"]
-    assert {node.text for node in headings} == {"Basal", "Supplied stem", "Foldback"}
-    for node in headings:
-        x, y, width, height = json.loads(node.get("data-label-box"))
-        for a, b, w, h in primers:
-            assert x + width <= a or a + w <= x or y + height <= b or b + h <= y, node.text
+    headings = [node for node in root.iter() if node.text in {"Basal", "Supplied stem", "Foldback"}]
+    assert not headings
+    assert len(primers) == 2
+    contours = [node for node in root.iter() if node.get("data-primer-shape") == "integrated-wedge"]
+    assert len(contours) == 2
+    assert all("Q" in node.get("d", "") for node in contours)
 
 
 def test_structural_scenes_keep_stage_qualified_parameters_and_exact_bases(loop_pool, tmp_path):
@@ -332,6 +380,6 @@ def test_current_teaching_uses_catalog_names_without_rewriting_captured_measurem
     before = copy.deepcopy(summary)
     tree = ET.fromstring(render_teaching_overview(summary))
     anchor = tree.find(".//*[@data-parameter-anchor='foldback_arm_bp']")
-    assert anchor.get("data-parameter-label") == "Loop-side extension"
-    assert anchor.find("{http://www.w3.org/2000/svg}title").text.startswith("Loop-side extension:")
+    assert anchor.get("data-parameter-label") == "Loop-side pairing"
+    assert anchor.find("{http://www.w3.org/2000/svg}title").text.startswith("Loop-side pairing:")
     assert summary == before

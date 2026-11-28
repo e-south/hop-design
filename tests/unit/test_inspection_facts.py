@@ -48,8 +48,8 @@ def test_inspection_explanation_deduplicates_aliases_and_keeps_reference_explici
     assert result["reference_identity"] == "a"
     assert result["basis"] == "recorded_parameters"
     assert [c["key"] for c in result["coordinate_changes"]] == ["foldback_arm_bp", "left_gap"]
-    assert "Loop-side extension: 5 → 6 bp" in result["description"]
-    assert "Left gap: 0 → 2 bp" in result["description"]
+    assert "Loop-side pairing: 5 → 6 bp" in result["description"]
+    assert "Left insert spacer: 0 → 2 bp" in result["description"]
     assert "preserved" not in result["description"]
 
 
@@ -107,3 +107,42 @@ def test_hover_uses_the_retained_inspected_reference_after_filter_exclusion(
     assert result["inspection_explanation"]["materialized_realization_id"] == "b"
     assert state["selection"] is None
     assert calls == [(data, None if display_axes is None else tuple(display_axes))]
+
+
+@pytest.mark.parametrize(
+    "endpoint,label",
+    [
+        ("ssdna_hairpin", "ssDNA hairpin"),
+        ("adapter_ligated_hairpin", "adapter-ligated hairpin"),
+        ("hairpin_pcr_duplex", "copied hairpin duplex"),
+        ("clone_ready_duplex", "released duplex insert"),
+    ],
+)
+def test_inspection_product_label_names_each_supported_endpoint_without_rewriting_cost(
+    endpoint, label
+):
+    from copy import deepcopy
+
+    from hop_design.api import _InspectionProjection
+
+    cost = {"endpoint": endpoint, "added_nt_by_strand": {"top": 20}, "distinct_orders": 4}
+    before = deepcopy(cost)
+    assert _InspectionProjection.product_label(cost) == label
+    assert cost == before
+    assert _InspectionProjection.product_label(None) is None
+    with pytest.raises(ValueError):
+        _InspectionProjection.product_label({"endpoint": "unknown_product"})
+
+
+def test_inspection_state_options_keep_exact_ids_and_shared_molecular_names():
+    from hop_design.api import _InspectionProjection
+
+    states = [
+        {"state": {"state_id": "first", "phase": "source_ssdna"}},
+        {"state": {"state_id": "last", "phase": "clone_ready_duplex"}},
+    ]
+    assert _InspectionProjection.stage_options(states) == [
+        {"value": "first", "label": "Source ssDNA"},
+        {"value": "last", "label": "Released insert"},
+    ]
+    assert states[0]["state"]["phase"] == "source_ssdna"

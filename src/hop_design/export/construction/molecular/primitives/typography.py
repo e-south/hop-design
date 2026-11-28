@@ -14,3 +14,8 @@ def text_width(text: str, size: float, *, bold: bool = False) -> float:
 def fitted_base_size(base: str, requested_size: float, *, pitch: float = 16) -> float:
     """Keep wide IUPAC glyphs inside the existing molecular coordinate pitch."""
     return min(requested_size, max(0.01, pitch - 0.2) / text_width(base, 1))
+
+
+def base_ink_shift(size: float) -> float:
+    """Center uppercase nucleotide ink (Helvetica cap height .718 em)."""
+    return size * 0.718 / 2 - 5

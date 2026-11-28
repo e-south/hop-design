@@ -1,7 +1,8 @@
 """Stable axis coordinates and label allocation, independent of SVG interactions."""
 
-from dataclasses import dataclass
-from itertools import groupby
+from dataclasses import dataclass, replace
+from itertools import groupby, pairwise
+from math import ceil
 from textwrap import wrap
 from typing import Any
 
@@ -44,10 +45,15 @@ def node_geometry(
     axis: dict[str, Any], node: dict[str, Any], *, profile: FigureProfile = PUBLICATION_FIGURE
 ) -> dict[str, Any]:
     """One label contour for the static figure and its exact inspection overlay."""
-    lines = node_lines(axis, node)
+    lines = node.get("display_lines") or (
+        [node_label(axis, node)] if profile.rotated_labels else node_lines(axis, node)
+    )
     return {
         "lines": lines,
-        "width": max(18, max(text_width(line, profile.axis_font) for line in lines) + 4),
+        "width": max(
+            18,
+            max(text_width(line, profile.axis_font) for line in lines) + profile.node_padding,
+        ),
         "height": len(lines) * profile.axis_font + 4,
     }
 
@@ -62,19 +68,30 @@ def heading_lines(
     )
 
 
+def compact_heading(axis: dict[str, Any]) -> str:
+    """Context comes from the region strip; canonical titles remain attached."""
+    if axis.get("heading_label"):
+        return str(axis["heading_label"])
+    label = axis.get("label", axis["symbol"])
+    unit = {"positions": "pos", "contacts": "ct"}.get(axis["unit"], axis["unit"])
+    return str(label) + (f" ({unit})" if unit else "")
+
+
 def _region_widths(
     items: list[tuple[dict[str, Any], float]], profile: FigureProfile
 ) -> list[float]:
     """Reserve a shared heading once per contiguous molecular region in a row."""
     widths = [width for _, width in items]
-    if profile.width >= PUBLICATION_FIGURE.width:
-        return widths
     for region, group in groupby(
         enumerate(items), key=lambda item: teaching_region(item[1][0].get("neighborhood", "whole"))
     ):
         columns = list(group)
         label = REGIONS[region][0]
-        minimum = max(text_width(word, profile.axis_font) for word in label.split()) + 8
+        minimum = (
+            text_width(label, profile.axis_font)
+            if profile.width >= WIDTH
+            else max(text_width(word, profile.axis_font) for word in label.split())
+        ) + 8
         available = sum(width for _, (_, width) in columns) + 6 * (len(columns) - 1)
         extra = max(0.0, minimum - available) / len(columns)
         for index, _ in columns:
@@ -138,6 +155,8 @@ def categorical_positions(
 class SurveyLayout:
     axes: list[dict[str, Any]]
     frame: AxisFrame
+    width: float
+    landing_y: float
 
     @property
     def height(self) -> float:
@@ -159,23 +178,89 @@ def plot_layout(
             lines = node_lines(axis, node)
             node_rows = max(node_rows, len(lines))
             labels.extend(lines)
-        width = max(18, max(text_width(label, profile.axis_font) for label in labels) + 4)
+        width = (
+            max(
+                [
+                    18,
+                    *[node_geometry(axis, n, profile=profile)["width"] for n in axis["nodes"]],
+                ]
+            )
+            if profile.rotated_labels
+            else max(18, max(text_width(label, profile.axis_font) for label in labels) + 4)
+        )
+        if profile.rotated_labels:
+            # Adjacent one-digit axes still need a full diagonal text line.
+            width = max(width, profile.axis_font * profile.heading_pitch_em)
         widths.append(width)
-    bands = _axis_bands(list(zip(axes, widths, strict=True)), profile)
+    items = list(zip(axes, widths, strict=True))
+    margin, minimum_gap = (6, profile.minimum_axis_gap) if profile.rotated_labels else (26, 6)
+    if profile.rotated_labels:
+        # Reserve the first descending label's measured left overhang.
+        margin = max(
+            6,
+            ceil(
+                max(
+                    (
+                        text_width(compact_heading(a), profile.axis_font) * 0.707 - w / 2
+                        for a, w in items[:1]
+                    ),
+                    default=0,
+                )
+            ),
+        )
+    if profile.single_row:
+        needed = (
+            sum(_region_widths(items, profile)) + minimum_gap * max(0, len(items) - 1) + 2 * margin
+        )
+        if (
+            profile.rotated_labels
+            and profile.axis_font * profile.physical_width_pt / max(profile.width, needed + 1) < 7
+        ):
+            minimum = ceil((needed + 1) * 7 / profile.axis_font)
+            raise ValueError(
+                f"The declared axes require at least {minimum} points for readable labels."
+            )
+        profile = replace(profile, width=max(profile.width, round(needed + 1)))
+        bands = [items] if items else []
+    else:
+        bands = _axis_bands(items, profile)
     frame = measured_frame(
         font=profile.axis_font,
         heading_rows=heading_rows,
         node_rows=node_rows,
         region_rows=2 if profile.width < WIDTH else 1,
     )
+    if profile.rotated_labels:
+        longest = max(
+            (text_width(compact_heading(a), profile.axis_font) for a in axes),
+            default=0,
+        )
+        tallest = max(
+            (node_geometry(a, n, profile=profile)["height"] for a in axes for n in a["nodes"]),
+            default=profile.axis_font,
+        )
+        below = profile.region_strip != "above"
+        region_height = 0 if profile.region_strip == "none" else frame.region_height
+        top = (0 if below else frame.region_height) + tallest / 2 + (8 if below else 12)
+        bottom = top + max(150, 6 * profile.axis_font)
+        heading_y = bottom + tallest / 2 + 14
+        label_bottom = heading_y + longest * 0.707 + profile.axis_font + 8
+        frame = AxisFrame(
+            label_bottom + profile.axis_font if below else frame.region_baseline,
+            region_height,
+            heading_y,
+            top,
+            bottom,
+            label_bottom + region_height + 8 if below else label_bottom,
+        )
     result = []
     for band, items in enumerate(bands):
         items = [
             (axis, width)
             for (axis, _), width in zip(items, _region_widths(items, profile), strict=True)
         ]
-        gap = (profile.width - 52 - sum(w for _, w in items)) / max(1, len(items) - 1)
-        left = 26.0
+        gap = (profile.width - 2 * margin - sum(w for _, w in items)) / max(1, len(items) - 1)
+        left = float(margin)
         for axis, width in items:
             values = [n["value"] for n in axis["nodes"]]
             if len(set(values)) != len(values):
@@ -198,7 +283,16 @@ def plot_layout(
                 {"definition": axis, "x": x, "y": positions, "band": band, "width": width}
             )
             left += width + gap
-    return SurveyLayout(result, frame)
+    if profile.rotated_labels and len(result) > 1:
+        pitch = (result[-1]["x"] - result[0]["x"]) / (len(result) - 1)
+        required = max((a["width"] + b["width"]) / 2 + minimum_gap for a, b in pairwise(result))
+        if pitch >= required:
+            first_x = result[0]["x"]
+            for index, axis in enumerate(result):
+                axis["x"] = first_x + index * pitch
+    return SurveyLayout(
+        result, frame, profile.width, frame.top if profile.region_strip != "above" else 0
+    )
 
 
 def plot_axes(

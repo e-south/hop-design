@@ -12,7 +12,6 @@ from xml.etree import ElementTree as ET
 from ..presentation.figure_profile import PUBLICATION_FIGURE, FigureProfile
 
 SVG = "http://www.w3.org/2000/svg"
-AXIS_LANDING_Y = 0
 
 
 def teaching_geometry(content: bytes | ET.Element, *, fit_content: bool = False) -> dict[str, Any]:
@@ -42,9 +41,17 @@ def plot_geometry(content: bytes | ET.Element) -> dict[str, Any]:
             if label is not None:
                 anchors[axis.attrib["data-axis"]] = [
                     float(label.attrib["x"]),
-                    AXIS_LANDING_Y,
+                    float(root.attrib["data-axis-landing-y"]),
                 ]
-    return {"frame": root.get("data-landscape-frame", root.attrib["viewBox"]), "anchors": anchors}
+    return {
+        "frame": root.get("data-landscape-frame", root.attrib["viewBox"]),
+        "anchors": anchors,
+        **(
+            {"parameter_aliases": json.loads(root.attrib["data-parameter-aliases"])}
+            if root.get("data-parameter-aliases")
+            else {}
+        ),
+    }
 
 
 def figure_layout(
@@ -59,7 +66,13 @@ def figure_layout(
     top = (slot - kh * ks) / 2
     trace_y = slot + profile.teaching_trace_gap
     links, origins = [], []
-    for parameter, anchor in teaching["anchors"].items():
+    anchors = dict(teaching["anchors"])
+    for field, parameters in plot.get("parameter_aliases", {}).items():
+        for parameter in parameters:
+            if parameter in anchors:
+                anchors[field] = anchors[parameter]
+                break
+    for parameter, anchor in anchors.items():
         if parameter not in plot["anchors"]:
             continue
         tx, ty = plot["anchors"][parameter]

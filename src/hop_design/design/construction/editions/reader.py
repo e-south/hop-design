@@ -110,15 +110,9 @@ class AtlasEdition(AtlasNavigation):
         )
 
     def explain(self, query: Source | None = None) -> dict[str, Any]:
-        from ..variants.explanation import explain_choices
+        from ..variants.explanation import explain_captured_choices
 
-        answer = explain_choices(self.resolution, self.query(query), can_continue=False)
-        answer["actions"] = [a for a in answer["actions"] if a in {"select", "refine_query"}]
-        answer["guidance"] += (
-            " This frozen edition supports viewing and retrieval; "
-            "new search belongs to the original discovery."
-        )
-        return answer
+        return explain_captured_choices(self.resolution, self.query(query))
 
     def member(self, name: str) -> Never:
         raise ValueError("An atlas edition contains one experimental stem; open its named edition.")
@@ -167,6 +161,7 @@ class AtlasEdition(AtlasNavigation):
         render_policy: str | None = None,
         reference_selection: Source | None = None,
         display_axes: tuple[str, ...] | None = None,
+        detail_width_pt: float | None = None,
     ) -> SourceBoundConstructionPacket:
         from .rendering import edition_figure
 
@@ -180,6 +175,7 @@ class AtlasEdition(AtlasNavigation):
             render_policy=render_policy,
             reference_selection=reference_selection,
             display_axes=display_axes,
+            detail_width_pt=detail_width_pt,
         )
 
     def select(
@@ -198,7 +194,7 @@ class AtlasEdition(AtlasNavigation):
         ).model_dump(mode="json", by_alias=True)
 
     def _selected(self, selection: Source) -> EditionSelection:
-        from ..navigation.guided_sampling import selection_source
+        from ..navigation.selection.sources import selection_source
 
         selected = EditionSelection.model_validate_json(
             canonical_json_bytes(selection_source(self, selection))
@@ -228,7 +224,7 @@ class AtlasEdition(AtlasNavigation):
         history: tuple[str, ...] = (),
         after: Source | None = None,
     ) -> dict[str, Any]:
-        from ..navigation.guided_sampling import sample_choices
+        from ..navigation.selection.sampling import sample_choices
 
         return sample_choices(
             self,

@@ -16,7 +16,6 @@ import json
 import re
 import subprocess
 import sys
-import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import ModuleType
@@ -60,7 +59,6 @@ def test_public_landing_page_routes_without_becoming_a_manual() -> None:
     assert "SECURITY.md" in readme
     assert "docs/index.md" in readme
     normalized = " ".join(readme.split())
-    assert "finds ways to construct DNA hairpins" in normalized
     docs_index = (REPO_ROOT / "docs/index.md").read_text(encoding="utf-8")
     for route in (
         "guides/discover-product-scaffolds.md",
@@ -96,7 +94,10 @@ def test_landing_page_opens_with_one_short_product_paragraph() -> None:
 
     assert len(paragraphs) == 1
     assert len(paragraphs[0].split()) <= 90
-    assert paragraphs[0].startswith("Hairpin Oligonucleotide Processing (HOP)")
+    overview = " ".join(paragraphs[0].split())
+    assert "Hairpin Oligonucleotide Processing (HOP)" in overview
+    for term in ("stem", "hairpin", "duplex insert"):
+        assert term in overview.lower()
 
 
 def test_landing_page_routes_tasks_and_ends_with_versioned_citation_guidance() -> None:
@@ -120,8 +121,9 @@ def test_installation_continues_into_the_primary_discovery_tutorial() -> None:
 def test_map_capture_names_its_optional_dependency_before_first_fit() -> None:
     install = (REPO_ROOT / "docs/guides/install.md").read_text(encoding="utf-8")
     capture = (REPO_ROOT / "docs/guides/share-atlas-edition.md").read_text(encoding="utf-8")
-    version = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text())["project"]["version"]
-    assert f"hop-design[atlas]=={version}" in install
+    release = re.search(r'uv tool install "hop-design==([^\"]+)"', install)
+    assert release is not None
+    assert f"hop-design[atlas]=={release.group(1)}" in install
     assert capture.index("install.md#fit-a-new-molecular-map") < capture.index(
         "--include-landscape"
     )

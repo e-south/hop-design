@@ -32,12 +32,14 @@ def assembly_scenes(atlas: MolecularAtlas, presentation: RoutePresentation) -> t
             continue
         if start is not None and index == start - 1:
             scenes.append(
-                Scene(index, tuple(range(index, start + 2)), operation="Cleavage · cleanup")
+                Scene(
+                    index, tuple(range(index, start + 2)), operation="Cleave, separate and retain"
+                )
             )
         elif start is not None and index == start + 2:
             scenes.append(
                 Scene(
-                    index, (index,), title="Cleaved and retained", operation="Fold-back · reanneal"
+                    index, (index,), title="Cleaved and retained", operation="Fold back and anneal"
                 )
             )
         else:
@@ -47,6 +49,11 @@ def assembly_scenes(atlas: MolecularAtlas, presentation: RoutePresentation) -> t
                     (index,) if index < len(atlas.transitions) else (),
                     title="Folded and annealed"
                     if start is not None and index == start + 3
+                    else None,
+                    operation="Hairpin PCR"
+                    if phases[index] == "adapter_ligated"
+                    and index + 1 < len(phases)
+                    and phases[index + 1] == "hairpin_pcr_duplex"
                     else None,
                 )
             )
